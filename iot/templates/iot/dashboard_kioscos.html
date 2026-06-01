@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Kioscos IoT{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold mb-0"><i class="fas fa-tablet-alt text-primary me-2"></i>Kioscos IoT</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalKiosco">
+      <i class="fas fa-plus me-1"></i>Nuevo Kiosco
+    </button>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm text-center py-3">
+        <div class="fw-bold text-primary" style="font-size:1.6rem;">{{ kioscos|length }}</div>
+        <small class="text-muted">Kioscos Registrados</small>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm text-center py-3">
+        <div class="fw-bold text-success" style="font-size:1.6rem;">{{ verificaciones_hoy }}</div>
+        <small class="text-muted">Verificaciones Hoy</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    {% for k in kioscos %}
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <strong>{{ k.nombre }}</strong>
+          {% if k.online %}<span class="badge bg-success">Online</span>{% elif k.activo %}<span class="badge bg-warning text-dark">Offline</span>{% else %}<span class="badge bg-secondary">Inactivo</span>{% endif %}
+        </div>
+        <div class="card-body" style="font-size:.88rem;">
+          {% if k.ubicacion %}<div><i class="fas fa-map-pin text-muted me-1"></i>{{ k.ubicacion }}</div>{% endif %}
+          {% if k.ip_address %}<div><i class="fas fa-network-wired text-muted me-1"></i>{{ k.ip_address }}</div>{% endif %}
+          {% if k.ultima_conexion %}<div class="mt-1 text-muted"><small>Ultima conexion: {{ k.ultima_conexion|timesince }}</small></div>{% endif %}
+          <div class="mt-2">
+            <button class="btn btn-sm btn-outline-{% if k.activo %}danger{% else %}success{% endif %}" onclick="toggleKiosco({{ k.id }})">
+              {% if k.activo %}Desactivar{% else %}Activar{% endif %}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center text-muted py-5">
+      <i class="fas fa-tablet-alt fa-3x mb-3"></i>
+      <p>No hay kioscos registrados.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="modal fade" id="modalKiosco" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Nuevo Kiosco</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label fw-bold">Nombre *</label><input type="text" class="form-control" id="kNombre"></div>
+        <div class="mb-3"><label class="form-label">Ubicacion</label><input type="text" class="form-control" id="kUbicacion"></div>
+        <div class="mb-3"><label class="form-label">IP Address</label><input type="text" class="form-control" id="kIP"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btnGuardarK"><i class="fas fa-save me-1"></i>Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function getCookie(n){const v=`; ${document.cookie}`;const p=v.split(`; ${n}=`);if(p.length===2)return p.pop().split(';').shift();}
+
+async function toggleKiosco(id) {
+  const r = await fetch(`/iot/api/toggle/${id}/`, {method:'POST', headers:{'X-CSRFToken':getCookie('csrftoken')}});
+  if (r.ok) location.reload();
+}
+
+document.getElementById('btnGuardarK').addEventListener('click', async () => {
+  const nombre = document.getElementById('kNombre').value.trim();
+  if (!nombre) return Swal.fire('Error', 'Nombre requerido', 'error');
+  const r = await fetch('{% url "iot:api_crear_kiosco" %}', {
+    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
+    body: JSON.stringify({nombre, ubicacion: document.getElementById('kUbicacion').value, ip_address: document.getElementById('kIP').value})
+  });
+  const d = await r.json();
+  if (d.status === 'success') Swal.fire('OK', d.mensaje, 'success').then(()=>location.reload());
+  else Swal.fire('Error', d.mensaje, 'error');
+});
+</script>
+{% endblock %}

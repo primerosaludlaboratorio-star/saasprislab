@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Rastrear Transferencia — PRISLAB{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-primary text-white rounded-top-4">
+          <h5 class="mb-0 fw-bold">
+            <i class="fas fa-map-marker-alt me-2"></i>
+            Rastreo — Transferencia {{ transferencia.folio }}
+          </h5>
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <span class="text-muted small">Origen</span>
+              <div class="fw-semibold">{{ transferencia.sucursal_origen }}</div>
+            </div>
+            <div class="col-md-6">
+              <span class="text-muted small">Destino</span>
+              <div class="fw-semibold">{{ transferencia.sucursal_destino }}</div>
+            </div>
+            <div class="col-md-6">
+              <span class="text-muted small">Transportista</span>
+              <div class="fw-semibold">{{ transferencia.transportista|default:'—' }}</div>
+            </div>
+            <div class="col-md-6">
+              <span class="text-muted small">Estado</span>
+              <div>
+                <span class="badge
+                  {% if transferencia.estado == 'COMPLETADA' %}bg-success
+                  {% elif transferencia.estado == 'ENVIADA' %}bg-warning text-dark
+                  {% elif transferencia.estado == 'CANCELADA' %}bg-danger
+                  {% else %}bg-secondary{% endif %} rounded-pill">
+                  {{ transferencia.get_estado_display }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <h6 class="fw-bold text-muted mb-3">Historial de Eventos</h6>
+          <div class="timeline">
+            {% for log in logs %}
+            <div class="d-flex gap-3 mb-3 align-items-start">
+              <div class="rounded-circle bg-primary bg-opacity-10 p-2 text-center flex-shrink-0"
+                   style="width:40px;height:40px;">
+                <i class="fas fa-circle-dot text-primary" style="font-size:0.7rem;margin-top:6px;"></i>
+              </div>
+              <div>
+                <div class="small fw-semibold">{{ log.estado_nuevo }}</div>
+                <div class="text-muted" style="font-size:.8rem">
+                  {{ log.comentario }} — <em>{{ log.usuario }}</em>
+                </div>
+                <div class="text-muted" style="font-size:.75rem">
+                  {{ log.fecha_registro|date:"d/m/Y H:i" }}
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <p class="text-muted small">Sin eventos registrados.</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

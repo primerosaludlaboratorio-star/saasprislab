@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% load static %}
+{% load math_filters %}
+
+{% block title %}Flujo de Caja - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Prevenir Layout Shift en Móvil */
+    .card-kpi {
+        min-height: 150px;
+        display: flex;
+        flex-direction: column;
+    }
+    .card-kpi .card-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .card-kpi h2 {
+        font-size: clamp(1.5rem, 4vw, 2.5rem);
+        word-break: break-word;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+    @media (max-width: 768px) {
+        .chart-container {
+            height: 250px;
+        }
+        .btn-group-mobile {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .btn-group-mobile .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4 px-2 px-md-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-2">
+                <h2 class="mb-0">
+                    <i class="bi bi-arrow-left-right"></i> Flujo de Caja
+                </h2>
+                <div class="btn-group-mobile d-flex flex-row gap-2">
+                    <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
+                        <i class="bi bi-printer"></i> <span class="d-none d-md-inline">Imprimir</span>
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" onclick="exportarExcel()">
+                        <i class="bi bi-file-earmark-excel"></i> <span class="d-none d-md-inline">Excel</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-12 col-md-5">
+                    <label class="form-label fw-bold">Fecha Desde</label>
+                    <input type="date" name="fecha_inicio" class="form-control" value="{{ fecha_inicio }}" required>
+                </div>
+                <div class="col-12 col-md-5">
+                    <label class="form-label fw-bold">Fecha Hasta</label>
+                    <input type="date" name="fecha_fin" class="form-control" value="{{ fecha_fin }}" required>
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="form-label d-none d-md-block">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resumen Ejecutivo -->
+    <div class="row mb-4 g-3">
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="card text-white bg-success h-100 card-kpi">
+                <div class="card-body">
+                    <h5 class="card-title">Entradas de Efectivo</h5>
+                    <h2 class="mb-0">${{ total_entradas_efectivo|floatformat:2 }}</h2>
+                    <small>Pagos en efectivo recibidos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="card text-white bg-danger h-100 card-kpi">
+                <div class="card-body">
+                    <h5 class="card-title">Salidas de Efectivo</h5>
+                    <h2 class="mb-0">${{ total_salidas_efectivo|floatformat:2 }}</h2>
+                    <small>Gastos de caja pagados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="card text-white {% if flujo_neto >= 0 %}bg-primary{% else %}bg-warning{% endif %} h-100 card-kpi">
+                <div class="card-body">
+                    <h5 class="card-title">Flujo Neto</h5>
+                    <h2 class="mb-0">${{ flujo_neto|floatformat:2 }}</h2>
+                    <small>Entradas - Salidas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfica de Flujo -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0"><i class="bi bi-graph-up"></i> Flujo de Caja Diario</h5>
+        </div>
+        <div class="card-body">
+            <div class="chart-container">
+                <canvas id="graficaFlujo"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Análisis de Liquidez -->
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-speedometer2"></i> Análisis de Liquidez</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12 col-md-4">
+                    <p class="mb-1"><strong>Ratio Entradas/Salidas:</strong></p>
+                    <h3 class="{% if total_salidas_efectivo > 0 and total_entradas_efectivo|div:total_salidas_efectivo >= 1.2 %}text-success{% elif total_salidas_efectivo > 0 and total_entradas_efectivo|div:total_salidas_efectivo >= 1 %}text-warning{% else %}text-danger{% endif %} mb-2">
+                        {% if total_salidas_efectivo > 0 %}
+                            {{ total_entradas_efectivo|floatformat:2|div:total_salidas_efectivo|floatformat:2 }}:1
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </h3>
+                    <small class="text-muted d-block">
+                        {% if total_salidas_efectivo > 0 and total_entradas_efectivo|div:total_salidas_efectivo >= 1.2 %}
+                            <i class="bi bi-check-circle text-success"></i> Excelente liquidez
+                        {% elif total_salidas_efectivo > 0 and total_entradas_efectivo|div:total_salidas_efectivo >= 1 %}
+                            <i class="bi bi-exclamation-triangle text-warning"></i> Liquidez adecuada
+                        {% else %}
+                            <i class="bi bi-x-circle text-danger"></i> Atención: Liquidez baja
+                        {% endif %}
+                    </small>
+                </div>
+                <div class="col-12 col-md-4">
+                    <p class="mb-1"><strong>Días Promedio de Entrada:</strong></p>
+                    <h3 class="text-primary mb-2">
+                        {% if total_entradas_efectivo > 0 %}
+                            {{ total_entradas_efectivo|floatformat:2|div:30|floatformat:2 }}
+                        {% else %}
+                            0.00
+                        {% endif %}
+                    </h3>
+                    <small class="text-muted d-block">Promedio diario de entradas</small>
+                </div>
+                <div class="col-12 col-md-4">
+                    <p class="mb-1"><strong>Días Promedio de Salida:</strong></p>
+                    <h3 class="text-danger mb-2">
+                        {% if total_salidas_efectivo > 0 %}
+                            {{ total_salidas_efectivo|floatformat:2|div:30|floatformat:2 }}
+                        {% else %}
+                            0.00
+                        {% endif %}
+                    </h3>
+                    <small class="text-muted d-block">Promedio diario de salidas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Gráfica de Flujo de Caja
+    const datosFlujo = {{ flujo_diario|safe }};
+    const ctx = document.getElementById('graficaFlujo').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: datosFlujo.map(d => d.fecha),
+            datasets: [
+                {
+                    label: 'Entradas ($)',
+                    data: datosFlujo.map(d => d.entradas),
+                    backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                    borderColor: 'rgb(40, 167, 69)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Salidas ($)',
+                    data: datosFlujo.map(d => d.salidas),
+                    backgroundColor: 'rgba(220, 53, 69, 0.8)',
+                    borderColor: 'rgb(220, 53, 69)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Flujo Neto ($)',
+                    data: datosFlujo.map(d => d.flujo_neto),
+                    type: 'line',
+                    borderColor: 'rgb(0, 123, 255)',
+                    backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                    tension: 0.1,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 2,
+            scales: {
+                y: {
+                    beginAtZero: true
+                },
+                x: {
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+
+    function exportarExcel() {
+        const params = new URLSearchParams(window.location.search);
+        window.location.href = "{% url 'exportar_excel_flujo_caja' %}" + '?' + params.toString();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3" style="max-width:800px">
+  <div class="d-flex align-items-center mb-4 gap-3">
+    <a href="{% url 'mantenimiento:lista_expedientes' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h2 class="mb-0 fw-bold text-primary"><i class="bi bi-cpu me-2"></i>{{ titulo }}</h2>
+  </div>
+
+  {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Equipo <span class="text-danger">*</span></label>
+            <select name="equipo" class="form-select" required>
+              <option value="">— Selecciona un equipo —</option>
+              {% for eq in equipos %}
+                <option value="{{ eq.pk }}">{{ eq.marca|default:"" }} {{ eq.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tipo de Equipo</label>
+            <select name="tipo_equipo" class="form-select">
+              {% for val, lbl in tipo_choices %}
+                <option value="{{ val }}">{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">
+              Silo de Refacciones por Defecto
+              <i class="bi bi-info-circle text-muted" title="Ajuste 1 V8.2: puede ser Lab, Consultorio o General"></i>
+            </label>
+            <select name="silo_refacciones" class="form-select">
+              {% for val, lbl in silo_choices %}
+                <option value="{{ val }}">{{ lbl }}</option>
+              {% endfor %}
+            </select>
+            <small class="text-muted">Podrá cambiarse por ticket.</small>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">N° de Serie</label>
+            <input type="text" name="numero_serie" class="form-control" placeholder="SN-00001">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Fabricante</label>
+            <input type="text" name="fabricante" class="form-control" placeholder="Roche, Mindray…">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Modelo</label>
+            <input type="text" name="modelo" class="form-control" placeholder="Cobas c111, BC-6000…">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Fecha de Instalación</label>
+            <input type="date" name="fecha_instalacion" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Garantía hasta</label>
+            <input type="date" name="garantia_hasta" class="form-control">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Foto del Equipo</label>
+            <input type="file" name="foto_equipo" class="form-control" accept="image/*">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Manual PDF del Fabricante</label>
+            <input type="file" name="manual_pdf" class="form-control" accept=".pdf">
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">Notas</label>
+            <textarea name="notas" class="form-control" rows="3"
+                      placeholder="Observaciones, ubicación física, notas de configuración…"></textarea>
+          </div>
+
+          <div class="col-12 d-flex justify-content-end gap-2">
+            <a href="{% url 'mantenimiento:lista_expedientes' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-save me-1"></i>Registrar Equipo
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

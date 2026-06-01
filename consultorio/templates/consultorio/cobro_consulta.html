@@ -1,0 +1,641 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Blindaje de Cobros - Consultorio{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- ENCABEZADO -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-6">
+            <h2 class="mb-1"><i class="fas fa-shield-alt text-success"></i> Blindaje de Cobros</h2>
+            <p class="text-muted mb-0">
+                {% if config.modo_cobro == 'MEDICO' %}
+                    <span class="badge bg-success"><i class="fas fa-user-md"></i> Cobro directo por el médico</span>
+                {% else %}
+                    <span class="badge bg-info"><i class="fas fa-building"></i> Cobro centralizado en recepción</span>
+                {% endif %}
+                <small class="ms-2 text-muted">Caja del {{ caja_hoy.fecha|date:"d/m/Y" }}</small>
+            </p>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{% url 'consultorio:reporte_liquidacion' %}" class="btn btn-outline-warning me-2">
+                <i class="fas fa-file-invoice-dollar"></i> Reporte de Liquidación
+            </a>
+            <a href="{% url 'consultorio:configuracion_medico' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-cog"></i> Configuración
+            </a>
+        </div>
+    </div>
+
+    <!-- ========== DASHBOARD FINANCIERO ========== -->
+    <div class="row g-3 mb-4">
+        <!-- Cobrado Hoy -->
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card border-0 shadow-sm bg-success text-white h-100">
+                <div class="card-body text-center py-3">
+                    <i class="fas fa-dollar-sign fa-2x mb-1"></i>
+                    <h3 class="mb-0">${{ stats_hoy.ingresos|floatformat:0 }}</h3>
+                    <small>Cobrado Hoy</small>
+                </div>
+            </div>
+        </div>
+        <!-- Pagadas -->
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card border-0 shadow-sm bg-primary text-white h-100">
+                <div class="card-body text-center py-3">
+                    <i class="fas fa-check-circle fa-2x mb-1"></i>
+                    <h3 class="mb-0">{{ stats_hoy.pagadas }}</h3>
+                    <small>Cobradas</small>
+                </div>
+            </div>
+        </div>
+        <!-- Pendientes -->
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card border-0 shadow-sm bg-warning text-dark h-100">
+                <div class="card-body text-center py-3">
+                    <i class="fas fa-hourglass-half fa-2x mb-1"></i>
+                    <h3 class="mb-0">{{ stats_hoy.pendientes_cobro }}</h3>
+                    <small>Pendientes</small>
+                </div>
+            </div>
+        </div>
+        <!-- Dinero en Tránsito -->
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card border-0 shadow-sm {% if stats_hoy.en_transito > 0 %}bg-danger{% else %}bg-secondary{% endif %} text-white h-100">
+                <div class="card-body text-center py-3">
+                    <i class="fas fa-exchange-alt fa-2x mb-1"></i>
+                    <h3 class="mb-0">${{ stats_hoy.en_transito|floatformat:0 }}</h3>
+                    <small>En Tránsito</small>
+                </div>
+            </div>
+        </div>
+        <!-- Semanal -->
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card border-0 shadow-sm bg-info text-white h-100">
+                <div class="card-body text-center py-3">
+                    <i class="fas fa-calendar-week fa-2x mb-1"></i>
+                    <h3 class="mb-0">${{ stats_semana|floatformat:0 }}</h3>
+                    <small>Esta Semana</small>
+                </div>
+            </div>
+        </div>
+        <!-- Mensual -->
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card border-0 shadow-sm text-white h-100" style="background-color: #6f42c1;">
+                <div class="card-body text-center py-3">
+                    <i class="fas fa-calendar-alt fa-2x mb-1"></i>
+                    <h3 class="mb-0">${{ stats_mes|floatformat:0 }}</h3>
+                    <small>Este Mes</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desglose por método de pago del día -->
+    {% if stats_hoy.ingresos > 0 %}
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-start border-success border-4 shadow-sm">
+                <div class="card-body d-flex align-items-center py-2">
+                    <i class="fas fa-money-bill-wave fa-2x text-success me-3"></i>
+                    <div>
+                        <h5 class="mb-0">${{ stats_hoy.efectivo|floatformat:0 }}</h5>
+                        <small class="text-muted">Efectivo</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-start border-primary border-4 shadow-sm">
+                <div class="card-body d-flex align-items-center py-2">
+                    <i class="fas fa-credit-card fa-2x text-primary me-3"></i>
+                    <div>
+                        <h5 class="mb-0">${{ stats_hoy.tarjeta|floatformat:0 }}</h5>
+                        <small class="text-muted">Tarjeta</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-start border-info border-4 shadow-sm">
+                <div class="card-body d-flex align-items-center py-2">
+                    <i class="fas fa-university fa-2x text-info me-3"></i>
+                    <div>
+                        <h5 class="mb-0">${{ stats_hoy.transferencia|floatformat:0 }}</h5>
+                        <small class="text-muted">Transferencia</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ========== VALES PENDIENTES DE LIQUIDACIÓN ========== -->
+    {% if vales_pendientes %}
+    <div class="card border-0 shadow-sm mb-4 border-start border-danger border-4">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-exclamation-circle"></i>
+                Recepción debe entregarle: ${{ stats_hoy.en_transito|floatformat:0 }}
+            </h5>
+            <a href="{% url 'consultorio:reporte_liquidacion' %}" class="btn btn-sm btn-light">
+                Ver Reporte Completo
+            </a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Vale</th>
+                            <th>Paciente</th>
+                            <th>Consulta</th>
+                            <th>Monto</th>
+                            <th>Pendiente</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vale in vales_pendientes %}
+                        <tr>
+                            <td><span class="badge bg-danger">{{ vale.folio_vale }}</span></td>
+                            <td><strong>{{ vale.cobro.paciente.nombre_completo }}</strong></td>
+                            <td>{{ vale.cobro.consulta.folio_consulta }}</td>
+                            <td>${{ vale.monto_adeudado|floatformat:0 }}</td>
+                            <td><strong class="text-danger">${{ vale.saldo_pendiente|floatformat:0 }}</strong></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-success btn-liquidar"
+                                        data-vale-id="{{ vale.id }}"
+                                        data-folio="{{ vale.folio_vale }}"
+                                        data-monto="{{ vale.saldo_pendiente }}">
+                                    <i class="fas fa-hand-holding-usd"></i> Liquidar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ========== CONSULTAS PENDIENTES DE COBRO ========== -->
+    {% if pendientes_cobro %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Pendientes de Cobro ({{ pendientes_cobro|length }})</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Folio</th>
+                            <th>Paciente</th>
+                            <th>Hora</th>
+                            <th>Diagnóstico</th>
+                            <th>Monto</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in pendientes_cobro %}
+                        <tr>
+                            <td><span class="badge bg-secondary">{{ c.folio_consulta }}</span></td>
+                            <td>
+                                <strong>{{ c.paciente.nombre_completo }}</strong>
+                                {% if c.paciente.telefono %}
+                                    <br><small class="text-muted"><i class="fas fa-phone"></i> {{ c.paciente.telefono }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ c.fecha_consulta|time:"H:i" }}</td>
+                            <td>{{ c.diagnostico_principal|truncatewords:6|default:"—" }}</td>
+                            <td><strong>${{ c.precio_consulta|floatformat:0 }}</strong></td>
+                            <td>
+                                <button class="btn btn-sm btn-success btn-cobrar"
+                                        data-consulta-id="{{ c.id }}"
+                                        data-folio="{{ c.folio_consulta }}"
+                                        data-paciente="{{ c.paciente.nombre_completo }}"
+                                        data-monto="{{ c.precio_consulta }}"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalCobrar">
+                                    <i class="fas fa-dollar-sign"></i> Cobrar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ========== COBROS REALIZADOS HOY ========== -->
+    {% if cobros_hoy %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-check-double"></i> Cobros del Día ({{ cobros_hoy|length }})</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Folio</th>
+                            <th>Paciente</th>
+                            <th>Hora</th>
+                            <th>Concepto</th>
+                            <th>Método</th>
+                            <th>Monto</th>
+                            <th>Cobrado por</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cobro in cobros_hoy %}
+                        <tr>
+                            <td><span class="badge bg-success">{{ cobro.consulta.folio_consulta }}</span></td>
+                            <td><strong>{{ cobro.paciente.nombre_completo }}</strong></td>
+                            <td>{{ cobro.fecha_cobro|time:"H:i" }}</td>
+                            <td>{{ cobro.get_concepto_display }}</td>
+                            <td>
+                                {% if cobro.es_mixto %}
+                                    <span class="badge bg-info">Mixto</span>
+                                    <br>
+                                    <small>
+                                        {% if cobro.monto_efectivo > 0 %}Ef: ${{ cobro.monto_efectivo|floatformat:0 }} {% endif %}
+                                        {% if cobro.monto_tarjeta > 0 %}Tj: ${{ cobro.monto_tarjeta|floatformat:0 }} {% endif %}
+                                        {% if cobro.monto_transferencia > 0 %}Tr: ${{ cobro.monto_transferencia|floatformat:0 }}{% endif %}
+                                    </small>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ cobro.get_metodo_pago_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td><strong class="text-success">${{ cobro.monto_total|floatformat:0 }}</strong></td>
+                            <td>
+                                {% if cobro.cobrado_por == 'RECEPCION' %}
+                                    <span class="badge bg-warning text-dark"><i class="fas fa-building"></i> Recepción</span>
+                                {% else %}
+                                    <span class="badge bg-success"><i class="fas fa-user-md"></i> Médico</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% elif not pendientes_cobro and not vales_pendientes %}
+    <div class="text-center py-5">
+        <i class="fas fa-shield-alt fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">Sin movimientos hoy</h4>
+        <p class="text-muted">Los cobros se registran al finalizar cada consulta</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ========== MODAL: COBRO MIXTO ========== -->
+<div class="modal fade" id="modalCobrar" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-cash-register"></i> Registrar Cobro</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Info de consulta -->
+                <div class="alert alert-light border mb-3">
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Paciente</small>
+                            <p class="mb-0 fw-bold" id="cobroPaciente"></p>
+                        </div>
+                        <div class="col-6 text-end">
+                            <small class="text-muted">Folio</small>
+                            <p class="mb-0 fw-bold" id="cobroFolio"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Concepto -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Concepto del Servicio</label>
+                    <select class="form-select" id="cobroConcepto">
+                        <option value="CONSULTA">Consulta Médica</option>
+                        <option value="ULTRASONIDO">Ultrasonido</option>
+                        <option value="CERTIFICADO">Certificado Médico</option>
+                        <option value="PROCEDIMIENTO">Procedimiento Menor</option>
+                        <option value="OTRO">Otro Servicio</option>
+                    </select>
+                </div>
+
+                <!-- Monto Total -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Monto Total del Servicio ($)</label>
+                    <input type="number" class="form-control form-control-lg text-center fw-bold"
+                           id="cobroMontoTotal" step="50" min="0" style="font-size: 1.5rem;">
+                </div>
+
+                <!-- Toggle Pago Dividido -->
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="toggleMixto" onchange="togglePagoMixto()">
+                    <label class="form-check-label" for="toggleMixto">
+                        <i class="fas fa-divide"></i> Pago Dividido (Mixto)
+                    </label>
+                </div>
+
+                <!-- Pago Simple (un solo método) -->
+                <div id="pagoSimple">
+                    <div class="mb-3">
+                        <label class="form-label">Método de Pago</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="metodoPago" id="metEfectivo" value="EFECTIVO" checked>
+                            <label class="btn btn-outline-success" for="metEfectivo">
+                                <i class="fas fa-money-bill-wave"></i> Efectivo
+                            </label>
+                            <input type="radio" class="btn-check" name="metodoPago" id="metTarjeta" value="TARJETA">
+                            <label class="btn btn-outline-primary" for="metTarjeta">
+                                <i class="fas fa-credit-card"></i> Tarjeta
+                            </label>
+                            <input type="radio" class="btn-check" name="metodoPago" id="metTransferencia" value="TRANSFERENCIA">
+                            <label class="btn btn-outline-info" for="metTransferencia">
+                                <i class="fas fa-university"></i> Transferencia
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pago Mixto (desglose) -->
+                <div id="pagoMixto" style="display:none;">
+                    <div class="alert alert-info py-2 mb-2">
+                        <small><i class="fas fa-info-circle"></i> Divide el monto entre los métodos de pago. La suma debe ser igual al total.</small>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="fas fa-money-bill-wave text-success"></i> Efectivo</label>
+                            <input type="number" class="form-control monto-parcial" id="mixEfectivo" value="0" min="0" step="50" oninput="validarSumaMixta()">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="fas fa-credit-card text-primary"></i> Tarjeta</label>
+                            <input type="number" class="form-control monto-parcial" id="mixTarjeta" value="0" min="0" step="50" oninput="validarSumaMixta()">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="fas fa-university text-info"></i> Transferencia</label>
+                            <input type="number" class="form-control monto-parcial" id="mixTransferencia" value="0" min="0" step="50" oninput="validarSumaMixta()">
+                        </div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <span id="sumaValidacion" class="badge bg-secondary">Suma: $0 / $0</span>
+                    </div>
+                </div>
+
+                <!-- Quién cobró -->
+                <div class="mb-3 mt-3">
+                    <label class="form-label fw-bold">¿Quién cobró?</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="cobradoPor" id="cobMedico" value="MEDICO" checked>
+                        <label class="btn btn-outline-success" for="cobMedico">
+                            <i class="fas fa-user-md"></i> Yo (Médico)
+                        </label>
+                        <input type="radio" class="btn-check" name="cobradoPor" id="cobRecepcion" value="RECEPCION">
+                        <label class="btn btn-outline-warning" for="cobRecepcion">
+                            <i class="fas fa-building"></i> Recepción
+                        </label>
+                    </div>
+                    <div id="avisoRecepcion" class="alert alert-warning mt-2 py-2" style="display:none;">
+                        <small><i class="fas fa-exclamation-triangle"></i>
+                            Se generará un <strong>Vale Digital de Adeudo</strong>.
+                            Recepción deberá entregar este monto al médico.
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Referencia -->
+                <div class="mb-3" id="divReferencia" style="display:none;">
+                    <label class="form-label">Referencia / No. Aprobación</label>
+                    <input type="text" class="form-control" id="cobroReferencia"
+                           placeholder="No. de aprobación de tarjeta o referencia de transferencia">
+                </div>
+
+                <!-- Notas -->
+                <div class="mb-3">
+                    <label class="form-label">Notas (opcional)</label>
+                    <input type="text" class="form-control" id="cobroNotas" placeholder="Observaciones del cobro">
+                </div>
+
+                <input type="hidden" id="cobroConsultaId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success btn-lg" id="btnConfirmarCobro" onclick="confirmarCobro()">
+                    <i class="fas fa-check"></i> Confirmar Cobro
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== MODAL: LIQUIDAR VALE ========== -->
+<div class="modal fade" id="modalLiquidar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fas fa-hand-holding-usd"></i> Liquidar Vale</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Vale: <strong id="liqFolio"></strong></p>
+                <p>Monto pendiente: <strong class="text-danger" id="liqMonto"></strong></p>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success btn-lg" onclick="liquidarVale('total')">
+                        <i class="fas fa-check-double"></i> Liquidar Total
+                    </button>
+                </div>
+            </div>
+            <input type="hidden" id="liqValeId">
+        </div>
+    </div>
+</div>
+
+<script>
+// ========== LLENAR MODAL DE COBRO ==========
+document.querySelectorAll('.btn-cobrar').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.getElementById('cobroPaciente').textContent = this.dataset.paciente;
+        document.getElementById('cobroFolio').textContent = this.dataset.folio;
+        document.getElementById('cobroMontoTotal').value = this.dataset.monto || '0';
+        document.getElementById('cobroConsultaId').value = this.dataset.consultaId;
+
+        // Reset
+        document.getElementById('toggleMixto').checked = false;
+        togglePagoMixto();
+        document.getElementById('metEfectivo').checked = true;
+        document.getElementById('cobMedico').checked = true;
+        document.getElementById('avisoRecepcion').style.display = 'none';
+    });
+});
+
+// ========== TOGGLE PAGO MIXTO ==========
+function togglePagoMixto() {
+    const mixto = document.getElementById('toggleMixto').checked;
+    document.getElementById('pagoSimple').style.display = mixto ? 'none' : 'block';
+    document.getElementById('pagoMixto').style.display = mixto ? 'block' : 'none';
+    if (mixto) {
+        const total = parseFloat(document.getElementById('cobroMontoTotal').value) || 0;
+        document.getElementById('mixEfectivo').value = total;
+        document.getElementById('mixTarjeta').value = 0;
+        document.getElementById('mixTransferencia').value = 0;
+        validarSumaMixta();
+    }
+}
+
+// ========== VALIDAR SUMA MIXTA ==========
+function validarSumaMixta() {
+    const total = parseFloat(document.getElementById('cobroMontoTotal').value) || 0;
+    const ef = parseFloat(document.getElementById('mixEfectivo').value) || 0;
+    const tj = parseFloat(document.getElementById('mixTarjeta').value) || 0;
+    const tr = parseFloat(document.getElementById('mixTransferencia').value) || 0;
+    const suma = ef + tj + tr;
+    const badge = document.getElementById('sumaValidacion');
+    badge.textContent = `Suma: $${suma} / $${total}`;
+    if (suma === total) {
+        badge.className = 'badge bg-success';
+    } else {
+        badge.className = 'badge bg-danger';
+    }
+}
+
+// ========== MOSTRAR AVISO RECEPCIÓN ==========
+document.querySelectorAll('input[name="cobradoPor"]').forEach(r => {
+    r.addEventListener('change', function() {
+        document.getElementById('avisoRecepcion').style.display =
+            this.value === 'RECEPCION' ? 'block' : 'none';
+    });
+});
+
+// ========== MOSTRAR REFERENCIA PARA TARJETA/TRANSFERENCIA ==========
+document.querySelectorAll('input[name="metodoPago"]').forEach(r => {
+    r.addEventListener('change', function() {
+        document.getElementById('divReferencia').style.display =
+            (this.value === 'TARJETA' || this.value === 'TRANSFERENCIA') ? 'block' : 'none';
+    });
+});
+
+// ========== CONFIRMAR COBRO (API) ==========
+function confirmarCobro() {
+    const btn = document.getElementById('btnConfirmarCobro');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+
+    const consultaId = document.getElementById('cobroConsultaId').value;
+    const montoTotal = parseFloat(document.getElementById('cobroMontoTotal').value) || 0;
+    const concepto = document.getElementById('cobroConcepto').value;
+    const cobradoPor = document.querySelector('input[name="cobradoPor"]:checked').value;
+    const referencia = document.getElementById('cobroReferencia').value;
+    const notas = document.getElementById('cobroNotas').value;
+    const esMixto = document.getElementById('toggleMixto').checked;
+
+    let mEfectivo = 0, mTarjeta = 0, mTransferencia = 0;
+
+    if (esMixto) {
+        mEfectivo = parseFloat(document.getElementById('mixEfectivo').value) || 0;
+        mTarjeta = parseFloat(document.getElementById('mixTarjeta').value) || 0;
+        mTransferencia = parseFloat(document.getElementById('mixTransferencia').value) || 0;
+        if (mEfectivo + mTarjeta + mTransferencia !== montoTotal) {
+            alert('Error: Los montos parciales no suman el total.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check"></i> Confirmar Cobro';
+            return;
+        }
+    } else {
+        const metodo = document.querySelector('input[name="metodoPago"]:checked').value;
+        if (metodo === 'EFECTIVO') mEfectivo = montoTotal;
+        else if (metodo === 'TARJETA') mTarjeta = montoTotal;
+        else mTransferencia = montoTotal;
+    }
+
+    if (montoTotal <= 0) {
+        alert('El monto debe ser mayor a $0');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Confirmar Cobro';
+        return;
+    }
+
+    fetch("{% url 'consultorio:api_registrar_cobro' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            consulta_id: parseInt(consultaId),
+            monto_total: montoTotal,
+            monto_efectivo: mEfectivo,
+            monto_tarjeta: mTarjeta,
+            monto_transferencia: mTransferencia,
+            concepto: concepto,
+            cobrado_por: cobradoPor,
+            referencia_pago: referencia,
+            notas: notas
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            let msg = `Cobro registrado: ${data.folio_consulta} - $${data.monto_total}`;
+            if (data.vale) {
+                msg += `\nVale generado: ${data.vale.folio_vale} (Recepción debe entregar $${data.vale.monto})`;
+            }
+            alert(msg);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Error desconocido'));
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check"></i> Confirmar Cobro';
+        }
+    })
+    .catch(err => {
+        alert('Error de conexión: ' + err);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Confirmar Cobro';
+    });
+}
+
+// ========== LIQUIDAR VALE ==========
+document.querySelectorAll('.btn-liquidar').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.getElementById('liqFolio').textContent = this.dataset.folio;
+        document.getElementById('liqMonto').textContent = '$' + this.dataset.monto;
+        document.getElementById('liqValeId').value = this.dataset.valeId;
+        new bootstrap.Modal(document.getElementById('modalLiquidar')).show();
+    });
+});
+
+function liquidarVale(tipo) {
+    const valeId = document.getElementById('liqValeId').value;
+
+    fetch("{% url 'consultorio:api_liquidar_vale' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ vale_id: parseInt(valeId), monto: 0 })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Vale ${data.vale_folio} liquidado correctamente.`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(err => alert('Error: ' + err));
+}
+</script>
+{% endblock %}

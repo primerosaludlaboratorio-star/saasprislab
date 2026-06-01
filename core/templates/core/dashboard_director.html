@@ -1,0 +1,754 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard de Director - {{ empresa.nombre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kpi-card {
+        background: var(--bg-glass);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-glass);
+        border-left: 4px solid;
+        transition: all 0.3s ease;
+    }
+    .kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    .kpi-ventas { border-left-color: #28a745; }
+    .kpi-sucursales { border-left-color: #17a2b8; }
+    .kpi-alertas { border-left-color: #dc3545; }
+    .kpi-reactivos { border-left-color: #ffc107; }
+    .valor-kpi {
+        font-size: 2.5rem;
+        font-weight: 900;
+        font-family: 'Inter', monospace;
+    }
+    .sucursal-card {
+        background: white;
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        border-left: 4px solid var(--empresa-color-primario, #D9230F);
+    }
+    .barra-ocupacion {
+        height: 20px;
+        background: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+    .barra-ocupacion-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745 0%, #17a2b8 100%);
+        transition: width 0.5s ease;
+    }
+    .badge-critico {
+        animation: pulse-critico 2s infinite;
+    }
+    @keyframes pulse-critico {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px;">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <h2>
+                <i class="bi bi-speedometer2"></i> Dashboard de Control de Mando
+            </h2>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="{% url 'ranking_desempeno' %}" class="btn btn-warning btn-profesional neon-hover">
+                    <i class="bi bi-trophy-fill"></i> Ranking de Desempeño
+                </a>
+                <a href="{% url 'chat_experto' %}" class="btn btn-primary-profesional btn-profesional neon-hover">
+                    <i class="bi bi-cpu"></i> Cerebro Prislab
+                </a>
+                <a href="{% url 'sucursales_modo_inventario_lab' %}" class="btn btn-outline-secondary btn-profesional neon-hover">
+                    <i class="bi bi-box-seam"></i> Inventario lab (sucursales)
+                </a>
+                <small class="text-muted">{{ fecha_hoy }} | {{ empresa.nombre }}</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         PRIS SENTINEL V4: Widget de Notificaciones Push Móviles
+         ══════════════════════════════════════════════════════════════════════ -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px;">
+                <div class="card-body p-4 text-white">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width: 56px; height: 56px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">
+                                <i class="bi bi-phone-vibrate"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1 fw-bold">Notificaciones Móviles Sentinel</h5>
+                                <p class="mb-0 small" style="opacity: 0.9;">
+                                    Recibe alertas instantáneas de errores críticos en tu dispositivo
+                                </p>
+                                <div id="push-status-badge" class="mt-2" style="display: none;">
+                                    <span class="badge" style="background: rgba(255,255,255,0.25); font-size: 0.75rem;">
+                                        <i class="bi bi-check-circle-fill"></i> <span id="push-status-text">Verificando...</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button id="btn-suscribir-push" class="btn btn-light btn-lg px-4" style="border-radius: 12px; display: none;" onclick="activarNotificacionesPush()">
+                                <i class="bi bi-bell-fill"></i> Activar Notificaciones
+                            </button>
+                            <button id="btn-desuscribir-push" class="btn btn-outline-light btn-lg px-4" style="border-radius: 12px; display: none;" onclick="desactivarNotificacionesPush()">
+                                <i class="bi bi-bell-slash"></i> Desactivar
+                            </button>
+                            <button id="btn-test-push" class="btn btn-outline-light px-3" style="border-radius: 12px; display: none;" onclick="enviarPruebaNotificacion()" title="Enviar notificación de prueba">
+                                <i class="bi bi-send-fill"></i> Prueba
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs Principales -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="kpi-card kpi-ventas">
+                <h6 class="text-uppercase text-muted small mb-2">VENTAS HOY</h6>
+                <div class="valor-kpi text-success">${{ total_ventas_hoy|floatformat:2 }}</div>
+                <small class="text-muted">{{ cantidad_ventas }} transacciones</small>
+                <div class="mt-2">
+                    <small>Efectivo: ${{ ventas_efectivo|floatformat:2 }}</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="kpi-card kpi-sucursales">
+                <h6 class="text-uppercase text-muted small mb-2">SUCURSALES</h6>
+                <div class="valor-kpi text-info">{{ total_sucursales }}</div>
+                <small class="text-muted">Activas</small>
+                <div class="mt-2">
+                    <small>Total pacientes: {{ total_pacientes }}</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="kpi-card kpi-alertas">
+                <h6 class="text-uppercase text-muted small mb-2">ALERTAS CRÍTICAS</h6>
+                <div class="valor-kpi text-danger">{{ alertas_criticas_count }}</div>
+                <small class="text-muted">Valores de pánico</small>
+                <div class="mt-2">
+                    {% if reactivos_criticos %}
+                    <span class="badge badge-critico bg-danger">{{ reactivos_criticos|length }} reactivos críticos</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="kpi-card kpi-reactivos">
+                <h6 class="text-uppercase text-muted small mb-2">REACTIVOS POR VENCER</h6>
+                <div class="valor-kpi text-warning">{{ cantidad_reactivos_vencer }}</div>
+                <small class="text-muted">< 30 días</small>
+                <div class="mt-2">
+                    <small>Órdenes hoy: {{ total_ordenes_hoy }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ocupación de Sucursales -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card-profesional">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-building"></i> Ocupación de Sucursales</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in ocupacion_sucursales %}
+                    <div class="sucursal-card">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>{{ item.sucursal.nombre }}</strong>
+                                <small class="text-muted ms-2">({{ item.sucursal.codigo_sucursal }})</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="valor-kpi" style="font-size: 1.5rem; color: {% if item.porcentaje_ocupacion > 75 %}#28a745{% elif item.porcentaje_ocupacion > 50 %}#17a2b8{% else %}#ffc107{% endif %};">
+                                    {{ item.porcentaje_ocupacion|floatformat:1 }}%
+                                </div>
+                                <small class="text-muted">{{ item.usuarios_activos }} usuarios activos</small>
+                            </div>
+                        </div>
+                        <div class="barra-ocupacion">
+                            <div class="barra-ocupacion-fill" style="width: {{ item.porcentaje_ocupacion }}%;"></div>
+                        </div>
+                        <div class="mt-2">
+                            <small>Ventas hoy: <strong>${{ item.ventas_hoy|floatformat:2 }}</strong></small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center py-4">No hay sucursales activas</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reactivos Próximos a Vencer -->
+    {% if reactivos_vencer %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card-profesional">
+                <div class="card-header {% if reactivos_criticos %}bg-danger text-white{% else %}bg-warning{% endif %}">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Reactivos Próximos a Vencer (< 30 días)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-profesional">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Lote</th>
+                                    <th>Fecha Caducidad</th>
+                                    <th>Días Restantes</th>
+                                    <th>Cantidad</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in reactivos_vencer|slice:":10" %}
+                                <tr class="{% if item.es_critico %}table-danger{% elif item.es_atencion %}table-warning{% endif %}">
+                                    <td><strong>{{ item.producto }}</strong></td>
+                                    <td><code>{{ item.lote }}</code></td>
+                                    <td>{{ item.fecha_caducidad|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <span class="badge {% if item.es_critico %}bg-danger{% elif item.es_atencion %}bg-warning{% else %}bg-info{% endif %}">
+                                            {{ item.dias_restantes }} días
+                                        </span>
+                                    </td>
+                                    <td>{{ item.cantidad }} unidades</td>
+                                    <td>
+                                        {% if item.es_critico %}
+                                        <span class="badge badge-critico bg-danger">CRÍTICO (≤7 días)</span>
+                                        {% elif item.es_atencion %}
+                                        <span class="badge bg-warning">ATENCIÓN (≤14 días)</span>
+                                        {% else %}
+                                        <span class="badge bg-info">VIGILAR</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if reactivos_vencer|length > 10 %}
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Mostrando 10 de {{ reactivos_vencer|length }} reactivos próximos a vencer</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Autorizaciones Pendientes -->
+    {% if autorizaciones_pendientes_count > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card-profesional border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-shield-exclamation"></i> Autorizaciones Pendientes
+                            <span class="badge bg-danger ms-2">{{ autorizaciones_pendientes_count }}</span>
+                        </h5>
+                        <a href="{% url 'listar_autorizaciones_pendientes' %}" class="btn btn-sm btn-dark">
+                            Ver Todas
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Solicitado por</th>
+                                    <th>Descripción</th>
+                                    <th>Fecha</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for solicitud in autorizaciones_pendientes %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ solicitud.get_tipo_accion_display }}</span>
+                                    </td>
+                                    <td><strong>{{ solicitud.usuario_solicita.get_full_name }}</strong></td>
+                                    <td>{{ solicitud.descripcion|truncatewords:15 }}</td>
+                                    <td>{{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success me-1" onclick="aprobarSolicitud({{ solicitud.id }})">
+                                            <i class="bi bi-check-circle"></i> Aprobar
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="rechazarSolicitud({{ solicitud.id }})">
+                                            <i class="bi bi-x-circle"></i> Rechazar
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Incidencias Operativas del Día -->
+    {% if incidencias_hoy_count > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card-profesional border-info">
+                <div class="card-header bg-info text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clipboard-data"></i> Incidencias Operativas Pendientes
+                            <span class="badge bg-warning text-dark ms-2">{{ incidencias_hoy_count }}</span>
+                        </h5>
+                        <a href="{% url 'panel_auditoria_incidencias' %}" class="btn btn-sm btn-light">
+                            <i class="bi bi-arrow-right-circle"></i> Ver Panel de Auditoría
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">
+                        Hay <strong>{{ incidencias_hoy_count }}</strong> incidencia(s) operativa(s) del día pendiente(s) de revisión.
+                        Revisa las excepciones de política registradas por los empleados.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Notificaciones de Backup Nocturno -->
+    {% if backup_ultima_noche or ultimo_backup %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card-profesional">
+                <div class="card-header {% if backup_ultima_noche %}bg-success text-white{% elif ultimo_backup %}bg-info text-white{% else %}bg-warning{% endif %}">
+                    <h5 class="mb-0">
+                        <i class="bi bi-shield-check"></i> Estado de Backup Nocturno (3:00 AM)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if backup_ultima_noche %}
+                    <div class="alert alert-success">
+                        <h6><i class="bi bi-check-circle-fill"></i> Backup Nocturno Exitoso</h6>
+                        <p class="mb-2">
+                            <strong>Fecha:</strong> {{ backup_ultima_noche.fecha_backup|date:"d/m/Y H:i" }}<br>
+                            <strong>Tipo:</strong> {{ backup_ultima_noche.get_tipo_backup_display }}<br>
+                            <strong>Tamaño:</strong> {{ backup_ultima_noche.tamanio_mb|floatformat:2 }} MB<br>
+                            <strong>Estado:</strong> 
+                            <span class="badge bg-success">{{ backup_ultima_noche.get_estado_display }}</span>
+                        </p>
+                        <small class="text-muted">
+                            ✅ Base de Datos incluida | ✅ Archivos Multimedia incluidos | 
+                            ✅ Parámetros de Laboratorio (163) | ✅ Auditoría SHA-256 | 
+                            ✅ Expedientes Médicos | ✅ Firmas Digitales | ✅ PDFs de RH
+                        </small>
+                        {% if backup_ultima_noche.hash_verificacion %}
+                        <div class="mt-2">
+                            <small><strong>Hash SHA-256:</strong> <code>{{ backup_ultima_noche.hash_verificacion|truncatechars:32 }}...</code></small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% elif ultimo_backup %}
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-exclamation-triangle-fill"></i> Último Backup: {{ ultimo_backup.fecha_backup|date:"d/m/Y H:i" }}</h6>
+                        <p class="mb-2">
+                            No se encontró backup de la noche anterior. El último backup fue el {{ ultimo_backup.fecha_backup|date:"d/m/Y" }}.
+                        </p>
+                        <small class="text-muted">
+                            <strong>Estado:</strong> {{ ultimo_backup.get_estado_display }} | 
+                            <strong>Tamaño:</strong> {{ ultimo_backup.tamanio_mb|floatformat:2 }} MB
+                        </small>
+                    </div>
+                    {% endif %}
+                    
+                    {% if backups_recientes %}
+                    <div class="mt-3">
+                        <h6>Historial de Backups Recientes (Últimos 7 días)</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-profesional">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Tipo</th>
+                                        <th>Tamaño</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for backup in backups_recientes|slice:":5" %}
+                                    <tr>
+                                        <td>{{ backup.fecha_backup|date:"d/m/Y H:i" }}</td>
+                                        <td>{{ backup.get_tipo_backup_display }}</td>
+                                        <td>{{ backup.tamanio_mb|floatformat:2 }} MB</td>
+                                        <td>
+                                            {% if backup.estado == 'COMPLETADO' %}
+                                            <span class="badge bg-success">✅ {{ backup.get_estado_display }}</span>
+                                            {% elif backup.estado == 'FALLIDO' %}
+                                            <span class="badge bg-danger">❌ {{ backup.get_estado_display }}</span>
+                                            {% else %}
+                                            <span class="badge bg-warning">⏳ {{ backup.get_estado_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Volumen de Pacientes por Sucursal -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card-profesional">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-people"></i> Volumen de Pacientes por Sucursal</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-profesional">
+                            <thead>
+                                <tr>
+                                    <th>Sucursal</th>
+                                    <th>Total Pacientes</th>
+                                    <th>Órdenes Hoy</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in volumen_pacientes %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.sucursal.nombre }}</strong><br>
+                                        <small class="text-muted">{{ item.sucursal.codigo_sucursal }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info fs-6">{{ item.total_pacientes }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary fs-6">{{ item.ordenes_hoy }}</span>
+                                    </td>
+                                    <td>
+                                        {% if item.ordenes_hoy > 10 %}
+                                        <span class="badge bg-success">Alto volumen</span>
+                                        {% elif item.ordenes_hoy > 5 %}
+                                        <span class="badge bg-info">Medio volumen</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Bajo volumen</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">No hay datos disponibles</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Funciones de Autorizaciones
+function aprobarSolicitud(solicitudId) {
+    Swal.fire({
+        title: '¿Aprobar esta solicitud?',
+        text: 'La solicitud será aprobada y el usuario será notificado.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, Aprobar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/api/autorizaciones/${solicitudId}/aprobar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire('Aprobado', data.mensaje, 'success').then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', data.mensaje, 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                Swal.fire('Error', 'No se pudo procesar la aprobación', 'error');
+            });
+        }
+    });
+}
+
+function rechazarSolicitud(solicitudId) {
+    Swal.fire({
+        title: 'Rechazar Solicitud',
+        input: 'textarea',
+        inputLabel: 'Motivo del Rechazo',
+        inputPlaceholder: 'Explica por qué rechazas esta solicitud...',
+        inputAttributes: {
+            'aria-label': 'Motivo del rechazo'
+        },
+        showCancelButton: true,
+        confirmButtonText: 'Rechazar',
+        cancelButtonText: 'Cancelar',
+        inputValidator: (value) => {
+            if (!value) {
+                return 'Debes proporcionar un motivo de rechazo';
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/api/autorizaciones/${solicitudId}/rechazar/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    comentario: result.value
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire('Rechazada', data.mensaje, 'info').then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', data.mensaje, 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                Swal.fire('Error', 'No se pudo procesar el rechazo', 'error');
+            });
+        }
+    });
+}
+
+// Actualización automática cada 30 segundos
+setInterval(function() {
+    location.reload();
+}, 30000);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PRIS SENTINEL V4: Gestión de Notificaciones Push
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Verificar estado de suscripción al cargar la página
+document.addEventListener('DOMContentLoaded', async function() {
+    if (!window.PushNotifications || !window.PushNotifications.isSupported()) {
+        document.getElementById('push-status-badge').style.display = 'block';
+        document.getElementById('push-status-text').textContent = 'No soportado en este navegador';
+        return;
+    }
+    
+    try {
+        const estado = await window.PushNotifications.verificarEstado();
+        
+        const badge = document.getElementById('push-status-badge');
+        const statusText = document.getElementById('push-status-text');
+        const btnSuscribir = document.getElementById('btn-suscribir-push');
+        const btnDesuscribir = document.getElementById('btn-desuscribir-push');
+        const btnTest = document.getElementById('btn-test-push');
+        
+        badge.style.display = 'block';
+        
+        if (estado.suscrito) {
+            statusText.textContent = 'Notificaciones Activas en este dispositivo';
+            btnDesuscribir.style.display = 'inline-block';
+            btnTest.style.display = 'inline-block';
+        } else {
+            statusText.textContent = 'No activas en este dispositivo';
+            btnSuscribir.style.display = 'inline-block';
+        }
+    } catch (error) {
+        console.error('Error al verificar estado de push:', error);
+    }
+});
+
+// Activar notificaciones push
+async function activarNotificacionesPush() {
+    const btnSuscribir = document.getElementById('btn-suscribir-push');
+    const btnDesuscribir = document.getElementById('btn-desuscribir-push');
+    const btnTest = document.getElementById('btn-test-push');
+    const statusText = document.getElementById('push-status-text');
+    
+    btnSuscribir.disabled = true;
+    btnSuscribir.innerHTML = '<i class="spinner-border spinner-border-sm"></i> Activando...';
+    
+    try {
+        const nombreDispositivo = window.PushNotifications.detectarDispositivo();
+        const resultado = await window.PushNotifications.suscribir(nombreDispositivo);
+        
+        if (resultado.success) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Notificaciones Activadas',
+                    text: resultado.message + ' Recibirás una notificación de prueba en breve.',
+                    timer: 4000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            } else {
+                alert(resultado.message);
+            }
+            
+            // Actualizar UI
+            btnSuscribir.style.display = 'none';
+            btnDesuscribir.style.display = 'inline-block';
+            btnTest.style.display = 'inline-block';
+            statusText.textContent = 'Notificaciones Activas en este dispositivo';
+        } else {
+            throw new Error(resultado.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error al Activar',
+                text: error.message || 'No se pudo activar las notificaciones. Verifica los permisos de tu navegador.',
+                confirmButtonText: 'Entendido'
+            });
+        } else {
+            alert('Error: ' + (error.message || 'No se pudo activar las notificaciones'));
+        }
+        
+        btnSuscribir.disabled = false;
+        btnSuscribir.innerHTML = '<i class="bi bi-bell-fill"></i> Activar Notificaciones';
+    }
+}
+
+// Desactivar notificaciones push
+async function desactivarNotificacionesPush() {
+    const btnSuscribir = document.getElementById('btn-suscribir-push');
+    const btnDesuscribir = document.getElementById('btn-desuscribir-push');
+    const btnTest = document.getElementById('btn-test-push');
+    const statusText = document.getElementById('push-status-text');
+    
+    btnDesuscribir.disabled = true;
+    btnDesuscribir.innerHTML = '<i class="spinner-border spinner-border-sm"></i> Desactivando...';
+    
+    try {
+        const resultado = await window.PushNotifications.desuscribir();
+        
+        if (resultado.success) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Notificaciones Desactivadas',
+                    text: resultado.message,
+                    timer: 3000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            } else {
+                alert(resultado.message);
+            }
+            
+            // Actualizar UI
+            btnSuscribir.style.display = 'inline-block';
+            btnDesuscribir.style.display = 'none';
+            btnTest.style.display = 'none';
+            statusText.textContent = 'No activas en este dispositivo';
+        } else {
+            throw new Error(resultado.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error: ' + (error.message || 'No se pudo desactivar'));
+        
+        btnDesuscribir.disabled = false;
+        btnDesuscribir.innerHTML = '<i class="bi bi-bell-slash"></i> Desactivar';
+    }
+}
+
+// Enviar notificación de prueba
+async function enviarPruebaNotificacion() {
+    const btnTest = document.getElementById('btn-test-push');
+    btnTest.disabled = true;
+    btnTest.innerHTML = '<i class="spinner-border spinner-border-sm"></i>';
+    
+    try {
+        const resultado = await window.PushNotifications.enviarPrueba();
+        
+        if (resultado.success) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Notificación Enviada',
+                    text: 'Deberías recibir una notificación de prueba en unos segundos.',
+                    timer: 3000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            } else {
+                alert('Notificación de prueba enviada');
+            }
+        } else {
+            throw new Error(resultado.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error: ' + (error.message || 'No se pudo enviar la notificación'));
+    } finally {
+        btnTest.disabled = false;
+        btnTest.innerHTML = '<i class="bi bi-send-fill"></i> Prueba';
+    }
+}
+</script>
+{% endblock %}

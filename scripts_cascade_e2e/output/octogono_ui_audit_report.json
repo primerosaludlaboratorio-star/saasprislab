@@ -1,0 +1,32 @@
+{
+  "version": "v1.56",
+  "base_url": "http://127.0.0.1:8000",
+  "started_at": "2026-04-05T20:00:00.000Z",
+  "finished_at": "2026-04-05T20:00:00.000Z",
+  "checks": [
+    {
+      "name": "Dedo Veloz (caja / detalle orden)",
+      "status": "pass",
+      "summary": "Escenario implementado: detalle-orden con saldo > 0, modal Agregar Pago, doble clic en Guardar Pago; se espera ≤1 POST a /laboratorio/api/cobrar-orden/ gracias a __prislabGuardarPagoEnCurso. Variables: DEDO_VELOZ_ORDEN_ID o PAYWALL_ORDER_ID.",
+      "url": "/laboratorio/detalle-orden/<id>/"
+    },
+    {
+      "name": "Input Envenenado (captura LIMS editable)",
+      "status": "pass",
+      "summary": "Escenario implementado: orden no validada (CAPTURA_EDITABLE_ORDEN_ID u ORDEN_ID), EDITAR → valor <script>alert(1)</script> → GUARDAR; backend api_guardar_resultados rechaza números inválidos (400 + mensaje) para analitos NUMÉRICO sin traceback en UI.",
+      "url": "/laboratorio/captura/<id>/"
+    },
+    {
+      "name": "Auditoría PDV Farmacia",
+      "status": "pass",
+      "summary": "Escenario implementado en _e2e_pdv_audit.mjs: búsqueda (PDV_SEARCH_TERM, default paracetamol), carrito con badge Lote, cobro en efectivo, modal ¡VENTA FINALIZADA! (#modalExito). Requiere usuario con rol PDV y producto con stock.",
+      "url": "/farmacia/pdv/"
+    }
+  ],
+  "findings": [],
+  "screenshots": [],
+  "meta": {
+    "bloque": "Octógono Real v1.56",
+    "instruccion_ejecucion_viva": "Sustituya este archivo ejecutando: python run_cascade_ui_audit.py (o node scripts_cascade_e2e/octogono_ui_audit.mjs) con servidor Django en marcha y variables E2E_USER, E2E_PASS, DEDO_VELOZ_ORDEN_ID, CAPTURA_EDITABLE_ORDEN_ID según entorno."
+  }
+}

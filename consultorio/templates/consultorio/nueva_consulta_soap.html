@@ -1,0 +1,1222 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Consulta Médica Completa - {{ cita.paciente.nombre_completo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ESTILOS GENERALES */
+    .consulta-container {
+        max-width: 100%;
+        margin-top: 70px;
+    }
+    
+    /* HEADER DEL PACIENTE */
+    .patient-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .patient-avatar {
+        width: 80px;
+        height: 80px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: #667eea;
+    }
+    
+    /* CARDS */
+    .card-custom {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+    
+    .card-header-custom {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        border: none;
+    }
+    
+    .card-header-soap {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .card-header-receta {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    
+    .card-header-cert {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    
+    .card-header-lab {
+        background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+    }
+    
+    /* BOTONES DE VOZ */
+    .btn-voice {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        min-width: 50px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-voice.btn-danger {
+        animation: pulse-recording 1.5s infinite;
+    }
+    
+    @keyframes pulse-recording {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(0.95); }
+    }
+    
+    .input-group textarea,
+    .input-group input {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    
+    /* RECETARIO */
+    .receta-item {
+        background: #f8f9fa;
+        border-left: 4px solid #43e97b;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        border-radius: 8px;
+        transition: all 0.3s;
+    }
+    
+    .receta-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    
+    /* ESTUDIOS DE LABORATORIO */
+    .estudio-item {
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 0.8rem;
+        margin-bottom: 0.5rem;
+        border-radius: 8px;
+    }
+    
+    /* HISTORIAL */
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+    
+    .timeline-dot {
+        position: absolute;
+        left: -24px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #007bff;
+        border: 3px solid white;
+        box-shadow: 0 0 0 2px #007bff;
+    }
+    
+    /* SIGNOS VITALES */
+    .signos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+    
+    .signo-box {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 10px;
+        text-align: center;
+        border: 2px solid #e9ecef;
+    }
+    
+    .signo-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #495057;
+    }
+    
+    .signo-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        text-transform: uppercase;
+    }
+    
+    /* ALERTA DE ALERGIAS */
+    .alerta-alergia {
+        background: #fff3cd;
+        border-left: 4px solid #856404;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        animation: pulse-alert 2s infinite;
+    }
+    
+    @keyframes pulse-alert {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; }
+    }
+    
+    /* BÚSQUEDA AUTOCOMPLETADO */
+    .search-results {
+        position: absolute;
+        z-index: 1000;
+        width: 100%;
+        max-height: 300px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        margin-top: 0.25rem;
+    }
+    
+    .search-result-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f1f1;
+        transition: background 0.2s;
+    }
+    
+    .search-result-item:hover {
+        background: #f8f9fa;
+    }
+    
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+    
+    /* BOTONES DE ACCIÓN */
+    .btn-action {
+        padding: 0.8rem 2rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-radius: 10px;
+        transition: all 0.3s;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    }
+    
+    /* TABS */
+    .nav-tabs-custom .nav-link {
+        border: none;
+        color: #6c757d;
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+    }
+    
+    .nav-tabs-custom .nav-link.active {
+        color: #007bff;
+        border-bottom: 3px solid #007bff;
+        background: transparent;
+    }
+    
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+        .consulta-container {
+            margin-top: 60px;
+        }
+        
+        .patient-avatar {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .signos-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid consulta-container px-3">
+    
+    <!-- ================================================ -->
+    <!-- HEADER: INFORMACIÓN DEL PACIENTE Y ALERTAS -->
+    <!-- ================================================ -->
+    <div class="patient-header">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <div class="patient-avatar">
+                    <i class="fas fa-user-injured"></i>
+                </div>
+            </div>
+            <div class="col">
+                <h2 class="mb-1">{{ cita.paciente.nombre_completo }}</h2>
+                <div class="d-flex flex-wrap gap-3">
+                    <span><i class="fas fa-birthday-cake"></i> {{ cita.paciente.edad }} años</span>
+                    <span><i class="fas fa-venus-mars"></i> {{ cita.paciente.get_sexo_display }}</span>
+                    <span><i class="fas fa-phone"></i> {{ cita.paciente.telefono|default:"Sin teléfono" }}</span>
+                    <span><i class="fas fa-calendar"></i> Cita: {{ cita.fecha_cita }} {{ cita.hora_cita }}</span>
+                </div>
+            </div>
+            <div class="col-auto text-end">
+                <div class="badge bg-light text-dark fs-5 px-3 py-2">
+                    <i class="fas fa-heartbeat text-danger"></i> CONSULTA #{{ cita.id }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- ALERTA DE ALERGIAS -->
+        {% if historia_clinica and historia_clinica.app_alergias %}
+        <div class="alerta-alergia mt-3">
+            <i class="fas fa-exclamation-triangle text-warning fs-4"></i>
+            <strong class="ms-2">ALERTA - ALERGIAS:</strong> {{ historia_clinica.app_alergias }}
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- ================================================ -->
+    <!-- FORMULARIO PRINCIPAL DE CONSULTA -->
+    <!-- ================================================ -->
+    <form method="POST" id="formConsultaCompleta" action="{% url 'consultorio:nueva_consulta_soap' cita.id %}">
+        {% csrf_token %}
+        
+        <div class="row g-3">
+            
+            <!-- ================================ -->
+            <!-- COLUMNA IZQUIERDA: HISTORIAL -->
+            <!-- ================================ -->
+            <div class="col-lg-3">
+                
+                <!-- SIGNOS VITALES -->
+                <div class="card card-custom">
+                    <div class="card-header card-header-custom">
+                        <i class="fas fa-heartbeat"></i> Signos Vitales
+                    </div>
+                    <div class="card-body">
+                        {% if signos_vitales_existen %}
+                            <!-- Mostrar signos capturados -->
+                            <div class="signos-grid">
+                                <div class="signo-box">
+                                    <div class="signo-value">{{ signos_vitales.presion_arterial|default:"-" }}</div>
+                                    <div class="signo-label">Presión</div>
+                                </div>
+                                <div class="signo-box">
+                                    <div class="signo-value">{{ signos_vitales.frecuencia_cardiaca|default:"-" }}</div>
+                                    <div class="signo-label">FC</div>
+                                </div>
+                                <div class="signo-box">
+                                    <div class="signo-value">{{ signos_vitales.temperatura|default:"-" }}</div>
+                                    <div class="signo-label">Temp °C</div>
+                                </div>
+                                <div class="signo-box">
+                                    <div class="signo-value">{{ signos_vitales.peso|default:"-" }}</div>
+                                    <div class="signo-label">Peso kg</div>
+                                </div>
+                                <div class="signo-box">
+                                    <div class="signo-value">{{ signos_vitales.talla|default:"-" }}</div>
+                                    <div class="signo-label">Talla m</div>
+                                </div>
+                                <div class="signo-box">
+                                    <div class="signo-value">{{ signos_vitales.imc|default:"-" }}</div>
+                                    <div class="signo-label">IMC</div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <!-- Captura rápida de signos vitales -->
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small">Presión</label>
+                                    <input type="text" name="presion_arterial" class="form-control form-control-sm" placeholder="120/80">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">FC</label>
+                                    <input type="number" name="frecuencia_cardiaca" class="form-control form-control-sm" placeholder="70">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Temp °C</label>
+                                    <input type="number" step="0.1" name="temperatura" class="form-control form-control-sm" placeholder="36.5">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Peso kg</label>
+                                    <input type="number" step="0.1" name="peso" id="peso" class="form-control form-control-sm" placeholder="70">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Talla m</label>
+                                    <input type="number" step="0.01" name="talla" id="talla" class="form-control form-control-sm" placeholder="1.70">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">IMC</label>
+                                    <input type="text" id="imc_calc" class="form-control form-control-sm" readonly placeholder="Auto">
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- CONSULTAS PREVIAS -->
+                {% if consultas_previas %}
+                <div class="card card-custom">
+                    <div class="card-header card-header-custom">
+                        <i class="fas fa-history"></i> Consultas Previas
+                    </div>
+                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                        <div class="timeline">
+                            {% for consulta_prev in consultas_previas %}
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="small text-muted mb-1">{{ consulta_prev.fecha_consulta|date:"d/m/Y" }}</div>
+                                <div class="fw-bold">{{ consulta_prev.diagnostico_principal|truncatewords:5 }}</div>
+                                <div class="small text-muted">Dr. {{ consulta_prev.medico.nombre_completo }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+            </div>
+            
+            <!-- ================================ -->
+            <!-- COLUMNA CENTRAL: SOAP -->
+            <!-- ================================ -->
+            <div class="col-lg-6">
+                
+                <!-- FORMATO SOAP -->
+                <div class="card card-custom">
+                    <div class="card-header card-header-soap">
+                        <i class="fas fa-notes-medical"></i> Consulta Médica - Formato SOAP
+                    </div>
+                    <div class="card-body">
+                        
+                        <!-- S - SUBJETIVO -->
+                        <h6 class="text-primary fw-bold mb-3">
+                            <i class="fas fa-comment-medical"></i> SUBJETIVO (Lo que el paciente cuenta)
+                        </h6>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Motivo de Consulta <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <textarea class="form-control" id="motivo_consulta" name="motivo_consulta" rows="2" required placeholder="¿Por qué viene el paciente?">{{ consulta.motivo_consulta }}</textarea>
+                                <button type="button" class="btn btn-outline-danger btn-voice" data-target="motivo_consulta" title="Dictar con voz">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Padecimiento Actual <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <textarea class="form-control" id="padecimiento_actual" name="padecimiento_actual" rows="3" required placeholder="Historia del padecimiento...">{{ consulta.padecimiento_actual }}</textarea>
+                                <button type="button" class="btn btn-outline-danger btn-voice" data-target="padecimiento_actual" title="Dictar con voz">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- O - OBJETIVO -->
+                        <h6 class="text-success fw-bold mb-3">
+                            <i class="fas fa-stethoscope"></i> OBJETIVO (Lo que el médico observa)
+                        </h6>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Exploración Física <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <textarea class="form-control" id="exploracion_fisica" name="exploracion_fisica" rows="4" required placeholder="Hallazgos en la exploración física...">{{ consulta.exploracion_fisica }}</textarea>
+                                <button type="button" class="btn btn-outline-danger btn-voice" data-target="exploracion_fisica" title="Dictar con voz">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- A - ASSESSMENT -->
+                        <h6 class="text-warning fw-bold mb-3">
+                            <i class="fas fa-diagnoses"></i> ASSESSMENT (Diagnóstico/Evaluación)
+                        </h6>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-8">
+                                <label class="form-label">Diagnóstico Principal <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="diagnostico_principal" required value="{{ consulta.diagnostico_principal }}" placeholder="Ej: Hipertensión Arterial Sistémica">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Código CIE-10</label>
+                                <input type="text" class="form-control" name="diagnostico_cie10" value="{{ consulta.diagnostico_cie10 }}" placeholder="Ej: I10">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Diagnósticos Secundarios</label>
+                                <div class="input-group">
+                                    <textarea class="form-control" id="diagnosticos_secundarios" name="diagnosticos_secundarios" rows="2" placeholder="Diagnósticos adicionales...">{{ consulta.diagnosticos_secundarios }}</textarea>
+                                    <button type="button" class="btn btn-outline-danger btn-voice" data-target="diagnosticos_secundarios" title="Dictar con voz">
+                                        <i class="fas fa-microphone"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- P - PLAN -->
+                        <h6 class="text-danger fw-bold mb-3">
+                            <i class="fas fa-clipboard-list"></i> PLAN (Plan de tratamiento)
+                        </h6>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Plan de Tratamiento <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <textarea class="form-control" id="plan_tratamiento" name="plan_tratamiento" rows="3" required placeholder="Medicamentos, indicaciones, dieta, ejercicio...">{{ consulta.plan_tratamiento }}</textarea>
+                                <button type="button" class="btn btn-outline-danger btn-voice" data-target="plan_tratamiento" title="Dictar con voz">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Estudios Solicitados</label>
+                            <div class="input-group">
+                                <textarea class="form-control" id="estudios_solicitados" name="estudios_solicitados" rows="2" placeholder="Laboratorio, rayos X, ultrasonidos...">{{ consulta.estudios_solicitados }}</textarea>
+                                <button type="button" class="btn btn-outline-danger btn-voice" data-target="estudios_solicitados" title="Dictar con voz">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Pronóstico</label>
+                                <select class="form-select" name="pronostico" id="pronostico">
+                                    <option value="EXCELENTE" {% if consulta.pronostico == 'EXCELENTE' %}selected{% endif %}>Excelente</option>
+                                    <option value="BUENO" {% if consulta.pronostico == 'BUENO' or not consulta.pronostico %}selected{% endif %}>Bueno</option>
+                                    <option value="REGULAR" {% if consulta.pronostico == 'REGULAR' %}selected{% endif %}>Regular</option>
+                                    <option value="RESERVADO" {% if consulta.pronostico == 'RESERVADO' %}selected{% endif %}>Reservado</option>
+                                    <option value="MALO" {% if consulta.pronostico == 'MALO' %}selected{% endif %}>Malo</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Próxima Cita</label>
+                                <input type="date" class="form-control" name="fecha_proxima_cita" value="{{ consulta.fecha_proxima_cita|date:'Y-m-d' }}">
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- ================================ -->
+            <!-- COLUMNA DERECHA: RECETAS Y MÁS -->
+            <!-- ================================ -->
+            <div class="col-lg-3">
+                
+                <!-- TABS DE ACCIONES -->
+                <ul class="nav nav-tabs nav-tabs-custom mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-receta" type="button">
+                            <i class="fas fa-pills"></i> Receta
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-cert" type="button">
+                            <i class="fas fa-certificate"></i> Certificado
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-lab" type="button">
+                            <i class="fas fa-flask"></i> Laboratorio
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content">
+                    
+                    <!-- TAB: RECETA MÉDICA -->
+                    <div class="tab-pane fade show active" id="tab-receta">
+                        <div class="card card-custom">
+                            <div class="card-header card-header-receta">
+                                <i class="fas fa-prescription"></i> Receta Médica
+                            </div>
+                            <div class="card-body">
+                                
+                                <!-- Búsqueda de Medicamentos -->
+                                <div class="mb-3 position-relative">
+                                    <label class="form-label small">Buscar Medicamento</label>
+                                    <input type="text" id="buscar_medicamento" class="form-control form-control-sm" placeholder="Escribe para buscar..." autocomplete="off">
+                                    <div id="resultados_medicamentos" class="search-results" style="display: none;"></div>
+                                </div>
+                                
+                                <!-- Lista de Medicamentos Agregados -->
+                                <div id="lista_medicamentos" style="max-height: 300px; overflow-y: auto;">
+                                    <!-- Los medicamentos se agregarán aquí dinámicamente -->
+                                    <div id="empty_medicamentos" class="text-center text-muted py-4">
+                                        <i class="fas fa-capsules fa-3x mb-2"></i>
+                                        <p class="small">No hay medicamentos agregados</p>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                
+                                <!-- Botón Agregar Manual -->
+                                <button type="button" class="btn btn-sm btn-outline-success w-100 mb-2" onclick="agregarMedicamentoManual()">
+                                    <i class="fas fa-plus"></i> Agregar Manual
+                                </button>
+                                
+                                <!-- Botón Generar Receta -->
+                                <button type="button" class="btn btn-success w-100" onclick="generarReceta()">
+                                    <i class="fas fa-print"></i> Generar Receta
+                                </button>
+                                
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- TAB: CERTIFICADO MÉDICO -->
+                    <div class="tab-pane fade" id="tab-cert">
+                        <div class="card card-custom">
+                            <div class="card-header card-header-cert">
+                                <i class="fas fa-file-medical"></i> Certificado Médico
+                            </div>
+                            <div class="card-body">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label small">Tipo de Certificado</label>
+                                    <select class="form-select form-select-sm" name="tipo_certificado" id="tipo_certificado">
+                                        <option value="MEDICO">Certificado Médico General</option>
+                                        <option value="INCAPACIDAD">Certificado de Incapacidad</option>
+                                        <option value="APTITUD">Certificado de Aptitud Física</option>
+                                        <option value="DEFUNCION">Certificado de Defunción</option>
+                                        <option value="NACIMIENTO">Certificado de Nacimiento</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label small">Motivo del Certificado</label>
+                                    <textarea class="form-control form-control-sm" name="motivo_certificado" id="motivo_certificado" rows="3" placeholder="Especifique el motivo..."></textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label small">Días de Incapacidad (si aplica)</label>
+                                    <input type="number" class="form-control form-control-sm" name="dias_incapacidad" id="dias_incapacidad" placeholder="0">
+                                </div>
+                                
+                                <button type="button" class="btn btn-warning w-100" onclick="generarCertificado()">
+                                    <i class="fas fa-certificate"></i> Generar Certificado
+                                </button>
+                                
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- TAB: ESTUDIOS DE LABORATORIO -->
+                    <div class="tab-pane fade" id="tab-lab">
+                        <div class="card card-custom">
+                            <div class="card-header card-header-lab">
+                                <i class="fas fa-vial"></i> Estudios de Laboratorio
+                            </div>
+                            <div class="card-body">
+                                
+                                <!-- Búsqueda de Estudios -->
+                                <div class="mb-3 position-relative">
+                                    <label class="form-label small">Buscar Estudio</label>
+                                    <input type="text" id="buscar_estudio" class="form-control form-control-sm" placeholder="Escribe para buscar..." autocomplete="off">
+                                    <div id="resultados_estudios" class="search-results" style="display: none;"></div>
+                                </div>
+                                
+                                <!-- Lista de Estudios Seleccionados -->
+                                <div id="lista_estudios" style="max-height: 300px; overflow-y: auto;">
+                                    <div id="empty_estudios" class="text-center text-muted py-4">
+                                        <i class="fas fa-microscope fa-3x mb-2"></i>
+                                        <p class="small">No hay estudios seleccionados</p>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label small">Urgencia</label>
+                                    <select class="form-select form-select-sm" name="urgencia_estudios" id="urgencia_estudios">
+                                        <option value="NORMAL">Normal</option>
+                                        <option value="URGENTE">Urgente</option>
+                                        <option value="STAT">STAT (Inmediato)</option>
+                                    </select>
+                                </div>
+                                
+                                <button type="button" class="btn btn-primary w-100" onclick="generarOrdenLaboratorio()">
+                                    <i class="fas fa-file-invoice"></i> Generar Orden
+                                </button>
+                                
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+        </div>
+        
+        <!-- ================================================ -->
+        <!-- BOTONES DE ACCIÓN PRINCIPAL -->
+        <!-- ================================================ -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="d-flex gap-3 justify-content-between flex-wrap">
+                    <div>
+                        <a href="{% url 'consultorio:lista_trabajo_medico' %}" class="btn btn-outline-secondary btn-action">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <button type="submit" name="accion" value="guardar" class="btn btn-primary btn-action">
+                            <i class="fas fa-save"></i> Guardar Borrador
+                        </button>
+                        <button type="submit" name="accion" value="finalizar" class="btn btn-success btn-action">
+                            <i class="fas fa-check-circle"></i> Finalizar Consulta
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </form>
+    
+</div>
+
+<!-- ================================================ -->
+<!-- JAVASCRIPT: FUNCIONALIDADES INTERACTIVAS -->
+<!-- ================================================ -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // ==========================================
+    // 1. CÁLCULO AUTOMÁTICO DE IMC
+    // ==========================================
+    const peso = document.getElementById('peso');
+    const talla = document.getElementById('talla');
+    const imcCalc = document.getElementById('imc_calc');
+    
+    function calcularIMC() {
+        if (peso && talla && imcCalc) {
+            const p = parseFloat(peso.value);
+            const t = parseFloat(talla.value);
+            if (p > 0 && t > 0) {
+                const imc = (p / (t * t)).toFixed(2);
+                imcCalc.value = imc;
+            }
+        }
+    }
+    
+    if (peso && talla) {
+        peso.addEventListener('input', calcularIMC);
+        talla.addEventListener('input', calcularIMC);
+    }
+    
+    // ==========================================
+    // 2. TRANSCRIPCIÓN DE VOZ
+    // ==========================================
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'es-MX';
+        
+        let currentTextarea = null;
+        let finalTranscript = '';
+        
+        recognition.onresult = function(event) {
+            let interimTranscript = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript + ' ';
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            
+            if (currentTextarea) {
+                currentTextarea.value = finalTranscript + interimTranscript;
+            }
+        };
+        
+        recognition.onerror = function(event) {
+            console.error('Error de reconocimiento de voz:', event.error);
+            stopRecording();
+        };
+        
+        recognition.onend = function() {
+            stopRecording();
+        };
+        
+        function startRecording(button, textarea) {
+            currentTextarea = textarea;
+            finalTranscript = textarea.value || '';
+            
+            button.classList.remove('btn-outline-danger');
+            button.classList.add('btn-danger');
+            button.innerHTML = '<i class="fas fa-stop"></i>';
+            
+            recognition.start();
+        }
+        
+        function stopRecording() {
+            document.querySelectorAll('.btn-voice').forEach(btn => {
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-outline-danger');
+                btn.innerHTML = '<i class="fas fa-microphone"></i>';
+            });
+            
+            try {
+                recognition.stop();
+            } catch (e) {}
+            
+            currentTextarea = null;
+        }
+        
+        document.querySelectorAll('.btn-voice').forEach(button => {
+            button.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const textarea = document.getElementById(targetId);
+                
+                if (!textarea) return;
+                
+                if (this.classList.contains('btn-danger')) {
+                    stopRecording();
+                } else {
+                    stopRecording();
+                    startRecording(this, textarea);
+                }
+            });
+        });
+        
+        console.log('✅ Sistema de transcripción de voz activado');
+    } else {
+        document.querySelectorAll('.btn-voice').forEach(btn => {
+            btn.style.display = 'none';
+        });
+    }
+    
+    // ==========================================
+    // 3. BÚSQUEDA DE MEDICAMENTOS
+    // ==========================================
+    const buscarMedicamento = document.getElementById('buscar_medicamento');
+    const resultadosMedicamentos = document.getElementById('resultados_medicamentos');
+    let timeoutMedicamentos;
+    let medicamentosAgregados = [];
+    
+    if (buscarMedicamento) {
+    buscarMedicamento.addEventListener('input', function() {
+        clearTimeout(timeoutMedicamentos);
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+            resultadosMedicamentos.style.display = 'none';
+            return;
+        }
+        
+        timeoutMedicamentos = setTimeout(() => {
+            fetch(`{% url 'api_buscar_productos_lectura' %}?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.productos && data.productos.length > 0) {
+                        resultadosMedicamentos.innerHTML = data.productos.map(prod => `
+                            <div class="search-result-item" onclick="agregarMedicamento(${prod.id}, '${prod.nombre.replace(/'/g, "\\'")}', ${prod.precio})">
+                                <div class="fw-bold">${prod.nombre}</div>
+                                <div class="small text-muted">$${prod.precio} | Stock: ${prod.stock || 0}</div>
+                            </div>
+                        `).join('');
+                        resultadosMedicamentos.style.display = 'block';
+                    } else {
+                        resultadosMedicamentos.innerHTML = '<div class="search-result-item">No se encontraron medicamentos</div>';
+                        resultadosMedicamentos.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error buscando medicamentos:', error);
+                });
+        }, 300);
+    });
+    }
+    
+    // Cerrar resultados al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        if (buscarMedicamento && resultadosMedicamentos && !buscarMedicamento.contains(e.target) && !resultadosMedicamentos.contains(e.target)) {
+            resultadosMedicamentos.style.display = 'none';
+        }
+    });
+    
+    // ==========================================
+    // 4. BÚSQUEDA DE ESTUDIOS DE LABORATORIO
+    // ==========================================
+    const buscarEstudio = document.getElementById('buscar_estudio');
+    const resultadosEstudios = document.getElementById('resultados_estudios');
+    let timeoutEstudios;
+    let estudiosSeleccionados = [];
+    
+    if (buscarEstudio) {
+    buscarEstudio.addEventListener('input', function() {
+        clearTimeout(timeoutEstudios);
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+            resultadosEstudios.style.display = 'none';
+            return;
+        }
+        
+        timeoutEstudios = setTimeout(() => {
+            fetch(`{% url 'laboratorio:api_buscar_estudios' %}?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.estudios && data.estudios.length > 0) {
+                        resultadosEstudios.innerHTML = data.estudios.map(est => `
+                            <div class="search-result-item" onclick="agregarEstudio(${est.id}, '${est.nombre.replace(/'/g, "\\'")}', ${est.precio})">
+                                <div class="fw-bold">${est.nombre}</div>
+                                <div class="small text-muted">$${est.precio}</div>
+                            </div>
+                        `).join('');
+                        resultadosEstudios.style.display = 'block';
+                    } else {
+                        resultadosEstudios.innerHTML = '<div class="search-result-item">No se encontraron estudios</div>';
+                        resultadosEstudios.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error buscando estudios:', error);
+                });
+        }, 300);
+    });
+    }
+    
+    document.addEventListener('click', function(e) {
+        if (buscarEstudio && resultadosEstudios && !buscarEstudio.contains(e.target) && !resultadosEstudios.contains(e.target)) {
+            resultadosEstudios.style.display = 'none';
+        }
+    });
+    
+});
+
+// ==========================================
+// FUNCIONES GLOBALES PARA MEDICAMENTOS
+// ==========================================
+let contadorMedicamentos = 0;
+
+function agregarMedicamento(id, nombre, precio) {
+    const listaMedicamentos = document.getElementById('lista_medicamentos');
+    const emptyMedicamentos = document.getElementById('empty_medicamentos');
+    
+    if (emptyMedicamentos) {
+        emptyMedicamentos.style.display = 'none';
+    }
+    
+    const medId = `med_${contadorMedicamentos++}`;
+    
+    const html = `
+        <div class="receta-item" id="${medId}">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="fw-bold text-success">${nombre}</div>
+                <button type="button" class="btn-close btn-sm" onclick="removerMedicamento('${medId}')"></button>
+            </div>
+            <input type="hidden" name="medicamento_id[]" value="${id}">
+            <input type="hidden" name="medicamento_nombre[]" value="${nombre}">
+            <div class="row g-2">
+                <div class="col-12">
+                    <input type="text" name="medicamento_dosis[]" class="form-control form-control-sm" placeholder="Dosis (Ej: 1 tableta cada 8 horas)" required>
+                </div>
+                <div class="col-6">
+                    <input type="text" name="medicamento_duracion[]" class="form-control form-control-sm" placeholder="Duración (Ej: 7 días)">
+                </div>
+                <div class="col-6">
+                    <input type="number" name="medicamento_cantidad[]" class="form-control form-control-sm" placeholder="Cantidad" value="1">
+                </div>
+            </div>
+        </div>
+    `;
+    
+    listaMedicamentos.insertAdjacentHTML('beforeend', html);
+    document.getElementById('buscar_medicamento').value = '';
+    document.getElementById('resultados_medicamentos').style.display = 'none';
+}
+
+function agregarMedicamentoManual() {
+    const nombre = prompt('Nombre del medicamento:');
+    if (nombre && nombre.trim()) {
+        agregarMedicamento(0, nombre.trim(), 0);
+    }
+}
+
+function removerMedicamento(id) {
+    document.getElementById(id).remove();
+    
+    const lista = document.getElementById('lista_medicamentos');
+    const empty = document.getElementById('empty_medicamentos');
+    
+    if (lista.children.length === 1) {
+        empty.style.display = 'block';
+    }
+}
+
+function generarReceta() {
+    const medicamentos = document.querySelectorAll('input[name="medicamento_id[]"]');
+
+    if (medicamentos.length === 0) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Sin medicamentos', 'Agrega al menos un medicamento antes de generar la receta.', 'warning');
+        } else {
+            alert('Debe agregar al menos un medicamento para generar la receta.');
+        }
+        return;
+    }
+
+    // Validar dosis
+    let faltaDosis = false;
+    document.querySelectorAll('input[name="medicamento_dosis[]"]').forEach(input => {
+        if (!input.value.trim()) faltaDosis = true;
+    });
+    if (faltaDosis) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Dosis requerida', 'Todos los medicamentos deben tener dosis especificada.', 'warning');
+        } else {
+            alert('Todos los medicamentos deben tener dosis especificada.');
+        }
+        return;
+    }
+
+    // Recopilar medicamentos
+    const medsList = [];
+    medicamentos.forEach((input, i) => {
+        const nombres = document.querySelectorAll('input[name="medicamento_nombre[]"]');
+        const dosis = document.querySelectorAll('input[name="medicamento_dosis[]"]');
+        const duracion = document.querySelectorAll('input[name="medicamento_duracion[]"]');
+        const cantidad = document.querySelectorAll('input[name="medicamento_cantidad[]"]');
+        medsList.push({
+            nombre: nombres[i] ? nombres[i].value : '',
+            dosis: dosis[i] ? dosis[i].value : '',
+            duracion: duracion[i] ? duracion[i].value : '',
+            cantidad: cantidad[i] ? cantidad[i].value : '1'
+        });
+    });
+
+    // Generar receta inmediata via API
+    const citaId = '{{ cita.id }}';
+    fetch('{% url "consultorio:api_generar_receta_inmediata" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ cita_id: citaId, medicamentos: medsList })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            if (typeof Swal !== 'undefined') {
+                var btnFarmacia = data.url_farmacia
+                    ? '<a href="' + data.url_farmacia + '" class="btn btn-success btn-lg mt-2 ms-2"><i class="fas fa-shopping-cart"></i> Cobrar en Farmacia</a>'
+                    : '';
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Receta Generada',
+                    html: '<p>La receta fue creada exitosamente.</p>' +
+                          '<a href="' + data.url_pdf + '" target="_blank" class="btn btn-primary btn-lg mt-2">' +
+                          '<i class="fas fa-file-pdf"></i> Ver / Imprimir Receta</a>' + btnFarmacia,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Cerrar'
+                });
+            } else {
+                window.open(data.url_pdf, '_blank');
+            }
+        } else {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Error', data.error || 'Error al generar receta', 'error');
+            } else {
+                alert(data.error || 'Error al generar receta');
+            }
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Error de conexion', 'No se pudo conectar con el servidor.', 'error');
+        }
+    });
+}
+
+// ==========================================
+// FUNCIONES GLOBALES PARA ESTUDIOS
+// ==========================================
+let contadorEstudios = 0;
+
+function agregarEstudio(id, nombre, precio) {
+    const listaEstudios = document.getElementById('lista_estudios');
+    const emptyEstudios = document.getElementById('empty_estudios');
+    
+    if (emptyEstudios) {
+        emptyEstudios.style.display = 'none';
+    }
+    
+    const estId = `est_${contadorEstudios++}`;
+    
+    const html = `
+        <div class="estudio-item" id="${estId}">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="fw-bold">${nombre}</div>
+                    <div class="small text-muted">$${(Number(precio) || 0).toFixed(2)}</div>
+                </div>
+                <button type="button" class="btn-close btn-sm" onclick="removerEstudio('${estId}')"></button>
+            </div>
+            <input type="hidden" name="estudio_id[]" value="${id}">
+        </div>
+    `;
+    
+    listaEstudios.insertAdjacentHTML('beforeend', html);
+    document.getElementById('buscar_estudio').value = '';
+    document.getElementById('resultados_estudios').style.display = 'none';
+}
+
+function removerEstudio(id) {
+    document.getElementById(id).remove();
+    
+    const lista = document.getElementById('lista_estudios');
+    const empty = document.getElementById('empty_estudios');
+    
+    if (lista.children.length === 1) {
+        empty.style.display = 'block';
+    }
+}
+
+function generarOrdenLaboratorio() {
+    const estudios = document.querySelectorAll('input[name="estudio_id[]"]');
+    
+    if (estudios.length === 0) {
+        alert('Debe seleccionar al menos un estudio para generar la orden.');
+        return;
+    }
+    
+    alert('Orden de laboratorio será generada al finalizar la consulta.');
+}
+
+// ==========================================
+// FUNCIONES GLOBALES PARA CERTIFICADOS
+// ==========================================
+function getCSRFToken() {
+    var el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+}
+function generarCertificado() {
+    const tipo = document.getElementById('tipo_certificado').value;
+    const motivo = document.getElementById('motivo_certificado').value.trim();
+    const diasInc = document.getElementById('dias_incapacidad').value.trim() || '0';
+    
+    if (!motivo) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Motivo requerido', 'Debe especificar el motivo del certificado.', 'warning');
+        } else {
+            alert('Debe especificar el motivo del certificado.');
+        }
+        return;
+    }
+    
+    const citaId = '{{ cita.id }}';
+    fetch('{% url "consultorio:api_generar_certificado_inmediato" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken(),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            cita_id: citaId,
+            tipo: tipo,
+            motivo: motivo,
+            dias_incapacidad: parseInt(diasInc, 10) || 0
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Certificado generado',
+                    html: '<p>El certificado fue creado correctamente.</p>' +
+                          '<a href="' + data.url_pdf + '" target="_blank" class="btn btn-primary btn-lg mt-2">' +
+                          '<i class="fas fa-file-pdf"></i> Ver / Imprimir Certificado</a>',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Cerrar'
+                });
+            } else {
+                window.open(data.url_pdf, '_blank');
+            }
+        } else {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Error', data.error || 'Error al generar certificado', 'error');
+            } else {
+                alert(data.error || 'Error al generar certificado');
+            }
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Error de conexión', 'No se pudo conectar con el servidor.', 'error');
+        } else {
+            alert('Error de conexión.');
+        }
+    });
+}
+
+// ==========================================
+// VALIDACIÓN ANTES DE ENVIAR FORMULARIO
+// ==========================================
+(function() {
+    const formEl = document.getElementById('formConsultaCompleta');
+    if (!formEl) return;
+    formEl.addEventListener('submit', function(e) {
+        const accion = e.submitter && e.submitter.value;
+        if (accion === 'finalizar') {
+            const confirmacion = confirm('¿Está seguro de finalizar esta consulta? Esta acción no se puede deshacer.');
+            if (!confirmacion) {
+                e.preventDefault();
+                return false;
+            }
+        }
+        return true;
+    });
+})();
+
+</script>
+{% endblock %}

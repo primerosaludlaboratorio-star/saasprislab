@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reporte Guiado de Fricción - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .wizard-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    .wizard-step {
+        display: none;
+    }
+    .wizard-step.active {
+        display: block;
+    }
+    .progress-bar-custom {
+        height: 8px;
+        border-radius: 4px;
+        background: #e9ecef;
+        margin-bottom: 2rem;
+    }
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #D9230F 0%, #ff6b6b 100%);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+    .pris-panel {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .pris-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+    .card-step {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    .card-step:hover {
+        border-color: #D9230F;
+        box-shadow: 0 4px 15px rgba(217, 35, 15, 0.1);
+    }
+    .btn-modulo {
+        padding: 1rem;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+    .btn-modulo:hover {
+        border-color: #D9230F;
+        background: #fff5f5;
+        transform: translateY(-2px);
+    }
+    .btn-modulo.selected {
+        border-color: #D9230F;
+        background: #D9230F;
+        color: white;
+    }
+    .step-number {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #D9230F;
+        color: white;
+        text-align: center;
+        line-height: 40px;
+        font-weight: bold;
+        margin-right: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="wizard-container">
+        <!-- Barra de Progreso -->
+        <div class="progress-bar-custom">
+            <div class="progress-fill" id="progress-fill" style="width: {% widthratio paso_actual 1 25 %}%"></div>
+        </div>
+
+        <!-- Panel de PRIS -->
+        <div class="pris-panel">
+            <div class="d-flex align-items-start">
+                <div class="pris-avatar">
+                    <i class="bi bi-robot"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h5 class="mb-2">Hola, soy PRIS 👋</h5>
+                    <p class="mb-0" id="pris-mensaje">
+                        {% if paso_actual == 1 %}
+                            Tu opinión nos ayuda a que PRISLAB sea un mejor lugar para trabajar. Tómate un momento para explicarme el detalle y yo me encargo de que llegue a la dirección.
+                        {% elif paso_actual == 2 %}
+                            Perfecto. Ahora necesito entender mejor el problema. ¿Qué estabas intentando hacer cuando encontraste el obstáculo?
+                        {% elif paso_actual == 3 %}
+                            Entiendo. Este problema está afectando tu eficiencia. ¿Cuánto tiempo te está costando o cómo afecta a la atención del paciente?
+                        {% elif paso_actual == 4 %}
+                            Excelente. Ahora, si tú fueras el arquitecto del sistema, ¿cómo lo solucionarías? Tu perspectiva es valiosa.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paso 1: Identificación del Dolor -->
+        <div class="wizard-step {% if paso_actual == 1 %}active{% endif %}" id="step-1">
+            <div class="card-step">
+                <h3 class="mb-4">
+                    <span class="step-number">1</span>
+                    ¿Dónde ocurre la fricción?
+                </h3>
+                <p class="text-muted mb-4">Selecciona el módulo donde estás experimentando el problema:</p>
+                
+                <form method="post" id="form-paso-1">
+                    {% csrf_token %}
+                    <input type="hidden" name="paso" value="1">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="btn-modulo" onclick="seleccionarModulo('RECEPCION')">
+                                <i class="bi bi-person-badge fs-3 d-block mb-2"></i>
+                                <strong>Recepción</strong>
+                            </div>
+                            <input type="radio" name="modulo_afectado" value="RECEPCION" id="mod-RECEPCION" style="display: none;">
+                        </div>
+                        <div class="col-md-4">
+                            <div class="btn-modulo" onclick="seleccionarModulo('FARMACIA')">
+                                <i class="bi bi-capsule-pill fs-3 d-block mb-2"></i>
+                                <strong>Farmacia</strong>
+                            </div>
+                            <input type="radio" name="modulo_afectado" value="FARMACIA" id="mod-FARMACIA" style="display: none;">
+                        </div>
+                        <div class="col-md-4">
+                            <div class="btn-modulo" onclick="seleccionarModulo('LABORATORIO')">
+                                <i class="bi bi-flask fs-3 d-block mb-2"></i>
+                                <strong>Laboratorio</strong>
+                            </div>
+                            <input type="radio" name="modulo_afectado" value="LABORATORIO" id="mod-LABORATORIO" style="display: none;">
+                        </div>
+                        <div class="col-md-4">
+                            <div class="btn-modulo" onclick="seleccionarModulo('CONSULTORIO')">
+                                <i class="bi bi-heart-pulse fs-3 d-block mb-2"></i>
+                                <strong>Consultorio</strong>
+                            </div>
+                            <input type="radio" name="modulo_afectado" value="CONSULTORIO" id="mod-CONSULTORIO" style="display: none;">
+                        </div>
+                        <div class="col-md-4">
+                            <div class="btn-modulo" onclick="seleccionarModulo('INVENTARIO')">
+                                <i class="bi bi-boxes fs-3 d-block mb-2"></i>
+                                <strong>Inventario</strong>
+                            </div>
+                            <input type="radio" name="modulo_afectado" value="INVENTARIO" id="mod-INVENTARIO" style="display: none;">
+                        </div>
+                        <div class="col-md-4">
+                            <div class="btn-modulo" onclick="seleccionarModulo('OTRO')">
+                                <i class="bi bi-three-dots fs-3 d-block mb-2"></i>
+                                <strong>Otro</strong>
+                            </div>
+                            <input type="radio" name="modulo_afectado" value="OTRO" id="mod-OTRO" style="display: none;">
+                        </div>
+                    </div>
+                    <div class="mt-4 text-end">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            Continuar <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Paso 2: Diagnóstico Guiado -->
+        <div class="wizard-step {% if paso_actual == 2 %}active{% endif %}" id="step-2">
+            <div class="card-step">
+                <h3 class="mb-4">
+                    <span class="step-number">2</span>
+                    Diagnóstico Guiado
+                </h3>
+                
+                <form method="post" id="form-paso-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="paso" value="2">
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">¿Qué intentabas hacer?</label>
+                        <textarea name="que_intentabas_hacer" class="form-control" rows="3" 
+                                  placeholder="Ejemplo: Estaba intentando registrar una venta en el PDV cuando..." required></textarea>
+                        <small class="text-muted">Describe la acción que estabas realizando</small>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">¿Qué te detuvo o te hizo el trabajo más lento?</label>
+                        <textarea name="que_te_detiene" class="form-control" rows="3" 
+                                  placeholder="Ejemplo: El botón de cobro es muy pequeño y me hace perder 3 segundos por paciente..." required></textarea>
+                        <small class="text-muted">Describe el obstáculo o problema encontrado</small>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">¿Es algo técnico o de proceso?</label>
+                        <select name="es_tecnico_o_proceso" class="form-select" required>
+                            <option value="">Selecciona una opción</option>
+                            <option value="TECNICO">Técnico (Error del sistema)</option>
+                            <option value="PROCESO">Proceso (Pasos innecesarios)</option>
+                            <option value="AMBOS">Ambos</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'reporte_friccion' %}?paso=1" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Anterior
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            Continuar <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Paso 3: El Punto Crítico -->
+        <div class="wizard-step {% if paso_actual == 3 %}active{% endif %}" id="step-3">
+            <div class="card-step">
+                <h3 class="mb-4">
+                    <span class="step-number">3</span>
+                    El Punto Crítico
+                </h3>
+                
+                <form method="post" id="form-paso-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="paso" value="3">
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">¿Cómo afecta esto tu tiempo o tu atención al paciente?</label>
+                        <select name="impacto_tiempo" class="form-select" required>
+                            <option value="">Selecciona una opción</option>
+                            <option value="MENOS_5_MIN">Menos de 5 minutos</option>
+                            <option value="5_15_MIN">5 a 15 minutos</option>
+                            <option value="15_30_MIN">15 a 30 minutos</option>
+                            <option value="MAS_30_MIN">Más de 30 minutos</option>
+                            <option value="AFECTA_PACIENTE">Afecta directamente la atención al paciente</option>
+                        </select>
+                        <small class="text-muted">Esta información nos ayuda a priorizar las mejoras</small>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'reporte_friccion' %}?paso=2" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Anterior
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            Continuar <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Paso 4: La Chispa de Mejora -->
+        <div class="wizard-step {% if paso_actual == 4 %}active{% endif %}" id="step-4">
+            <div class="card-step">
+                <h3 class="mb-4">
+                    <span class="step-number">4</span>
+                    La Chispa de Mejora
+                </h3>
+                
+                <form method="post" id="form-paso-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="paso" value="4">
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Si tú fueras el arquitecto, ¿cómo lo solucionarías?</label>
+                        <textarea name="solucion_propuesta" class="form-control" rows="5" 
+                                  placeholder="Ejemplo: Sugiero mover el botón de cobro al centro de la pantalla y hacerlo más grande..." required></textarea>
+                        <small class="text-muted">Tu perspectiva es valiosa. Comparte tu idea de solución.</small>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'reporte_friccion' %}?paso=3" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Anterior
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Enviar Reporte
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function seleccionarModulo(modulo) {
+    // Deseleccionar todos
+    document.querySelectorAll('.btn-modulo').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.checked = false;
+    });
+    
+    // Seleccionar el módulo
+    const btn = event.currentTarget;
+    btn.classList.add('selected');
+    document.getElementById('mod-' + modulo).checked = true;
+}
+
+// Actualizar mensaje de PRIS dinámicamente
+document.addEventListener('DOMContentLoaded', function() {
+    const paso = {{ paso_actual }};
+    const mensajes = {
+        1: "Tu opinión nos ayuda a que PRISLAB sea un mejor lugar para trabajar. Tómate un momento para explicarme el detalle y yo me encargo de que llegue a la dirección.",
+        2: "Perfecto. Ahora necesito entender mejor el problema. ¿Qué estabas intentando hacer cuando encontraste el obstáculo?",
+        3: "Entiendo. Este problema está afectando tu eficiencia. ¿Cuánto tiempo te está costando o cómo afecta a la atención del paciente?",
+        4: "Excelente. Ahora, si tú fueras el arquitecto del sistema, ¿cómo lo solucionarías? Tu perspectiva es valiosa."
+    };
+    
+    const mensajeElement = document.getElementById('pris-mensaje');
+    if (mensajeElement && mensajes[paso]) {
+        mensajeElement.textContent = mensajes[paso];
+    }
+});
+</script>
+{% endblock %}

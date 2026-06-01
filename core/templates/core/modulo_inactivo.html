@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Módulo no disponible — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center" style="min-height:70vh;">
+  <div class="text-center" style="max-width:520px;">
+
+    <div style="font-size:80px; line-height:1; margin-bottom:16px;">🔒</div>
+
+    <h2 class="fw-bold text-dark mb-2">Módulo no disponible</h2>
+
+    <p class="text-muted fs-5 mb-1">
+      <strong>{{ nombre_modulo }}</strong>
+    </p>
+
+    <p class="text-muted mb-4">
+      Este módulo no está incluido en el plan contratado por
+      {% if empresa %}<strong>{{ empresa.nombre }}</strong>{% else %}tu empresa{% endif %}.
+    </p>
+
+    <div class="alert alert-info text-start" style="border-left:4px solid #0d6efd;">
+      <strong>¿Necesitas activarlo?</strong><br>
+      Contacta a <strong>soporte PRISLAB</strong> para ampliar tu plan y tener acceso a
+      <em>{{ nombre_modulo }}</em> y otros módulos avanzados.
+    </div>
+
+    <div class="d-flex gap-2 justify-content-center mt-4">
+      <a href="{% url 'dashboard' %}" class="btn btn-primary px-4">
+        <i class="bi bi-house-fill me-2"></i>Volver al inicio
+      </a>
+      <a href="mailto:soporte@prislab.mx" class="btn btn-outline-secondary px-4">
+        <i class="bi bi-envelope me-2"></i>Contactar soporte
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Historial de Resultados - {{ paciente.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="bi bi-graph-up"></i> Historial de Resultados
+                <small class="text-muted">- {{ paciente.nombre_completo }}</small>
+            </h2>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Analito (LIMS)</label>
+                    <select name="estudio" class="form-select">
+                        <option value="">Todos los analitos</option>
+                        {% for estudio in estudios %}
+                        <option value="{{ estudio.id }}" {% if estudio_seleccionado == estudio.id|stringformat:"s" %}selected{% endif %}>
+                            {{ estudio.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Desde</label>
+                    <input type="date" name="fecha_desde" class="form-control" value="{{ fecha_desde }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Hasta</label>
+                    <input type="date" name="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Gráfica -->
+    {% if estudio_seleccionado %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Evolución del Resultado</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="graficaResultados" height="100"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tabla de Resultados -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Resultados Recientes</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Analito</th>
+                            <th>Resultado</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for resultado in resultados_tabla %}
+                        <tr>
+                            <td>{{ resultado.orden.fecha_creacion|date:"d/m/Y" }}</td>
+                            <td>{% if resultado.analito %}{{ resultado.analito.nombre }}{% else %}—{% endif %}</td>
+                            <td>
+                                {{ resultado.valor }}
+                                {% if resultado._forense_num_ediciones %}
+                                <span class="badge bg-dark ms-1"
+                                      title="Este resultado tiene {{ resultado._forense_num_ediciones }} registro(s) de modificación en auditoría forense."
+                                      data-testid="badge-espejo-forense">Espejo forense</span>
+                                {% endif %}
+                                {% if resultado.fuera_rango or resultado.es_critico %}
+                                <span class="badge bg-warning">Atípico</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if resultado.fuera_rango or resultado.es_critico %}
+                                <span class="badge bg-danger">Fuera de Rango</span>
+                                {% else %}
+                                <span class="badge bg-success">Normal</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">No hay resultados para mostrar</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    {% if estudio_seleccionado and resultados_grafica %}
+    const datos = {{ resultados_grafica|safe }};
+    const ctx = document.getElementById('graficaResultados').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: datos.map(d => d.fecha),
+            datasets: [{
+                label: 'Valor',
+                data: datos.map(d => d.valor),
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %}

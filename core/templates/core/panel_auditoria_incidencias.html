@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Panel de Auditoría - Incidencias Operativas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .incidencia-card {
+        border-left: 4px solid;
+        transition: all 0.3s ease;
+    }
+    .incidencia-pendiente {
+        border-left-color: #ffc107;
+        background-color: #fff3cd;
+    }
+    .incidencia-justificada {
+        border-left-color: #28a745;
+        background-color: #d4edda;
+    }
+    .incidencia-sancionada {
+        border-left-color: #dc3545;
+        background-color: #f8d7da;
+    }
+    .incidencia-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .badge-tipo {
+        font-size: 0.85rem;
+        padding: 0.5em 0.75em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px;">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <h2>
+                <i class="bi bi-clipboard-data"></i> Panel de Auditoría - Incidencias Operativas
+            </h2>
+            <a href="{% url 'dashboard_director' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="text-muted">Total</h5>
+                    <h3 class="text-primary">{{ estadisticas.total }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <h5 class="text-muted">Pendientes</h5>
+                    <h3 class="text-warning">{{ estadisticas.pendientes }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h5 class="text-muted">Justificadas</h5>
+                    <h3 class="text-success">{{ estadisticas.justificadas }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h5 class="text-muted">Hoy</h5>
+                    <h3 class="text-info">{{ estadisticas.hoy }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Estado:</label>
+                            <select name="estado" class="form-select" onchange="this.form.submit()">
+                                <option value="TODAS" {% if filtro_estado == 'TODAS' %}selected{% endif %}>Todas</option>
+                                <option value="PENDIENTE" {% if filtro_estado == 'PENDIENTE' %}selected{% endif %}>Pendientes</option>
+                                <option value="JUSTIFICADA" {% if filtro_estado == 'JUSTIFICADA' %}selected{% endif %}>Justificadas</option>
+                                <option value="SANCIONADA" {% if filtro_estado == 'SANCIONADA' %}selected{% endif %}>Sancionadas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Periodo:</label>
+                            <select name="fecha" class="form-select" onchange="this.form.submit()">
+                                <option value="hoy" {% if filtro_fecha == 'hoy' %}selected{% endif %}>Hoy</option>
+                                <option value="semana" {% if filtro_fecha == 'semana' %}selected{% endif %}>Últimos 7 días</option>
+                                <option value="mes" {% if filtro_fecha == 'mes' %}selected{% endif %}>Este mes</option>
+                                <option value="todas" {% if filtro_fecha == 'todas' %}selected{% endif %}>Todas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <small class="text-muted">Fecha: {{ fecha_hoy }}</small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Incidencias -->
+    <div class="row">
+        <div class="col-12">
+            {% if incidencias %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Incidencias Registradas</h5>
+                </div>
+                <div class="card-body">
+                    {% for incidencia in incidencias %}
+                    <div class="card mb-3 incidencia-card incidencia-{{ incidencia.estado_revision|lower }}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <span class="badge badge-tipo bg-primary">{{ incidencia.get_tipo_incidencia_display }}</span>
+                                    <span class="badge {% if incidencia.estado_revision == 'PENDIENTE' %}bg-warning{% elif incidencia.estado_revision == 'JUSTIFICADA' %}bg-success{% else %}bg-danger{% endif %} ms-2">
+                                        {{ incidencia.get_estado_revision_display }}
+                                    </span>
+                                    {% if incidencia.monto_afectado %}
+                                    <span class="badge bg-info ms-2">${{ incidencia.monto_afectado|floatformat:2 }}</span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">{{ incidencia.fecha_hora|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <strong>Registrado por:</strong> {{ incidencia.usuario_responsable.get_full_name }}
+                            </div>
+                            
+                            <div class="mb-2">
+                                <strong>Justificación:</strong>
+                                <div class="alert alert-light mt-1 mb-0">{{ incidencia.justificacion|linebreaks }}</div>
+                            </div>
+                            
+                            {% if incidencia.revisado_por %}
+                            <div class="mb-2">
+                                <strong>Revisado por:</strong> {{ incidencia.revisado_por.get_full_name }} 
+                                ({{ incidencia.fecha_revision|date:"d/m/Y H:i" }})
+                            </div>
+                            {% if incidencia.comentario_revision %}
+                            <div class="mb-2">
+                                <strong>Comentario del Director:</strong>
+                                <div class="alert alert-info mt-1 mb-0">{{ incidencia.comentario_revision|linebreaks }}</div>
+                            </div>
+                            {% endif %}
+                            {% endif %}
+                            
+                            {% if incidencia.estado_revision == 'PENDIENTE' %}
+                            <div class="mt-3">
+                                <button class="btn btn-sm btn-success me-2" onclick="marcarRevisada({{ incidencia.id }}, 'JUSTIFICADA')">
+                                    <i class="bi bi-check-circle"></i> Marcar como Justificada
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="marcarRevisada({{ incidencia.id }}, 'SANCIONADA')">
+                                    <i class="bi bi-x-circle"></i> Requiere Acción Correctiva
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center">
+                <i class="bi bi-check-circle"></i> No hay incidencias que mostrar con los filtros seleccionados.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function marcarRevisada(incidenciaId, estado) {
+        const titulo = estado === 'JUSTIFICADA' ? '¿Marcar como Justificada?' : '¿Marcar como Requiere Acción Correctiva?';
+        const inputPlaceholder = estado === 'JUSTIFICADA' ? 'Comentario opcional...' : 'Motivo de la acción correctiva (requerido)...';
+        
+        Swal.fire({
+            title: titulo,
+            input: 'textarea',
+            inputLabel: 'Comentario de Revisión',
+            inputPlaceholder: inputPlaceholder,
+            inputAttributes: {
+                'aria-label': 'Comentario'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Confirmar',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (estado === 'SANCIONADA' && !value.trim()) {
+                    return 'Debes proporcionar un motivo para la acción correctiva';
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/api/incidencias/${incidenciaId}/marcar-revisada/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        estado: estado,
+                        comentario: result.value || ''
+                    })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        Swal.fire('Actualizado', data.mensaje, 'success').then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Error', data.mensaje, 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    Swal.fire('Error', 'No se pudo actualizar la incidencia', 'error');
+                });
+            }
+        });
+    }
+</script>
+{% endblock %}

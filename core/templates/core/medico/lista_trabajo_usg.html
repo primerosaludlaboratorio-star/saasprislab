@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Reportes de Ultrasonido — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="fas fa-wave-square text-info me-2"></i>Reportes de Ultrasonido</h3>
+    <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-sm">← Volver</a>
+  </div>
+
+  <!-- Filtros rápidos -->
+  <div class="mb-3 d-flex gap-2 flex-wrap">
+    <a href="?" class="btn btn-sm {% if not estado_filtro %}btn-primary{% else %}btn-outline-primary{% endif %}">Todos</a>
+    {% for val, label in estados %}
+    <a href="?estado={{ val }}"
+       class="btn btn-sm {% if estado_filtro == val %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      {{ label }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      {% if page_obj %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Paciente</th><th>Tipo</th><th>Estado</th><th>Médico</th><th>Fecha</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in page_obj %}
+            <tr>
+              <td class="fw-semibold">{{ r.paciente }}</td>
+              <td>{{ r.get_tipo_display }}</td>
+              <td>
+                {% if r.estado == 'BORRADOR' %}
+                  <span class="badge bg-warning text-dark">Borrador</span>
+                {% elif r.estado == 'FIRMADO' %}
+                  <span class="badge bg-success">Firmado</span>
+                {% else %}
+                  <span class="badge bg-primary">Entregado</span>
+                {% endif %}
+              </td>
+              <td>{{ r.medico|default:"–" }}</td>
+              <td>{{ r.fecha_estudio|date:"d/m/Y H:i" }}</td>
+              <td>
+                <a href="{% url 'descargar_pdf_ultrasonido' r.id %}" class="btn btn-outline-info btn-sm" target="_blank">
+                  <i class="fas fa-file-pdf me-1"></i>PDF
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if page_obj.has_other_pages %}
+      <div class="d-flex justify-content-center py-3">
+        <nav><ul class="pagination pagination-sm mb-0">
+          {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&estado={{ estado_filtro }}">‹</a></li>{% endif %}
+          <li class="page-item active"><a class="page-link" href="#">{{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</a></li>
+          {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&estado={{ estado_filtro }}">›</a></li>{% endif %}
+        </ul></nav>
+      </div>
+      {% endif %}
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-wave-square fa-2x mb-2"></i><br>Sin reportes de ultrasonido
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

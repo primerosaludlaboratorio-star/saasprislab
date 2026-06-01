@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="mb-0 fw-bold text-primary"><i class="bi bi-flask me-2"></i>{{ titulo }}</h2>
+      <small class="text-muted">Catálogo maestro de reactivos, calibradores, controles y consumibles</small>
+    </div>
+    <a href="{% url 'inventario:crear_reactivo' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>Nuevo Reactivo
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-md-4">
+      <input type="text" name="q" value="{{ busqueda }}" placeholder="Buscar nombre, código, fabricante…"
+             class="form-control form-control-sm">
+    </div>
+    <div class="col-md-3">
+      <select name="tipo" class="form-select form-select-sm">
+        <option value="">— Todos los tipos —</option>
+        {% for val, lbl in tipo_choices %}
+          <option value="{{ val }}" {% if tipo_filtro == val %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-outline-secondary btn-sm" type="submit">
+        <i class="bi bi-funnel me-1"></i>Filtrar
+      </button>
+      {% if busqueda or tipo_filtro %}
+        <a href="{% url 'inventario:lista_reactivos' %}" class="btn btn-outline-danger btn-sm ms-1">
+          <i class="bi bi-x"></i>
+        </a>
+      {% endif %}
+    </div>
+  </form>
+
+  <!-- Tabla -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Fabricante</th>
+              <th>Unidad</th>
+              <th class="text-end">Stock Actual</th>
+              <th class="text-end">Mínimo</th>
+              <th class="text-center">Estado</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in reactivos %}
+            {% with es_critico=r.stock_total|floatformat:4 %}
+            <tr>
+              <td><code class="small">{{ r.codigo_interno }}</code></td>
+              <td class="fw-semibold">{{ r.nombre }}</td>
+              <td>
+                <span class="badge
+                  {% if r.tipo == 'REACTIVO' %}bg-primary
+                  {% elif r.tipo == 'CALIBRADOR' %}bg-info text-dark
+                  {% elif r.tipo == 'CONTROL' %}bg-purple
+                  {% elif r.tipo == 'CONSUMIBLE' %}bg-secondary
+                  {% else %}bg-light text-dark{% endif %}">
+                  {{ r.get_tipo_display }}
+                </span>
+              </td>
+              <td class="small text-muted">{{ r.fabricante|default:"—" }}</td>
+              <td class="small">{{ r.unidad_medida }}</td>
+              <td class="text-end fw-bold
+                {% if r.stock_total <= r.stock_minimo %}text-danger
+                {% elif r.stock_total == 0 %}text-danger
+                {% else %}text-success{% endif %}">
+                {{ r.stock_total|floatformat:2 }}
+                {% if r.stock_total <= r.stock_minimo and r.stock_total > 0 %}
+                  <i class="bi bi-exclamation-triangle-fill text-warning ms-1" title="Bajo mínimo"></i>
+                {% elif r.stock_total == 0 %}
+                  <i class="bi bi-x-circle-fill text-danger ms-1" title="Sin stock"></i>
+                {% endif %}
+              </td>
+              <td class="text-end small text-muted">{{ r.stock_minimo }}</td>
+              <td class="text-center">
+                {% if r.activo %}
+                  <span class="badge bg-success">Activo</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inactivo</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="btn-group btn-group-sm">
+                  <a href="{% url 'inventario:lista_lotes' %}?reactivo={{ r.pk }}"
+                     class="btn btn-outline-info" title="Ver lotes">
+                    <i class="bi bi-layers"></i>
+                  </a>
+                  <a href="{% url 'inventario:editar_reactivo' r.pk %}"
+                     class="btn btn-outline-primary" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <form method="post" action="{% url 'inventario:eliminar_reactivo' r.pk %}"
+                        onsubmit="return confirm('¿Eliminar reactivo {{ r.nombre }}?');" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger" title="Eliminar">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endwith %}
+            {% empty %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-4">
+                <i class="bi bi-flask display-6 d-block mb-2 opacity-25"></i>
+                No hay reactivos. <a href="{% url 'inventario:crear_reactivo' %}">Crear el primero</a>.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-2 text-end">
+    <a href="{% url 'inventario:dashboard_reactivos' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

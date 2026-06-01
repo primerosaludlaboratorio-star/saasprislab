@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Catálogo de Cuentas - {{ empresa.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px;">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold text-primary">
+                    <i class="bi bi-list-ul"></i> Catálogo de Cuentas Contables
+                </h2>
+                <a href="{% url 'crear_cuenta' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Nueva Cuenta
+                </a>
+            </div>
+
+            <!-- Búsqueda -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-10">
+                            <input type="text" name="q" class="form-control" placeholder="Buscar por código o nombre..." value="{{ busqueda }}">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search"></i> Buscar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Cuentas por Tipo -->
+            {% for tipo_nombre, cuentas in cuentas_por_tipo.items %}
+            {% if cuentas %}
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">{{ tipo_nombre }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Nombre</th>
+                                    <th>Naturaleza</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cuenta in cuentas %}
+                                <tr>
+                                    <td><strong>{{ cuenta.codigo }}</strong></td>
+                                    <td>{{ cuenta.nombre }}</td>
+                                    <td>{{ cuenta.get_naturaleza_display }}</td>
+                                    <td>
+                                        {% if cuenta.activa %}
+                                        <span class="badge bg-success">Activa</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactiva</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'crear_cuenta' %}?id={{ cuenta.id }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i> Editar
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

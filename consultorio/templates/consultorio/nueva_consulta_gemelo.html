@@ -1,0 +1,1183 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<!-- Estilos de grabación IA -->
+<link rel="stylesheet" href="{% static 'consultorio/css/grabacion_ia.css' %}">
+
+<style>
+/* ==============================================================================
+   GEMELO DIGITAL - ESTILOS PARA VISTA DIVIDIDA Y HOJA DE PAPEL
+   ============================================================================== */
+
+/* Contenedor Principal */
+body {
+    overflow-x: hidden;
+}
+
+.consulta-container {
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+/* ==============================================================================
+   COLUMNA IZQUIERDA: FORMULARIO DE TRABAJO (40%)
+   ============================================================================== */
+
+.columna-inputs {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 1.5rem;
+    overflow-y: auto;
+    position: relative;
+}
+
+.columna-inputs h2 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+/* Botón de Voz Héroe (Siempre Visible) */
+.btn-grabar-voz {
+    position: sticky;
+    top: 10px;
+    z-index: 100;
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border: none;
+    box-shadow: 0 4px 6px rgba(220, 53, 69, 0.3);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s;
+}
+
+.btn-grabar-voz:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(220, 53, 69, 0.4);
+}
+
+.btn-grabar-voz:active {
+    transform: scale(0.98);
+}
+
+/* Secciones SOAP */
+.soap-section {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.soap-section h4 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.soap-section h4 .badge {
+    font-size: 0.75rem;
+    vertical-align: middle;
+}
+
+/* Inputs y TextAreas */
+.form-control, .form-select {
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    padding: 0.75rem;
+    transition: all 0.3s;
+    font-size: 1rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+textarea.form-control {
+    min-height: 120px;
+    resize: vertical;
+}
+
+/* Grid de Signos Vitales */
+.signos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+}
+
+.signo-vital {
+    display: flex;
+    flex-direction: column;
+}
+
+.signo-vital label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.signo-vital input {
+    padding: 0.5rem;
+    font-size: 0.95rem;
+}
+
+/* Botonera Fixed Bottom */
+.botonera-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 40%;
+    background: white;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+    z-index: 99;
+    display: flex;
+    gap: 1rem;
+}
+
+.botonera-fixed .btn {
+    flex: 1;
+    padding: 0.75rem;
+    font-weight: 600;
+}
+
+/* ==============================================================================
+   COLUMNA DERECHA: GEMELO DIGITAL - HOJA DE PAPEL (60%)
+   ============================================================================== */
+
+.columna-preview {
+    background-color: #5a5c69;
+    min-height: 100vh;
+    padding: 2rem;
+    overflow-y: auto;
+    position: sticky;
+    top: 0;
+}
+
+/* La Hoja de Papel (Tamaño Carta Real) */
+#hoja-receta {
+    width: 21.59cm;
+    min-height: 27.94cm;
+    background: white;
+    margin: 0 auto;
+    padding: 2cm;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    font-family: 'Times New Roman', 'Merriweather', serif;
+    color: #212529;
+    position: relative;
+}
+
+/* Header de la Receta */
+.receta-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5cm;
+    padding-bottom: 0.5cm;
+    border-bottom: 2px solid #2c3e50;
+}
+
+.receta-logo {
+    max-width: 150px;
+}
+
+.receta-doctor {
+    text-align: right;
+    font-size: 0.9rem;
+}
+
+.receta-doctor h3 {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 0.25rem;
+}
+
+.receta-doctor p {
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Información del Paciente */
+.receta-paciente {
+    background: #f8f9fa;
+    padding: 0.5cm;
+    margin-bottom: 1cm;
+    border-left: 4px solid #667eea;
+}
+
+.receta-paciente p {
+    margin: 0.2rem 0;
+    font-size: 0.95rem;
+}
+
+.receta-paciente strong {
+    color: #495057;
+}
+
+/* Cuerpo de la Receta (Dinámico) */
+.receta-seccion {
+    margin-bottom: 1cm;
+}
+
+.receta-seccion h5 {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 0.3cm;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.receta-seccion .contenido {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.receta-seccion .contenido.empty {
+    color: #dee2e6;
+    font-style: italic;
+}
+
+/* Signos Vitales en la Receta */
+.signos-preview {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.3cm;
+    font-size: 0.85rem;
+}
+
+.signos-preview .signo {
+    background: #f8f9fa;
+    padding: 0.2cm;
+    border-radius: 4px;
+}
+
+.signos-preview .signo strong {
+    color: #495057;
+    display: block;
+}
+
+/* Footer de la Receta */
+.receta-footer {
+    position: absolute;
+    bottom: 1.5cm;
+    left: 2cm;
+    right: 2cm;
+    border-top: 1px solid #dee2e6;
+    padding-top: 0.5cm;
+}
+
+.firma-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.firma-linea {
+    border-top: 2px solid #212529;
+    width: 200px;
+    text-align: center;
+    padding-top: 0.3cm;
+    font-size: 0.85rem;
+}
+
+/* ==============================================================================
+   ESTILOS DE IMPRESIÓN
+   ============================================================================== */
+
+@media print {
+    /* Ocultar todo */
+    body * {
+        visibility: hidden;
+    }
+    
+    /* Mostrar solo la hoja */
+    #hoja-receta,
+    #hoja-receta * {
+        visibility: visible;
+    }
+    
+    /* Posicionar la hoja */
+    #hoja-receta {
+        position: absolute;
+        left: 0;
+        top: 0;
+        margin: 0;
+        padding: 1.5cm;
+        box-shadow: none;
+        width: 100%;
+        min-height: auto;
+    }
+    
+    /* Ocultar navegación, sidebar y secciones no deseadas */
+    .navbar,
+    .sidebar,
+    .botonera-fixed,
+    .btn-grabar-voz,
+    #seccion-motivo {
+        display: none !important;
+    }
+}
+
+/* ==============================================================================
+   RESPONSIVE
+   ============================================================================== */
+
+@media (max-width: 992px) {
+    .columna-inputs,
+    .columna-preview {
+        width: 100% !important;
+    }
+    
+    .columna-preview {
+        position: relative;
+    }
+    
+    .botonera-fixed {
+        width: 100%;
+    }
+    
+    #hoja-receta {
+        width: 100%;
+        padding: 1cm;
+    }
+}
+
+/* ==============================================================================
+   ANIMACIONES Y FEEDBACK VISUAL
+   ============================================================================== */
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.typing {
+    animation: pulse 1s infinite;
+}
+
+.receta-seccion .contenido {
+    transition: all 0.3s ease;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid consulta-container">
+    <div class="row" style="margin: 0;">
+        
+        <!-- ==================================================================
+             COLUMNA IZQUIERDA: FORMULARIO DE TRABAJO (40%)
+             ================================================================== -->
+        <div class="col-lg-5 columna-inputs">
+            <h2>
+                <i class="fas fa-notes-medical text-primary me-2"></i>
+                Nueva Consulta Medica
+            </h2>
+            
+            <!-- ENCABEZADO DEL PACIENTE (SOLO LECTURA) -->
+            {% if paciente %}
+            <div class="card mb-3 border-primary" style="border-width: 2px;">
+                <div class="card-body" style="background: linear-gradient(135deg, #e7f3ff 0%, #f0f4ff 100%); border-radius: 6px;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="mb-1">
+                                <i class="fas fa-user-check text-success me-2"></i>
+                                <strong>{{ paciente.nombre_completo }}</strong>
+                            </h5>
+                            <p class="mb-1 text-muted">
+                                <i class="fas fa-birthday-cake me-1"></i>
+                                {% if paciente.edad %}{{ paciente.edad }} anios{% else %}Edad no registrada{% endif %}
+                                {% if paciente.sexo %}&nbsp;|&nbsp;<i class="fas fa-venus-mars me-1"></i>{{ paciente.get_sexo_display }}{% endif %}
+                                {% if paciente.telefono %}&nbsp;|&nbsp;<i class="fas fa-phone me-1"></i>{{ paciente.telefono }}{% endif %}
+                            </p>
+                            <p class="mb-0 small text-muted">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                Fecha: <strong>{% now "d/m/Y H:i" %}</strong>
+                                &nbsp;|&nbsp;
+                                <i class="fas fa-hashtag me-1"></i>
+                                UUID: <code class="small">{{ paciente.uuid|truncatechars:13 }}</code>
+                            </p>
+                        </div>
+                        <a href="{% url 'consultorio:nueva_consulta' %}" class="btn btn-sm btn-outline-secondary" title="Cambiar paciente">
+                            <i class="fas fa-exchange-alt"></i>
+                        </a>
+                    </div>
+                    {% if consultas_previas %}
+                    <div class="mt-2 pt-2 border-top">
+                        <small class="text-muted"><i class="fas fa-history me-1"></i>{{ consultas_previas|length }} consulta{{ consultas_previas|length|pluralize:"s" }} previa{{ consultas_previas|length|pluralize:"s" }}</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Error de Identidad:</strong> No se ha seleccionado un paciente.
+                <a href="{% url 'consultorio:nueva_consulta' %}" class="alert-link">Buscar paciente</a>
+            </div>
+            {% endif %}
+            
+            <!-- Botón de Grabar Voz (Héroe) -->
+            <button type="button" class="btn btn-danger btn-grabar-voz">
+                <i class="fas fa-microphone me-2"></i>
+                GRABAR CONSULTA CON IA
+                <i class="fas fa-microphone ms-2"></i>
+            </button>
+            
+            <!-- Barra de herramientas rápidas -->
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-plantillas" title="Plantillas por especialidad">
+                    <i class="fas fa-file-medical me-1"></i>Plantillas
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-info" id="btn-vademecum-toggle" title="Buscar medicamento">
+                    <i class="fas fa-pills me-1"></i>Vademecum
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-warning" id="btn-adjuntar-archivo" title="Adjuntar Rx, documentos">
+                    <i class="fas fa-paperclip me-1"></i>Adjuntar
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-historial-sv" title="Ver signos vitales previos">
+                    <i class="fas fa-chart-line me-1"></i>Tendencias
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="btn-odontograma" title="Odontograma interactivo">
+                    <i class="fas fa-tooth me-1"></i>Odontograma
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-success" id="btn-mapa-corporal" title="Mapa corporal interactivo">
+                    <i class="fas fa-male me-1"></i>Mapa Corporal
+                </button>
+            </div>
+            
+            <!-- Panel de Plantillas (oculto por defecto) -->
+            <div id="panel-plantillas" class="card mb-3" style="display:none;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0"><i class="fas fa-file-medical text-primary me-2"></i>Plantillas de Nota Clinica</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('panel-plantillas').style.display='none'"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="lista-plantillas" class="list-group" style="max-height: 200px; overflow-y: auto;">
+                        <div class="text-muted text-center py-2">Cargando plantillas...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Panel de Vademecum (oculto por defecto) -->
+            <div id="panel-vademecum" class="card mb-3" style="display:none;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0"><i class="fas fa-pills text-info me-2"></i>Buscar Medicamento</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('panel-vademecum').style.display='none'"><i class="fas fa-times"></i></button>
+                    </div>
+                    <input type="text" class="form-control form-control-sm mb-2" id="buscar-vademecum" placeholder="Buscar medicamento (ej: Amoxicilina)..." autocomplete="off">
+                    <div id="resultados-vademecum" class="list-group" style="max-height: 300px; overflow-y: auto;"></div>
+                </div>
+            </div>
+            
+            <!-- Panel de Adjuntar Archivos (oculto por defecto) -->
+            <div id="panel-adjuntar" class="card mb-3" style="display:none;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0"><i class="fas fa-paperclip text-warning me-2"></i>Adjuntar Documento</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('panel-adjuntar').style.display='none'"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <select class="form-select form-select-sm" id="tipo-archivo-adjunto">
+                                <option value="RADIOGRAFIA">Radiografia</option>
+                                <option value="TOMOGRAFIA">Tomografia</option>
+                                <option value="RESONANCIA">Resonancia</option>
+                                <option value="ULTRASONIDO">Ultrasonido</option>
+                                <option value="LABORATORIO_EXTERNO">Lab Externo</option>
+                                <option value="FOTO_EVOLUCION">Foto Evolucion</option>
+                                <option value="RECETA_EXTERNA">Receta Externa</option>
+                                <option value="DOCUMENTO">Documento</option>
+                                <option value="OTRO">Otro</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <input type="text" class="form-control form-control-sm" id="titulo-archivo-adjunto" placeholder="Titulo del documento">
+                        </div>
+                    </div>
+                    <input type="file" class="form-control form-control-sm mt-2" id="input-archivo-adjunto" accept="image/*,.pdf,.doc,.docx">
+                    <button type="button" class="btn btn-sm btn-warning mt-2 w-100" id="btn-subir-archivo">
+                        <i class="fas fa-upload me-1"></i>Subir Archivo
+                    </button>
+                    <div id="archivos-adjuntos-lista" class="mt-2"></div>
+                </div>
+            </div>
+            
+            <form id="form-consulta" method="POST" action="">
+                {% csrf_token %}
+                
+                <!-- ========================================================
+                     SECCIÓN S: SUBJETIVO (Motivo de Consulta)
+                     ======================================================== -->
+                <div class="soap-section">
+                    <h4>
+                        <span class="badge bg-info">S</span>
+                        SUBJETIVO - Motivo de Consulta
+                    </h4>
+                    <textarea 
+                        class="form-control" 
+                        id="motivo-consulta" 
+                        name="motivo" 
+                        rows="4" 
+                        placeholder="¿Qué lo trae hoy? Síntomas, molestias, quejas del paciente...">{{ consulta.motivo|default:"" }}</textarea>
+                </div>
+                
+                <!-- ========================================================
+                     SECCIÓN O: OBJETIVO (Signos Vitales)
+                     ======================================================== -->
+                <div class="soap-section">
+                    <h4>
+                        <span class="badge bg-success">O</span>
+                        OBJETIVO - Signos Vitales
+                    </h4>
+                    <div class="signos-grid">
+                        <div class="signo-vital">
+                            <label>Temp. (°C)</label>
+                            <input type="number" class="form-control" id="temperatura" name="temperatura" step="0.1" placeholder="36.5">
+                        </div>
+                        <div class="signo-vital">
+                            <label>FC (lpm)</label>
+                            <input type="number" class="form-control" id="frecuencia-cardiaca" name="frecuencia_cardiaca" placeholder="70">
+                        </div>
+                        <div class="signo-vital">
+                            <label>FR (rpm)</label>
+                            <input type="number" class="form-control" id="frecuencia-respiratoria" name="frecuencia_respiratoria" placeholder="18">
+                        </div>
+                        <div class="signo-vital">
+                            <label>TA (mmHg)</label>
+                            <input type="text" class="form-control" id="presion-arterial" name="presion_arterial" placeholder="120/80">
+                        </div>
+                        <div class="signo-vital">
+                            <label>SatO₂ (%)</label>
+                            <input type="number" class="form-control" id="saturacion" name="saturacion" placeholder="98">
+                        </div>
+                        <div class="signo-vital">
+                            <label>Peso (kg)</label>
+                            <input type="number" class="form-control" id="peso" name="peso" step="0.1" placeholder="70">
+                        </div>
+                        <div class="signo-vital">
+                            <label>Talla (m)</label>
+                            <input type="number" class="form-control" id="talla" name="talla" step="0.01" placeholder="1.70">
+                        </div>
+                        <div class="signo-vital">
+                            <label>IMC</label>
+                            <input type="text" class="form-control" id="imc" name="imc" readonly placeholder="--">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ========================================================
+                     SECCIÓN A: ANÁLISIS (Exploración Física y Diagnóstico)
+                     ======================================================== -->
+                <div class="soap-section">
+                    <h4>
+                        <span class="badge bg-warning text-dark">A</span>
+                        ANÁLISIS - Exploración Física
+                    </h4>
+                    <textarea 
+                        class="form-control mb-3" 
+                        id="exploracion-fisica" 
+                        name="exploracion_fisica" 
+                        rows="3" 
+                        placeholder="Exploración física / Hallazgos clínicos..."></textarea>
+                    
+                    <label for="diagnostico" class="form-label mt-2"><strong>Diagnóstico</strong></label>
+                    <input 
+                        type="text" 
+                        class="form-control" 
+                        id="diagnostico" 
+                        name="diagnostico" 
+                        placeholder="Diagnóstico principal (ej: Faringitis aguda)">
+                </div>
+                
+                <!-- ========================================================
+                     SECCIÓN P: PLAN (Tratamiento/Receta)
+                     ======================================================== -->
+                <div class="soap-section" style="margin-bottom: 100px;">
+                    <h4>
+                        <span class="badge bg-danger">P</span>
+                        PLAN - Tratamiento y Receta
+                    </h4>
+                    <textarea 
+                        class="form-control" 
+                        id="tratamiento" 
+                        name="tratamiento" 
+                        rows="8" 
+                        placeholder="Medicamentos, dosis, vía de administración, frecuencia, duración...&#10;&#10;Ejemplo:&#10;1. Amoxicilina 500mg, VO, c/8hrs x 7 días&#10;2. Paracetamol 500mg, VO, c/8hrs PRN (dolor/fiebre)&#10;3. Reposo relativo, hidratación abundante">{{ consulta.tratamiento|default:"" }}</textarea>
+                </div>
+                
+            </form>
+            
+            <!-- Botonera Fixed Bottom -->
+            <div class="botonera-fixed">
+                <button type="button" class="btn btn-secondary" onclick="window.history.back();">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-outline-success" onclick="window.print();" title="Imprime la vista previa del gemelo digital">
+                    <i class="fas fa-print me-2"></i>Imprimir Vista Previa
+                </button>
+                <button type="submit" form="form-consulta" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Guardar y Generar Receta
+                </button>
+            </div>
+        </div>
+        
+        <!-- ==================================================================
+             COLUMNA DERECHA: GEMELO DIGITAL - HOJA DE PAPEL (60%)
+             ================================================================== -->
+        <div class="col-lg-7 columna-preview">
+            <div id="hoja-receta">
+                
+                <!-- Header: Logo + Info del Doctor -->
+                <div class="receta-header">
+                    <div class="receta-logo">
+                        {% if empresa.logo %}
+                        <img src="{{ empresa.logo.url }}" alt="Logo" style="max-width: 100%;">
+                        {% else %}
+                        <h2 style="color: #dc3545; margin: 0;">PRISLAB</h2>
+                        {% endif %}
+                    </div>
+                    <div class="receta-doctor">
+                        <h3>{{ request.user.get_full_name }}</h3>
+                        <p><strong>Cédula Profesional:</strong> {{ request.user.cedula_profesional|default:"--" }}</p>
+                        <p><strong>Especialidad:</strong> {{ request.user.especialidad|default:"Médico General" }}</p>
+                        <p><strong>Tel:</strong> {{ empresa.telefono|default:"--" }}</p>
+                    </div>
+                </div>
+                
+                <!-- Informacion del Paciente (Datos Reales de la Tabla Maestra) -->
+                <div class="receta-paciente">
+                    <p>
+                        <strong>Paciente:</strong> 
+                        <span id="preview-nombre-paciente">{% if paciente %}{{ paciente.nombre_completo }}{% else %}--{% endif %}</span>
+                    </p>
+                    <p>
+                        <strong>Edad:</strong> 
+                        <span id="preview-edad-paciente">{% if paciente.edad %}{{ paciente.edad }} anios{% else %}--{% endif %}</span>
+                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                        <strong>Sexo:</strong>
+                        <span>{% if paciente.sexo %}{{ paciente.get_sexo_display }}{% else %}--{% endif %}</span>
+                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                        <strong>Fecha:</strong> 
+                        <span id="preview-fecha">{% now "d de F de Y, H:i" %}</span>
+                    </p>
+                </div>
+                
+                <!-- Cuerpo Dinámico -->
+                
+                <!-- Motivo de Consulta -->
+                <div class="receta-seccion" id="seccion-motivo">
+                    <h5>Motivo de Consulta</h5>
+                    <div class="contenido empty" id="preview-motivo">
+                        (El médico está escribiendo...)
+                    </div>
+                </div>
+                
+                <!-- Signos Vitales -->
+                <div class="receta-seccion" id="seccion-signos">
+                    <h5>Signos Vitales</h5>
+                    <div class="signos-preview" id="preview-signos">
+                        <div class="signo" id="preview-temp">
+                            <strong>Temp:</strong> <span>--</span>
+                        </div>
+                        <div class="signo" id="preview-fc">
+                            <strong>FC:</strong> <span>--</span>
+                        </div>
+                        <div class="signo" id="preview-fr">
+                            <strong>FR:</strong> <span>--</span>
+                        </div>
+                        <div class="signo" id="preview-ta">
+                            <strong>TA:</strong> <span>--</span>
+                        </div>
+                        <div class="signo" id="preview-sat">
+                            <strong>SatO₂:</strong> <span>--</span>
+                        </div>
+                        <div class="signo" id="preview-peso">
+                            <strong>Peso:</strong> <span>--</span>
+                        </div>
+                        <div class="signo" id="preview-talla">
+                            <strong>Talla:</strong> <span>--</span>
+                        </div>
+                        <div class="signo" id="preview-imc">
+                            <strong>IMC:</strong> <span>--</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Exploración Física -->
+                <div class="receta-seccion" id="seccion-exploracion">
+                    <h5>Exploración Física / Hallazgos</h5>
+                    <div class="contenido empty" id="preview-exploracion">
+                        (Esperando exploración...)
+                    </div>
+                </div>
+                
+                <!-- Diagnóstico -->
+                <div class="receta-seccion" id="seccion-diagnostico">
+                    <h5>Diagnóstico</h5>
+                    <div class="contenido empty" id="preview-diagnostico">
+                        (Esperando diagnóstico...)
+                    </div>
+                </div>
+                
+                <!-- Tratamiento / Receta -->
+                <div class="receta-seccion" id="seccion-tratamiento">
+                    <h5>℞ Tratamiento</h5>
+                    <div class="contenido empty" id="preview-tratamiento">
+                        (Esperando indicaciones...)
+                    </div>
+                </div>
+                
+                <!-- Footer con Firma -->
+                <div class="receta-footer">
+                    <div class="firma-area">
+                        <div class="firma-linea">
+                            Firma del Médico
+                        </div>
+                        <div style="text-align: right; font-size: 0.75rem; color: #6c757d;">
+                            <p style="margin: 0;">Receta generada por PRISLAB V5.0</p>
+                            <p style="margin: 0;">Documento con validez oficial</p>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Script de grabación IA -->
+<script src="{% static 'consultorio/js/grabacion_ia.js' %}"></script>
+
+<script>
+/* ==============================================================================
+   MOTOR DE SINCRONIZACIÓN: GEMELO DIGITAL (MIRRORING EN TIEMPO REAL)
+   ============================================================================== */
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎨 Gemelo Digital activado');
+    
+    // ==============================================================================
+    // 1. SINCRONIZACIÓN DE CAMPOS DE TEXTO
+    // ==============================================================================
+    
+    // Motivo de Consulta
+    const motivoInput = document.getElementById('motivo-consulta');
+    const motivoPreview = document.getElementById('preview-motivo');
+    
+    if (motivoInput && motivoPreview) {
+        motivoInput.addEventListener('input', function() {
+            syncTextField(this, motivoPreview);
+        });
+        // Inicializar si tiene valor
+        if (motivoInput.value) {
+            syncTextField(motivoInput, motivoPreview);
+        }
+    }
+    
+    // Diagnóstico
+    const diagnosticoInput = document.getElementById('diagnostico');
+    const diagnosticoPreview = document.getElementById('preview-diagnostico');
+    
+    if (diagnosticoInput && diagnosticoPreview) {
+        diagnosticoInput.addEventListener('input', function() {
+            syncTextField(this, diagnosticoPreview);
+        });
+        if (diagnosticoInput.value) {
+            syncTextField(diagnosticoInput, diagnosticoPreview);
+        }
+    }
+    
+    // Exploración Física
+    const exploracionInput = document.getElementById('exploracion-fisica');
+    const exploracionPreview = document.getElementById('preview-exploracion');
+    
+    if (exploracionInput && exploracionPreview) {
+        exploracionInput.addEventListener('input', function() {
+            syncTextField(this, exploracionPreview);
+        });
+        if (exploracionInput.value) {
+            syncTextField(exploracionInput, exploracionPreview);
+        }
+    }
+    
+    // Tratamiento
+    const tratamientoInput = document.getElementById('tratamiento');
+    const tratamientoPreview = document.getElementById('preview-tratamiento');
+    
+    if (tratamientoInput && tratamientoPreview) {
+        tratamientoInput.addEventListener('input', function() {
+            syncTextField(this, tratamientoPreview);
+        });
+        if (tratamientoInput.value) {
+            syncTextField(tratamientoInput, tratamientoPreview);
+        }
+    }
+    
+    // ==============================================================================
+    // 2. SINCRONIZACIÓN DE SIGNOS VITALES
+    // ==============================================================================
+    
+    const signosMap = [
+        { input: 'temperatura', preview: 'preview-temp', unit: '°C' },
+        { input: 'frecuencia-cardiaca', preview: 'preview-fc', unit: 'lpm' },
+        { input: 'frecuencia-respiratoria', preview: 'preview-fr', unit: 'rpm' },
+        { input: 'presion-arterial', preview: 'preview-ta', unit: 'mmHg' },
+        { input: 'saturacion', preview: 'preview-sat', unit: '%' },
+        { input: 'peso', preview: 'preview-peso', unit: 'kg' },
+        { input: 'talla', preview: 'preview-talla', unit: 'm' },
+    ];
+    
+    signosMap.forEach(signo => {
+        const input = document.getElementById(signo.input);
+        const preview = document.getElementById(signo.preview);
+        
+        if (input && preview) {
+            input.addEventListener('input', function() {
+                const span = preview.querySelector('span');
+                if (this.value) {
+                    span.textContent = this.value + ' ' + signo.unit;
+                    preview.classList.remove('empty');
+                } else {
+                    span.textContent = '--';
+                }
+            });
+        }
+    });
+    
+    // ==============================================================================
+    // 3. CÁLCULO AUTOMÁTICO DE IMC
+    // ==============================================================================
+    
+    const pesoInput = document.getElementById('peso');
+    const tallaInput = document.getElementById('talla');
+    const imcInput = document.getElementById('imc');
+    const imcPreview = document.getElementById('preview-imc');
+    
+    function calcularIMC() {
+        if (pesoInput && tallaInput && imcInput && imcPreview) {
+            const peso = parseFloat(pesoInput.value);
+            const talla = parseFloat(tallaInput.value);
+            
+            if (peso > 0 && talla > 0) {
+                const imc = peso / (talla * talla);
+                const imcFormateado = imc.toFixed(2);
+                
+                // Actualizar input
+                imcInput.value = imcFormateado;
+                
+                // Actualizar preview
+                const span = imcPreview.querySelector('span');
+                span.textContent = imcFormateado;
+                
+                // Clasificación del IMC
+                let clasificacion = '';
+                let colorClass = '';
+                
+                if (imc < 18.5) {
+                    clasificacion = '(Bajo peso)';
+                    colorClass = 'text-warning';
+                } else if (imc < 25) {
+                    clasificacion = '(Normal)';
+                    colorClass = 'text-success';
+                } else if (imc < 30) {
+                    clasificacion = '(Sobrepeso)';
+                    colorClass = 'text-warning';
+                } else {
+                    clasificacion = '(Obesidad)';
+                    colorClass = 'text-danger';
+                }
+                
+                span.innerHTML = `${imcFormateado} <small class="${colorClass}">${clasificacion}</small>`;
+            } else {
+                imcInput.value = '';
+                const span = imcPreview.querySelector('span');
+                span.textContent = '--';
+            }
+        }
+    }
+    
+    if (pesoInput) {
+        pesoInput.addEventListener('input', calcularIMC);
+    }
+    
+    if (tallaInput) {
+        tallaInput.addEventListener('input', calcularIMC);
+    }
+    
+    // ==============================================================================
+    // 4. FUNCIÓN AUXILIAR: SINCRONIZAR CAMPOS DE TEXTO
+    // ==============================================================================
+    
+    function syncTextField(inputElement, previewElement) {
+        const value = inputElement.value.trim();
+        
+        if (value) {
+            // Reemplazar saltos de línea por <br>
+            const formattedValue = value.replace(/\n/g, '<br>');
+            previewElement.innerHTML = formattedValue;
+            previewElement.classList.remove('empty');
+            
+            // Efecto de typing
+            previewElement.classList.add('typing');
+            setTimeout(() => {
+                previewElement.classList.remove('typing');
+            }, 300);
+        } else {
+            // Si está vacío, mostrar placeholder
+            const placeholders = {
+                'preview-motivo': '(El médico está escribiendo...)',
+                'preview-diagnostico': '(Esperando diagnóstico...)',
+                'preview-exploracion': '(Esperando exploración...)',
+                'preview-tratamiento': '(Esperando indicaciones...)',
+            };
+            
+            previewElement.textContent = placeholders[previewElement.id] || '';
+            previewElement.classList.add('empty');
+        }
+    }
+    
+    // ==============================================================================
+    // 5. BOTÓN DE GRABAR VOZ (AHORA CON FUNCIONALIDAD REAL)
+    // ==============================================================================
+    
+    // El botón ahora es manejado por grabacion_ia.js
+    // Ya no es un placeholder - la funcionalidad completa está implementada
+    console.log('✓ Sistema de grabación IA activado (grabacion_ia.js)');
+    
+    // ==============================================================================
+    // 6. AUTO-SCROLL DE LA PREVIEW (OPCIONAL)
+    // ==============================================================================
+    
+    // Cuando el usuario escribe, hacer scroll en la preview si es necesario
+    const columnaPreview = document.querySelector('.columna-preview');
+    
+    function autoScrollPreview() {
+        if (columnaPreview) {
+            // Scroll suave hacia la sección que se está editando
+            const activeInput = document.activeElement;
+            if (activeInput && (activeInput.tagName === 'INPUT' || activeInput.tagName === 'TEXTAREA')) {
+                // Identificar qué sección está activa
+                const section = activeInput.closest('.soap-section');
+                if (section) {
+                    // Scroll en la preview (opcional)
+                    // columnaPreview.scrollTop = columnaPreview.scrollHeight / 3;
+                }
+            }
+        }
+    }
+    
+    // Listener global para inputs
+    document.querySelectorAll('input, textarea').forEach(el => {
+        el.addEventListener('focus', autoScrollPreview);
+    });
+    
+    // ==============================================================================
+    // 7. PACIENTE YA VINCULADO - Validacion antes de guardar
+    // ==============================================================================
+    
+    const formConsulta = document.getElementById('form-consulta');
+    if (formConsulta) {
+        formConsulta.addEventListener('submit', function(e) {
+            const motivo = document.getElementById('motivo-consulta').value.trim();
+            const diagnostico = document.getElementById('diagnostico').value.trim();
+            
+            if (!motivo) {
+                e.preventDefault();
+                alert('El motivo de consulta es obligatorio');
+                document.getElementById('motivo-consulta').focus();
+                return;
+            }
+            if (!diagnostico) {
+                e.preventDefault();
+                alert('El diagnostico es obligatorio');
+                document.getElementById('diagnostico').focus();
+                return;
+            }
+        });
+    }
+    
+    console.log('Gemelo Digital listo - Paciente vinculado');
+});
+</script>
+
+<!-- NOTA: El avatar Live2D ahora está en base.html (global en todas las páginas) -->
+
+<!-- ========================================================================
+     HERRAMIENTAS INTEGRADAS: Vademecum, Plantillas, Archivos, Tendencias
+     ======================================================================== -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    
+    // ===================== PLANTILLAS POR ESPECIALIDAD =====================
+    document.getElementById('btn-plantillas')?.addEventListener('click', async function() {
+        const panel = document.getElementById('panel-plantillas');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        if (panel.style.display === 'block') {
+            const lista = document.getElementById('lista-plantillas');
+            lista.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm"></div> Cargando...</div>';
+            try {
+                const resp = await fetch('/consultorio/api/plantillas/');
+                const plantillas = await resp.json();
+                if (plantillas.length === 0) {
+                    lista.innerHTML = '<div class="text-muted text-center py-2">No hay plantillas creadas aun</div>';
+                    return;
+                }
+                lista.innerHTML = '';
+                plantillas.forEach(p => {
+                    const item = document.createElement('a');
+                    item.href = '#';
+                    item.className = 'list-group-item list-group-item-action py-2';
+                    item.innerHTML = `<strong>${p.nombre}</strong> <small class="text-muted">${p.especialidad || ''}</small>
+                        <br><small class="text-muted">${p.descripcion || ''}</small>`;
+                    item.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        try {
+                            const r = await fetch(`/consultorio/api/plantillas/${p.id}/usar/`, {
+                                method: 'POST', headers: {'X-CSRFToken': csrfToken}
+                            });
+                            const data = await r.json();
+                            if (data.ok) {
+                                if (data.subjetivo) { document.getElementById('motivo-consulta').value = data.subjetivo; document.getElementById('motivo-consulta').dispatchEvent(new Event('input', {bubbles:true})); }
+                                if (data.analisis) { document.getElementById('exploracion-fisica').value = data.analisis; document.getElementById('exploracion-fisica').dispatchEvent(new Event('input', {bubbles:true})); }
+                                if (data.plan) { document.getElementById('tratamiento').value = data.plan; document.getElementById('tratamiento').dispatchEvent(new Event('input', {bubbles:true})); }
+                                panel.style.display = 'none';
+                            }
+                        } catch(err) { console.error('Error aplicando plantilla:', err); }
+                    });
+                    lista.appendChild(item);
+                });
+            } catch(err) { lista.innerHTML = '<div class="text-danger text-center py-2">Error al cargar plantillas</div>'; }
+        }
+    });
+    
+    // ===================== VADEMECUM INTEGRADO =====================
+    document.getElementById('btn-vademecum-toggle')?.addEventListener('click', function() {
+        const panel = document.getElementById('panel-vademecum');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        if (panel.style.display === 'block') document.getElementById('buscar-vademecum').focus();
+    });
+    
+    let vademecumTimeout;
+    document.getElementById('buscar-vademecum')?.addEventListener('input', function() {
+        clearTimeout(vademecumTimeout);
+        const termino = this.value.trim();
+        const resultados = document.getElementById('resultados-vademecum');
+        if (termino.length < 2) { resultados.innerHTML = ''; return; }
+        vademecumTimeout = setTimeout(async () => {
+            try {
+                const resp = await fetch(`/consultorio/api/buscar-vademecum/?q=${encodeURIComponent(termino)}`);
+                const meds = await resp.json();
+                resultados.innerHTML = '';
+                if (meds.length === 0) {
+                    resultados.innerHTML = '<div class="list-group-item text-muted">Sin resultados</div>';
+                    return;
+                }
+                meds.forEach(m => {
+                    const item = document.createElement('div');
+                    item.className = 'list-group-item list-group-item-action py-2';
+                    item.style.cursor = 'pointer';
+                    item.innerHTML = `
+                        <div class="d-flex justify-content-between">
+                            <strong>${m.nombre_generico}</strong>
+                            <small class="text-primary">${m.concentracion}</small>
+                        </div>
+                        <small class="text-muted">${m.presentacion} | ${m.via}</small>
+                        ${m.controlado ? '<span class="badge bg-danger ms-1">Controlado</span>' : ''}
+                        <div class="mt-1" style="font-size:0.8rem;">
+                            <strong>Dosis adulto:</strong> ${m.dosis_adulto || 'N/D'}<br>
+                            ${m.contraindicaciones ? '<strong class="text-danger">CI:</strong> ' + m.contraindicaciones.substring(0,100) + '<br>' : ''}
+                            ${m.interacciones ? '<strong class="text-warning">Interacciones:</strong> ' + m.interacciones.substring(0,100) : ''}
+                        </div>
+                    `;
+                    item.addEventListener('click', () => {
+                        // Insertar en tratamiento
+                        const trat = document.getElementById('tratamiento');
+                        if (trat) {
+                            const linea = `${m.nombre_generico} ${m.concentracion}, ${m.via}, ${m.dosis_adulto || ''}`;
+                            trat.value = trat.value ? trat.value + '\n' + linea : linea;
+                            trat.dispatchEvent(new Event('input', {bubbles:true}));
+                        }
+                    });
+                    resultados.appendChild(item);
+                });
+            } catch(err) { resultados.innerHTML = '<div class="text-danger">Error al buscar</div>'; }
+        }, 300);
+    });
+    
+    // ===================== ADJUNTAR ARCHIVOS =====================
+    document.getElementById('btn-adjuntar-archivo')?.addEventListener('click', function() {
+        const panel = document.getElementById('panel-adjuntar');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    });
+    
+    document.getElementById('btn-subir-archivo')?.addEventListener('click', async function() {
+        const archivo = document.getElementById('input-archivo-adjunto').files[0];
+        const pacienteId = document.getElementById('paciente_id').value;
+        const tipo = document.getElementById('tipo-archivo-adjunto').value;
+        const titulo = document.getElementById('titulo-archivo-adjunto').value || 'Sin titulo';
+        
+        if (!archivo) { alert('Seleccione un archivo'); return; }
+        if (!pacienteId) { alert('Seleccione un paciente primero'); return; }
+        
+        const formData = new FormData();
+        formData.append('archivo', archivo);
+        formData.append('paciente_id', pacienteId);
+        formData.append('tipo', tipo);
+        formData.append('titulo', titulo);
+        
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Subiendo...';
+        
+        try {
+            const resp = await fetch('/consultorio/api/subir-archivo/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: formData,
+            });
+            const data = await resp.json();
+            if (data.ok) {
+                const lista = document.getElementById('archivos-adjuntos-lista');
+                lista.innerHTML += `<div class="badge bg-success me-1 mb-1"><i class="fas fa-check me-1"></i>${data.titulo}</div>`;
+                document.getElementById('input-archivo-adjunto').value = '';
+                document.getElementById('titulo-archivo-adjunto').value = '';
+            } else {
+                alert('Error: ' + (data.error || 'No se pudo subir'));
+            }
+        } catch(err) { alert('Error de red al subir archivo'); }
+        
+        this.disabled = false;
+        this.innerHTML = '<i class="fas fa-upload me-1"></i>Subir Archivo';
+    });
+    
+    // ===================== TENDENCIAS SIGNOS VITALES =====================
+    document.getElementById('btn-historial-sv')?.addEventListener('click', function() {
+        const pacienteId = document.getElementById('paciente_id').value;
+        if (!pacienteId) { alert('Seleccione un paciente primero'); return; }
+        window.open(`/consultorio/paciente/${pacienteId}/signos-vitales/`, '_blank');
+    });
+});
+</script>
+
+{% endblock %}

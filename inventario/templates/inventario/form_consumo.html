@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3" style="max-width:700px">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'inventario:lista_consumo' %}" class="btn btn-sm btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h2 class="mb-0 fw-bold text-primary"><i class="bi bi-diagram-3 me-2"></i>{{ titulo }}</h2>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">Analito LIMS <span class="text-danger">*</span></label>
+            <select name="analito" class="form-select" required>
+              <option value="">— Seleccionar analito —</option>
+              {% for e in analitos %}
+                <option value="{{ e.pk }}" {% if consumo.analito_id == e.pk %}selected{% endif %}>
+                  {{ e.nombre }}
+                </option>
+              {% endfor %}
+            </select>
+            <small class="text-muted">Al validar resultados de este analito, se descuentan los reactivos indicados.</small>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">Reactivo <span class="text-danger">*</span></label>
+            <select name="reactivo" class="form-select" required>
+              <option value="">— Seleccionar reactivo —</option>
+              {% for r in reactivos %}
+                <option value="{{ r.pk }}" {% if consumo.reactivo_id == r.pk %}selected{% endif %}>
+                  {{ r.get_tipo_display }} — {{ r.nombre }} ({{ r.unidad_medida }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Cantidad por Prueba <span class="text-danger">*</span></label>
+            <input type="number" name="cantidad_por_prueba" class="form-control" required
+                   step="0.0001" min="0.0001"
+                   value="{{ consumo.cantidad_por_prueba|default:'' }}"
+                   placeholder="Ej. 0.025 (= 25µL)">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Unidad <span class="text-danger">*</span></label>
+            <select name="unidad" class="form-select" required>
+              {% for val, lbl in unidad_choices %}
+                <option value="{{ val }}" {% if consumo.unidad == val %}selected{% endif %}>{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="incluye_overhead_qc"
+                     id="overhead" {% if consumo.incluye_overhead_qc %}checked{% endif %}>
+              <label class="form-check-label" for="overhead">
+                <strong>Incluye overhead QC</strong>
+                <small class="text-muted d-block">Activa un factor extra para controles y calibradores.</small>
+              </label>
+            </div>
+          </div>
+
+          {% if consumo %}
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="activo"
+                     id="activo" {% if consumo.activo %}checked{% endif %}>
+              <label class="form-check-label" for="activo"><strong>Fórmula activa</strong></label>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+            <a href="{% url 'inventario:lista_consumo' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-save me-1"></i>Guardar Fórmula
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

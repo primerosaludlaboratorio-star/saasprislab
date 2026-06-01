@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Consultorio · Historial{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="mb-1">Historial clínico</h2>
+      <div class="text-muted">Paciente: <strong>{{ paciente.nombre_completo }}</strong></div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'core:buscar_paciente' %}">Buscar paciente</a>
+      <a class="btn btn-outline-secondary" href="{% url 'consultorio:lista_trabajo_medico' %}">Lista de Trabajo</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mt-3">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Fecha</th>
+              <th>Médico</th>
+              <th>CIE-10</th>
+              <th>Diagnóstico</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in consultas %}
+              <tr>
+                <td>{{ c.fecha_consulta|date:"Y-m-d H:i" }}</td>
+                <td>{{ c.medico.nombre_completo|default:"-" }}</td>
+                <td>{{ c.diagnostico_cie10|default:"-" }}</td>
+                <td>{{ c.diagnostico_principal|default:"-" }}</td>
+                <td>
+                  {% if c.cita_id %}
+                    <a href="{% url 'consultorio:nueva_consulta_soap' c.cita_id %}" class="btn btn-sm btn-outline-primary">Ver/Editar</a>
+                  {% else %}
+                    <a href="{% url 'consultorio:ver_consulta_detalle' c.id %}" class="btn btn-sm btn-outline-info">Ver</a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">Sin consultas registradas.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% if recetas %}
+  <div class="card shadow-sm mt-3">
+    <div class="card-header bg-light">
+      <h5 class="mb-0"><i class="fas fa-prescription-bottle-alt"></i> Recetas anteriores</h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Fecha</th>
+              <th>Folio</th>
+              <th>Médico</th>
+              <th>Diagnóstico</th>
+              <th>Ver PDF</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in recetas %}
+              <tr>
+                <td>{{ r.fecha_emision|date:"Y-m-d H:i" }}</td>
+                <td>{{ r.folio_receta|default:"—" }}</td>
+                <td>{{ r.medico_nombre_completo|default:r.medico.nombre_completo|default:"—" }}</td>
+                <td>{{ r.diagnostico_principal|default:"—"|truncatewords:8 }}</td>
+                <td>
+                  {% if r.consulta %}
+                    <a href="{% url 'consultorio:pdf_receta_paciente' r.consulta.id %}" class="btn btn-sm btn-outline-primary" target="_blank">Ver PDF</a>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if ordenes_lab %}
+  <div class="card shadow-sm mt-3">
+    <div class="card-header bg-light">
+      <h5 class="mb-0"><i class="fas fa-vial"></i> Órdenes de laboratorio</h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for o in ordenes_lab %}
+              <tr>
+                <td>{{ o.fecha_creacion|date:"Y-m-d H:i" }}</td>
+                <td>{{ o.get_estado_display|default:o.estado|default:"—" }}</td>
+                <td>{{ o.total|default:"—" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if certificados %}
+  <div class="card shadow-sm mt-3">
+    <div class="card-header bg-light">
+      <h5 class="mb-0"><i class="fas fa-file-medical text-success"></i> Certificados médicos</h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Fecha</th>
+              <th>Folio</th>
+              <th>Tipo</th>
+              <th>Diagnóstico</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cert in certificados %}
+              <tr>
+                <td>{{ cert.fecha_emision|date:"Y-m-d H:i" }}</td>
+                <td>{{ cert.folio_certificado|default:"—" }}</td>
+                <td>{{ cert.get_tipo_certificado_display|default:cert.tipo_certificado }}</td>
+                <td>{{ cert.diagnostico|default:"—"|truncatewords:6 }}</td>
+                <td>
+                  <a href="{% url 'consultorio:ver_certificado' cert.id %}" class="btn btn-sm btn-outline-primary" target="_blank">Ver</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+

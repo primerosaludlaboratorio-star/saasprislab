@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Registrar Paciente{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2><i class="fas fa-user-plus"></i> Registrar Nuevo Paciente</h2>
+    
+    <form method="post" class="needs-validation">
+        {% csrf_token %}
+        
+        <!-- Datos del Paciente -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-id-card"></i> Datos del Paciente</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.nombres.id_for_label }}" class="form-label">{{ form.nombres.label }}</label>
+                        {{ form.nombres }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.apellido_paterno.id_for_label }}" class="form-label">{{ form.apellido_paterno.label }}</label>
+                        {{ form.apellido_paterno }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.apellido_materno.id_for_label }}" class="form-label">{{ form.apellido_materno.label }}</label>
+                        {{ form.apellido_materno }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.fecha_nacimiento.id_for_label }}" class="form-label">{{ form.fecha_nacimiento.label }}</label>
+                        {{ form.fecha_nacimiento }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.sexo.id_for_label }}" class="form-label">{{ form.sexo.label }}</label>
+                        {{ form.sexo }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.telefono.id_for_label }}" class="form-label">{{ form.telefono.label }}</label>
+                        {{ form.telefono }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+                        {{ form.email }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Consentimiento LFPDPPP -->
+        <div class="card shadow-sm mb-4 border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-shield-alt"></i> Privacidad y Consentimiento (LFPDPPP)</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-light border" role="alert">
+                    <h6 class="alert-heading"><i class="fas fa-info-circle"></i> Información importante</h6>
+                    <p class="mb-2">De conformidad con la <strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)</strong>, necesitamos su consentimiento para:</p>
+                    <ul class="mb-2">
+                        <li>Tratar sus datos personales para fines de atención médica</li>
+                        <li>Enviar comunicaciones sobre resultados de laboratorio y citas</li>
+                        <li>Contacto para promociones de salud y bienestar (marketing)</li>
+                    </ul>
+                    <hr>
+                    <p class="mb-0 small text-muted">Sus datos están protegidos y nunca serán compartidos con terceros sin su autorización expresa. Puede revocar este consentimiento en cualquier momento.</p>
+                </div>
+
+                {% if form.acepta_privacidad_y_tratamiento.errors %}
+                <div class="alert alert-danger mt-3" role="alert">
+                    {{ form.acepta_privacidad_y_tratamiento.errors.0 }}
+                </div>
+                {% endif %}
+                <div class="form-check mt-3">
+                    {{ form.acepta_privacidad_y_tratamiento }}
+                    <label class="form-check-label" for="{{ form.acepta_privacidad_y_tratamiento.id_for_label }}">
+                        <strong>{{ form.acepta_privacidad_y_tratamiento.label }}</strong>
+                        <span class="text-danger" title="Obligatorio">*</span>
+                    </label>
+                </div>
+                
+                <div class="form-check form-switch mt-3">
+                    {{ form.consentimiento_marketing }}
+                    <label class="form-check-label" for="{{ form.consentimiento_marketing.id_for_label }}">
+                        <strong>{{ form.consentimiento_marketing.label }}</strong>
+                        <span class="text-muted small">(opcional)</span>
+                    </label>
+                    <div class="form-text">{{ form.consentimiento_marketing.help_text }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save"></i> Guardar Paciente
+            </button>
+            <a href="{% url 'recepcion:dashboard_recepcion' %}" class="btn btn-secondary btn-lg">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

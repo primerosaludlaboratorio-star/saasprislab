@@ -1,0 +1,6 @@
+# TODO_CODE_SCAN — generado 2026-04-05T05:56:19Z (UTC)
+# Comando: python manage.py audit_dump_code_markers
+# Archivos recorridos (aprox.): 906
+# Coincidencias (cap 8000): 0
+# Formato: ruta:linea:contenido_truncado
+

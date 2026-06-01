@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Enviar Transferencia {{ transferencia.folio }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'logistica:lista_transferencias' %}">Transferencias</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'logistica:detalle_transferencia' transferencia.id %}">{{ transferencia.folio }}</a></li>
+      <li class="breadcrumb-item active">Enviar</li>
+    </ol>
+  </nav>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-warning text-dark rounded-top-4 fw-bold">
+          <i class="fas fa-paper-plane me-2"></i>Enviar Transferencia {{ transferencia.folio }}
+        </div>
+        <div class="card-body p-4">
+          <div class="alert alert-info rounded-3 mb-4">
+            <i class="fas fa-info-circle me-2"></i>
+            De <strong>{{ transferencia.sucursal_origen }}</strong>
+            a <strong>{{ transferencia.sucursal_destino }}</strong>
+          </div>
+
+          {% if messages %}
+            {% for msg in messages %}
+            <div class="alert alert-{{ msg.tags }} rounded-3">{{ msg }}</div>
+            {% endfor %}
+          {% endif %}
+
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Transportista / Responsable de envío</label>
+              <input type="text" name="transportista" class="form-control" required
+                     placeholder="Nombre del responsable del traslado"
+                     value="{{ transferencia.transportista|default:'' }}">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Vehículo / Referencia de envío</label>
+              <input type="text" name="vehiculo" class="form-control"
+                     placeholder="Ej: Camioneta blanca, placas ABC-123">
+            </div>
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Observaciones de salida</label>
+              <textarea name="observaciones_origen" class="form-control" rows="3"
+                        placeholder="Estado del empaque, temperatura al salir, etc."></textarea>
+            </div>
+
+            <div class="d-flex gap-3">
+              <button type="submit" class="btn btn-warning fw-bold flex-grow-1">
+                <i class="fas fa-paper-plane me-2"></i>Confirmar Envío
+              </button>
+              <a href="{% url 'logistica:detalle_transferencia' transferencia.id %}"
+                 class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

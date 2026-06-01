@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3" style="max-width:700px">
+  <h5 class="fw-bold mb-3"><i class="bi bi-bandaid me-2"></i>{{ titulo }}</h5>
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post">{% csrf_token %}
+        <div class="row g-3">
+          <div class="col-sm-4">
+            <label class="form-label fw-semibold">Código Interno *</label>
+            <input type="text" name="codigo_interno" value="{{ insumo.codigo_interno|default:'' }}" required class="form-control">
+          </div>
+          <div class="col-sm-8">
+            <label class="form-label fw-semibold">Nombre *</label>
+            <input type="text" name="nombre" value="{{ insumo.nombre|default:'' }}" required class="form-control">
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold">Tipo *</label>
+            <select name="tipo" class="form-select" required>
+              {% for val, lbl in tipo_choices %}
+              <option value="{{ val }}" {% if insumo.tipo == val %}selected{% endif %}>{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold">Unidad de Medida</label>
+            <select name="unidad_medida" class="form-select">
+              {% for val, lbl in unidad_choices %}
+              <option value="{{ val }}" {% if insumo.unidad_medida == val %}selected{% endif %}>{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold">Stock Mínimo</label>
+            <input type="number" step="0.01" name="stock_minimo" value="{{ insumo.stock_minimo|default:'0' }}" class="form-control">
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold">Stock Máximo</label>
+            <input type="number" step="0.01" name="stock_maximo" value="{{ insumo.stock_maximo|default:'' }}" class="form-control" placeholder="Opcional">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Descripción / Notas</label>
+            <textarea name="notas" rows="2" class="form-control">{{ insumo.notas|default:'' }}</textarea>
+          </div>
+          {% if insumo %}
+          <div class="col-12">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="activo" id="activo" {% if insumo.activo %}checked{% endif %}>
+              <label class="form-check-label" for="activo">Activo</label>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <div class="mt-3 d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Guardar</button>
+          <a href="{% url 'inventario:lista_insumos_consultorio' %}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

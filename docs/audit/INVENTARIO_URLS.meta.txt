@@ -1,0 +1,12 @@
+PRISLAB — Metadatos del inventario de URLs (anexo de auditoría)
+================================================================
+Generado (UTC): 2026-04-02T22:29:58.772805Z  (según campo "timestamp" dentro de INVENTARIO_URLS.txt)
+Archivo principal: docs/audit/INVENTARIO_URLS.txt  (JSON UTF-8, protocolo PRISLAB_URL_INVENTORY)
+Total de rutas registradas: 1784
+ROOT_URLCONF: config.urls
+INSTALLED_APPS (conteo en ejecución): 28
+
+Comando de regeneración (desde la raíz del repo):
+  python tools/audit_url_inventory.py --out docs/audit/INVENTARIO_URLS.txt
+
+Nota: el contenido técnico completo está en INVENTARIO_URLS.txt (lista "items": path, name, view, kind).

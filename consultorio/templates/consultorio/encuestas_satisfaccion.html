@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Encuestas de Satisfacción (NPS){% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-star-half-alt"></i> Encuestas de Satisfacción (NPS)</h2>
+            <p class="text-muted">
+                Mide la calidad del servicio con el Net Promoter Score. Envío automático post-consulta.
+            </p>
+        </div>
+    </div>
+
+    <!-- Score NPS General -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-4">
+                    <h2 class="display-4 fw-bold
+                        {% if nps_score >= 50 %}text-success
+                        {% elif nps_score >= 0 %}text-warning
+                        {% else %}text-danger{% endif %}">
+                        {{ nps_score }}
+                    </h2>
+                    <h5>NPS Score</h5>
+                    <p class="text-muted small mb-0">
+                        {% if nps_score >= 50 %}Excelente
+                        {% elif nps_score >= 0 %}Bueno
+                        {% else %}Necesita mejora{% endif %}
+                    </p>
+                    <div class="progress mt-2" style="height:10px;">
+                        <div class="progress-bar bg-danger" style="width:{{ pct_detractores }}%"></div>
+                        <div class="progress-bar bg-warning" style="width:{{ pct_pasivos }}%"></div>
+                        <div class="progress-bar bg-success" style="width:{{ pct_promotores }}%"></div>
+                    </div>
+                    <small class="text-muted">
+                        <span class="text-danger">Detractores: {{ pct_detractores }}%</span> |
+                        <span class="text-warning">Pasivos: {{ pct_pasivos }}%</span> |
+                        <span class="text-success">Promotores: {{ pct_promotores }}%</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center h-100">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <h3 class="mb-0">{{ stats.total_enviadas }}</h3>
+                    <small class="text-muted">Enviadas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center h-100">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <h3 class="text-success mb-0">{{ stats.respondidas }}</h3>
+                    <small class="text-muted">Respondidas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center h-100">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <h3 class="text-info mb-0">{{ stats.tasa_respuesta }}%</h3>
+                    <small class="text-muted">Tasa Respuesta</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center h-100">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <h3 class="text-primary mb-0">{{ stats.promedio_estrellas }}</h3>
+                    <small class="text-muted">Promedio Atención</small>
+                    <div>
+                        {% for i in "12345" %}
+                        <i class="fas fa-star {% if forloop.counter <= stats.promedio_estrellas %}text-warning{% else %}text-muted{% endif %}"></i>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dimensiones -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-md fa-2x text-primary mb-2"></i>
+                    <h5>{{ promedios.atencion_medico|default:"—" }}</h5>
+                    <small class="text-muted">Atención del Médico</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                    <h5>{{ promedios.tiempo_espera|default:"—" }}</h5>
+                    <small class="text-muted">Tiempo de Espera</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-building fa-2x text-info mb-2"></i>
+                    <h5>{{ promedios.instalaciones|default:"—" }}</h5>
+                    <small class="text-muted">Instalaciones</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-comment-medical fa-2x text-success mb-2"></i>
+                    <h5>{{ promedios.explicacion|default:"—" }}</h5>
+                    <small class="text-muted">Claridad Tratamiento</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comentarios recientes -->
+    {% if encuestas_recientes %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-comments"></i> Respuestas Recientes</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Paciente</th>
+                            <th>NPS</th>
+                            <th>Atención</th>
+                            <th>Comentarios</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in encuestas_recientes %}
+                        <tr>
+                            <td>{{ e.paciente.nombre_completo }}</td>
+                            <td>
+                                {% if e.puntuacion_nps >= 9 %}
+                                    <span class="badge bg-success">{{ e.puntuacion_nps }}</span>
+                                {% elif e.puntuacion_nps >= 7 %}
+                                    <span class="badge bg-warning text-dark">{{ e.puntuacion_nps }}</span>
+                                {% else %}
+                                    <span class="badge bg-danger">{{ e.puntuacion_nps }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% for i in "12345" %}
+                                <i class="fas fa-star {% if forloop.counter <= e.atencion_medico %}text-warning{% else %}text-muted{% endif %}" style="font-size:0.8em;"></i>
+                                {% endfor %}
+                            </td>
+                            <td>{{ e.comentarios|truncatewords:15|default:"Sin comentarios" }}</td>
+                            <td>{{ e.fecha_respuesta|date:"d/m/Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-star fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">Sin encuestas respondidas</h4>
+        <p class="text-muted">
+            Las encuestas se envían automáticamente después de cada consulta finalizada.
+            Puedes activar esta función en
+            <a href="{% url 'consultorio:configuracion_medico' %}">Configuración</a>.
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

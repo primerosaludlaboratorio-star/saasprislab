@@ -1,0 +1,461 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}PRIS Sentinel - Panel de Autocuración{% endblock %}
+
+{% block extra_css %}
+<style>
+    .sentinel-container { margin-top: 70px; }
+    .stat-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        transition: transform 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-3px); }
+    .stat-card .stat-number { font-size: 2.5rem; font-weight: 800; }
+    .stat-card .stat-label { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
+
+    .bg-sentinel-total { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+    .bg-sentinel-pendiente { background: linear-gradient(135deg, #f5af19, #f12711); color: #fff; }
+    .bg-sentinel-reparacion { background: linear-gradient(135deg, #4facfe, #00f2fe); color: #fff; }
+    .bg-sentinel-resuelto { background: linear-gradient(135deg, #43e97b, #38f9d7); color: #fff; }
+
+    .badge-critica { background: #dc3545; }
+    .badge-alta { background: #fd7e14; }
+    .badge-media { background: #ffc107; color: #333; }
+    .badge-baja { background: #20c997; }
+
+    .badge-pendiente { background: #f5af19; }
+    .badge-en_reparacion { background: #4facfe; }
+    .badge-solucionado { background: #43e97b; color: #333; }
+
+    .incidencia-row { cursor: pointer; transition: background 0.15s; }
+    .incidencia-row:hover { background: rgba(102, 126, 234, 0.05); }
+
+    .btn-cursor-fix {
+        background: linear-gradient(135deg, #00c853, #00e676);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 0.4rem 0.8rem;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .btn-cursor-fix:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0,200,83,0.4);
+        color: white;
+    }
+    .btn-cursor-fix i { margin-right: 4px; }
+
+    .btn-ssh-fix {
+        background: linear-gradient(135deg, #ff6f00, #ff8f00);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.72rem;
+        padding: 0.3rem 0.6rem;
+    }
+    .btn-ssh-fix:hover { opacity: 0.9; color: white; }
+
+    .sentinel-logo {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 900;
+    }
+    .pulse-critical {
+        animation: pulse-red 1.5s infinite;
+    }
+    @keyframes pulse-red {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+        50% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    }
+
+    .repair-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(0,200,83,0.1);
+        border: 1px solid rgba(0,200,83,0.3);
+        border-radius: 6px;
+        padding: 2px 8px;
+        font-size: 0.7rem;
+        color: #00c853;
+        font-weight: 600;
+    }
+    .repair-badge.no-repair {
+        background: rgba(158,158,158,0.1);
+        border-color: rgba(158,158,158,0.3);
+        color: #9e9e9e;
+    }
+
+    .ssh-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.75rem;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    .ssh-connected {
+        background: rgba(0,200,83,0.15);
+        color: #00c853;
+    }
+    .ssh-info {
+        background: rgba(102,126,234,0.1);
+        color: #667eea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid sentinel-container px-4">
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="sentinel-logo mb-0">
+                <i class="bi bi-shield-fill-check"></i> PRIS SENTINEL
+            </h2>
+            <p class="text-muted mb-0">
+                Panel de Autocuración Inteligente
+                <span class="ssh-info ms-2">
+                    <i class="bi bi-hdd-network"></i> Compatible con Remote SSH
+                </span>
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'consultorio:dashboard_consultorio' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Consultorio
+            </a>
+        </div>
+    </div>
+
+    <!-- ESTADÍSTICAS -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="stat-card p-3 bg-sentinel-total">
+                <div class="stat-number">{{ stats.total|default:0 }}</div>
+                <div class="stat-label">Total Incidencias</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card p-3 bg-sentinel-pendiente {% if stats.criticas > 0 %}pulse-critical{% endif %}">
+                <div class="stat-number">{{ stats.pendientes|default:0 }}</div>
+                <div class="stat-label">
+                    Pendientes
+                    {% if stats.criticas > 0 %}
+                        <span class="badge bg-danger ms-1">{{ stats.criticas }} CRITICAS</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card p-3 bg-sentinel-reparacion">
+                <div class="stat-number">{{ stats.en_reparacion|default:0 }}</div>
+                <div class="stat-label">En Reparación</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card p-3 bg-sentinel-resuelto">
+                <div class="stat-number">{{ stats.solucionados|default:0 }}</div>
+                <div class="stat-label">Solucionados</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-2">
+            <form method="GET" class="d-flex align-items-center gap-3 flex-wrap">
+                <span class="fw-bold text-muted small"><i class="bi bi-funnel"></i> Filtros:</span>
+                <select name="estado" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                    <option value="">Todos los estados</option>
+                    <option value="PENDIENTE" {% if estado_filtro == 'PENDIENTE' %}selected{% endif %}>Pendiente</option>
+                    <option value="EN_REPARACION" {% if estado_filtro == 'EN_REPARACION' %}selected{% endif %}>En Reparación</option>
+                    <option value="SOLUCIONADO" {% if estado_filtro == 'SOLUCIONADO' %}selected{% endif %}>Solucionado</option>
+                </select>
+                <select name="severidad" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                    <option value="">Toda severidad</option>
+                    <option value="CRITICA" {% if severidad_filtro == 'CRITICA' %}selected{% endif %}>Crítica</option>
+                    <option value="ALTA" {% if severidad_filtro == 'ALTA' %}selected{% endif %}>Alta</option>
+                    <option value="MEDIA" {% if severidad_filtro == 'MEDIA' %}selected{% endif %}>Media</option>
+                    <option value="BAJA" {% if severidad_filtro == 'BAJA' %}selected{% endif %}>Baja</option>
+                </select>
+                <select name="namespace" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                    <option value="">Todos los módulos</option>
+                    <option value="consultorio" {% if namespace_filtro == 'consultorio' %}selected{% endif %}>Consultorio</option>
+                    <option value="laboratorio" {% if namespace_filtro == 'laboratorio' %}selected{% endif %}>Laboratorio</option>
+                    <option value="farmacia" {% if namespace_filtro == 'farmacia' %}selected{% endif %}>Farmacia</option>
+                    <option value="core" {% if namespace_filtro == 'core' %}selected{% endif %}>Core</option>
+                    <option value="ia" {% if namespace_filtro == 'ia' %}selected{% endif %}>IA</option>
+                    <option value="pacientes" {% if namespace_filtro == 'pacientes' %}selected{% endif %}>Pacientes</option>
+                </select>
+                {% if estado_filtro or severidad_filtro or namespace_filtro %}
+                    <a href="{% url 'consultorio:sentinel_dashboard' %}" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-x-circle"></i> Limpiar
+                    </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- TABLA DE INCIDENCIAS -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-list-task"></i> Incidencias Registradas</span>
+            <span class="badge bg-light text-dark">{{ incidencias|length }} resultado{{ incidencias|length|pluralize:"s" }}</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="50">#</th>
+                            <th width="90">Severidad</th>
+                            <th width="100">Estado</th>
+                            <th width="80">Módulo</th>
+                            <th>Excepción / Descripción</th>
+                            <th width="100">Reparación</th>
+                            <th width="130">Fecha</th>
+                            <th width="200">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inc in incidencias %}
+                        <tr class="incidencia-row" onclick="window.location='{% url 'consultorio:sentinel_detalle' inc.id %}'">
+                            <td class="fw-bold text-muted">{{ inc.id }}</td>
+                            <td>
+                                <span class="badge badge-{{ inc.severidad|lower }}">
+                                    {{ inc.get_severidad_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ inc.estado|lower }}">
+                                    {{ inc.get_estado_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary text-uppercase" style="font-size:0.65rem;">
+                                    {{ inc.namespace }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="fw-bold small">{{ inc.tipo_excepcion|truncatechars:45 }}</div>
+                                {% if inc.descripcion_usuario %}
+                                    <div class="text-muted small"><i class="bi bi-chat-dots"></i> {{ inc.descripcion_usuario|truncatechars:50 }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if inc.contexto_reparacion %}
+                                    <span class="repair-badge">
+                                        <i class="bi bi-wrench"></i> IA Ready
+                                    </span>
+                                {% else %}
+                                    <span class="repair-badge no-repair">
+                                        <i class="bi bi-dash-circle"></i> Manual
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted">{{ inc.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            <td onclick="event.stopPropagation();">
+                                <div class="d-flex gap-1">
+                                    <button class="btn-cursor-fix" onclick="solucionarConCursor({{ inc.id }})" title="Generar prompt para Cursor Remote SSH">
+                                        <i class="bi bi-lightning-charge-fill"></i> SOLUCIONAR
+                                    </button>
+                                    <button class="btn-ssh-fix" onclick="copiarSSH({{ inc.id }})" title="Copiar comandos SSH rápidos">
+                                        <i class="bi bi-terminal"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-shield-check" style="font-size:3rem;"></i>
+                                <p class="mt-2 mb-0 fw-bold">Sistema Estable</p>
+                                <p class="small">Sin incidencias registradas. Todos los módulos operativos.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: SOLUCIONAR CON CURSOR -->
+<div class="modal fade" id="modalSolucionarCursor" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #00c853, #00e676);">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-lightning-charge-fill"></i> SOLUCIONAR CON CURSOR (Remote SSH)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Info de reparación -->
+                <div class="row g-3 mb-3" id="repair-info-row" style="display:none;">
+                    <div class="col-md-4">
+                        <div class="p-3 rounded" style="background: #f0faf0;">
+                            <small class="text-muted text-uppercase fw-bold">Archivo</small>
+                            <div class="fw-bold text-success" id="repair-archivo">—</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="p-3 rounded" style="background: #f0faf0;">
+                            <small class="text-muted text-uppercase fw-bold">Línea</small>
+                            <div class="fw-bold text-success" id="repair-linea">—</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 rounded" style="background: #f0faf0;">
+                            <small class="text-muted text-uppercase fw-bold">Función</small>
+                            <div class="fw-bold text-success" id="repair-funcion">—</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 rounded" style="background: #f0faf0;">
+                            <small class="text-muted text-uppercase fw-bold">Riesgo</small>
+                            <div class="fw-bold" id="repair-riesgo">—</div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-muted small mb-2">
+                    <i class="bi bi-info-circle"></i> 
+                    Copia este bloque y pégalo en el chat de Cursor conectado via <strong>Remote SSH</strong> a tu servidor Ubuntu.
+                    La IA abrirá el archivo correcto y aplicará la corrección directamente.
+                </p>
+                <textarea id="cursor-export-text" class="form-control font-monospace" rows="20" readonly
+                    style="font-size: 0.78rem; background: #1e1e2e; color: #d4d4d4; border: 2px solid #00c853;"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success btn-lg fw-bold" onclick="copiarAlPortapapeles()">
+                    <i class="bi bi-clipboard-check"></i> Copiar al Portapapeles
+                </button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: SSH Rápido -->
+<div class="modal fade" id="modalSSH" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #ff6f00, #ff8f00);">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-terminal-fill"></i> Comandos SSH Rápidos
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">Ejecuta estos comandos directamente en la terminal SSH del servidor.</p>
+                <pre id="ssh-commands" style="background: #1e1e1e; color: #00e676; padding: 1rem; border-radius: 8px; font-size: 0.8rem;"></pre>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-warning fw-bold" onclick="copiarSSHText()">
+                    <i class="bi bi-clipboard"></i> Copiar
+                </button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function solucionarConCursor(incidenciaId) {
+        try {
+            const response = await fetch(`/consultorio/api/sentinel/exportar/${incidenciaId}/`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                document.getElementById('cursor-export-text').value = data.bloque_cursor;
+
+                // Mostrar info de reparación si existe
+                const infoRow = document.getElementById('repair-info-row');
+                if (data.tiene_reparacion && data.reparacion) {
+                    document.getElementById('repair-archivo').textContent = data.reparacion.archivo || '—';
+                    document.getElementById('repair-linea').textContent = data.reparacion.linea || '—';
+                    document.getElementById('repair-funcion').textContent = data.reparacion.funcion || '—';
+                    const riesgoEl = document.getElementById('repair-riesgo');
+                    riesgoEl.textContent = data.reparacion.riesgo || '—';
+                    riesgoEl.className = 'fw-bold ' + (
+                        data.reparacion.riesgo === 'ALTO' ? 'text-danger' :
+                        data.reparacion.riesgo === 'MEDIO' ? 'text-warning' : 'text-success'
+                    );
+                    infoRow.style.display = 'flex';
+                } else {
+                    infoRow.style.display = 'none';
+                }
+
+                new bootstrap.Modal(document.getElementById('modalSolucionarCursor')).show();
+            } else {
+                Swal.fire('Error', data.message || 'No se pudo exportar', 'error');
+            }
+        } catch (e) {
+            console.error('Error exportando:', e);
+            Swal.fire('Error', 'Fallo de conexión al servidor', 'error');
+        }
+    }
+
+    async function copiarSSH(incidenciaId) {
+        try {
+            const response = await fetch(`/consultorio/api/sentinel/ssh/${incidenciaId}/`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                document.getElementById('ssh-commands').textContent = data.comandos_ssh;
+                new bootstrap.Modal(document.getElementById('modalSSH')).show();
+            } else {
+                Swal.fire('Error', data.message || 'No se pudo generar comandos SSH', 'error');
+            }
+        } catch (e) {
+            console.error('Error:', e);
+            Swal.fire('Error', 'Fallo de conexión', 'error');
+        }
+    }
+
+    function copiarAlPortapapeles() {
+        const textarea = document.getElementById('cursor-export-text');
+        textarea.select();
+        navigator.clipboard.writeText(textarea.value).then(() => {
+            Swal.fire({
+                icon: 'success',
+                title: 'Listo para Cursor',
+                text: 'Prompt copiado. Pégalo en Cursor conectado via Remote SSH.',
+                timer: 3000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        });
+    }
+
+    function copiarSSHText() {
+        const text = document.getElementById('ssh-commands').textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            Swal.fire({
+                icon: 'success',
+                title: 'Comandos SSH copiados',
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        });
+    }
+</script>
+{% endblock %}

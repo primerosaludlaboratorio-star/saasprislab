@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load static humanize %}
+{% block title %}Nómina — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-money-check-alt text-success me-2"></i>Módulo de Nómina</h2>
+      <small class="text-muted">Gestión de períodos y pagos al personal</small>
+    </div>
+    <a href="{% url 'nomina_crear_periodo' %}" class="btn btn-success">
+      <i class="fas fa-plus me-1"></i>Nuevo Período
+    </a>
+  </div>
+
+  <!-- Resumen del último período -->
+  {% if ultimo %}
+  <div class="row g-3 mb-4">
+    <div class="col-12">
+      <div class="alert alert-info d-flex justify-content-between align-items-center">
+        <div><strong>Último período:</strong> {{ ultimo.nombre }} —
+          <span class="badge bg-{% if ultimo.estado == 'PAGADO' %}success{% elif ultimo.estado == 'ABIERTO' %}warning text-dark{% else %}secondary{% endif %}">
+            {{ ultimo.get_estado_display }}
+          </span>
+        </div>
+        <a href="{% url 'nomina_detalle_periodo' ultimo.pk %}" class="btn btn-sm btn-outline-primary">Ver detalle →</a>
+      </div>
+    </div>
+    {% if estadisticas %}
+    <div class="col-md-3">
+      <div class="card text-center border-0 shadow-sm">
+        <div class="card-body">
+          <div class="h3 fw-bold text-success">${{ estadisticas.total_neto|floatformat:2|intcomma|default:"0.00" }}</div>
+          <div class="text-muted small">Neto a pagar</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center border-0 shadow-sm">
+        <div class="card-body">
+          <div class="h3 fw-bold text-primary">${{ estadisticas.total_percepciones|floatformat:2|intcomma|default:"0.00" }}</div>
+          <div class="text-muted small">Total percepciones</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center border-0 shadow-sm">
+        <div class="card-body">
+          <div class="h3 fw-bold text-danger">${{ estadisticas.total_deducciones|floatformat:2|intcomma|default:"0.00" }}</div>
+          <div class="text-muted small">Total deducciones</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center border-0 shadow-sm">
+        <div class="card-body">
+          <div class="h3 fw-bold">{{ estadisticas.num_empleados|default:0 }}</div>
+          <div class="text-muted small">Empleados en nómina</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Historial de períodos -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-white fw-bold">Períodos recientes</div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Período</th><th>Frecuencia</th><th>Fechas</th><th>Estado</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in periodos %}
+          <tr>
+            <td class="fw-semibold">{{ p.nombre }}</td>
+            <td>{{ p.get_frecuencia_display }}</td>
+            <td><small>{{ p.fecha_inicio|date:"d/m/Y" }} — {{ p.fecha_fin|date:"d/m/Y" }}</small></td>
+            <td>
+              <span class="badge bg-{% if p.estado == 'PAGADO' %}success{% elif p.estado == 'ABIERTO' %}warning text-dark{% elif p.estado == 'CERRADO' %}info{% else %}secondary{% endif %}">
+                {{ p.get_estado_display }}
+              </span>
+            </td>
+            <td>
+              <a href="{% url 'nomina_detalle_periodo' p.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-eye"></i> Ver
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-4">No hay períodos registrados. Crea el primero.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

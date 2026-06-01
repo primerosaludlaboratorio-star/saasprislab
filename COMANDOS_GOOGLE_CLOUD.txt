@@ -1,0 +1,310 @@
+================================================================================
+  🚀 COMANDOS EXACTOS PARA DESPLIEGUE EN GOOGLE CLOUD
+  PRISLAB V5.0 - Estrategia Híbrida (WhiteNoise + Google Drive)
+================================================================================
+
+IMPORTANTE:
+- Copia y pega CADA comando EN ORDEN
+- Reemplaza los valores entre < > con tus datos reales
+- Ejecuta estos comandos en Google Cloud Shell (https://shell.cloud.google.com)
+
+================================================================================
+PASO 1: CONFIGURACIÓN INICIAL DEL PROYECTO
+================================================================================
+
+# 1.1 Crear proyecto nuevo (o usar uno existente)
+gcloud projects create <TU-PROYECTO-ID> --name="PRISLAB V5"
+
+# 1.2 Configurar proyecto activo
+gcloud config set project <TU-PROYECTO-ID>
+
+# 1.3 Habilitar facturación (debes tener una cuenta de facturación)
+# Ve a: https://console.cloud.google.com/billing
+# Vincula tu cuenta de facturación al proyecto
+
+# 1.4 Habilitar APIs necesarias
+gcloud services enable \
+    run.googleapis.com \
+    sqladmin.googleapis.com \
+    secretmanager.googleapis.com \
+    storage.googleapis.com \
+    drive.googleapis.com \
+    vision.googleapis.com \
+    speech.googleapis.com \
+    generativelanguage.googleapis.com
+
+================================================================================
+PASO 2: CREAR INSTANCIA DE CLOUD SQL (PostgreSQL)
+================================================================================
+
+# 2.1 Crear instancia de PostgreSQL
+gcloud sql instances create prislab-db \
+    --database-version=POSTGRES_15 \
+    --tier=db-f1-micro \
+    --region=us-central1 \
+    --storage-type=SSD \
+    --storage-size=10GB \
+    --backup-start-time=03:00 \
+    --maintenance-window-day=SUN \
+    --maintenance-window-hour=04 \
+    --enable-bin-log
+
+# 2.2 Crear base de datos
+gcloud sql databases create prislab_v5 \
+    --instance=prislab-db
+
+# 2.3 Crear usuario de la base de datos
+gcloud sql users create prislab_user \
+    --instance=prislab-db \
+    --password=<ELIGE-UN-PASSWORD-SEGURO>
+
+# 2.4 Obtener el connection name (GUÁRDALO)
+gcloud sql instances describe prislab-db --format="value(connectionName)"
+# Output: <TU-PROYECTO-ID>:us-central1:prislab-db
+
+================================================================================
+PASO 3: CONFIGURAR GOOGLE DRIVE PARA ARCHIVOS MEDIA
+================================================================================
+
+# 3.1 Ir a Google Drive en tu navegador
+# Ve a: https://drive.google.com
+
+# 3.2 Crear carpeta "PRISLAB_MEDIA"
+# Haz clic derecho > Compartir > Copiar enlace
+# El enlace será: https://drive.google.com/drive/folders/1ABC...XYZ
+# El FOLDER_ID es: 1ABC...XYZ (la parte después de /folders/)
+# GUARDA ESTE ID
+
+# 3.3 Crear Service Account para acceder a Drive
+gcloud iam service-accounts create prislab-drive-sa \
+    --display-name="PRISLAB Drive Service Account"
+
+# 3.4 Crear key para el Service Account
+gcloud iam service-accounts keys create drive-credentials.json \
+    --iam-account=prislab-drive-sa@<TU-PROYECTO-ID>.iam.gserviceaccount.com
+
+# 3.5 Compartir la carpeta de Drive con el Service Account
+# Ve a Drive > Carpeta "PRISLAB_MEDIA" > Compartir > Agregar:
+# Email: prislab-drive-sa@<TU-PROYECTO-ID>.iam.gserviceaccount.com
+# Permisos: Editor
+
+================================================================================
+PASO 4: OBTENER API KEY DE GOOGLE GEMINI
+================================================================================
+
+# 4.1 Ir a Google AI Studio
+# Ve a: https://aistudio.google.com/app/apikey
+
+# 4.2 Crear nueva API Key
+# Haz clic en "Create API Key"
+# GUARDA LA API KEY
+
+================================================================================
+PASO 5: GUARDAR SECRETOS EN SECRET MANAGER
+================================================================================
+
+# 5.1 Generar SECRET_KEY de Django
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+# GUARDA EL OUTPUT
+
+# 5.2 Guardar secretos (reemplaza <VALORES> con tus datos reales)
+
+# SECRET_KEY de Django
+echo -n "<TU-SECRET-KEY-GENERADA>" | gcloud secrets create django-secret-key --data-file=-
+
+# Password de la base de datos
+echo -n "<TU-DB-PASSWORD>" | gcloud secrets create db-password --data-file=-
+
+# API Key de Gemini
+echo -n "<TU-GEMINI-API-KEY>" | gcloud secrets create gemini-api-key --data-file=-
+
+# Folder ID de Google Drive
+echo -n "<TU-DRIVE-FOLDER-ID>" | gcloud secrets create drive-folder-id --data-file=-
+
+# Credenciales de Google Drive (desde el archivo JSON)
+gcloud secrets create drive-credentials --data-file=drive-credentials.json
+
+# 5.3 Verificar secretos creados
+gcloud secrets list
+
+================================================================================
+PASO 6: CONSTRUIR Y DESPLEGAR A CLOUD RUN
+================================================================================
+
+# 6.1 Subir código a Cloud Shell
+# En tu computadora local, ejecuta:
+# gcloud cloud-shell scp -r C:\Users\jonil\Desktop\PRISLAB_SaaS ~/prislab
+
+# O usa el editor de Cloud Shell para subir los archivos
+
+# 6.2 Navegar al directorio del proyecto
+cd ~/prislab
+
+# 6.3 Construir imagen Docker
+gcloud builds submit --tag gcr.io/<TU-PROYECTO-ID>/prislab-v5
+
+# 6.4 Desplegar a Cloud Run
+gcloud run deploy prislab-v5 \
+    --image gcr.io/<TU-PROYECTO-ID>/prislab-v5 \
+    --platform managed \
+    --region us-central1 \
+    --allow-unauthenticated \
+    --memory 512Mi \
+    --cpu 1 \
+    --timeout 60 \
+    --max-instances 10 \
+    --set-env-vars "PROD=1,GOOGLE_CLOUD_PROJECT=<TU-PROYECTO-ID>,CLOUD_SQL_CONNECTION_NAME=<TU-CONNECTION-NAME>" \
+    --set-secrets "SECRET_KEY=django-secret-key:latest,DB_PASSWORD=db-password:latest,GOOGLE_API_KEY=gemini-api-key:latest,GOOGLE_DRIVE_FOLDER_ID=drive-folder-id:latest,GOOGLE_DRIVE_CREDENTIALS=drive-credentials:latest" \
+    --add-cloudsql-instances <TU-CONNECTION-NAME>
+
+# Espera a que termine el despliegue (2-5 minutos)
+
+================================================================================
+PASO 7: EJECUTAR MIGRACIONES EN LA BASE DE DATOS DE PRODUCCIÓN
+================================================================================
+
+# 7.1 Conectar Cloud Run con Cloud SQL y ejecutar migraciones
+gcloud run jobs create prislab-migrate \
+    --image gcr.io/<TU-PROYECTO-ID>/prislab-v5 \
+    --region us-central1 \
+    --set-env-vars "PROD=1,GOOGLE_CLOUD_PROJECT=<TU-PROYECTO-ID>,CLOUD_SQL_CONNECTION_NAME=<TU-CONNECTION-NAME>" \
+    --set-secrets "SECRET_KEY=django-secret-key:latest,DB_PASSWORD=db-password:latest,GOOGLE_API_KEY=gemini-api-key:latest,GOOGLE_DRIVE_FOLDER_ID=drive-folder-id:latest,GOOGLE_DRIVE_CREDENTIALS=drive-credentials:latest" \
+    --add-cloudsql-instances <TU-CONNECTION-NAME> \
+    --command "python,manage.py,migrate"
+
+# 7.2 Ejecutar el job de migración
+gcloud run jobs execute prislab-migrate --region us-central1
+
+# 7.3 Crear superusuario (opcional, para acceder al admin)
+gcloud run jobs create prislab-createsuperuser \
+    --image gcr.io/<TU-PROYECTO-ID>/prislab-v5 \
+    --region us-central1 \
+    --set-env-vars "PROD=1,GOOGLE_CLOUD_PROJECT=<TU-PROYECTO-ID>,CLOUD_SQL_CONNECTION_NAME=<TU-CONNECTION-NAME>" \
+    --set-secrets "SECRET_KEY=django-secret-key:latest,DB_PASSWORD=db-password:latest" \
+    --add-cloudsql-instances <TU-CONNECTION-NAME> \
+    --command "python,manage.py,createsuperuser,--noinput,--username=admin,--email=admin@prislab.com"
+
+# Si no funciona, conecta por Cloud SQL Proxy localmente y crea el superuser
+
+================================================================================
+PASO 8: VERIFICAR DESPLIEGUE
+================================================================================
+
+# 8.1 Obtener URL del servicio
+gcloud run services describe prislab-v5 \
+    --platform managed \
+    --region us-central1 \
+    --format "value(status.url)"
+
+# 8.2 Abrir en navegador
+# Copia la URL y ábrela en tu navegador
+# Deberías ver la página de login de PRISLAB
+
+# 8.3 Ver logs en tiempo real
+gcloud run services logs read prislab-v5 \
+    --platform managed \
+    --region us-central1 \
+    --follow
+
+================================================================================
+PASO 9: POBLAR BASE DE DATOS CON DATOS DE PRUEBA
+================================================================================
+
+# 9.1 Conectar a la base de datos con Cloud SQL Proxy
+# En tu computadora local:
+
+# Descargar Cloud SQL Proxy
+# Windows: https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.9.0/cloud-sql-proxy.x64.exe
+# Renombrar a: cloud-sql-proxy.exe
+
+# Conectar a la base de datos
+cloud-sql-proxy.exe <TU-CONNECTION-NAME>
+
+# 9.2 En otra terminal, conectar con psql o ejecutar script de datos
+# Activar entorno virtual
+.\venv\Scripts\activate
+
+# Configurar variables de entorno para conectar a Cloud SQL
+$env:DB_HOST="127.0.0.1"
+$env:DB_PORT="5432"
+$env:DB_NAME="prislab_v5"
+$env:DB_USER="prislab_user"
+$env:DB_PASSWORD="<TU-DB-PASSWORD>"
+
+# Ejecutar script de datos de prueba
+python scripts/crear_datos_omega.py
+
+================================================================================
+PASO 10: CONFIGURAR DOMINIO PERSONALIZADO (OPCIONAL)
+================================================================================
+
+# 10.1 Verificar dominio en Google Cloud
+# Ve a: https://console.cloud.google.com/run/domains
+
+# 10.2 Mapear dominio a Cloud Run
+gcloud run domain-mappings create \
+    --service prislab-v5 \
+    --domain <TU-DOMINIO.com> \
+    --region us-central1
+
+# 10.3 Configurar DNS según las instrucciones de Google
+
+================================================================================
+✅ DESPLIEGUE COMPLETADO
+================================================================================
+
+Tu aplicación PRISLAB V5.0 ahora está corriendo en Google Cloud con:
+
+✅ WhiteNoise sirviendo archivos estáticos (CSS, JS, imágenes)
+✅ Google Drive almacenando archivos MEDIA (10TB)
+✅ Cloud SQL con PostgreSQL
+✅ Secret Manager protegiendo credenciales
+✅ Google Gemini para IA
+✅ Cloud Run escalando automáticamente
+
+URL de tu aplicación: <LA URL QUE OBTUVISTE EN EL PASO 8.1>
+
+================================================================================
+COMANDOS ÚTILES PARA MANTENIMIENTO
+================================================================================
+
+# Ver logs en tiempo real
+gcloud run services logs read prislab-v5 --region us-central1 --follow
+
+# Actualizar servicio después de cambios
+gcloud builds submit --tag gcr.io/<TU-PROYECTO-ID>/prislab-v5
+gcloud run deploy prislab-v5 --image gcr.io/<TU-PROYECTO-ID>/prislab-v5 --region us-central1
+
+# Ver estado del servicio
+gcloud run services describe prislab-v5 --region us-central1
+
+# Ver tráfico y métricas
+gcloud run services describe prislab-v5 --region us-central1 --format="value(status.traffic)"
+
+# Conectar a la base de datos
+cloud-sql-proxy.exe <TU-CONNECTION-NAME>
+
+================================================================================
+SOPORTE Y TROUBLESHOOTING
+================================================================================
+
+Si encuentras errores:
+
+1. Ver logs detallados:
+   gcloud run services logs read prislab-v5 --region us-central1 --limit=50
+
+2. Verificar que los secretos estén accesibles:
+   gcloud secrets versions access latest --secret="django-secret-key"
+
+3. Verificar conexión a Cloud SQL:
+   gcloud sql instances describe prislab-db
+
+4. Verificar que la imagen se construyó correctamente:
+   gcloud container images list --repository=gcr.io/<TU-PROYECTO-ID>
+
+5. Si hay errores de migración, ejecuta:
+   gcloud run jobs execute prislab-migrate --region us-central1
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================

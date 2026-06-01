@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nuevo Cliente - Contabilidad - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-user-plus text-primary me-2"></i>
+            Nuevo Cliente de Facturación
+        </h1>
+        <a href="{% url 'contabilidad:lista_clientes' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Regresar
+        </a>
+    </div>
+
+    <!-- Formulario -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Paciente (Opcional) -->
+                        <div class="mb-3">
+                            <label class="form-label">Paciente Asociado (Opcional)</label>
+                            <select name="paciente_id" class="form-select">
+                                <option value="">-- Sin paciente asociado --</option>
+                                {% for paciente in pacientes %}
+                                <option value="{{ paciente.id }}">{{ paciente.nombre_completo }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">
+                                Si el cliente es un paciente existente, selecciónalo aquí
+                            </small>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Datos Fiscales -->
+                        <h5 class="mb-3">Datos Fiscales</h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">RFC *</label>
+                                <input type="text" name="rfc" class="form-control text-uppercase" required maxlength="13" placeholder="XAXX010101000">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Código Postal *</label>
+                                <input type="text" name="codigo_postal" class="form-control" required maxlength="5" placeholder="45050">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Razón Social *</label>
+                            <input type="text" name="razon_social" class="form-control" required maxlength="250" placeholder="EMPRESA SA DE CV">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email *</label>
+                            <input type="email" name="email" class="form-control" required placeholder="facturacion@empresa.com">
+                            <small class="form-text text-muted">
+                                A este correo se enviarán las facturas
+                            </small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Régimen Fiscal *</label>
+                                <select name="regimen_fiscal" class="form-select" required>
+                                    <option value="">-- Seleccionar --</option>
+                                    <option value="601">601 - General de Ley Personas Morales</option>
+                                    <option value="603">603 - Personas Morales con Fines no Lucrativos</option>
+                                    <option value="605">605 - Sueldos y Salarios e Ingresos Asimilados a Salarios</option>
+                                    <option value="606">606 - Arrendamiento</option>
+                                    <option value="608">608 - Demás ingresos</option>
+                                    <option value="609">609 - Consolidación</option>
+                                    <option value="610">610 - Residentes en el Extranjero</option>
+                                    <option value="611">611 - Ingresos por Dividendos</option>
+                                    <option value="612">612 - Personas Físicas con Actividades Empresariales</option>
+                                    <option value="614">614 - Ingresos por intereses</option>
+                                    <option value="616">616 - Sin obligaciones fiscales</option>
+                                    <option value="620">620 - Sociedades Cooperativas de Producción</option>
+                                    <option value="621">621 - Incorporación Fiscal</option>
+                                    <option value="622">622 - Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras</option>
+                                    <option value="623">623 - Opcional para Grupos de Sociedades</option>
+                                    <option value="624">624 - Coordinados</option>
+                                    <option value="625">625 - Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas</option>
+                                    <option value="626">626 - Régimen Simplificado de Confianza</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Uso CFDI por Defecto *</label>
+                                <select name="uso_cfdi_default" class="form-select" required>
+                                    <option value="G01">G01 - Adquisición de mercancías</option>
+                                    <option value="G02">G02 - Devoluciones, descuentos o bonificaciones</option>
+                                    <option value="G03">G03 - Gastos en general</option>
+                                    <option value="I01">I01 - Construcciones</option>
+                                    <option value="I02">I02 - Mobilario y equipo de oficina</option>
+                                    <option value="I03">I03 - Equipo de transporte</option>
+                                    <option value="I04">I04 - Equipo de cómputo y accesorios</option>
+                                    <option value="I05">I05 - Dados, troqueles, moldes, matrices y herramental</option>
+                                    <option value="I06">I06 - Comunicaciones telefónicas</option>
+                                    <option value="I07">I07 - Comunicaciones satelitales</option>
+                                    <option value="I08">I08 - Otra maquinaria y equipo</option>
+                                    <option value="D01" selected>D01 - Honorarios médicos, dentales y gastos hospitalarios</option>
+                                    <option value="D02">D02 - Gastos médicos por incapacidad</option>
+                                    <option value="D03">D03 - Gastos funerales</option>
+                                    <option value="D04">D04 - Donativos</option>
+                                    <option value="S01">S01 - Sin efectos fiscales</option>
+                                    <option value="CP01">CP01 - Pagos</option>
+                                    <option value="CN01">CN01 - Nómina</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'contabilidad:lista_clientes' %}" class="btn btn-secondary">
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> Guardar Cliente
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

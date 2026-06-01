@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}IA de Reactivación — Marketing{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <div>
+      <h4 class="mb-0">🤖 IA de Reactivación de Pacientes</h4>
+      <p class="text-muted mb-0" style="font-size:.84rem;">
+        Detecta pacientes crónicos inactivos y genera mensajes de WhatsApp personalizados.
+      </p>
+    </div>
+    <a href="{% url 'marketing:dashboard_marketing' %}" class="btn btn-outline-secondary btn-sm">
+      ← Volver
+    </a>
+  </div>
+
+  <!-- Controles -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-bold" style="font-size:.82rem;">Segmento de pacientes</label>
+          <select id="segmento" class="form-select form-select-sm">
+            {% for codigo, nombre, icon in segmentos %}
+            <option value="{{ codigo }}">{{ icon }} {{ nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold" style="font-size:.82rem;">Meses sin visita</label>
+          <select id="meses" class="form-select form-select-sm">
+            <option value="3">3 meses</option>
+            <option value="6" selected>6 meses</option>
+            <option value="9">9 meses</option>
+            <option value="12">12 meses</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button onclick="buscarInactivos()" class="btn btn-primary btn-sm w-100" id="btnBuscar">
+            🔍 Detectar
+          </button>
+        </div>
+        <div class="col-md-3">
+          <div id="resumen" class="text-muted" style="font-size:.8rem;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spinner -->
+  <div id="spinner" class="text-center py-4 d-none">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="text-muted mt-2" style="font-size:.82rem;">Analizando historial clínico…</p>
+  </div>
+
+  <!-- Resultados -->
+  <div id="resultados" class="d-none">
+    <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+      <h6 class="mb-0" id="titulo-resultados"></h6>
+      <button onclick="abrirTodos()" class="btn btn-success btn-sm" id="btnTodos">
+        📤 Abrir todos en WhatsApp
+      </button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle" id="tablaResultados">
+        <thead class="table-dark">
+          <tr>
+            <th>#</th>
+            <th>Nombre</th>
+            <th>Teléfono</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyResultados"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sin resultados -->
+  <div id="sinResultados" class="d-none">
+    <div class="alert alert-success">
+      <strong>¡Excelente!</strong> No se encontraron pacientes inactivos para este segmento en el período seleccionado.
+    </div>
+  </div>
+
+</div>
+
+<script>
+let _links = [];
+
+async function buscarInactivos() {
+  const seg = document.getElementById('segmento').value;
+  const mes = document.getElementById('meses').value;
+  document.getElementById('spinner').classList.remove('d-none');
+  document.getElementById('resultados').classList.add('d-none');
+  document.getElementById('sinResultados').classList.add('d-none');
+  document.getElementById('resumen').textContent = '';
+
+  try {
+    const resp = await fetch(`/marketing/api/ia/pacientes-inactivos/?segmento=${seg}&meses=${mes}`);
+    const data = await resp.json();
+    document.getElementById('spinner').classList.add('d-none');
+
+    if (!data.ok) {
+      alert('Error: ' + (data.error || 'No se pudo procesar.'));
+      return;
+    }
+
+    if (!data.total) {
+      document.getElementById('sinResultados').classList.remove('d-none');
+      return;
+    }
+
+    _links = data.pacientes.filter(p => p.whatsapp).map(p => p.whatsapp);
+
+    const tbody = document.getElementById('tbodyResultados');
+    tbody.innerHTML = '';
+    data.pacientes.forEach((p, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="text-muted" style="font-size:.75rem;">${i + 1}</td>
+        <td><strong>${p.nombre || '—'}</strong></td>
+        <td>${p.telefono || '—'}</td>
+        <td>
+          ${p.whatsapp
+            ? `<a href="${p.whatsapp}" target="_blank" class="btn btn-sm btn-success py-0 px-2" style="font-size:.75rem;">
+                💬 WhatsApp
+              </a>`
+            : '<span class="badge bg-secondary" style="font-size:.72rem;">Sin teléfono</span>'
+          }
+        </td>`;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('titulo-resultados').textContent =
+      `${data.total} paciente(s) inactivo(s) en el segmento: ${seg} (${mes} meses)`;
+    document.getElementById('resumen').textContent =
+      `${data.total} paciente(s) encontrado(s)`;
+    document.getElementById('resultados').classList.remove('d-none');
+
+  } catch(e) {
+    document.getElementById('spinner').classList.add('d-none');
+    alert('Error de red: ' + e.message);
+  }
+}
+
+function abrirTodos() {
+  if (!_links.length) return;
+  if (!confirm(`¿Abrir ${_links.length} ventana(s) de WhatsApp? Tu navegador puede bloquear pop-ups.`)) return;
+  _links.slice(0, 20).forEach((url, i) => {
+    setTimeout(() => window.open(url, '_blank'), i * 300);
+  });
+}
+</script>
+{% endblock %}

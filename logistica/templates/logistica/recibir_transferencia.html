@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Recibir Transferencia {{ transferencia.folio }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'logistica:lista_transferencias' %}">Transferencias</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'logistica:detalle_transferencia' transferencia.id %}">{{ transferencia.folio }}</a></li>
+      <li class="breadcrumb-item active">Recibir</li>
+    </ol>
+  </nav>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-success text-white rounded-top-4 fw-bold">
+          <i class="fas fa-box-open me-2"></i>Recibir Transferencia {{ transferencia.folio }}
+        </div>
+        <div class="card-body p-4">
+          <div class="alert alert-success rounded-3 mb-4">
+            <i class="fas fa-truck me-2"></i>
+            Recibiendo de <strong>{{ transferencia.sucursal_origen }}</strong>
+            — Transportista: <strong>{{ transferencia.transportista|default:'No especificado' }}</strong>
+          </div>
+
+          {% if messages %}
+            {% for msg in messages %}
+            <div class="alert alert-{{ msg.tags }} rounded-3">{{ msg }}</div>
+            {% endfor %}
+          {% endif %}
+
+          <form method="post">
+            {% csrf_token %}
+            <div class="table-responsive mb-4">
+              <table class="table table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Producto / Reactivo</th>
+                    <th class="text-center">Cantidad Enviada</th>
+                    <th class="text-center">Cantidad Recibida</th>
+                    <th>Daños / Observaciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for detalle in detalles %}
+                  <tr>
+                    <td class="fw-semibold">{{ detalle.producto }}</td>
+                    <td class="text-center text-muted">{{ detalle.cantidad_enviada }}</td>
+                    <td class="text-center">
+                      <input type="number" name="cantidad_recibida_{{ detalle.id }}"
+                             class="form-control form-control-sm text-center"
+                             value="{{ detalle.cantidad_enviada }}" min="0"
+                             step="0.01" style="max-width:100px; margin:0 auto;">
+                    </td>
+                    <td>
+                      <input type="text" name="danos_{{ detalle.id }}"
+                             class="form-control form-control-sm"
+                             placeholder="Ninguno">
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="4" class="text-center text-muted py-3">Sin detalles registrados.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Observaciones de recepción</label>
+              <textarea name="observaciones" class="form-control" rows="3"
+                        placeholder="Estado general del paquete, temperatura al llegar, etc."></textarea>
+            </div>
+
+            <div class="d-flex gap-3">
+              <button type="submit" class="btn btn-success fw-bold flex-grow-1">
+                <i class="fas fa-check-circle me-2"></i>Confirmar Recepción
+              </button>
+              <a href="{% url 'logistica:detalle_transferencia' transferencia.id %}"
+                 class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

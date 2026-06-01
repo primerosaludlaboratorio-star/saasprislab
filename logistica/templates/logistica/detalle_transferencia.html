@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ transferencia.folio }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Transferencia {{ transferencia.folio }}</h2>
+        <div>
+            {% if transferencia.estado == 'BORRADOR' %}
+                <a href="{% url 'logistica:enviar_transferencia' transferencia.id %}" class="btn btn-success">
+                    <i class="bi bi-send"></i> Enviar
+                </a>
+            {% elif transferencia.puede_recibir %}
+                <a href="{% url 'logistica:recibir_transferencia' transferencia.id %}" class="btn btn-primary">
+                    <i class="bi bi-box-seam"></i> Recibir
+                </a>
+            {% endif %}
+            <a href="{% url 'logistica:lista_transferencias' %}" class="btn btn-outline-secondary">Volver</a>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Información General</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Origen:</dt>
+                        <dd class="col-sm-8">{{ transferencia.sucursal_origen.nombre }}</dd>
+                        
+                        <dt class="col-sm-4">Destino:</dt>
+                        <dd class="col-sm-8">{{ transferencia.sucursal_destino.nombre }}</dd>
+                        
+                        <dt class="col-sm-4">Estado:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-{{ transferencia.estado|lower }}">
+                                {{ transferencia.get_estado_display }}
+                            </span>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Solicitada por:</dt>
+                        <dd class="col-sm-8">{{ transferencia.solicitado_por.get_full_name }}</dd>
+                        
+                        <dt class="col-sm-4">Fecha:</dt>
+                        <dd class="col-sm-8">{{ transferencia.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Resumen</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Total Items:</dt>
+                        <dd class="col-sm-6"><strong>{{ total_items }}</strong></dd>
+                        
+                        <dt class="col-sm-6">Cantidad Total:</dt>
+                        <dd class="col-sm-6"><strong>{{ transferencia.total_cantidad }}</strong></dd>
+                        
+                        <dt class="col-sm-6">Valor Estimado:</dt>
+                        <dd class="col-sm-6"><strong>${{ total_valor|floatformat:2 }}</strong></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Productos</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Producto</th>
+                        <th>Lote</th>
+                        <th>Solicitado</th>
+                        <th>Enviado</th>
+                        <th>Recibido</th>
+                        <th>Costo Unit.</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for det in detalles %}
+                    <tr>
+                        <td>{{ det.producto.nombre }}</td>
+                        <td>{% if det.lote %}<code>{{ det.lote.numero_lote }}</code>{% else %}-{% endif %}</td>
+                        <td>{{ det.cantidad_solicitada }}</td>
+                        <td>{{ det.cantidad_enviada }}</td>
+                        <td>{{ det.cantidad_recibida }}</td>
+                        <td>${{ det.costo_unitario|floatformat:2 }}</td>
+                        <td><strong>${{ det.subtotal|floatformat:2 }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

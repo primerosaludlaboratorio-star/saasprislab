@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container" style="max-width:640px; padding-top:2rem">
+  <div class="card border-0 shadow-lg">
+    {% if exp.foto_equipo %}
+      <img src="{{ exp.foto_equipo.url }}" class="card-img-top" style="max-height:220px;object-fit:cover">
+    {% endif %}
+    <div class="card-body">
+      <h3 class="fw-bold">{{ exp.equipo.nombre }}</h3>
+      <p class="text-muted mb-1">{{ exp.get_tipo_equipo_display }} &bull; {{ exp.fabricante }}</p>
+      {% if exp.numero_serie %}
+        <p class="text-muted small mb-1">N° Serie: <code>{{ exp.numero_serie }}</code></p>
+      {% endif %}
+      <span class="badge {% if exp.en_servicio %}bg-success{% else %}bg-danger{% endif %} mb-3">
+        {% if exp.en_servicio %}En Servicio{% else %}Fuera de Servicio{% endif %}
+      </span>
+
+      {% if usuario_logueado %}
+        <hr>
+        <h6 class="fw-semibold text-muted">Acciones Rápidas</h6>
+        <div class="d-flex flex-wrap gap-2">
+          {% for protocolo in protocolos %}
+            <a href="{% url 'mantenimiento:ejecutar_checklist' protocolo.pk exp.pk %}"
+               class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-journal-check me-1"></i>{{ protocolo.nombre }}
+            </a>
+          {% endfor %}
+          <a href="{% url 'mantenimiento:diagnostico_inicio' exp.pk %}"
+             class="btn btn-sm btn-outline-warning">
+            <i class="bi bi-diagram-3 me-1"></i>Diagnóstico
+          </a>
+          <a href="{% url 'mantenimiento:crear_ticket_equipo' exp.pk %}"
+             class="btn btn-sm btn-outline-danger">
+            <i class="bi bi-ticket me-1"></i>Reportar Falla
+          </a>
+          <a href="{% url 'mantenimiento:detalle_expediente' exp.pk %}"
+             class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-folder2-open me-1"></i>Ver Expediente
+          </a>
+        </div>
+        {% if ultimo_ticket %}
+          <hr>
+          <small class="text-muted">Último ticket: <strong>{{ ultimo_ticket.titulo|truncatechars:60 }}</strong>
+            — {{ ultimo_ticket.get_estado_display }} ({{ ultimo_ticket.fecha_apertura|date:"d/m/Y" }})</small>
+        {% endif %}
+      {% else %}
+        <hr>
+        <a href="/login/?next={{ request.path }}" class="btn btn-primary w-100">
+          <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar sesión para acceder a protocolos
+        </a>
+      {% endif %}
+    </div>
+    {% if exp.manual_pdf %}
+    <div class="card-footer text-end">
+      <a href="{{ exp.manual_pdf.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-file-pdf me-1"></i>Manual del Fabricante
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

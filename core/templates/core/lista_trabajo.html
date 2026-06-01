@@ -1,0 +1,701 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Lista de Trabajo - Laboratorio{% endblock %}
+
+{% block extra_css %}
+<style>
+        body {
+            background-color: #f4f6f9;
+        }
+        .worklist-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .filter-buttons {
+            margin-bottom: 20px;
+        }
+        .filter-btn {
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        .table-worklist {
+            font-size: 14px;
+        }
+        .table-worklist thead {
+            background-color: #343a40;
+            color: white;
+        }
+        .urgente {
+            background-color: #fff3cd !important;
+            border-left: 4px solid #dc3545;
+        }
+        .proximo {
+            background-color: #fff8e1 !important;
+            border-left: 4px solid #ffc107;
+        }
+        .a-tiempo {
+            border-left: 4px solid #28a745;
+        }
+        .estado-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+    </style>
+{% endblock %}
+
+{% load static %}
+{% block content %}
+    <div class="container-fluid mt-4" style="margin-top: 70px;">
+        <!-- SALUDO PERSONALIZADO DE PRIS -->
+        <div class="alert alert-info border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 4px solid #2196F3 !important;">
+            <div class="d-flex align-items-start">
+                <div class="me-3">
+                    <i class="bi bi-robot fs-3 text-primary"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="mb-2 fw-bold">
+                        {% if user.rol == 'QUIMICO' %}
+                            ¡Hola Q.C. {{ user.first_name|default:user.username }}!
+                        {% elif user.rol == 'RECEPCION' %}
+                            ¡Hola {{ user.first_name|default:user.username }}!
+                        {% else %}
+                            ¡Hola {{ user.first_name|default:user.username }}!
+                        {% endif %}
+                    </h5>
+                    <p class="mb-2">
+                        Te deseamos un día de éxito. PRIS está aquí para facilitar tu labor y que alcances tu máximo potencial profesional.
+                    </p>
+                    <p class="mb-0 small">
+                        <i class="bi bi-heart"></i> Recuerda: si en algún momento el día se vuelve pesado y requieres un momento de paz, tu 
+                        <a href="{% url 'bienestar:dashboard_bienestar' %}" class="fw-bold text-decoration-none">Módulo de Bienestar</a> 
+                        está siempre disponible para ti.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h2 class="fw-bold text-primary mb-0"><i class="bi bi-microscope"></i> TABLERO DE PROCESO (SUPER WORKLIST)</h2>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{% url 'recepcion_lab' %}" class="btn btn-success fw-bold">
+                    <i class="bi bi-plus-circle"></i> Nueva Orden
+                </a>
+                <a href="{% url 'toma_muestra_index' %}" class="btn btn-outline-primary fw-bold">
+                    <i class="bi bi-droplet"></i> Toma de muestra
+                </a>
+            </div>
+        </div>
+
+        <!-- ── PANEL DE FILTROS AVANZADOS ──────────────────────────────── -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body py-3">
+                <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+                    <select name="filtro" class="form-select form-select-sm" style="min-width: 160px;">
+                        <option value="todos" {% if filtro_actual == 'todos' %}selected{% endif %}>Todos</option>
+                        <option value="urgente" {% if filtro_actual == 'urgente' %}selected{% endif %}>Urgentes (≤ 8h)</option>
+                        <option value="hoy" {% if filtro_actual == 'hoy' %}selected{% endif %}>Entrega Hoy</option>
+                        <option value="listos" {% if filtro_actual == 'listos' %}selected{% endif %}>Resultados Listos</option>
+                    </select>
+                    <select name="departamento" class="form-select form-select-sm" style="min-width: 180px;">
+                        <option value="">Departamento (Todos)</option>
+                        {% for dep in departamentos %}
+                            <option value="{{ dep }}" {% if departamento_actual == dep %}selected{% endif %}>{{ dep }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="text" name="folio" class="form-control form-control-sm" style="min-width: 120px;"
+                           placeholder="Folio..." value="{{ folio_actual|default:'' }}">
+                    <input type="text" name="paciente" class="form-control form-control-sm" style="min-width: 160px;"
+                           placeholder="Paciente..." value="{{ paciente_actual|default:'' }}">
+                    <input type="date" name="fecha_desde" class="form-control form-control-sm" style="min-width: 140px;"
+                           value="{{ fecha_desde_actual|default:'' }}" title="Fecha desde">
+                    <input type="date" name="fecha_hasta" class="form-control form-control-sm" style="min-width: 140px;"
+                           value="{{ fecha_hasta_actual|default:'' }}" title="Fecha hasta">
+                    <select name="sucursal" class="form-select form-select-sm" style="min-width: 160px;">
+                        <option value="">Sucursal (Todas)</option>
+                        {% for suc in sucursales %}
+                            <option value="{{ suc.id }}" {% if sucursal_actual == suc.id|stringformat:"s" %}selected{% endif %}>{{ suc.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-sm btn-outline-primary fw-bold" type="submit">
+                        <i class="bi bi-funnel"></i> Filtrar
+                    </button>
+                    <a class="btn btn-sm btn-outline-secondary fw-bold" href="{% url 'lista_trabajo_lab' %}">
+                        <i class="bi bi-x-circle"></i> Limpiar
+                    </a>
+                    <a class="btn btn-sm btn-outline-dark fw-bold" target="_blank"
+                       href="{% url 'imprimir_hoja_trabajo_pdf' %}?departamento={{ departamento_actual|urlencode }}">
+                        <i class="bi bi-printer"></i> Hoja de Trabajo + QR
+                    </a>
+                </form>
+            </div>
+        </div>
+
+        <!-- ── BARRA DE ACCIONES EN BLOQUE ────────────────────────────── -->
+        <div class="d-flex gap-2 mb-2 align-items-center" id="barraAccionesBulk" style="display:none!important;">
+            <span class="text-muted small me-2"><span id="cntSeleccionados">0</span> seleccionado(s)</span>
+            <button class="btn btn-sm btn-success fw-bold" id="btnBulkValidar" disabled>
+                <i class="bi bi-check2-all"></i> Validar Seleccionados
+            </button>
+            <button class="btn btn-sm btn-outline-primary fw-bold" id="btnBulkImprimir" disabled>
+                <i class="bi bi-printer"></i> Imprimir Seleccionados
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" id="btnDeseleccionar">
+                <i class="bi bi-x"></i> Deseleccionar
+            </button>
+        </div>
+
+        <div class="worklist-container">
+            {% if ordenes %}
+            <div class="table-responsive">
+                <table class="table table-hover table-worklist align-middle" id="tablaWorklist" style="font-size:12px;">
+                    <thead>
+                        <tr>
+                            <th style="width:30px;"><input type="checkbox" id="chkTodos" title="Seleccionar todos"></th>
+                            <th>Folio</th>
+                            <th>Paciente</th>
+                            <th>Estudios</th>
+                            <th>Departamento</th>
+                            <th class="text-center">Pago</th>
+                            <th class="text-center">Toma de Muestra</th>
+                            <th class="text-center">Captura</th>
+                            <th class="text-center">Validación</th>
+                            <th class="text-center">Entrega</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in ordenes %}
+                        {% with et=item.estudios_texto|default:""|upper %}
+                        <tr data-orden-id="{{ item.orden.id }}">
+                            <td><input type="checkbox" class="chk-orden" data-orden-id="{{ item.orden.id }}"></td>
+                            <td class="fw-bold">#{{ item.orden.folio_orden|default:item.orden.id }}</td>
+                            <td>
+                                <strong>{{ item.orden.paciente.nombre_completo }}</strong><br>
+                                <small class="text-muted">
+                                    {% if item.orden.paciente.edad %}
+                                        Edad: {{ item.orden.paciente.edad }} años
+                                    {% else %}
+                                        Edad: N/A años
+                                    {% endif %}
+                                    {% if item.orden.paciente.sexo %}
+                                        | {{ item.orden.paciente.get_sexo_display }}
+                                    {% endif %}
+                                </small><br>
+                                <small class="text-muted">{{ item.orden.fecha_creacion|date:"Y-m-d H:i" }}</small>
+                            </td>
+                            <td>
+                                <small>{{ item.estudios_texto|default:"N/A" }}</small>
+                                {% if 'MAQUILA' in et %}
+                                    <span class="ms-2" title="Maquila">✈️</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% for det in item.orden.detalles.all %}
+                                    {% if det.analito_id and det.analito.departamento %}
+                                        <span class="badge bg-secondary text-white" style="font-size:10px;">{{ det.analito.departamento }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                            <td class="text-center">
+                                {% if item.orden.es_cortesia %}
+                                    <span class="badge bg-info text-dark fw-bold" title="Cortesía / Beca — $0.00">CORTESÍA</span>
+                                {% elif item.orden.estado_pago == 'PAGADO' %}
+                                    <span class="badge bg-success">PAGADO</span>
+                                {% elif item.orden.estado_pago == 'PARCIAL' %}
+                                    <span class="badge bg-warning text-dark">PARCIAL<br><small>${{ item.orden.total|floatformat:2 }}</small></span>
+                                {% else %}
+                                    <span class="badge bg-danger">DEBE<br><small>${{ item.orden.total|floatformat:2 }}</small></span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if item.orden.estado == 'PAGADO' or item.orden.es_cortesia %}
+                                    <button class="btn btn-sm btn-outline-success" onclick="marcarToma({{ item.orden.id }})" data-role="tomaBtn">Marcar</button>
+                                    <span class="d-none" data-role="tomaOk">✅</span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if 'MAQUILA' in et %}
+                                    <span class="text-muted" title="Captura no aplica (maquila)">✈️</span>
+                                {% else %}
+                                    <a href="{% url 'captura_resultados' item.orden.id %}" class="btn btn-primary btn-lg fw-bold" style="min-width: 120px;">
+                                        <i class="bi bi-flask"></i> CAPTURAR
+                                    </a>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-1 flex-wrap">
+                                    {% if item.orden.es_cortesia or item.orden.estado_pago == 'PAGADO' %}
+                                    <a class="btn btn-sm btn-success" target="_blank" href="{% url 'imprimir_resultados_pdf' item.orden.id %}?modo=digital" title="PDF de resultados">
+                                        <i class="bi bi-file-earmark-pdf"></i> PDF
+                                    </a>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-secondary" type="button" disabled title="PDF bloqueado por adeudo pendiente">
+                                        <i class="bi bi-file-earmark-pdf"></i> PDF
+                                    </button>
+                                    {% endif %}
+                                    {% if item.orden.paciente.telefono %}
+                                    <a class="btn btn-sm btn-outline-success" target="_blank"
+                                       title="Enviar WhatsApp con resultados"
+                                       href="https://wa.me/52{{ item.orden.paciente.telefono|cut:' '|cut:'-' }}?text=Hola%20{{ item.orden.paciente.primer_nombre|default:'Paciente'|urlencode }}%2C%20tus%20resultados%20de%20laboratorio%20est%C3%A1n%20listos.%20Folio%3A%20{{ item.orden.folio_orden|default:item.orden.id }}%20-%20{{ request.scheme }}%3A%2F%2F{{ request.get_host }}%2Flaboratorio%2Fverificar%2F{{ item.orden.folio_orden|default:item.orden.id }}%2F">
+                                        <i class="bi bi-whatsapp"></i> WA
+                                    </a>
+                                    {% endif %}
+                                    <a class="btn btn-sm btn-outline-info" target="_blank"
+                                       href="{% url 'consentimiento_digital' item.orden.id %}"
+                                       title="Consentimiento Informado Digital">
+                                        <i class="bi bi-pen"></i> CI
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-warning" title="Rechazar/devolver muestra"
+                                            onclick="abrirRechazoMuestra({{ item.orden.id }}, '{{ item.orden.folio_orden|default:item.orden.id }}')">
+                                        <i class="bi bi-x-octagon"></i> Rechazar
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-dark" title="Imprimir etiqueta de tubo (ZPL/Zebra)"
+                                            onclick="imprimirEtiquetaZPL({{ item.orden.id }}, '{{ item.orden.folio_orden|default:item.orden.id }}', '{{ item.orden.paciente.nombre_completo|escapejs }}')">
+                                        <i class="bi bi-upc-scan"></i> ZPL
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <div class="text-center py-5 text-muted">Sin órdenes.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal de captura (sin recargar) -->
+    <div class="modal fade" id="modalCaptura" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Captura de Resultados</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-0">
+            <iframe id="iframeCaptura" src="about:blank" style="width:100%; height:80vh; border:0;"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Pánico (Valor Crítico) -->
+    <div class="modal fade" id="modalPanico" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content border-danger border-3">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title fw-bold">
+              <i class="bi bi-exclamation-triangle-fill"></i> ⚠️ VALOR DE PÁNICO DETECTADO
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-danger mb-3">
+              <h6 class="fw-bold">Valor Crítico Ingresado:</h6>
+              <p class="mb-0" id="modalPanicoValor">---</p>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Estudio:</label>
+              <p id="modalPanicoEstudio">---</p>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Rango Normal:</label>
+              <p id="modalPanicoRango">---</p>
+            </div>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="confirmacionPanico" required>
+              <label class="form-check-label fw-bold" for="confirmacionPanico">
+                ✅ Confirmo que verifiqué el valor y avisé al médico
+              </label>
+            </div>
+            <input type="hidden" id="modalPanicoDetalleId">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-danger fw-bold" onclick="confirmarValorPanico()">
+              <i class="bi bi-check-circle"></i> Confirmar Valor de Pánico
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Rechazo de Muestra -->
+    <div class="modal fade" id="modalRechazo" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-warning text-dark">
+            <h5 class="modal-title fw-bold">
+              <i class="bi bi-x-circle-fill"></i> RECHAZAR MUESTRA
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Detalle de Orden:</label>
+              <p id="modalRechazoDetalle">---</p>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Motivo de Rechazo:</label>
+              <select class="form-select" id="motivoRechazo" required>
+                <option value="">Seleccione un motivo...</option>
+                <option value="Muestra Insuficiente">Muestra Insuficiente</option>
+                <option value="Hemolizada">Hemolizada</option>
+                <option value="Coagulada">Coagulada</option>
+                <option value="Contaminada">Contaminada</option>
+                <option value="Tubos Incorrectos">Tubos Incorrectos</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Observaciones Adicionales:</label>
+              <textarea class="form-control" id="observacionesRechazo" rows="3" placeholder="Detalles adicionales del rechazo..."></textarea>
+            </div>
+            <div class="alert alert-info">
+              <small><i class="bi bi-info-circle"></i> La muestra será marcada como rechazada y el estudio volverá a estado "PENDIENTE_TOMA"</small>
+            </div>
+            <input type="hidden" id="modalRechazoDetalleId">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-warning fw-bold" onclick="confirmarRechazo()">
+              <i class="bi bi-x-circle"></i> Confirmar Rechazo
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+      }
+
+      async function marcarToma(ordenId) {
+        const csrf = getCookie('csrftoken');
+        try {
+          const resp = await fetch(`/laboratorio/api/toma-muestra/${ordenId}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf }
+          });
+          if (resp.status === 401) { alert('Sesión expirada.'); window.location.href = '/login/'; return; }
+          if (!resp.ok) { alert('Error al marcar toma de muestra.'); return; }
+          const data = await resp.json();
+          if (!data.ok) { alert(data.error || 'Error'); return; }
+          const row = document.querySelector(`tr[data-orden-id="${ordenId}"]`);
+          if (!row) return;
+          const btn = row.querySelector('[data-role="tomaBtn"]');
+          const ok = row.querySelector('[data-role="tomaOk"]');
+          if (btn) btn.classList.add('d-none');
+          if (ok) ok.classList.remove('d-none');
+        } catch (err) {
+          alert('Error de conexión.');
+          console.error(err);
+        }
+      }
+
+      function abrirCaptura(ordenId) {
+        const iframe = document.getElementById('iframeCaptura');
+        iframe.src = `/laboratorio/captura/${ordenId}/`;
+        const modal = new bootstrap.Modal(document.getElementById('modalCaptura'));
+        modal.show();
+        document.getElementById('modalCaptura').addEventListener('hidden.bs.modal', () => refrescarFila(ordenId), { once: true });
+      }
+
+      // Validación se hace dentro de Captura (guardar como Validar). Este botón abre captura en modal.
+      function validarOrden(ordenId) {
+        abrirCaptura(ordenId);
+      }
+
+      async function refrescarFila(ordenId) {
+        try {
+          const resp = await fetch(`/laboratorio/api/estado/${ordenId}/`);
+          if (!resp.ok) return;
+          const data = await resp.json();
+          if (!data.ok) return;
+          const row = document.querySelector(`tr[data-orden-id="${ordenId}"]`);
+          if (!row) return;
+          if (data.tomada) {
+            const btn = row.querySelector('[data-role="tomaBtn"]');
+            const ok = row.querySelector('[data-role="tomaOk"]');
+            if (btn) btn.classList.add('d-none');
+            if (ok) ok.classList.remove('d-none');
+          }
+          if (data.validada) {
+            const okv = row.querySelector('[data-role="valOk"]');
+            if (okv) okv.classList.remove('d-none');
+          }
+        } catch (err) { console.error(err); }
+      }
+      
+      // Función para mostrar modal de pánico
+      function mostrarModalPanico(detalleId, valor, estudio, rangoMin, rangoMax) {
+        const v = document.getElementById('modalPanicoValor');
+        const e = document.getElementById('modalPanicoEstudio');
+        const r = document.getElementById('modalPanicoRango');
+        const d = document.getElementById('modalPanicoDetalleId');
+        const c = document.getElementById('confirmacionPanico');
+        const m = document.getElementById('modalPanico');
+        if (v) v.textContent = valor;
+        if (e) e.textContent = estudio;
+        if (r) r.textContent = `${rangoMin} - ${rangoMax}`;
+        if (d) d.value = detalleId;
+        if (c) c.checked = false;
+        if (m && typeof bootstrap !== 'undefined') new bootstrap.Modal(m).show();
+      }
+      
+      // Función para confirmar valor de pánico
+      function confirmarValorPanico() {
+        const detalleEl = document.getElementById('modalPanicoDetalleId');
+        const confirmadoEl = document.getElementById('confirmacionPanico');
+        if (!detalleEl || !confirmadoEl) return;
+        const detalleId = detalleEl.value;
+        const confirmado = confirmadoEl.checked;
+        
+        if (!confirmado) {
+          alert('Debe confirmar que verificó el valor y avisó al médico');
+          return;
+        }
+        if (!detalleId) {
+          alert('Error: no se identificó el detalle.');
+          return;
+        }
+        
+        fetch(`/laboratorio/api/validar-valor-critico/${detalleId}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({
+            confirmado: true
+          })
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'success') {
+            const modalEl = document.getElementById('modalPanico');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+              const inst = bootstrap.Modal.getInstance(modalEl);
+              if (inst) inst.hide();
+            }
+            alert('Valor crítico confirmado correctamente');
+          } else {
+            alert('Error: ' + (data.mensaje || 'Error desconocido'));
+          }
+        })
+        .catch(err => {
+          alert('Error de conexión.');
+          console.error(err);
+        });
+      }
+      
+      // Abrir rechazo desde la lista de trabajo (por orden_id y folio)
+      function abrirRechazoMuestra(ordenId, folio) {
+        mostrarModalRechazo(ordenId, `Orden ${folio} — Rechazar/Devolver Muestra`);
+      }
+
+      // Función para mostrar modal de rechazo
+      function mostrarModalRechazo(detalleId, detalleTexto) {
+        const det = document.getElementById('modalRechazoDetalle');
+        const detId = document.getElementById('modalRechazoDetalleId');
+        const mot = document.getElementById('motivoRechazo');
+        const obs = document.getElementById('observacionesRechazo');
+        const m = document.getElementById('modalRechazo');
+        if (det) det.textContent = detalleTexto;
+        if (detId) detId.value = detalleId;
+        if (mot) mot.value = '';
+        if (obs) obs.value = '';
+        if (m && typeof bootstrap !== 'undefined') new bootstrap.Modal(m).show();
+      }
+      
+      // Función para confirmar rechazo
+      function confirmarRechazo() {
+        const detalleEl = document.getElementById('modalRechazoDetalleId');
+        const motivoEl = document.getElementById('motivoRechazo');
+        const obsEl = document.getElementById('observacionesRechazo');
+        if (!detalleEl || !motivoEl) return;
+        const detalleId = detalleEl.value;
+        const motivo = motivoEl.value;
+        const observaciones = obsEl ? obsEl.value : '';
+        
+        if (!motivo) {
+          alert('Debe seleccionar un motivo de rechazo');
+          return;
+        }
+        if (!detalleId) {
+          alert('Error: no se identificó el detalle.');
+          return;
+        }
+        
+        fetch(`/laboratorio/api/rechazar-muestra/${detalleId}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({
+            motivo_rechazo: motivo + (observaciones ? ': ' + observaciones : '')
+          })
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'success') {
+            const modalEl = document.getElementById('modalRechazo');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+              const inst = bootstrap.Modal.getInstance(modalEl);
+              if (inst) inst.hide();
+            }
+            alert('Muestra rechazada correctamente. El estudio volverá a estado "PENDIENTE_TOMA"');
+            location.reload();
+          } else {
+            alert('Error: ' + (data.mensaje || 'Error desconocido'));
+          }
+        })
+        .catch(err => {
+          alert('Error de conexión.');
+          console.error(err);
+        });
+      }
+
+      /* ===== IMPRESIÓN DE ETIQUETA ZPL / ZEBRA ===== */
+      async function imprimirEtiquetaZPL(ordenId, folio, pacienteNombre) {
+        const csrf = getCookie('csrftoken');
+        try {
+          const resp = await fetch(`/api/lab/imprimir-zpl/${ordenId}/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify({ folio, paciente: pacienteNombre })
+          });
+          if (!resp.ok) { alert('Error generando etiqueta ZPL.'); return; }
+          const data = await resp.json();
+          if (data.zpl) {
+            // Intentar imprimir directamente por TCP/IP si QZ Tray está disponible
+            if (typeof qz !== 'undefined' && qz.websocket && qz.websocket.isActive()) {
+              const config = qz.configs.create(data.impresora || 'ZDesigner ZD220-203dpi ZPL');
+              const printData = [{ type: 'raw', format: 'plain', data: data.zpl }];
+              qz.print(config, printData).then(() => mostrarToastLab('Etiqueta enviada a impresora Zebra ✓', 'success'))
+                .catch(e => { console.error(e); alert('Error de impresión ZPL.'); });
+            } else {
+              // Fallback: mostrar ZPL para copiar o descargar
+              const blob = new Blob([data.zpl], { type: 'text/plain' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url; a.download = `etiqueta_${folio}.zpl`; a.click();
+              mostrarToastLab('ZPL descargado (abre con Zebra Designer o envía por TCP/9100)', 'info');
+            }
+          } else {
+            alert(data.error || 'No se generó la etiqueta.');
+          }
+        } catch(err) {
+          console.error('ZPL Error:', err);
+          alert('Error de conexión al generar etiqueta.');
+        }
+      }
+
+      function mostrarToastLab(msg, tipo) {
+        const colores = {success:'#28a745', info:'#0066cc', warning:'#ffc107', error:'#dc3545'};
+        const t = document.createElement('div');
+        t.style.cssText = `position:fixed;bottom:20px;right:20px;background:${colores[tipo]||'#333'};color:white;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;max-width:320px;box-shadow:0 3px 12px rgba(0,0,0,0.3)`;
+        t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3500);
+      }
+
+      /* ===== CHECKBOXES Y ACCIONES EN BLOQUE ===== */
+      const barraAcciones = document.getElementById('barraAccionesBulk');
+      const btnBulkValidar  = document.getElementById('btnBulkValidar');
+      const btnBulkImprimir = document.getElementById('btnBulkImprimir');
+      const cntLabel = document.getElementById('cntSeleccionados');
+
+      function _seleccionados() {
+        return [...document.querySelectorAll('.chk-orden:checked')];
+      }
+      function _actualizarBarra() {
+        const sel = _seleccionados();
+        if (barraAcciones) {
+          barraAcciones.style.display = sel.length > 0 ? 'flex' : 'none';
+        }
+        if (cntLabel) cntLabel.textContent = sel.length;
+        if (btnBulkValidar)  btnBulkValidar.disabled  = sel.length === 0;
+        if (btnBulkImprimir) btnBulkImprimir.disabled = sel.length === 0;
+      }
+
+      // Select-all
+      const chkTodos = document.getElementById('chkTodos');
+      if (chkTodos) {
+        chkTodos.addEventListener('change', () => {
+          document.querySelectorAll('.chk-orden').forEach(c => c.checked = chkTodos.checked);
+          _actualizarBarra();
+        });
+      }
+      document.querySelectorAll('.chk-orden').forEach(c => c.addEventListener('change', _actualizarBarra));
+
+      // Deseleccionar todo
+      const btnDesel = document.getElementById('btnDeseleccionar');
+      if (btnDesel) btnDesel.addEventListener('click', () => {
+        document.querySelectorAll('.chk-orden, #chkTodos').forEach(c => c.checked = false);
+        _actualizarBarra();
+      });
+
+      // Bulk Validar
+      if (btnBulkValidar) {
+        btnBulkValidar.addEventListener('click', async () => {
+          const ids = _seleccionados().map(c => parseInt(c.dataset.ordenId));
+          if (!ids.length) return;
+          if (!confirm(`¿Validar resultados de ${ids.length} orden(es)?`)) return;
+
+          // Para cada orden seleccionada, obtener los IDs de ResultadoParametro pendientes
+          // Usamos el endpoint api_bulk_validar enviando los orden_ids y la API valida los parámetros
+          const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+          try {
+            const resp = await fetch('{% url "api_bulk_validar" %}', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+              body: JSON.stringify({ ids: ids })
+            });
+            const data = await resp.json();
+            if (data.status === 'ok') {
+              mostrarToastLab(`✅ ${data.mensaje}`, 'success');
+              setTimeout(() => location.reload(), 1500);
+            } else {
+              mostrarToastLab(`❌ ${data.mensaje}`, 'error');
+            }
+          } catch(e) {
+            mostrarToastLab('Error de red al validar', 'error');
+          }
+        });
+      }
+
+      // Bulk Imprimir
+      if (btnBulkImprimir) {
+        btnBulkImprimir.addEventListener('click', async () => {
+          const ids = _seleccionados().map(c => c.dataset.ordenId).join(',');
+          if (!ids) return;
+          try {
+            const resp = await fetch(`{% url "api_bulk_imprimir" %}?orden_ids=${ids}`);
+            const data = await resp.json();
+            if (data.status === 'ok') {
+              data.urls.forEach(item => window.open(item.url, '_blank'));
+              mostrarToastLab(`🖨️ Abriendo ${data.urls.length} PDF(s)`, 'success');
+            } else {
+              mostrarToastLab(`❌ ${data.mensaje}`, 'error');
+            }
+          } catch(e) {
+            mostrarToastLab('Error al generar PDFs', 'error');
+          }
+        });
+      }
+    </script>
+{% endblock %}

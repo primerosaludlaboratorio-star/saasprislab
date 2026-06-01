@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Timeline — {{ paciente.nombre_completo }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'expediente_clinico' paciente.pk %}" class="btn btn-outline-secondary me-3">
+      <i class="fas fa-arrow-left"></i>
+    </a>
+    <div>
+      <h2 class="mb-0">Timeline del Paciente</h2>
+      <small class="text-muted">{{ paciente.nombre_completo }} — {{ total_eventos }} eventos</small>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8 mx-auto">
+      {% if eventos %}
+      <div class="timeline">
+        {% for evento in eventos %}
+        <div class="d-flex mb-4">
+          <div class="me-3 text-center" style="min-width:50px;">
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                 style="width:40px;height:40px;background:{% if evento.tipo == 'CONSULTA' %}#0d6efd{% elif evento.tipo == 'LAB' %}#198754{% elif evento.tipo == 'FARMACIA' %}#fd7e14{% else %}#6c757d{% endif %};">
+              <i class="fas fa-{% if evento.tipo == 'CONSULTA' %}stethoscope{% elif evento.tipo == 'LAB' %}flask{% elif evento.tipo == 'FARMACIA' %}pills{% else %}circle{% endif %} small"></i>
+            </div>
+            <div class="border-start mx-auto" style="width:2px;height:calc(100% - 40px);margin-top:4px;"></div>
+          </div>
+          <div class="card shadow-sm flex-grow-1">
+            <div class="card-body py-2 px-3">
+              <div class="d-flex justify-content-between">
+                <span class="fw-semibold">{{ evento.titulo|default:evento.tipo }}</span>
+                <small class="text-muted">{{ evento.fecha|date:"d/m/Y H:i" }}</small>
+              </div>
+              {% if evento.descripcion %}
+              <p class="mb-0 text-muted small mt-1">{{ evento.descripcion }}</p>
+              {% endif %}
+              {% if evento.url %}
+              <a href="{{ evento.url }}" class="btn btn-xs btn-outline-primary mt-1" style="font-size:.75rem;padding:1px 8px;">Ver detalle</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="card shadow-sm text-center py-5">
+        <i class="fas fa-history fa-3x text-muted mb-3"></i>
+        <p class="text-muted">Sin eventos registrados para este paciente</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

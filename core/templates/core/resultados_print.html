@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultados de Laboratorio - {{ orden.folio_orden|default:orden.id }}</title>
+    <style>
+        /* ===== MODO MEMBRETADO (Hoja Física Pre-impresa) ===== */
+        @page {
+            size: Letter;
+            {% if modo_impresion == 'membrete' %}
+            margin-top: 4.5cm;
+            margin-bottom: 5.5cm;
+            margin-left: 2cm;
+            margin-right: 2cm;
+            {% else %}
+            margin: 1.5cm;
+            {% endif %}
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, 'Roboto', sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            color: #000;
+        }
+
+        .modo-digital {
+            {% if empresa.logo %}
+            background-image: url('{{ empresa.logo.url }}');
+            {% else %}
+            background-image: url('/static/logos/600.png');
+            {% endif %}
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .modo-membrete {
+            background: white;
+        }
+
+        /* Ocultar elementos en modo membrete */
+        .modo-membrete .header-digital,
+        .modo-membrete .logo-digital,
+        .modo-membrete .marca-agua {
+            display: none !important;
+        }
+
+        /* Ocultar elementos en modo digital */
+        .modo-digital .membrete-only {
+            display: none !important;
+        }
+
+        /* Contenedor principal */
+        .container {
+            position: relative;
+        }
+
+        .modo-digital .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 8px;
+        }
+
+        /* Encabezado (solo modo digital) */
+        .header-digital {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid {{ empresa.color_primario|default:"#D9230F" }};
+        }
+
+        .header-left {
+            width: 20%;
+            text-align: center;
+        }
+
+        .header-logo {
+            max-width: 120px;
+            height: auto;
+        }
+
+        .header-center {
+            width: 60%;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .header-title {
+            font-size: 16pt;
+            font-weight: bold;
+            color: {{ empresa.color_primario|default:"#D9230F" }};
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .header-subtitle {
+            font-size: 12pt;
+            color: {{ empresa.color_primario|default:"#D9230F" }};
+            margin-bottom: 5px;
+        }
+
+        .header-address {
+            font-size: 9pt;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .header-right {
+            width: 20%;
+            text-align: right;
+            font-size: 9pt;
+            color: #666;
+        }
+
+        /* Datos del Paciente */
+        .patient-box {
+            border: 2px solid #cccccc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 25px;
+            background-color: #f9f9f9;
+        }
+
+        .patient-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .patient-table td {
+            padding: 8px 10px;
+            font-size: 10pt;
+            vertical-align: top;
+        }
+
+        .patient-label {
+            font-weight: bold;
+            color: {{ empresa.color_primario|default:"#D9230F" }};
+            width: 30%;
+        }
+
+        .patient-value {
+            color: #000;
+        }
+
+        /* Tabla de Resultados */
+        table.resultados {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+
+        table.resultados thead {
+            background-color: {{ empresa.color_primario|default:"#D9230F" }};
+            color: white;
+        }
+
+        table.resultados th {
+            padding: 10px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 10pt;
+            border: none;
+        }
+
+        table.resultados td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #ddd;
+            font-size: 10pt;
+        }
+
+        table.resultados tbody tr:nth-child(even) {
+            background-color: #f5f5f5;
+        }
+
+        .col-param {
+            width: 35%;
+            font-weight: bold;
+        }
+
+        .col-valor {
+            width: 25%;
+            text-align: center;
+        }
+
+        .col-unid {
+            width: 15%;
+            text-align: center;
+            font-style: italic;
+            color: #666;
+        }
+
+        .col-ref {
+            width: 25%;
+            text-align: center;
+            font-size: 9pt;
+            color: #555;
+        }
+
+        .valor-anormal {
+            font-weight: bold;
+            color: #dc3545;
+        }
+
+        .valor-anormal-prefix {
+            font-weight: bold;
+            color: #dc3545;
+            margin-right: 2px;
+        }
+
+        .area-title {
+            font-weight: bold;
+            font-size: 12pt;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            padding: 8px;
+            background-color: #e6f2ff;
+            color: {{ empresa.color_primario|default:"#D9230F" }};
+            text-transform: uppercase;
+            border-left: 4px solid {{ empresa.color_primario|default:"#D9230F" }};
+        }
+
+        /* QR Code */
+        .qr-container {
+            position: fixed;
+            bottom: 6cm;
+            right: 2cm;
+            text-align: center;
+            z-index: 1000;
+        }
+
+        .qr-image {
+            width: 80px;
+            height: 80px;
+            border: 2px solid #000;
+            padding: 5px;
+            background: white;
+        }
+
+        .qr-label {
+            font-size: 8pt;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        /* Firma */
+        .firma {
+            margin-top: 40px;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+
+        .firma-linea {
+            border-top: 2px solid #000;
+            width: 400px;
+            margin: 0 auto 10px auto;
+            padding-top: 10px;
+        }
+
+        .firma-nombre {
+            font-weight: bold;
+            font-size: 12pt;
+            text-transform: uppercase;
+            color: {{ empresa.color_primario|default:"#D9230F" }};
+        }
+
+        .firma-cedula {
+            font-size: 10pt;
+            color: #666;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+
+        /* Franja roja de teléfonos (solo modo membrete) */
+        .franja-telefonos {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 5.5cm;
+            background-color: #dc3545;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            font-size: 10pt;
+            font-weight: bold;
+            z-index: 999;
+        }
+
+        /* Botones de acción (solo pantalla) */
+        .no-print {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #fff3cd;
+            border: 3px solid #ffc107;
+        }
+
+        .no-print button {
+            padding: 12px 25px;
+            font-size: 14pt;
+            margin: 0 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-print {
+            background: {{ empresa.color_primario|default:"#D9230F" }};
+            color: white;
+        }
+
+        .btn-close {
+            background: #dc3545;
+            color: white;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="modo-{{ modo_impresion }}">
+    <!-- Botones de acción (solo en pantalla) -->
+    <div class="no-print">
+        <button class="btn-print" onclick="window.print()">🖨️ IMPRIMIR</button>
+        <button class="btn-close" onclick="window.close()">CERRAR</button>
+    </div>
+
+    <div class="container">
+        <!-- Encabezado (solo modo digital) -->
+        <div class="header-digital">
+            <div class="header-left">
+                {% if empresa.logo %}
+                    <img src="{{ empresa.logo.url }}" alt="Logo" class="header-logo">
+                {% else %}
+                    <div class="logo-digital">[Logo]</div>
+                {% endif %}
+            </div>
+            <div class="header-center">
+                <div class="header-title">{{ empresa.nombre|default:"LABORATORIO DE ANÁLISIS CLÍNICOS" }}</div>
+                {% if empresa.rfc %}
+                    <div class="header-subtitle">RFC: {{ empresa.rfc }}</div>
+                {% endif %}
+                {% if empresa.direccion %}
+                    <div class="header-address">{{ empresa.direccion }}</div>
+                {% endif %}
+                {% if empresa.telefono %}
+                    <div class="header-address">Tel: {{ empresa.telefono }}</div>
+                {% endif %}
+            </div>
+            <div class="header-right">
+                <div><strong>Folio:</strong> {{ orden.folio_orden|default:orden.id }}</div>
+                <div><strong>Fecha:</strong> {{ fecha_impresion|date:"d/m/Y H:i" }}</div>
+            </div>
+        </div>
+
+        <!-- Datos del Paciente -->
+        <div class="patient-box">
+            <table class="patient-table">
+                <tr>
+                    <td class="patient-label">Paciente:</td>
+                    <td class="patient-value">{{ paciente_nombre_documento|default:paciente.nombre_completo|default:paciente }}</td>
+                    <td class="patient-label">Edad:</td>
+                    <td class="patient-value">
+                        {% if paciente.calcular_edad %}{{ paciente.calcular_edad }} años{% else %}-{% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="patient-label">Sexo:</td>
+                    <td class="patient-value">
+                        {% if paciente.get_sexo_display %}{{ paciente.get_sexo_display }}{% else %}{{ paciente.sexo|default:"-" }}{% endif %}
+                    </td>
+                    <td class="patient-label">Fecha Toma:</td>
+                    <td class="patient-value">{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                </tr>
+                <tr>
+                    <td class="patient-label">Médico:</td>
+                    <td class="patient-value" colspan="3">
+                        {% if orden.medico %}{{ orden.medico }}{% elif orden.medico_texto %}{{ orden.medico_texto }}{% else %}-{% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Resultados por Área (LIMS v7.5: grupo por perfil/paquete/analito) -->
+        {% regroup detalles by categoria_grupo as grupos %}
+        {% for grupo in grupos %}
+            {% if grupo.grouper %}
+                <div class="area-title">{{ grupo.grouper|upper }}</div>
+            {% endif %}
+            <table class="resultados">
+                <thead>
+                    <tr>
+                        <th class="col-param">Parámetro / Estudio</th>
+                        <th class="col-valor">Resultado</th>
+                        <th class="col-unid">Unidades</th>
+                        <th class="col-ref">Referencia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in grupo.list %}
+                        {% if item.resultado_parseado %}
+                            {# Paquete con parámetros parseados — incluye marcadores anormales #}
+                            {% for param in item.resultado_parseado %}
+                                <tr {% if param.es_critico %}style="background:#fff0f0"{% elif param.es_anormal %}style="background:#fffbf0"{% endif %}>
+                                    <td class="col-param">{{ param.descripcion }}</td>
+                                    <td class="col-valor">
+                                        {% if param.es_critico %}
+                                            <span style="color:#8B0000;font-weight:900;font-size:12pt">&#9888; {{ param.valor }}</span>
+                                            <span style="color:#8B0000;font-size:8pt;margin-left:4px">CRITICO</span>
+                                        {% elif param.es_anormal %}
+                                            <span class="valor-anormal">{{ param.valor }}</span>
+                                            <span class="valor-anormal-prefix" title="Fuera de rango">
+                                                {% if param.direccion == 'H' %}&#9650;{% elif param.direccion == 'L' %}&#9660;{% else %}*{% endif %}
+                                            </span>
+                                        {% else %}
+                                            <span class="valor">{{ param.valor }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="col-unid">{{ param.unidades|default:"-" }}</td>
+                                    <td class="col-ref">
+                                        {% if param.ref_min is not None and param.ref_max is not None %}
+                                            {{ param.ref_min|floatformat:2 }} – {{ param.ref_max|floatformat:2 }}
+                                        {% elif param.ref_texto %}
+                                            {{ param.ref_texto }}
+                                        {% else %}-{% endif %}
+                                    </td>
+                                </tr>
+                                {% if param.historial %}
+                                <tr style="background:#f9f9f9;font-size:8pt;color:#666;">
+                                    <td colspan="4" style="padding:2px 8px;">
+                                        <em>Historial: {% for h in param.historial %}{{ h.fecha }}: {{ h.valor }}{% if not forloop.last %} | {% endif %}{% endfor %}</em>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            {# Línea simple (analito LIMS o legado con estudio) #}
+                            {% with val=item.detalle.resultado %}
+                            {% if item.detalle.estudio %}
+                                {% with ref_min=item.detalle.estudio.valor_minimo ref_max=item.detalle.estudio.valor_maximo %}
+                            <tr {% if item.es_critico %}style="background:#fff0f0"{% elif item.es_anormal %}style="background:#fffbf0"{% endif %}>
+                                <td class="col-param">{{ item.detalle.estudio.nombre }}</td>
+                                <td class="col-valor">
+                                    {% if item.es_critico %}
+                                        <span style="color:#8B0000;font-weight:900">&#9888; {{ val|default:"-" }}</span>
+                                        <span style="color:#8B0000;font-size:8pt"> CRITICO</span>
+                                    {% elif item.es_anormal %}
+                                        <span class="valor-anormal">{{ val|default:"-" }}</span>
+                                        <span class="valor-anormal-prefix">{% if item.direccion == 'H' %}&#9650;{% else %}&#9660;{% endif %}</span>
+                                    {% else %}
+                                        <span class="valor">{{ val|default:"-" }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="col-unid">{{ item.detalle.estudio.unidades|default:"-" }}</td>
+                                <td class="col-ref">
+                                    {% if ref_min or ref_max %}
+                                        {% if ref_min %}{{ ref_min|floatformat:2 }}{% else %}-{% endif %}
+                                        –
+                                        {% if ref_max %}{{ ref_max|floatformat:2 }}{% else %}-{% endif %}
+                                    {% else %}-{% endif %}
+                                </td>
+                            </tr>
+                                {% endwith %}
+                            {% else %}
+                            <tr {% if item.es_critico %}style="background:#fff0f0"{% elif item.es_anormal %}style="background:#fffbf0"{% endif %}>
+                                <td class="col-param">{{ item.detalle.descripcion_linea|default:item.detalle.analito.nombre|default:"—" }}</td>
+                                <td class="col-valor">
+                                    {% if item.es_critico %}
+                                        <span style="color:#8B0000;font-weight:900">&#9888; {{ val|default:"-" }}</span>
+                                        <span style="color:#8B0000;font-size:8pt"> CRITICO</span>
+                                    {% elif item.es_anormal %}
+                                        <span class="valor-anormal">{{ val|default:"-" }}</span>
+                                        <span class="valor-anormal-prefix">{% if item.direccion == 'H' %}&#9650;{% else %}&#9660;{% endif %}</span>
+                                    {% else %}
+                                        <span class="valor">{{ val|default:"-" }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="col-unid">{% if item.detalle.analito %}{{ item.detalle.analito.unidades|default:"-" }}{% else %}-{% endif %}</td>
+                                <td class="col-ref">—</td>
+                            </tr>
+                            {% endif %}
+                            {% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% empty %}
+            <p>No hay resultados disponibles para esta orden.</p>
+        {% endfor %}
+
+        <!-- Firma -->
+        <div class="firma">
+            <div class="firma-linea"></div>
+            <div class="firma-nombre">Q.C. GISELL MARGARITA LÓPEZ GUTIÉRREZ</div>
+            <div class="firma-cedula">Céd. Prof. 9439502</div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div>{{ empresa.nombre|default:"Laboratorio" }}</div>
+            {% if empresa.direccion %}<div>{{ empresa.direccion }}</div>{% endif %}
+            {% if empresa.telefono %}<div>Tel: {{ empresa.telefono }}</div>{% endif %}
+        </div>
+    </div>
+
+    <!-- QR Code (esquina inferior derecha) — URL pública de verificación -->
+    {% if qr_image %}
+    <div class="qr-container">
+        <img src="data:image/png;base64,{{ qr_image }}" alt="QR Verificación" class="qr-image">
+        <div class="qr-label">Verificar autenticidad</div>
+        {% if url_verificacion %}
+        <div style="font-size:7pt;color:#888;margin-top:2px;">{{ url_verificacion|truncatechars:40 }}</div>
+        {% endif %}
+        <div style="font-size:8pt;font-weight:bold;margin-top:2px;">Folio: {{ orden.folio_orden|default:orden.id }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Franja roja de teléfonos (solo modo membrete) -->
+    {% if modo_impresion == 'membrete' %}
+    <div class="franja-telefonos membrete-only">
+        {% if empresa.telefono %}
+            <div>Teléfono: {{ empresa.telefono }}</div>
+        {% endif %}
+        {% if empresa.direccion %}
+            <div>{{ empresa.direccion }}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+</body>
+</html>

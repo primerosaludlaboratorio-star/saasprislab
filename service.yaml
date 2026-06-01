@@ -1,0 +1,69 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: prislab-farmacia
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '10'
+        run.googleapis.com/cloudsql-instances: prislab-v5-ai:us-central1:prislab-db
+        run.googleapis.com/startup-cpu-boost: 'true'
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      containers:
+      - image: us-central1-docker.pkg.dev/prislab-v5-ai/cloud-run-source-deploy/prislab-farmacia@sha256:406037fdf77ed71fda48ae498dfd0b0465349aef6ef6224798e433a45aa47b43
+        ports:
+        - containerPort: 8080
+          name: http1
+        resources:
+          limits:
+            cpu: '1'
+            memory: 1Gi
+        env:
+        - name: DEBUG
+          value: 'False'
+        - name: DB_NAME
+          value: 'prislab_v5'
+        - name: DB_USER
+          value: 'postgres'
+        - name: DB_HOST
+          value: '/cloudsql/prislab-v5-ai:us-central1:prislab-db'
+        - name: GOOGLE_CLOUD_PROJECT
+          value: 'prislab-v5-ai'
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-password
+              key: latest
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: django-secret-key
+              key: latest
+        - name: GOOGLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: gemini-api-key
+              key: latest
+        - name: DRIVE_FOLDER_ID
+          valueFrom:
+            secretKeyRef:
+              name: drive-folder-id
+              key: latest
+        - name: VAPID_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vapid-private-key
+              key: latest
+        - name: VAPID_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vapid-public-key
+              key: latest
+  traffic:
+  - percent: 100
+    latestRevision: true

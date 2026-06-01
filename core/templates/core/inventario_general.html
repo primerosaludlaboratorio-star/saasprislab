@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inventario General - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Estilos High Density */
+    body { background-color: #f4f6f9; padding-bottom: 60px; }
+    
+    .table-inventory thead th {
+        background-color: #343a40;
+        color: white;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .status-dot {
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 6px;
+    }
+    .status-ok { background-color: #28a745; box-shadow: 0 0 5px #28a745; }
+    .status-warn { background-color: #ffc107; box-shadow: 0 0 5px #ffc107; }
+    .status-crit { background-color: #dc3545; box-shadow: 0 0 5px #dc3545; }
+    
+    .badge-lote { font-family: monospace; font-size: 0.9em; }
+    
+    /* Search Bar Flotante */
+    .search-panel {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top: 70px;">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="m-0 fw-bold"><i class="bi bi-boxes"></i> INVENTARIO GENERAL</h3>
+            <small class="text-muted">Valor Total: <span class="fw-bold text-success">$ {{ valor_inventario|floatformat:2 }}</span></small>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-success fw-bold" onclick="exportarExcel()">
+                <i class="bi bi-file-excel"></i> Exportar
+            </button>
+            <a href="{% url 'entrada_mercancia' %}" class="btn btn-primary fw-bold">
+                <i class="bi bi-plus-lg"></i> Entrada
+            </a>
+            <a href="{% url 'pdv_farmacia' %}" class="btn btn-secondary fw-bold">
+                <i class="bi bi-arrow-left"></i> Volver PDV
+            </a>
+        </div>
+    </div>
+
+    <!-- Buscador y Filtros -->
+    <div class="search-panel">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input type="text" id="buscador-inventario" class="form-control" 
+                           placeholder="Buscar por nombre, código, lote..." autocomplete="off">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select id="filtro-rapido" class="form-select">
+                    <option value="">Todos los estados</option>
+                    <option value="caducados">🔴 Caducados</option>
+                    <option value="proximos">🟡 Próximos a vencer</option>
+                    <option value="bajo-stock">🟠 Bajo Stock</option>
+                </select>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-secondary" onclick="imprimirEtiquetasMasivas()" title="Imprimir Etiquetas Selección">
+                        <i class="bi bi-upc"></i> Etiquetas
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="ajusteMasivo()" title="Ajuste Masivo">
+                        <i class="bi bi-sliders"></i> Ajuste
+                    </button>
+                </div>
+                <small class="text-muted ms-2" id="contador-resultados">{{ lotes_data|length }} lotes</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Inventario -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 70vh;">
+                <table class="table table-striped table-hover mb-0 table-inventory" id="tabla-inventario">
+                    <thead>
+                        <tr>
+                            <th width="40" class="text-center"><input type="checkbox" class="form-check-input" id="check-all" onclick="toggleAllChecks()"></th>
+                            <th>Estado</th>
+                            <th>Producto</th>
+                            <th>Lote</th>
+                            <th>Caducidad</th>
+                            <th class="text-center">Stock</th>
+                            <th>Ubicación</th>
+                            <th class="text-end">P. Venta</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-inventario">
+                        {% for item in lotes_data %}
+                        {% with p=item.producto lote=item.lote %}
+                        <tr class="fila-lote" 
+                            data-nombre="{{ p.nombre|lower }}" 
+                            data-lote="{{ lote.numero_lote|lower }}"
+                            data-estado="{% if item.dias_restantes < 0 %}caducados{% elif item.dias_restantes < 90 %}proximos{% elif item.stock_lote < 10 %}bajo-stock{% endif %}">
+                            
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input check-item">
+                            </td>
+                            <!-- Semáforo -->
+                            <td class="text-center">
+                                {% if item.dias_restantes < 0 %}
+                                    <span class="status-dot status-crit" title="Caducado"></span>
+                                {% elif item.dias_restantes < 90 %}
+                                    <span class="status-dot status-warn" title="Por vencer"></span>
+                                {% elif item.stock_lote < 10 %}
+                                    <span class="status-dot status-warn" title="Bajo Stock"></span>
+                                {% else %}
+                                    <span class="status-dot status-ok" title="OK"></span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Producto -->
+                            <td>
+                                <div class="fw-bold">{{ p.nombre }}</div>
+                                <small class="text-muted">{{ p.sustancia_activa|default:"" }}</small>
+                            </td>
+
+                            <!-- Lote -->
+                            <td><span class="badge bg-light text-dark border badge-lote">{{ lote.numero_lote }}</span></td>
+
+                            <!-- Caducidad -->
+                            <td>
+                                {{ lote.fecha_caducidad|date:"d/m/Y" }}
+                                {% if item.dias_restantes < 90 %}
+                                    <br><small class="text-danger fw-bold">{{ item.dias_restantes }} días</small>
+                                {% endif %}
+                            </td>
+
+                            <!-- Stock -->
+                            <td class="text-center">
+                                <span class="badge {% if item.stock_lote == 0 %}bg-secondary{% elif item.stock_lote < 10 %}bg-warning{% else %}bg-success{% endif %} rounded-pill">
+                                    {{ item.stock_lote }}
+                                </span>
+                            </td>
+
+                            <!-- Ubicación -->
+                            <td><small>{{ lote.ubicacion_fisica|default:"-" }}</small></td>
+
+                            <!-- Precio -->
+                            <td class="text-end fw-bold text-success">$ {{ p.precio_publico|floatformat:2 }}</td>
+
+                            <!-- Acciones -->
+                            <td class="text-center">
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-light border dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-gear"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'ajustes_inventario' %}?lote={{ lote.id }}">
+                                                <i class="bi bi-sliders"></i> Ajuste / Merma
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#">
+                                                <i class="bi bi-printer"></i> Imprimir Etiqueta
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-muted" href="#">
+                                                <i class="bi bi-clock-history"></i> Ver Kardex
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% empty %}
+                        <tr><td colspan="8" class="text-center py-5 text-muted">Inventario vacío</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Filtro en tiempo real
+    const buscador = document.getElementById('buscador-inventario');
+    const filtroRapido = document.getElementById('filtro-rapido');
+    const filas = document.querySelectorAll('.fila-lote');
+    const contador = document.getElementById('contador-resultados');
+
+    function filtrar() {
+        const texto = buscador.value.toLowerCase();
+        const estado = filtroRapido.value;
+        let visibles = 0;
+
+        filas.forEach(fila => {
+            const nombre = fila.dataset.nombre;
+            const lote = fila.dataset.lote;
+            const filaEstado = fila.dataset.estado;
+            
+            const matchTexto = nombre.includes(texto) || lote.includes(texto);
+            const matchEstado = !estado || filaEstado === estado;
+
+            if (matchTexto && matchEstado) {
+                fila.style.display = '';
+                visibles++;
+            } else {
+                fila.style.display = 'none';
+            }
+        });
+        contador.textContent = `${visibles} lotes`;
+    }
+
+    buscador.addEventListener('input', filtrar);
+    filtroRapido.addEventListener('change', filtrar);
+
+    function toggleAllChecks() {
+        const master = document.getElementById('check-all');
+        document.querySelectorAll('.check-item').forEach(c => c.checked = master.checked);
+    }
+
+    function exportarExcel() {
+        alert('Generando archivo CSV...');
+        // Lógica de exportación ya implementada o pendiente de backend
+    }
+</script>
+{% endblock %}

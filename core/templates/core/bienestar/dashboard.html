@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Mi Bienestar — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col">
+      <h2 class="fw-bold">
+        <i class="bi bi-heart-pulse-fill text-danger me-2"></i>Mi Bienestar
+      </h2>
+      <p class="text-muted small">Tu espacio privado. Solo tú puedes ver tu diario. RRHH recibe alertas anónimas de riesgo.</p>
+    </div>
+    <div class="col-auto">
+      <a href="{% url 'diario_emocional' %}" class="btn btn-outline-primary me-2">
+        <i class="bi bi-journal-heart me-1"></i> Mi Diario
+      </a>
+      <a href="{% url 'evaluacion_nom035' %}" class="btn btn-danger">
+        <i class="bi bi-clipboard2-check me-1"></i> Evaluación NOM-035
+      </a>
+    </div>
+  </div>
+
+  {% if alertas_activas %}
+  <div class="alert alert-warning rounded-3 d-flex align-items-center gap-2 mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    <span>Tienes <strong>{{ alertas_activas }} alerta(s)</strong> activas. RRHH ha sido notificado para apoyarte.</span>
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+
+    <!-- Estado emocional reciente -->
+    <div class="col-md-6 col-xl-4">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-header bg-transparent fw-semibold border-0 pt-3">
+          <i class="bi bi-emoji-smile me-1 text-warning"></i> Últimos 7 días
+        </div>
+        <div class="card-body">
+          {% if ultimas_entradas_diario %}
+          <div class="d-flex flex-wrap gap-2">
+            {% for entrada in ultimas_entradas_diario %}
+            <div class="text-center p-2 rounded-3" style="background:#f8f9fa; min-width:52px">
+              <div class="fs-4">
+                {% if entrada.humor_general >= 4 %}😀{% elif entrada.humor_general == 3 %}😐{% else %}😔{% endif %}
+              </div>
+              <div class="small text-muted">{{ entrada.fecha|date:"d/m" }}</div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted small">Aún no hay entradas. <a href="{% url 'diario_emocional' %}">Escribe la primera hoy</a>.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Evaluaciones NOM-035 -->
+    <div class="col-md-6 col-xl-4">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-header bg-transparent fw-semibold border-0 pt-3">
+          <i class="bi bi-clipboard2-check me-1 text-danger"></i> Evaluaciones NOM-035
+        </div>
+        <div class="card-body">
+          {% if evaluaciones %}
+          {% for ev in evaluaciones %}
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span class="small fw-semibold">{{ ev.periodo }}</span>
+            <span class="badge {% if ev.nivel_riesgo >= 4 %}bg-danger{% elif ev.nivel_riesgo == 3 %}bg-warning{% else %}bg-success{% endif %} rounded-pill">
+              Nivel {{ ev.nivel_riesgo }}
+            </span>
+          </div>
+          {% endfor %}
+          {% else %}
+          <p class="text-muted small">Sin evaluaciones completadas.</p>
+          <a href="{% url 'evaluacion_nom035' %}" class="btn btn-sm btn-outline-danger mt-2">Completar ahora</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Próximas sesiones -->
+    <div class="col-md-12 col-xl-4">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-header bg-transparent fw-semibold border-0 pt-3">
+          <i class="bi bi-people me-1 text-primary"></i> Sesiones de Coaching
+        </div>
+        <div class="card-body">
+          {% if sesiones_proximas %}
+          {% for s in sesiones_proximas %}
+          <div class="d-flex gap-3 align-items-center py-2 border-bottom">
+            <div class="rounded-3 bg-primary bg-opacity-10 p-2 text-center" style="min-width:50px">
+              <div class="small fw-bold text-primary">{{ s.fecha_sesion|date:"d" }}</div>
+              <div class="small text-muted">{{ s.fecha_sesion|date:"M" }}</div>
+            </div>
+            <div>
+              <div class="small fw-semibold">{{ s.get_tipo_display }}</div>
+              <div class="text-muted" style="font-size:.78rem">{{ s.duracion_minutos }} min</div>
+            </div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <p class="text-muted small">Sin sesiones programadas.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

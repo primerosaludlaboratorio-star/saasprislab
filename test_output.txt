@@ -1,0 +1,33 @@
+﻿
+[DRY-RUN] Modo de simulaci¾n activado. No se guardarßn cambios.
+
+[INICIO] Actualizando precios para PRISLAB...
+  [NO ENCONTRADO] Estudio con c¾digo: QuÝmica Bßsica
+  [NO ENCONTRADO] Estudio con c¾digo: Perfil Hepßtico
+  [NO ENCONTRADO] Estudio con c¾digo: Perfil de LÝpidos
+
+============================================================
+[COMPLETADO] ACTUALIZACIËN DE PRECIOS FINALIZADA
+============================================================
+
+Resumen:
+   - Estudios actualizados: 8
+   - Perfiles actualizados: 0
+   - Estudios no encontrados: 3
+   - Perfiles no encontrados: 0
+   - Errores: 9
+
+Estudios no encontrados: QuÝmica Bßsica, Perfil Hepßtico, Perfil de LÝpidos
+
+Errores:
+   - Fila 2: 'charmap' codec can't encode character '\u2192' in position 32: character maps to <undefined>
+   - Fila 3: 'charmap' codec can't encode character '\u2192' in position 29: character maps to <undefined>
+   - Fila 4: 'charmap' codec can't encode character '\u2192' in position 47: character maps to <undefined>
+   - Fila 5: 'charmap' codec can't encode character '\u2192' in position 42: character maps to <undefined>
+   - Fila 6: 'charmap' codec can't encode character '\u2192' in position 36: character maps to <undefined>
+   - Fila 7: 'charmap' codec can't encode character '\u2192' in position 41: character maps to <undefined>
+   - Fila 8: 'charmap' codec can't encode character '\u2192' in position 39: character maps to <undefined>
+   - Fila 9: 'charmap' codec can't encode character '\u2192' in position 36: character maps to <undefined>
+   - Fila 10: Tipo no reconocido. Debe ser 'estudio' o 'perfil'
+
+[EXITO] Actualizaci¾n completada con auditorÝa!

@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Marketing Médico{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-bullhorn"></i> Marketing Médico</h2>
+            <p class="text-muted">
+                Campañas de email/SMS, promociones y comunicación masiva con pacientes
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaCampana">
+                <i class="fas fa-plus"></i> Nueva Campaña
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body text-center py-3">
+                    <i class="fas fa-paper-plane fa-2x mb-2"></i>
+                    <h3 class="mb-0">{{ stats.total_enviadas }}</h3>
+                    <small>Campañas Enviadas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body text-center py-3">
+                    <i class="fas fa-users fa-2x mb-2"></i>
+                    <h3 class="mb-0">{{ stats.total_pacientes }}</h3>
+                    <small>Pacientes Alcanzados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-info text-white">
+                <div class="card-body text-center py-3">
+                    <i class="fas fa-envelope-open fa-2x mb-2"></i>
+                    <h3 class="mb-0">{{ stats.tasa_apertura }}%</h3>
+                    <small>Tasa de Apertura</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-warning text-dark">
+                <div class="card-body text-center py-3">
+                    <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                    <h3 class="mb-0">{{ stats.citas_generadas }}</h3>
+                    <small>Citas Generadas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plantillas rápidas -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-heartbeat fa-3x text-danger mb-3"></i>
+                    <h5>Check-Up Anual</h5>
+                    <p class="text-muted small">Recordar a pacientes que no han venido en más de un año</p>
+                    <button class="btn btn-outline-danger btn-sm btn-crear-campana" data-tipo="CHECKUP">
+                        Crear Campaña
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-syringe fa-3x text-primary mb-3"></i>
+                    <h5>Vacunación</h5>
+                    <p class="text-muted small">Campaña de vacunación estacional (influenza, etc.)</p>
+                    <button class="btn btn-outline-primary btn-sm btn-crear-campana" data-tipo="VACUNACION">
+                        Crear Campaña
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-star fa-3x text-warning mb-3"></i>
+                    <h5>Promoción Especial</h5>
+                    <p class="text-muted small">Oferta en servicios o paquetes promocionales</p>
+                    <button class="btn btn-outline-warning btn-sm btn-crear-campana" data-tipo="PROMOCION">
+                        Crear Campaña
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de campañas -->
+    {% if campanas %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-history"></i> Historial de Campañas</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Campaña</th>
+                            <th>Tipo</th>
+                            <th>Canal</th>
+                            <th>Destinatarios</th>
+                            <th>Estado</th>
+                            <th>Fecha Envío</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in campanas %}
+                        <tr>
+                            <td>
+                                <strong>{{ c.nombre }}</strong>
+                                <br><small class="text-muted">{{ c.descripcion|truncatewords:10 }}</small>
+                            </td>
+                            <td><span class="badge bg-secondary">{{ c.get_tipo_display }}</span></td>
+                            <td>
+                                {% if c.canal == 'EMAIL' %}
+                                    <i class="fas fa-envelope text-primary"></i> Email
+                                {% elif c.canal == 'SMS' %}
+                                    <i class="fas fa-sms text-success"></i> SMS
+                                {% elif c.canal == 'WHATSAPP' %}
+                                    <i class="fab fa-whatsapp text-success"></i> WhatsApp
+                                {% endif %}
+                            </td>
+                            <td>{{ c.total_destinatarios }}</td>
+                            <td>
+                                {% if c.estado == 'BORRADOR' %}
+                                    <span class="badge bg-secondary">Borrador</span>
+                                {% elif c.estado == 'PROGRAMADA' %}
+                                    <span class="badge bg-warning text-dark">Programada</span>
+                                {% elif c.estado == 'ENVIADA' %}
+                                    <span class="badge bg-success">Enviada</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ c.fecha_envio|date:"d/m/Y H:i"|default:"—" }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" title="Ver detalle">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-bullhorn fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">Sin campañas registradas</h4>
+        <p class="text-muted">
+            Crea tu primera campaña de marketing para mantener a tus pacientes informados
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Nueva Campaña -->
+<div class="modal fade" id="modalNuevaCampana" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-bullhorn"></i> Nueva Campaña de Marketing</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nombre de la Campaña</label>
+                    <input type="text" class="form-control" id="nombreCampana" placeholder="Ej: Check-Up Febrero 2026">
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Canal de Envío</label>
+                        <select class="form-select" id="canalCampana">
+                            <option value="WHATSAPP">WhatsApp</option>
+                            <option value="EMAIL">Correo Electrónico</option>
+                            <option value="SMS">SMS</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Segmento</label>
+                        <select class="form-select" id="segmentoCampana">
+                            <option value="TODOS">Todos los pacientes</option>
+                            <option value="INACTIVOS_6M">Inactivos (+6 meses)</option>
+                            <option value="INACTIVOS_12M">Inactivos (+12 meses)</option>
+                            <option value="RECIENTES">Pacientes recientes (3 meses)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Mensaje</label>
+                    <textarea class="form-control" id="mensajeCampana" rows="4"
+                              placeholder="Escriba el mensaje que se enviará a los pacientes..."></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Fecha de Envío</label>
+                    <input type="datetime-local" class="form-control" id="fechaEnvioCampana">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-outline-primary" id="btnGuardarBorrador">
+                    <i class="fas fa-save"></i> Guardar Borrador
+                </button>
+                <button type="button" class="btn btn-primary" id="btnProgramarCampana">
+                    <i class="fas fa-paper-plane"></i> Programar Envío
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Funcionalidad básica: se conectará con las APIs cuando estén completas
+document.querySelectorAll('.btn-crear-campana').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const tipo = this.dataset.tipo;
+        const nombres = { CHECKUP: 'Check-Up Anual', VACUNACION: 'Vacunación Estacional', PROMOCION: 'Promoción Especial' };
+        document.getElementById('nombreCampana').value = nombres[tipo] || '';
+        const modal = new bootstrap.Modal(document.getElementById('modalNuevaCampana'));
+        modal.show();
+    });
+});
+</script>
+{% endblock %}

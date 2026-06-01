@@ -1,0 +1,521 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}War Room — Director | PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ══════════════════════════════════════════════
+   WAR ROOM — Dashboard de Excepciones
+   Estética militar / sala de crisis ejecutiva
+   ══════════════════════════════════════════════ */
+:root {
+  --wr-bg: #0a0e1a;
+  --wr-panel: #111827;
+  --wr-border: #1f2d4a;
+  --wr-critico: #ef4444;
+  --wr-advertencia: #f59e0b;
+  --wr-ok: #10b981;
+  --wr-text: #e2e8f0;
+  --wr-muted: #64748b;
+  --wr-accent: #3b82f6;
+}
+
+body { background: var(--wr-bg) !important; color: var(--wr-text) !important; }
+
+.wr-header {
+  background: linear-gradient(135deg, #0d1b2a 0%, #1a237e 100%);
+  border-bottom: 2px solid var(--wr-accent);
+  padding: 1.25rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.wr-header-title { display: flex; align-items: center; gap: 12px; }
+.wr-header-title h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; margin: 0; color: #fff; }
+.wr-header-title .wr-badge-live {
+  background: var(--wr-critico); color: #fff; padding: 3px 10px;
+  border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  animation: pulse-live 1.5s ease-in-out infinite;
+}
+@keyframes pulse-live { 0%,100%{opacity:1;} 50%{opacity:.5;} }
+
+.wr-timestamp { font-size: 11px; color: var(--wr-muted); font-family: monospace; }
+
+/* Métricas rápidas */
+.wr-kpis {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px; padding: 1rem 1.5rem; background: var(--wr-panel);
+  border-bottom: 1px solid var(--wr-border);
+}
+.wr-kpi {
+  background: var(--wr-bg); border: 1px solid var(--wr-border);
+  border-radius: 10px; padding: 12px 16px; text-align: center;
+}
+.wr-kpi .kpi-val { font-size: 1.75rem; font-weight: 800; line-height: 1; }
+.wr-kpi .kpi-lbl { font-size: 10px; color: var(--wr-muted); text-transform: uppercase;
+  letter-spacing: 1px; margin-top: 4px; }
+.wr-kpi.critico .kpi-val { color: var(--wr-critico); }
+.wr-kpi.advertencia .kpi-val { color: var(--wr-advertencia); }
+.wr-kpi.ok .kpi-val { color: var(--wr-ok); }
+.wr-kpi.azul .kpi-val { color: var(--wr-accent); }
+
+/* Resumen contadores */
+.wr-resumen {
+  display: flex; gap: 16px; padding: 1rem 1.5rem; align-items: center;
+  border-bottom: 1px solid var(--wr-border);
+}
+.wr-resumen-chip {
+  display: flex; align-items: center; gap: 8px; padding: 6px 16px;
+  border-radius: 20px; font-size: 13px; font-weight: 600;
+}
+.wr-resumen-chip.critico { background: rgba(239,68,68,.15); color: var(--wr-critico);
+  border: 1px solid rgba(239,68,68,.3); }
+.wr-resumen-chip.advertencia { background: rgba(245,158,11,.15); color: var(--wr-advertencia);
+  border: 1px solid rgba(245,158,11,.3); }
+.wr-resumen-chip.ok { background: rgba(16,185,129,.15); color: var(--wr-ok);
+  border: 1px solid rgba(16,185,129,.3); }
+
+/* Anomalías */
+.wr-lista { padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 10px; }
+
+.wr-anomalia {
+  background: var(--wr-panel); border: 1px solid var(--wr-border);
+  border-radius: 12px; padding: 14px 18px;
+  display: grid; grid-template-columns: 44px 1fr auto;
+  gap: 14px; align-items: center;
+  transition: transform .15s, border-color .15s;
+}
+.wr-anomalia:hover { transform: translateX(4px); border-color: var(--wr-accent); }
+
+.wr-anomalia.nivel-CRITICO {
+  border-left: 4px solid var(--wr-critico);
+  background: linear-gradient(90deg, rgba(239,68,68,.08) 0%, var(--wr-panel) 100%);
+  animation: blink-critico 3s ease-in-out infinite;
+}
+.wr-anomalia.nivel-ADVERTENCIA {
+  border-left: 4px solid var(--wr-advertencia);
+  background: linear-gradient(90deg, rgba(245,158,11,.08) 0%, var(--wr-panel) 100%);
+}
+@keyframes blink-critico {
+  0%,100%{border-left-color: var(--wr-critico);}
+  50%{border-left-color: #ff8a80;}
+}
+
+.wr-icono {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.nivel-CRITICO .wr-icono { background: rgba(239,68,68,.15); color: var(--wr-critico); }
+.nivel-ADVERTENCIA .wr-icono { background: rgba(245,158,11,.15); color: var(--wr-advertencia); }
+
+.wr-body .titulo { font-size: 14px; font-weight: 700; color: var(--wr-text); margin-bottom: 3px; }
+.wr-body .detalle { font-size: 12px; color: var(--wr-muted); line-height: 1.4; }
+.wr-body .meta { font-size: 11px; color: var(--wr-muted); margin-top: 4px;
+  display: flex; gap: 12px; }
+
+.wr-accion a {
+  display: inline-block; padding: 7px 16px; border-radius: 8px;
+  font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap;
+  background: rgba(59,130,246,.15); color: var(--wr-accent);
+  border: 1px solid rgba(59,130,246,.3);
+  transition: background .15s;
+}
+.wr-accion a:hover { background: rgba(59,130,246,.3); }
+.nivel-CRITICO .wr-accion a {
+  background: rgba(239,68,68,.15); color: var(--wr-critico);
+  border-color: rgba(239,68,68,.3);
+}
+.nivel-CRITICO .wr-accion a:hover { background: rgba(239,68,68,.3); }
+
+/* Vacío */
+.wr-empty {
+  text-align: center; padding: 4rem 2rem; color: var(--wr-muted);
+}
+.wr-empty .icon { font-size: 3.5rem; margin-bottom: 1rem; color: var(--wr-ok); }
+.wr-empty h3 { font-size: 1.2rem; color: var(--wr-ok); margin-bottom: 0.5rem; }
+
+/* Tipo badge */
+.tipo-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  margin-right: 6px;
+}
+.tipo-CAJA { background: rgba(124,58,237,.2); color: #a78bfa; }
+.tipo-PANICO { background: rgba(239,68,68,.2); color: #f87171; }
+.tipo-SEGURIDAD { background: rgba(245,158,11,.2); color: #fbbf24; }
+.tipo-STOCK { background: rgba(16,185,129,.2); color: #34d399; }
+
+/* Auto-refresh indicator */
+.wr-refresh { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--wr-muted); }
+.wr-refresh-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--wr-ok);
+  animation: pulse-ok 2s ease-in-out infinite; }
+@keyframes pulse-ok { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+/* Override navbar dark */
+.navbar { background: #0d1b2a !important; border-bottom: 1px solid var(--wr-border) !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ═══════════════════════════════════════════
+     WAR ROOM — HEADER
+     ═══════════════════════════════════════════ -->
+<div class="wr-header">
+  <div class="wr-header-title">
+    <i class="fas fa-satellite-dish fa-lg" style="color:#3b82f6;"></i>
+    <h1>War Room</h1>
+    <span class="wr-badge-live">LIVE</span>
+  </div>
+  <div style="display:flex;gap:20px;align-items:center;">
+    <div class="wr-refresh">
+      <span class="wr-refresh-dot"></span>
+      Auto-actualiza cada 60s
+    </div>
+    <div class="wr-timestamp" id="wr-timestamp">
+      <i class="fas fa-clock me-1"></i>{{ ultima_actualizacion }}
+    </div>
+    <button onclick="actualizarWarRoom()" class="btn btn-sm" style="background:rgba(59,130,246,.15);color:#3b82f6;border:1px solid rgba(59,130,246,.3);">
+      <i class="fas fa-sync-alt me-1"></i>Actualizar
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     KPIs DEL DÍA
+     ═══════════════════════════════════════════ -->
+<div class="wr-kpis">
+  <div class="wr-kpi azul">
+    <div class="kpi-val" id="kpi-ordenes-hoy">{{ metricas.ordenes_hoy }}</div>
+    <div class="kpi-lbl">Ordenes hoy</div>
+  </div>
+  <div class="wr-kpi ok">
+    <div class="kpi-val" id="kpi-completadas">{{ metricas.ordenes_completadas }}</div>
+    <div class="kpi-lbl">Completadas</div>
+  </div>
+  <div class="wr-kpi advertencia">
+    <div class="kpi-val" id="kpi-pendientes">{{ metricas.ordenes_pendientes }}</div>
+    <div class="kpi-lbl">Pendientes</div>
+  </div>
+  <div class="wr-kpi ok">
+    <div class="kpi-val" id="kpi-ingresos">${{ metricas.ingresos_hoy|floatformat:0 }}</div>
+    <div class="kpi-lbl">Ingresos hoy</div>
+  </div>
+  <div class="wr-kpi {% if metricas.criticos_activos > 0 %}critico{% else %}ok{% endif %}">
+    <div class="kpi-val" id="kpi-criticos">{{ metricas.criticos_activos }}</div>
+    <div class="kpi-lbl">Panico activos</div>
+  </div>
+  <div class="wr-kpi {% if metricas.stocks_criticos > 0 %}advertencia{% else %}ok{% endif %}">
+    <div class="kpi-val" id="kpi-stocks">{{ metricas.stocks_criticos }}</div>
+    <div class="kpi-lbl">Stock critico</div>
+  </div>
+  <div class="wr-kpi {% if flujo_caja.saldo_neto >= 0 %}ok{% else %}critico{% endif %}">
+    <div class="kpi-val">${{ flujo_caja.saldo_neto|floatformat:0 }}</div>
+    <div class="kpi-lbl">Saldo neto hoy</div>
+  </div>
+  {% if discrepancias_pendientes > 0 %}
+  <div class="wr-kpi advertencia">
+    <div class="kpi-val">{{ discrepancias_pendientes }}</div>
+    <div class="kpi-lbl"><a href="/inventario/notificaciones/" style="color:inherit;">Discrepancias</a></div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ═══════════════════════════════════════════
+     RESUMEN DE ALERTAS
+     ═══════════════════════════════════════════ -->
+<div class="wr-resumen">
+  <span class="wr-resumen-chip {% if total_criticos > 0 %}critico{% else %}ok{% endif %}" id="chip-criticos">
+    <i class="fas fa-circle-dot"></i> {{ total_criticos }} Criticos
+  </span>
+  <span class="wr-resumen-chip advertencia" id="chip-advertencias">
+    <i class="fas fa-circle-dot"></i> {{ total_advertencias }} Advertencias
+  </span>
+  {% if anomalias %}
+  <span class="wr-resumen-chip ok" style="margin-left:auto;">
+    <i class="fas fa-circle-check"></i> PRIS monitoreando
+  </span>
+  {% endif %}
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LISTA DE ANOMALÍAS
+     ═══════════════════════════════════════════ -->
+<div class="wr-lista" id="wr-lista-anomalias">
+{% if anomalias %}
+  {% for a in anomalias %}
+  <div class="wr-anomalia nivel-{{ a.nivel }}">
+    <div class="wr-icono"><i class="{{ a.icono }}"></i></div>
+    <div class="wr-body">
+      <div class="titulo">
+        <span class="tipo-badge tipo-{{ a.tipo }}">{{ a.tipo }}</span>
+        {{ a.titulo }}
+      </div>
+      <div class="detalle">{{ a.detalle }}</div>
+      <div class="meta">
+        <span><i class="fas fa-clock me-1"></i>{{ a.fecha }}</span>
+        <span><i class="fas fa-user me-1"></i>{{ a.usuario }}</span>
+        <span class="badge bg-{{ a.nivel|lower|default:'secondary' }}" style="font-size:9px;">
+          {{ a.nivel }}
+        </span>
+      </div>
+    </div>
+    <div class="wr-accion">
+      <a href="{{ a.accion_url }}">
+        <i class="fas fa-arrow-right me-1"></i>{{ a.accion_texto }}
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+
+{% else %}
+  <div class="wr-empty">
+    <div class="icon"><i class="fas fa-shield-check"></i></div>
+    <h3>Sistema en Estado Optimo</h3>
+    <p style="max-width:400px;margin:0 auto;">
+      No hay anomalías activas. Todos los indicadores están dentro de los parámetros normales.
+      PRIS está monitoreando activamente las 22 áreas del sistema.
+    </p>
+  </div>
+{% endif %}
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MARKETING & FACTURACIÓN — MÉTRICAS RÁPIDAS
+     ═══════════════════════════════════════════ -->
+{% if metricas_marketing.disponible or metricas_marketing.cfdi_pendientes > 0 %}
+<div style="padding: 0 1.5rem 1rem;">
+  <div style="background: var(--wr-panel); border: 1px solid var(--wr-border); border-radius: 12px; padding: 1.25rem;">
+    <span style="font-size:.7rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--wr-muted);">Marketing & CFDI</span>
+    <h2 style="margin:2px 0 1rem; font-size:1rem; color:var(--wr-text);">Radar de Marketing y Facturación</h2>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.75rem;">
+
+      <div style="background:rgba(37,99,235,.1); border:1px solid rgba(37,99,235,.2); border-radius:10px; padding:.9rem; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:800; color:#60a5fa;">{{ metricas_marketing.campanas_activas }}</div>
+        <div style="font-size:.72rem; color:var(--wr-muted); margin-top:2px;">Campañas Activas</div>
+      </div>
+
+      <div style="background:{% if metricas_marketing.cfdi_pendientes > 0 %}rgba(245,158,11,.15){% else %}rgba(16,185,129,.1){% endif %}; border:1px solid {% if metricas_marketing.cfdi_pendientes > 0 %}rgba(245,158,11,.3){% else %}rgba(16,185,129,.2){% endif %}; border-radius:10px; padding:.9rem; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:800; color:{% if metricas_marketing.cfdi_pendientes > 0 %}#fbbf24{% else %}#34d399{% endif %};">{{ metricas_marketing.cfdi_pendientes }}</div>
+        <div style="font-size:.72rem; color:var(--wr-muted); margin-top:2px;">CFDI Pendientes</div>
+        {% if metricas_marketing.cfdi_pendientes > 0 %}
+        <a href="{% url 'bandeja_cfdi' %}" style="font-size:.68rem; color:#fbbf24; text-decoration:none;">Ver bandeja →</a>
+        {% endif %}
+      </div>
+
+      <div style="background:rgba(168,85,247,.1); border:1px solid rgba(168,85,247,.2); border-radius:10px; padding:.9rem; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:800; color:#c084fc;">~{{ metricas_marketing.pacientes_inactivos_estimado }}</div>
+        <div style="font-size:.72rem; color:var(--wr-muted); margin-top:2px;">Pac. Inactivos (6m)</div>
+        <a href="{% url 'marketing:reactivacion_ia' %}" style="font-size:.68rem; color:#c084fc; text-decoration:none;">Reactivar con IA →</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════
+     RADAR NOM-035 — TENDENCIA DE BIENESTAR STAFF
+     ═══════════════════════════════════════════ -->
+{% if tendencia_bienestar.disponible %}
+<div style="padding: 1rem 1.5rem;">
+  <div style="background: var(--wr-panel); border: 1px solid var(--wr-border); border-radius: 12px; padding: 1.25rem;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+      <div>
+        <span style="font-size:.7rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--wr-muted);">NOM-035 STPS</span>
+        <h2 style="margin:2px 0 0; font-size:1rem; color:var(--wr-text);">Radar de Bienestar del Staff — Últimas 8 Semanas</h2>
+      </div>
+      {% if tendencia_bienestar.total_alto_riesgo > 0 %}
+      <span style="background:rgba(239,68,68,.15); color:#ef4444; padding:4px 12px; border-radius:20px; font-size:.72rem; font-weight:700; border:1px solid rgba(239,68,68,.3);">
+        {{ tendencia_bienestar.total_alto_riesgo }} entradas ROJO
+      </span>
+      {% else %}
+      <span style="background:rgba(16,185,129,.15); color:#10b981; padding:4px 12px; border-radius:20px; font-size:.72rem; font-weight:700; border:1px solid rgba(16,185,129,.3);">
+        Sin alertas críticas
+      </span>
+      {% endif %}
+    </div>
+    <canvas id="nom035Chart" style="max-height:200px;"></canvas>
+    <p style="font-size:.68rem; color:var(--wr-muted); margin-top:.5rem; text-align:center;">
+      <i class="fas fa-lock me-1"></i>Datos anonimizados — Solo conteos por semana. Identidades protegidas bajo NOM-035 STPS.
+    </p>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+let warRoomInterval = null;
+
+{% if tendencia_bienestar.disponible %}
+// ── Gráfica NOM-035 Burnout ──────────────────────────────────────────────────
+(function() {
+  const ctx = document.getElementById('nom035Chart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ tendencia_bienestar.labels|safe }},
+      datasets: [
+        {
+          label: 'Bienestar Normal',
+          data: {{ tendencia_bienestar.verde|safe }},
+          backgroundColor: 'rgba(16,185,129,.7)',
+          borderColor: '#10b981',
+          borderWidth: 1,
+        },
+        {
+          label: 'Estrés / Ansiedad',
+          data: {{ tendencia_bienestar.amarillo|safe }},
+          backgroundColor: 'rgba(245,158,11,.7)',
+          borderColor: '#f59e0b',
+          borderWidth: 1,
+        },
+        {
+          label: 'Riesgo Alto (ROJO)',
+          data: {{ tendencia_bienestar.rojo|safe }},
+          backgroundColor: 'rgba(239,68,68,.7)',
+          borderColor: '#ef4444',
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { labels: { color: '#94a3b8', font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            title: ctx => `Semana del ${ctx[0].label}`,
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.raw} entradas`,
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: '#64748b', font: { size: 10 } },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          ticks: { color: '#64748b', font: { size: 10 }, stepSize: 1 },
+          grid: { color: 'rgba(255,255,255,.08)' },
+        },
+      },
+    },
+  });
+})();
+{% endif %}
+
+function actualizarWarRoom() {
+  const btn = document.querySelector('button[onclick="actualizarWarRoom()"]');
+  if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Actualizando...';
+
+  fetch('/director/war-room/api/anomalias/')
+    .then(r => r.json())
+    .then(data => {
+      // Actualizar KPIs
+      const m = data.metricas || {};
+      document.getElementById('kpi-ordenes-hoy').textContent = m.ordenes_hoy ?? '-';
+      document.getElementById('kpi-completadas').textContent = m.ordenes_completadas ?? '-';
+      document.getElementById('kpi-pendientes').textContent = m.ordenes_pendientes ?? '-';
+      document.getElementById('kpi-ingresos').textContent = '$' + (m.ingresos_hoy ?? 0).toLocaleString('es-MX', {maximumFractionDigits:0});
+      document.getElementById('kpi-criticos').textContent = m.criticos_activos ?? 0;
+      document.getElementById('kpi-stocks').textContent = m.stocks_criticos ?? 0;
+
+      // Actualizar contadores
+      document.getElementById('chip-criticos').innerHTML =
+        `<i class="fas fa-circle-dot"></i> ${data.total_criticos} Criticos`;
+      document.getElementById('chip-advertencias').innerHTML =
+        `<i class="fas fa-circle-dot"></i> ${data.total_advertencias} Advertencias`;
+
+      // Actualizar lista
+      const lista = document.getElementById('wr-lista-anomalias');
+      if (data.anomalias && data.anomalias.length > 0) {
+        lista.innerHTML = data.anomalias.map(a => `
+          <div class="wr-anomalia nivel-${a.nivel}">
+            <div class="wr-icono"><i class="${a.icono}"></i></div>
+            <div class="wr-body">
+              <div class="titulo">
+                <span class="tipo-badge tipo-${a.tipo}">${a.tipo}</span>
+                ${a.titulo}
+              </div>
+              <div class="detalle">${a.detalle}</div>
+              <div class="meta">
+                <span><i class="fas fa-clock me-1"></i>${a.fecha}</span>
+                <span><i class="fas fa-user me-1"></i>${a.usuario}</span>
+                <span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.1);">${a.nivel}</span>
+              </div>
+            </div>
+            <div class="wr-accion">
+              <a href="${a.accion_url}">
+                <i class="fas fa-arrow-right me-1"></i>${a.accion_texto}
+              </a>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        lista.innerHTML = `
+          <div class="wr-empty">
+            <div class="icon"><i class="fas fa-shield-check"></i></div>
+            <h3>Sistema en Estado Optimo</h3>
+            <p style="max-width:400px;margin:0 auto;">
+              No hay anomalías activas. PRIS monitorea activamente.
+            </p>
+          </div>`;
+      }
+
+      // Actualizar timestamp
+      document.getElementById('wr-timestamp').innerHTML =
+        `<i class="fas fa-clock me-1"></i>${data.timestamp}`;
+
+      if (btn) btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Actualizar';
+
+      // Notificación críticos eliminada (orb removido)
+    })
+    .catch(err => {
+      console.warn('War Room API error:', err);
+      if (btn) btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Actualizar';
+    });
+}
+
+// Auto-actualizar cada 60 segundos
+warRoomInterval = setInterval(actualizarWarRoom, 60000);
+
+// Limpiar al salir
+window.addEventListener('beforeunload', () => {
+  if (warRoomInterval) clearInterval(warRoomInterval);
+});
+
+// Sonido de alerta para críticos (Web Audio API)
+function reproducirAlertaSonora() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [440, 523, 440].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.13);
+      osc.start(ctx.currentTime + i * 0.15);
+      osc.stop(ctx.currentTime + i * 0.15 + 0.13);
+    });
+  } catch(e) {}
+}
+
+{% if total_criticos > 0 %}
+// Reproducir alerta si hay críticos al cargar
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(reproducirAlertaSonora, 500);
+});
+{% endif %}
+</script>
+{% endblock %}

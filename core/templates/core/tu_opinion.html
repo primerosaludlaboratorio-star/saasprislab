@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Tu Opinión{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-7">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="mb-0"><i class="fas fa-comment-dots me-2 text-primary"></i>Tu Opinión</h5>
+        </div>
+        <div class="card-body">
+          {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+          {% if success %}<div class="alert alert-success">{{ success }}</div>{% endif %}
+
+          <p class="text-muted mb-4">Comparte tu opinión, sugerencia o comentario de forma anónima o identificada.</p>
+
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label">Nombre (opcional)</label>
+              <input type="text" name="nombre" class="form-control" placeholder="Tu nombre o alias" value="{{ nombre|default:'' }}">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Contacto (opcional)</label>
+              <input type="text" name="contacto" class="form-control" placeholder="Email o teléfono">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Mensaje *</label>
+              <textarea name="mensaje" class="form-control" rows="5" required placeholder="Escribe tu opinión, sugerencia o comentario..."></textarea>
+            </div>
+            <div class="form-check mb-4">
+              <input class="form-check-input" type="checkbox" name="anonimo" id="anonimo" value="true">
+              <label class="form-check-label" for="anonimo">Enviar de forma anónima</label>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fas fa-paper-plane me-1"></i>Enviar opinión
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

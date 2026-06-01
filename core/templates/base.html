@@ -1,0 +1,1867 @@
+﻿{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ empresa_actual.nombre|default:"PRISLAB" }} - Sistema Clínico Premium{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/icon-192.svg' %}">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="PRISLAB">
+    <meta name="theme-color" content="#0d6efd">
+    
+    <!-- CSRF Token para AJAX (accesible desde JavaScript) -->
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    
+    <!-- Google Fonts: Inter y Roboto (Tipografía Institucional) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 (CDN + fallback local) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+          onerror="this.onerror=null;this.href='{% static 'vendor/css/bootstrap.min.css' %}'">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <!-- FontAwesome (requerido para iconografía clínica avanzada) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- Estilo Global: Tipografía y Colores Institucionales -->
+    <style>
+        :root {
+            --prislab-font-primary: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --prislab-bg-broken-white: #fafafa;
+        }
+        body {
+            font-family: var(--prislab-font-primary);
+            background-color: var(--prislab-bg-broken-white);
+        }
+        /* Accesibilidad: foco visible para teclado (WCAG 2.4.7) */
+        :focus-visible {
+            outline: 3px solid #0d6efd;
+            outline-offset: 2px;
+        }
+        .btn:focus-visible {
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.35);
+        }
+        {% if is_sandbox_mode %}
+        .prislab-sandbox-stripe {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 2147483646;
+            background: linear-gradient(90deg, #ff3d00, #ff6d00);
+            color: #fff;
+            text-align: center;
+            font-weight: 700;
+            padding: 0.55rem 1rem;
+            font-size: clamp(0.78rem, 2.3vw, 1rem);
+            line-height: 1.35;
+            box-shadow: 0 3px 14px rgba(0,0,0,.45);
+            pointer-events: none;
+        }
+        body.prislab-sandbox-body { padding-top: 2.9rem !important; }
+        body.prislab-sandbox-body #prislab-offline-banner { top: calc(2.9rem + 60px); }
+        @media (max-width: 991.98px) {
+            body.prislab-sandbox-body #prislab-offline-banner { top: calc(2.9rem + 56px); }
+        }
+        {% endif %}
+    </style>
+    
+    <!-- CSS Compartido PRISLAB Futurista -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/prislab_shared.css' %}">
+    <!-- CSS Industrial: Semáforo de Pánico + Ergonomía Clínica ISO 15189 -->
+    <link rel="stylesheet" href="{% static 'css/prislab_industrial.css' %}">
+    
+    {# Pris Assistant CSS removido — widget desactivado #}
+    
+    <!-- CSS Dinámico Multi-Tenant (Identidad Camaleónica) -->
+    {% if empresa_actual %}
+    <style id="dynamic-empresa-styles">
+        :root {
+            --empresa-color-primario: {{ empresa_actual.color_primario|default:"#D9230F" }};
+            --empresa-color-secundario: {{ empresa_actual.color_secundario|default:"#2B3A42" }};
+            --empresa-color-fondo: {{ empresa_actual.color_fondo|default:"#FFFFFF" }};
+        }
+        
+        /* Aplicar colores dinámicos a la marca */
+        .marca-prislab {
+            color: var(--empresa-color-primario) !important;
+        }
+        
+        .marca-prislab:hover {
+            color: var(--empresa-color-primario) !important;
+            filter: brightness(1.1);
+        }
+        
+        /* Aplicar colores dinámicos a botones principales */
+        .btn-primary-profesional,
+        .btn-primary-profesional.neon-hover:hover {
+            background-color: var(--empresa-color-primario);
+            border-color: var(--empresa-color-primario);
+        }
+        
+        /* Aplicar colores dinámicos a enlaces activos (máximo contraste) */
+        .menu-item.active {
+            background-color: var(--empresa-color-primario);
+            color: #FFFFFF !important;
+            font-weight: 600;
+        }
+        
+        /* Efectos de hover con color de empresa */
+        .btn-profesional.neon-hover:hover,
+        .btn-primary-profesional.neon-hover:hover {
+            box-shadow: 0 0 24px {{ empresa_actual.color_primario|default:"#D9230F" }}80,
+                        inset 0 0 24px {{ empresa_actual.color_primario|default:"#D9230F" }}30;
+        }
+        
+        /* CSS Personalizado adicional de la empresa */
+        {% if empresa_actual.css_personalizado %}
+        {{ empresa_actual.css_personalizado|safe }}
+        {% endif %}
+    </style>
+    {% endif %}
+    
+    <!-- SweetAlert2 (CDN + fallback local) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>if(typeof Swal==='undefined'){var s=document.createElement('script');s.src="{% static 'vendor/js/sweetalert2.all.min.js' %}";document.head.appendChild(s);}</script>
+    
+    <!-- Estilos del Layout por Islas -->
+    <style>
+        /* ==================================================================
+           HEADER LÍQUIDO — Se adapta al sidebar de islas
+           ================================================================== */
+        .header-liquido {
+            position: fixed;
+            top: 0;
+            left: 272px;  /* Ancho del sidebar acordeón V8.0 */
+            right: 0;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            box-shadow: 0 1px 10px rgba(0, 0, 0, 0.04);
+            z-index: 1030;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                        border-bottom-color 0.5s ease;
+        }
+
+        /* Sidebar V8.0: el header tiene left fijo = --prsb-width (sobrescrito por sidebar.html CSS) */
+        .header-liquido.island-panel-expanded {
+            left: 272px;
+        }
+
+        /* Hamburguesa solo en móvil */
+        .hamburger-btn-island {
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: var(--prislab-dark);
+            padding: 8px;
+            margin-right: 8px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .hamburger-btn-island:hover {
+            background: rgba(0,0,0,0.06);
+            color: var(--prislab-red);
+        }
+        
+        /* Marca PRISLAB */
+        .marca-prislab {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            font-size: 22px;
+            letter-spacing: -0.5px;
+            color: var(--empresa-color-primario, var(--prislab-red));
+            text-decoration: none;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .marca-prislab:hover {
+            color: var(--prislab-red-neon);
+            text-decoration: none;
+        }
+        .marca-prislab .logo-icon {
+            font-size: 26px;
+            filter: drop-shadow(0 2px 4px rgba(217, 35, 15, 0.2));
+        }
+
+        /* Zona derecha del header */
+        /* ========== OMNISEARCH ========== */
+        .omnisearch-wrapper {
+            position: relative;
+            flex: 0 1 340px;
+            margin: 0 12px;
+        }
+        .omnisearch-input-group {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 10px;
+            padding: 0 12px;
+            transition: all .2s;
+        }
+        .omnisearch-input-group:focus-within {
+            background: rgba(255,255,255,0.22);
+            border-color: rgba(255,255,255,0.4);
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.08);
+        }
+        .omnisearch-icon { color: rgba(255,255,255,0.5); font-size: 0.85rem; }
+        .omnisearch-input {
+            background: none; border: none; outline: none;
+            color: #fff; padding: 7px 8px; width: 100%;
+            font-size: 0.88rem;
+        }
+        .omnisearch-input::placeholder { color: rgba(255,255,255,0.45); }
+        .omnisearch-kbd {
+            background: rgba(255,255,255,0.15); border-radius: 4px;
+            padding: 2px 6px; font-size: 0.7rem; color: rgba(255,255,255,0.5);
+            white-space: nowrap;
+        }
+        .omnisearch-results {
+            position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+            background: #fff; border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+            z-index: 9999; max-height: 380px; overflow-y: auto;
+            border: 1px solid #e0e0e0;
+        }
+        .omnisearch-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 16px; cursor: pointer; transition: background .15s;
+            text-decoration: none; color: #333; border-bottom: 1px solid #f0f0f0;
+        }
+        .omnisearch-item:hover, .omnisearch-item.active {
+            background: #f0f4ff;
+        }
+        .omnisearch-item:last-child { border-bottom: none; }
+        .omnisearch-item-icon {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem; color: #fff; flex-shrink: 0;
+        }
+        .omnisearch-item-text { flex: 1; min-width: 0; }
+        .omnisearch-item-title { font-weight: 600; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .omnisearch-item-sub { font-size: 0.78rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .omnisearch-empty { padding: 20px; text-align: center; color: #aaa; font-size: 0.9rem; }
+        .omnisearch-loading { padding: 16px; text-align: center; color: #888; }
+        @media (max-width: 768px) {
+            .omnisearch-wrapper { flex: 0 1 180px; margin: 0 6px; }
+            .omnisearch-kbd { display: none !important; }
+        }
+        @media (max-width: 576px) {
+            .omnisearch-wrapper { flex: 0 1 120px; }
+            .omnisearch-input { font-size: 0.8rem; padding: 5px 4px; }
+        }
+
+        .header-actions {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .header-action-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: rgba(0,0,0,0.65);
+            background: rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.06);
+            transition: all .2s ease;
+        }
+        .header-action-btn:hover {
+            color: var(--empresa-color-primario, #D9230F);
+            background: rgba(217,35,15,0.08);
+            border-color: rgba(217,35,15,0.2);
+            transform: translateY(-1px);
+        }
+        .header-action-btn.help-btn {
+            background: var(--empresa-color-primario, #D9230F);
+            border-color: transparent;
+        }
+        .header-action-btn.help-btn i {
+            color: #FFFFFF !important;
+        }
+
+        .header-user-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.06);
+            color: rgba(0,0,0,0.7);
+            font-weight: 600;
+            font-size: 13px;
+            max-width: 280px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+        .header-user-pill:hover {
+            background: rgba(0,0,0,0.08);
+            color: var(--empresa-color-primario, #D9230F);
+        }
+        .header-user-pill.dropdown-toggle::after {
+            margin-left: 6px;
+            opacity: 0.5;
+        }
+        
+        .dropdown-menu {
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0,0,0,0.08);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            border-radius: 12px;
+        }
+        .dropdown-item {
+            color: rgba(0,0,0,0.70);
+            padding: 10px 16px;
+            transition: all 0.15s ease;
+        }
+        .dropdown-item:hover {
+            background: rgba(217,35,15,0.08);
+            color: var(--empresa-color-primario, #D9230F);
+        }
+        .dropdown-item.text-danger:hover {
+            background: rgba(220,53,69,0.08);
+            color: #dc3545;
+        }
+        .dropdown-header {
+            color: rgba(0,0,0,0.45);
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 8px 16px;
+        }
+
+        /* ==================================================================
+           CONTENEDOR PRINCIPAL — Se desplaza con el sidebar
+           Transiciones "Programa Único": fade al cambiar de isla
+           ================================================================== */
+        .main-wrapper {
+            margin-top: 60px;
+            margin-left: 272px; /* Sidebar acordeón V8.0 */
+            transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                        opacity 0.3s ease,
+                        transform 0.3s ease,
+                        background 0.5s ease;
+            min-height: calc(100vh - 60px);
+        }
+        
+        /* Efecto fade al cambiar de módulo */
+        .main-wrapper.island-switching {
+            opacity: 0.4;
+            transform: translateY(3px);
+        }
+        
+        /* Sidebar V8.0 - sobrescrito por sidebar.html vía CSS vars */
+        .main-wrapper.island-panel-expanded {
+            margin-left: 272px;
+        }
+
+        /* Sidebar colapsado (modo compacto) */
+        body.prsb-collapsed-mode .main-wrapper {
+            margin-left: 0;
+        }
+
+        /* Responsive móvil */
+        @media (max-width: 991px) {
+            .main-wrapper {
+                margin-left: 0 !important;
+            }
+        }
+
+        /* Overlay para cerrar sidebar en móvil */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 1040;
+            display: none;
+            transition: opacity 0.3s ease;
+        }
+        .sidebar-overlay.show {
+            display: block;
+            animation: fadeIn 0.2s ease;
+        }
+        
+        /* Efecto de iluminación neón en hover */
+        .neon-hover {
+            transition: all 0.15s ease;
+        }
+        .neon-hover:hover {
+            box-shadow: 0 0 16px rgba(217, 35, 15, 0.3), inset 0 0 16px rgba(217, 35, 15, 0.08);
+            border-color: var(--prislab-red-neon) !important;
+        }
+        
+        /* Botones principales */
+        .btn-principal {
+            background: linear-gradient(135deg, var(--prislab-red) 0%, #B71C1C 100%);
+            color: white;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            box-shadow: 0 4px 16px rgba(217, 35, 15, 0.3);
+            transition: all 0.15s ease;
+        }
+        .btn-principal:hover {
+            background: linear-gradient(135deg, #FF1744 0%, var(--prislab-red) 100%);
+            box-shadow: 0 6px 24px rgba(217, 35, 15, 0.5);
+            transform: translateY(-2px);
+            color: white;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* ==================================================================
+           RESPONSIVE — Móvil (<992px): Rail se oculta
+           ================================================================== */
+        @media (max-width: 991.98px) {
+            .header-liquido {
+                left: 0 !important;
+                padding-left: 8px;
+            }
+            .main-wrapper {
+                margin-left: 0 !important;
+            }
+            .marca-prislab {
+                font-size: 18px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .header-actions .header-action-btn:not(.help-btn) {
+                display: none;
+            }
+            .marca-prislab span {
+                max-width: 120px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+        
+        /* ==================================================================
+           CICLO 8: Mobile/Tablet integrity — touch targets & tables
+           ================================================================== */
+        @media (max-width: 991.98px) {
+            .main-wrapper .table:not(.table-sm) {
+                font-size: 0.9rem;
+            }
+            .main-wrapper input:not([type="hidden"]):not(.form-control-sm),
+            .main-wrapper select:not(.form-select-sm),
+            .main-wrapper textarea:not(.form-control-sm) {
+                min-height: 44px;
+                font-size: 16px !important;
+            }
+            .main-wrapper .btn:not(.btn-sm) {
+                min-height: 44px;
+            }
+            .main-wrapper .card-body,
+            .main-wrapper .modal-body {
+                padding: 1rem;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body{% if is_sandbox_mode %} class="prislab-sandbox-body"{% endif %}>
+    <a href="#main-content" class="visually-hidden-focusable position-fixed top-0 start-0 m-2 btn btn-sm btn-primary shadow" style="z-index:2147483647;">
+        Saltar al contenido principal
+    </a>
+    {% if is_sandbox_mode %}
+    <div class="prislab-sandbox-stripe" role="alert" aria-live="assertive">
+        Advertencia: entorno de pruebas / sandbox. Los datos no son reales y no tienen validez clínica ni fiscal.
+    </div>
+    {% endif %}
+    <!-- Banner modo supervivencia — Punto 11 (debajo del header fijo en desktop) -->
+    <div id="prislab-offline-banner" class="d-none" role="status" aria-live="polite" style="position:fixed;top:60px;left:0;right:0;z-index:1025;background:#b45309;color:#fff;padding:6px 14px;text-align:center;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.15);">
+        <i class="bi bi-wifi-off me-2"></i> Estás en Modo Offline. Las órdenes y pagos se guardarán en este equipo y se sincronizarán al recuperar la conexión.
+    </div>
+    <script>
+    (function() {
+        var banner = document.getElementById('prislab-offline-banner');
+        if (!banner) return;
+        function updateBanner() {
+            if (!navigator.onLine) { banner.classList.remove('d-none'); }
+            else { banner.classList.add('d-none'); }
+        }
+        updateBanner();
+        window.addEventListener('online', updateBanner);
+        window.addEventListener('offline', updateBanner);
+    })();
+    </script>
+    <!-- Overlay para cerrar sidebar en móvil -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="cerrarSidebarMobile()"></div>
+    
+    <!-- ============================================================================
+         SIDEBAR DINÁMICO POR ISLAS (2 Niveles)
+         Nivel 1: Rail de Iconos (siempre visible en desktop)
+         Nivel 2: Panel de Funciones (se expande al seleccionar isla)
+         ============================================================================ -->
+    {% if user.is_authenticated %}
+    {% include "includes/sidebar.html" %}
+    {% endif %}
+
+    <!-- Header Líquido con Marca PRISLAB + Título Dinámico de Isla -->
+    <header class="header-liquido" id="headerLiquido">
+        <!-- Hamburguesa (solo visible en móvil) -->
+        <button type="button" class="hamburger-btn-island d-lg-none" id="hamburgerBtnIsland" onclick="toggleSidebarMobile()" aria-label="Abrir o cerrar menú de navegación">
+            <i class="bi bi-list" id="hamburgerIcon" aria-hidden="true"></i>
+        </button>
+        
+        <a href="{% url 'home' %}" class="marca-prislab" id="marcaPrislab">
+            <img src="{% static 'img/icon-192.svg' %}" alt="{{ empresa_actual.nombre|default:'PRISLAB' }}" class="logo-icon" style="width: 32px; height: 32px; object-fit: contain;" onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+            <i class="bi bi-heart-pulse-fill logo-icon" style="display: none;"></i>
+            <span>{{ empresa_actual.nombre|default:"PRISLAB" }}</span>
+            {% if empresa_actual and empresa_actual.periodo_vigencia %}
+                <small style="font-size: 0.65em; font-weight: 400; opacity: 0.7; margin-left: 8px;">
+                    {{ empresa_actual.periodo_vigencia }}
+                </small>
+            {% endif %}
+        </a>
+        
+        <!-- Título Dinámico de la Isla Activa ("Programa Único") -->
+        <span class="island-navbar-badge" id="islandNavbarBadge">
+            <span class="island-navbar-dot"></span>
+            <i id="islandNavbarIcon"></i>
+            <span class="island-navbar-separator"></span>
+            <span id="islandNavbarTitle"></span>
+        </span>
+        
+        <!-- ========== OMNISEARCH BAR ========== -->
+        {% if user.is_authenticated %}
+        <div class="omnisearch-wrapper" id="omnisearchWrapper">
+            <div class="omnisearch-input-group">
+                <i class="fas fa-search omnisearch-icon"></i>
+                <input type="text" id="omnisearchInput" class="omnisearch-input" 
+                       placeholder="Buscar paciente, orden, folio..." 
+                       autocomplete="off" spellcheck="false"
+                       aria-label="Búsqueda global: paciente, orden o folio"
+                       aria-autocomplete="list"
+                       aria-controls="omnisearchResults">
+                <kbd class="omnisearch-kbd d-none d-md-inline">Ctrl+K</kbd>
+            </div>
+            <div class="omnisearch-results" id="omnisearchResults" role="listbox" aria-label="Resultados de búsqueda" style="display:none;"></div>
+        </div>
+        {% endif %}
+        
+        <div class="header-actions">
+            {% if user.is_authenticated %}
+            <span class="d-none align-self-center small me-2 text-warning" id="prislab-outbox-badge-wrap" style="font-weight:600;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="">
+                <i class="bi bi-cloud-arrow-up"></i> <span id="prislab-outbox-num">0</span>
+            </span>
+            <a href="{% url 'notificaciones_lista' %}" class="header-action-btn neon-hover position-relative" title="Centro de Notificaciones" id="notificacionesBtn">
+                <i class="bi bi-bell"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificacionesBadge" style="display:none; font-size:.6rem;">0</span>
+            </a>
+            {% endif %}
+            <a href="#" class="header-action-btn help-btn neon-hover" title="Guia Rapida" data-bs-toggle="modal" data-bs-target="#modalAyudaRapida">
+                <i class="fa-regular fa-circle-question"></i>
+            </a>
+            {% if user.is_authenticated %}
+                <div class="dropdown">
+                    <button class="header-user-pill dropdown-toggle" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; border: none; background: var(--bg-glass);">
+                        <i class="bi bi-person-circle"></i>
+                        {{ user.get_full_name|default:user.username }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenuDropdown" style="margin-top: 8px; min-width: 200px;">
+                        <li>
+                            <h6 class="dropdown-header">
+                                <i class="bi bi-person"></i> {{ user.get_full_name|default:user.username }}
+                            </h6>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% if user.is_superuser or user.is_staff %}
+                        <li>
+                            <a class="dropdown-item" href="{% url 'admin:index' %}">
+                                <i class="bi bi-gear"></i> Panel Admin
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% endif %}
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'logout' %}" data-prislab-logout="forensic">
+                                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </header>
+    
+    <!-- Barra de color contextual de isla (debajo del header) -->
+    <div class="island-header-bar" id="islandHeaderBar"></div>
+    
+    <!-- SUGERENCIA DE DESCANSO (Pris te Cuida 💜) -->
+    {% if request.session.sugerir_descanso %}
+    <div id="alerta-descanso" class="alert alert-warning border-0 shadow-lg position-fixed" 
+         style="top: 80px; right: 20px; z-index: 1060; max-width: 350px; display: none;">
+        <button type="button" class="btn-close" onclick="cerrarAlertaPris()"></button>
+        <h6 class="mb-2">
+            <i class="bi bi-heart-pulse" aria-hidden="true"></i> Recordatorio de bienestar
+        </h6>
+        <p class="mb-0 small">
+            {% if user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %}, 
+            tu precisión es vital, pero tus ojos necesitan un respiro. 
+            Has estado activo por más de {{ request.session.tiempo_activo_horas|floatformat:1 }} horas. 
+            <strong>Tómate 5 minutos de paz.</strong>
+        </p>
+        <a href="{% url 'bienestar:dashboard_bienestar' %}" class="btn btn-sm btn-outline-primary mt-2">
+            <i class="bi bi-heart"></i> Ir a Bienestar
+        </a>
+    </div>
+    <script>
+        // Sistema inteligente de Pris: Solo aparece UNA VEZ por sesión
+        function mostrarAlertaPris() {
+            const alerta = document.getElementById('alerta-descanso');
+            if (!alerta) return;
+            
+            // Verificar si el usuario ya cerró la alerta en esta sesión
+            const prisAlertaCerrada = sessionStorage.getItem('pris_alerta_cerrada');
+            
+            // Si nunca la ha cerrado en esta sesión, mostrarla
+            if (!prisAlertaCerrada) {
+                alerta.style.display = 'block';
+            }
+        }
+        
+        function cerrarAlertaPris() {
+            const alerta = document.getElementById('alerta-descanso');
+            if (alerta) {
+                alerta.style.display = 'none';
+            }
+            // Marcar que el usuario cerró la alerta (persiste durante toda la sesión del navegador)
+            sessionStorage.setItem('pris_alerta_cerrada', 'true');
+        }
+        
+        // Mostrar alerta de Pris solo si no ha sido cerrada antes
+        document.addEventListener('DOMContentLoaded', function() {
+            mostrarAlertaPris();
+        });
+    </script>
+    {% endif %}
+    
+    <!-- Contenedor principal (landmark para lectores de pantalla y enlace “saltar”) -->
+    <main class="main-wrapper" id="main-content" tabindex="-1">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="margin: 20px;">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>if(typeof bootstrap==='undefined'){var s=document.createElement('script');s.src="{% static 'vendor/js/bootstrap.bundle.min.js' %}";document.head.appendChild(s);}</script>
+    
+    <!-- PRIS SENTINEL V4: Push Notifications -->
+    <script src="{% static 'js/push_notifications.js' %}"></script>
+    
+    <!-- PRIS Voice Commander Legacy: Desactivado, reemplazado por PRIS IA Assistant (/ia/asistente/) -->
+    
+    <!-- ================================================================
+         PRIS ERROR SHIELD: Interceptor global de errores
+         Nunca corta el flujo. Muestra errores bonitos y reporta a Sentinel.
+         ================================================================ -->
+    <script>
+    (function(){
+        // Interceptar alert() para reemplazarlo con notificacion elegante
+        const _origAlert = window.alert;
+        window.alert = function(msg) {
+            // Si es un error del sistema, mostrarlo bonito
+            if (typeof msg === 'string' && (msg.includes('Error') || msg.includes('error') || msg.includes('NoneType') || msg.includes('attribute'))) {
+                window.prisNotify(msg, 'error');
+                return;
+            }
+            // Para alertas normales, usar el original
+            _origAlert.call(window, msg);
+        };
+
+        // Funcion global de notificacion elegante
+        window.prisNotify = function(msg, type) {
+            type = type || 'info';
+            const colors = {error:'danger', warning:'warning', success:'success', info:'info'};
+            const icons = {error:'exclamation-triangle', warning:'exclamation-circle', success:'check-circle', info:'info-circle'};
+            const cls = colors[type] || 'info';
+            const icon = icons[type] || 'info-circle';
+
+            const prev = document.getElementById('prisNotify');
+            if (prev) prev.remove();
+
+            const div = document.createElement('div');
+            div.id = 'prisNotify';
+            div.className = `alert alert-${cls} alert-dismissible fade show shadow-lg`;
+            div.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;max-width:500px;border-radius:12px;animation:prisSlideIn .3s ease;font-size:.9rem;';
+            div.innerHTML = `<i class="fas fa-${icon} me-2"></i>${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+            document.body.appendChild(div);
+            setTimeout(() => { if (div.parentNode) div.remove(); }, 10000);
+        };
+
+        // Interceptar errores JS globales
+        window.addEventListener('error', function(e) {
+            console.error('PRIS Error Shield:', e.message, e.filename, e.lineno);
+            // Reportar al servidor (Sentinel)
+            try {
+                fetch('/api/log-frontend-error/', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json','X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1]||''},
+                    body: JSON.stringify({error: e.message, source: e.filename, line: e.lineno, col: e.colno})
+                }).catch(()=>{});
+            } catch(x){}
+        });
+
+        // Interceptar promesas rechazadas
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('PRIS Error Shield (Promise):', e.reason);
+            try {
+                fetch('/api/log-frontend-error/', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json','X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1]||''},
+                    body: JSON.stringify({error: String(e.reason), source: 'unhandledrejection', line: 0})
+                }).catch(()=>{});
+            } catch(x){}
+        });
+
+        // Inyectar CSS de animacion
+        const style = document.createElement('style');
+        style.textContent = '@keyframes prisSlideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}';
+        document.head.appendChild(style);
+    })();
+    </script>
+    
+    <!-- Interceptar errores de WebSocket GLOBALMENTE (antes de cualquier script) -->
+    <script>
+        // ==============================================================================
+        // SILENCIADOR DE WEBSOCKET (CAPA 0): Interceptar constructor ANTES de que se use
+        // ==============================================================================
+        (function() {
+            // Guardar el constructor original de WebSocket
+            const OriginalWebSocket = window.WebSocket;
+            
+            // Interceptar el constructor de WebSocket
+            window.WebSocket = function(url, protocols) {
+                // Verificar si es una conexión a QZ Tray (puertos 8182-8485)
+                const esQZTray = url && (
+                    url.includes('localhost:8182') ||
+                    url.includes('localhost:8283') ||
+                    url.includes('localhost:8384') ||
+                    url.includes('localhost:8485') ||
+                    url.includes('127.0.0.1:8182') ||
+                    url.includes('127.0.0.1:8283') ||
+                    url.includes('127.0.0.1:8384') ||
+                    url.includes('127.0.0.1:8485') ||
+                    url.includes('qz.io')
+                );
+                
+                if (esQZTray) {
+                    // Crear un WebSocket "mock" que silencia errores
+                    const ws = new OriginalWebSocket(url, protocols);
+                    
+                    // Interceptar eventos de error y cerrarlos silenciosamente
+                    const originalOnError = ws.onerror;
+                    ws.onerror = function(event) {
+                        // Silenciar completamente - no hacer nada
+                        return false;
+                    };
+                    
+                    // Interceptar eventos de close y cerrarlos silenciosamente
+                    const originalOnClose = ws.onclose;
+                    ws.onclose = function(event) {
+                        // Silenciar completamente - no hacer nada
+                        return false;
+                    };
+                    
+                    // Si falla la conexión, no propagar el error
+                    ws.addEventListener('error', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                    }, true);
+                    
+                    return ws;
+                }
+                
+                // Para conexiones normales, usar el constructor original
+                return new OriginalWebSocket(url, protocols);
+            };
+            
+            // Copiar propiedades estáticas del WebSocket original
+            Object.setPrototypeOf(window.WebSocket, OriginalWebSocket);
+            Object.getOwnPropertyNames(OriginalWebSocket).forEach(function(prop) {
+                if (prop !== 'prototype' && prop !== 'length' && prop !== 'name') {
+                    try {
+                        window.WebSocket[prop] = OriginalWebSocket[prop];
+                    } catch (e) {
+                        // Ignorar errores al copiar propiedades
+                    }
+                }
+            });
+        })();
+        
+        // ==============================================================================
+        // INTERCEPTAR ERRORES DE CONSOLA (CAPA 1): Filtro adicional
+        // ==============================================================================
+        (function() {
+            const originalError = console.error;
+            const originalWarn = console.warn;
+            const originalLog = console.log;
+            
+            // Función helper para verificar si es un error de QZ Tray
+            function esErrorQZTray(message) {
+                if (!message) return false;
+                const msg = String(message).toLowerCase();
+                return msg.includes('websocket') && 
+                       (msg.includes('localhost') || 
+                        msg.includes('qz.io') || 
+                        msg.includes('ws://') ||
+                        msg.includes('failed') ||
+                        msg.includes('connection') ||
+                        msg.includes('8182') ||
+                        msg.includes('8283') ||
+                        msg.includes('8384') ||
+                        msg.includes('8485'));
+            }
+            
+            console.error = function(...args) {
+                const errorMessage = args.map(arg => {
+                    if (arg instanceof Error) {
+                        return arg.message + ' ' + (arg.stack || '');
+                    }
+                    return String(arg);
+                }).join(' ');
+                
+                if (esErrorQZTray(errorMessage)) {
+                    return; // Silenciar completamente
+                }
+                originalError.apply(console, args);
+            };
+            
+            console.warn = function(...args) {
+                const warnMessage = args.map(arg => {
+                    if (arg instanceof Error) {
+                        return arg.message + ' ' + (arg.stack || '');
+                    }
+                    return String(arg);
+                }).join(' ');
+                
+                if (esErrorQZTray(warnMessage)) {
+                    return; // Silenciar completamente
+                }
+                originalWarn.apply(console, args);
+            };
+            
+            console.log = function(...args) {
+                const logMessage = args.map(arg => String(arg)).join(' ');
+                if (esErrorQZTray(logMessage)) {
+                    return; // Silenciar completamente
+                }
+                originalLog.apply(console, args);
+            };
+            
+            // Interceptar errores no capturados
+            window.addEventListener('error', function(event) {
+                if (esErrorQZTray(event.message) || esErrorQZTray(event.filename) || esErrorQZTray(event.error?.message)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return false;
+                }
+            }, true);
+            
+            // Interceptar promesas rechazadas
+            window.addEventListener('unhandledrejection', function(event) {
+                const reason = event.reason ? String(event.reason) : '';
+                if (esErrorQZTray(reason)) {
+                    event.preventDefault();
+                    return false;
+                }
+            });
+        })();
+    </script>
+    
+    <!-- JavaScript Global: Navegación por Islas -->
+    <script>
+        // ── Toggle sidebar en MÓVIL — delega al nuevo sistema V8.0 ──
+        function toggleSidebarMobile() {
+            var sidebar = document.getElementById('islandSidebar');
+            var icon    = document.getElementById('hamburgerIcon');
+            if (!sidebar) return;
+            var isOpen = sidebar.classList.contains('prsb-mobile-open');
+            if (isOpen) {
+                if (typeof prsbCloseMobile === 'function') prsbCloseMobile();
+                if (icon) icon.className = 'bi bi-list';
+            } else {
+                if (typeof prsbOpenMobile === 'function') prsbOpenMobile();
+                if (icon) icon.className = 'bi bi-x-lg';
+            }
+        }
+        
+        function cerrarSidebarMobile() {
+            if (typeof prsbCloseMobile === 'function') prsbCloseMobile();
+            var icon = document.getElementById('hamburgerIcon');
+            if (icon) icon.className = 'bi bi-list';
+        }
+        
+        // ── Función placeholder para Panel IA ──
+        function abrirPanelIA() {
+            window.location.href = "{% url 'ia_dashboard' %}";
+        }
+    </script>
+    
+    <script src="{% static 'js/offline_sync.js' %}" defer></script>
+    {% block extra_js %}{% endblock %}
+    
+    <!-- ============================================================================== -->
+    <!-- WIDGET DE CHAT INTERNO (INTER-CHAT) - DISPONIBLE EN TODAS LAS PANTALLAS -->
+    <!-- ============================================================================== -->
+    {% if user.is_authenticated %}
+    <!-- WIDGET PRIS - SISTEMA NERVIOSO CENTRAL -->
+    {# Widget PRIS flotante eliminado — acceso solo desde el rail del sidebar #}
+    
+    <!-- Chat Legacy removido: PRIS-Chat (WhatsApp-style) es la nueva interfaz -->
+    
+    <script>
+        // Usar window.CSRF_TOKEN para evitar conflictos con otros scripts
+        // NO crear alias local para evitar errores de redeclaración
+        if (typeof window.CSRF_TOKEN === 'undefined') {
+            window.CSRF_TOKEN = '{{ csrf_token }}';
+        }
+        
+        // ==============================================================================
+        // SISTEMA DE AUDITORÍA: Capturador de Errores del Frontend
+        // ==============================================================================
+        (function() {
+            'use strict';
+            
+            // Función para enviar errores al servidor (SILENCIOSA: no debe bloquear)
+            // Expuesta al scope global para que otros scripts puedan usarla
+            window.enviarErrorAlServidor = enviarErrorAlServidor;
+            function enviarErrorAlServidor(errorData) {
+                try {
+                    // Intentar enviar el error al servidor
+                    fetch('/api/log-frontend-error/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': window.CSRF_TOKEN || ''
+                        },
+                        body: JSON.stringify(errorData)
+                    }).catch(function(err) {
+                        // Si falla el envío, no hacer nada (silencioso)
+                        console.warn('[AUDITORÍA] No se pudo enviar error al servidor (esto es normal si el servidor está caído)');
+                    });
+                } catch (e) {
+                    // Si hay un error al intentar enviar, ignorarlo completamente
+                    // No queremos que el sistema de logging bloquee la aplicación
+                }
+            }
+            
+            // Capturar errores de JavaScript (window.onerror)
+            window.onerror = function(message, source, lineno, colno, error) {
+                // Construir objeto de error
+                const errorData = {
+                    message: message || 'Error desconocido',
+                    source: source || 'Desconocido',
+                    line: lineno || 'N/A',
+                    col: colno || 'N/A',
+                    stack: error ? (error.stack || 'N/A') : 'N/A',
+                    url: window.location.href,
+                    type: 'javascript_error',
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Enviar al servidor (silencioso)
+                enviarErrorAlServidor(errorData);
+                
+                // Permitir que el error se propague normalmente (no retornar true)
+                return false;
+            };
+            
+            // Capturar promesas rechazadas no manejadas (window.onunhandledrejection)
+            window.addEventListener('unhandledrejection', function(event) {
+                const reason = event.reason;
+                let errorMessage = 'Promise rejection no manejada';
+                let errorStack = 'N/A';
+                
+                if (reason instanceof Error) {
+                    errorMessage = reason.message;
+                    errorStack = reason.stack || 'N/A';
+                } else if (typeof reason === 'string') {
+                    errorMessage = reason;
+                } else {
+                    errorMessage = String(reason);
+                }
+                
+                const errorData = {
+                    message: errorMessage,
+                    source: 'Promise Rejection',
+                    line: 'N/A',
+                    col: 'N/A',
+                    stack: errorStack,
+                    url: window.location.href,
+                    type: 'unhandled_promise_rejection',
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Enviar al servidor (silencioso)
+                enviarErrorAlServidor(errorData);
+            });
+            
+            // Interceptar console.error para capturar errores que se muestran en rojo
+            const originalConsoleError = console.error;
+            console.error = function(...args) {
+                // Construir mensaje del error
+                const errorMessage = args.map(arg => {
+                    if (arg instanceof Error) {
+                        return arg.message + ' ' + (arg.stack || '');
+                    }
+                    return String(arg);
+                }).join(' ');
+                
+                // Filtrar errores de QZ Tray (ya están silenciados, no los registramos)
+                const esQZTray = errorMessage.toLowerCase().includes('websocket') && 
+                                 (errorMessage.includes('localhost') || 
+                                  errorMessage.includes('qz.io') || 
+                                  errorMessage.includes('8182') ||
+                                  errorMessage.includes('8283') ||
+                                  errorMessage.includes('8384') ||
+                                  errorMessage.includes('8485'));
+                
+                if (!esQZTray) {
+                    // Enviar al servidor solo si NO es un error de QZ Tray
+                    // y evitar loop si enviarErrorAlServidor falla
+                    try {
+                        const errorData = {
+                            message: errorMessage,
+                            source: 'console.error',
+                            line: 'N/A',
+                            col: 'N/A',
+                            stack: args.find(arg => arg instanceof Error)?.stack || 'N/A',
+                            url: window.location.href,
+                            type: 'console_error',
+                            timestamp: new Date().toISOString()
+                        };
+                        
+                        if (typeof enviarErrorAlServidor === 'function') {
+                            enviarErrorAlServidor(errorData);
+                        }
+                    } catch(_ignoreLoopError) {}
+                }
+                
+                // Llamar al console.error original
+                originalConsoleError.apply(console, args);
+            };
+        })();
+        
+        /* Chat legacy removido - PRIS-Chat (WhatsApp-style) es la interfaz activa en /chat/ */
+
+        // ── SENTINEL 2.0: Monitoreo de latencia de fetch ──
+        (function() {
+            const _fetch = window.fetch;
+            window.fetch = function() {
+                const url = arguments[0];
+                var urlStr = typeof url === 'string' ? url : '';
+                if (urlStr.startsWith('/static/') || urlStr.startsWith('/media/') || urlStr.includes('/log-frontend-error')) {
+                    return _fetch.apply(this, arguments);
+                }
+                const t0 = performance.now();
+                return _fetch.apply(this, arguments).then(function(resp) {
+                    const ms = performance.now() - t0;
+                    if (ms > 8000) {
+                        enviarErrorAlServidor({
+                            message: 'Request lenta: ' + urlStr + ' (' + Math.round(ms) + 'ms)',
+                            source: 'sentinel_performance',
+                            line: 'N/A', col: 'N/A',
+                            stack: 'Latencia: ' + Math.round(ms) + 'ms | Status: ' + resp.status,
+                            url: window.location.href,
+                            type: 'slow_request',
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+                    return resp;
+                });
+            };
+        })();
+    </script>
+    {% endif %}
+    
+    <!-- ============================================================================== -->
+    <!-- MODAL QUEJAS / SUGERENCIAS (se abre desde el rail del sidebar, sin botones flotantes) -->
+    <!-- ============================================================================== -->
+    {% if user.is_authenticated %}
+    <!-- Modal de Feedback/Sugerencias -->
+    <div class="modal fade" id="modalFeedback" tabindex="-1" aria-labelledby="modalFeedbackLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="modalFeedbackLabel">
+                        <i class="bi bi-chat-left-text"></i> Enviar Sugerencia o Reportar Error
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formFeedback">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="feedbackTipo" class="form-label fw-bold">Tipo de Mensaje</label>
+                            <select class="form-select" id="feedbackTipo" required>
+                                <option value="">Seleccione...</option>
+                                <option value="SUGERENCIA">💡 Sugerencia de Mejora</option>
+                                <option value="ERROR">🐛 Reportar Error</option>
+                                <option value="FELICITACION">⭐ Felicitación</option>
+                                <option value="OTRO">📝 Otro</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="feedbackMensaje" class="form-label fw-bold">Mensaje</label>
+                            <textarea class="form-control" id="feedbackMensaje" rows="5" 
+                                      placeholder="Describe tu sugerencia, el error encontrado o tu comentario..." 
+                                      required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="feedbackNombre" class="form-label">Tu Nombre (Opcional)</label>
+                            <input type="text" class="form-control" id="feedbackNombre" 
+                                   placeholder="Dejar vacío para enviar anónimamente">
+                        </div>
+                        <div class="mb-3">
+                            <label for="feedbackContacto" class="form-label">Contacto (Opcional)</label>
+                            <input type="text" class="form-control" id="feedbackContacto" 
+                                   placeholder="Email o teléfono (opcional)">
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="feedbackAnonimo" checked>
+                            <label class="form-check-label" for="feedbackAnonimo">
+                                Enviar de forma anónima
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-info" id="btnEnviarFeedback">
+                        <i class="bi bi-send"></i> Enviar Sugerencia
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Enviar feedback al servidor
+        document.getElementById('btnEnviarFeedback').addEventListener('click', function() {
+            const tipo = document.getElementById('feedbackTipo').value;
+            const mensaje = document.getElementById('feedbackMensaje').value;
+            const nombre = document.getElementById('feedbackNombre').value;
+            const contacto = document.getElementById('feedbackContacto').value;
+            const anonimo = document.getElementById('feedbackAnonimo').checked;
+            
+            if (!tipo || !mensaje) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({icon:'warning', title:'Campos incompletos', text:'Por favor complete todos los campos requeridos.', confirmButtonColor:'#17a2b8'});
+                } else {
+                    alert('Por favor complete todos los campos requeridos.');
+                }
+                return;
+            }
+            
+            // Enviar al endpoint de buzon de quejas (usar FormData para compatibilidad)
+            const formData = new FormData();
+            formData.append('tipo', tipo);
+            formData.append('mensaje', mensaje);
+            formData.append('nombre', anonimo ? '' : nombre);
+            formData.append('contacto', contacto);
+            formData.append('anonimo', anonimo ? 'true' : 'false');
+            
+            fetch('/tu-opinion/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': window.CSRF_TOKEN || '',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.text().then(html => {
+                        // Si la respuesta es HTML (éxito), mostrar mensaje
+                        if (html.includes('exito') || html.includes('Gracias')) {
+                            document.getElementById('formFeedback').reset();
+                            document.getElementById('feedbackAnonimo').checked = true;
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('modalFeedback'));
+                            modal.hide();
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({icon:'success', title:'¡Gracias!', text:'Tu mensaje ha sido enviado correctamente.', timer:3000, showConfirmButton:false, toast:true, position:'top-end'});
+                            }
+                        } else {
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({icon:'error', title:'Error', text:'No se pudo enviar. Intente nuevamente.'});
+                            } else {
+                                alert('Error al enviar. Por favor intente nuevamente.');
+                            }
+                        }
+                    });
+                } else {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({icon:'error', title:'Error', text:'Error del servidor. Intente nuevamente.'});
+                    } else {
+                        alert('Error al enviar. Por favor intente nuevamente.');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({icon:'error', title:'Error de conexión', text:'No se pudo enviar el mensaje. Verifique su conexión.'});
+                } else {
+                    alert('Error al enviar el mensaje. Por favor intente nuevamente.');
+                }
+            });
+        });
+    </script>
+    {% endif %}
+    
+    <!-- Service Worker Registration para PWA -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                // Limpiar SWs viejos registrados con scope incorrecto (/static/)
+                navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    regs.forEach(function(r) {
+                        if (r.scope && r.scope.includes('/static/')) {
+                            r.unregister().then(function() {
+                                console.log('[PWA] SW viejo desregistrado:', r.scope);
+                            });
+                        }
+                    });
+                });
+
+                navigator.serviceWorker.register('/sw.js', {scope: '/'})
+                    .then(function(registration) {
+                        console.log('[PWA] Service Worker registrado:', registration.scope);
+                        setInterval(function() { registration.update(); }, 300000);
+                    })
+                    .catch(function(error) {
+                        console.warn('[PWA] SW no disponible:', error.message);
+                    });
+                
+                navigator.serviceWorker.addEventListener('message', function(event) {
+                    console.log('[PWA] Mensaje del Service Worker:', event.data);
+                });
+            });
+        }
+
+        async function prislabForensicLogout(logoutUrl) {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    regs.forEach(function(reg) {
+                        if (reg.active) {
+                            reg.active.postMessage({ type: 'FORENSIC_LOGOUT' });
+                        }
+                    });
+                }
+
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(function(name) { return caches.delete(name); }));
+                }
+
+                if ('indexedDB' in window && indexedDB.databases) {
+                    const dbs = await indexedDB.databases();
+                    await Promise.all((dbs || []).map(function(db) {
+                        if (db && db.name) {
+                            return new Promise(function(resolve) {
+                                const req = indexedDB.deleteDatabase(db.name);
+                                req.onsuccess = req.onerror = req.onblocked = function() { resolve(); };
+                            });
+                        }
+                        return Promise.resolve();
+                    }));
+                }
+
+                try { localStorage.clear(); } catch (e) {}
+                try { sessionStorage.clear(); } catch (e) {}
+            } catch (e) {
+                console.warn('[PWA] Logout forense incompleto:', e && e.message ? e.message : e);
+            } finally {
+                window.location.href = logoutUrl;
+            }
+        }
+
+        document.addEventListener('click', function(event) {
+            const logoutLink = event.target.closest('[data-prislab-logout="forensic"]');
+            if (!logoutLink) return;
+            event.preventDefault();
+            prislabForensicLogout(logoutLink.getAttribute('href'));
+        });
+        
+        // Detectar si la app está instalada como PWA
+        window.addEventListener('beforeinstallprompt', function(e) {
+            console.log('[PWA] App puede ser instalada');
+            // Prevenir el prompt automático
+            e.preventDefault();
+            // Guardar el evento para mostrarlo manualmente si se desea
+            window.deferredPrompt = e;
+        });
+        
+        // Detectar cuando la app se instala
+        window.addEventListener('appinstalled', function() {
+            console.log('[PWA] App instalada exitosamente');
+            window.deferredPrompt = null;
+        });
+    </script>
+    
+    <!-- ========================================
+         PRIS ASSISTANT - ASISTENTE VIRTUAL
+         ======================================== -->
+    {# Pris Assistant removido — no tiene funcionalidad interactiva actualmente #}
+    
+    <!-- FOOTER CON FILOSOFÍA (Visible en todas las pantallas, excepto al imprimir) -->
+    <footer class="d-print-none mt-5 py-4 border-top" style="background-color: #f8f9fa; font-family: 'Inter', 'Roboto', sans-serif;">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <p class="mb-0" style="font-size: 0.9rem; color: #6c757d; line-height: 1.6;">
+                        <strong>PRISLAB v5.0 ®</strong> | Salud Digital con Propósito Humano. 2026.<br>
+                        <small>Evolucionado con Gemini AI & Cursor para el desarrollo integral de nuestra comunidad.</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    {% if user.is_authenticated %}
+    {# Badge chat: el elemento #badgeNoLeidos está en el rail del sidebar (includes/sidebar.html) #}
+    <script>
+    // Polling global para badge de mensajes no leidos (cada 30s)
+    (function(){
+        let pollingActivo = true;
+        let intervaloRef = null;
+
+        function refreshBadge(){
+            if (!pollingActivo) return;
+            fetch('/chat/api/conversaciones/', {redirect: 'manual'}).then(r=>{
+                if (r.type === 'opaqueredirect' || r.status === 302 || r.status === 0) {
+                    pollingActivo = false;
+                    if (intervaloRef) clearInterval(intervaloRef);
+                    return;
+                }
+                if (!r.ok) return;
+                return r.json();
+            }).then(data=>{
+                if (!data || data.status !== 'success') return;
+                const badge = document.getElementById('badgeNoLeidos');
+                if(data.total_no_leidos>0){badge.textContent=data.total_no_leidos;badge.style.display='';}
+                else{badge.style.display='none';}
+            }).catch(()=>{});
+        }
+        refreshBadge();
+        intervaloRef = setInterval(refreshBadge, 30000);
+    })();
+
+    // Polling campana de notificaciones del sistema (cada 60s)
+    (function(){
+        function refreshNotifBadge(){
+            fetch('/notificaciones/badge/', {redirect:'manual'})
+              .then(r => (r.ok ? r.json() : null))
+              .then(data => {
+                if (!data) return;
+                const badge = document.getElementById('notificacionesBadge');
+                if (!badge) return;
+                if (data.no_leidas > 0) {
+                    badge.textContent = data.no_leidas > 99 ? '99+' : data.no_leidas;
+                    badge.style.display = '';
+                } else {
+                    badge.style.display = 'none';
+                }
+              })
+              .catch(() => {});
+        }
+        refreshNotifBadge();
+        setInterval(refreshNotifBadge, 60000);
+    })();
+    </script>
+    {% endif %}
+
+    <!-- ========== OMNISEARCH JS ========== -->
+    {% if user.is_authenticated %}
+    <script>
+    (function(){
+        const input = document.getElementById('omnisearchInput');
+        const results = document.getElementById('omnisearchResults');
+        if(!input || !results) return;
+        
+        let debounceTimer = null;
+        let activeIdx = -1;
+        let items = [];
+        
+        // Ctrl+K shortcut
+        document.addEventListener('keydown', function(e){
+            if((e.ctrlKey || e.metaKey) && e.key === 'k'){
+                e.preventDefault();
+                input.focus();
+                input.select();
+            }
+            if(e.key === 'Escape'){
+                results.style.display = 'none';
+                input.blur();
+            }
+        });
+        
+        input.addEventListener('input', function(){
+            clearTimeout(debounceTimer);
+            const q = this.value.trim();
+            if(q.length < 2){
+                results.style.display = 'none';
+                return;
+            }
+            results.innerHTML = '<div class="omnisearch-loading"><i class="fas fa-spinner fa-spin me-1"></i> Buscando...</div>';
+            results.style.display = 'block';
+            debounceTimer = setTimeout(() => doSearch(q), 300);
+        });
+        
+        input.addEventListener('keydown', function(e){
+            if(!results.style.display || results.style.display === 'none') return;
+            items = results.querySelectorAll('.omnisearch-item');
+            if(e.key === 'ArrowDown'){
+                e.preventDefault();
+                activeIdx = Math.min(activeIdx + 1, items.length - 1);
+                updateActive();
+            } else if(e.key === 'ArrowUp'){
+                e.preventDefault();
+                activeIdx = Math.max(activeIdx - 1, 0);
+                updateActive();
+            } else if(e.key === 'Enter'){
+                e.preventDefault();
+                if(activeIdx >= 0 && items[activeIdx]){
+                    window.location.href = items[activeIdx].getAttribute('href');
+                } else if(items.length > 0){
+                    window.location.href = items[0].getAttribute('href');
+                }
+            }
+        });
+        
+        function updateActive(){
+            items.forEach((el,i) => el.classList.toggle('active', i === activeIdx));
+            if(items[activeIdx]) items[activeIdx].scrollIntoView({block:'nearest'});
+        }
+        
+        function doSearch(q){
+            fetch('/api/omnisearch/?q=' + encodeURIComponent(q), {
+                headers: {'X-Requested-With':'XMLHttpRequest'}
+            })
+            .then(r => r.json())
+            .then(data => {
+                activeIdx = -1;
+                if(!data.resultados || data.resultados.length === 0){
+                    results.innerHTML = '<div class="omnisearch-empty"><i class="fas fa-search me-1"></i> Sin resultados para "' + q + '"</div>';
+                    return;
+                }
+                let html = '';
+                data.resultados.forEach(r => {
+                    html += `<a href="${r.url}" class="omnisearch-item">
+                        <div class="omnisearch-item-icon" style="background:${r.color}">
+                            <i class="fas ${r.icono}"></i>
+                        </div>
+                        <div class="omnisearch-item-text">
+                            <div class="omnisearch-item-title">${r.titulo}</div>
+                            <div class="omnisearch-item-sub">${r.subtitulo}</div>
+                        </div>
+                        <span class="badge bg-light text-dark" style="font-size:.7rem">${r.tipo === 'paciente' ? 'Paciente' : 'Orden'}</span>
+                    </a>`;
+                });
+                results.innerHTML = html;
+            })
+            .catch(() => {
+                results.innerHTML = '<div class="omnisearch-empty text-danger">Error de conexion</div>';
+            });
+        }
+        
+        // Cerrar al hacer clic fuera
+        document.addEventListener('click', function(e){
+            if(!e.target.closest('#omnisearchWrapper')){
+                results.style.display = 'none';
+            }
+        });
+    })();
+    </script>
+    {% endif %}
+
+<!-- ============ MODAL: GUIA RAPIDA (AYUDA CONTEXTUAL) ============ -->
+<div class="modal fade" id="modalAyudaRapida" tabindex="-1" aria-labelledby="ayudaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #0d6efd, #0a58ca); color: white;">
+        <h5 class="modal-title fw-bold" id="ayudaLabel">
+          <i class="fas fa-life-ring me-2"></i>Guia Rapida - PRISLAB
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0">
+        <!-- Tabs de navegacion -->
+        <ul class="nav nav-tabs nav-fill" id="ayudaTabs" role="tablist" style="background:#f8f9fa;">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#ayuda-registro" type="button">
+              <i class="bi bi-person-plus"></i> Registro
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#ayuda-captura" type="button">
+              <i class="bi bi-pencil-square"></i> Captura
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#ayuda-cobro" type="button">
+              <i class="bi bi-cash-stack"></i> Cobro
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#ayuda-farmacia" type="button">
+              <i class="bi bi-capsule"></i> Farmacia
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#ayuda-atajos" type="button">
+              <i class="bi bi-lightning"></i> Atajos
+            </button>
+          </li>
+        </ul>
+        <div class="tab-content p-4" id="ayudaTabContent">
+          <!-- TAB: REGISTRO DE PACIENTES -->
+          <div class="tab-pane fade show active" id="ayuda-registro" role="tabpanel">
+            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-1-circle-fill me-1"></i> Registro de Paciente y Orden</h6>
+            <div class="list-group list-group-flush">
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-primary me-2">1</span>
+                Ve a <b>Laboratorio &rarr; Recepcion</b> o <b>Consultorio &rarr; Buscar Paciente</b>.
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-primary me-2">2</span>
+                Busca al paciente por <b>nombre o telefono</b>. Si no existe, haz clic en <b>"Nuevo Paciente"</b>.
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-primary me-2">3</span>
+                Llena: <b>Nombre, Apellidos, Fecha de Nacimiento, Sexo</b>.
+                El telefono debe tener <b>10 digitos</b> (se valida automaticamente).
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-primary me-2">4</span>
+                En Laboratorio: selecciona los <b>estudios</b>, se calcula el total automaticamente.
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-success me-2">5</span>
+                Haz clic en <b>"Generar Orden"</b>. Se abrira el <b>modal de cobro</b> (obligatorio).
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: CAPTURA DE RESULTADOS -->
+          <div class="tab-pane fade" id="ayuda-captura" role="tabpanel">
+            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-2-circle-fill me-1"></i> Captura de Resultados</h6>
+            <div class="list-group list-group-flush">
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-primary me-2">1</span>
+                Ve a <b>Laboratorio &rarr; Monitor de Produccion</b> (tablero Kanban).
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-primary me-2">2</span>
+                Busca la orden en la columna <b>"Pendiente"</b> y haz clic.
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-primary me-2">3</span>
+                Captura cada resultado. Los <b>valores fuera de rango</b> se marcan automaticamente en rojo.
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-warning text-dark me-2">!</span>
+                Si un valor es de <b>PANICO</b>, el sistema envia alerta automatica al Director.
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-success me-2">4</span>
+                Haz clic en <b>"Validar"</b> para confirmar. El PDF se genera automaticamente.
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: COBRO Y CAJA -->
+          <div class="tab-pane fade" id="ayuda-cobro" role="tabpanel">
+            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-3-circle-fill me-1"></i> Cobro y Corte de Caja</h6>
+            <div class="list-group list-group-flush">
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-primary me-2">1</span>
+                Al generar orden, selecciona <b>metodo de pago</b>: Efectivo, Tarjeta, Transferencia o Mixto.
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-primary me-2">2</span>
+                En Efectivo: ingresa el monto recibido, el sistema calcula el <b>cambio</b>.
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-primary me-2">3</span>
+                Para gastos operativos (agua, limpieza), ve a <b>Corte de Caja &rarr; Registrar Gasto</b>.
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-primary me-2">4</span>
+                Al final del dia: ve a <b>Corte de Caja</b>, ingresa cuanto tienes en mano.
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-success me-2">5</span>
+                El sistema compara <b>esperado vs declarado</b>. Tolerancia: $0.50.
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: FARMACIA -->
+          <div class="tab-pane fade" id="ayuda-farmacia" role="tabpanel">
+            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-4-circle-fill me-1"></i> Farmacia y Punto de Venta</h6>
+            <div class="list-group list-group-flush">
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-primary me-2">1</span>
+                Ve a <b>Farmacia &rarr; Punto de Venta</b> para realizar ventas.
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-primary me-2">2</span>
+                Busca productos por <b>nombre o codigo de barras</b>.
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-warning text-dark me-2">!</span>
+                El <b>Semaforo de Caducidad</b> muestra en rojo productos proximos a vencer.
+              </div>
+              <div class="list-group-item border-0 ps-0">
+                <span class="badge bg-danger me-2">!</span>
+                Las <b>Alertas de Stock</b> aparecen en el Dashboard del Director cuando hay menos de 5 unidades.
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: ATAJOS -->
+          <div class="tab-pane fade" id="ayuda-atajos" role="tabpanel">
+            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-5-circle-fill me-1"></i> Atajos y Tips</h6>
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><td><kbd>Ctrl</kbd> + <kbd>K</kbd></td><td>Busqueda rapida (paciente, orden, folio)</td></tr>
+                  <tr><td><kbd>F5</kbd></td><td>Actualizar la pagina actual</td></tr>
+                  <tr><td><kbd>Ctrl</kbd> + <kbd>P</kbd></td><td>Imprimir (ticket, corte, reporte)</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="alert alert-info mt-3 mb-0">
+              <i class="bi bi-info-circle me-1"></i>
+              <b>Tip:</b> Si un PDF no se genera correctamente, pide el <b>"PDF Simple"</b> como respaldo.
+              El sistema siempre tiene un modo de contingencia.
+            </div>
+            <div class="mt-3 text-center">
+              <a href="{% url 'manual_operativo' %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-book me-1"></i> Manual Operativo Completo
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRIS SENTINEL SHIELD + VOICE (Rev 128 — AIOps) -->
+{% if user.is_authenticated %}
+<script src="{% static 'js/sentinel_shield.js' %}"></script>
+<script src="{% static 'js/sentinel_voice.js' %}"></script>
+{% endif %}
+
+<!-- PRIS COPILOT WIDGET (global, ISO 15189 audit) -->
+{% if user.is_authenticated %}
+{% include "pris/widget.html" %}
+{% endif %}
+
+<!-- PRIS: Semáforo de Pánico — Detección de valores críticos en tiempo real -->
+<script>
+(function() {
+  'use strict';
+
+  // ── Modal de Confirmación PRIS ─────────────────────────────────────
+  function mostrarModalPrisConfirmacion(datos) {
+    var titulo   = datos.titulo   || '¿Confirmas la acción de PRIS?';
+    var mensaje  = datos.mensaje  || '';
+    var accionId = datos.accion_id;
+    var esCritico = datos.es_critico || false;
+    var payload  = datos.valores  || datos.payload || {};
+
+    var modal = document.createElement('div');
+    modal.className = 'modal fade modal-pris-confirmacion';
+    modal.id = 'modalPrisConfirm_' + accionId;
+    modal.setAttribute('tabindex', '-1');
+    modal.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header ${esCritico ? 'critico' : ''}">
+            <h5 class="modal-title text-white">
+              <i class="fas fa-robot me-2" style="color:#4f8ef7;"></i>
+              ${titulo}
+            </h5>
+          </div>
+          <div class="modal-body">
+            <p class="text-white-50 mb-3">${mensaje}</p>
+            <div class="payload-preview">${JSON.stringify(payload, null, 2)}</div>
+          </div>
+          <div class="modal-footer border-0">
+            <button type="button" class="btn-pris-rechazar" data-accion="${accionId}" onclick="prisRechazarAccion(${accionId})">
+              <i class="fas fa-times me-1"></i> Rechazar
+            </button>
+            <button type="button" class="btn-pris-confirmar" data-accion="${accionId}" onclick="prisConfirmarAccion(${accionId})">
+              <i class="fas fa-check me-1"></i> Confirmar Indicación
+            </button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    var bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    modal.addEventListener('hidden.bs.modal', function() { modal.remove(); });
+  }
+
+  window.mostrarModalPrisConfirmacion = mostrarModalPrisConfirmacion;
+
+  window.prisConfirmarAccion = function(accionId) {
+    fetch('/pris/api/accion/' + accionId + '/confirmar/', {
+      method: 'POST',
+      headers: {'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''},
+    })
+    .then(r => r.json())
+    .then(data => {
+      var m = bootstrap.Modal.getInstance(document.getElementById('modalPrisConfirm_' + accionId));
+      if (m) m.hide();
+      mostrarToastPris(data.mensaje || '✅ Acción confirmada', 'success');
+    })
+    .catch(() => mostrarToastPris('Error al confirmar', 'danger'));
+  };
+
+  window.prisRechazarAccion = function(accionId) {
+    fetch('/pris/api/accion/' + accionId + '/rechazar/', {
+      method: 'POST',
+      headers: {'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''},
+      body: new URLSearchParams({motivo: 'Rechazado por el usuario'}),
+    })
+    .then(r => r.json())
+    .then(data => {
+      var m = bootstrap.Modal.getInstance(document.getElementById('modalPrisConfirm_' + accionId));
+      if (m) m.hide();
+      mostrarToastPris(data.mensaje || '⚠️ Acción rechazada', 'warning');
+    });
+  };
+
+  // ── Toast de notificación PRIS ────────────────────────────────────
+  function mostrarToastPris(mensaje, tipo) {
+    var toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:99999;padding:.75rem 1.25rem;border-radius:12px;font-weight:600;font-size:.9rem;max-width:360px;box-shadow:0 4px 20px rgba(0,0,0,.4);animation:slide-down .3s ease;';
+    var colors = {success:'#1e5f2e,#27ae60', warning:'#7a4800,#f39c12', danger:'#3d0a0a,#e74c3c', info:'#0a2a4a,#4f8ef7'};
+    var c = (colors[tipo] || colors.info).split(',');
+    toast.style.background = 'linear-gradient(135deg,' + c[0] + ',' + c[1] + ')';
+    toast.style.color = '#fff';
+    toast.innerHTML = '<i class="fas fa-robot me-2"></i>' + mensaje;
+    document.body.appendChild(toast);
+    setTimeout(function() { toast.style.opacity = '0'; toast.style.transition = 'opacity .4s'; setTimeout(function() { toast.remove(); }, 400); }, 4000);
+  }
+  window.mostrarToastPris = mostrarToastPris;
+
+  // ── Semáforo de Pánico — Detecta inputs críticos ──────────────────
+  document.addEventListener('change', function(e) {
+    if (!e.target.classList.contains('input-resultado')) return;
+    var val = parseFloat(e.target.value);
+    var min = parseFloat(e.target.dataset.criticoMin);
+    var max = parseFloat(e.target.dataset.criticoMax);
+    var rMin = parseFloat(e.target.dataset.rangoMin);
+    var rMax = parseFloat(e.target.dataset.rangoMax);
+    var nombre = e.target.dataset.parametro || 'parámetro';
+
+    e.target.classList.remove('es-critico', 'es-anormal');
+
+    if (!isNaN(val)) {
+      var esCritico = (!isNaN(min) && val < min) || (!isNaN(max) && val > max);
+      var esAnormal = (!isNaN(rMin) && val < rMin) || (!isNaN(rMax) && val > rMax);
+
+      if (esCritico) {
+        e.target.classList.add('es-critico');
+        document.body.classList.add('modo-panico');
+        var banner = document.getElementById('banner-critico-pris');
+        if (!banner) {
+          banner = document.createElement('div');
+          banner.id = 'banner-critico-pris';
+          banner.className = 'banner-critico';
+          banner.innerHTML = '<span class="icon-pulse">⚠️</span> VALOR CRÍTICO DETECTADO — ' + nombre.toUpperCase() + ': ' + val + ' — ISO 15189: CONFIRMACIÓN OBLIGATORIA <button onclick="this.parentNode.remove();document.body.classList.remove(\'modo-panico\')" style="margin-left:1rem;background:rgba(255,255,255,.2);border:none;color:#fff;padding:.2rem .6rem;border-radius:6px;cursor:pointer;">✕</button>';
+          document.body.prepend(banner);
+        }
+        setTimeout(function() {
+          if (!confirm('⚠️ VALOR DE PÁNICO: ' + nombre + ' = ' + val + '\n\n¿Confirmas que el valor es correcto?')) {
+            e.target.value = '';
+            e.target.classList.remove('es-critico');
+            document.body.classList.remove('modo-panico');
+            banner.remove();
+          }
+        }, 100);
+      } else if (esAnormal) {
+        e.target.classList.add('es-anormal');
+      }
+    }
+  });
+
+  // ── Turno indicator ───────────────────────────────────────────────
+  {% if user.is_authenticated %}
+  var turnoStart = sessionStorage.getItem('pris_turno_start');
+  if (!turnoStart) { turnoStart = Date.now(); sessionStorage.setItem('pris_turno_start', turnoStart); }
+  var indicator = document.createElement('div');
+  indicator.className = 'turno-indicator';
+  indicator.id = 'turno-indicator';
+  indicator.innerHTML = '<span class="dot"></span><span id="turno-tiempo">--:--</span>';
+  document.body.appendChild(indicator);
+
+  setInterval(function() {
+    var mins = Math.floor((Date.now() - parseInt(turnoStart)) / 60000);
+    var h = Math.floor(mins / 60), m = mins % 60;
+    var el = document.getElementById('turno-tiempo');
+    if (el) el.textContent = h + 'h ' + m + 'm';
+    var ind = document.getElementById('turno-indicator');
+    if (ind) ind.className = 'turno-indicator' + (mins >= 360 ? ' alerta-fatiga' : '');
+  }, 60000);
+  {% endif %}
+})();
+</script>
+
+</body>
+</html>

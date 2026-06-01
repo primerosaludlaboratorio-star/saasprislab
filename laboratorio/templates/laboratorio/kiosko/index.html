@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kiosco PRISLAB — Auto Check-in</title>
+  <!-- html5-qrcode — escáner QR en navegador, sin apps externas -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    :root { --azul:#1e3a5f; --verde:#10b981; --rojo:#ef4444; --borde:rgba(255,255,255,.12); }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body {
+      font-family:'Segoe UI',system-ui,sans-serif;
+      background:var(--azul); min-height:100vh;
+      display:flex; flex-direction:column; align-items:center;
+      justify-content:center; color:#fff; padding:1rem;
+    }
+    .logo { font-size:1rem; font-weight:800; letter-spacing:.15em; opacity:.55; margin-bottom:1.5rem; }
+
+    .card {
+      background:rgba(255,255,255,.07); border:1px solid var(--borde);
+      border-radius:1.5rem; padding:2rem 1.5rem; max-width:480px; width:100%;
+      text-align:center; backdrop-filter:blur(12px);
+    }
+
+    .qr-icon { font-size:4rem; margin-bottom:1rem; }
+    h1 { font-size:1.5rem; margin-bottom:.5rem; font-weight:800; }
+    .subtitle { opacity:.65; font-size:.9rem; margin-bottom:1.5rem; line-height:1.6; }
+
+    /* Cámara */
+    #reader {
+      width:100%; max-width:300px; margin:0 auto 1rem;
+      border-radius:1rem; overflow:hidden;
+      border:2px solid var(--verde);
+      display:none;
+    }
+    #reader video { width:100%; }
+
+    /* Botones */
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      background:var(--verde); color:#fff; border:none;
+      border-radius:1rem; padding:14px 28px; font-size:1rem;
+      font-weight:700; cursor:pointer; width:100%; margin-bottom:.8rem;
+      transition:opacity .2s;
+    }
+    .btn:hover { opacity:.88; }
+    .btn.secondary {
+      background:rgba(255,255,255,.1); color:#fff;
+      border:1px solid var(--borde);
+    }
+    .btn.danger { background:var(--rojo); }
+
+    /* Input manual */
+    .manual-form { margin-top:1rem; }
+    .manual-form input {
+      width:100%; padding:12px 16px; border-radius:.8rem;
+      border:1px solid var(--borde); background:rgba(255,255,255,.1);
+      color:#fff; font-size:1rem; text-align:center;
+      text-transform:uppercase; letter-spacing:2px; font-weight:700;
+      margin-bottom:.8rem;
+    }
+    .manual-form input::placeholder { opacity:.45; font-weight:400; letter-spacing:normal; }
+
+    /* Estado */
+    #status {
+      font-size:.85rem; min-height:20px; margin-bottom:.8rem;
+      color:rgba(255,255,255,.6);
+    }
+    #status.ok { color:#6ee7b7; }
+    #status.err { color:#fca5a5; }
+
+    .footer { margin-top:2rem; font-size:.75rem; opacity:.35; }
+  </style>
+</head>
+<body>
+  <div class="logo">⬡ PRISLAB</div>
+
+  <div class="card">
+    <div class="qr-icon" id="mainIcon">📱</div>
+    <h1>Auto Check-in</h1>
+    <p class="subtitle">
+      Escanea el QR de tu orden de laboratorio<br>
+      o ingresa tu folio manualmente.
+    </p>
+
+    <div id="status"></div>
+
+    <!-- Scanner -->
+    <div id="reader"></div>
+
+    <!-- Botones -->
+    <button class="btn" id="btnEscanear" onclick="iniciarEscaner()">
+      📷 Escanear QR con cámara
+    </button>
+    <button class="btn danger d-none" id="btnDetener" onclick="detenerEscaner()">
+      ⏹ Detener cámara
+    </button>
+
+    <!-- Folio manual -->
+    <div class="manual-form">
+      <input type="text" id="folioInput" placeholder="Ej. LAB-00123" maxlength="30"
+             onkeydown="if(event.key==='Enter') irAFolio()">
+      <button class="btn secondary" onclick="irAFolio()">
+        🔢 Ingresar folio manualmente
+      </button>
+    </div>
+  </div>
+
+  <div class="footer">PRISLAB — Sistema de Gestión de Laboratorio Clínico</div>
+
+  <script>
+    let scanner = null;
+    let escaneando = false;
+
+    function setStatus(msg, tipo) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = tipo || '';
+    }
+
+    async function iniciarEscaner() {
+      if (escaneando) return;
+      document.getElementById('reader').style.display = 'block';
+      document.getElementById('btnEscanear').classList.add('d-none');
+      document.getElementById('btnDetener').classList.remove('d-none');
+      document.getElementById('mainIcon').textContent = '🔍';
+      setStatus('Apunta la cámara al código QR de tu orden…');
+
+      scanner = new Html5Qrcode('reader');
+      try {
+        await scanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 220, height: 220 } },
+          (decodedText) => {
+            // QR detectado
+            const folio = decodedText.trim().toUpperCase();
+            setStatus(`✅ QR detectado: ${folio}`, 'ok');
+            detenerEscaner();
+            setTimeout(() => window.location.href = `/kiosko/check-in/${encodeURIComponent(folio)}/`, 600);
+          },
+          (err) => { /* ignorar errores de frame — son normales */ }
+        );
+        escaneando = true;
+      } catch(e) {
+        setStatus('No se pudo acceder a la cámara. Usa el folio manual.', 'err');
+        document.getElementById('reader').style.display = 'none';
+        document.getElementById('btnEscanear').classList.remove('d-none');
+        document.getElementById('btnDetener').classList.add('d-none');
+      }
+    }
+
+    function detenerEscaner() {
+      if (scanner && escaneando) {
+        scanner.stop().catch(() => {});
+        escaneando = false;
+      }
+      document.getElementById('reader').style.display = 'none';
+      document.getElementById('btnEscanear').classList.remove('d-none');
+      document.getElementById('btnDetener').classList.add('d-none');
+      document.getElementById('mainIcon').textContent = '📱';
+    }
+
+    function irAFolio() {
+      const folio = document.getElementById('folioInput').value.trim().toUpperCase();
+      if (!folio) {
+        setStatus('Ingresa tu folio de laboratorio.', 'err');
+        return;
+      }
+      window.location.href = `/kiosko/check-in/${encodeURIComponent(folio)}/`;
+    }
+  </script>
+</body>
+</html>

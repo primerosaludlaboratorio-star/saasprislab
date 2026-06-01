@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}IA de Reabastecimiento | PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h2 class="mb-1"><i class="fas fa-robot me-2 text-primary"></i>IA de Reabastecimiento Predictivo</h2>
+      <small class="text-muted">Generado: {{ reporte.generado_en }} — Análisis de consumo histórico 30 días</small>
+    </div>
+    <a href="/inventario/prediccion/api/?dias=7" target="_blank" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-code me-1"></i>API JSON
+    </a>
+  </div>
+
+  <!-- Resumen -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-danger">
+        <div class="card-body text-center">
+          <div class="fs-1 fw-bold text-danger">{{ reporte.resumen.agotados }}</div>
+          <div class="text-muted small text-uppercase">AGOTADOS HOY</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-warning">
+        <div class="card-body text-center">
+          <div class="fs-1 fw-bold text-warning">{{ reporte.resumen.criticos_hoy }}</div>
+          <div class="text-muted small text-uppercase">Críticos (1 día)</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-orange" style="border-color:#fd7e14!important;">
+        <div class="card-body text-center">
+          <div class="fs-1 fw-bold" style="color:#fd7e14;">{{ reporte.resumen.urgentes_3_dias }}</div>
+          <div class="text-muted small text-uppercase">Urgentes (3 días)</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-info">
+        <div class="card-body text-center">
+          <div class="fs-1 fw-bold text-info">{{ reporte.resumen.bajos_7_dias }}</div>
+          <div class="text-muted small text-uppercase">Bajos (7 días)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de productos en riesgo -->
+  {% if reporte.urgentes %}
+  <div class="card mb-4">
+    <div class="card-header bg-warning text-dark">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      <strong>Productos que se agotan en menos de 3 días</strong>
+      <span class="badge bg-dark ms-2">{{ reporte.urgentes|length }}</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Producto</th>
+              <th class="text-center">Stock actual</th>
+              <th class="text-center">Consumo/día</th>
+              <th class="text-center">Días restantes</th>
+              <th class="text-center">Se agota</th>
+              <th>Recomendación</th>
+              <th class="text-center">Nivel</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in reporte.urgentes %}
+            <tr>
+              <td><strong>{{ item.producto_nombre }}</strong>
+                {% if item.sustancia %}<br><small class="text-muted">{{ item.sustancia }}</small>{% endif %}
+              </td>
+              <td class="text-center">{{ item.stock_actual }}</td>
+              <td class="text-center">{{ item.consumo_diario }}</td>
+              <td class="text-center fw-bold
+                {% if item.dias_restantes <= 0 %}text-danger
+                {% elif item.dias_restantes <= 1 %}text-danger
+                {% else %}text-warning{% endif %}">
+                {% if item.dias_restantes <= 0 %}HOYA{% else %}{{ item.dias_restantes }}{% endif %}
+              </td>
+              <td class="text-center small">{{ item.fecha_agotamiento|default:"HOY" }}</td>
+              <td><small>{{ item.recomendacion }}</small></td>
+              <td class="text-center">
+                <span class="badge
+                  {% if item.nivel_alerta == 'AGOTADO' %}bg-dark
+                  {% elif item.nivel_alerta == 'CRITICO' %}bg-danger
+                  {% elif item.nivel_alerta == 'URGENTE' %}bg-warning text-dark
+                  {% else %}bg-info{% endif %}">
+                  {{ item.nivel_alerta }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-success">
+    <i class="fas fa-check-circle me-2"></i>
+    No hay productos con riesgo de agotamiento en los próximos 3 días.
+  </div>
+  {% endif %}
+
+  <!-- PRIS Quick Action -->
+  <div class="card border-primary">
+    <div class="card-body d-flex align-items-center gap-3">
+      <i class="fas fa-brain text-primary fs-3"></i>
+      <div>
+        <strong>Pedirle a PRIS que genere una orden de compra</strong><br>
+        <small class="text-muted">
+          Di o escribe: <em>"PRIS, genera una orden de compra para los productos con stock crítico"</em>
+        </small>
+      </div>
+      <button class="btn btn-primary ms-auto btn-sm" onclick="
+        // PRIS accesible desde el sidebar lateral">
+        <i class="fas fa-paper-plane me-1"></i>Enviar a PRIS
+      </button>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

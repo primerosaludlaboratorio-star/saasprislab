@@ -1,0 +1,178 @@
+/**
+ * PRIS VOICE COMMANDER - Estilos del Botón PTT
+ * Botón flotante para control por voz
+ */
+
+/* Contenedor del botón PTT flotante */
+.pris-voice-ptt-container {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Botón PTT */
+.pris-voice-ptt-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pris-voice-ptt-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+}
+
+.pris-voice-ptt-btn:active {
+    transform: scale(0.95);
+}
+
+/* Estado: Escuchando */
+.pris-voice-ptt-btn.listening {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 8px 20px rgba(255, 107, 107, 0.8);
+    }
+}
+
+/* Estado: Procesando */
+.pris-voice-ptt-btn.processing {
+    background: linear-gradient(135deg, #feca57 0%, #ff9ff3 100%);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Indicador de estado (texto) */
+.pris-voice-status {
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    display: none;
+}
+
+.pris-voice-ptt-btn.listening ~ .pris-voice-status,
+.pris-voice-ptt-btn.processing ~ .pris-voice-status {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive: Ocultar en pantallas muy pequeñas */
+@media (max-width: 360px) {
+    .pris-voice-ptt-btn {
+        width: 56px;
+        height: 56px;
+        font-size: 20px;
+        bottom: 70px;
+        right: 15px;
+    }
+}
+
+/* Para tablet y desktop */
+@media (min-width: 768px) {
+    .pris-voice-ptt-container {
+        bottom: 100px;
+        right: 30px;
+    }
+    
+    .pris-voice-ptt-btn {
+        width: 72px;
+        height: 72px;
+        font-size: 28px;
+    }
+}
+
+/* Prevenir selección de texto */
+.pris-voice-ptt-btn * {
+    pointer-events: none;
+}
+
+/* Animación de entrada */
+.pris-voice-ptt-container {
+    animation: slideInUp 0.5s ease;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Indicador de WebSocket conectado (pequeño dot) */
+.pris-voice-ptt-btn::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #4caf50;
+    border: 2px solid white;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.pris-voice-ptt-btn.ws-connected::before {
+    opacity: 1;
+}
+
+/* Modo oscuro (opcional) */
+@media (prefers-color-scheme: dark) {
+    .pris-voice-status {
+        background: rgba(255, 255, 255, 0.9);
+        color: #000;
+    }
+}

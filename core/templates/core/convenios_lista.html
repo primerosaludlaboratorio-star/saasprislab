@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Convenios{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold mb-0"><i class="fas fa-handshake text-primary me-2"></i>Convenios con Empresas</h4>
+    <div>
+      <a href="{% url 'cuentas_por_cobrar' %}" class="btn btn-outline-secondary btn-sm me-1">
+        <i class="fas fa-file-invoice-dollar me-1"></i>Cuentas por Cobrar
+      </a>
+      <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalConvenio">
+        <i class="fas fa-plus me-1"></i>Nuevo Convenio
+      </button>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    {% for c in convenios %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <strong>{{ c.nombre }}</strong>
+          {% if c.activo %}<span class="badge bg-success">Activo</span>{% else %}<span class="badge bg-secondary">Inactivo</span>{% endif %}
+        </div>
+        <div class="card-body" style="font-size:.88rem;">
+          <div class="mb-1"><i class="fas fa-building text-muted me-1"></i>{{ c.get_tipo_display }}</div>
+          {% if c.rfc %}<div class="mb-1"><i class="fas fa-id-card text-muted me-1"></i>RFC: {{ c.rfc }}</div>{% endif %}
+          {% if c.contacto %}<div class="mb-1"><i class="fas fa-user text-muted me-1"></i>{{ c.contacto }}</div>{% endif %}
+          {% if c.telefono %}<div class="mb-1"><i class="fas fa-phone text-muted me-1"></i>{{ c.telefono }}</div>{% endif %}
+          <hr class="my-2">
+          <div class="row text-center">
+            <div class="col-4">
+              <div class="fw-bold">{{ c.dias_credito }}</div>
+              <small class="text-muted">Dias credito</small>
+            </div>
+            <div class="col-4">
+              <div class="fw-bold">{{ c.descuento_porcentaje }}%</div>
+              <small class="text-muted">Descuento</small>
+            </div>
+            <div class="col-4">
+              <div class="fw-bold {% if c.cuentas_pendientes > 0 %}text-danger{% endif %}">{{ c.cuentas_pendientes|default:0 }}</div>
+              <small class="text-muted">CxC pend.</small>
+            </div>
+          </div>
+          {% if c.saldo_total %}
+          <div class="alert alert-warning mt-2 mb-0 py-1 text-center" style="font-size:.85rem;">
+            Saldo pendiente: <strong>${{ c.saldo_total|floatformat:2 }}</strong>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center text-muted py-5">
+      <i class="fas fa-handshake fa-3x mb-3 text-secondary"></i>
+      <p>No hay convenios registrados. Crea el primero.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Modal Nuevo Convenio -->
+<div class="modal fade" id="modalConvenio" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Nuevo Convenio</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label fw-bold">Nombre de la Empresa *</label><input type="text" class="form-control" id="convNombre" required></div>
+        <div class="row g-2 mb-3">
+          <div class="col-6"><label class="form-label">RFC</label><input type="text" class="form-control" id="convRFC" maxlength="13"></div>
+          <div class="col-6"><label class="form-label">Tipo</label>
+            <select class="form-select" id="convTipo">
+              <option value="EMPRESA">Empresa Privada</option>
+              <option value="ASEGURADORA">Aseguradora</option>
+              <option value="GOBIERNO">Gobierno</option>
+              <option value="ONG">ONG</option>
+            </select>
+          </div>
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-6"><label class="form-label">Contacto</label><input type="text" class="form-control" id="convContacto"></div>
+          <div class="col-6"><label class="form-label">Telefono</label><input type="text" class="form-control" id="convTel"></div>
+        </div>
+        <div class="mb-3"><label class="form-label">Email</label><input type="email" class="form-control" id="convEmail"></div>
+        <div class="row g-2 mb-3">
+          <div class="col-4"><label class="form-label">Dias Credito</label><input type="number" class="form-control" id="convDias" value="15"></div>
+          <div class="col-4"><label class="form-label">Descuento %</label><input type="number" class="form-control" id="convDesc" value="0" step="0.01"></div>
+          <div class="col-4"><label class="form-label">Limite $</label><input type="number" class="form-control" id="convLimite" value="0" step="0.01"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btnGuardarConv"><i class="fas fa-save me-1"></i>Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function getCookie(n){const v=`; ${document.cookie}`;const p=v.split(`; ${n}=`);if(p.length===2)return p.pop().split(';').shift();}
+
+document.getElementById('btnGuardarConv').addEventListener('click', async () => {
+  const nombre = document.getElementById('convNombre').value.trim();
+  if (!nombre) return Swal.fire('Error', 'El nombre es obligatorio', 'error');
+
+  try {
+    const resp = await fetch('{% url "api_crear_convenio" %}', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
+      body: JSON.stringify({
+        nombre, rfc: document.getElementById('convRFC').value,
+        tipo: document.getElementById('convTipo').value,
+        contacto: document.getElementById('convContacto').value,
+        telefono: document.getElementById('convTel').value,
+        email: document.getElementById('convEmail').value,
+        dias_credito: document.getElementById('convDias').value,
+        descuento: document.getElementById('convDesc').value,
+        limite_credito: document.getElementById('convLimite').value,
+      })
+    });
+    const data = await resp.json();
+    if (data.status === 'success') {
+      Swal.fire('Convenio creado', data.mensaje, 'success').then(() => location.reload());
+    } else {
+      Swal.fire('Error', data.mensaje, 'error');
+    }
+  } catch(e) { Swal.fire('Error', e.message, 'error'); }
+});
+</script>
+{% endblock %}

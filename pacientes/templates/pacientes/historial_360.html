@@ -1,0 +1,780 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Historial 360° - {{ paciente.nombre_completo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .header-paciente {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+    
+    .foto-paciente {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 5px solid white;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        object-fit: cover;
+    }
+    
+    .stat-card {
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: transform 0.3s;
+        border: 2px solid #e9ecef;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    
+    .alert-clinica {
+        border-left: 5px solid;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 5px;
+    }
+    
+    .alert-clinica.danger { 
+        border-left-color: #dc3545; 
+        background-color: #f8d7da;
+    }
+    
+    .alert-clinica.warning { 
+        border-left-color: #ffc107; 
+        background-color: #fff3cd;
+    }
+    
+    .alert-clinica.success { 
+        border-left-color: #28a745; 
+        background-color: #d4edda;
+    }
+    
+    .timeline-item {
+        border-left: 3px solid #e9ecef;
+        padding-left: 1.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -8px;
+        top: 0;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid #0d6efd;
+    }
+    
+    .nav-pills .nav-link {
+        border-radius: 10px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .nav-pills .nav-link.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    .badge-forense-lab {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        margin-top: .35rem;
+        padding: .35rem .55rem;
+        border-radius: 999px;
+        background: #f3f4ff;
+        color: #4c1d95;
+        border: 1px solid #ddd6fe;
+        font-size: .78rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- ========================================================== -->
+    <!-- HEADER PRINCIPAL DEL PACIENTE -->
+    <!-- ========================================================== -->
+    <div class="header-paciente">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                {% if paciente.foto %}
+                    <img src="{{ paciente.foto.url }}" class="foto-paciente" alt="{{ paciente.nombre_completo }}">
+                {% else %}
+                    <div class="foto-paciente d-flex align-items-center justify-content-center" 
+                         style="background: rgba(255,255,255,0.2);">
+                        <i class="bi bi-person-fill" style="font-size: 4rem; color: white;"></i>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="col">
+                <h1 class="mb-2">{{ paciente.nombre_completo }}</h1>
+                <div class="row">
+                    <div class="col-md-3">
+                        <small class="text-white-50">EDAD</small>
+                        <h5>{{ paciente.edad }} años</h5>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-white-50">SEXO</small>
+                        <h5>{{ paciente.get_sexo_display }}</h5>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-white-50">ID</small>
+                        <h5>{{ paciente.numero_identificacion|default:"N/A" }}</h5>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-white-50">TELÉFONO</small>
+                        <h5>{{ paciente.telefono|default:"N/A" }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-auto no-print">
+                <a href="{% url 'pacientes:lista_pacientes' %}" class="btn btn-light btn-lg">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- ALERTAS CLÍNICAS -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-shield-exclamation"></i>
+                        Alertas Clínicas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for alerta in alertas %}
+                        <div class="alert-clinica {{ alerta.tipo }}">
+                            <i class="bi bi-{{ alerta.icono }}"></i>
+                            <strong>{{ alerta.titulo }}:</strong> {{ alerta.mensaje }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- ESTADÍSTICAS GENERALES -->
+    <!-- ========================================================== -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <i class="bi bi-clipboard2-pulse text-primary" style="font-size: 2.5rem;"></i>
+                <h3 class="mt-2 mb-0">{{ stats.total_consultas }}</h3>
+                <small class="text-muted">Consultas</small>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card">
+                <i class="bi bi-collection text-success" style="font-size: 2.5rem;"></i>
+                <h3 class="mt-2 mb-0">{{ stats.total_ordenes_lab }}</h3>
+                <small class="text-muted">Órdenes de Lab</small>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card">
+                <i class="bi bi-prescription2 text-warning" style="font-size: 2.5rem;"></i>
+                <h3 class="mt-2 mb-0">{{ stats.total_recetas }}</h3>
+                <small class="text-muted">Recetas Activas</small>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card">
+                <i class="bi bi-file-earmark-medical text-info" style="font-size: 2.5rem;"></i>
+                <h3 class="mt-2 mb-0">{{ stats.total_certificados }}</h3>
+                <small class="text-muted">Certificados</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- CONTENIDO PRINCIPAL CON TABS -->
+    <!-- ========================================================== -->
+    <div class="row">
+        
+        <!-- BARRA LATERAL DE NAVEGACIÓN -->
+        <div class="col-md-2 no-print">
+            <nav class="nav nav-pills flex-column sticky-top" style="top: 20px;">
+                <a class="nav-link active" data-bs-toggle="pill" href="#tab-timeline">
+                    <i class="bi bi-clock-history"></i> Timeline
+                </a>
+                <a class="nav-link" data-bs-toggle="pill" href="#tab-signos">
+                    <i class="bi bi-activity"></i> Signos Vitales
+                </a>
+                <a class="nav-link" data-bs-toggle="pill" href="#tab-historia">
+                    <i class="bi bi-journal-medical"></i> Historia Clínica
+                </a>
+                <a class="nav-link" data-bs-toggle="pill" href="#tab-laboratorio">
+                    <i class="bi bi-collection"></i> Laboratorio
+                </a>
+                <a class="nav-link" data-bs-toggle="pill" href="#tab-recetas">
+                    <i class="bi bi-prescription2"></i> Recetas
+                </a>
+                <a class="nav-link" data-bs-toggle="pill" href="#tab-imagenes">
+                    <i class="bi bi-file-image"></i> Estudios Imagen
+                </a>
+                <a class="nav-link" data-bs-toggle="pill" href="#tab-certificados">
+                    <i class="bi bi-award"></i> Certificados
+                </a>
+            </nav>
+        </div>
+        
+        <!-- CONTENIDO DE TABS -->
+        <div class="col-md-10">
+            <div class="tab-content">
+                
+                <!-- ========== TAB 1: TIMELINE DE CONSULTAS ========== -->
+                <div class="tab-pane fade show active" id="tab-timeline">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-clock-history"></i>
+                                Timeline de Consultas
+                            </h5>
+                            <a href="{% url 'pacientes:timeline_consultas' paciente.id %}" 
+                               class="btn btn-light btn-sm">
+                                Ver Todas
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if consultas %}
+                                {% for consulta in consultas %}
+                                <div class="timeline-item">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <h6>
+                                            {{ consulta.fecha_consulta|date:"d/m/Y H:i" }}
+                                            - Dr. {{ consulta.medico.nombre_completo }}
+                                        </h6>
+                                        <span class="badge bg-{{ consulta.estado_color }}">
+                                            {{ consulta.get_estado_display }}
+                                        </span>
+                                    </div>
+                                    
+                                    {% if consulta.signos_vitales %}
+                                    <p class="text-muted mb-2">
+                                        <i class="bi bi-activity"></i>
+                                        PA: {{ consulta.signos_vitales.presion_arterial_sistolica }}/{{ consulta.signos_vitales.presion_arterial_diastolica }} mmHg | 
+                                        FC: {{ consulta.signos_vitales.frecuencia_cardiaca }} lpm | 
+                                        Temp: {{ consulta.signos_vitales.temperatura }}°C
+                                    </p>
+                                    {% endif %}
+                                    
+                                    <p><strong>Motivo:</strong> {{ consulta.motivo_consulta|truncatewords:20 }}</p>
+                                    
+                                    {% if consulta.diagnostico_cie10 %}
+                                    <p><strong>Diagnóstico:</strong> {{ consulta.diagnostico_cie10 }}</p>
+                                    {% endif %}
+                                    
+                                    {% if consulta.plan_tratamiento %}
+                                    <p><strong>Plan:</strong> {{ consulta.plan_tratamiento|truncatewords:30 }}</p>
+                                    {% endif %}
+                                    
+                                    <div class="mt-2">
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#modalConsulta{{ consulta.id }}">
+                                            <i class="bi bi-eye"></i> Ver Detalles
+                                        </button>
+                                        
+                                        {% if consulta.audio_sesion_completa %}
+                                        <button class="btn btn-sm btn-outline-warning">
+                                            <i class="bi bi-mic-fill"></i> Audio
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                                    <p class="text-muted mt-3">No hay consultas registradas</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ========== TAB 2: GRÁFICAS DE SIGNOS VITALES ========== -->
+                <div class="tab-pane fade" id="tab-signos">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-activity"></i>
+                                Gráficas de Signos Vitales
+                            </h5>
+                            <a href="{% url 'pacientes:graficas_signos' paciente.id %}" 
+                               class="btn btn-light btn-sm">
+                                Vista Completa
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            
+                            <!-- Gráfica de Presión Arterial -->
+                            <div class="mb-4">
+                                <h6>Presión Arterial</h6>
+                                <div class="chart-container">
+                                    <canvas id="chartPresion"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- Gráfica de Peso e IMC -->
+                            <div class="mb-4">
+                                <h6>Peso e Índice de Masa Corporal (IMC)</h6>
+                                <div class="chart-container">
+                                    <canvas id="chartPeso"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- Gráfica de Temperatura -->
+                            <div class="mb-4">
+                                <h6>Temperatura Corporal</h6>
+                                <div class="chart-container">
+                                    <canvas id="chartTemperatura"></canvas>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ========== TAB 3: HISTORIA CLÍNICA ========== -->
+                <div class="tab-pane fade" id="tab-historia">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-journal-medical"></i>
+                                Historia Clínica (Antecedentes)
+                            </h5>
+                            <a href="{% url 'pacientes:historia_clinica' paciente.id %}" 
+                               class="btn btn-light btn-sm">
+                                Vista Detallada
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if historia_clinica %}
+                                <dl class="row">
+                                    <dt class="col-sm-4">Folio:</dt>
+                                    <dd class="col-sm-8"><code>{{ historia_clinica.folio }}</code></dd>
+                                    
+                                    <dt class="col-sm-4">Tipo de Sangre:</dt>
+                                    <dd class="col-sm-8">{{ historia_clinica.tipo_sangre|default:"No registrado" }}</dd>
+                                    
+                                    {% if historia_clinica.alergias %}
+                                    <dt class="col-sm-4 text-danger">Alergias:</dt>
+                                    <dd class="col-sm-8 text-danger"><strong>{{ historia_clinica.alergias }}</strong></dd>
+                                    {% endif %}
+                                    
+                                    {% if historia_clinica.ahf %}
+                                    <dt class="col-sm-4">Antecedentes Heredofamiliares:</dt>
+                                    <dd class="col-sm-8">{{ historia_clinica.ahf }}</dd>
+                                    {% endif %}
+                                    
+                                    {% if historia_clinica.app_enfermedades_cronicas %}
+                                    <dt class="col-sm-4">Enfermedades Crónicas:</dt>
+                                    <dd class="col-sm-8">{{ historia_clinica.app_enfermedades_cronicas }}</dd>
+                                    {% endif %}
+                                    
+                                    {% if historia_clinica.apnp_toxicomanias_tabaco %}
+                                    <dt class="col-sm-4">Tabaquismo:</dt>
+                                    <dd class="col-sm-8">
+                                        {{ historia_clinica.get_apnp_toxicomanias_tabaco_display }}
+                                        {% if historia_clinica.apnp_toxicomanias_tabaco_detalle %}
+                                            ({{ historia_clinica.apnp_toxicomanias_tabaco_detalle }})
+                                        {% endif %}
+                                    </dd>
+                                    {% endif %}
+                                    
+                                    {% if historia_clinica.apnp_toxicomanias_alcohol %}
+                                    <dt class="col-sm-4">Alcohol:</dt>
+                                    <dd class="col-sm-8">
+                                        {{ historia_clinica.get_apnp_toxicomanias_alcohol_display }}
+                                        {% if historia_clinica.apnp_toxicomanias_alcohol_detalle %}
+                                            ({{ historia_clinica.apnp_toxicomanias_alcohol_detalle }})
+                                        {% endif %}
+                                    </dd>
+                                    {% endif %}
+                                </dl>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    No se ha capturado la historia clínica de este paciente.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ========== TAB 4: LABORATORIO ========== -->
+                <div class="tab-pane fade" id="tab-laboratorio">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">
+                                <i class="bi bi-collection"></i>
+                                Estudios de Laboratorio
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if ordenes_lab %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Folio</th>
+                                                <th>Fecha</th>
+                                                <th>Estudios</th>
+                                                <th>Estado</th>
+                                                <th>Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for orden in ordenes_lab %}
+                                            <tr>
+                                                <td><code>{{ orden.folio }}</code></td>
+                                                <td>{{ orden.fecha_creacion|date:"d/m/Y" }}</td>
+                                                <td>{{ orden.detalles.count }} estudio(s)</td>
+                                                <td>
+                                                    <span class="badge bg-{{ orden.estado_color }}">
+                                                        {{ orden.get_estado_display }}
+                                                    </span>
+                                                    {% if orden.forensic_badge %}
+                                                    <div class="badge-forense-lab">
+                                                        <i class="bi bi-clock-history"></i>
+                                                        <span>Editado por {{ orden.forensic_badge.usuario }} - {{ orden.forensic_badge.fecha|date:"d/m/Y H:i" }}</span>
+                                                    </div>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <a href="#" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-eye"></i> Ver
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                                    <p class="text-muted mt-3">No hay estudios de laboratorio</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ========== TAB 5: RECETAS ========== -->
+                <div class="tab-pane fade" id="tab-recetas">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-prescription2"></i>
+                                Recetas y Tratamientos
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recetas_activas %}
+                                {% for receta in recetas_activas %}
+                                <div class="border-bottom pb-3 mb-3">
+                                    <div class="d-flex justify-content-between">
+                                        <h6>{{ receta.fecha_prescripcion|date:"d/m/Y" }}</h6>
+                                        <small class="text-muted">Dr. {{ receta.medico.nombre_completo }}</small>
+                                    </div>
+                                    <pre class="bg-light p-3 rounded">{{ receta.medicamentos }}</pre>
+                                    {% if receta.indicaciones %}
+                                    <p class="mb-0"><strong>Indicaciones:</strong> {{ receta.indicaciones }}</p>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                                    <p class="text-muted mt-3">No hay recetas activas</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ========== TAB 6: ESTUDIOS DE IMAGEN ========== -->
+                <div class="tab-pane fade" id="tab-imagenes">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-file-image"></i>
+                                Estudios de Imagen
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if estudios_imagen %}
+                                {% for estudio in estudios_imagen %}
+                                <div class="border-bottom pb-3 mb-3">
+                                    <div class="d-flex justify-content-between">
+                                        <h6>{{ estudio.get_tipo_estudio_display }} - {{ estudio.region_anatomica }}</h6>
+                                        <small class="text-muted">{{ estudio.fecha_estudio|date:"d/m/Y" }}</small>
+                                    </div>
+                                    {% if estudio.interpretacion %}
+                                    <p><strong>Interpretación:</strong> {{ estudio.interpretacion|truncatewords:50 }}</p>
+                                    {% endif %}
+                                    {% if estudio.conclusion %}
+                                    <p><strong>Conclusión:</strong> {{ estudio.conclusion }}</p>
+                                    {% endif %}
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> Ver Detalles
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                                    <p class="text-muted mt-3">No hay estudios de imagen</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ========== TAB 7: CERTIFICADOS MÉDICOS ========== -->
+                <div class="tab-pane fade" id="tab-certificados">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-award"></i>
+                                Certificados Médicos
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if certificados %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Tipo</th>
+                                                <th>Médico</th>
+                                                <th>Vigencia</th>
+                                                <th>Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for cert in certificados %}
+                                            <tr>
+                                                <td>{{ cert.fecha_emision|date:"d/m/Y" }}</td>
+                                                <td>{{ cert.get_tipo_display }}</td>
+                                                <td>Dr. {{ cert.medico.nombre_completo }}</td>
+                                                <td>
+                                                    {% if cert.fecha_vigencia %}
+                                                        {{ cert.fecha_vigencia|date:"d/m/Y" }}
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-download"></i> Descargar
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                                    <p class="text-muted mt-3">No hay certificados médicos</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+    // ============================================================
+    // DATOS PARA GRÁFICAS (desde Django)
+    // ============================================================
+    const datosGraficas = {{ datos_graficas|safe }};
+    
+    // ============================================================
+    // GRÁFICA DE PRESIÓN ARTERIAL
+    // ============================================================
+    const ctxPresion = document.getElementById('chartPresion');
+    if (ctxPresion) {
+        new Chart(ctxPresion, {
+            type: 'line',
+            data: {
+                labels: datosGraficas.fechas,
+                datasets: [{
+                    label: 'Sistólica',
+                    data: datosGraficas.presion_sistolica,
+                    borderColor: 'rgb(220, 53, 69)',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Diastólica',
+                    data: datosGraficas.presion_diastolica,
+                    borderColor: 'rgb(13, 110, 253)',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 60,
+                        max: 180
+                    }
+                }
+            }
+        });
+    }
+    
+    // ============================================================
+    // GRÁFICA DE PESO E IMC
+    // ============================================================
+    const ctxPeso = document.getElementById('chartPeso');
+    if (ctxPeso) {
+        new Chart(ctxPeso, {
+            type: 'line',
+            data: {
+                labels: datosGraficas.fechas,
+                datasets: [{
+                    label: 'Peso (kg)',
+                    data: datosGraficas.peso,
+                    borderColor: 'rgb(25, 135, 84)',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    yAxisID: 'y',
+                    tension: 0.4
+                }, {
+                    label: 'IMC',
+                    data: datosGraficas.imc,
+                    borderColor: 'rgb(255, 193, 7)',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    yAxisID: 'y1',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Peso (kg)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'IMC'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    },
+                }
+            }
+        });
+    }
+    
+    // ============================================================
+    // GRÁFICA DE TEMPERATURA
+    // ============================================================
+    const ctxTemp = document.getElementById('chartTemperatura');
+    if (ctxTemp) {
+        new Chart(ctxTemp, {
+            type: 'line',
+            data: {
+                labels: datosGraficas.fechas,
+                datasets: [{
+                    label: 'Temperatura (°C)',
+                    data: datosGraficas.temperatura,
+                    borderColor: 'rgb(255, 99, 71)',
+                    backgroundColor: 'rgba(255, 99, 71, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 35,
+                        max: 40
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

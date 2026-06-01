@@ -1,0 +1,69 @@
+# PRISLAB — Quality Gate (Punto 20)
+# Suite crítica en SQLite (rápido); sin GOOGLE_CLOUD_PROJECT → BD local según config/settings.py
+name: PRISLAB Quality Gate
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+env:
+  DJANGO_SETTINGS_MODULE: config.settings
+  PYTHONUNBUFFERED: "1"
+  PYTHONIOENCODING: utf-8
+  LC_ALL: C.UTF-8
+  LANG: C.UTF-8
+  # Build hermético: no usar secretos reales de producción
+  SECRET_KEY: "ci-prislab-quality-gate-dummy-secret-key-not-for-production-min-55chars"
+  # Clave Fernet válida (solo CI); generar otra con: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+  FERNET_KEY: "crFEHsDc7QApfMoN2nKLLdaHvGW4TMfx4vB7Wf8DYOE="
+  OPENAI_API_KEY: "CI-dummy"
+  GOOGLE_API_KEY: "CI-dummy"
+  # No vaciar GITHUB_TOKEN: el runner y setup-python (cache: pip) necesitan el token por defecto.
+  # El sentinel GitHub en la app exige GITHUB_REPO además del token; GITHUB_REPO vacío desactiva llamadas API.
+  GITHUB_REPO: ""
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # WeasyPrint: el paquete pip en ubuntu-latest suele necesitar GTK/Pango/Cairo del sistema
+      # (OSError al importar si faltan; pdf_generator solo capturaba ImportError).
+      # WeasyPrint: Noble 24.04 → libgdk-pixbuf-2.0-0; Jammy 22.04 → libgdk-pixbuf2.0-0
+      - name: Install OS libs for WeasyPrint (CI)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libffi-dev shared-mime-info
+          sudo apt-get install -y --no-install-recommends libgdk-pixbuf-2.0-0 || \
+            sudo apt-get install -y --no-install-recommends libgdk-pixbuf2.0-0
+
+      - name: Install dependencies
+        run: pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: Django system check
+        run: python manage.py check
+
+      - name: Quality Gate — suite ampliada (Guardian, CFDI, Westgard, fórmulas LIMS, inventario FEFO/stock, offline, sandbox, ética IA)
+        run: |
+          python manage.py test \
+            core.tests.test_guardian_v53 \
+            core.tests.test_e2e_cfdi \
+            laboratorio.tests.test_westgard \
+            laboratorio.tests.test_cci_lj_postgres_guard \
+            core.tests.test_clinical_math \
+            inventario.tests \
+            core.tests.test_offline_idempotency \
+            core.tests.test_sandbox_telegram \
+            core.tests.test_ia_ethics_p18
+          python scripts_cursor_e2e/run_cursor_reliability_suite.py

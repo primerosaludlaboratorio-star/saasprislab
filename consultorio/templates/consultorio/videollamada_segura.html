@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Telemedicina - Videollamada Segura{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-video"></i> Telemedicina - Videollamada Segura</h2>
+            <p class="text-muted">
+                Consultas remotas con cumplimiento de normativas de privacidad
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Panel principal de videollamada -->
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-video"></i> Sala de Consulta Virtual</h5>
+                    <span class="badge bg-success" id="statusConexion">
+                        <i class="fas fa-circle"></i> Disponible
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Área de video -->
+                    <div class="position-relative bg-dark" style="min-height:400px;" id="areaVideo">
+                        <div class="d-flex align-items-center justify-content-center h-100" style="min-height:400px;">
+                            <div class="text-center text-white">
+                                <i class="fas fa-video fa-5x mb-3 text-muted"></i>
+                                <h4>Sala de Videollamada</h4>
+                                <p class="text-muted">Seleccione un paciente e inicie la consulta</p>
+                            </div>
+                        </div>
+                        <!-- Mini vista del doctor (esquina) -->
+                        <div class="position-absolute" style="bottom:10px; right:10px; width:150px; height:110px; background:#333; border-radius:8px; border:2px solid #fff;">
+                            <div class="d-flex align-items-center justify-content-center h-100">
+                                <i class="fas fa-user-md text-muted fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Controles de llamada -->
+                    <div class="bg-dark p-3 text-center">
+                        <button class="btn btn-light rounded-circle mx-2" id="btnMicrofono" title="Micrófono">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <button class="btn btn-light rounded-circle mx-2" id="btnCamara" title="Cámara">
+                            <i class="fas fa-video"></i>
+                        </button>
+                        <button class="btn btn-light rounded-circle mx-2" id="btnPantalla" title="Compartir pantalla">
+                            <i class="fas fa-desktop"></i>
+                        </button>
+                        <button class="btn btn-danger rounded-circle mx-2 px-3" id="btnColgar" title="Finalizar">
+                            <i class="fas fa-phone-slash"></i>
+                        </button>
+                        <button class="btn btn-light rounded-circle mx-2" id="btnChat" title="Chat">
+                            <i class="fas fa-comment"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info de seguridad -->
+            <div class="alert alert-info mt-3 d-flex align-items-center">
+                <i class="fas fa-shield-alt fa-2x me-3"></i>
+                <div>
+                    <strong>Conexión Segura</strong><br>
+                    <small>Las videollamadas utilizan cifrado de extremo a extremo. 
+                    No se almacenan grabaciones sin consentimiento explícito del paciente.</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel lateral -->
+        <div class="col-md-4">
+            <!-- Iniciar consulta -->
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-phone"></i> Iniciar Videollamada</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Paciente</label>
+                        <input type="text" class="form-control" id="buscarPacienteVideo" 
+                               placeholder="Buscar paciente...">
+                        <input type="hidden" id="pacienteVideoId">
+                        <div id="resultadosPacienteVideo"></div>
+                    </div>
+                    <button class="btn btn-success w-100" id="btnIniciarLlamada" disabled>
+                        <i class="fas fa-phone-alt"></i> Iniciar Consulta Virtual
+                    </button>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            También puede compartir el link de la sala con el paciente
+                        </small>
+                    </div>
+                    <div class="input-group mt-2">
+                        <input type="text" class="form-control form-control-sm" id="linkSala" 
+                               value="" placeholder="Link generado aquí" readonly>
+                        <button class="btn btn-outline-secondary btn-sm" id="btnCopiarLink" title="Copiar">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consultas virtuales del día -->
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="fas fa-list"></i> Consultas Virtuales Hoy</h6>
+                </div>
+                <div class="card-body">
+                    {% if consultas_virtuales %}
+                        {% for cv in consultas_virtuales %}
+                        <div class="d-flex align-items-center mb-2 p-2 rounded bg-light">
+                            <div class="me-2">
+                                <i class="fas fa-user-circle fa-2x text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <strong>{{ cv.paciente.nombre_completo }}</strong>
+                                <br><small class="text-muted">{{ cv.hora_cita|time:"H:i" }}</small>
+                            </div>
+                            <span class="badge bg-{{ cv.estado_class }}">{{ cv.estado_display }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center mb-0">No hay consultas virtuales programadas</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Notas rápidas -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="fas fa-sticky-note"></i> Notas de la Consulta</h6>
+                </div>
+                <div class="card-body">
+                    <textarea class="form-control" rows="4" id="notasVideollamada"
+                              placeholder="Escriba notas durante la videollamada..."></textarea>
+                    <button class="btn btn-sm btn-outline-primary mt-2 w-100" id="btnGuardarNotas">
+                        <i class="fas fa-save"></i> Guardar Notas
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Funcionalidad de búsqueda de pacientes
+let timeoutBusqueda;
+document.getElementById('buscarPacienteVideo').addEventListener('input', function() {
+    clearTimeout(timeoutBusqueda);
+    const q = this.value.trim();
+    if (q.length < 2) { document.getElementById('resultadosPacienteVideo').innerHTML = ''; return; }
+    
+    timeoutBusqueda = setTimeout(async () => {
+        try {
+            const resp = await fetch(`{% url 'consultorio:api_buscar_pacientes' %}?q=${encodeURIComponent(q)}`);
+            const pacientes = await resp.json();
+            let html = '<div class="list-group mt-1">';
+            pacientes.forEach(p => {
+                html += `<a href="#" class="list-group-item list-group-item-action py-1" 
+                            onclick="seleccionarPacienteVideo(${p.id}, '${p.nombre_completo}'); return false;">
+                            ${p.nombre_completo}
+                         </a>`;
+            });
+            html += '</div>';
+            document.getElementById('resultadosPacienteVideo').innerHTML = html;
+        } catch(err) { console.error(err); }
+    }, 300);
+});
+
+function seleccionarPacienteVideo(id, nombre) {
+    document.getElementById('pacienteVideoId').value = id;
+    document.getElementById('buscarPacienteVideo').value = nombre;
+    document.getElementById('resultadosPacienteVideo').innerHTML = '';
+    document.getElementById('btnIniciarLlamada').disabled = false;
+}
+
+// Toggle controles
+document.getElementById('btnMicrofono').addEventListener('click', function() {
+    this.classList.toggle('btn-danger');
+    this.classList.toggle('btn-light');
+    this.querySelector('i').classList.toggle('fa-microphone');
+    this.querySelector('i').classList.toggle('fa-microphone-slash');
+});
+
+document.getElementById('btnCamara').addEventListener('click', function() {
+    this.classList.toggle('btn-danger');
+    this.classList.toggle('btn-light');
+    this.querySelector('i').classList.toggle('fa-video');
+    this.querySelector('i').classList.toggle('fa-video-slash');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h5 class="mb-0 fw-bold"><i class="bi bi-shield-check me-2 text-primary"></i>{{ titulo }}</h5>
+      <small class="text-muted">Calibraciones, IQ/OQ/PQ — COFEPRIS · ISO 15189 §6.4.3</small>
+    </div>
+    <a href="{% url 'mantenimiento:subir_certificado' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-upload me-1"></i>Subir Certificado
+    </a>
+  </div>
+
+  <!-- KPIs -->
+  <div class="row g-2 mb-3">
+    <div class="col-sm-4">
+      <div class="card border-0 bg-success bg-opacity-10 text-center p-3">
+        <div class="fs-3 fw-bold text-success">{{ vigentes }}</div>
+        <small class="text-muted">Vigentes</small>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card border-0 bg-warning bg-opacity-10 text-center p-3">
+        <div class="fs-3 fw-bold text-warning">{{ por_vencer }}</div>
+        <small class="text-muted">Por Vencer (&le;30 días)</small>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card border-0 bg-danger bg-opacity-10 text-center p-3">
+        <div class="fs-3 fw-bold text-danger">{{ vencidos }}</div>
+        <small class="text-muted">Vencidos — Acción Requerida</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtro -->
+  <form class="d-flex gap-2 mb-3">
+    <select name="estado" class="form-select form-select-sm w-auto">
+      <option value="">— Todos los estados —</option>
+      {% for val, lbl in estado_choices %}
+      <option value="{{ val }}" {% if estado_f == val %}selected{% endif %}>{{ lbl }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn btn-sm btn-secondary">Filtrar</button>
+  </form>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>Equipo</th><th>Tipo de Certificado</th><th>N° Cert.</th>
+              <th>Laboratorio Emisor</th><th>Emisión</th><th>Vencimiento</th>
+              <th>Estado</th><th>PDF</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in certificados %}
+            <tr class="{% if c.estado == 'VENCIDO' %}table-danger{% elif c.estado == 'POR_VENCER' %}table-warning{% endif %}">
+              <td class="fw-semibold">{{ c.expediente.equipo.nombre }}</td>
+              <td>{{ c.get_tipo_display }}</td>
+              <td><code>{{ c.numero_certificado|default:"S/N" }}</code></td>
+              <td class="text-muted small">{{ c.laboratorio_emisor|default:"—" }}</td>
+              <td class="small">{{ c.fecha_emision|date:"d/m/Y" }}</td>
+              <td class="small fw-semibold">
+                {{ c.fecha_vencimiento|date:"d/m/Y" }}
+                {% if c.estado == 'VENCIDO' %}<br><small class="text-danger">VENCIDO</small>
+                {% elif c.estado == 'POR_VENCER' %}
+                  {% with dias=c.fecha_vencimiento|timeuntil:hoy %}
+                  <br><small class="text-warning">vence pronto</small>
+                  {% endwith %}
+                {% endif %}
+              </td>
+              <td>
+                {% if c.estado == 'VIGENTE' %}<span class="badge bg-success">Vigente</span>
+                {% elif c.estado == 'POR_VENCER' %}<span class="badge bg-warning text-dark">⚠ Por Vencer</span>
+                {% elif c.estado == 'VENCIDO' %}<span class="badge bg-danger">🔴 Vencido</span>
+                {% else %}<span class="badge bg-secondary">{{ c.get_estado_display }}</span>{% endif %}
+              </td>
+              <td>
+                {% if c.archivo_pdf %}
+                <a href="{{ c.archivo_pdf.url }}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2">
+                  <i class="bi bi-file-pdf"></i>
+                </a>
+                {% else %}<span class="text-muted small">Sin PDF</span>{% endif %}
+              </td>
+              <td>
+                <a href="{% url 'mantenimiento:subir_certificado_equipo' c.expediente.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Subir renovación">
+                  <i class="bi bi-arrow-repeat"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9" class="text-center text-muted py-4">No hay certificados registrados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

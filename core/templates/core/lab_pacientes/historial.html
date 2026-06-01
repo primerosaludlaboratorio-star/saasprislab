@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Historial de Estudios — {{ paciente.nombre_completo }} | PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stat-card {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,.07);
+    transition: transform .15s;
+  }
+  .stat-card:hover { transform: translateY(-2px); }
+  .orden-row { border-left: 3px solid transparent; transition: border-color .2s; }
+  .orden-row:hover { border-left-color: #7b2bdb; background: #fafafa; }
+  .badge-estado-VALIDADO   { background:#d1fae5; color:#065f46; }
+  .badge-estado-PENDIENTE  { background:#fef3c7; color:#92400e; }
+  .badge-estado-EN_PROCESO { background:#dbeafe; color:#1e40af; }
+  .badge-estado-CANCELADO  { background:#fee2e2; color:#991b1b; }
+  .estudios-pill {
+    display: inline-block;
+    background: #f3f4f6;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: .75rem;
+    margin: 2px 2px 2px 0;
+    color: #374151;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  {# ── Breadcrumb ─────────────────────────────────────────────────────── #}
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{% url 'laboratorio:lista_pacientes' %}">
+          <i class="fas fa-users me-1"></i>Pacientes
+        </a>
+      </li>
+      <li class="breadcrumb-item active">{{ paciente.nombre_completo }}</li>
+    </ol>
+  </nav>
+
+  {# ── Perfil del paciente ─────────────────────────────────────────────── #}
+  <div class="card stat-card mb-4 p-4">
+    <div class="row align-items-center">
+      <div class="col-auto">
+        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center"
+             style="width:64px;height:64px;">
+          <i class="fas fa-user fa-2x text-primary"></i>
+        </div>
+      </div>
+      <div class="col">
+        <h4 class="fw-bold mb-0">{{ paciente.nombre_completo }}</h4>
+        <div class="text-muted small mt-1">
+          {% if paciente.fecha_nacimiento %}
+            <i class="fas fa-birthday-cake me-1"></i>{{ paciente.fecha_nacimiento|date:"d/m/Y" }}
+            &nbsp;·&nbsp;
+          {% endif %}
+          {% if paciente.sexo %}
+            <i class="fas fa-venus-mars me-1"></i>{{ paciente.get_sexo_display|default:paciente.sexo }}
+            &nbsp;·&nbsp;
+          {% endif %}
+          {% if paciente.telefono %}
+            <i class="fas fa-phone me-1"></i>{{ paciente.telefono }}
+          {% endif %}
+        </div>
+        {% if paciente.curp %}
+        <div class="text-muted small"><i class="fas fa-id-card me-1"></i>CURP: {{ paciente.curp }}</div>
+        {% endif %}
+      </div>
+      <div class="col-auto d-flex gap-2">
+        <a href="{% url 'recepcion_lab' %}?paciente_id={{ paciente.id }}"
+           class="btn btn-primary btn-sm">
+          <i class="fas fa-plus me-1"></i>Nueva Orden
+        </a>
+        <a href="{% url 'consulta_ordenes' %}?q={{ paciente.nombre_completo }}"
+           class="btn btn-outline-secondary btn-sm">
+          <i class="fas fa-search me-1"></i>Buscar Órdenes
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {# ── Tarjetas de métricas ─────────────────────────────────────────────── #}
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-md-3">
+      <div class="card stat-card text-center p-3">
+        <div class="fs-1 fw-bold text-primary">{{ total_visitas }}</div>
+        <div class="text-muted small">Visitas al laboratorio</div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+      <div class="card stat-card text-center p-3">
+        <div class="fs-4 fw-bold text-success">
+          {% if ultima_visita %}{{ ultima_visita.fecha_creacion|date:"d/m/Y" }}{% else %}—{% endif %}
+        </div>
+        <div class="text-muted small">Última visita</div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card stat-card p-3">
+        <div class="text-muted small mb-2 fw-semibold">
+          <i class="fas fa-flask me-1"></i>Estudios más solicitados
+        </div>
+        {% for ef in estudios_frecuentes %}
+          <span class="estudios-pill">{{ ef.linea_label }} <strong>({{ ef.veces }}x)</strong></span>
+        {% empty %}
+          <span class="text-muted small">Sin datos</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {# ── Historial de órdenes ─────────────────────────────────────────────── #}
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3">
+      <h6 class="mb-0 fw-bold">
+        <i class="fas fa-history text-primary me-2"></i>Historial de Órdenes
+        <span class="badge bg-primary bg-opacity-10 text-primary ms-2">{{ total_visitas }}</span>
+      </h6>
+    </div>
+
+    <div class="card-body p-0">
+      {% if ordenes %}
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Folio</th>
+              <th>Fecha</th>
+              <th>Estudios</th>
+              <th>Total</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for orden in ordenes %}
+            <tr class="orden-row">
+              <td>
+                <span class="fw-semibold text-primary">{{ orden.folio_orden|default:orden.id }}</span>
+                {% if orden.tipo_servicio and orden.tipo_servicio != 'RUTINA' %}
+                <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">
+                  {{ orden.tipo_servicio }}
+                </span>
+                {% endif %}
+              </td>
+              <td>
+                <div>{{ orden.fecha_creacion|date:"d/m/Y" }}</div>
+                <small class="text-muted">{{ orden.fecha_creacion|date:"H:i" }}</small>
+              </td>
+              <td>
+                {% for detalle in orden.detalles.all|slice:":5" %}
+                  <span class="estudios-pill">{% if detalle.descripcion_linea %}{{ detalle.descripcion_linea }}{% elif detalle.analito_id %}{{ detalle.analito.nombre }}{% elif detalle.perfil_lims_id %}{{ detalle.perfil_lims.nombre }}{% elif detalle.paquete_lims_id %}{{ detalle.paquete_lims.nombre }}{% else %}—{% endif %}</span>
+                {% endfor %}
+                {% if orden.detalles.count > 5 %}
+                  <span class="estudios-pill bg-secondary text-white">
+                    +{{ orden.detalles.count|add:"-5" }} más
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="fw-semibold">${{ orden.total|floatformat:2 }}</span>
+                {% if orden.anticipo and orden.anticipo < orden.total %}
+                <br><small class="text-warning">
+                  Saldo: ${{ orden.total|add:"-"|add:orden.anticipo|floatformat:2 }}
+                </small>
+                {% endif %}
+              </td>
+              <td>
+                {% with estado=orden.estado_analisis|default:"PENDIENTE" %}
+                <span class="badge badge-estado-{{ estado }} px-2 py-1" style="border-radius:8px;">
+                  {{ estado }}
+                </span>
+                {% endwith %}
+              </td>
+              <td>
+                <a href="{% url 'detalle_orden' orden.id %}"
+                   class="btn btn-sm btn-outline-primary">
+                  <i class="fas fa-eye"></i>
+                </a>
+                {% if orden.estado_analisis == 'VALIDADO' %}
+                <a href="{% url 'laboratorio:imprimir_resultados' orden.id %}"
+                   class="btn btn-sm btn-outline-success ms-1" target="_blank"
+                   title="Imprimir resultados">
+                  <i class="fas fa-print"></i>
+                </a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-flask fa-2x mb-3 d-block opacity-30"></i>
+        Este paciente no tiene órdenes de laboratorio registradas.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Nota de alcance ─────────────────────────────────────────────────── #}
+  <div class="alert alert-light border mt-4 d-flex align-items-start gap-3">
+    <i class="fas fa-info-circle text-primary mt-1 flex-shrink-0"></i>
+    <div class="small text-muted">
+      <strong>Alcance de este historial:</strong> muestra únicamente las visitas y resultados de
+      laboratorio de este paciente. El historial clínico completo (consultas médicas, notas SOAP,
+      tratamientos y seguimiento médico) está disponible exclusivamente en el módulo de
+      <strong>Consultorio Médico</strong> para los médicos autorizados que atienden a este paciente.
+    </div>
+  </div>
+
+</div>
+{% endblock %}

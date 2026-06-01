@@ -1,0 +1,356 @@
+{
+  "metadata": {
+    "titulo": "Auditoría Profunda (Deep Dive) — 5 Frentes Periféricos",
+    "version_prislab": "5.0",
+    "fecha_auditoria": "2026-04-03T11:44:09.676974",
+    "auditor": "Cascade AI — Análisis Estático",
+    "documento_referencia": "Documento Maestro §6.8, §6.4, §6.10, §6.11"
+  },
+  "resumen_ejecutivo": {
+    "total_hallazgos": 13,
+    "criticos": 2,
+    "medios": 6,
+    "bajos": 5,
+    "frentes_auditados": [
+      "Frente Fiscal (CFDI)",
+      "Motor Financiero Secundario (Nómina, CXC, CRM)",
+      "Deuda Técnica LIMS (Intérprete de Fórmulas)",
+      "Flujos Clínicos Auxiliares (Enfermería, Logística)",
+      "RH y Módulos Satélite (Bienestar, IA, Voz)"
+    ]
+  },
+  "hallazgos_criticos": [
+    {
+      "id": "H-001",
+      "frente": "Frente Fiscal (CFDI)",
+      "categoria": "Race Condition / Concurrencia",
+      "nivel_riesgo": "🔴 CRÍTICO",
+      "descripcion": "La vista timbrar_factura() NO utiliza select_for_update() ni bloqueo de fila en la base de datos. Si dos usuarios (o el mismo usuario en dos pestañas) intentan timbrar la misma factura simultáneamente, ambas solicitudes podrían pasar la validación factura.estado == \"TIMBRADO\" antes de que cualquiera complete, resultando en múltiples facturas ante el SAT para el mismo ingreso.",
+      "ubicacion": "@contabilidad/views.py:234-275 — timbrar_factura()",
+      "recomendacion": "1. Usar select_for_update() para bloquear la fila: FacturaCFDI.objects.select_for_update().get(id=factura_id)\n2. Envolver la transacción completa (incluyendo llamada API) en transaction.atomic()\n3. Implementar campo timbrando_en_proceso con timestamp para evitar timbrados concurrentes\n4. Agregar índice único condicional en uuid_sat para prevenir duplicados a nivel DB",
+      "referencia_codigo": "@login_required\ndef timbrar_factura(request, factura_id):\n    # ... líneas 243-248 ...\n    factura = get_object_or_404(FacturaCFDI, id=factura_id, usuario_creo__empresa=empresa)\n    \n    if factura.estado == 'TIMBRADO':  # ← Race condition: dos requests leen BORRADOR\n        messages.warning(request, 'Esta factura ya está timbrada.')\n        return redirect('contabilidad:detalle_factura', factura_id=factura.id)\n    \n    # Ambos requests pueden llegar aquí simultáneamente\n    api = FacturamaAPI()\n    resultado = api.timbrar_cfdi(factura)  # ← Ambos llaman a Facturama",
+      "timestamp": "2026-04-03T11:44:09.676842"
+    },
+    {
+      "id": "H-007",
+      "frente": "Deuda Técnica LIMS (Fórmulas)",
+      "categoria": "Deuda Técnica / Riesgo Seguridad",
+      "nivel_riesgo": "🔴 CRÍTICO",
+      "descripcion": "El modelo Analito tiene campos formula (TextField) y es_calculado (BooleanField) que almacenan fórmulas matemáticas en la BD, pero NO existe un intérprete seguro implementado. \n\nRiesgo: Cuando se implemente el motor de cálculo, si se usa eval() o exec() de Python sin sandboxing, un atacante podría inyectar código malicioso en el campo formula y ejecutar comandos arbitrarios en el servidor (RCE — Remote Code Execution).",
+      "ubicacion": "@lims/models.py:56-68 — Analito.formula, Analito.es_calculado",
+      "recomendacion": "1. NO usar eval() o exec() bajo ninguna circunstancia\n2. Implementar intérprete matemático seguro con whitelist:\n   - asteval (librería de sandboxing matemático)\n   - O parser propio con operaciones permitidas: +, -, *, /, **, sqrt(), log(), etc.\n3. Validar fórmulas en clean() del modelo con regex estricto\n4. Ejecutar cálculos en contenedor/entorno aislado\n5. Limitar tiempo de ejecución (timeout) y memoria",
+      "referencia_codigo": "class Analito(models.Model):\n    # ...\n    formula = models.TextField(\n        blank=True,\n        verbose_name='Fórmula',\n        help_text='Expresión desde Parametros.csv (Formula)...',\n    )\n    es_calculado = models.BooleanField(\n        default=False,\n        verbose_name='¿Calculado?',\n        help_text='True si el resultado se obtiene por motor interno...',\n    )\n    # NO hay método calcular() ni intérprete implementado",
+      "timestamp": "2026-04-03T11:44:09.676902"
+    }
+  ],
+  "hallazgos_medios": [
+    {
+      "id": "H-002",
+      "frente": "Frente Fiscal (CFDI)",
+      "categoria": "Idempotencia / API Externa",
+      "nivel_riesgo": "🟡 MEDIO",
+      "descripcion": "La API de Facturama no implementa clave de idempotencia (Idempotency-Key). Si hay un timeout de red justo después de que Facturama timbra pero antes de recibir la respuesta, el usuario podría reintentar y crear una segunda factura ante el SAT.",
+      "ubicacion": "@contabilidad/facturama_api.py:36-85 — timbrar_cfdi()",
+      "recomendacion": "1. Generar clave de idempotencia única por factura (ej: hash de folio_interno + usuario_id + timestamp_dia)\n2. Enviar en headers: {\"Idempotency-Key\": clave}\n3. Almacenar clave usada y verificar antes de reintentar\n4. Implementar patrón \"circuit breaker\" para timeouts consecutivos",
+      "referencia_codigo": "response = requests.post(\n    url,\n    auth=self.auth,\n    headers=headers,  # ← Falta 'Idempotency-Key': folio_interno_unico\n    json=cfdi_json,\n    timeout=(5, 30)\n)",
+      "timestamp": "2026-04-03T11:44:09.676873"
+    },
+    {
+      "id": "H-003",
+      "frente": "Frente Fiscal (CFDI)",
+      "categoria": "Testing / Cobertura",
+      "nivel_riesgo": "🟡 MEDIO",
+      "descripcion": "No se encontraron pruebas E2E automatizadas que validen el flujo completo de timbrado usando el sandbox de Facturama. El riesgo es que cambios en producción rompan el timbrado sin detectarse.",
+      "ubicacion": "@tests/ — directorio de pruebas",
+      "recomendacion": "1. Crear test_e2e_timbrado.py con pytest-playwright\n2. Usar FACTURAMA_SANDBOX=True en CI/CD\n3. Validar flujo: Crear borrador → Timbrar → Verificar UUID → Cancelar (si el sandbox lo permite)",
+      "referencia_codigo": "No se encontraron tests E2E para timbrado CFDI",
+      "timestamp": "2026-04-03T11:44:09.676878"
+    },
+    {
+      "id": "H-004",
+      "frente": "Motor Financiero (CXC)",
+      "categoria": "Módulo Faltante",
+      "nivel_riesgo": "🟡 MEDIO",
+      "descripcion": "El módulo de Cuentas por Cobrar (CXC) mencionado en el Documento Maestro §6.8 no fue encontrado en el codebase. Esto puede indicar:\na) Que aún no se implementa\nb) Que está integrado en otro módulo (ej: core/views/ventas.py)\nc) Que fue renombrado (ej: financiero/cuentas_por_cobrar.py)",
+      "ubicacion": "@core/views/ — no existe cuentas_por_cobrar.py",
+      "recomendacion": "1. Confirmar con equipo de producto si CXC está en roadmap\n2. Si existe con otro nombre, documentar en CHANGELOG\n3. Si está pendiente, agregar a backlog con prioridad",
+      "referencia_codigo": "Archivo no encontrado en búsqueda: **/*cxc*.py",
+      "timestamp": "2026-04-03T11:44:09.676882"
+    },
+    {
+      "id": "H-006",
+      "frente": "Motor Financiero (CRM)",
+      "categoria": "Seguridad / Multi-tenancy",
+      "nivel_riesgo": "🟡 MEDIO",
+      "descripcion": "Las vistas de CRM usan filtro por empresa, pero no verifican explícitamente que el usuario pertenezca a esa empresa. Un usuario con URL manipulada podría potencialmente acceder a prospectos de otra empresa si conoce el ID.",
+      "ubicacion": "@core/views/crm.py:110 — detalle_prospecto()",
+      "recomendacion": "1. Agregar verificación explícita: if request.user.empresa != empresa: raise PermissionDenied\n2. Implementar middleware de verificación de empresa para todas las vistas multi-tenant",
+      "referencia_codigo": "def detalle_prospecto(request, pk):\n    empresa = _empresa(request)\n    prospecto = get_object_or_404(ProspectoCRM, pk=pk, empresa=empresa)\n    # Falta: verificar que request.user.empresa == empresa",
+      "timestamp": "2026-04-03T11:44:09.676893"
+    },
+    {
+      "id": "H-009",
+      "frente": "Flujos Clínicos (Enfermería)",
+      "categoria": "Integración / Blindaje Forense",
+      "nivel_riesgo": "🟡 MEDIO",
+      "descripcion": "El módulo de Enfermería (Triage/Signos Vitales) captura datos clínicos importantes, pero NO está vinculado al nuevo motor de Expediente Inmutable (Blindaje v2.0) que acabamos de implementar. Los signos vitales no generan snapshots SHA256 ni sellos PIN-LAB.",
+      "ubicacion": "@enfermeria/views.py:55-81 — capturar_signos_vitales()",
+      "recomendacion": "1. Extender SignosVitales para crear snapshot automático en ExpedienteNotaSHA\n2. Agregar campo signos.firmado_con_pin para validación médica\n3. Implementar middleware de blindaje para modelos clínicos (similar a NotaClinicaSOAP)",
+      "referencia_codigo": "@login_required\ndef capturar_signos_vitales(request, cita_id):\n    # ...\n    if form.is_valid():\n        signos = form.save(commit=False)\n        signos.paciente = cita.paciente\n        signos.empresa = cita.empresa\n        signos.cita = cita\n        signos.registrado_por = request.user\n        signos.save()\n        # ← Falta: Crear snapshot en ExpedienteNotaSHA\n        # ← Falta: Vincular con Blindaje v2.0",
+      "timestamp": "2026-04-03T11:44:09.676920"
+    },
+    {
+      "id": "H-011",
+      "frente": "RH y Satélites (Bienestar NOM-035)",
+      "categoria": "Cumplimiento Normativo / NOM-035",
+      "nivel_riesgo": "🟡 MEDIO",
+      "descripcion": "El módulo de Bienestar implementa detección de riesgo emocional (ROJO_VIDA, ROJO_VIOLENCIA, ROJO_ACOSO) y envío de alertas a administradores. Sin embargo, no se encontró:\n1. Sistema de anonimización de datos para reportes NOM-035\n2. Retención temporal de datos sensibles (deberían eliminarse después de X meses según NOM-035)\n3. Consentimiento explícito del trabajador para procesamiento de datos emocionales",
+      "ubicacion": "@bienestar/views.py:190-209 — detectar_riesgo_emocional()",
+      "recomendacion": "1. Implementar política de retención: eliminar entradas de diario después de 6 meses (configurable)\n2. Agregar consentimiento informado en onboarding del empleado\n3. Crear reporte NOM-035 agregado/anónimo para dirección\n4. Documentar procedimiento de respuesta a alertas ROJO_VIDA",
+      "referencia_codigo": "def detectar_riesgo_emocional(texto):\n    # Palabras clave de alto riesgo\n    palabras_suicidio = ['suicidio', 'suicidarme', 'matarme', ...]\n    # ...\n    if any(palabra in texto_lower for palabra in palabras_suicidio):\n        return 'ROJO_VIDA'",
+      "timestamp": "2026-04-03T11:44:09.676939"
+    }
+  ],
+  "hallazgos_bajos": [
+    {
+      "id": "H-005",
+      "frente": "Motor Financiero (Nómina)",
+      "categoria": "Seguridad / Autorización",
+      "nivel_riesgo": "🟢 BAJO",
+      "descripcion": "El módulo de Nómina implementa correctamente el decorador @role_required(\"DIRECTOR\", \"ADMIN\", \"GERENTE\") en todas las vistas sensibles. No se detectaron fugas de información por URLs.",
+      "ubicacion": "@core/views/nomina.py — todas las vistas",
+      "recomendacion": "✅ Implementación correcta. Mantener matriz de roles. Sugerencia: Agregar auditoría de logs para accesos a nómina.",
+      "referencia_codigo": "@login_required\n@role_required('DIRECTOR', 'ADMIN', 'GERENTE')\ndef dashboard_nomina(request):\n    # ...\n\n@login_required\n@role_required('DIRECTOR', 'ADMIN', 'GERENTE')\ndef editar_recibo(request, pk):\n    # ...",
+      "timestamp": "2026-04-03T11:44:09.676889"
+    },
+    {
+      "id": "H-008",
+      "frente": "Deuda Técnica LIMS (Fórmulas)",
+      "categoria": "Validación Positiva",
+      "nivel_riesgo": "🟢 BAJO",
+      "descripcion": "Búsqueda exhaustiva con grep no encontró uso de eval() o exec() en el módulo LIMS ni en core. Esto es positivo — significa que el riesgo aún no está materializado, pero debe prevenirse antes de implementar el motor de cálculo.",
+      "ubicacion": "@lims/, @core/ — búsqueda completa",
+      "recomendacion": "✅ No existe código inseguro actualmente. Implementar linting en CI/CD para prohibir eval()/exec() en futuros commits.",
+      "referencia_codigo": "grep -r \"eval(\" lims/ core/ → No results found",
+      "timestamp": "2026-04-03T11:44:09.676911"
+    },
+    {
+      "id": "H-010",
+      "frente": "Flujos Clínicos (Logística)",
+      "categoria": "Implementación / Transacciones",
+      "nivel_riesgo": "🟢 BAJO",
+      "descripcion": "El módulo de Logística (Rutas de Recolección, Transferencias) implementa transacciones atómicas correctamente, usa transaction.atomic(), y tiene sistema de logs de auditoría. Incluye certificación de cadena de frío ISO 15189.",
+      "ubicacion": "@logistica/views.py:277-300 — enviar_transferencia()",
+      "recomendacion": "✅ Implementación correcta. Mantener estándar en otros módulos. Sugerencia: Agregar índices en LogTransferencia para consultas frecuentes.",
+      "referencia_codigo": "with transaction.atomic():\n    # Actualizar cantidades enviadas\n    for detalle in transferencia.detalles.all():\n        detalle.cantidad_enviada = detalle.cantidad_solicitada\n        detalle.save(update_fields=['cantidad_enviada'])\n    \n    # Cambiar estado\n    transferencia.estado = 'ENVIADA'\n    transferencia.save()\n    \n    # Log\n    LogTransferencia.objects.create(...)",
+      "timestamp": "2026-04-03T11:44:09.676926"
+    },
+    {
+      "id": "H-012",
+      "frente": "RH y Satélites (Voice Commander)",
+      "categoria": "Módulo No Encontrado / HTTPS",
+      "nivel_riesgo": "🟢 BAJO",
+      "descripcion": "No se encontró el módulo \"Voice Commander\" en el codebase. Según el Documento Maestro §6.11, debe exigir HTTPS estricto para proteger la transmisión de comandos de voz. \n\nPosibles ubicaciones:\n- ia/views.py (integrado en módulo IA)\n- middleware de reconocimiento de voz\n- Pendiente de implementación",
+      "ubicacion": "@/ — Voice Commander no encontrado",
+      "recomendacion": "1. Confirmar si Voice Commander está implementado con otro nombre\n2. Si existe: verificar que requiera HTTPS (SECURE_SSL_REDIRECT)\n3. Si no existe: documentar en backlog",
+      "referencia_codigo": "Búsqueda: **/voice*.py, **/comand*.py → No results",
+      "timestamp": "2026-04-03T11:44:09.676945"
+    },
+    {
+      "id": "H-013",
+      "frente": "RH y Satélites (Asistente IA)",
+      "categoria": "Seguridad / API Externa",
+      "nivel_riesgo": "🟢 BAJO",
+      "descripcion": "El módulo de Bienestar usa Gemini Flash con timeout configurado (10 segundos) y sanitización básica del input del usuario. El contexto está restringido a bienestar emocional. \n\nPositivo: No se encontraron prompts susceptibles a jailbreaking.",
+      "ubicacion": "@bienestar/views.py:144-161 — api_chat_bienestar()",
+      "recomendacion": "✅ Implementación segura. Sugerencias adicionales:\n1. Agregar rate limiting por usuario (max 20 mensajes/hora)\n2. Implementar logging de prompts para auditoría\n3. Validar que la respuesta de IA no contenga PII del usuario",
+      "referencia_codigo": "response = model.generate_content(\n    prompt_completo, \n    generation_config=config, \n    request_options={'timeout': 10}  # ← Timeout configurado\n)",
+      "timestamp": "2026-04-03T11:44:09.676952"
+    }
+  ],
+  "hallazgos_por_frente": {
+    "frente_fiscal_cfdi": [
+      {
+        "id": "H-001",
+        "frente": "Frente Fiscal (CFDI)",
+        "categoria": "Race Condition / Concurrencia",
+        "nivel_riesgo": "🔴 CRÍTICO",
+        "descripcion": "La vista timbrar_factura() NO utiliza select_for_update() ni bloqueo de fila en la base de datos. Si dos usuarios (o el mismo usuario en dos pestañas) intentan timbrar la misma factura simultáneamente, ambas solicitudes podrían pasar la validación factura.estado == \"TIMBRADO\" antes de que cualquiera complete, resultando en múltiples facturas ante el SAT para el mismo ingreso.",
+        "ubicacion": "@contabilidad/views.py:234-275 — timbrar_factura()",
+        "recomendacion": "1. Usar select_for_update() para bloquear la fila: FacturaCFDI.objects.select_for_update().get(id=factura_id)\n2. Envolver la transacción completa (incluyendo llamada API) en transaction.atomic()\n3. Implementar campo timbrando_en_proceso con timestamp para evitar timbrados concurrentes\n4. Agregar índice único condicional en uuid_sat para prevenir duplicados a nivel DB",
+        "referencia_codigo": "@login_required\ndef timbrar_factura(request, factura_id):\n    # ... líneas 243-248 ...\n    factura = get_object_or_404(FacturaCFDI, id=factura_id, usuario_creo__empresa=empresa)\n    \n    if factura.estado == 'TIMBRADO':  # ← Race condition: dos requests leen BORRADOR\n        messages.warning(request, 'Esta factura ya está timbrada.')\n        return redirect('contabilidad:detalle_factura', factura_id=factura.id)\n    \n    # Ambos requests pueden llegar aquí simultáneamente\n    api = FacturamaAPI()\n    resultado = api.timbrar_cfdi(factura)  # ← Ambos llaman a Facturama",
+        "timestamp": "2026-04-03T11:44:09.676842"
+      },
+      {
+        "id": "H-002",
+        "frente": "Frente Fiscal (CFDI)",
+        "categoria": "Idempotencia / API Externa",
+        "nivel_riesgo": "🟡 MEDIO",
+        "descripcion": "La API de Facturama no implementa clave de idempotencia (Idempotency-Key). Si hay un timeout de red justo después de que Facturama timbra pero antes de recibir la respuesta, el usuario podría reintentar y crear una segunda factura ante el SAT.",
+        "ubicacion": "@contabilidad/facturama_api.py:36-85 — timbrar_cfdi()",
+        "recomendacion": "1. Generar clave de idempotencia única por factura (ej: hash de folio_interno + usuario_id + timestamp_dia)\n2. Enviar en headers: {\"Idempotency-Key\": clave}\n3. Almacenar clave usada y verificar antes de reintentar\n4. Implementar patrón \"circuit breaker\" para timeouts consecutivos",
+        "referencia_codigo": "response = requests.post(\n    url,\n    auth=self.auth,\n    headers=headers,  # ← Falta 'Idempotency-Key': folio_interno_unico\n    json=cfdi_json,\n    timeout=(5, 30)\n)",
+        "timestamp": "2026-04-03T11:44:09.676873"
+      },
+      {
+        "id": "H-003",
+        "frente": "Frente Fiscal (CFDI)",
+        "categoria": "Testing / Cobertura",
+        "nivel_riesgo": "🟡 MEDIO",
+        "descripcion": "No se encontraron pruebas E2E automatizadas que validen el flujo completo de timbrado usando el sandbox de Facturama. El riesgo es que cambios en producción rompan el timbrado sin detectarse.",
+        "ubicacion": "@tests/ — directorio de pruebas",
+        "recomendacion": "1. Crear test_e2e_timbrado.py con pytest-playwright\n2. Usar FACTURAMA_SANDBOX=True en CI/CD\n3. Validar flujo: Crear borrador → Timbrar → Verificar UUID → Cancelar (si el sandbox lo permite)",
+        "referencia_codigo": "No se encontraron tests E2E para timbrado CFDI",
+        "timestamp": "2026-04-03T11:44:09.676878"
+      }
+    ],
+    "motor_financiero": [
+      {
+        "id": "H-004",
+        "frente": "Motor Financiero (CXC)",
+        "categoria": "Módulo Faltante",
+        "nivel_riesgo": "🟡 MEDIO",
+        "descripcion": "El módulo de Cuentas por Cobrar (CXC) mencionado en el Documento Maestro §6.8 no fue encontrado en el codebase. Esto puede indicar:\na) Que aún no se implementa\nb) Que está integrado en otro módulo (ej: core/views/ventas.py)\nc) Que fue renombrado (ej: financiero/cuentas_por_cobrar.py)",
+        "ubicacion": "@core/views/ — no existe cuentas_por_cobrar.py",
+        "recomendacion": "1. Confirmar con equipo de producto si CXC está en roadmap\n2. Si existe con otro nombre, documentar en CHANGELOG\n3. Si está pendiente, agregar a backlog con prioridad",
+        "referencia_codigo": "Archivo no encontrado en búsqueda: **/*cxc*.py",
+        "timestamp": "2026-04-03T11:44:09.676882"
+      },
+      {
+        "id": "H-005",
+        "frente": "Motor Financiero (Nómina)",
+        "categoria": "Seguridad / Autorización",
+        "nivel_riesgo": "🟢 BAJO",
+        "descripcion": "El módulo de Nómina implementa correctamente el decorador @role_required(\"DIRECTOR\", \"ADMIN\", \"GERENTE\") en todas las vistas sensibles. No se detectaron fugas de información por URLs.",
+        "ubicacion": "@core/views/nomina.py — todas las vistas",
+        "recomendacion": "✅ Implementación correcta. Mantener matriz de roles. Sugerencia: Agregar auditoría de logs para accesos a nómina.",
+        "referencia_codigo": "@login_required\n@role_required('DIRECTOR', 'ADMIN', 'GERENTE')\ndef dashboard_nomina(request):\n    # ...\n\n@login_required\n@role_required('DIRECTOR', 'ADMIN', 'GERENTE')\ndef editar_recibo(request, pk):\n    # ...",
+        "timestamp": "2026-04-03T11:44:09.676889"
+      },
+      {
+        "id": "H-006",
+        "frente": "Motor Financiero (CRM)",
+        "categoria": "Seguridad / Multi-tenancy",
+        "nivel_riesgo": "🟡 MEDIO",
+        "descripcion": "Las vistas de CRM usan filtro por empresa, pero no verifican explícitamente que el usuario pertenezca a esa empresa. Un usuario con URL manipulada podría potencialmente acceder a prospectos de otra empresa si conoce el ID.",
+        "ubicacion": "@core/views/crm.py:110 — detalle_prospecto()",
+        "recomendacion": "1. Agregar verificación explícita: if request.user.empresa != empresa: raise PermissionDenied\n2. Implementar middleware de verificación de empresa para todas las vistas multi-tenant",
+        "referencia_codigo": "def detalle_prospecto(request, pk):\n    empresa = _empresa(request)\n    prospecto = get_object_or_404(ProspectoCRM, pk=pk, empresa=empresa)\n    # Falta: verificar que request.user.empresa == empresa",
+        "timestamp": "2026-04-03T11:44:09.676893"
+      }
+    ],
+    "deuda_tecnica_lims": [
+      {
+        "id": "H-007",
+        "frente": "Deuda Técnica LIMS (Fórmulas)",
+        "categoria": "Deuda Técnica / Riesgo Seguridad",
+        "nivel_riesgo": "🔴 CRÍTICO",
+        "descripcion": "El modelo Analito tiene campos formula (TextField) y es_calculado (BooleanField) que almacenan fórmulas matemáticas en la BD, pero NO existe un intérprete seguro implementado. \n\nRiesgo: Cuando se implemente el motor de cálculo, si se usa eval() o exec() de Python sin sandboxing, un atacante podría inyectar código malicioso en el campo formula y ejecutar comandos arbitrarios en el servidor (RCE — Remote Code Execution).",
+        "ubicacion": "@lims/models.py:56-68 — Analito.formula, Analito.es_calculado",
+        "recomendacion": "1. NO usar eval() o exec() bajo ninguna circunstancia\n2. Implementar intérprete matemático seguro con whitelist:\n   - asteval (librería de sandboxing matemático)\n   - O parser propio con operaciones permitidas: +, -, *, /, **, sqrt(), log(), etc.\n3. Validar fórmulas en clean() del modelo con regex estricto\n4. Ejecutar cálculos en contenedor/entorno aislado\n5. Limitar tiempo de ejecución (timeout) y memoria",
+        "referencia_codigo": "class Analito(models.Model):\n    # ...\n    formula = models.TextField(\n        blank=True,\n        verbose_name='Fórmula',\n        help_text='Expresión desde Parametros.csv (Formula)...',\n    )\n    es_calculado = models.BooleanField(\n        default=False,\n        verbose_name='¿Calculado?',\n        help_text='True si el resultado se obtiene por motor interno...',\n    )\n    # NO hay método calcular() ni intérprete implementado",
+        "timestamp": "2026-04-03T11:44:09.676902"
+      },
+      {
+        "id": "H-008",
+        "frente": "Deuda Técnica LIMS (Fórmulas)",
+        "categoria": "Validación Positiva",
+        "nivel_riesgo": "🟢 BAJO",
+        "descripcion": "Búsqueda exhaustiva con grep no encontró uso de eval() o exec() en el módulo LIMS ni en core. Esto es positivo — significa que el riesgo aún no está materializado, pero debe prevenirse antes de implementar el motor de cálculo.",
+        "ubicacion": "@lims/, @core/ — búsqueda completa",
+        "recomendacion": "✅ No existe código inseguro actualmente. Implementar linting en CI/CD para prohibir eval()/exec() en futuros commits.",
+        "referencia_codigo": "grep -r \"eval(\" lims/ core/ → No results found",
+        "timestamp": "2026-04-03T11:44:09.676911"
+      }
+    ],
+    "flujos_clinicos": [
+      {
+        "id": "H-009",
+        "frente": "Flujos Clínicos (Enfermería)",
+        "categoria": "Integración / Blindaje Forense",
+        "nivel_riesgo": "🟡 MEDIO",
+        "descripcion": "El módulo de Enfermería (Triage/Signos Vitales) captura datos clínicos importantes, pero NO está vinculado al nuevo motor de Expediente Inmutable (Blindaje v2.0) que acabamos de implementar. Los signos vitales no generan snapshots SHA256 ni sellos PIN-LAB.",
+        "ubicacion": "@enfermeria/views.py:55-81 — capturar_signos_vitales()",
+        "recomendacion": "1. Extender SignosVitales para crear snapshot automático en ExpedienteNotaSHA\n2. Agregar campo signos.firmado_con_pin para validación médica\n3. Implementar middleware de blindaje para modelos clínicos (similar a NotaClinicaSOAP)",
+        "referencia_codigo": "@login_required\ndef capturar_signos_vitales(request, cita_id):\n    # ...\n    if form.is_valid():\n        signos = form.save(commit=False)\n        signos.paciente = cita.paciente\n        signos.empresa = cita.empresa\n        signos.cita = cita\n        signos.registrado_por = request.user\n        signos.save()\n        # ← Falta: Crear snapshot en ExpedienteNotaSHA\n        # ← Falta: Vincular con Blindaje v2.0",
+        "timestamp": "2026-04-03T11:44:09.676920"
+      },
+      {
+        "id": "H-010",
+        "frente": "Flujos Clínicos (Logística)",
+        "categoria": "Implementación / Transacciones",
+        "nivel_riesgo": "🟢 BAJO",
+        "descripcion": "El módulo de Logística (Rutas de Recolección, Transferencias) implementa transacciones atómicas correctamente, usa transaction.atomic(), y tiene sistema de logs de auditoría. Incluye certificación de cadena de frío ISO 15189.",
+        "ubicacion": "@logistica/views.py:277-300 — enviar_transferencia()",
+        "recomendacion": "✅ Implementación correcta. Mantener estándar en otros módulos. Sugerencia: Agregar índices en LogTransferencia para consultas frecuentes.",
+        "referencia_codigo": "with transaction.atomic():\n    # Actualizar cantidades enviadas\n    for detalle in transferencia.detalles.all():\n        detalle.cantidad_enviada = detalle.cantidad_solicitada\n        detalle.save(update_fields=['cantidad_enviada'])\n    \n    # Cambiar estado\n    transferencia.estado = 'ENVIADA'\n    transferencia.save()\n    \n    # Log\n    LogTransferencia.objects.create(...)",
+        "timestamp": "2026-04-03T11:44:09.676926"
+      }
+    ],
+    "rh_satelites": [
+      {
+        "id": "H-011",
+        "frente": "RH y Satélites (Bienestar NOM-035)",
+        "categoria": "Cumplimiento Normativo / NOM-035",
+        "nivel_riesgo": "🟡 MEDIO",
+        "descripcion": "El módulo de Bienestar implementa detección de riesgo emocional (ROJO_VIDA, ROJO_VIOLENCIA, ROJO_ACOSO) y envío de alertas a administradores. Sin embargo, no se encontró:\n1. Sistema de anonimización de datos para reportes NOM-035\n2. Retención temporal de datos sensibles (deberían eliminarse después de X meses según NOM-035)\n3. Consentimiento explícito del trabajador para procesamiento de datos emocionales",
+        "ubicacion": "@bienestar/views.py:190-209 — detectar_riesgo_emocional()",
+        "recomendacion": "1. Implementar política de retención: eliminar entradas de diario después de 6 meses (configurable)\n2. Agregar consentimiento informado en onboarding del empleado\n3. Crear reporte NOM-035 agregado/anónimo para dirección\n4. Documentar procedimiento de respuesta a alertas ROJO_VIDA",
+        "referencia_codigo": "def detectar_riesgo_emocional(texto):\n    # Palabras clave de alto riesgo\n    palabras_suicidio = ['suicidio', 'suicidarme', 'matarme', ...]\n    # ...\n    if any(palabra in texto_lower for palabra in palabras_suicidio):\n        return 'ROJO_VIDA'",
+        "timestamp": "2026-04-03T11:44:09.676939"
+      },
+      {
+        "id": "H-012",
+        "frente": "RH y Satélites (Voice Commander)",
+        "categoria": "Módulo No Encontrado / HTTPS",
+        "nivel_riesgo": "🟢 BAJO",
+        "descripcion": "No se encontró el módulo \"Voice Commander\" en el codebase. Según el Documento Maestro §6.11, debe exigir HTTPS estricto para proteger la transmisión de comandos de voz. \n\nPosibles ubicaciones:\n- ia/views.py (integrado en módulo IA)\n- middleware de reconocimiento de voz\n- Pendiente de implementación",
+        "ubicacion": "@/ — Voice Commander no encontrado",
+        "recomendacion": "1. Confirmar si Voice Commander está implementado con otro nombre\n2. Si existe: verificar que requiera HTTPS (SECURE_SSL_REDIRECT)\n3. Si no existe: documentar en backlog",
+        "referencia_codigo": "Búsqueda: **/voice*.py, **/comand*.py → No results",
+        "timestamp": "2026-04-03T11:44:09.676945"
+      },
+      {
+        "id": "H-013",
+        "frente": "RH y Satélites (Asistente IA)",
+        "categoria": "Seguridad / API Externa",
+        "nivel_riesgo": "🟢 BAJO",
+        "descripcion": "El módulo de Bienestar usa Gemini Flash con timeout configurado (10 segundos) y sanitización básica del input del usuario. El contexto está restringido a bienestar emocional. \n\nPositivo: No se encontraron prompts susceptibles a jailbreaking.",
+        "ubicacion": "@bienestar/views.py:144-161 — api_chat_bienestar()",
+        "recomendacion": "✅ Implementación segura. Sugerencias adicionales:\n1. Agregar rate limiting por usuario (max 20 mensajes/hora)\n2. Implementar logging de prompts para auditoría\n3. Validar que la respuesta de IA no contenga PII del usuario",
+        "referencia_codigo": "response = model.generate_content(\n    prompt_completo, \n    generation_config=config, \n    request_options={'timeout': 10}  # ← Timeout configurado\n)",
+        "timestamp": "2026-04-03T11:44:09.676952"
+      }
+    ]
+  },
+  "recomendaciones_prioritarias": [
+    {
+      "prioridad": 1,
+      "hallazgo_id": "H-001",
+      "accion": "Implementar select_for_update() en timbrado CFDI",
+      "estimacion": "4 horas",
+      "riesgo_si_no_se_atiende": "Duplicidad de facturas ante SAT, multas fiscales"
+    },
+    {
+      "prioridad": 2,
+      "hallazgo_id": "H-005",
+      "accion": "Diseñar intérprete matemático seguro (NO eval())",
+      "estimacion": "16 horas",
+      "riesgo_si_no_se_atiende": "RCE (Remote Code Execution), compromiso total del servidor"
+    },
+    {
+      "prioridad": 3,
+      "hallazgo_id": "H-002",
+      "accion": "Agregar Idempotency-Key en llamadas a Facturama",
+      "estimacion": "2 horas",
+      "riesgo_si_no_se_atiende": "Timbrados duplicados por timeouts de red"
+    },
+    {
+      "prioridad": 4,
+      "hallazgo_id": "H-003",
+      "accion": "Crear pruebas E2E de timbrado en sandbox",
+      "estimacion": "8 horas",
+      "riesgo_si_no_se_atiende": "Regresiones en producción sin detección"
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "description": "Inventario central de cobertura para la suite Omni-Tester. Se evoluciona con el sistema.",
+  "inventory_baseline": {
+    "source": "tools/url_inventory.json",
+    "count": 1732,
+    "kinds": {
+      "ui": 1494,
+      "api": 223,
+      "pdf": 15
+    },
+    "prefixes_top": [
+      { "prefix": "/admin/", "count": 1019 },
+      { "prefix": "/laboratorio/", "count": 114 },
+      { "prefix": "/consultorio/", "count": 67 },
+      { "prefix": "/api/", "count": 53 },
+      { "prefix": "/farmacia/", "count": 51 },
+      { "prefix": "/silo-lab/", "count": 50 }
+    ]
+  },
+  "coverage_targets": [
+    {
+      "prefix": "/admin/",
+      "kind": "ui",
+      "owners": ["role_matrix"],
+      "notes": "Admin genera cientos de rutas. Se audita con matriz de acceso + smoke (login + index + sample CRUD)."
+    },
+    {
+      "prefix": "/farmacia/",
+      "kind": "ui",
+      "owners": ["pdv_e2e", "ui_omni"]
+    },
+    {
+      "prefix": "/farmacia/api/",
+      "kind": "api",
+      "owners": ["api_smoke", "ui_omni", "pdv_e2e"]
+    },
+    {
+      "prefix": "/laboratorio/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix"],
+      "notes": "Se ampliará con auditor LIMS/PDF/validación Sentinel."
+    },
+    {
+      "prefix": "/laboratorio/api/",
+      "kind": "api",
+      "owners": ["api_smoke"]
+    },
+    {
+      "prefix": "/api/",
+      "kind": "api",
+      "owners": ["api_smoke"],
+      "notes": "Sentinel/IA/autorizaciones y endpoints globales."
+    }
+  ],
+  "targets": {
+    "local": {
+      "baseUrlDefault": "http://127.0.0.1:8000",
+      "requiresRunningServer": true,
+      "auditors": [
+        { "id": "url_inventory", "cmd": "python", "args": ["tools/audit_url_inventory.py", "--out", "tools/url_inventory.json"], "env": {} },
+        { "id": "url_inventory_summary", "cmd": "python", "args": ["tools/summarize_url_inventory.py"], "env": {} },
+        { "id": "coverage_gate", "cmd": "python", "args": ["tools/audit_coverage_gate.py"], "env": { "OMNI_MANIFEST": "tools/omni_manifest.json", "URL_INVENTORY": "tools/url_inventory.json" } },
+        { "id": "pdv_e2e", "cmd": "node", "args": ["_e2e_pdv_audit.mjs"], "env": { "BASE_URL": "${BASE_URL}", "PDV_USER": "${USER}", "PDV_PASS": "${PASS}" } },
+        { "id": "ui_omni", "cmd": "node", "args": ["_e2e_ui_omni.mjs"], "env": { "BASE_URL": "${BASE_URL}", "E2E_USER": "${USER}", "E2E_PASS": "${PASS}" } },
+        { "id": "api_smoke", "cmd": "node", "args": ["_audit_api_smoke.mjs"], "env": { "BASE_URL": "${BASE_URL}", "E2E_USER": "${USER}", "E2E_PASS": "${PASS}" } },
+        { "id": "role_matrix", "cmd": "node", "args": ["_audit_role_matrix.mjs"], "env": { "BASE_URL": "${BASE_URL}", "E2E_USER": "${USER}", "E2E_PASS": "${PASS}" } },
+        { "id": "data_integrity", "cmd": "python", "args": ["tools/audit_data_integrity.py"], "env": {} }
+      ]
+    },
+    "cloud": {
+      "baseUrlDefault": "https://prislab-saas-811785477499.us-central1.run.app",
+      "requiresRunningServer": false,
+      "auditors": [
+        { "id": "pdv_e2e", "cmd": "node", "args": ["_e2e_pdv_audit.mjs"], "env": { "BASE_URL": "${BASE_URL}", "PDV_USER": "${USER}", "PDV_PASS": "${PASS}" } },
+        { "id": "ui_omni", "cmd": "node", "args": ["_e2e_ui_omni.mjs"], "env": { "BASE_URL": "${BASE_URL}", "E2E_USER": "${USER}", "E2E_PASS": "${PASS}" } },
+        { "id": "api_smoke", "cmd": "node", "args": ["_audit_api_smoke.mjs"], "env": { "BASE_URL": "${BASE_URL}", "E2E_USER": "${USER}", "E2E_PASS": "${PASS}" } },
+        { "id": "role_matrix", "cmd": "node", "args": ["_audit_role_matrix.mjs"], "env": { "BASE_URL": "${BASE_URL}", "E2E_USER": "${USER}", "E2E_PASS": "${PASS}" } }
+      ]
+    }
+  },
+  "coverage_map": {
+    "farmacia": [
+      "/farmacia/pdv/",
+      "/farmacia/pdv/buscar-fragmento/",
+      "/farmacia/api/buscar-producto-pdv/",
+      "/farmacia/api/lotes-producto/<id>/"
+    ],
+    "laboratorio": [
+      "/laboratorio/lista-trabajo/",
+      "/laboratorio/captura/<orden_id>/",
+      "/laboratorio/imprimir/<orden_id>/",
+      "/laboratorio/api/guardar-resultados/<orden_id>/"
+    ],
+    "finanzas": [
+      "/finanzas/",
+      "/finanzas/corte/"
+    ],
+    "seguridad": [
+      "/login/",
+      "/logout/",
+      "/auth/2fa/verificar/"
+    ]
+  }
+}

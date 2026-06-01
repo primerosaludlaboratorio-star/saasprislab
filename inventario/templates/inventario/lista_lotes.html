@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="mb-0 fw-bold text-primary"><i class="bi bi-layers me-2"></i>{{ titulo }}</h2>
+      <small class="text-muted">Control FEFO — First Expired, First Out</small>
+    </div>
+    <a href="{% url 'inventario:crear_lote' %}" class="btn btn-success btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>Registrar Lote
+    </a>
+  </div>
+
+  <!-- Leyenda semáforo -->
+  <div class="d-flex gap-3 mb-3 flex-wrap">
+    <span class="badge bg-success fs-6 px-3"><i class="bi bi-circle-fill me-1"></i>Activo</span>
+    <span class="badge bg-warning text-dark fs-6 px-3"><i class="bi bi-circle-fill me-1"></i>Próximo a caducar (&lt;30d)</span>
+    <span class="badge bg-danger fs-6 px-3"><i class="bi bi-circle-fill me-1"></i>Vencido / Baja / Agotado</span>
+    <span class="badge bg-secondary fs-6 px-3"><i class="bi bi-shield-exclamation me-1"></i>Cuarentena QC</span>
+  </div>
+
+  <!-- Filtros -->
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-md-4">
+      <select name="reactivo" class="form-select form-select-sm">
+        <option value="">— Todos los reactivos —</option>
+        {% for r in reactivos %}
+          <option value="{{ r.pk }}" {% if reactivo_id == r.pk|stringformat:"s" %}selected{% endif %}>{{ r.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="estado" class="form-select form-select-sm">
+        <option value="">— Todos los estados —</option>
+        {% for val, lbl in estado_choices %}
+          <option value="{{ val }}" {% if estado_filtro == val %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-outline-secondary btn-sm" type="submit">
+        <i class="bi bi-funnel me-1"></i>Filtrar
+      </button>
+      {% if reactivo_id or estado_filtro %}
+        <a href="{% url 'inventario:lista_lotes' %}" class="btn btn-outline-danger btn-sm ms-1">
+          <i class="bi bi-x"></i>
+        </a>
+      {% endif %}
+    </div>
+  </form>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th></th>
+              <th>Reactivo</th>
+              <th>N° Lote</th>
+              <th>Caducidad</th>
+              <th class="text-end">Cantidad Inicial</th>
+              <th class="text-end">Cantidad Actual</th>
+              <th>Estado</th>
+              <th>QC</th>
+              <th>Recibido por</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lote in lotes %}
+            <tr class="
+              {% if lote._semaforo == 'rojo' %}table-danger
+              {% elif lote._semaforo == 'amarillo' %}table-warning
+              {% endif %}">
+              <td>
+                {% if lote._semaforo == 'rojo' %}
+                  <span class="text-danger fs-5"><i class="bi bi-circle-fill"></i></span>
+                {% elif lote._semaforo == 'amarillo' %}
+                  <span class="text-warning fs-5"><i class="bi bi-circle-fill"></i></span>
+                {% else %}
+                  <span class="text-success fs-5"><i class="bi bi-circle-fill"></i></span>
+                {% endif %}
+              </td>
+              <td class="fw-semibold">{{ lote.reactivo.nombre }}</td>
+              <td><code>{{ lote.numero_lote }}</code></td>
+              <td>{{ lote.fecha_caducidad|date:"d/m/Y"|default:"—" }}</td>
+              <td class="text-end small text-muted">{{ lote.cantidad_inicial|floatformat:2 }} {{ lote.reactivo.unidad_medida }}</td>
+              <td class="text-end fw-bold">{{ lote.cantidad_actual|floatformat:2 }} {{ lote.reactivo.unidad_medida }}</td>
+              <td>
+                {% if lote.estado == 'ACTIVO' %}
+                  <span class="badge bg-success">{{ lote.get_estado_display }}</span>
+                {% elif lote.estado == 'CUARENTENA' %}
+                  <span class="badge bg-secondary"><i class="bi bi-shield-exclamation me-1"></i>{{ lote.get_estado_display }}</span>
+                {% elif lote.estado == 'VENCIDO' or lote.estado == 'BAJA' %}
+                  <span class="badge bg-danger">{{ lote.get_estado_display }}</span>
+                {% elif lote.estado == 'AGOTADO' %}
+                  <span class="badge bg-warning text-dark">{{ lote.get_estado_display }}</span>
+                {% else %}
+                  <span class="badge bg-light text-dark">{{ lote.get_estado_display }}</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if lote.lote_aprobado_qc %}
+                  <i class="bi bi-shield-check text-success" title="QC aprobado por {{ lote.aprobado_por }}"></i>
+                {% else %}
+                  <i class="bi bi-shield-x text-secondary" title="Pendiente QC"></i>
+                {% endif %}
+              </td>
+              <td class="small text-muted">{{ lote.recibido_por.get_full_name|default:lote.recibido_por.username|default:"—" }}</td>
+              <td class="text-center">
+                <a href="{% url 'inventario:detalle_lote' lote.pk %}"
+                   class="btn btn-sm btn-outline-primary" title="Detalle / Liberación QC">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="10" class="text-center text-muted py-4">
+                <i class="bi bi-layers display-6 d-block mb-2 opacity-25"></i>
+                No hay lotes registrados. <a href="{% url 'inventario:crear_lote' %}">Registrar lote</a>.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

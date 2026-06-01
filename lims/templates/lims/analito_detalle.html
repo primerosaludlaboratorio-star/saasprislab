@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ analito.abreviatura }} — Analito LIMS{% endblock %}
+
+{% block extra_css %}
+<style>
+body { background: #f4f6f9; }
+.lims-header { background: linear-gradient(135deg, #1a252f 0%, #2c3e50 100%); }
+.ficha-card { border-left: 4px solid #27ae60; }
+.table-rangos th { background: #34495e; color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top:70px;">
+
+  <!-- Header -->
+  <div class="lims-header rounded-3 p-4 mb-4 text-white">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <h3 class="m-0 fw-bold">
+          <span class="badge bg-success me-2">{{ analito.abreviatura }}</span>
+          {{ analito.nombre }}
+        </h3>
+        <small class="opacity-75">
+          <i class="fas fa-flask me-1"></i>{{ analito.departamento }}
+          &nbsp;·&nbsp;Código: {{ analito.codigo }}
+          &nbsp;·&nbsp;ID legacy: {{ analito.id_legacy|default:"—" }}
+        </small>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'lims_analito_editar' analito.pk %}" class="btn btn-warning btn-sm">
+          <i class="fas fa-edit"></i> Editar
+        </a>
+        <a href="{% url 'lims_analitos' %}" class="btn btn-outline-light btn-sm">
+          <i class="fas fa-arrow-left"></i> Volver
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Ficha técnica -->
+    <div class="col-lg-5">
+      <div class="card shadow-sm ficha-card">
+        <div class="card-header fw-bold"><i class="fas fa-cog me-1"></i>Configuración Técnica</div>
+        <div class="card-body">
+          <table class="table table-sm table-borderless mb-0">
+            <tr><td class="text-muted fw-bold" width="45%">Tipo resultado</td><td>{{ analito.tipo_resultado }}</td></tr>
+            <tr><td class="text-muted fw-bold">Unidades</td><td>{{ analito.unidades|default:"—" }}</td></tr>
+            <tr><td class="text-muted fw-bold">Decimales</td><td>{{ analito.decimales }}</td></tr>
+            <tr><td class="text-muted fw-bold">Tipo de muestra</td><td>{{ analito.tipo_muestra|default:"—" }}</td></tr>
+            <tr><td class="text-muted fw-bold">Metodología</td><td><small>{{ analito.metodologia|default:"—" }}</small></td></tr>
+            <tr>
+              <td class="text-muted fw-bold">Calculado</td>
+              <td>
+                {% if analito.es_calculado %}
+                  <span class="badge bg-info text-dark">Sí — fórmula / motor interno</span>
+                {% else %}
+                  <span class="badge bg-light text-dark">No — resultado de equipo o captura</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% if analito.formula %}
+            <tr><td class="text-muted fw-bold">Fórmula</td><td><pre class="small mb-0 bg-light p-2 rounded">{{ analito.formula }}</pre></td></tr>
+            {% endif %}
+            <tr><td class="text-muted fw-bold">Clave hoja</td><td><code>{{ analito.clave_hoja|default:"—" }}</code></td></tr>
+            <tr>
+              <td class="text-muted fw-bold">Venta directa (PDV)</td>
+              <td>
+                {% if analito.es_vendible_individualmente %}
+                  <span class="badge bg-success">Visible en PDV</span>
+                {% else %}
+                  <span class="badge bg-secondary">Solo para perfiles</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted fw-bold">Estado</td>
+              <td>{% if analito.activo %}<span class="badge bg-success">Activo</span>{% else %}<span class="badge bg-danger">Inactivo</span>{% endif %}</td>
+            </tr>
+          </table>
+          {% if analito.indicaciones %}
+          <hr>
+          <strong class="small">Indicaciones:</strong>
+          <p class="small mt-1 mb-0">{{ analito.indicaciones }}</p>
+          {% endif %}
+          {% if analito.notas %}
+          <hr>
+          <strong class="small">Notas técnicas:</strong>
+          <p class="small mt-1 mb-0">{{ analito.notas }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Rangos de referencia -->
+    <div class="col-lg-7">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center fw-bold">
+          <span><i class="fas fa-ruler-combined me-1"></i>Valores de Referencia (Sentinel)</span>
+          <button class="btn btn-sm btn-success" id="btn-nuevo-rango">
+            <i class="fas fa-plus"></i> Agregar rango
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm table-hover table-rangos mb-0" id="tabla-rangos">
+            <thead>
+              <tr>
+                <th>Sexo</th>
+                <th>Unidad edad</th>
+                <th>Edad min</th>
+                <th>Edad max</th>
+                <th>Ref. min</th>
+                <th>Ref. max</th>
+                <th>Texto</th>
+                <th class="text-nowrap">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="rangos-body">
+              {% for r in rangos %}
+              <tr data-id="{{ r.pk }}">
+                <td>{{ r.get_sexo_display }}</td>
+                <td><span class="badge {% if r.unidad_edad == 'DIAS' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}">{{ r.get_unidad_edad_display }}</span></td>
+                <td>{{ r.edad_minima }}</td>
+                <td>{{ r.edad_maxima }}</td>
+                <td>{{ r.ref_minimo|default:"—" }}</td>
+                <td>{{ r.ref_maximo|default:"—" }}</td>
+                <td><small>{{ r.texto_referencia|default:"—" }}</small></td>
+                <td class="text-nowrap">
+                  <button type="button" class="btn btn-sm btn-outline-primary btn-editar-rango me-1" data-id="{{ r.pk }}" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-rango" data-id="{{ r.pk }}" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr id="row-sin-rangos">
+                <td colspan="8" class="text-center text-muted py-3">Sin rangos definidos — todos los valores del CSV ya fueron importados.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: nuevo rango -->
+<div class="modal fade" id="modalRango" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title" id="modalRangoTitulo"><i class="fas fa-plus-circle"></i> Nuevo Rango de Referencia</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="small fw-bold">Sexo</label>
+            <select id="rng-sexo" class="form-select">
+              <option value="I">Indistinto</option>
+              <option value="M">Masculino</option>
+              <option value="F">Femenino</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="small fw-bold">Unidad de edad</label>
+            <select id="rng-unidad" class="form-select">
+              <option value="ANOS">Años (≥1 año)</option>
+              <option value="DIAS">Días (&lt;1 año)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="small fw-bold">Edad mínima</label>
+            <input type="number" id="rng-emin" class="form-control" value="0" min="0">
+          </div>
+          <div class="col-6">
+            <label class="small fw-bold">Edad máxima</label>
+            <input type="number" id="rng-emax" class="form-control" value="150" min="0">
+          </div>
+          <div class="col-6">
+            <label class="small fw-bold">Ref. mínima</label>
+            <input type="number" step="0.0001" id="rng-rmin" class="form-control" placeholder="0.0">
+          </div>
+          <div class="col-6">
+            <label class="small fw-bold">Ref. máxima</label>
+            <input type="number" step="0.0001" id="rng-rmax" class="form-control" placeholder="0.0">
+          </div>
+          <div class="col-12">
+            <label class="small fw-bold">Referencia en texto (opcional)</label>
+            <input type="text" id="rng-texto" class="form-control" placeholder="Ej: NEGATIVO">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <input type="hidden" id="rng-edit-id" value="">
+        <button class="btn btn-success" id="btn-guardar-rango">
+          <i class="fas fa-save"></i> <span id="btn-guardar-rango-texto">Guardar Rango</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var CSRF = '{{ csrf_token }}';
+var ANALITO_ID = {{ analito.pk }};
+var API_RANGOS = '/lims/api/analitos/' + ANALITO_ID + '/rangos/';
+var API_RANGO_ITEM = '/lims/api/analitos/' + ANALITO_ID + '/rangos/';
+var API_RANGO_DEL = '/lims/api/rangos/';
+
+function abrirModalRangoNuevo() {
+    document.getElementById('modalRangoTitulo').innerHTML = '<i class="fas fa-plus-circle"></i> Nuevo Rango de Referencia';
+    document.getElementById('btn-guardar-rango-texto').textContent = 'Guardar Rango';
+    document.getElementById('rng-edit-id').value = '';
+    document.getElementById('rng-sexo').value = 'I';
+    document.getElementById('rng-unidad').value = 'ANOS';
+    document.getElementById('rng-emin').value = '0';
+    document.getElementById('rng-emax').value = '150';
+    document.getElementById('rng-rmin').value = '';
+    document.getElementById('rng-rmax').value = '';
+    document.getElementById('rng-texto').value = '';
+    new bootstrap.Modal(document.getElementById('modalRango')).show();
+}
+
+document.getElementById('btn-nuevo-rango').addEventListener('click', abrirModalRangoNuevo);
+
+document.getElementById('btn-guardar-rango').addEventListener('click', function() {
+    var editId = document.getElementById('rng-edit-id').value;
+    var datos = {
+        sexo:          document.getElementById('rng-sexo').value,
+        unidad_edad:   document.getElementById('rng-unidad').value,
+        edad_minima:   parseInt(document.getElementById('rng-emin').value, 10),
+        edad_maxima:   parseInt(document.getElementById('rng-emax').value, 10),
+        ref_minimo:    document.getElementById('rng-rmin').value || null,
+        ref_maximo:    document.getElementById('rng-rmax').value || null,
+        texto_referencia: document.getElementById('rng-texto').value,
+    };
+    var url = editId ? (API_RANGO_ITEM + editId + '/') : API_RANGOS;
+    var method = editId ? 'POST' : 'POST';
+    fetch(url, {
+        method: method,
+        headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/json'},
+        body: JSON.stringify(datos),
+        credentials: 'same-origin',
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) { location.reload(); }
+        else { alert('Error: ' + JSON.stringify(data)); }
+    });
+});
+
+document.querySelectorAll('.btn-editar-rango').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var id = btn.dataset.id;
+        fetch(API_RANGO_ITEM + id + '/', {credentials: 'same-origin'})
+        .then(r => r.json())
+        .then(function(data) {
+            if (data.error) { alert(data.error); return; }
+            document.getElementById('modalRangoTitulo').innerHTML = '<i class="fas fa-edit"></i> Editar Rango de Referencia';
+            document.getElementById('btn-guardar-rango-texto').textContent = 'Actualizar';
+            document.getElementById('rng-edit-id').value = String(data.id);
+            document.getElementById('rng-sexo').value = data.sexo || 'I';
+            document.getElementById('rng-unidad').value = data.unidad_edad || 'ANOS';
+            document.getElementById('rng-emin').value = data.edad_minima;
+            document.getElementById('rng-emax').value = data.edad_maxima;
+            document.getElementById('rng-rmin').value = data.ref_minimo || '';
+            document.getElementById('rng-rmax').value = data.ref_maximo || '';
+            document.getElementById('rng-texto').value = data.texto_referencia || '';
+            new bootstrap.Modal(document.getElementById('modalRango')).show();
+        })
+        .catch(function() { alert('No se pudo cargar el rango.'); });
+    });
+});
+
+document.querySelectorAll('.btn-eliminar-rango').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        if (!confirm('¿Eliminar este rango de referencia?')) return;
+        var id = btn.dataset.id;
+        fetch(API_RANGO_DEL + id + '/eliminar/', {
+            method: 'POST',
+            headers: {'X-CSRFToken': CSRF},
+            credentials: 'same-origin',
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) { btn.closest('tr').remove(); }
+        });
+    });
+});
+</script>
+{% endblock %}

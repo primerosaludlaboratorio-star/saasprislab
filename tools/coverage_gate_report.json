@@ -1,0 +1,510 @@
+{
+  "protocol": "PRISLAB_COVERAGE_GATE",
+  "timestamp": "2026-04-02T03:54:19.517834Z",
+  "ok": true,
+  "enforce": false,
+  "inventory": {
+    "path": "tools/url_inventory.json",
+    "count": 1732
+  },
+  "manifest": {
+    "path": "tools/omni_manifest.json",
+    "coverage_targets_count": 6
+  },
+  "coverage": {
+    "covered": 1237,
+    "uncovered": 495,
+    "covered_ratio": 0.714203233256351,
+    "covered_by_prefix": {
+      "/admin/": 1019,
+      "/laboratorio/": 62,
+      "/api/": 53,
+      "/laboratorio/api/": 52,
+      "/farmacia/": 42,
+      "/farmacia/api/": 9
+    },
+    "uncovered_samples": [
+      {
+        "path": "/favicon.ico",
+        "kind": "ui",
+        "name": null,
+        "view": "django.views.generic.base.view"
+      },
+      {
+        "path": "/",
+        "kind": "ui",
+        "name": "login_root",
+        "view": "core.views.general.view"
+      },
+      {
+        "path": "/login/",
+        "kind": "ui",
+        "name": "login",
+        "view": "core.views.general.view"
+      },
+      {
+        "path": "/logout/",
+        "kind": "ui",
+        "name": "logout",
+        "view": "core.views.general.logout_view"
+      },
+      {
+        "path": "/auth/2fa/verificar/",
+        "kind": "ui",
+        "name": "verificar_2fa",
+        "view": "core.views.autenticacion_2fa.verificar_2fa"
+      },
+      {
+        "path": "/auth/2fa/configurar/",
+        "kind": "ui",
+        "name": "setup_2fa",
+        "view": "core.views.autenticacion_2fa.setup_2fa"
+      },
+      {
+        "path": "/auth/2fa/desactivar/",
+        "kind": "ui",
+        "name": "desactivar_2fa",
+        "view": "core.views.autenticacion_2fa.desactivar_2fa"
+      },
+      {
+        "path": "/kiosko/",
+        "kind": "ui",
+        "name": "kiosko_index",
+        "view": "laboratorio.views.imprimir_zpl.kiosko_index"
+      },
+      {
+        "path": "/kiosko/check-in/<str:qr_token>/",
+        "kind": "ui",
+        "name": "kiosko_check_in",
+        "view": "laboratorio.views.imprimir_zpl.kiosko_check_in_qr"
+      },
+      {
+        "path": "/bienestar/",
+        "kind": "ui",
+        "name": "bienestar_dashboard",
+        "view": "core.views.bienestar.dashboard_bienestar"
+      },
+      {
+        "path": "/bienestar/diario/",
+        "kind": "ui",
+        "name": "diario_emocional",
+        "view": "core.views.bienestar.diario_emocional"
+      },
+      {
+        "path": "/bienestar/nom035/",
+        "kind": "ui",
+        "name": "evaluacion_nom035",
+        "view": "core.views.bienestar.evaluacion_nom035"
+      },
+      {
+        "path": "/bienestar/alertas-rrhh/",
+        "kind": "ui",
+        "name": "bienestar_alertas_rrhh",
+        "view": "core.views.bienestar.alertas_rrhh"
+      },
+      {
+        "path": "/home/",
+        "kind": "ui",
+        "name": "home",
+        "view": "core.views.general.home_view"
+      },
+      {
+        "path": "/dashboard/",
+        "kind": "ui",
+        "name": "dashboard",
+        "view": "core.views.director.dashboard_director"
+      },
+      {
+        "path": "/validar/resultado/<uuid:token>/",
+        "kind": "ui",
+        "name": "validar_resultado",
+        "view": "core.views.laboratorio_reportes.validar_resultado"
+      },
+      {
+        "path": "/voice/logs/",
+        "kind": "ui",
+        "name": "voice_logs_dashboard",
+        "view": "core.views.voice.dashboard_voice_logs"
+      },
+      {
+        "path": "/ia/asistente/",
+        "kind": "ui",
+        "name": "pris_ia_asistente",
+        "view": "core.views.pris_ia.asistente_page"
+      },
+      {
+        "path": "/ia/asistente/chat/",
+        "kind": "ui",
+        "name": "pris_ia_chat",
+        "view": "core.views.pris_ia.asistente_chat"
+      },
+      {
+        "path": "/ia/asistente/reset/",
+        "kind": "ui",
+        "name": "pris_ia_reset",
+        "view": "core.views.pris_ia.asistente_reset"
+      },
+      {
+        "path": "/pris/api/acciones/pendientes/",
+        "kind": "api",
+        "name": "pris_acciones_pendientes",
+        "view": "core.views.pris_ia.api_acciones_pendientes"
+      },
+      {
+        "path": "/pris/api/accion/<int:accion_id>/confirmar/",
+        "kind": "api",
+        "name": "pris_confirmar_accion",
+        "view": "core.views.pris_ia.api_confirmar_accion"
+      },
+      {
+        "path": "/pris/api/accion/<int:accion_id>/rechazar/",
+        "kind": "api",
+        "name": "pris_rechazar_accion",
+        "view": "core.views.pris_ia.api_rechazar_accion"
+      },
+      {
+        "path": "/notificaciones/",
+        "kind": "ui",
+        "name": "notificaciones_lista",
+        "view": "core.views.notificaciones.lista_notificaciones"
+      },
+      {
+        "path": "/notificaciones/badge/",
+        "kind": "ui",
+        "name": "notificaciones_badge",
+        "view": "core.views.notificaciones.api_notificaciones_badge"
+      },
+      {
+        "path": "/notificaciones/<int:notificacion_id>/leer/",
+        "kind": "ui",
+        "name": "notificacion_leer",
+        "view": "core.views.notificaciones.marcar_leida"
+      },
+      {
+        "path": "/notificaciones/marcar-todas/",
+        "kind": "ui",
+        "name": "notificaciones_marcar_todas",
+        "view": "core.views.notificaciones.marcar_todas_leidas"
+      },
+      {
+        "path": "/nomina/",
+        "kind": "ui",
+        "name": "nomina_dashboard",
+        "view": "core.views.nomina.dashboard_nomina"
+      },
+      {
+        "path": "/nomina/periodos/",
+        "kind": "ui",
+        "name": "nomina_lista_periodos",
+        "view": "core.views.nomina.lista_periodos"
+      },
+      {
+        "path": "/nomina/periodos/nuevo/",
+        "kind": "ui",
+        "name": "nomina_crear_periodo",
+        "view": "core.views.nomina.crear_periodo"
+      },
+      {
+        "path": "/nomina/periodos/<int:pk>/",
+        "kind": "ui",
+        "name": "nomina_detalle_periodo",
+        "view": "core.views.nomina.detalle_periodo"
+      },
+      {
+        "path": "/nomina/periodos/<int:pk>/pagar/",
+        "kind": "ui",
+        "name": "nomina_marcar_pagado",
+        "view": "core.views.nomina.marcar_periodo_pagado"
+      },
+      {
+        "path": "/nomina/recibos/<int:pk>/editar/",
+        "kind": "ui",
+        "name": "nomina_editar_recibo",
+        "view": "core.views.nomina.editar_recibo"
+      },
+      {
+        "path": "/nomina/api/resumen/",
+        "kind": "api",
+        "name": "nomina_api_resumen",
+        "view": "core.views.nomina.api_resumen_nomina"
+      },
+      {
+        "path": "/crm/",
+        "kind": "ui",
+        "name": "crm_dashboard",
+        "view": "core.views.crm.dashboard_crm"
+      },
+      {
+        "path": "/crm/prospectos/",
+        "kind": "ui",
+        "name": "crm_lista_prospectos",
+        "view": "core.views.crm.lista_prospectos"
+      },
+      {
+        "path": "/crm/prospectos/nuevo/",
+        "kind": "ui",
+        "name": "crm_crear_prospecto",
+        "view": "core.views.crm.crear_prospecto"
+      },
+      {
+        "path": "/crm/prospectos/<int:pk>/",
+        "kind": "ui",
+        "name": "crm_detalle_prospecto",
+        "view": "core.views.crm.detalle_prospecto"
+      },
+      {
+        "path": "/crm/prospectos/<int:pk>/seguimiento/",
+        "kind": "ui",
+        "name": "crm_agregar_seguimiento",
+        "view": "core.views.crm.agregar_seguimiento"
+      },
+      {
+        "path": "/crm/api/kanban/",
+        "kind": "api",
+        "name": "crm_api_kanban",
+        "view": "core.views.crm.api_kanban_crm"
+      },
+      {
+        "path": "/seguridad/2fa/",
+        "kind": "ui",
+        "name": "configuracion_2fa",
+        "view": "seguridad.views.configuracion_2fa"
+      },
+      {
+        "path": "/seguridad/2fa/activar-totp/",
+        "kind": "ui",
+        "name": "activar_totp",
+        "view": "seguridad.views.activar_totp"
+      },
+      {
+        "path": "/seguridad/2fa/confirmar-totp/<int:dispositivo_id>/",
+        "kind": "ui",
+        "name": "confirmar_totp",
+        "view": "seguridad.views.confirmar_totp"
+      },
+      {
+        "path": "/seguridad/2fa/desactivar-totp/<int:dispositivo_id>/",
+        "kind": "ui",
+        "name": "desactivar_totp",
+        "view": "seguridad.views.desactivar_totp"
+      },
+      {
+        "path": "/seguridad/2fa/codigos-backup/",
+        "kind": "ui",
+        "name": "mostrar_codigos_backup",
+        "view": "seguridad.views.mostrar_codigos_backup"
+      },
+      {
+        "path": "/seguridad/2fa/regenerar-codigos/",
+        "kind": "ui",
+        "name": "regenerar_codigos_backup",
+        "view": "seguridad.views.regenerar_codigos_backup"
+      },
+      {
+        "path": "/seguridad/sesiones/",
+        "kind": "ui",
+        "name": "sesiones_activas",
+        "view": "seguridad.views.sesiones_activas"
+      },
+      {
+        "path": "/seguridad/sesiones/cerrar/<int:sesion_id>/",
+        "kind": "ui",
+        "name": "cerrar_sesion_remota",
+        "view": "seguridad.views.cerrar_sesion_remota"
+      },
+      {
+        "path": "/seguridad/sesiones/cerrar-todas/",
+        "kind": "ui",
+        "name": "cerrar_todas_las_sesiones",
+        "view": "seguridad.views.cerrar_todas_las_sesiones"
+      },
+      {
+        "path": "/seguridad/auditoria/",
+        "kind": "ui",
+        "name": "dashboard_auditoria",
+        "view": "seguridad.views.dashboard_auditoria"
+      },
+      {
+        "path": "/seguridad/auditoria/logs/",
+        "kind": "ui",
+        "name": "logs_auditoria",
+        "view": "seguridad.views.logs_auditoria"
+      },
+      {
+        "path": "/seguridad/api/verificar-2fa/",
+        "kind": "api",
+        "name": "api_verificar_2fa",
+        "view": "seguridad.views.api_verificar_codigo_2fa"
+      },
+      {
+        "path": "/seguridad/api/estadisticas/",
+        "kind": "api",
+        "name": "api_estadisticas",
+        "view": "seguridad.views.api_estadisticas_seguridad"
+      },
+      {
+        "path": "/contabilidad/clientes/",
+        "kind": "ui",
+        "name": "lista_clientes",
+        "view": "contabilidad.views.lista_clientes"
+      },
+      {
+        "path": "/contabilidad/clientes/crear/",
+        "kind": "ui",
+        "name": "crear_cliente",
+        "view": "contabilidad.views.crear_cliente"
+      },
+      {
+        "path": "/contabilidad/facturas/",
+        "kind": "ui",
+        "name": "lista_facturas",
+        "view": "contabilidad.views.lista_facturas"
+      },
+      {
+        "path": "/contabilidad/facturas/crear/",
+        "kind": "ui",
+        "name": "crear_factura",
+        "view": "contabilidad.views.crear_factura"
+      },
+      {
+        "path": "/contabilidad/facturas/<int:factura_id>/",
+        "kind": "ui",
+        "name": "detalle_factura",
+        "view": "contabilidad.views.detalle_factura"
+      },
+      {
+        "path": "/contabilidad/facturas/<int:factura_id>/timbrar/",
+        "kind": "ui",
+        "name": "timbrar_factura",
+        "view": "contabilidad.views.timbrar_factura"
+      },
+      {
+        "path": "/contabilidad/facturas/<int:factura_id>/pdf/",
+        "kind": "pdf",
+        "name": "descargar_pdf",
+        "view": "contabilidad.views.descargar_pdf"
+      },
+      {
+        "path": "/contabilidad/api/clientes/buscar/",
+        "kind": "api",
+        "name": "api_buscar_cliente",
+        "view": "contabilidad.views.api_buscar_cliente"
+      },
+      {
+        "path": "/medico/",
+        "kind": "ui",
+        "name": "medico",
+        "view": "core.views.general.dashboard_medico"
+      },
+      {
+        "path": "/manual/",
+        "kind": "ui",
+        "name": "manual_operativo",
+        "view": "core.views.manual.manual_operativo"
+      },
+      {
+        "path": "/manual/pdf/",
+        "kind": "pdf",
+        "name": "manual_operativo_pdf",
+        "view": "core.views.manual.manual_operativo_pdf"
+      },
+      {
+        "path": "/lims/estudios/",
+        "kind": "ui",
+        "name": "lista_pruebas",
+        "view": "core.views.laboratorio_config.lista_pruebas"
+      },
+      {
+        "path": "/lims/estudios/nuevo/",
+        "kind": "ui",
+        "name": "configurar_prueba",
+        "view": "core.views.laboratorio_config.configurar_prueba"
+      },
+      {
+        "path": "/lims/estudios/<int:estudio_id>/editar/",
+        "kind": "ui",
+        "name": "editar_prueba_lims",
+        "view": "core.views.laboratorio_config.configurar_prueba"
+      },
+      {
+        "path": "/lims/estudios/<int:estudio_id>/duplicar/",
+        "kind": "ui",
+        "name": "duplicar_prueba",
+        "view": "core.views.laboratorio_config.duplicar_prueba"
+      },
+      {
+        "path": "/lims/estudios/<int:estudio_id>/eliminar/",
+        "kind": "ui",
+        "name": "eliminar_prueba",
+        "view": "core.views.laboratorio_config.eliminar_prueba"
+      },
+      {
+        "path": "/lims/parametros/",
+        "kind": "ui",
+        "name": "lista_parametros",
+        "view": "core.views.laboratorio_config.lista_parametros"
+      },
+      {
+        "path": "/lims/parametros/nuevo/",
+        "kind": "ui",
+        "name": "nuevo_parametro",
+        "view": "core.views.laboratorio_config.editar_parametro"
+      },
+      {
+        "path": "/lims/parametros/nuevo/estudio/<int:estudio_id>/",
+        "kind": "ui",
+        "name": "nuevo_parametro_estudio",
+        "view": "core.views.laboratorio_config.editar_parametro"
+      },
+      {
+        "path": "/lims/parametros/<int:parametro_id>/editar/",
+        "kind": "ui",
+        "name": "editar_parametro",
+        "view": "core.views.laboratorio_config.editar_parametro"
+      },
+      {
+        "path": "/lims/api/parametros/<int:parametro_id>/eliminar/",
+        "kind": "api",
+        "name": "api_soft_delete_parametro",
+        "view": "core.views.laboratorio_config.api_soft_delete_parametro"
+      },
+      {
+        "path": "/lims/api/parametros/<int:parametro_id>/rangos/",
+        "kind": "api",
+        "name": "api_rangos_parametro",
+        "view": "core.views.laboratorio_config.api_rangos_parametro"
+      },
+      {
+        "path": "/lims/api/parametros/<int:parametro_id>/rangos/<int:rango_id>/",
+        "kind": "api",
+        "name": "api_rango_detalle",
+        "view": "core.views.laboratorio_config.api_rango_detalle"
+      },
+      {
+        "path": "/lims/api/parametros/buscar/",
+        "kind": "api",
+        "name": "api_buscar_parametros",
+        "view": "core.views.laboratorio_config.api_buscar_parametros"
+      },
+      {
+        "path": "/lims/parametros/<int:parametro_id>/rangos/",
+        "kind": "ui",
+        "name": "configurar_rangos",
+        "view": "core.views.laboratorio_config.configurar_rangos"
+      },
+      {
+        "path": "/lims/api/estudios/<int:estudio_id>/parametros/",
+        "kind": "api",
+        "name": "api_parametros_estudio",
+        "view": "core.views.laboratorio_config.api_parametros_estudio"
+      },
+      {
+        "path": "/inventario/api/registrar-merma/",
+        "kind": "api",
+        "name": "registrar_merma",
+        "view": "core.views.excepciones_lab.registrar_merma"
+      }
+    ],
+    "missing_owner_prefix_samples": []
+  }
+}

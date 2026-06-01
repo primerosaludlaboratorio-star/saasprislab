@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Generar Certificado Médico{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="max-width:800px;">
+    <div class="d-flex align-items-center mb-4">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary me-3">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h2 class="mb-0"><i class="fas fa-file-medical text-success"></i> Generar Certificado Médico</h2>
+            <p class="text-muted mb-0">Crear un certificado para el paciente</p>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                {% if consulta %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Consulta asociada: {{ consulta.paciente.nombre_completo|default:"—" }}
+                    ({{ consulta.fecha_consulta|date:"d/m/Y" }})
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="paciente_id" class="form-label fw-bold">Paciente *</label>
+                    <select name="paciente_id" id="paciente_id" class="form-select" required>
+                        <option value="">— Seleccionar paciente —</option>
+                        {% for p in pacientes %}
+                        <option value="{{ p.id }}" {% if consulta and consulta.paciente_id == p.id %}selected{% endif %}>
+                            {{ p.nombre_completo }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="medico_id" class="form-label fw-bold">Médico *</label>
+                    <select name="medico_id" id="medico_id" class="form-select" required>
+                        <option value="">— Seleccionar médico —</option>
+                        {% for m in medicos %}
+                        <option value="{{ m.id }}">Dr(a). {{ m.nombre_completo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="tipo_certificado" class="form-label fw-bold">Tipo de Certificado *</label>
+                    <select name="tipo_certificado" id="tipo_certificado" class="form-select" required>
+                        <option value="APTITUD">Aptitud Médica</option>
+                        <option value="INCAPACIDAD">Incapacidad / Reposo</option>
+                        <option value="SALUD">Estado de Salud</option>
+                        <option value="OTRO">Otro</option>
+                    </select>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="fecha_inicio" class="form-label fw-bold">Fecha Inicio *</label>
+                        <input type="date" name="fecha_inicio" id="fecha_inicio" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="fecha_fin" class="form-label fw-bold">Fecha Fin</label>
+                        <input type="date" name="fecha_fin" id="fecha_fin" class="form-control">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="diagnostico" class="form-label fw-bold">Diagnóstico</label>
+                    <textarea name="diagnostico" id="diagnostico" class="form-control" rows="2">{% if consulta %}{{ consulta.diagnostico_principal|default:"" }}{% endif %}</textarea>
+                </div>
+
+                <div class="mb-4">
+                    <label for="observaciones" class="form-label fw-bold">Observaciones / Restricciones</label>
+                    <textarea name="observaciones" id="observaciones" class="form-control" rows="3" placeholder="Indicaciones especiales, restricciones de actividad, etc."></textarea>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-file-medical"></i> Generar Certificado
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Ticket Venta - {{ venta.folio_operacion }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  @media print {
+    @page { margin: 0; size: 80mm auto; }
+    .header-liquido, .island-sidebar, .hamburger-btn-island, .sidebar-overlay, .no-print { display:none !important; }
+    body { margin:0; padding: 0; font-family: 'Courier New', Courier, monospace; font-size: 10px; }
+  }
+  .ticket-shell {
+    max-width: 80mm; margin: 20px auto; padding: 12px;
+    font-family: 'Courier New', Courier, monospace; font-size: 11px;
+    border: 1px dashed #ccc; background: #fff;
+  }
+  .ticket-shell .text-center { text-align:center; }
+  .ticket-shell .line { border-top: 1px dashed #333; margin: 8px 0; }
+  .ticket-shell .line-double { border-top: 2px double #333; margin: 8px 0; }
+  .ticket-shell .row-item { display:flex; justify-content:space-between; padding: 2px 0; }
+  .ticket-shell .row-item.total { font-weight: bold; font-size: 13px; }
+  .ticket-shell .badge-pago {
+    display: inline-block; padding: 2px 6px; border: 1px solid #333;
+    font-size: 9px; margin-top: 4px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ticket-shell">
+  <!-- ENCABEZADO -->
+  <div class="text-center">
+    <strong style="font-size: 14px;">{{ venta.empresa.nombre|default:"PRISLAB"|upper }}</strong><br>
+    {% if venta.empresa.direccion %}
+    <span style="font-size: 8px;">{{ venta.empresa.direccion }}</span><br>
+    {% endif %}
+    {% if venta.empresa.telefono %}
+    <span style="font-size: 9px;">Tel: {{ venta.empresa.telefono }}</span><br>
+    {% endif %}
+    <span style="font-size: 9px;">TICKET DE VENTA</span>
+  </div>
+
+  <div class="line-double"></div>
+
+  <!-- DATOS -->
+  <div>
+    <div class="row-item"><span>Folio:</span><span><strong>{{ venta.folio_operacion }}</strong></span></div>
+    <div class="row-item"><span>Fecha:</span><span>{{ venta.fecha|date:"d/m/Y H:i" }}</span></div>
+    <div class="row-item"><span>Cajero:</span><span>{{ venta.usuario.get_full_name|default:venta.usuario.username }}</span></div>
+    <div class="row-item"><span>Cliente:</span><span>{% if venta.paciente_nombre %}{{ venta.paciente_nombre }}{% elif venta.paciente %}{{ venta.paciente.nombre_completo }}{% else %}PÚBLICO GENERAL{% endif %}</span></div>
+  </div>
+
+  <div class="line"></div>
+
+  <!-- PRODUCTOS -->
+  <div>
+    {% for d in detalles %}
+      <div style="padding: 3px 0;">
+        <div><strong>{{ d.producto.nombre|truncatechars:28 }}</strong></div>
+        <div class="row-item">
+          <span>&nbsp;&nbsp;{{ d.cantidad }} x ${{ d.precio_unitario|floatformat:2 }}</span>
+          <span>${{ d.subtotal|floatformat:2 }}</span>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="line-double"></div>
+
+  <!-- TOTALES -->
+  <div>
+    <div class="row-item"><span>Subtotal:</span><span>${{ venta.subtotal|floatformat:2 }}</span></div>
+    {% if venta.descuento_aplicado > 0 %}
+    <div class="row-item" style="color: #c00;"><span>Descuento:</span><span>-${{ venta.descuento_aplicado|floatformat:2 }}</span></div>
+    {% endif %}
+    {% if venta.impuestos_iva > 0 %}
+    <div class="row-item"><span>IVA:</span><span>${{ venta.impuestos_iva|floatformat:2 }}</span></div>
+    {% endif %}
+    <div class="line"></div>
+    <div class="row-item total"><span>TOTAL:</span><span>${{ venta.total|floatformat:2 }}</span></div>
+  </div>
+
+  <div class="line"></div>
+
+  <!-- METODO DE PAGO -->
+  <div>
+    {% if venta.efectivo_recibido and venta.efectivo_recibido > 0 %}
+    <div class="row-item"><span>Efectivo recibido:</span><span>${{ venta.efectivo_recibido|floatformat:2 }}</span></div>
+    <div class="row-item"><span>Cambio:</span><span>${{ venta.cambio_entregado|floatformat:2 }}</span></div>
+    {% endif %}
+    {% for pago in pagos %}
+    <div class="row-item">
+      <span><span class="badge-pago">{{ pago.metodo }}</span></span>
+      <span>${{ pago.monto|floatformat:2 }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="line-double"></div>
+
+  {% if facturas_cfdi %}
+  <div style="font-size: 8px; margin: 6px 0;">
+    <div class="text-center"><strong>CFDI (LAB / PDV)</strong></div>
+    {% for f in facturas_cfdi %}
+    <div class="row-item">
+      <span>{{ f.folio_interno|truncatechars:18 }}</span>
+      <span>
+        {% if f.estado == 'TIMBRADO' %}TIMBRADA{% elif f.estado == 'ERROR' %}ERROR{% elif f.estado == 'FACTURANDO' %}PROC…{% else %}BORRADOR{% endif %}
+      </span>
+    </div>
+    {% if f.estado == 'ERROR' and f.ultimo_error_pac %}
+    <div style="font-size:7px;color:#a00;white-space:pre-wrap;">{{ f.ultimo_error_pac|truncatechars:200 }}</div>
+    {% endif %}
+    {% endfor %}
+    <div class="text-center" style="font-size:7px;margin-top:4px;">Timbrar o descargar PDF/XML desde Contabilidad o historial de ventas.</div>
+  </div>
+  <div class="line"></div>
+  {% endif %}
+
+  <!-- AUTOFACTURACIÓN CFDI 4.0 -->
+  <div class="text-center" style="margin: 6px 0;">
+    <span style="font-size: 8px; font-weight: bold;">FACTURACIÓN ELECTRÓNICA (CFDI 4.0)</span><br>
+    <span style="font-size: 7px;">Escanea el QR o visita:</span><br>
+    <span style="font-size: 7px; word-break: break-all;">
+      {{ request.scheme }}://{{ request.get_host }}/facturacion/autofactura/?folio={{ venta.folio_operacion }}
+    </span>
+    <!-- QR de autofacturación generado con Google Charts API (sin dependencias locales) -->
+    <img src="https://chart.googleapis.com/chart?chs=100x100&cht=qr&chl={{ request.scheme }}%3A%2F%2F{{ request.get_host }}%2Ffacturacion%2Fautofactura%2F%3Ffolio%3D{{ venta.folio_operacion }}&choe=UTF-8"
+         alt="QR Autofacturación"
+         width="80" height="80"
+         style="margin: 4px auto; display: block;"
+         onerror="this.style.display='none'">
+    <span style="font-size: 7px; color: #555;">Vigencia: {{ venta.fecha|date:"d/m/Y" }} — mismo mes fiscal</span>
+  </div>
+
+  <div class="line-double"></div>
+
+  <div class="text-center">
+    <strong>*** GRACIAS POR SU PREFERENCIA ***</strong><br>
+    <span style="font-size: 8px;">{{ venta.fecha|date:"d/m/Y H:i:s" }}</span>
+  </div>
+
+  <!-- BOTON NO-PRINT -->
+  <div class="text-center mt-3 no-print">
+    <button class="btn btn-dark btn-sm" onclick="window.print()">
+      <i class="bi bi-printer"></i> Imprimir Ticket
+    </button>
+    <a href="/facturacion/autofactura/?folio={{ venta.folio_operacion }}"
+       target="_blank"
+       class="btn btn-outline-primary btn-sm ms-2">
+      <i class="bi bi-receipt"></i> Solicitar Factura CFDI
+    </a>
+  </div>
+</div>
+{% endblock %}

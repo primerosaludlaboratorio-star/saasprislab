@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Signos Vitales - {{ cita.paciente.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="max-width:800px;">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'consultorio:lista_triage' %}" class="btn btn-outline-secondary me-3">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h2 class="mb-0"><i class="fas fa-heartbeat text-danger"></i> Captura de Signos Vitales</h2>
+            <p class="text-muted mb-0">{{ cita.paciente.nombre_completo }} — Cita {{ cita.hora_cita|time:"H:i" }}</p>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="post" action="{% url 'consultorio:captura_signos_vitales' cita.id %}">
+                {% csrf_token %}
+
+                <h6 class="fw-bold text-primary mb-3"><i class="fas fa-stethoscope"></i> Signos Vitales Básicos</h6>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label class="form-label">PA Sistólica (mmHg)</label>
+                        <input type="number" name="pa_sistolica" class="form-control" placeholder="120" min="50" max="300" value="{{ signos.presion_arterial_sistolica|default:'' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">PA Diastólica (mmHg)</label>
+                        <input type="number" name="pa_diastolica" class="form-control" placeholder="80" min="30" max="200" value="{{ signos.presion_arterial_diastolica|default:'' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">FC (lpm)</label>
+                        <input type="number" name="frecuencia_cardiaca" class="form-control" placeholder="70" min="30" max="250" value="{{ signos.frecuencia_cardiaca|default:'' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">FR (rpm)</label>
+                        <input type="number" name="frecuencia_respiratoria" class="form-control" placeholder="18" min="5" max="60" value="{{ signos.frecuencia_respiratoria|default:'' }}">
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label class="form-label">Temperatura (°C)</label>
+                        <input type="number" name="temperatura" class="form-control" placeholder="36.5" step="0.1" min="34" max="43" value="{{ signos.temperatura|default:'' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Peso (kg)</label>
+                        <input type="number" id="sv-peso" name="peso" class="form-control" placeholder="70" step="0.1" min="1" max="300" value="{{ signos.peso|default:'' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Talla (m)</label>
+                        <input type="number" id="sv-talla" name="talla" class="form-control" placeholder="1.70" step="0.01" min="0.5" max="2.5" value="{{ signos.talla|default:'' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">IMC <small class="text-muted">(calculado)</small></label>
+                        <div class="input-group">
+                            <input type="text" id="sv-imc-display" class="form-control bg-light" readonly placeholder="—">
+                            <span class="input-group-text" id="sv-imc-badge" style="min-width:80px;font-size:.78rem;"></span>
+                        </div>
+                        <input type="hidden" id="sv-imc" name="imc">
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-primary mb-3"><i class="fas fa-plus-circle"></i> Opcionales</h6>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label">Perímetro Abdominal (cm)</label>
+                        <input type="number" name="perimetro_abdominal" class="form-control" step="0.1" value="{{ signos.perimetro_abdominal|default:'' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">SpO2 (%)</label>
+                        <input type="number" name="saturacion_oxigeno" class="form-control" placeholder="98" min="50" max="100" value="{{ signos.saturacion_oxigeno|default:'' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Glucosa Capilar (mg/dL)</label>
+                        <input type="number" name="glucosa_capilar" class="form-control" step="0.1" value="{{ signos.glucosa_capilar|default:'' }}">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Observaciones</label>
+                    <textarea name="observaciones" class="form-control" rows="3" placeholder="Notas adicionales...">{{ signos.observaciones|default:'' }}</textarea>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'consultorio:lista_triage' %}" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-save"></i> Guardar Signos Vitales
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    const pesoEl  = document.getElementById('sv-peso');
+    const tallaEl = document.getElementById('sv-talla');
+    const imcDisp = document.getElementById('sv-imc-display');
+    const imcBadg = document.getElementById('sv-imc-badge');
+    const imcHid  = document.getElementById('sv-imc');
+
+    function calcularIMC(){
+        const peso  = parseFloat(pesoEl.value);
+        const talla = parseFloat(tallaEl.value);
+        if(!peso || !talla || talla <= 0) {
+            imcDisp.value = '';
+            imcBadg.textContent = '';
+            imcBadg.className = 'input-group-text';
+            imcHid.value = '';
+            return;
+        }
+        const imc = peso / (talla * talla);
+        imcDisp.value = imc.toFixed(1);
+        imcHid.value  = imc.toFixed(2);
+
+        let label, color;
+        if      (imc < 18.5) { label = 'Bajo peso';   color = 'bg-info text-white'; }
+        else if (imc < 25)   { label = 'Normal';       color = 'bg-success text-white'; }
+        else if (imc < 30)   { label = 'Sobrepeso';    color = 'bg-warning text-dark'; }
+        else if (imc < 35)   { label = 'Obesidad I';   color = 'bg-danger text-white'; }
+        else if (imc < 40)   { label = 'Obesidad II';  color = 'bg-danger text-white'; }
+        else                 { label = 'Obesidad III'; color = 'bg-dark text-white'; }
+
+        imcBadg.textContent = label;
+        imcBadg.className = 'input-group-text ' + color;
+    }
+
+    pesoEl.addEventListener('input', calcularIMC);
+    tallaEl.addEventListener('input', calcularIMC);
+    calcularIMC();
+})();
+</script>
+{% endblock %}

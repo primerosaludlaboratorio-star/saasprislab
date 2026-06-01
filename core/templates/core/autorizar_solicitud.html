@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Autorizar Solicitud{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px;">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-shield-check"></i> {{ titulo }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Tipo de Acción:</strong>
+                        <span class="badge bg-primary ms-2">{{ solicitud.get_tipo_accion_display }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Solicitado por:</strong>
+                        {{ solicitud.usuario_solicita.get_full_name }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Fecha de Solicitud:</strong>
+                        {{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Descripción:</strong>
+                        <div class="alert alert-light mt-2">{{ solicitud.descripcion|linebreaks }}</div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Comentario (requerido si rechazas):</label>
+                            <textarea name="comentario" class="form-control" rows="3" placeholder="Motivo del rechazo (si aplica)"></textarea>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="accion" value="aprobar" class="btn btn-success btn-lg">
+                                <i class="bi bi-check-circle"></i> Aprobar
+                            </button>
+                            <button type="submit" name="accion" value="rechazar" class="btn btn-danger btn-lg" onclick="return confirm('¿Estás seguro de rechazar esta solicitud?');">
+                                <i class="bi bi-x-circle"></i> Rechazar
+                            </button>
+                            <a href="{% url 'listar_autorizaciones_pendientes' %}" class="btn btn-secondary btn-lg">
+                                Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

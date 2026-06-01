@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0 fw-bold"><i class="bi bi-cpu me-2 text-info"></i>{{ titulo }}</h5>
+    <div class="d-flex gap-2">
+      <a href="{% url 'mantenimiento:crear_sensor' %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus me-1"></i>Nuevo Sensor
+      </a>
+      <a href="{% url 'mantenimiento:dashboard_sensores' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-grid me-1"></i>Dashboard
+      </a>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-dark">
+            <tr><th>Código</th><th>Nombre / Ubicación</th><th>Tipo</th>
+            <th>Equipo Vinculado</th><th>Rango T (°C)</th><th>Estado</th><th>Lecturas</th></tr>
+          </thead>
+          <tbody>
+            {% for s in sensores %}
+            <tr>
+              <td><code class="fw-semibold">{{ s.codigo }}</code></td>
+              <td>{{ s.nombre }}</td>
+              <td><span class="badge bg-info text-dark">{{ s.get_tipo_display }}</span></td>
+              <td class="small">{{ s.expediente.equipo.nombre|default:"—" }}</td>
+              <td class="small">{{ s.temp_min_aceptable }}–{{ s.temp_max_aceptable }}</td>
+              <td>{% if s.activo %}<span class="badge bg-success">Activo</span>
+              {% else %}<span class="badge bg-secondary">Inactivo</span>{% endif %}</td>
+              <td class="text-center">{{ s.lecturas.count }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-4">No hay sensores registrados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

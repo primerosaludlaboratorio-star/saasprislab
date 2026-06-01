@@ -1,0 +1,109 @@
+# ==============================================================================
+# PRISLAB V5 — Docker Ignore (Cloud Run + Docker Compose)
+# ==============================================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv/
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+
+# Archivos estáticos recolectados (se generan en build)
+staticfiles/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker Compose (no necesario dentro de la imagen)
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore
+
+# Nginx (se monta como volumen en docker-compose)
+nginx/
+
+# Backups
+backups/
+
+# Documentación (excepto plan maestro referenciado en código)
+AUDITORIA_*.md
+MANUAL_*.md
+PLAN_*.md
+REPORTE_*.md
+BLOQUE*.md
+CAUSA_*.md
+DEPLOY*.md
+DESPLIEGUE*.md
+DOCUMENTO_*.md
+FIX_*.md
+GUIA_*.md
+INFORME_*.md
+PROBLEMA_*.md
+COMANDOS_*.md
+
+# Scripts de deploy (no necesarios dentro del contenedor)
+deploy.sh
+scripts/deploy.sh
+scripts/deploy.ps1
+scripts/*.ps1
+
+# Scripts de testing, auditoría y herramientas locales (no van al contenedor)
+test_*.py
+auditoria_*.py
+AUDITORIA_*.py
+smoke_test.py
+verificar_*.py
+probar_*.py
+cargar_excel*.py
+poblar_recursos*.py
+migracion_ordenes*.py
+ejecutar_pruebas*.py
+debug_*.py
+check_*.py
+ver_*.py
+create_admin.py
+reset_*.py
+configurar_admin*.py
+deploy_automated.py
+desactivar_usuarios*.py
+limpiar_usuarios*.py
+generar_migraciones*.py
+generar_vapid_keys.py
+cargar_tarifas.py
+production_env_check.py
+
+# Archivos temporales (excepción: inventario para CMD de arranque en Dockerfile)
+*.xlsx
+*.xls
+!inventario_prislab.xlsx
+*.tmp
+# NOTA: NO excluir *.csv — datos_lims/ y tarifas.csv son necesarios para migrar_lab_master
+procesar_firma_brizia.py
+
+# Env files
+.env
+.env.*
+env.example

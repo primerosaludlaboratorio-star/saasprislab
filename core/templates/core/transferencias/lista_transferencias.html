@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block title %}Transferencias de Inventario{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="fas fa-exchange-alt text-primary"></i> Transferencias de Inventario</h2>
+            <p class="text-muted mb-0">Movimientos de productos entre sucursales</p>
+        </div>
+        <a href="{% url 'crear_transferencia' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nueva Transferencia
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-2">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <select name="estado" class="form-select form-select-sm">
+                        <option value="">Todos los estados</option>
+                        <option value="BORRADOR" {% if estado == 'BORRADOR' %}selected{% endif %}>Borrador</option>
+                        <option value="EN_TRANSITO" {% if estado == 'EN_TRANSITO' %}selected{% endif %}>En Tránsito</option>
+                        <option value="RECIBIDA" {% if estado == 'RECIBIDA' %}selected{% endif %}>Recibida</option>
+                        <option value="COMPLETADA" {% if estado == 'COMPLETADA' %}selected{% endif %}>Completada</option>
+                        <option value="CANCELADA" {% if estado == 'CANCELADA' %}selected{% endif %}>Cancelada</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="sucursal_origen" class="form-select form-select-sm">
+                        <option value="">Todas las sucursales origen</option>
+                        {% for s in sucursales %}
+                        <option value="{{ s.id }}" {% if sucursal_origen_id == s.id|stringformat:"d" %}selected{% endif %}>{{ s.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            {% if transferencias %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Folio</th>
+                            <th>Origen → Destino</th>
+                            <th>Estado</th>
+                            <th>Solicitado por</th>
+                            <th>Fecha</th>
+                            <th>Ítems</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for t in transferencias %}
+                    <tr>
+                        <td><code>{{ t.folio }}</code></td>
+                        <td>
+                            <small>{{ t.sucursal_origen.nombre|default:"Central" }}</small>
+                            <i class="fas fa-arrow-right text-muted mx-1"></i>
+                            <small>{{ t.sucursal_destino.nombre|default:"?" }}</small>
+                        </td>
+                        <td>
+                            {% if t.estado == 'BORRADOR' %}<span class="badge bg-secondary">Borrador</span>
+                            {% elif t.estado == 'EN_TRANSITO' %}<span class="badge bg-warning text-dark">En Tránsito</span>
+                            {% elif t.estado == 'RECIBIDA' %}<span class="badge bg-info">Recibida</span>
+                            {% elif t.estado == 'COMPLETADA' %}<span class="badge bg-success">Completada</span>
+                            {% elif t.estado == 'CANCELADA' %}<span class="badge bg-danger">Cancelada</span>
+                            {% else %}<span class="badge bg-light text-dark">{{ t.estado }}</span>{% endif %}
+                        </td>
+                        <td>{{ t.solicitado_por.get_full_name|default:t.solicitado_por.username|default:"—" }}</td>
+                        <td><small>{{ t.fecha_creacion|date:"d/m/Y H:i" }}</small></td>
+                        <td>{{ t.detalles.count }}</td>
+                        <td>
+                            <a href="{% url 'ver_transferencia' t.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if transferencias.has_other_pages %}
+            <div class="card-footer d-flex justify-content-center">
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if transferencias.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page={{ transferencias.previous_page_number }}&estado={{ estado }}">‹</a></li>
+                        {% endif %}
+                        <li class="page-item active"><span class="page-link">{{ transferencias.number }} / {{ transferencias.paginator.num_pages }}</span></li>
+                        {% if transferencias.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ transferencias.next_page_number }}&estado={{ estado }}">›</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-exchange-alt fa-3x mb-3"></i>
+                <p class="mb-0">No hay transferencias registradas.</p>
+                <a href="{% url 'crear_transferencia' %}" class="btn btn-sm btn-primary mt-3">Crear primera transferencia</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

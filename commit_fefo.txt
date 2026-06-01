@@ -1,0 +1,1 @@
+﻿feat(pdv): buscador de medicamentos muestra un resultado por lote (FEFO)

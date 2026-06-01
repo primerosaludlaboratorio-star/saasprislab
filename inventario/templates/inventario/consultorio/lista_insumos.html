@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0 fw-bold"><i class="bi bi-bandaid me-2"></i>{{ titulo }}</h5>
+    <a href="{% url 'inventario:crear_insumo_consultorio' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>Nuevo Insumo
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <form class="row g-2 mb-3">
+    <div class="col-sm-5">
+      <input type="text" name="q" value="{{ q }}" placeholder="Buscar nombre o código…" class="form-control form-control-sm">
+    </div>
+    <div class="col-sm-4">
+      <select name="tipo" class="form-select form-select-sm">
+        <option value="">— Todos los tipos —</option>
+        {% for val, lbl in tipo_choices %}
+        <option value="{{ val }}" {% if tipo == val %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-sm-3">
+      <button class="btn btn-sm btn-secondary w-100">Filtrar</button>
+    </div>
+  </form>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>Código</th><th>Nombre</th><th>Tipo</th>
+              <th class="text-end">Stock</th><th class="text-end">Mín.</th>
+              <th>Estado</th><th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in insumos %}
+            <tr>
+              <td><code>{{ i.codigo_interno }}</code></td>
+              <td>{{ i.nombre }}</td>
+              <td><span class="badge bg-info text-dark">{{ i.get_tipo_display }}</span></td>
+              <td class="text-end fw-semibold {% if i.stock_total == 0 %}text-danger{% elif i.stock_total <= i.stock_minimo %}text-warning{% else %}text-success{% endif %}">
+                {{ i.stock_total|floatformat:1 }} {{ i.unidad_medida }}
+              </td>
+              <td class="text-end text-muted">{{ i.stock_minimo }}</td>
+              <td>
+                {% if not i.activo %}<span class="badge bg-secondary">Inactivo</span>
+                {% elif i.necesita_reorden %}<span class="badge bg-danger">Crítico</span>
+                {% else %}<span class="badge bg-success">OK</span>{% endif %}
+              </td>
+              <td class="text-center">
+                <a href="{% url 'inventario:editar_insumo_consultorio' i.pk %}" class="btn btn-xs btn-outline-primary btn-sm py-0 px-2">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'inventario:crear_lote_consultorio' %}?insumo={{ i.pk }}" class="btn btn-xs btn-outline-success btn-sm py-0 px-2">
+                  <i class="bi bi-plus"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-4">No hay insumos. <a href="{% url 'inventario:crear_insumo_consultorio' %}">Crear uno</a>.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

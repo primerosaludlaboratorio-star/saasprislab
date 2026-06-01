@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Crear Cuenta Contable - {{ empresa.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px;">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-plus-circle"></i> {% if cuenta %}Editar{% else %}Nueva{% endif %} Cuenta Contable
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Código de Cuenta <span class="text-danger">*</span></label>
+                            <input type="text" name="codigo" class="form-control" required value="{{ cuenta.codigo|default:'' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nombre de la Cuenta <span class="text-danger">*</span></label>
+                            <input type="text" name="nombre" class="form-control" required value="{{ cuenta.nombre|default:'' }}">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tipo de Cuenta <span class="text-danger">*</span></label>
+                                <select name="tipo" class="form-select" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="ACTIVO" {% if cuenta.tipo == 'ACTIVO' %}selected{% endif %}>Activo</option>
+                                    <option value="PASIVO" {% if cuenta.tipo == 'PASIVO' %}selected{% endif %}>Pasivo</option>
+                                    <option value="CAPITAL" {% if cuenta.tipo == 'CAPITAL' %}selected{% endif %}>Capital</option>
+                                    <option value="INGRESO" {% if cuenta.tipo == 'INGRESO' %}selected{% endif %}>Ingreso</option>
+                                    <option value="GASTO" {% if cuenta.tipo == 'GASTO' %}selected{% endif %}>Gasto</option>
+                                    <option value="COSTO" {% if cuenta.tipo == 'COSTO' %}selected{% endif %}>Costo de Venta</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Naturaleza <span class="text-danger">*</span></label>
+                                <select name="naturaleza" class="form-select" required>
+                                    <option value="D" {% if cuenta.naturaleza == 'D' %}selected{% endif %}>Deudora</option>
+                                    <option value="A" {% if cuenta.naturaleza == 'A' %}selected{% endif %}>Acreedora</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cuenta Padre (Opcional)</label>
+                            <select name="cuenta_padre" class="form-select">
+                                <option value="">Ninguna (Cuenta Principal)</option>
+                                {% for cuenta_padre in cuentas_padre %}
+                                <option value="{{ cuenta_padre.id }}" {% if cuenta.cuenta_padre_id == cuenta_padre.id %}selected{% endif %}>
+                                    {{ cuenta_padre.codigo }} - {{ cuenta_padre.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" name="activa" class="form-check-input" {% if not cuenta or cuenta.activa %}checked{% endif %}>
+                            <label class="form-check-label">Cuenta Activa</label>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'catalogo_cuentas' %}" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">Guardar Cuenta</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Editar Recibo — {{ recibo.empleado.usuario.get_full_name }} — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:800px">
+  <div class="d-flex align-items-center mb-4 gap-3">
+    <a href="{% url 'nomina_detalle_periodo' recibo.periodo.pk %}" class="btn btn-outline-secondary btn-sm">← Regresar</a>
+    <div>
+      <h3 class="fw-bold mb-0">Recibo de Nómina</h3>
+      <small class="text-muted">{{ recibo.empleado.usuario.get_full_name }} — {{ recibo.periodo.nombre }}</small>
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="row g-3">
+      <!-- PERCEPCIONES -->
+      <div class="col-12"><h5 class="fw-bold text-success border-bottom pb-2">Percepciones</h5></div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Sueldo base</label>
+        <div class="input-group"><span class="input-group-text">$</span>
+          <input type="number" name="sueldo_base" step="0.01" min="0"
+                 value="{{ recibo.sueldo_base }}" class="form-control">
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Horas extra</label>
+        <input type="number" name="horas_extra" step="0.5" min="0"
+               value="{{ recibo.horas_extra }}" class="form-control">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Importe horas extra</label>
+        <div class="input-group"><span class="input-group-text">$</span>
+          <input type="number" name="importe_he" step="0.01" min="0"
+                 value="{{ recibo.importe_he }}" class="form-control">
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Bonificación / Comisión</label>
+        <div class="input-group"><span class="input-group-text">$</span>
+          <input type="number" name="bonificacion" step="0.01" min="0"
+                 value="{{ recibo.bonificacion }}" class="form-control">
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Otras percepciones</label>
+        <div class="input-group"><span class="input-group-text">$</span>
+          <input type="number" name="percepciones_extras" step="0.01" min="0"
+                 value="{{ recibo.percepciones_extras }}" class="form-control">
+        </div>
+      </div>
+
+      <!-- DEDUCCIONES -->
+      <div class="col-12"><h5 class="fw-bold text-danger border-bottom pb-2 mt-2">Deducciones</h5></div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">IMSS (cuota trabajador)</label>
+        <div class="input-group"><span class="input-group-text">$</span>
+          <input type="number" name="imss" step="0.01" min="0"
+                 value="{{ recibo.imss }}" class="form-control">
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">ISR retenido</label>
+        <div class="input-group"><span class="input-group-text">$</span>
+          <input type="number" name="isr" step="0.01" min="0"
+                 value="{{ recibo.isr }}" class="form-control">
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">INFONAVIT</label>
+        <div class="input-group"><span class="input-group-text">$</span>
+          <input type="number" name="infonavit" step="0.01" min="0"
+                 value="{{ recibo.infonavit }}" class="form-control">
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Descuento préstamo</label>
+        <div class="input-group"><span class="input-group-text">$</span>
+          <input type="number" name="prestamo" step="0.01" min="0"
+                 value="{{ recibo.prestamo }}" class="form-control">
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Otras deducciones</label>
+        <div class="input-group"><span class="input-group-text">$</span>
+          <input type="number" name="otras_deducciones" step="0.01" min="0"
+                 value="{{ recibo.otras_deducciones }}" class="form-control">
+        </div>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label fw-semibold">Observaciones</label>
+        <textarea name="observaciones" class="form-control" rows="2">{{ recibo.observaciones }}</textarea>
+      </div>
+
+      <div class="col-12 d-flex justify-content-end gap-2">
+        <a href="{% url 'nomina_detalle_periodo' recibo.periodo.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary px-4">
+          <i class="fas fa-save me-1"></i>Guardar Recibo
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

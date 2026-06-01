@@ -1,0 +1,184 @@
+<!-- Modal de Registro de Excepción de Política -->
+<div class="modal fade" id="modalRegistroIncidencia" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Registro de Excepción de Política
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle"></i> <strong>Acción fuera de la política estándar</strong><br>
+                    Esta acción queda fuera de la política estándar. Por favor, justifica el motivo para la auditoría del Director.
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tipo de Incidencia:</label>
+                    <select class="form-select" id="incidencia_tipo" required>
+                        <option value="">Seleccione el tipo...</option>
+                        <option value="PAGO_PARCIAL">Pago Parcial en Farmacia</option>
+                        <option value="DESCUENTO_ELEVADO">Descuento Elevado</option>
+                        <option value="EDICION_TICKET">Edición de Ticket Post-Venta</option>
+                        <option value="CANCELACION_SIN_CLAVE">Cancelación sin Autorización</option>
+                        <option value="RESULTADO_EDITADO">Resultado de Laboratorio Editado</option>
+                        <option value="MUESTRA_RECHAZADA">Muestra Rechazada</option>
+                        <option value="VENTA_SIN_STOCK">Venta con Stock Insuficiente</option>
+                        <option value="DEVOLUCION_MANUAL">Devolución Manual</option>
+                        <option value="AJUSTE_INVENTARIO">Ajuste Mayor de Inventario</option>
+                        <option value="OTRO">Otro</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Monto Afectado (si aplica):</label>
+                    <input type="number" class="form-control" id="incidencia_monto" step="0.01" min="0" placeholder="0.00">
+                    <small class="text-muted">Dejar vacío si no aplica</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Justificación <span class="text-danger">*</span>:</label>
+                    <textarea class="form-control" id="incidencia_justificacion" rows="4" 
+                              placeholder="Explica el motivo de esta excepción (mínimo 15 caracteres)..."
+                              minlength="15" required></textarea>
+                    <small class="text-muted">
+                        <span id="contador_justificacion">0</span> / 15 caracteres mínimos
+                    </small>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-check-circle"></i> La operación continuará después de registrar esta incidencia.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btn_guardar_incidencia" disabled onclick="guardarIncidencia()">
+                    <i class="bi bi-save"></i> Guardar y Continuar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let callbackIncidenciaGuardada = null;
+    let datosContextoIncidencia = {};
+
+    // Validación en tiempo real del textarea
+    document.addEventListener('DOMContentLoaded', function() {
+        const textarea = document.getElementById('incidencia_justificacion');
+        const btnGuardar = document.getElementById('btn_guardar_incidencia');
+        const contador = document.getElementById('contador_justificacion');
+        const selectTipo = document.getElementById('incidencia_tipo');
+        
+        if (textarea) {
+            textarea.addEventListener('input', function() {
+                const longitud = this.value.length;
+                contador.textContent = longitud;
+                
+                // Habilitar botón solo si tiene al menos 15 caracteres y tipo seleccionado
+                if (longitud >= 15 && selectTipo.value) {
+                    btnGuardar.disabled = false;
+                    contador.classList.remove('text-danger');
+                    contador.classList.add('text-success');
+                } else {
+                    btnGuardar.disabled = true;
+                    if (longitud > 0) {
+                        contador.classList.remove('text-success');
+                        contador.classList.add('text-danger');
+                    }
+                }
+            });
+        }
+        
+        if (selectTipo) {
+            selectTipo.addEventListener('change', function() {
+                const longitud = textarea.value.length;
+                if (longitud >= 15 && this.value) {
+                    btnGuardar.disabled = false;
+                } else {
+                    btnGuardar.disabled = true;
+                }
+            });
+        }
+    });
+
+    function mostrarModalIncidencia(tipoIncidencia, montoAfectado, datosContexto, callback) {
+        // Pre-llenar campos si se proporcionan
+        if (tipoIncidencia) {
+            document.getElementById('incidencia_tipo').value = tipoIncidencia;
+        }
+        if (montoAfectado) {
+            document.getElementById('incidencia_monto').value = montoAfectado;
+        }
+        datosContextoIncidencia = datosContexto || {};
+        callbackIncidenciaGuardada = callback;
+        
+        // Resetear y mostrar modal
+        document.getElementById('incidencia_justificacion').value = '';
+        document.getElementById('btn_guardar_incidencia').disabled = true;
+        document.getElementById('contador_justificacion').textContent = '0';
+        
+        const modal = new bootstrap.Modal(document.getElementById('modalRegistroIncidencia'));
+        modal.show();
+        
+        // Enfocar el textarea
+        setTimeout(() => {
+            document.getElementById('incidencia_justificacion').focus();
+        }, 500);
+    }
+
+    function guardarIncidencia() {
+        const tipo = document.getElementById('incidencia_tipo').value;
+        const justificacion = document.getElementById('incidencia_justificacion').value.trim();
+        const monto = parseFloat(document.getElementById('incidencia_monto').value) || null;
+        
+        if (!tipo || justificacion.length < 15) {
+            Swal.fire('Error', 'Por favor, completa todos los campos requeridos (mínimo 15 caracteres en justificación).', 'error');
+            return;
+        }
+        
+        // Deshabilitar botón mientras se procesa
+        const btnGuardar = document.getElementById('btn_guardar_incidencia');
+        btnGuardar.disabled = true;
+        btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+        
+        fetch('{% url "registrar_incidencia" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                tipo_incidencia: tipo,
+                justificacion: justificacion,
+                monto_afectado: monto,
+                datos_contexto: datosContextoIncidencia
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Cerrar modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalRegistroIncidencia'));
+                modal.hide();
+                
+                // Ejecutar callback si existe
+                if (callbackIncidenciaGuardada) {
+                    callbackIncidenciaGuardada();
+                }
+            } else {
+                Swal.fire('Error', data.mensaje || 'No se pudo registrar la incidencia', 'error');
+                btnGuardar.disabled = false;
+                btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar y Continuar';
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+            btnGuardar.disabled = false;
+            btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar y Continuar';
+        });
+    }
+</script>

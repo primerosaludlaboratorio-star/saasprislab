@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% block title %}Paquete: {{ paquete.nombre }} — LIMS{% endblock %}
+{% block extra_css %}
+<style>
+body { background: #f4f6f9; }
+.lims-header { background: linear-gradient(135deg, #7d6608 0%, #b7950b 100%); }
+#ta-analito-dropdown, #ta-perfil-dropdown {
+  position: absolute; z-index: 1000; width: 100%;
+  background: #fff; border: 1px solid #ddd; border-radius: 0 0 8px 8px;
+  max-height: 200px; overflow-y: auto;
+}
+.ta-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f5f5f5; }
+.ta-item:hover { background: #fef9e7; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top:70px;">
+
+  <div class="lims-header rounded-3 p-4 mb-4 text-white d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="m-0 fw-bold"><i class="fas fa-box-open me-2"></i>{{ paquete.nombre }}</h3>
+      <small class="opacity-75">
+        {{ paquete.descripcion|default:"Sin descripción" }}
+        &nbsp;·&nbsp;
+        {% if paquete.venta_publico %}Venta pública{% else %}Interno{% endif %}
+      </small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'lims_paquete_editar' paquete.pk %}" class="btn btn-warning btn-sm">
+        <i class="fas fa-cog"></i> Configurar
+      </a>
+      <a href="{% url 'lims_paquetes' %}" class="btn btn-outline-light btn-sm">
+        <i class="fas fa-arrow-left"></i> Paquetes
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Agregar analito -->
+    <div class="col-md-6">
+      <div class="card shadow-sm mb-3">
+        <div class="card-header fw-bold text-white" style="background:#154360;">
+          <i class="fas fa-vial me-1"></i> Agregar Analito Individual
+        </div>
+        <div class="card-body">
+          <div class="position-relative">
+            <input type="text" id="ta-analito" class="form-control" placeholder="Buscar analito…" autocomplete="off">
+            <div id="ta-analito-dropdown" style="display:none;"></div>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-dark"><tr><th>Código</th><th>Nombre</th><th></th></tr></thead>
+            <tbody id="tbody-analitos">
+              {% for a in analitos_directos %}
+              <tr data-id="{{ a.pk }}">
+                <td><code>{{ a.codigo }}</code></td>
+                <td>{{ a.nombre|truncatechars:45 }}</td>
+                <td><button class="btn btn-sm btn-outline-danger btn-quitar-analito" data-id="{{ a.pk }}"><i class="fas fa-times"></i></button></td>
+              </tr>
+              {% empty %}
+              <tr id="row-vacio-analito"><td colspan="3" class="text-center text-muted py-2">Sin analitos individuales</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agregar perfiles -->
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header fw-bold text-white" style="background:#1f618d;">
+          <i class="fas fa-layer-group me-1"></i> Agregar Perfiles Completos
+        </div>
+        <div class="card-body">
+          <div class="position-relative">
+            <select id="sel-perfil" class="form-select">
+              <option value="">— Seleccionar perfil —</option>
+              <!-- Cargado por JS -->
+            </select>
+            <p id="msg-perfiles-api" class="small text-danger mt-1 mb-0" style="min-height:1.25rem;"></p>
+          </div>
+          <button class="btn btn-primary mt-2 w-100" id="btn-agregar-perfil">
+            <i class="fas fa-plus me-1"></i>Agregar Perfil
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-dark"><tr><th>Nombre del Perfil</th><th></th></tr></thead>
+            <tbody id="tbody-perfiles">
+              {% for p in perfiles %}
+              <tr data-id="{{ p.pk }}">
+                <td>{{ p.nombre }}</td>
+                <td><button class="btn btn-sm btn-outline-danger btn-quitar-perfil" data-id="{{ p.pk }}"><i class="fas fa-times"></i></button></td>
+              </tr>
+              {% empty %}
+              <tr id="row-vacio-perfil"><td colspan="2" class="text-center text-muted py-2">Sin perfiles incluidos</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var CSRF = '{{ csrf_token }}';
+var API_BUSCAR_ANALITO  = '/lims/api/analitos/buscar/';
+var API_AGREGAR_ANALITO = '/lims/paquetes/{{ paquete.pk }}/api/agregar-analito/';
+var API_QUITAR_ANALITO  = '/lims/paquetes/{{ paquete.pk }}/api/quitar-analito/';
+var API_AGREGAR_PERFIL  = '/lims/paquetes/{{ paquete.pk }}/api/agregar-perfil/';
+var API_QUITAR_PERFIL   = '/lims/paquetes/{{ paquete.pk }}/api/quitar-perfil/';
+var API_PERFILES_LISTA  = '{% url "lims_api_perfiles" %}';
+
+// Typeahead analitos
+var taInput = document.getElementById('ta-analito');
+var taDrop  = document.getElementById('ta-analito-dropdown');
+var timer = null;
+taInput.addEventListener('input', function() {
+    clearTimeout(timer);
+    var q = taInput.value.trim();
+    if (q.length < 2) { taDrop.style.display = 'none'; return; }
+    timer = setTimeout(function() {
+        fetch(API_BUSCAR_ANALITO + '?q=' + encodeURIComponent(q), {credentials:'same-origin'})
+        .then(r => r.json()).then(data => {
+            taDrop.innerHTML = '';
+            (data.resultados || []).forEach(a => {
+                var d = document.createElement('div');
+                d.className = 'ta-item';
+                d.innerHTML = '<strong>' + a.abreviatura + '</strong> — ' + a.nombre;
+                d.onclick = function() {
+                    agregarAnalito(a.id, a.nombre, a.codigo);
+                    taDrop.style.display = 'none'; taInput.value = '';
+                };
+                taDrop.appendChild(d);
+            });
+            taDrop.style.display = data.resultados && data.resultados.length ? 'block' : 'none';
+        });
+    }, 280);
+});
+document.addEventListener('click', function(e) { if (!taInput.contains(e.target)) taDrop.style.display='none'; });
+
+function agregarAnalito(id, nombre, codigo) {
+    fetch(API_AGREGAR_ANALITO, {
+        method:'POST', headers:{'X-CSRFToken':CSRF,'Content-Type':'application/json'},
+        body: JSON.stringify({analito_id:id}), credentials:'same-origin'
+    }).then(r=>r.json()).then(data => {
+        if (data.ok) {
+            document.getElementById('row-vacio-analito') && document.getElementById('row-vacio-analito').remove();
+            if (!document.querySelector('#tbody-analitos [data-id="'+id+'"]')) {
+                var tbody = document.getElementById('tbody-analitos');
+                var tr = document.createElement('tr'); tr.dataset.id = id;
+                tr.innerHTML = '<td><code>'+codigo+'</code></td><td>'+nombre.substring(0,45)+'</td>' +
+                    '<td><button class="btn btn-sm btn-outline-danger btn-quitar-analito" data-id="'+id+'"><i class="fas fa-times"></i></button></td>';
+                tbody.appendChild(tr);
+                bindQuitarAnalito(tr.querySelector('.btn-quitar-analito'));
+            }
+        }
+    });
+}
+
+function bindQuitarAnalito(btn) {
+    btn.addEventListener('click', function() {
+        if (!confirm('¿Quitar analito del paquete?')) return;
+        fetch(API_QUITAR_ANALITO + btn.dataset.id + '/', {
+            method:'POST', headers:{'X-CSRFToken':CSRF}, credentials:'same-origin'
+        }).then(r=>r.json()).then(data => { if (data.ok) btn.closest('tr').remove(); });
+    });
+}
+document.querySelectorAll('.btn-quitar-analito').forEach(bindQuitarAnalito);
+
+// Cargar perfiles disponibles en el select (FIX CONTRATO UI: errores 403 visibles)
+fetch(API_PERFILES_LISTA, {credentials:'same-origin'})
+.then(function(r) {
+    return r.json().then(function(data) { return { ok: r.ok, data: data }; });
+})
+.then(function(res) {
+    var sel = document.getElementById('sel-perfil');
+    var msgEl = document.getElementById('msg-perfiles-api');
+    if (!res.ok) {
+        msgEl.textContent = (res.data && res.data.error) ? res.data.error : ('No se pudieron cargar perfiles (HTTP ' + res.status + ')');
+        return;
+    }
+    (res.data.perfiles || []).forEach(function(p) {
+        var opt = document.createElement('option'); opt.value = p.id; opt.textContent = p.nombre;
+        sel.appendChild(opt);
+    });
+})
+.catch(function() {
+    document.getElementById('msg-perfiles-api').textContent = 'Error de red al cargar perfiles.';
+});
+
+document.getElementById('btn-agregar-perfil').addEventListener('click', function() {
+    var sel = document.getElementById('sel-perfil');
+    var id = parseInt(sel.value); if (!id) return;
+    var nombre = sel.options[sel.selectedIndex].text;
+    fetch(API_AGREGAR_PERFIL, {
+        method:'POST', headers:{'X-CSRFToken':CSRF,'Content-Type':'application/json'},
+        body: JSON.stringify({perfil_id:id}), credentials:'same-origin'
+    }).then(r=>r.json()).then(data => {
+        if (data.ok) {
+            document.getElementById('row-vacio-perfil') && document.getElementById('row-vacio-perfil').remove();
+            if (!document.querySelector('#tbody-perfiles [data-id="'+id+'"]')) {
+                var tbody = document.getElementById('tbody-perfiles');
+                var tr = document.createElement('tr'); tr.dataset.id=id;
+                tr.innerHTML = '<td>'+nombre+'</td><td><button class="btn btn-sm btn-outline-danger btn-quitar-perfil" data-id="'+id+'"><i class="fas fa-times"></i></button></td>';
+                tbody.appendChild(tr);
+                bindQuitarPerfil(tr.querySelector('.btn-quitar-perfil'));
+            }
+        }
+    });
+});
+
+function bindQuitarPerfil(btn) {
+    btn.addEventListener('click', function() {
+        if (!confirm('¿Quitar perfil del paquete?')) return;
+        fetch(API_QUITAR_PERFIL + btn.dataset.id + '/', {
+            method:'POST', headers:{'X-CSRFToken':CSRF}, credentials:'same-origin'
+        }).then(r=>r.json()).then(data => { if (data.ok) btn.closest('tr').remove(); });
+    });
+}
+document.querySelectorAll('.btn-quitar-perfil').forEach(bindQuitarPerfil);
+</script>
+{% endblock %}

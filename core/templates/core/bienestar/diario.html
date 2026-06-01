@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Mi Diario — PRISLAB Bienestar{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:640px">
+  <a href="{% url 'bienestar_dashboard' %}" class="btn btn-sm btn-link text-muted mb-3">
+    <i class="bi bi-arrow-left me-1"></i> Volver a Mi Bienestar
+  </a>
+
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-transparent border-0 pt-4 px-4">
+      <h4 class="fw-bold"><i class="bi bi-journal-heart text-danger me-2"></i>Mi Diario</h4>
+      <p class="text-muted small mb-0">
+        <i class="bi bi-lock-fill me-1 text-success"></i>
+        Tu contenido está cifrado. Solo tú puedes leerlo.
+      </p>
+    </div>
+    <div class="card-body px-4 pb-4">
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">¿Cómo te sientes hoy?</label>
+        <div class="d-flex gap-3 justify-content-center py-2" id="humorSelector">
+          <button type="button" class="btn btn-lg humor-btn" data-val="1">😔</button>
+          <button type="button" class="btn btn-lg humor-btn" data-val="2">😕</button>
+          <button type="button" class="btn btn-lg humor-btn" data-val="3">😐</button>
+          <button type="button" class="btn btn-lg humor-btn" data-val="4">🙂</button>
+          <button type="button" class="btn btn-lg humor-btn" data-val="5">😀</button>
+        </div>
+        <input type="hidden" id="humorVal" value="3">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Nivel de estrés <span id="estresLabel" class="text-muted fw-normal">5/10</span></label>
+        <input type="range" class="form-range" min="1" max="10" value="5" id="estresRange"
+               oninput="document.getElementById('estresLabel').textContent=this.value+'/10'">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Horas de sueño anoche</label>
+        <input type="number" class="form-control" id="horas_sueno" min="0" max="12" step="0.5" placeholder="ej: 7.5">
+      </div>
+
+      <div class="mb-3 form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="actividad_fisica">
+        <label class="form-check-label fw-semibold" for="actividad_fisica">Hice actividad física hoy</label>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label fw-semibold">
+          <i class="bi bi-lock-fill text-success me-1"></i>Nota privada (cifrada)
+        </label>
+        <textarea class="form-control" id="contenido" rows="4"
+                  placeholder="Escribe lo que quieras. Este texto es completamente privado y cifrado..."></textarea>
+      </div>
+
+      <button class="btn btn-danger w-100 rounded-3 fw-semibold" onclick="guardarEntrada()">
+        <i class="bi bi-save2 me-2"></i> Guardar entrada de hoy
+      </button>
+
+      <div id="msg" class="mt-3 text-center d-none"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let humorSeleccionado = 3;
+document.querySelectorAll('.humor-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.humor-btn').forEach(b => b.classList.remove('btn-warning'));
+    this.classList.add('btn-warning');
+    humorSeleccionado = parseInt(this.dataset.val);
+  });
+});
+
+async function guardarEntrada() {
+  const datos = {
+    humor_general: humorSeleccionado,
+    nivel_estres: parseInt(document.getElementById('estresRange').value),
+    horas_sueno: parseFloat(document.getElementById('horas_sueno').value) || null,
+    actividad_fisica: document.getElementById('actividad_fisica').checked,
+    contenido: document.getElementById('contenido').value,
+  };
+
+  const resp = await fetch("{% url 'diario_emocional' %}", {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify(datos),
+  });
+  const data = await resp.json();
+  const msg = document.getElementById('msg');
+  msg.classList.remove('d-none','text-success','text-danger');
+  msg.classList.add(data.ok ? 'text-success' : 'text-danger');
+  msg.textContent = data.ok ? '✅ Entrada guardada correctamente.' : '❌ Error: ' + (data.error || '');
+}
+</script>
+{% endblock %}

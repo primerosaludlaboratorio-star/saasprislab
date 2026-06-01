@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <h5 class="fw-bold mb-3"><i class="bi bi-file-earmark-plus me-2 text-warning"></i>{{ titulo }}</h5>
+
+  <form method="post" id="formVale">{% csrf_token %}
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-light py-2 fw-semibold">Datos Generales</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-5">
+            <label class="form-label fw-semibold">Área Solicitante *</label>
+            <select name="area_solicitante" class="form-select" required>
+              {% for val, lbl in area_choices %}
+              <option value="{{ val }}">{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Observaciones Generales</label>
+            <textarea name="observaciones" rows="2" class="form-control" placeholder="Propósito de la solicitud…"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Líneas de artículos -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Artículos Solicitados</span>
+        <button type="button" class="btn btn-sm btn-success" onclick="agregarLinea()">
+          <i class="bi bi-plus-circle me-1"></i>Agregar Artículo
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0" id="tablaLineas">
+          <thead class="table-light">
+            <tr>
+              <th style="width:50%">Artículo</th>
+              <th style="width:20%">Cantidad</th>
+              <th style="width:25%">Nota de línea</th>
+              <th style="width:5%" class="text-center">×</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpoLineas">
+            <tr id="lineaTemplate" class="linea-row">
+              <td>
+                <select name="insumo_id" class="form-select form-select-sm">
+                  <option value="">— Seleccionar artículo —</option>
+                  {% for i in insumos %}
+                  <option value="{{ i.pk }}" data-unidad="{{ i.unidad_medida }}">
+                    {{ i.nombre }} ({{ i.get_categoria_display }}) — Disp: {{ i.get_stock_disponible }} {{ i.unidad_medida }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td><input type="number" name="cantidad_solicitada" step="0.01" min="0.01" class="form-control form-control-sm" placeholder="0"></td>
+              <td><input type="text" name="obs_linea" class="form-control form-control-sm" placeholder="Opcional"></td>
+              <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="this.closest('tr').remove()"><i class="bi bi-trash"></i></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-warning">
+        <i class="bi bi-send me-1"></i>Crear Vale en Borrador
+      </button>
+      <a href="{% url 'inventario:lista_vales' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+function agregarLinea() {
+  const template = document.getElementById('lineaTemplate');
+  const clone = template.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.querySelector('select').value = '';
+  clone.querySelector('input[name="cantidad_solicitada"]').value = '';
+  clone.querySelector('input[name="obs_linea"]').value = '';
+  document.getElementById('cuerpoLineas').appendChild(clone);
+}
+</script>
+{% endblock %}

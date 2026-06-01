@@ -1,0 +1,474 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard Farmacia - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root { --prislab-red: #D9230F; --prislab-gray: #54565A; }
+    .bg-primary { background-color: var(--prislab-red) !important; }
+    body { background-color: #f4f6f9; }
+    
+    /* KPI Cards con Efecto Hover y Borde Izquierdo */
+    .card-kpi { 
+        border-left: 5px solid; 
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border-radius: 12px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .card-kpi:hover { 
+        transform: translateY(-5px); 
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
+    }
+    .kpi-ventas { border-left-color: #28a745; }
+    .kpi-caja { border-left-color: #ffc107; }
+    .kpi-digital { border-left-color: #17a2b8; }
+    .kpi-alertas { border-left-color: #dc3545; }
+    
+    /* Contenedor de Gráficos */
+    .chart-container {
+        position: relative;
+        height: 350px;
+        width: 100%;
+    }
+    
+    /* Accesos Rápidos */
+    .quick-access-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: none;
+        border-radius: 12px;
+    }
+    .quick-access-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        background-color: #fff;
+    }
+    .quick-access-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        transition: transform 0.2s;
+    }
+    .quick-access-card:hover .quick-access-icon {
+        transform: scale(1.1);
+    }
+    
+    /* Tablas */
+    .table-hover tbody tr:hover {
+        background-color: rgba(217, 35, 15, 0.03);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4" style="margin-top: 70px;">
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="fw-bold mb-0 text-dark"><i class="bi bi-speedometer2 text-primary"></i> DASHBOARD FARMACIA</h2>
+            <small class="text-muted">{{ fecha_hoy }} | {{ empresa }} | <span class="badge bg-success">En línea</span></small>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <!-- FILTRO DE FECHA -->
+            <form method="get" class="d-flex align-items-center gap-2" id="filtro-fecha-form">
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="bi bi-calendar3 text-primary"></i>
+                    </span>
+                    <input type="date" 
+                           name="fecha" 
+                           id="filtro-fecha" 
+                           class="form-control border-start-0" 
+                           value="{{ fecha_seleccionada|default:'' }}"
+                           onchange="document.getElementById('filtro-fecha-form').submit();">
+                </div>
+                <button type="button" class="btn btn-outline-secondary shadow-sm" onclick="resetearFecha()" title="Ver hoy">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+            </form>
+            <a href="{% url 'pdv_farmacia' %}" class="btn btn-primary shadow-sm fw-bold px-4">
+                <i class="bi bi-cart-plus"></i> IR AL PDV
+            </a>
+        </div>
+    </div>
+
+    <!-- KPIs PRINCIPALES -->
+    <div class="row g-3 mb-4">
+        <!-- Ventas Hoy -->
+        <div class="col-md-3">
+            <div class="card card-kpi kpi-ventas h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted text-uppercase small mb-1 fw-bold">VENTAS HOY</h6>
+                            <h3 class="fw-bold mb-0 text-success">$ {{ total_ventas_hoy|floatformat:2 }}</h3>
+                            <small class="text-muted"><i class="bi bi-receipt"></i> {{ cantidad_ventas }} transacciones</small>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded-circle">
+                            <i class="bi bi-cart-check text-success fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Saldo en Caja -->
+        <div class="col-md-3">
+            <div class="card card-kpi kpi-caja h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted text-uppercase small mb-1 fw-bold">SALDO EN CAJA</h6>
+                            <h3 class="fw-bold mb-0 text-warning">$ {{ saldo_caja|floatformat:2 }}</h3>
+                            <small class="text-muted">Efectivo: $ {{ ventas_efectivo|floatformat:2 }}</small>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
+                            <i class="bi bi-cash-coin text-warning fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Ventas Digitales -->
+        <div class="col-md-3">
+            <div class="card card-kpi kpi-digital h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted text-uppercase small mb-1 fw-bold">DIGITAL / TARJETA</h6>
+                            <h3 class="fw-bold mb-0 text-info">$ {{ ventas_digital|floatformat:2 }}</h3>
+                            <small class="text-muted">{{ porcentaje_digital|default:"0" }}% del total</small>
+                        </div>
+                        <div class="bg-info bg-opacity-10 p-3 rounded-circle">
+                            <i class="bi bi-credit-card text-info fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alertas -->
+        <div class="col-md-3">
+            <div class="card card-kpi kpi-alertas h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted text-uppercase small mb-1 fw-bold">ALERTAS FEFO/STOCK</h6>
+                            <h3 class="fw-bold mb-0 text-danger">{{ cantidad_productos_vencer|add:cantidad_productos_bajo_stock }}</h3>
+                            <small class="text-danger fw-bold">Requiere Atención</small>
+                        </div>
+                        <div class="bg-danger bg-opacity-10 p-3 rounded-circle">
+                            <i class="bi bi-exclamation-triangle text-danger fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Cards... -->
+    <!-- (KPIs existentes) -->
+    
+    <!-- BARRA DE METAS (NUEVO) -->
+    <div class="card shadow-sm border-0 mb-4 bg-primary text-white">
+        <div class="card-body py-2 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3 w-100">
+                <div class="fw-bold" style="white-space: nowrap;"><i class="bi bi-trophy"></i> Meta Diaria:</div>
+                <div class="progress w-100 bg-white bg-opacity-25" style="height: 20px;">
+                    <!-- Calcular porcentaje: (total_ventas_hoy / meta_diaria) * 100 -->
+                    <!-- Asumiendo meta fija de $50,000 por defecto si no hay dato -->
+                    <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated text-dark fw-bold" 
+                         role="progressbar" 
+                         style="width: 35%;" 
+                         aria-valuenow="35" aria-valuemin="0" aria-valuemax="100">
+                         $ {{ total_ventas_hoy|floatformat:0 }} / $ 50,000
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN GRÁFICA Y ALERTAS -->
+    <div class="row mb-4">
+        <!-- Gráfico de Tendencia -->
+        <div class="col-lg-8 mb-3 mb-lg-0">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-graph-up text-primary"></i> Tendencia de Ventas (7 Días)</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            Esta Semana
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Esta Semana</a></li>
+                            <li><a class="dropdown-item" href="#">Este Mes</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Alertas y Top Productos -->
+        <div class="col-lg-4">
+            <!-- Alertas Críticas -->
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-header bg-danger text-white fw-bold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-bell-fill"></i> Alertas Críticas</span>
+                    <span class="badge bg-white text-danger">{{ cantidad_productos_vencer }}</span>
+                </div>
+                <div class="list-group list-group-flush small" style="max-height: 200px; overflow-y: auto;">
+                    {% for item in productos_vencer %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+                        <div>
+                            <strong>{{ item.producto }}</strong><br>
+                            <span class="text-muted">Lote: {{ item.lote }}</span>
+                        </div>
+                        <span class="badge bg-danger rounded-pill">{{ item.dias_restantes }} días</span>
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item text-center text-muted py-3">
+                        <i class="bi bi-check-circle text-success mb-1"></i><br>
+                        Todo en orden
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Productos Más Vendidos (Placeholder dinámico) -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold">
+                    <i class="bi bi-star-fill text-warning"></i> Top Productos (Hoy)
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0" style="font-size: 0.85rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-center">Cant.</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-top-productos">
+                                <tr>
+                                    <td colspan="3" class="text-center py-3 text-muted">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                        Cargando...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACCESOS RÁPIDOS (GRID) -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <h5 class="fw-bold mb-3 text-secondary"><i class="bi bi-grid-3x3-gap-fill"></i> Módulos Operativos</h5>
+        </div>
+        
+        <div class="col-6 col-md-3 col-xl-2">
+            <a href="{% url 'pdv_farmacia' %}" class="card quick-access-card h-100 text-decoration-none text-dark shadow-sm">
+                <div class="card-body text-center p-3">
+                    <i class="bi bi-cart-plus quick-access-icon text-primary"></i>
+                    <h6 class="fw-bold mb-0">Punto de Venta</h6>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3 col-xl-2">
+            <a href="{% url 'entrada_mercancia' %}" class="card quick-access-card h-100 text-decoration-none text-dark shadow-sm">
+                <div class="card-body text-center p-3">
+                    <i class="bi bi-box-arrow-in-down quick-access-icon text-success"></i>
+                    <h6 class="fw-bold mb-0">Entradas</h6>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3 col-xl-2">
+            <a href="{% url 'inventario_general' %}" class="card quick-access-card h-100 text-decoration-none text-dark shadow-sm">
+                <div class="card-body text-center p-3">
+                    <i class="bi bi-boxes quick-access-icon text-info"></i>
+                    <h6 class="fw-bold mb-0">Inventario</h6>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3 col-xl-2">
+            <a href="{% url 'corte_dia' %}" class="card quick-access-card h-100 text-decoration-none text-dark shadow-sm">
+                <div class="card-body text-center p-3">
+                    <i class="bi bi-calculator quick-access-icon text-warning"></i>
+                    <h6 class="fw-bold mb-0">Corte Caja</h6>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3 col-xl-2">
+            <a href="{% url 'historial_devoluciones' %}" class="card quick-access-card h-100 text-decoration-none text-dark shadow-sm">
+                <div class="card-body text-center p-3">
+                    <i class="bi bi-arrow-counterclockwise quick-access-icon text-danger"></i>
+                    <h6 class="fw-bold mb-0">Devoluciones</h6>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3 col-xl-2">
+            <a href="{% url 'libro_control' %}" class="card quick-access-card h-100 text-decoration-none text-dark shadow-sm">
+                <div class="card-body text-center p-3">
+                    <i class="bi bi-journal-medical quick-access-icon text-secondary"></i>
+                    <h6 class="fw-bold mb-0">Libro Control</h6>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- ÚLTIMAS VENTAS -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-clock-history"></i> Últimas Transacciones</span>
+            <span class="badge bg-light text-dark">Hoy</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Folio</th>
+                            <th>Hora</th>
+                            <th>Cliente</th>
+                            <th>Método</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for venta in ultimas_ventas %}
+                        <tr>
+                            <td><span class="fw-bold text-primary">{{ venta.folio_operacion }}</span></td>
+                            <td>{{ venta.fecha|date:"H:i" }}</td>
+                            <td>{{ venta.paciente_nombre|default:"Público General" }}</td>
+                            <td><span class="badge bg-secondary">{{ venta.metodo_pago }}</span></td>
+                            <td class="text-end fw-bold text-success">$ {{ venta.total|floatformat:2 }}</td>
+                            <td class="text-center">
+                                <a href="{% url 'imprimir_ticket' venta.id %}" target="_blank" class="btn btn-sm btn-outline-dark" title="Reimprimir Ticket">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-2"></i>
+                                <p class="mt-2 mb-0">No hay ventas registradas hoy.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Inicialización de Gráficos y Datos Dinámicos
+    document.addEventListener('DOMContentLoaded', function() {
+        initSalesChart();
+        loadTopProducts();
+    });
+
+    // Gráfico de Ventas (Chart.js)
+    function initSalesChart() {
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        
+        // Simulación de carga (en producción esto vendrá de la API)
+        // Por ahora usamos datos dummy o los pasados por contexto si existieran
+        const labels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        const data = [12000, 19000, 15000, 22000, 18000, 25000, 10000]; // Placeholder
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Ventas ($)',
+                    data: data,
+                    borderColor: '#D9230F',
+                    backgroundColor: 'rgba(217, 35, 15, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#D9230F',
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return '$ ' + context.parsed.y.toLocaleString('es-MX', {minimumFractionDigits: 2});
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { borderDash: [2, 2] }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // Cargar Top Productos (Simulado / API Placeholder)
+    function loadTopProducts() {
+        const tbody = document.getElementById('tabla-top-productos');
+        // Aquí iría el fetch a la API real. Simulamos respuesta:
+        setTimeout(() => {
+            const products = [
+                {name: 'Paracetamol 500mg', qty: 45, total: 2250},
+                {name: 'Amoxicilina 500mg', qty: 32, total: 3200},
+                {name: 'Omeprazol 20mg', qty: 28, total: 1400},
+                {name: 'Ibuprofeno 400mg', qty: 25, total: 1250},
+                {name: 'Electrolit Uva', qty: 20, total: 600}
+            ];
+            
+            let html = '';
+            products.forEach(p => {
+                html += `
+                    <tr>
+                        <td><small class="fw-bold">${p.name}</small></td>
+                        <td class="text-center">${p.qty}</td>
+                        <td class="text-end small text-success fw-bold">$${p.total}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }, 800);
+    }
+
+    function resetearFecha() {
+        const hoy = new Date().toISOString().split('T')[0];
+        window.location.href = window.location.pathname + '?fecha=' + hoy;
+    }
+</script>
+{% endblock %}

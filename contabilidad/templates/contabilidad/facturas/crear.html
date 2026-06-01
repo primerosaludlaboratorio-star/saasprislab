@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nueva Factura CFDI 4.0 — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="fas fa-file-invoice-dollar text-primary"></i> Nueva Factura CFDI 4.0</h2>
+            <p class="text-muted mb-0">Complete los datos para emitir la factura</p>
+        </div>
+        <a href="{% url 'contabilidad:lista_facturas' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Volver a Facturas
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" id="form-factura">
+        {% csrf_token %}
+        <div class="row g-4">
+            <!-- Panel izquierdo: datos de factura -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-user-tie me-2"></i> Datos del Cliente</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Cliente Facturación *</label>
+                            <select name="cliente_id" class="form-select" required>
+                                <option value="">— Selecciona cliente —</option>
+                                {% for cliente in clientes %}
+                                <option value="{{ cliente.id }}">{{ cliente.razon_social }} — {{ cliente.rfc }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">Serie</label>
+                                <input type="text" name="serie" class="form-control" value="A" maxlength="10">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">Forma de Pago</label>
+                                <select name="forma_pago" class="form-select">
+                                    <option value="01">01 - Efectivo</option>
+                                    <option value="03">03 - Transferencia electrónica</option>
+                                    <option value="04" selected>04 - Tarjeta de crédito</option>
+                                    <option value="28">28 - Tarjeta de débito</option>
+                                    <option value="99">99 - Por definir</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">Método de Pago</label>
+                                <select name="metodo_pago" class="form-select">
+                                    <option value="PUE" selected>PUE - Pago en una sola exhibición</option>
+                                    <option value="PPD">PPD - Pago en parcialidades</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conceptos -->
+                <div class="card shadow-sm border-0 mt-4">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-list me-2"></i> Conceptos</h5>
+                        <button type="button" id="btn-add-concepto" class="btn btn-sm btn-success">
+                            <i class="fas fa-plus"></i> Agregar Concepto
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-striped mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Descripción</th>
+                                        <th style="width:120px">Cantidad</th>
+                                        <th style="width:140px">Valor Unitario</th>
+                                        <th style="width:140px">Importe</th>
+                                        <th style="width:50px"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-conceptos">
+                                    <tr class="fila-concepto">
+                                        <td><input type="text" name="concepto_descripcion" class="form-control form-control-sm" placeholder="Descripción del servicio" required></td>
+                                        <td><input type="number" name="concepto_cantidad" class="form-control form-control-sm cantidad-input" value="1" min="0.001" step="0.001" required></td>
+                                        <td><input type="number" name="concepto_valor" class="form-control form-control-sm valor-input" placeholder="0.00" min="0" step="0.01" required></td>
+                                        <td><span class="importe-label fw-bold text-success">$0.00</span></td>
+                                        <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-row"><i class="fas fa-times"></i></button></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="table-dark">
+                                    <tr>
+                                        <td colspan="3" class="text-end fw-bold">Subtotal:</td>
+                                        <td><span id="subtotal-label" class="fw-bold">$0.00</span></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3" class="text-end fw-bold">IVA (16%):</td>
+                                        <td><span id="iva-label" class="fw-bold">$0.00</span></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3" class="text-end fw-bold fs-5">TOTAL:</td>
+                                        <td><span id="total-label" class="fw-bold fs-5 text-success">$0.00</span></td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel derecho -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 sticky-top" style="top: 80px;">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-paper-plane me-2"></i> Emitir Factura</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">La factura se guardará como <strong>Borrador</strong>. Puedes timbrarla desde el detalle.</p>
+                        <button type="submit" class="btn btn-success btn-lg w-100 mb-2">
+                            <i class="fas fa-save me-2"></i> Crear Borrador
+                        </button>
+                        <a href="{% url 'contabilidad:lista_facturas' %}" class="btn btn-outline-secondary w-100">
+                            Cancelar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function recalcularTotales() {
+    let subtotal = 0;
+    document.querySelectorAll('.fila-concepto').forEach(fila => {
+        const cantidad = parseFloat(fila.querySelector('.cantidad-input').value) || 0;
+        const valor = parseFloat(fila.querySelector('.valor-input').value) || 0;
+        const importe = cantidad * valor;
+        fila.querySelector('.importe-label').textContent = '$' + importe.toFixed(2);
+        subtotal += importe;
+    });
+    const iva = subtotal * 0.16;
+    const total = subtotal + iva;
+    document.getElementById('subtotal-label').textContent = '$' + subtotal.toFixed(2);
+    document.getElementById('iva-label').textContent = '$' + iva.toFixed(2);
+    document.getElementById('total-label').textContent = '$' + total.toFixed(2);
+}
+
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('cantidad-input') || e.target.classList.contains('valor-input')) {
+        recalcularTotales();
+    }
+});
+
+document.getElementById('btn-add-concepto').addEventListener('click', function() {
+    const fila = document.querySelector('.fila-concepto').cloneNode(true);
+    fila.querySelectorAll('input').forEach(i => { if (i.name !== 'concepto_cantidad') i.value = ''; });
+    fila.querySelector('.importe-label').textContent = '$0.00';
+    document.getElementById('tabla-conceptos').appendChild(fila);
+});
+
+document.getElementById('tabla-conceptos').addEventListener('click', function(e) {
+    if (e.target.closest('.btn-remove-row')) {
+        const filas = document.querySelectorAll('.fila-concepto');
+        if (filas.length > 1) {
+            e.target.closest('.fila-concepto').remove();
+            recalcularTotales();
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,372 @@
+{
+  "protocol": "PRISLAB_URL_INVENTORY_SUMMARY",
+  "source": "tools/url_inventory.json",
+  "count": 1732,
+  "kinds": {
+    "ui": 1494,
+    "api": 223,
+    "pdf": 15
+  },
+  "prefixes_top": [
+    {
+      "prefix": "/admin/",
+      "count": 1019
+    },
+    {
+      "prefix": "/laboratorio/",
+      "count": 114
+    },
+    {
+      "prefix": "/consultorio/",
+      "count": 67
+    },
+    {
+      "prefix": "/api/",
+      "count": 53
+    },
+    {
+      "prefix": "/farmacia/",
+      "count": 51
+    },
+    {
+      "prefix": "/silo-lab/",
+      "count": 50
+    },
+    {
+      "prefix": "/mantenimiento/",
+      "count": 32
+    },
+    {
+      "prefix": "/director/",
+      "count": 23
+    },
+    {
+      "prefix": "/bienestar/",
+      "count": 21
+    },
+    {
+      "prefix": "/pacientes/",
+      "count": 18
+    },
+    {
+      "prefix": "/contabilidad/",
+      "count": 16
+    },
+    {
+      "prefix": "/lims/",
+      "count": 15
+    },
+    {
+      "prefix": "/ia/",
+      "count": 14
+    },
+    {
+      "prefix": "/pris/",
+      "count": 14
+    },
+    {
+      "prefix": "/crm/",
+      "count": 14
+    },
+    {
+      "prefix": "/medico/",
+      "count": 14
+    },
+    {
+      "prefix": "/marketing/",
+      "count": 14
+    },
+    {
+      "prefix": "/seguridad/",
+      "count": 13
+    },
+    {
+      "prefix": "/finanzas/",
+      "count": 13
+    },
+    {
+      "prefix": "/logistica/",
+      "count": 11
+    },
+    {
+      "prefix": "/capacitacion/",
+      "count": 10
+    },
+    {
+      "prefix": "/rh/",
+      "count": 10
+    },
+    {
+      "prefix": "/notificaciones/",
+      "count": 9
+    },
+    {
+      "prefix": "/nomina/",
+      "count": 9
+    },
+    {
+      "prefix": "/asistencia/",
+      "count": 8
+    },
+    {
+      "prefix": "/reportes/",
+      "count": 8
+    },
+    {
+      "prefix": "/recepcion/",
+      "count": 7
+    },
+    {
+      "prefix": "/iot/",
+      "count": 7
+    },
+    {
+      "prefix": "/cotizacion/",
+      "count": 6
+    },
+    {
+      "prefix": "/transferencias/",
+      "count": 6
+    }
+  ],
+  "view_modules_top": [
+    {
+      "module": "django.contrib",
+      "count": 849
+    },
+    {
+      "module": "core.views",
+      "count": 420
+    },
+    {
+      "module": "django.views",
+      "count": 173
+    },
+    {
+      "module": "consultorio.views",
+      "count": 62
+    },
+    {
+      "module": "farmacia.views",
+      "count": 24
+    },
+    {
+      "module": "mantenimiento.views",
+      "count": 22
+    },
+    {
+      "module": "inventario.views",
+      "count": 20
+    },
+    {
+      "module": "marketing.views",
+      "count": 14
+    },
+    {
+      "module": "seguridad.views",
+      "count": 13
+    },
+    {
+      "module": "bienestar.views",
+      "count": 12
+    },
+    {
+      "module": "logistica.views",
+      "count": 11
+    },
+    {
+      "module": "laboratorio.views",
+      "count": 10
+    },
+    {
+      "module": "ia.views",
+      "count": 10
+    },
+    {
+      "module": "pacientes.portal_views",
+      "count": 10
+    },
+    {
+      "module": "inventario.views_generales",
+      "count": 10
+    },
+    {
+      "module": "mantenimiento.views_metrologia",
+      "count": 9
+    },
+    {
+      "module": "contabilidad.views",
+      "count": 8
+    },
+    {
+      "module": "inventario.views_consultorio",
+      "count": 8
+    },
+    {
+      "module": "recepcion.views",
+      "count": 7
+    },
+    {
+      "module": "iot.views",
+      "count": 7
+    },
+    {
+      "module": "pacientes.views",
+      "count": 6
+    },
+    {
+      "module": "enfermeria.views",
+      "count": 6
+    },
+    {
+      "module": "inventario.views_compras",
+      "count": 6
+    },
+    {
+      "module": "inventario.views_traspasos",
+      "count": 6
+    },
+    {
+      "module": "ia.admin",
+      "count": 2
+    },
+    {
+      "module": "consultorio.api_views",
+      "count": 2
+    },
+    {
+      "module": "consultorio.pdf_views_prislab",
+      "count": 2
+    },
+    {
+      "module": "laboratorio.views_admin",
+      "count": 2
+    },
+    {
+      "module": "consultorio.pdf_views",
+      "count": 1
+    }
+  ],
+  "views_top": [
+    {
+      "view": "django.views.generic.base.view",
+      "count": 172
+    },
+    {
+      "view": "django.contrib.admin.options.history_view",
+      "count": 168
+    },
+    {
+      "view": "django.contrib.admin.options.delete_view",
+      "count": 168
+    },
+    {
+      "view": "django.contrib.admin.options.change_view",
+      "count": 168
+    },
+    {
+      "view": "django.contrib.admin.options.add_view",
+      "count": 167
+    },
+    {
+      "view": "django.contrib.admin.options.changelist_view",
+      "count": 166
+    },
+    {
+      "view": "pacientes.portal_views.wrapper",
+      "count": 7
+    },
+    {
+      "view": "core.views.laboratorio_config.configurar_prueba",
+      "count": 4
+    },
+    {
+      "view": "consultorio.views.nueva_consulta_soap",
+      "count": 4
+    },
+    {
+      "view": "core.views.laboratorio.recepcion_lab",
+      "count": 3
+    },
+    {
+      "view": "core.views.laboratorio_config.editar_parametro",
+      "count": 3
+    },
+    {
+      "view": "core.views.finanzas.view",
+      "count": 3
+    },
+    {
+      "view": "ia.admin.changelist_view",
+      "count": 2
+    },
+    {
+      "view": "core.views.general.view",
+      "count": 2
+    },
+    {
+      "view": "core.views.director.dashboard_director",
+      "count": 2
+    },
+    {
+      "view": "core.views.notificaciones.api_notificaciones_badge",
+      "count": 2
+    },
+    {
+      "view": "core.views.notificaciones.marcar_leida",
+      "count": 2
+    },
+    {
+      "view": "core.views.notificaciones.marcar_todas_leidas",
+      "count": 2
+    },
+    {
+      "view": "core.views.laboratorio.registro_resultados_entrada",
+      "count": 2
+    },
+    {
+      "view": "core.views.farmacia.dashboard_farmacia",
+      "count": 2
+    },
+    {
+      "view": "core.views.laboratorio.lista_trabajo_lab",
+      "count": 2
+    },
+    {
+      "view": "core.views.laboratorio_config.lista_pruebas",
+      "count": 2
+    },
+    {
+      "view": "core.views.laboratorio_config.duplicar_prueba",
+      "count": 2
+    },
+    {
+      "view": "core.views.laboratorio_config.eliminar_prueba",
+      "count": 2
+    },
+    {
+      "view": "core.views.laboratorio_config.configurar_rangos",
+      "count": 2
+    },
+    {
+      "view": "core.views.laboratorio_config.api_parametros_estudio",
+      "count": 2
+    },
+    {
+      "view": "core.views.laboratorio.imprimir_hoja_trabajo_pdf",
+      "count": 2
+    },
+    {
+      "view": "core.views.laboratorio.abrir_worklist_qr",
+      "count": 2
+    },
+    {
+      "view": "core.views.laboratorio.control_calidad",
+      "count": 2
+    },
+    {
+      "view": "core.views.laboratorio.toma_muestra_index",
+      "count": 2
+    }
+  ]
+}

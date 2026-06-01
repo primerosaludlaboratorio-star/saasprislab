@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gráficas de Signos Vitales - {{ paciente.nombre_completo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-bottom: 3rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-activity"></i>
+            Gráficas de Signos Vitales - {{ paciente.nombre_completo }}
+        </h2>
+        <div>
+            <form method="GET" class="d-inline-block me-2">
+                <select name="meses" class="form-select" onchange="this.form.submit()">
+                    <option value="3" {% if meses_seleccionados == 3 %}selected{% endif %}>Últimos 3 meses</option>
+                    <option value="6" {% if meses_seleccionados == 6 %}selected{% endif %}>Últimos 6 meses</option>
+                    <option value="12" {% if meses_seleccionados == 12 %}selected{% endif %}>Último año</option>
+                    <option value="24" {% if meses_seleccionados == 24 %}selected{% endif %}>Últimos 2 años</option>
+                </select>
+            </form>
+            <a href="{% url 'pacientes:historial_360' paciente.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Presión Arterial</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartPresion"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Frecuencia Cardiaca</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartFC"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">Temperatura</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartTemp"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Peso Corporal</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartPeso"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Índice de Masa Corporal (IMC)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartIMC"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    const datos = {{ datos_graficas|safe }};
+    
+    // Presión Arterial
+    new Chart(document.getElementById('chartPresion'), {
+        type: 'line',
+        data: {
+            labels: datos.fechas,
+            datasets: [{
+                label: 'Sistólica',
+                data: datos.presion_sistolica,
+                borderColor: 'rgb(220, 53, 69)',
+                tension: 0.4
+            }, {
+                label: 'Diastólica',
+                data: datos.presion_diastolica,
+                borderColor: 'rgb(13, 110, 253)',
+                tension: 0.4
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+    
+    // Frecuencia Cardiaca
+    new Chart(document.getElementById('chartFC'), {
+        type: 'line',
+        data: {
+            labels: datos.fechas,
+            datasets: [{
+                label: 'FC (lpm)',
+                data: datos.frecuencia_cardiaca,
+                borderColor: 'rgb(13, 110, 253)',
+                fill: true,
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+    
+    // Temperatura
+    new Chart(document.getElementById('chartTemp'), {
+        type: 'line',
+        data: {
+            labels: datos.fechas,
+            datasets: [{
+                label: 'Temperatura (°C)',
+                data: datos.temperatura,
+                borderColor: 'rgb(255, 193, 7)',
+                fill: true,
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+    
+    // Peso
+    new Chart(document.getElementById('chartPeso'), {
+        type: 'line',
+        data: {
+            labels: datos.fechas,
+            datasets: [{
+                label: 'Peso (kg)',
+                data: datos.peso,
+                borderColor: 'rgb(25, 135, 84)',
+                fill: true,
+                backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+    
+    // IMC
+    new Chart(document.getElementById('chartIMC'), {
+        type: 'line',
+        data: {
+            labels: datos.fechas,
+            datasets: [{
+                label: 'IMC',
+                data: datos.imc,
+                borderColor: 'rgb(13, 202, 240)',
+                fill: true,
+                backgroundColor: 'rgba(13, 202, 240, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+</script>
+{% endblock %}

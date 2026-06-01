@@ -1,0 +1,51 @@
+{% extends 'pacientes/portal/dashboard.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Mis Estudios de Laboratorio</h2>
+    
+    {% if ordenes %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Folio</th>
+                        <th>Fecha</th>
+                        <th>Estudios</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for orden in ordenes %}
+                    <tr>
+                        <td><strong>{{ orden.folio }}</strong></td>
+                        <td>{{ orden.fecha_creacion|date:"d/m/Y" }}</td>
+                        <td>{{ orden.detalles.count }} estudio(s)</td>
+                        <td>
+                            <span class="badge bg-{{ orden.estado|lower }}">
+                                {{ orden.get_estado_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if orden.estado == 'RESULTADOS_ENTREGADOS' %}
+                                <a href="{% url 'pacientes:portal_descargar_resultado' orden.id %}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="bi bi-download"></i> Descargar
+                                </a>
+                            {% else %}
+                                <span class="text-muted">En proceso</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No tienes estudios de laboratorio registrados
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

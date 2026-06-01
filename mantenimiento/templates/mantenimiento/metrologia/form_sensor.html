@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3" style="max-width:640px">
+  <h5 class="fw-bold mb-3"><i class="bi bi-cpu me-2"></i>{{ titulo }}</h5>
+  <form method="post">{% csrf_token %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-body row g-3">
+        <div class="col-sm-6">
+          <label class="form-label fw-semibold">Código / Serial *</label>
+          <input type="text" name="codigo" required class="form-control" placeholder="SEN-001">
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label fw-semibold">Nombre / Ubicación *</label>
+          <input type="text" name="nombre" required class="form-control" placeholder="Refrigerador LIMS 1">
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label fw-semibold">Tipo de Sensor *</label>
+          <select name="tipo" class="form-select" required>
+            {% for val, lbl in tipo_choices %}
+            <option value="{{ val }}">{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label fw-semibold">Equipo Vinculado (opcional)</label>
+          <select name="expediente" class="form-select">
+            <option value="">— Ninguno —</option>
+            {% for exp in expedientes %}
+            <option value="{{ exp.pk }}">{{ exp.equipo.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label fw-semibold">T° Mínima Aceptable (°C)</label>
+          <input type="number" name="temp_min_aceptable" step="0.1" value="2.0" class="form-control">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label fw-semibold">T° Máxima Aceptable (°C)</label>
+          <input type="number" name="temp_max_aceptable" step="0.1" value="8.0" class="form-control">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label fw-semibold">Humedad Mínima (%)</label>
+          <input type="number" name="hum_min_aceptable" step="0.1" class="form-control" placeholder="Opcional">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label fw-semibold">Humedad Máxima (%)</label>
+          <input type="number" name="hum_max_aceptable" step="0.1" class="form-control" placeholder="Opcional">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Notas</label>
+          <textarea name="notas" rows="2" class="form-control"></textarea>
+        </div>
+      </div>
+      <div class="card-footer d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Guardar</button>
+        <a href="{% url 'mantenimiento:lista_sensores' %}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

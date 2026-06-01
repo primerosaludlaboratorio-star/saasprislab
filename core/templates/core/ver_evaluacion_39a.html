@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Evaluación {{ evaluacion.periodo_semanal }} - {{ empresa.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px;">
+    <div class="row">
+        <div class="col-12">
+            <div class="card-profesional mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-clipboard-check"></i> Evaluación {{ evaluacion.periodo_semanal }}
+                    </h4>
+                    <div>
+                        <a href="{% url 'lista_evaluaciones_39a' %}" class="btn btn-outline-secondary btn-sm me-2">
+                            <i class="bi bi-arrow-left"></i> Volver
+                        </a>
+                        {% if evaluacion.pdf_firmado %}
+                        <a href="{% url 'descargar_pdf_evaluacion_39a' evaluacion.id %}" class="btn btn-danger btn-sm">
+                            <i class="bi bi-file-pdf"></i> Descargar PDF
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Datos del Empleado -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Datos del Empleado</h5>
+                            <table class="table table-sm">
+                                <tr><td><strong>Nombre:</strong></td><td>{{ evaluacion.empleado.usuario.get_full_name }}</td></tr>
+                                <tr><td><strong>Puesto:</strong></td><td>{{ evaluacion.empleado.puesto }}</td></tr>
+                                <tr><td><strong>Sucursal:</strong></td><td>{{ evaluacion.empleado.sucursal.nombre|default:"N/A" }}</td></tr>
+                                <tr><td><strong>Periodo:</strong></td><td>{{ evaluacion.periodo_semanal }}</td></tr>
+                                <tr><td><strong>Fechas:</strong></td><td>{{ evaluacion.fecha_inicio|date:"d/m/Y" }} - {{ evaluacion.fecha_fin|date:"d/m/Y" }}</td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Resumen de Evaluación</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Promedio General:</strong></td>
+                                    <td>
+                                        <span class="badge {% if evaluacion.calificacion_general >= 90 %}bg-success{% elif evaluacion.calificacion_general >= 75 %}bg-info{% elif evaluacion.calificacion_general >= 60 %}bg-warning{% else %}bg-danger{% endif %} fs-6">
+                                            {{ evaluacion.calificacion_general }} / 100
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr><td><strong>Recomendación:</strong></td><td>{{ evaluacion.get_recomendacion_display }}</td></tr>
+                                <tr><td><strong>Aptitud Médica:</strong></td><td>{% if evaluacion.aptitud_medica %}✅ Sí{% else %}❌ No{% endif %}</td></tr>
+                                <tr><td><strong>Evaluador:</strong></td><td>{{ evaluacion.evaluador.get_full_name|default:"N/A" }}</td></tr>
+                                <tr><td><strong>Fecha Evaluación:</strong></td><td>{{ evaluacion.fecha_evaluacion|date:"d/m/Y H:i" }}</td></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Métricas Detalladas -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5>Métricas de Evaluación</h5>
+                            <div class="table-responsive">
+                                <table class="table table-profesional">
+                                    <thead>
+                                        <tr>
+                                            <th>Métrica</th>
+                                            <th>Calificación</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>1. Puntualidad</strong><br><small>Asistencia y puntualidad</small></td>
+                                            <td><span class="badge bg-secondary fs-6">{{ evaluacion.puntualidad }}</span></td>
+                                            <td>
+                                                {% if evaluacion.puntualidad >= 90 %}<span class="badge bg-success">Excelente</span>
+                                                {% elif evaluacion.puntualidad >= 75 %}<span class="badge bg-info">Bueno</span>
+                                                {% elif evaluacion.puntualidad >= 60 %}<span class="badge bg-warning">Regular</span>
+                                                {% else %}<span class="badge bg-danger">Insuficiente</span>{% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>2. Calidad de Captura</strong><br><small>Precisión y calidad en captura de datos</small></td>
+                                            <td><span class="badge bg-secondary fs-6">{{ evaluacion.calidad_captura }}</span></td>
+                                            <td>
+                                                {% if evaluacion.calidad_captura >= 90 %}<span class="badge bg-success">Excelente</span>
+                                                {% elif evaluacion.calidad_captura >= 75 %}<span class="badge bg-info">Bueno</span>
+                                                {% elif evaluacion.calidad_captura >= 60 %}<span class="badge bg-warning">Regular</span>
+                                                {% else %}<span class="badge bg-danger">Insuficiente</span>{% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>3. Atención al Cliente</strong><br><small>Trato, comunicación y servicio</small></td>
+                                            <td><span class="badge bg-secondary fs-6">{{ evaluacion.atencion_cliente }}</span></td>
+                                            <td>
+                                                {% if evaluacion.atencion_cliente >= 90 %}<span class="badge bg-success">Excelente</span>
+                                                {% elif evaluacion.atencion_cliente >= 75 %}<span class="badge bg-info">Bueno</span>
+                                                {% elif evaluacion.atencion_cliente >= 60 %}<span class="badge bg-warning">Regular</span>
+                                                {% else %}<span class="badge bg-danger">Insuficiente</span>{% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>4. Cumplimiento de Procesos</strong><br><small>Adherencia a protocolos y procedimientos</small></td>
+                                            <td><span class="badge bg-secondary fs-6">{{ evaluacion.cumplimiento_procesos }}</span></td>
+                                            <td>
+                                                {% if evaluacion.cumplimiento_procesos >= 90 %}<span class="badge bg-success">Excelente</span>
+                                                {% elif evaluacion.cumplimiento_procesos >= 75 %}<span class="badge bg-info">Bueno</span>
+                                                {% elif evaluacion.cumplimiento_procesos >= 60 %}<span class="badge bg-warning">Regular</span>
+                                                {% else %}<span class="badge bg-danger">Insuficiente</span>{% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>5. Trabajo en Equipo</strong><br><small>Colaboración, comunicación y trabajo conjunto</small></td>
+                                            <td><span class="badge bg-secondary fs-6">{{ evaluacion.trabajo_equipo }}</span></td>
+                                            <td>
+                                                {% if evaluacion.trabajo_equipo >= 90 %}<span class="badge bg-success">Excelente</span>
+                                                {% elif evaluacion.trabajo_equipo >= 75 %}<span class="badge bg-info">Bueno</span>
+                                                {% elif evaluacion.trabajo_equipo >= 60 %}<span class="badge bg-warning">Regular</span>
+                                                {% else %}<span class="badge bg-danger">Insuficiente</span>{% endif %}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notas Objetivas -->
+                    {% if evaluacion.notas_objetivas %}
+                    <div class="card-profesional mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-file-text"></i> Notas Objetivas</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0">{{ evaluacion.notas_objetivas|linebreaks }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Verificación de Integridad del PDF -->
+                    {% if evaluacion.hash_pdf %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-shield-check"></i> 
+                        <strong>PDF Firmado Digitalmente:</strong> Hash SHA-256: 
+                        <code>{{ evaluacion.hash_pdf|truncatechars:20 }}...</code>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

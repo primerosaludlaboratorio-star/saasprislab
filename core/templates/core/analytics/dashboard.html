@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Analytics y Reportes Centralizados - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="bi bi-graph-up-arrow"></i> Analytics y Reportes Centralizados
+            </h2>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label">Fecha Desde</label>
+                    <input type="date" name="fecha_inicio" class="form-control" value="{{ fecha_inicio }}">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Fecha Hasta</label>
+                    <input type="date" name="fecha_fin" class="form-control" value="{{ fecha_fin }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- KPIs Principales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Total Ventas</h5>
+                    <h2>${{ total_ventas|floatformat:2 }}</h2>
+                    <small>{{ total_ventas_count }} transacciones</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Utilidad Bruta</h5>
+                    <h2>${{ utilidad_bruta|floatformat:2 }}</h2>
+                    <small>Margen: {{ margen_bruto|floatformat:2 }}%</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Ticket Promedio</h5>
+                    <h2>${{ ticket_promedio|floatformat:2 }}</h2>
+                    <small>Por transacción</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Operaciones Trazadas</h5>
+                    <h2>{{ total_operaciones }}</h2>
+                    <small>En el período</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfica de Ventas Diarias -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Tendencia de Ventas Diarias</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="graficaVentas" height="80"></canvas>
+        </div>
+    </div>
+
+    <!-- Métricas por Módulo -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Métricas por Módulo</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Módulo</th>
+                                <th>Operaciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for op in operaciones_por_modulo %}
+                            <tr>
+                                <td>{{ op.modulo }}</td>
+                                <td><span class="badge bg-primary">{{ op.total }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="2" class="text-center text-muted">No hay datos</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Productos Más Vendidos</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pv in productos_vendidos %}
+                            <tr>
+                                <td>{{ pv.producto__nombre }}</td>
+                                <td>{{ pv.cantidad_vendida }}</td>
+                                <td>${{ pv.total_vendido|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">No hay datos</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const datosVentas = {{ datos_ventas_diarias|safe }};
+    const ctx = document.getElementById('graficaVentas').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: datosVentas.labels,
+            datasets: [{
+                label: 'Ventas ($)',
+                data: datosVentas.valores,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

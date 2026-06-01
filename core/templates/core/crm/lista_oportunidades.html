@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Oportunidades CRM — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="fw-bold mb-0"><i class="fas fa-funnel-dollar text-warning me-2"></i>Oportunidades</h3>
+      <small class="text-muted">Pipeline activo</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'crear_oportunidad_crm' %}" class="btn btn-warning btn-sm">
+        <i class="fas fa-plus me-1"></i>Nueva oportunidad
+      </a>
+      <a href="{% url 'crm_dashboard' %}" class="btn btn-outline-secondary btn-sm">← Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Valor total del pipeline -->
+  <div class="alert alert-warning d-flex align-items-center gap-3 mb-3">
+    <i class="fas fa-coins fa-lg"></i>
+    <div>
+      <strong>Valor total del pipeline:</strong>
+      ${{ valor_total|floatformat:2 }}
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <form method="get" class="d-flex gap-2 flex-wrap">
+        <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" style="max-width:200px" placeholder="Buscar...">
+        <select name="estado" class="form-select form-select-sm" style="max-width:180px">
+          <option value="">— Todos los estados —</option>
+          {% for val, lbl in ESTADO_CHOICES %}
+          <option value="{{ val }}" {% if estado_filtro == val %}selected{% endif %}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      {% if oportunidades %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Prospecto</th><th>Servicio</th><th>Estado</th><th>Valor</th><th>Próx. contacto</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for op in oportunidades %}
+            <tr>
+              <td class="fw-semibold">{{ op.nombre }}</td>
+              <td>{{ op.servicio_interes|default:"—"|truncatechars:40 }}</td>
+              <td>
+                <span class="badge
+                  {% if op.estado == 'NUEVO' %}bg-secondary
+                  {% elif op.estado == 'CONTACTADO' %}bg-info
+                  {% elif op.estado == 'INTERESADO' %}bg-primary
+                  {% else %}bg-warning text-dark{% endif %}">
+                  {{ op.get_estado_display }}
+                </span>
+              </td>
+              <td>${{ op.valor_estimado|floatformat:0|default:"—" }}</td>
+              <td>
+                {% if op.fecha_proximo_contacto %}
+                  <span class="{% if op.fecha_proximo_contacto < today %}text-danger fw-bold{% endif %}">
+                    {{ op.fecha_proximo_contacto|date:"d/m/Y" }}
+                  </span>
+                {% else %}—{% endif %}
+              </td>
+              <td class="d-flex gap-1">
+                <a href="{% url 'ver_oportunidad_crm' op.pk %}" class="btn btn-outline-primary btn-sm">Ver</a>
+                <form method="post" action="{% url 'cerrar_oportunidad' op.pk %}" class="d-flex gap-1">
+                  {% csrf_token %}
+                  <button name="accion" value="GANADO" class="btn btn-success btn-sm" title="Cerrar como Ganado">✓</button>
+                  <button name="accion" value="PERDIDO" class="btn btn-outline-danger btn-sm" title="Cerrar como Perdido">✗</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if oportunidades.has_other_pages %}
+      <div class="d-flex justify-content-center py-3">
+        <nav><ul class="pagination pagination-sm mb-0">
+          {% if oportunidades.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ oportunidades.previous_page_number }}&estado={{ estado_filtro }}">‹</a></li>{% endif %}
+          <li class="page-item active"><a class="page-link" href="#">{{ oportunidades.number }}/{{ oportunidades.paginator.num_pages }}</a></li>
+          {% if oportunidades.has_next %}<li class="page-item"><a class="page-link" href="?page={{ oportunidades.next_page_number }}&estado={{ estado_filtro }}">›</a></li>{% endif %}
+        </ul></nav>
+      </div>
+      {% endif %}
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-funnel-dollar fa-2x mb-2"></i><br>Sin oportunidades activas
+        <div class="mt-3"><a href="{% url 'crear_oportunidad_crm' %}" class="btn btn-warning btn-sm">+ Crear oportunidad</a></div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

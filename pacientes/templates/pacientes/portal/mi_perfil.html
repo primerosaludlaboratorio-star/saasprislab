@@ -1,0 +1,71 @@
+{% extends 'pacientes/portal/dashboard.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Mi Perfil</h2>
+    
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Información Personal</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Nombre:</dt>
+                        <dd class="col-sm-8">{{ paciente.nombre_completo }}</dd>
+                        
+                        <dt class="col-sm-4">Edad:</dt>
+                        <dd class="col-sm-8">{{ paciente.edad }} años</dd>
+                        
+                        <dt class="col-sm-4">Sexo:</dt>
+                        <dd class="col-sm-8">{{ paciente.get_sexo_display }}</dd>
+                        
+                        <dt class="col-sm-4">Email:</dt>
+                        <dd class="col-sm-8">{{ usuario_portal.email }}</dd>
+                        
+                        <dt class="col-sm-4">Teléfono:</dt>
+                        <dd class="col-sm-8">{{ paciente.telefono|default:"No registrado" }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Configuración</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="notificaciones_email" 
+                                   id="notif_email" {% if usuario_portal.notificaciones_email %}checked{% endif %}>
+                            <label class="form-check-label" for="notif_email">
+                                Recibir notificaciones por email
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="notificaciones_sms" 
+                                   id="notif_sms" {% if usuario_portal.notificaciones_sms %}checked{% endif %}>
+                            <label class="form-check-label" for="notif_sms">
+                                Recibir notificaciones por SMS
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Guardar Cambios
+                        </button>
+                    </form>
+                    
+                    <hr class="my-4">
+                    
+                    <a href="{% url 'pacientes:portal_cambiar_password' %}" class="btn btn-outline-warning">
+                        <i class="bi bi-key"></i> Cambiar Contraseña
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

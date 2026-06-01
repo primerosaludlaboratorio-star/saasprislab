@@ -1,0 +1,295 @@
+{% extends "base_generic.html" %}
+{% load static %}
+
+{% block title %}Logs de Auditoría{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card { border-left: 4px solid #007bff; }
+    .log-row-critical { background-color: #f8d7da !important; }
+    .log-row-warning { background-color: #fff3cd !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-list-alt"></i> Logs de Auditoría
+            </h1>
+            <p class="text-muted mb-0">Registro completo de eventos del sistema</p>
+        </div>
+        <a href="{% url 'seguridad:dashboard_auditoria' %}" class="btn btn-outline-primary">
+            <i class="fas fa-chart-line"></i> Dashboard
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card filter-card mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="fas fa-filter"></i> Filtros
+                {% if filtros_aplicados %}
+                <span class="badge bg-primary">Activos</span>
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" action="{% url 'seguridad:logs_auditoria' %}">
+                <div class="row">
+                    <!-- Acción -->
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Acción:</label>
+                        <select name="accion" class="form-select form-select-sm">
+                            <option value="">Todas las acciones</option>
+                            {% for value, label in accion_choices %}
+                            <option value="{{ value }}" {% if request.GET.accion == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Severidad -->
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Severidad:</label>
+                        <select name="severidad" class="form-select form-select-sm">
+                            <option value="">Todas</option>
+                            {% for value, label in severidad_choices %}
+                            <option value="{{ value }}" {% if request.GET.severidad == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Usuario -->
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Usuario:</label>
+                        <input type="text" name="usuario" class="form-control form-control-sm" 
+                               value="{{ request.GET.usuario }}" placeholder="ID de usuario">
+                    </div>
+
+                    <!-- Fecha Desde -->
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Desde:</label>
+                        <input type="date" name="fecha_desde" class="form-control form-control-sm" 
+                               value="{{ request.GET.fecha_desde }}">
+                    </div>
+
+                    <!-- Fecha Hasta -->
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Hasta:</label>
+                        <input type="date" name="fecha_hasta" class="form-control form-control-sm" 
+                               value="{{ request.GET.fecha_hasta }}">
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="col-md-1 mb-3 d-flex align-items-end">
+                        <div class="btn-group w-100">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <a href="{% url 'seguridad:logs_auditoria' %}" class="btn btn-secondary btn-sm" 
+                               title="Limpiar filtros">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                Resultados
+                <span class="badge bg-secondary">{{ page_obj.paginator.count }} registro(s)</span>
+            </h5>
+            <div>
+                <button class="btn btn-sm btn-outline-success" onclick="exportarCSV()">
+                    <i class="fas fa-file-csv"></i> Exportar CSV
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0" id="tabla-logs">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th style="width: 150px;">Fecha/Hora</th>
+                            <th style="width: 120px;">Usuario</th>
+                            <th>Acción</th>
+                            <th>Descripción</th>
+                            <th style="width: 120px;">IP</th>
+                            <th style="width: 100px;">Severidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in page_obj %}
+                        <tr class="log-row {% if log.severidad == 'CRITICAL' %}log-row-critical{% elif log.severidad == 'WARNING' %}log-row-warning{% endif %}">
+                            <td class="small text-muted">{{ forloop.counter }}</td>
+                            <td class="small">
+                                {{ log.fecha_hora|date:"d/m/Y" }}<br>
+                                <span class="text-muted">{{ log.fecha_hora|date:"H:i:s" }}</span>
+                            </td>
+                            <td>
+                                {% if log.usuario %}
+                                <i class="fas fa-user-circle"></i>
+                                <strong>{{ log.usuario.username }}</strong>
+                                <br><small class="text-muted">ID: {{ log.usuario.id }}</small>
+                                {% else %}
+                                <span class="text-muted">Sistema</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ log.get_accion_display }}</span>
+                            </td>
+                            <td class="small">
+                                {{ log.descripcion|default:"-" }}
+                                {% if log.detalles %}
+                                <button class="btn btn-sm btn-link p-0" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#detalleModal{{ log.id }}">
+                                    <i class="fas fa-info-circle"></i> Ver más
+                                </button>
+
+                                <!-- Modal de Detalles -->
+                                <div class="modal fade" id="detalleModal{{ log.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Detalles del Evento #{{ log.id }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <dl class="row">
+                                                    <dt class="col-sm-3">Fecha/Hora:</dt>
+                                                    <dd class="col-sm-9">{{ log.fecha_hora|date:"d/m/Y H:i:s" }}</dd>
+                                                    
+                                                    <dt class="col-sm-3">Usuario:</dt>
+                                                    <dd class="col-sm-9">{{ log.usuario|default:"Sistema" }}</dd>
+                                                    
+                                                    <dt class="col-sm-3">Acción:</dt>
+                                                    <dd class="col-sm-9">{{ log.get_accion_display }}</dd>
+                                                    
+                                                    <dt class="col-sm-3">IP:</dt>
+                                                    <dd class="col-sm-9"><code>{{ log.ip_address }}</code></dd>
+                                                    
+                                                    <dt class="col-sm-3">User Agent:</dt>
+                                                    <dd class="col-sm-9"><small>{{ log.user_agent|default:"-" }}</small></dd>
+                                                </dl>
+                                                
+                                                <h6>Detalles Adicionales:</h6>
+                                                <pre class="bg-light p-3 rounded"><code>{{ log.detalles|pprint }}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="small">
+                                <code>{{ log.ip_address|default:"-" }}</code>
+                            </td>
+                            <td>
+                                {% if log.severidad == 'CRITICAL' %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-exclamation-circle"></i> CRÍTICO
+                                </span>
+                                {% elif log.severidad == 'WARNING' %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-exclamation-triangle"></i> ALERTA
+                                </span>
+                                {% elif log.severidad == 'INFO' %}
+                                <span class="badge bg-info">
+                                    <i class="fas fa-info-circle"></i> INFO
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ log.get_severidad_display }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p class="mb-0">No se encontraron registros con los filtros aplicados</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Paginación -->
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer bg-white">
+            <nav>
+                <ul class="pagination pagination-sm mb-0 justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.accion %}&accion={{ request.GET.accion }}{% endif %}{% if request.GET.severidad %}&severidad={{ request.GET.severidad }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.accion %}&accion={{ request.GET.accion }}{% endif %}{% if request.GET.severidad %}&severidad={{ request.GET.severidad }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.accion %}&accion={{ request.GET.accion }}{% endif %}{% if request.GET.severidad %}&severidad={{ request.GET.severidad }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.accion %}&accion={{ request.GET.accion }}{% endif %}{% if request.GET.severidad %}&severidad={{ request.GET.severidad }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportarCSV() {
+    // Obtener parámetros de filtro actuales
+    const params = new URLSearchParams(window.location.search);
+    params.append('export', 'csv');
+    
+    // Crear link temporal y descargar
+    window.location.href = '{% url "seguridad:logs_auditoria" %}?' + params.toString();
+}
+
+// Resaltar fila al hacer clic
+document.querySelectorAll('.log-row').forEach(row => {
+    row.addEventListener('click', function() {
+        this.style.backgroundColor = '#e7f3ff';
+        setTimeout(() => {
+            this.style.backgroundColor = '';
+        }, 1000);
+    });
+});
+</script>
+{% endblock %}

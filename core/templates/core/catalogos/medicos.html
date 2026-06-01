@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Catálogo de Médicos - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top: 70px;">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="fw-bold text-primary mb-0"><i class="bi bi-person-badge"></i> CATÁLOGO DE MÉDICOS</h2>
+    <a href="{% url 'lista_estudios' %}" class="btn btn-outline-secondary fw-bold">
+      <i class="bi bi-arrow-left"></i> Volver a Catálogos
+    </a>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-light">
+      <strong>Nuevo / Editar (por Cédula)</strong>
+    </div>
+    <div class="card-body">
+      <form method="post" class="row g-2">
+        {% csrf_token %}
+        <div class="col-md-5">
+          <label class="form-label">Nombre completo</label>
+          <input name="nombre_completo" class="form-control" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Cédula profesional</label>
+          <input name="cedula_profesional" class="form-control" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Especialidad</label>
+          <input name="especialidad" class="form-control" placeholder="Médico General">
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+          <button class="btn btn-primary w-100 fw-bold" type="submit">Guardar</button>
+        </div>
+      </form>
+      <small class="text-muted d-block mt-2">
+        El sistema actualiza si existe la misma cédula; si no existe, crea un médico nuevo.
+      </small>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-dark text-white">
+      <strong>Listado</strong>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Cédula</th>
+              <th>Especialidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in medicos %}
+              <tr>
+                <td class="fw-bold">{{ m.nombre_completo }}</td>
+                <td>{{ m.cedula_profesional }}</td>
+                <td>{{ m.especialidad }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="text-center text-muted py-4">Sin médicos registrados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

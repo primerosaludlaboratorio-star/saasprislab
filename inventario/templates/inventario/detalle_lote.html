@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'inventario:lista_lotes' %}" class="btn btn-sm btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h2 class="mb-0 fw-bold text-primary"><i class="bi bi-layers me-2"></i>{{ titulo }}</h2>
+      <small class="text-muted">{{ lote.reactivo.get_tipo_display }} — {{ lote.reactivo.nombre }}</small>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row g-3">
+    <!-- Ficha del lote -->
+    <div class="col-md-5">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-bold bg-light">
+          <i class="bi bi-info-circle me-2"></i>Información del Lote
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-6 text-muted small">N° Lote</dt>
+            <dd class="col-6"><code class="fs-6">{{ lote.numero_lote }}</code></dd>
+
+            <dt class="col-6 text-muted small">Reactivo</dt>
+            <dd class="col-6 fw-semibold">{{ lote.reactivo.nombre }}</dd>
+
+            <dt class="col-6 text-muted small">Fabricante</dt>
+            <dd class="col-6">{{ lote.reactivo.fabricante|default:"—" }}</dd>
+
+            <dt class="col-6 text-muted small">Caducidad</dt>
+            <dd class="col-6 {% if lote.fecha_caducidad < hoy %}text-danger fw-bold{% endif %}">
+              {{ lote.fecha_caducidad|date:"d/m/Y"|default:"—" }}
+              {% if lote.fecha_caducidad and lote.fecha_caducidad < hoy %}
+                <span class="badge bg-danger ms-1">VENCIDO</span>
+              {% endif %}
+            </dd>
+
+            <dt class="col-6 text-muted small">Cant. Inicial</dt>
+            <dd class="col-6">{{ lote.cantidad_inicial|floatformat:2 }} {{ lote.reactivo.unidad_medida }}</dd>
+
+            <dt class="col-6 text-muted small">Cant. Actual</dt>
+            <dd class="col-6 fw-bold fs-5
+              {% if lote.cantidad_actual == 0 %}text-danger
+              {% elif lote.cantidad_actual <= lote.reactivo.stock_minimo %}text-warning
+              {% else %}text-success{% endif %}">
+              {{ lote.cantidad_actual|floatformat:2 }} {{ lote.reactivo.unidad_medida }}
+            </dd>
+
+            <dt class="col-6 text-muted small">Estado</dt>
+            <dd class="col-6">
+              {% if lote.estado == 'ACTIVO' %}<span class="badge bg-success fs-6">Activo</span>
+              {% elif lote.estado == 'CUARENTENA' %}<span class="badge bg-secondary fs-6"><i class="bi bi-shield-exclamation me-1"></i>Cuarentena</span>
+              {% elif lote.estado == 'AGOTADO' %}<span class="badge bg-warning text-dark fs-6">Agotado</span>
+              {% elif lote.estado == 'VENCIDO' %}<span class="badge bg-danger fs-6">Vencido</span>
+              {% elif lote.estado == 'BAJA' %}<span class="badge bg-danger fs-6">Baja</span>
+              {% else %}<span class="badge bg-light text-dark fs-6">{{ lote.get_estado_display }}</span>
+              {% endif %}
+            </dd>
+
+            <dt class="col-6 text-muted small">Costo Unitario</dt>
+            <dd class="col-6">${{ lote.precio_unitario_compra|floatformat:2 }}</dd>
+
+            <dt class="col-6 text-muted small">Valor en Stock</dt>
+            <dd class="col-6 fw-bold text-info">
+              ${% widthratio lote.cantidad_actual 1 lote.precio_unitario_compra as val %}{{ val|default:"—" }}
+            </dd>
+
+            <dt class="col-6 text-muted small">Recibido por</dt>
+            <dd class="col-6">{{ lote.recibido_por.get_full_name|default:lote.recibido_por.username|default:"—" }}</dd>
+
+            <dt class="col-6 text-muted small">Fecha recepción</dt>
+            <dd class="col-6">{{ lote.fecha_recepcion|date:"d/m/Y H:i" }}</dd>
+
+            {% if lote.lote_aprobado_qc %}
+            <dt class="col-6 text-muted small">Liberado QC</dt>
+            <dd class="col-6">
+              <i class="bi bi-shield-check text-success me-1"></i>
+              {{ lote.aprobado_por.get_full_name|default:lote.aprobado_por.username|default:"—" }}
+              <br><small class="text-muted">{{ lote.fecha_aprobacion_qc|date:"d/m/Y H:i" }}</small>
+            </dd>
+            {% endif %}
+
+            {% if lote.observaciones_qc %}
+            <dt class="col-6 text-muted small">Obs. QC</dt>
+            <dd class="col-6 small">{{ lote.observaciones_qc }}</dd>
+            {% endif %}
+          </dl>
+        </div>
+
+        <!-- Acciones -->
+        <div class="card-footer d-flex flex-wrap gap-2">
+          {% if lote.estado == 'CUARENTENA' %}
+          <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalLiberar">
+            <i class="bi bi-shield-check me-1"></i>Liberación Técnica (QC)
+          </button>
+          {% endif %}
+          {% if lote.estado == 'ACTIVO' %}
+          <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalBaja">
+            <i class="bi bi-trash me-1"></i>Dar de Baja
+          </button>
+          {% endif %}
+          <a href="{% url 'inventario:crear_salida_tecnica' %}?lote={{ lote.pk }}"
+             class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-dash-circle me-1"></i>Descuento Técnico
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial de movimientos -->
+    <div class="col-md-7">
+      <!-- Salidas Analíticas (automáticas) -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header fw-bold bg-light">
+          <i class="bi bi-activity me-2 text-primary"></i>
+          Descuentos Analíticos (FEFO automático)
+          <span class="badge bg-primary ms-2">{{ salidas_analiticas|length }}</span>
+        </div>
+        <div class="card-body p-0">
+          {% if salidas_analiticas %}
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead class="table-light"><tr><th>Fecha</th><th>Orden</th><th>Parámetro</th><th class="text-end">Cantidad</th><th>Validó</th></tr></thead>
+              <tbody>
+                {% for s in salidas_analiticas %}
+                <tr>
+                  <td class="small">{{ s.fecha|date:"d/m H:i" }}</td>
+                  <td class="small">{{ s.orden.folio|default:s.orden.pk|default:"—" }}</td>
+                  <td class="small">{{ s.analito.nombre|default:"—" }}</td>
+                  <td class="text-end text-danger small">−{{ s.cantidad_consumida|floatformat:4 }}</td>
+                  <td class="small">{{ s.validado_por.get_full_name|default:s.validado_por.username|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted text-center py-3 small mb-0">Sin descuentos analíticos.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Salidas Técnicas (manuales) -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-bold bg-light">
+          <i class="bi bi-tools me-2 text-warning"></i>
+          Descuentos Técnicos (Mantenimiento / Merma)
+          <span class="badge bg-warning text-dark ms-2">{{ salidas_tecnicas|length }}</span>
+        </div>
+        <div class="card-body p-0">
+          {% if salidas_tecnicas %}
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead class="table-light"><tr><th>Fecha</th><th>Tipo</th><th>Motivo</th><th class="text-end">Cantidad</th><th>Registró</th></tr></thead>
+              <tbody>
+                {% for s in salidas_tecnicas %}
+                <tr>
+                  <td class="small">{{ s.fecha|date:"d/m H:i" }}</td>
+                  <td><span class="badge bg-secondary small">{{ s.get_tipo_display }}</span></td>
+                  <td class="small">{{ s.motivo|truncatechars:40 }}</td>
+                  <td class="text-end text-warning small">−{{ s.cantidad|floatformat:4 }}</td>
+                  <td class="small">{{ s.registrado_por.get_full_name|default:s.registrado_por.username|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted text-center py-3 small mb-0">Sin descuentos técnicos.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Liberación QC -->
+{% if lote.estado == 'CUARENTENA' %}
+<div class="modal fade" id="modalLiberar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-shield-check me-2"></i>Liberación Técnica — QC</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'inventario:liberar_lote_qc' lote.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="alert alert-warning">
+            Al liberar este lote, el sistema lo marcará como <strong>ACTIVO</strong> y lo incluirá en el
+            motor FEFO para descuentos automáticos.
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Fecha de apertura (opcional)</label>
+            <input type="date" name="fecha_apertura" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Observaciones de liberación</label>
+            <textarea name="observaciones_qc" class="form-control" rows="2"
+                      placeholder="N° Certificado de Análisis, nombre del responsable QC…">{{ lote.observaciones_qc }}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-shield-check me-1"></i>Confirmar Liberación
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Modal Baja -->
+{% if lote.estado == 'ACTIVO' %}
+<div class="modal fade" id="modalBaja" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="bi bi-trash me-2"></i>Dar de Baja — Lote {{ lote.numero_lote }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'inventario:baja_lote' lote.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="alert alert-danger">
+            <strong>Atención:</strong> Se dará de baja {{ lote.cantidad_actual|floatformat:2 }} {{ lote.reactivo.unidad_medida }}
+            de reactivo. Esta acción quedará registrada en la bitácora.
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Motivo de baja <span class="text-danger">*</span></label>
+            <textarea name="motivo" class="form-control" rows="2" required
+                      placeholder="Ej. Vencimiento detectado, derrame, contaminación…"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash me-1"></i>Confirmar Baja
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+/* ==============================================================================
+   DASHBOARD LABORATORIO - PERSONALIZADO
+   ============================================================================== */
+
+.dashboard-lab {
+    padding: 2rem 1rem;
+}
+
+.widget-lab {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s;
+}
+
+.widget-lab:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.stat-numero {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+}
+
+.lista-muestras {
+    list-style: none;
+    padding: 0;
+}
+
+.lista-muestras li {
+    padding: 1rem;
+    border-left: 4px solid #e9ecef;
+    margin-bottom: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    transition: all 0.3s;
+}
+
+.lista-muestras li:hover {
+    border-left-color: #667eea;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.lista-muestras li.urgente {
+    border-left-color: #dc3545;
+    background: #fff5f5;
+}
+
+.badge-urgente {
+    background: #dc3545;
+    color: white;
+    animation: parpadeo 1.5s infinite;
+}
+
+@keyframes parpadeo {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.reactivo-bajo {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+}
+
+.progress-custom {
+    height: 8px;
+    border-radius: 4px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-lab">
+    
+    <!-- ==================================================================
+         HEADER: SALUDO PERSONALIZADO
+         ================================================================== -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>
+                <i class="fas fa-microscope text-primary me-2"></i>
+                Bienvenido, Q.F.B. {{ request.user.get_full_name }}
+            </h2>
+            <p class="text-muted">
+                <i class="fas fa-calendar-day me-2"></i>
+                {% now "l, j de F de Y" %} • 
+                <i class="fas fa-clock ms-2 me-2"></i>
+                {% now "H:i" %}
+            </p>
+        </div>
+    </div>
+    
+    <!-- ==================================================================
+         WIDGETS: ESTADÍSTICAS DE LABORATORIO
+         ================================================================== -->
+    <div class="row">
+        
+        <!-- Widget: Muestras Pendientes -->
+        <div class="col-lg-3 col-md-6">
+            <div class="widget-lab">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="text-muted mb-0">Muestras Pendientes</h6>
+                        <div class="stat-numero text-warning">{{ muestras_pendientes|default:0 }}</div>
+                        <small class="text-muted">Para procesar</small>
+                    </div>
+                    <div style="width: 50px; height: 50px; background: #fff3cd; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-hourglass-half text-warning" style="font-size: 1.5rem;"></i>
+                    </div>
+                </div>
+                <a href="{% url 'lista_trabajo_lab' %}" class="btn btn-sm btn-outline-warning w-100 mt-3">
+                    <i class="fas fa-list me-2"></i>Ver Lista
+                </a>
+            </div>
+        </div>
+        
+        <!-- Widget: Resultados Críticos -->
+        <div class="col-lg-3 col-md-6">
+            <div class="widget-lab">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="text-muted mb-0">Resultados Críticos</h6>
+                        <div class="stat-numero text-danger">{{ resultados_criticos|default:0 }}</div>
+                        <small class="text-muted">Requieren notificación</small>
+                    </div>
+                    <div style="width: 50px; height: 50px; background: #f8d7da; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-exclamation-triangle text-danger" style="font-size: 1.5rem;"></i>
+                    </div>
+                </div>
+                <a href="{% url 'lista_trabajo_lab' %}" class="btn btn-sm btn-outline-danger w-100 mt-3">
+                    <i class="fas fa-bell me-2"></i>Ver Lista de Trabajo
+                </a>
+            </div>
+        </div>
+        
+        <!-- Widget: Procesadas Hoy -->
+        <div class="col-lg-3 col-md-6">
+            <div class="widget-lab">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="text-muted mb-0">Procesadas Hoy</h6>
+                        <div class="stat-numero text-success">{{ procesadas_hoy|default:0 }}</div>
+                        <small class="text-muted">Completadas</small>
+                    </div>
+                    <div style="width: 50px; height: 50px; background: #d4edda; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
+                    </div>
+                </div>
+                <a href="{% url 'consulta_ordenes' %}" class="btn btn-sm btn-outline-success w-100 mt-3">
+                    <i class="fas fa-history me-2"></i>Ver Historial
+                </a>
+            </div>
+        </div>
+        
+        <!-- Widget: Reactivos Bajos -->
+        <div class="col-lg-3 col-md-6">
+            <div class="widget-lab">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="text-muted mb-0">Reactivos Bajos</h6>
+                        <div class="stat-numero text-info">{{ reactivos_bajos|default:0 }}</div>
+                        <small class="text-muted">Requieren reorden</small>
+                    </div>
+                    <div style="width: 50px; height: 50px; background: #d1ecf1; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-flask text-info" style="font-size: 1.5rem;"></i>
+                    </div>
+                </div>
+                <a href="{% url 'control_calidad' %}" class="btn btn-sm btn-outline-info w-100 mt-3">
+                    <i class="fas fa-boxes me-2"></i>Ver Inventario
+                </a>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- ==================================================================
+         ALERTA: MUESTRAS URGENTES
+         ================================================================== -->
+    {% if muestras_urgentes %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white;" role="alert">
+                <h5 class="alert-heading">
+                    <i class="fas fa-siren-on me-2"></i>
+                    🚨 URGENTE: {{ muestras_urgentes|length }} Muestra(s) STAT Pendiente(s)
+                </h5>
+                <hr style="border-color: rgba(255, 255, 255, 0.3);">
+                <ul class="mb-0">
+                    {% for muestra in muestras_urgentes %}
+                    <li>
+                        <strong>Orden {{ muestra.folio_orden }}</strong> - {{ muestra.paciente.nombre_completo }}: 
+                        {{ muestra.estudios }}
+                        <a href="{% url 'captura_resultados' muestra.id %}" class="text-white text-decoration-underline ms-2">
+                            Procesar Ahora →
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- ==================================================================
+         SECCIÓN: LISTA DE TRABAJO
+         ================================================================== -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="widget-lab">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>
+                        <i class="fas fa-list-alt text-primary me-2"></i>
+                        Lista de Trabajo
+                    </h5>
+                    <a href="{% url 'lista_trabajo_lab' %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-expand me-2"></i>Ver Todo
+                    </a>
+                </div>
+                
+                {% if lista_trabajo %}
+                <ul class="lista-muestras">
+                    {% for orden in lista_trabajo %}
+                    <li {% if orden.urgente %}class="urgente"{% endif %}>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <strong style="font-size: 1.1rem;">{{ orden.folio_orden }}</strong>
+                                    {% if orden.urgente %}
+                                    <span class="badge badge-urgente ms-2">URGENTE</span>
+                                    {% endif %}
+                                    <span class="badge bg-secondary ms-2">{{ orden.estado }}</span>
+                                </div>
+                                <div>
+                                    <i class="fas fa-user text-primary me-2"></i>
+                                    <strong>{{ orden.paciente.nombre_completo }}</strong>
+                                </div>
+                                <div class="text-muted mt-1">
+                                    <i class="fas fa-flask me-2"></i>
+                                    {{ orden.estudios_solicitados }}
+                                </div>
+                                <div class="text-muted mt-1">
+                                    <i class="fas fa-clock me-2"></i>
+                                    Recibida: {{ orden.fecha_recepcion|date:"d/m/Y H:i" }}
+                                </div>
+                                
+                                <!-- Barra de Progreso -->
+                                <div class="mt-2">
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">Progreso</small>
+                                        <small class="text-muted">{{ orden.porcentaje_completado }}%</small>
+                                    </div>
+                                    <div class="progress progress-custom">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ orden.porcentaje_completado }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="ms-3">
+                                <a href="{% url 'captura_resultados' orden.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-play me-1"></i>Procesar
+                                </a>
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                    <p class="text-muted mt-3 mb-0">¡Excelente trabajo!</p>
+                    <p class="text-muted">No hay muestras pendientes de procesar</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- ==================================================================
+             SIDEBAR: HERRAMIENTAS Y ALERTAS
+             ================================================================== -->
+        <div class="col-lg-4">
+            <!-- Accesos Rápidos -->
+            <div class="widget-lab">
+                <h5>
+                    <i class="fas fa-bolt text-warning me-2"></i>
+                    Accesos Rápidos
+                </h5>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'toma_muestra_index' %}" class="btn btn-outline-danger">
+                        <i class="fas fa-syringe me-2"></i>Toma de Muestra
+                    </a>
+                    <a href="{% url 'lista_trabajo_lab' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-microscope me-2"></i>Procesar Muestras
+                    </a>
+                    <a href="{% url 'control_calidad' %}" class="btn btn-outline-success">
+                        <i class="fas fa-chart-line me-2"></i>Control de Calidad
+                    </a>
+                    <a href="{% url 'entrega_resultados' %}" class="btn btn-outline-info">
+                        <i class="fas fa-envelope-open-text me-2"></i>Entrega de Resultados
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Reactivos con Stock Bajo -->
+            {% if reactivos_stock_bajo %}
+            <div class="widget-lab mt-3">
+                <h5>
+                    <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                    Reactivos con Stock Bajo
+                </h5>
+                <ul class="list-group list-group-flush">
+                    {% for reactivo in reactivos_stock_bajo %}
+                    <li class="list-group-item reactivo-bajo">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>{{ reactivo.nombre }}</strong>
+                                <br>
+                                <small class="text-muted">Stock: {{ reactivo.cantidad_actual }} {{ reactivo.unidad }}</small>
+                            </div>
+                            <span class="badge bg-warning text-dark">Bajo</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <a href="{% url 'recepcion_lab' %}" class="btn btn-sm btn-warning w-100 mt-2">
+                    <i class="fas fa-shopping-cart me-2"></i>Solicitar Reorden
+                </a>
+            </div>
+            {% endif %}
+            
+            <!-- Control de Calidad Hoy -->
+            <div class="widget-lab mt-3">
+                <h5>
+                    <i class="fas fa-chart-line text-success me-2"></i>
+                    Control de Calidad
+                </h5>
+                {% if controles_hoy %}
+                <p class="text-muted mb-2">Controles realizados hoy:</p>
+                <ul class="list-group list-group-flush">
+                    {% for control in controles_hoy %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ control.prueba }}</strong>
+                                <br>
+                                <small class="text-muted">{{ control.hora|date:"H:i" }}</small>
+                            </div>
+                            {% if control.dentro_rango %}
+                            <span class="badge bg-success">✓ OK</span>
+                            {% else %}
+                            <span class="badge bg-danger">✗ Fuera</span>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted text-center py-3">
+                    <i class="fas fa-info-circle"></i><br>
+                    No se han registrado controles hoy
+                </p>
+                {% endif %}
+                <a href="{% url 'control_calidad' %}" class="btn btn-sm btn-outline-success w-100 mt-2">
+                    <i class="fas fa-plus me-2"></i>Registrar Control
+                </a>
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Caja Farmacia - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .caja-container {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    
+    .caja-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .kpi-card {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .kpi-card.humanista {
+        background: linear-gradient(135deg, #ff6a00 0%, #ee0979 100%);
+    }
+    
+    .kpi-value {
+        font-size: 3rem;
+        font-weight: bold;
+        margin: 0;
+    }
+    
+    .kpi-label {
+        font-size: 1rem;
+        opacity: 0.9;
+        margin-top: 0.5rem;
+    }
+    
+    .comparativa {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-top: 1rem;
+    }
+    
+    .variacion-positiva {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .variacion-negativa {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .header-operativo {
+        text-align: center;
+        color: white;
+        margin-bottom: 2rem;
+    }
+    
+    .header-operativo h1 {
+        font-size: 2.5rem;
+        font-weight: bold;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .productos-top {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .productos-top li {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background: #f8f9fa;
+        border-left: 4px solid #fa709a;
+        border-radius: 5px;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .modulo-construccion {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    
+    .modulo-construccion i {
+        font-size: 5rem;
+        color: #fa709a;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="caja-container">
+    <div class="container">
+        {% if modulo_inactivo %}
+        <div class="modulo-construccion">
+            <i class="bi bi-tools"></i>
+            <h2>Módulo de Farmacia en Construcción</h2>
+            <p class="lead">{{ mensaje_error }}</p>
+            <a href="{% url 'dashboard' %}" class="btn btn-primary btn-lg mt-3">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+        {% else %}
+        <div class="header-operativo">
+            <h1>
+                <i class="bi bi-capsule"></i> CAJA FARMACIA
+            </h1>
+            <p class="lead">Vista Operativa - {{ sucursal }}</p>
+            <small>Corte: {{ fecha_corte|date:"d/m/Y H:i" }} | Operador: {{ usuario_corte }}</small>
+        </div>
+        
+        <!-- KPIs HUMANISTAS -->
+        <div class="row">
+            <div class="col-md-4">
+                <div class="kpi-card humanista">
+                    <p class="kpi-value">{{ clientes_atendidos }}</p>
+                    <p class="kpi-label">
+                        <i class="bi bi-people-fill"></i> Clientes Atendidos
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kpi-card humanista">
+                    <p class="kpi-value">{{ recetas_surtidas }}</p>
+                    <p class="kpi-label">
+                        <i class="bi bi-file-medical-fill"></i> Recetas Surtidas
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kpi-card humanista">
+                    <p class="kpi-value">{{ productos_vendidos }}</p>
+                    <p class="kpi-label">
+                        <i class="bi bi-box-seam"></i> Productos Vendidos
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- INGRESOS DEL DÍA -->
+        <div class="caja-card">
+            <h3 class="text-center mb-4">
+                <i class="bi bi-cash-stack"></i> Ingresos del Día
+            </h3>
+            <div class="kpi-card">
+                <p class="kpi-value">${{ ingresos_dia|floatformat:2 }}</p>
+                <p class="kpi-label">MXN</p>
+            </div>
+            
+            <div class="comparativa">
+                <span>Comparativa con Ayer:</span>
+                <span class="{% if variacion_ingreso >= 0 %}variacion-positiva{% else %}variacion-negativa{% endif %}">
+                    {% if variacion_ingreso >= 0 %}
+                        <i class="bi bi-arrow-up-circle"></i> +${{ variacion_ingreso|floatformat:2 }}
+                    {% else %}
+                        <i class="bi bi-arrow-down-circle"></i> ${{ variacion_ingreso|floatformat:2 }}
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        
+        <!-- PRODUCTOS MÁS VENDIDOS -->
+        <div class="caja-card">
+            <h4 class="mb-3">
+                <i class="bi bi-bar-chart-fill"></i> Productos Más Vendidos
+            </h4>
+            <ul class="productos-top">
+                {% for producto in productos_top %}
+                <li>
+                    <span>{{ producto.producto__nombre }}</span>
+                    <span class="badge bg-warning">{{ producto.cantidad }}</span>
+                </li>
+                {% empty %}
+                <li class="text-center text-muted">No hay datos disponibles</li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{% url 'dashboard' %}" class="btn btn-light btn-lg">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Envíos a Maquila - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="bi bi-truck"></i> Gestión de Envíos a Maquila</h2>
+        </div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-9">
+                    <label class="form-label">Buscar por folio o paciente</label>
+                    <input type="text" name="busqueda" class="form-control" value="{{ busqueda }}" placeholder="Folio o nombre del paciente">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Pestañas -->
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#pendientes">Pendientes de Envío</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#enviadas">Enviadas a Maquila</a>
+        </li>
+    </ul>
+    
+    <div class="tab-content">
+        <!-- Pendientes -->
+        <div class="tab-pane fade show active" id="pendientes">
+            <div class="card">
+                <div class="card-body">
+                    {% if ordenes_pendientes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Folio</th>
+                                    <th>Paciente</th>
+                                    <th>Fecha</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for orden in ordenes_pendientes %}
+                                <tr>
+                                    <td><strong>{{ orden.folio_orden|default:orden.id }}</strong></td>
+                                    <td>{{ orden.paciente.nombre_completo }}</td>
+                                    <td>{{ orden.fecha_creacion|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'enviar_a_maquila' orden.id %}" class="btn btn-sm btn-primary" style="pointer-events: auto; z-index: 10; position: relative;" onclick="return confirm('¿Confirmar envío de esta orden a maquila?');">
+                                            <i class="bi bi-send"></i> Enviar a Maquila
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-3">No hay órdenes pendientes de envío</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Enviadas -->
+        <div class="tab-pane fade" id="enviadas">
+            <div class="card">
+                <div class="card-body">
+                    {% if ordenes_enviadas %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Folio</th>
+                                    <th>Paciente</th>
+                                    <th>Fecha Envío</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for orden in ordenes_enviadas %}
+                                <tr>
+                                    <td><strong>{{ orden.folio_orden|default:orden.id }}</strong></td>
+                                    <td>{{ orden.paciente.nombre_completo }}</td>
+                                    <td>{{ orden.fecha_envio_maquila|date:"d/m/Y"|default:"N/A" }}</td>
+                                    <td><span class="badge bg-info">En Maquila</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-3">No hay órdenes enviadas a maquila</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

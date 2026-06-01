@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mi Diario Emocional{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="bi bi-journal-heart text-success"></i> Mi Diario Emocional</h2>
+                    <p class="text-muted">Tus últimas 30 entradas</p>
+                </div>
+                <div>
+                    <a href="{% url 'bienestar:estadisticas_diario' %}" class="btn btn-info me-2">
+                        <i class="bi bi-graph-up"></i> Ver Estadísticas
+                    </a>
+                    <a href="{% url 'bienestar:nueva_entrada_diario' %}" class="btn btn-success">
+                        <i class="bi bi-plus-circle"></i> Nueva Entrada
+                    </a>
+                </div>
+            </div>
+
+            <!-- Gráfica de tendencias -->
+            {% if tendencias %}
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-graph-up-arrow"></i> Tendencia Emocional (Últimos 30 días)
+                </div>
+                <div class="card-body">
+                    <canvas id="grafica-tendencias" height="80"></canvas>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Lista de entradas -->
+            <div class="row">
+                {% if entradas %}
+                    {% for entrada in entradas %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="bi bi-calendar3"></i>
+                                    <strong>{{ entrada.fecha|date:"d/m/Y" }}</strong>
+                                    <small class="text-muted">({{ entrada.fecha|date:"l" }})</small>
+                                </div>
+                                {% if entrada.sentimiento_ia %}
+                                <span class="badge bg-primary">
+                                    {{ entrada.sentimiento_ia|capfirst }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-2">{{ entrada.contenido_privado|truncatewords:50 }}</p>
+                                
+                                <!-- Nivel de riesgo -->
+                                {% if entrada.nivel_riesgo == 'VERDE' %}
+                                <span class="badge bg-success">🟢 Bienestar</span>
+                                {% elif entrada.nivel_riesgo == 'AMARILLO' %}
+                                <span class="badge bg-warning">🟡 Atención</span>
+                                {% elif entrada.nivel_riesgo|slice:":4" == 'ROJO' %}
+                                <span class="badge bg-danger">🔴 Riesgo Detectado</span>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer text-muted small">
+                                <i class="bi bi-clock"></i> {{ entrada.fecha_creacion|timesince }} atrás
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <!-- Sin entradas -->
+                    <div class="col-12">
+                        <div class="card shadow text-center py-5">
+                            <div class="card-body">
+                                <i class="bi bi-journal-x" style="font-size: 4rem; color: #ccc;"></i>
+                                <h4 class="mt-3">Aún no tienes entradas en tu diario</h4>
+                                <p class="text-muted mb-4">
+                                    Comienza hoy a escribir sobre tus emociones.<br>
+                                    Te ayudará a identificar patrones y mejorar tu bienestar.
+                                </p>
+                                <a href="{% url 'bienestar:nueva_entrada_diario' %}" class="btn btn-success btn-lg">
+                                    <i class="bi bi-plus-circle"></i> Crear Mi Primera Entrada
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Paginación (futuro) -->
+            {% if entradas.count > 30 %}
+            <div class="d-flex justify-content-center mt-4">
+                <nav>
+                    <ul class="pagination">
+                        <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if tendencias %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('grafica-tendencias').getContext('2d');
+    
+    const tendencias = {{ tendencias|safe }};
+    const labels = tendencias.map(t => t.fecha);
+    const valores = tendencias.map(t => t.valor);
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Estado de Ánimo',
+                data: valores,
+                borderColor: '#4CAF50',
+                backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointRadius: function(context) {
+                    const tiene_entrada = tendencias[context.dataIndex].tiene_entrada;
+                    return tiene_entrada ? 6 : 3;
+                },
+                pointBackgroundColor: function(context) {
+                    const tiene_entrada = tendencias[context.dataIndex].tiene_entrada;
+                    return tiene_entrada ? '#4CAF50' : '#ccc';
+                }
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const valor = context.parsed.y;
+                            const emociones = {
+                                1: 'Muy mal',
+                                2: 'Mal',
+                                3: 'Normal',
+                                4: 'Bien',
+                                5: 'Excelente'
+                            };
+                            return emociones[valor] || 'Sin datos';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    min: 0,
+                    max: 5,
+                    ticks: {
+                        stepSize: 1,
+                        callback: function(value) {
+                            const emociones = {
+                                1: '😢',
+                                2: '😔',
+                                3: '😐',
+                                4: '😊',
+                                5: '😄'
+                            };
+                            return emociones[value] || '';
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

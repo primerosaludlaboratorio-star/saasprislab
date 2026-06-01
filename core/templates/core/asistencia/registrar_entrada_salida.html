@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Registrar Asistencia — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width:500px">
+  <div class="card border-0 shadow-lg">
+    <div class="card-header bg-primary text-white text-center py-4">
+      <i class="fas fa-fingerprint fa-3x mb-2"></i>
+      <h4 class="mb-0">Registro de Asistencia</h4>
+      <small id="reloj" class="opacity-75"></small>
+    </div>
+    <div class="card-body p-4">
+      {% if messages %}
+        {% for msg in messages %}
+        <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Empleado *</label>
+          <select name="empleado_id" class="form-select form-select-lg" required>
+            <option value="">— Seleccionar empleado —</option>
+            {% for emp in empleados %}
+            <option value="{{ emp.id }}">{{ emp.usuario.get_full_name|default:emp.usuario.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Tipo de registro *</label>
+          <div class="d-flex gap-3">
+            <div class="form-check form-check-inline flex-grow-1">
+              <input class="form-check-input" type="radio" name="tipo_registro" id="entrada" value="ENTRADA" checked>
+              <label class="form-check-label fw-bold text-success" for="entrada">
+                <i class="fas fa-sign-in-alt me-1"></i>ENTRADA
+              </label>
+            </div>
+            <div class="form-check form-check-inline flex-grow-1">
+              <input class="form-check-input" type="radio" name="tipo_registro" id="salida" value="SALIDA">
+              <label class="form-check-label fw-bold text-secondary" for="salida">
+                <i class="fas fa-sign-out-alt me-1"></i>SALIDA
+              </label>
+            </div>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 btn-lg">
+          <i class="fas fa-check me-2"></i>Registrar
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const reloj = document.getElementById('reloj');
+  function actualizar(){
+    const now = new Date();
+    reloj.textContent = now.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  }
+  actualizar();
+  setInterval(actualizar, 1000);
+})();
+</script>
+{% endblock %}

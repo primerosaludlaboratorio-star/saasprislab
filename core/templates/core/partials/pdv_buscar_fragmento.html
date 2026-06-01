@@ -1,0 +1,20 @@
+{% if mensaje %}
+<div class="text-center py-4 text-muted px-2">{{ mensaje }}</div>
+{% elif error %}
+<div class="text-center py-4 text-danger px-2"><i class="bi bi-exclamation-triangle-fill"></i> {{ error }}</div>
+{% elif not productos %}
+<div class="text-center py-4 text-muted px-2"><i class="bi bi-search display-6 opacity-25 d-block"></i><p class="mt-2 mb-0">Sin resultados{% if q %} para «{{ q }}»{% endif %}.</p></div>
+{% else %}
+<div class="list-group list-group-flush">
+{% for p in productos %}
+<a href="#" class="list-group-item list-group-item-action py-2" data-producto-id="{{ p.id }}"
+   onclick="if(typeof window.intentarAgregar==='function'){window.intentarAgregar({{ p.id }});}return false;">
+  <strong>{{ p.nombre_comercial|default:"" }}</strong>
+  <small class="text-muted">({{ p.sustancia_activa|default:"" }})</small>
+  <span class="badge float-end {% if p.stock_total %}bg-success{% elif p.stock %}bg-success{% else %}bg-secondary{% endif %}">
+    {% if p.stock_total %}{{ p.stock_total }}{% else %}{{ p.stock|default:0 }}{% endif %} uds | ${{ p.precio_base|floatformat:2 }}
+  </span>
+</a>
+{% endfor %}
+</div>
+{% endif %}

@@ -1,0 +1,35 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: prislab-farmacia
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/launch-stage: BETA
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '3'
+        run.googleapis.com/startup-cpu-boost: 'true'
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      containers:
+      - image: us-central1-docker.pkg.dev/prislab-v5-ai/cloud-run-source-deploy/prislab-farmacia:latest
+        ports:
+        - containerPort: 8080
+          name: http1
+        resources:
+          limits:
+            cpu: '1'
+            memory: 1Gi
+        env:
+        - name: DEBUG
+          value: 'True'
+        - name: GOOGLE_CLOUD_PROJECT
+          value: 'prislab-v5-ai'
+        - name: SECRET_KEY
+          value: 'django-insecure-prislab-saas-key-2025-test'
+  traffic:
+  - percent: 100
+    latestRevision: true

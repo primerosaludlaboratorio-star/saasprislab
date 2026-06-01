@@ -1,0 +1,398 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Registrar Compra - Farmacia PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .wizard-card {
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .wizard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+    }
+    
+    .step-indicator {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+    }
+    
+    .step {
+        flex: 1;
+        text-align: center;
+        position: relative;
+        padding: 1rem;
+    }
+    
+    .step::after {
+        content: '';
+        position: absolute;
+        top: 30px;
+        right: 0;
+        width: 100%;
+        height: 3px;
+        background: rgba(255,255,255,0.3);
+        z-index: 1;
+    }
+    
+    .step:last-child::after {
+        display: none;
+    }
+    
+    .step-number {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 0 auto 0.5rem;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .step.active .step-number {
+        background: white;
+        color: #667eea;
+        box-shadow: 0 4px 15px rgba(255,255,255,0.4);
+    }
+    
+    .step.completed .step-number {
+        background: #28a745;
+        color: white;
+    }
+    
+    .step.completed .step-number::before {
+        content: '✓';
+    }
+    
+    .table-productos-temp {
+        background: #f8f9fa;
+        border-radius: 10px;
+    }
+    
+    .producto-item {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.3s;
+    }
+    
+    .producto-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .btn-agregar-producto {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        color: white;
+        font-weight: 600;
+        padding: 0.75rem 2rem;
+        border-radius: 25px;
+        box-shadow: 0 4px 15px rgba(40,167,69,0.3);
+    }
+    
+    .btn-agregar-producto:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(40,167,69,0.4);
+    }
+    
+    .total-compra {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+        margin: 1.5rem 0;
+    }
+    
+    .total-compra h3 {
+        font-size: 2.5rem;
+        margin: 0;
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5 pt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Wizard Card -->
+            <div class="card wizard-card">
+                <div class="wizard-header">
+                    <h2 class="mb-4">
+                        <i class="fas fa-truck-loading me-2"></i>
+                        Registrar Compra a Proveedor
+                    </h2>
+                    
+                    <!-- Step Indicator -->
+                    <div class="step-indicator">
+                        <div class="step active">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Datos de Compra</div>
+                        </div>
+                        <div class="step" id="step-2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Agregar Productos</div>
+                        </div>
+                        <div class="step" id="step-3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Confirmar</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form method="POST" id="form-compra">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="guardar_completo">
+                        
+                        <!-- Sección 1: Datos de la Compra -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-building me-1"></i> {{ form_compra.proveedor.label }}
+                                </label>
+                                {{ form_compra.proveedor }}
+                                <small class="form-text text-muted">{{ form_compra.proveedor.help_text }}</small>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-file-invoice me-1"></i> {{ form_compra.documento_compra.label }}
+                                </label>
+                                {{ form_compra.documento_compra }}
+                                <small class="form-text text-muted">{{ form_compra.documento_compra.help_text }}</small>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">
+                                    <i class="far fa-calendar me-1"></i> {{ form_compra.fecha_compra.label }}
+                                </label>
+                                {{ form_compra.fecha_compra }}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-sticky-note me-1"></i> {{ form_compra.observaciones.label }}
+                                </label>
+                                {{ form_compra.observaciones }}
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <!-- Sección 2: Agregar Productos -->
+                        <h4 class="mb-3">
+                            <i class="fas fa-plus-circle me-2 text-success"></i>
+                            Agregar Productos a la Compra
+                        </h4>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Producto</label>
+                                {{ form_detalle.producto }}
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <label class="form-label">Cantidad</label>
+                                {{ form_detalle.cantidad }}
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <label class="form-label">Costo Unitario</label>
+                                {{ form_detalle.costo_unitario }}
+                                <small class="form-text text-muted">Sin IVA</small>
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <label class="form-label">Número de Lote</label>
+                                {{ form_detalle.numero_lote }}
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <label class="form-label">Caducidad</label>
+                                {{ form_detalle.fecha_caducidad }}
+                            </div>
+                            
+                            <div class="col-md-1 d-flex align-items-end">
+                                <button type="button" class="btn btn-agregar-producto w-100" onclick="agregarProducto()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Lista de Productos Temporales -->
+                        <div class="table-productos-temp p-3 mb-4" id="lista-productos">
+                            <h5 class="mb-3">
+                                <i class="fas fa-list me-2"></i>
+                                Productos en esta Compra
+                                <span class="badge bg-primary" id="count-productos">{{ items_temp|length }}</span>
+                            </h5>
+                            
+                            {% if items_temp %}
+                                {% for item in items_temp %}
+                                <div class="producto-item">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-3">
+                                            <strong>{{ item.producto_nombre }}</strong>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <small class="text-muted">Cantidad:</small><br>
+                                            <strong>{{ item.cantidad }}</strong>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <small class="text-muted">Costo Unit.:</small><br>
+                                            <strong>${{ item.costo_unitario }}</strong>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <small class="text-muted">Lote:</small><br>
+                                            <span class="badge bg-secondary">{{ item.numero_lote }}</span>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <small class="text-muted">Subtotal:</small><br>
+                                            <strong class="text-success">${{ item.subtotal }}</strong>
+                                        </div>
+                                        <div class="col-md-1 text-end">
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="eliminarProducto({{ forloop.counter0 }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                
+                                <!-- Total -->
+                                <div class="total-compra">
+                                    <small>TOTAL DE LA COMPRA</small>
+                                    <h3 id="total-display">${{ total_temp|floatformat:2 }}</h3>
+                                </div>
+                            {% else %}
+                                <div class="text-center text-muted py-5">
+                                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                                    <p>No hay productos agregados. Usa el formulario de arriba para agregar.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Botones de Acción -->
+                        <div class="row">
+                            <div class="col-12 text-end">
+                                <a href="{% url 'farmacia:kardex_list' %}" class="btn btn-outline-secondary btn-lg me-2">
+                                    <i class="fas fa-times me-2"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary btn-lg" id="btn-guardar" {% if not items_temp %}disabled{% endif %}>
+                                    <i class="fas fa-save me-2"></i> Guardar Compra Completa
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function agregarProducto() {
+    const productoId = document.querySelector('[name="producto"]').value;
+    const cantidad = document.querySelector('[name="cantidad"]').value;
+    const costoUnitario = document.querySelector('[name="costo_unitario"]').value;
+    const numeroLote = document.querySelector('[name="numero_lote"]').value;
+    const fechaCaducidad = document.querySelector('[name="fecha_caducidad"]').value;
+    
+    // Validaciones
+    if (!productoId || !cantidad || !costoUnitario || !numeroLote || !fechaCaducidad) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campos incompletos',
+            text: 'Todos los campos son obligatorios'
+        });
+        return;
+    }
+    
+    // Enviar a API
+    fetch('{% url "farmacia:api_agregar_producto_compra" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            producto_id: productoId,
+            cantidad: cantidad,
+            costo_unitario: costoUnitario,
+            numero_lote: numeroLote,
+            fecha_caducidad: fechaCaducidad
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            Swal.fire({
+                icon: 'success',
+                title: '¡Producto agregado!',
+                text: data.mensaje,
+                timer: 1500,
+                showConfirmButton: false
+            });
+            
+            // Recargar página para mostrar el producto
+            location.reload();
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.mensaje
+            });
+        }
+    });
+}
+
+function eliminarProducto(index) {
+    Swal.fire({
+        title: '¿Eliminar producto?',
+        text: 'Se quitará de la lista temporal',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/farmacia/erp/api/eliminar-producto-compra/${index}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    location.reload();
+                }
+            });
+        }
+    });
+}
+</script>
+{% endblock %}

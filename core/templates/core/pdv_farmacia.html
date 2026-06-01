@@ -1,0 +1,458 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}PRISLAB - Punto de Venta{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Estilos High Density & Glassmorphism */
+    :root {
+        --prislab-red: #D9230F;
+        --bg-glass: rgba(255, 255, 255, 0.92);
+        --bg-glass-hover: rgba(255, 255, 255, 0.98);
+        --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        --border-glass: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    /* Layout Optimizado */
+    .pdv-container {
+        padding-top: 1rem;
+        height: calc(100vh - 70px);
+        overflow: hidden;
+    }
+
+    /* Cards Glassmorphism */
+    .card-glass {
+        background: var(--bg-glass);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: var(--border-glass);
+        border-radius: 12px;
+        box-shadow: var(--shadow-glass);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Search Bar Gigante */
+    .search-input-lg {
+        font-size: 1.5rem;
+        padding: 1rem;
+        border-radius: 12px;
+        border: 2px solid #e0e0e0;
+        transition: all 0.3s;
+    }
+    .search-input-lg:focus {
+        border-color: var(--prislab-red);
+        box-shadow: 0 0 0 0.25rem rgba(217, 35, 15, 0.15);
+    }
+
+    /* Tabla de Productos (High Density) */
+    .table-pdv thead th {
+        background-color: #212529;
+        color: white;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .table-pdv tbody tr {
+        transition: background-color 0.1s;
+        cursor: pointer;
+    }
+    .table-pdv tbody tr:hover {
+        background-color: rgba(217, 35, 15, 0.05);
+    }
+    .table-pdv td {
+        vertical-align: middle;
+        padding: 0.5rem;
+    }
+    .col-qty input {
+        width: 60px;
+        text-align: center;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 2px;
+    }
+
+    /* Panel Totales Neón */
+    .total-panel {
+        background: #212529;
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: right;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .display-total {
+        font-size: 3.5rem;
+        font-weight: 800;
+        color: #D9230F;
+        text-shadow: 0 0 15px rgba(217, 35, 15, 0.4);
+        line-height: 1;
+        margin: 0.5rem 0;
+        font-family: 'Inter', monospace;
+    }
+
+    /* Botones de Acción */
+    .btn-action {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        transition: all 0.2s;
+        border-radius: 10px;
+    }
+    .btn-action i {
+        font-size: 1.5rem;
+        margin-bottom: 5px;
+    }
+    .btn-action:hover {
+        transform: translateY(-2px);
+    }
+
+    /* Teclado Virtual (Oculto por defecto) */
+    #virtual-keyboard {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(33, 37, 41, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 1rem;
+        z-index: 1050;
+        display: none; /* Toggle via JS */
+        animation: slideUp 0.3s ease-out;
+    }
+    @keyframes slideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
+    .key-btn {
+        height: 60px;
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+
+    /* Flex: sin min-height:0 el panel de resultados puede quedar en 0px de alto (lista invisible) */
+    .pdv-container .col-left {
+        min-height: 0;
+    }
+    .pdv-container .col-left > .card-glass.flex-grow-1 {
+        flex: 1 1 0;
+        min-height: 0;
+        height: auto !important;
+    }
+    #search-results-container {
+        flex: 1 1 auto;
+        min-height: 8rem;
+    }
+
+    /* Responsividad */
+    @media (max-width: 992px) {
+        .pdv-container { height: auto; overflow: visible; }
+        .col-left { height: auto; margin-bottom: 1rem; }
+        .col-right { height: 600px; }
+    }
+    /* Mobile: touch targets 44px, font 16px to prevent iOS zoom */
+    @media (max-width: 768px) {
+        .search-input-lg { min-height: 44px; font-size: 16px !important; }
+        .col-qty input { min-height: 44px; font-size: 16px !important; }
+        .btn-action { min-height: 44px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid pdv-container mt-5">
+    <div class="row h-100 g-3">
+        <!-- COLUMNA IZQUIERDA: Búsqueda y Resultados -->
+        <div class="col-lg-5 col-xl-4 d-flex flex-column h-100 col-left">
+            <!-- Header PDV -->
+            <div class="card-glass p-3 mb-3 flex-shrink-0">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h4 class="m-0 fw-bold text-primary"><i class="bi bi-capsule"></i> Farmacia</h4>
+                    <span class="badge bg-success" id="status-conn"><i class="bi bi-wifi"></i> Online</span>
+                </div>
+                
+                <!-- Datos de Venta (Paciente / Médico) - NUEVO -->
+                <div class="input-group mb-2">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-person-badge"></i></span>
+                    <input type="text" id="input-paciente" class="form-control border-start-0" placeholder="Público General (F3)" title="Asignar Paciente">
+                    <button class="btn btn-outline-secondary" type="button" title="Asignar Médico/Receta" onclick="abrirModalReceta()">
+                        <i class="bi bi-prescription2"></i> Rx
+                    </button>
+                </div>
+
+                <!-- Barra de Búsqueda Principal (resultados = HTML del servidor, no JSON) -->
+                <div class="position-relative">
+                    <input type="text" id="input-buscador" name="q" class="form-control search-input-lg" 
+                           placeholder="Escriba el nombre del medicamento..." autocomplete="off" autofocus
+                           inputmode="search">
+                    <span id="spinner-busqueda" class="position-absolute end-0 top-0 mt-2 me-2 d-none">
+                        <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                    </span>
+                    <button class="btn btn-link position-absolute end-0 top-0 mt-3 me-2 text-muted d-none" 
+                            onclick="toggleVirtualKeyboard()" title="Teclado Virtual" id="btn-teclado-virtual">
+                        <i class="bi bi-keyboard"></i>
+                    </button>
+                </div>
+                <div class="d-flex justify-content-between mt-2 small text-muted">
+                    <span><i class="bi bi-upc-scan"></i> Escáner listo</span>
+                    <span><strong>F2:</strong> Buscar | <strong>F4:</strong> Cobrar</span>
+                </div>
+            </div>
+
+            <!-- Resultados de Búsqueda -->
+            <div class="card-glass flex-grow-1 overflow-hidden d-flex flex-column">
+                <div class="card-header bg-transparent border-bottom px-3 py-2">
+                    <h6 class="m-0 fw-bold"><i class="bi bi-search"></i> Resultados</h6>
+                </div>
+                <div class="card-body p-0 overflow-auto flex-grow-1" id="search-results-container">
+                    <!-- Aquí se inyectan los resultados vía JS -->
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-upc-scan display-1 opacity-25"></i>
+                        <p class="mt-3">Escanee un código o escriba para buscar.</p>
+                    </div>
+                </div>
+            </div>
+            {# Búsqueda: listeners + fetch en static/js/pdv_farmacia.js (un solo contrato; PDV_BUSCAR_FRAGMENT_URL en extra_js) #}
+        </div>
+
+        <!-- COLUMNA DERECHA: Carrito y Totales -->
+        <div class="col-lg-7 col-xl-8 d-flex flex-column h-100 col-right">
+            
+            <!-- Tabs de Tickets Activos - NUEVO -->
+            <ul class="nav nav-tabs border-bottom-0 mb-0 px-2" id="ticketTabs" style="z-index: 10;">
+                <li class="nav-item">
+                    <a class="nav-link active fw-bold bg-white" href="#" onclick="switchTicket(1)">
+                        <i class="bi bi-receipt"></i> Ticket 1 <span class="badge bg-primary rounded-pill ms-1" id="contador-items" style="font-size:0.7rem;"></span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-muted" href="#" onclick="nuevoTicket()" title="Nuevo Ticket (En espera)">
+                        <i class="bi bi-plus-lg"></i>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Tabla de Carrito -->
+            <div class="card-glass flex-grow-1 mb-3 overflow-hidden d-flex flex-column" style="border-top-left-radius: 0;">
+                <div class="table-responsive flex-grow-1">
+                    <table class="table table-pdv table-hover mb-0" id="tablaCarrito">
+                        <thead>
+                            <tr>
+                                <th width="5%">#</th>
+                                <th width="40%">Producto</th>
+                                <th width="15%">Lote</th>
+                                <th width="10%" class="text-center">Cant.</th>
+                                <th width="15%" class="text-end">Precio</th>
+                                <th width="15%" class="text-end">Total</th>
+                                <th width="5%"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-carrito-body">
+                            <!-- Items del carrito -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Mensaje Carrito Vacío -->
+                <div id="carrito-vacio" class="text-center py-5 text-muted" style="display: block;">
+                    <i class="bi bi-cart-x display-4 opacity-25"></i>
+                    <p class="mt-2">Carrito vacío</p>
+                </div>
+            </div>
+
+            <!-- Panel Inferior: Totales y Botones -->
+            <div class="row g-3 flex-shrink-0">
+                <!-- Botones de Acción Rápida -->
+                <div class="col-md-7">
+                    <div class="row g-2 h-100 flex-wrap">
+                        <div class="col-6 col-sm-3">
+                            <button class="btn btn-outline-secondary w-100 btn-action" onclick="toggleShortcutsModal()">
+                                <i class="bi bi-keyboard"></i> <small>Atajos</small>
+                            </button>
+                        </div>
+                        <div class="col-6 col-sm-3">
+                            <button class="btn btn-outline-warning w-100 btn-action" onclick="pedirGasto()">
+                                <i class="bi bi-dash-circle"></i> <small>Retiro</small>
+                            </button>
+                        </div>
+                        <div class="col-6 col-sm-3">
+                            <button class="btn btn-outline-info w-100 btn-action" onclick="cargarCorte()">
+                                <i class="bi bi-calculator"></i> <small>Corte</small>
+                            </button>
+                        </div>
+                        <div class="col-6 col-sm-3">
+                            <button class="btn btn-outline-danger w-100 btn-action" onclick="limpiarCarrito()">
+                                <i class="bi bi-trash"></i> <small>Limpiar</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Totales y Cobrar -->
+                <div class="col-md-5">
+                    <div class="total-panel">
+                        <div class="d-flex justify-content-between text-white-50 small">
+                            <span>Subtotal:</span> <span id="res-subtotal">$0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-white-50 small">
+                            <span>IVA:</span> <span id="res-iva">$0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-white-50 small">
+                            <span>Redondeo:</span> <span id="res-redondeo">$0.00</span>
+                        </div>
+                        <div class="display-total" id="res-total">$0.00</div>
+                        <button class="btn btn-primary w-100 btn-lg fw-bold mt-2 shadow-lg" onclick="abrirModalPago()">
+                            <i class="bi bi-credit-card-2-front"></i> COBRAR (F4)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Teclado Virtual -->
+<div id="virtual-keyboard">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between mb-2">
+            <h6 class="text-white">Teclado Numérico</h6>
+            <button class="btn btn-sm btn-dark" onclick="toggleVirtualKeyboard()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="row g-2">
+            <div class="col-3"><button class="btn btn-secondary w-100 key-btn" onclick="typeKey('7')">7</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100 key-btn" onclick="typeKey('8')">8</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100 key-btn" onclick="typeKey('9')">9</button></div>
+            <div class="col-3"><button class="btn btn-warning w-100 key-btn" onclick="typeKey('BACK')">⌫</button></div>
+            
+            <div class="col-3"><button class="btn btn-secondary w-100 key-btn" onclick="typeKey('4')">4</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100 key-btn" onclick="typeKey('5')">5</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100 key-btn" onclick="typeKey('6')">6</button></div>
+            <div class="col-3"><button class="btn btn-primary w-100 key-btn" onclick="typeKey('ENTER')">⏎</button></div>
+            
+            <div class="col-3"><button class="btn btn-secondary w-100 key-btn" onclick="typeKey('1')">1</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100 key-btn" onclick="typeKey('2')">2</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100 key-btn" onclick="typeKey('3')">3</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100 key-btn" onclick="typeKey('0')">0</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Atajos -->
+<div class="modal fade" id="modalShortcuts" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="bi bi-keyboard"></i> Atajos de Teclado</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="list-group">
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>Buscar Producto</span>
+                        <span class="badge bg-secondary">F2</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>Cobrar / Pagar</span>
+                        <span class="badge bg-primary">F4</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>Corte de Caja</span>
+                        <span class="badge bg-warning text-dark">F10</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>Limpiar Carrito</span>
+                        <span class="badge bg-danger">Supr</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Incluir Modales de Pago, Corte, etc. -->
+{% include 'core/partials/modales_pdv.html' %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+window.PDV_BUSCAR_FRAGMENT_URL = "";
+window.PDV_BUSCAR_URL = "{% url 'api_buscar_producto_pdv' %}";
+</script>
+<!-- Dependencias para Impresión y Lógica -->
+<script src="https://cdn.jsdelivr.net/npm/rsvp@4.8.2/dist/rsvp.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qz-tray@2.1.0/qz-tray.js"></script>
+<script src="{% static 'js/pdv_farmacia.js' %}?v=7.3-single-pipeline"></script>
+
+<script>
+    // === LÓGICA DE INTERFAZ & ATAJOS ===
+    
+    // Focus automático en buscador
+    window.onload = function() {
+        const el = document.getElementById('input-buscador');
+        if (el) el.focus();
+    };
+
+    // Toggle Teclado Virtual
+    function toggleVirtualKeyboard() {
+        const kb = document.getElementById('virtual-keyboard');
+        kb.style.display = (kb.style.display === 'none' || kb.style.display === '') ? 'block' : 'none';
+    }
+
+    function typeKey(key) {
+        const activeElement = document.activeElement;
+        if (activeElement && (activeElement.tagName === 'INPUT')) {
+            if (key === 'BACK') {
+                activeElement.value = activeElement.value.slice(0, -1);
+            } else if (key === 'ENTER') {
+                // Simular Enter
+                const event = new KeyboardEvent('keyup', {'key': 'Enter'});
+                activeElement.dispatchEvent(event);
+                if (activeElement.id === 'input-buscador' && typeof window._pdvBuscarHTML === 'function') {
+                    window._pdvBuscarHTML(activeElement.value);
+                }
+            } else {
+                activeElement.value += key;
+            }
+            // Trigger input event for listeners
+            activeElement.dispatchEvent(new Event('input'));
+        }
+    }
+
+    function toggleShortcutsModal() {
+        const modal = new bootstrap.Modal(document.getElementById('modalShortcuts'));
+        modal.show();
+    }
+
+    // Global Keydown Listener
+    document.addEventListener('keydown', function(e) {
+        const buscador = document.getElementById('input-buscador');
+        // F2: Buscar
+        if (e.key === 'F2') {
+            e.preventDefault();
+            if (buscador) { buscador.focus(); buscador.select(); }
+        }
+        // F4: Cobrar
+        if (e.key === 'F4') {
+            e.preventDefault();
+            if (typeof carrito !== 'undefined' && carrito && carrito.length > 0) abrirModalPago();
+        }
+        // F10: Corte
+        if (e.key === 'F10') {
+            e.preventDefault();
+            cargarCorte();
+        }
+        // ESC: Cerrar modales o limpiar foco
+        if (e.key === 'Escape') {
+            if (buscador) buscador.focus();
+        }
+    });
+
+    {# Búsqueda: input/paste y debounce en static/js/pdv_farmacia.js #}
+</script>
+{% endblock %}

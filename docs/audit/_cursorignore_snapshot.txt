@@ -1,0 +1,89 @@
+﻿# ============================================================
+# CURSORIGNORE - Optimizacion de memoria PRISLAB SaaS
+# ============================================================
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# Migraciones antiguas (no necesitan indexarse)
+*/migrations/0001_initial.py
+*/migrations/0002_*.py
+*/migrations/0003_*.py
+*/migrations/0004_*.py
+*/migrations/0005_*.py
+*/migrations/0006_*.py
+*/migrations/0007_*.py
+*/migrations/0008_*.py
+*/migrations/0009_*.py
+*/migrations/001*.py
+*/migrations/002*.py
+
+# Archivos estaticos
+static/
+staticfiles/
+media/
+*.min.js
+*.min.css
+*.map
+
+# Bases de datos y backups
+*.sqlite3
+*.db
+*.sql
+*.dump
+*.bak
+backups/
+
+# Logs
+*.log
+logs/
+
+# Binarios e imagenes
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.pdf
+*.zip
+*.tar.gz
+*.whl
+assets/
+
+# Variables de entorno
+.env
+.env.*
+
+# Cache de herramientas
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+node_modules/
+
+# Documentacion generada — EXCEPCION TOTAL: docs/audit/ (bitacora PRISLAB v7.5)
+# Cursor, Cascade y otras herramientas deben poder LEER y que el asistente EDITE todo lo de esta carpeta.
+docs/**
+!docs/audit/
+!docs/audit/**
+# Manuales operativos v7.5 (Punto 8) — misma libertad de indexación que la bitácora
+!docs/manual/
+!docs/manual/**
+
+
+*.md
+!docs/audit/*.md
+!docs/audit/**/*.md
+!docs/manual/*.md
+!docs/manual/**/*.md
+
+# Explicito por extension (refuerzo)
+!docs/audit/**/*.py
+!docs/audit/**/*.txt
+!docs/audit/**/*.json
+!docs/manual/**/*.txt

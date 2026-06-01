@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Triaje Digital Pre-Cita{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-clipboard-check"></i> Triaje Digital Pre-Cita</h2>
+            <p class="text-muted">
+                Formularios enviados automáticamente a pacientes antes de su consulta
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary" id="btnEnviarTriaje" data-bs-toggle="modal" data-bs-target="#modalEnviarTriaje">
+                <i class="fas fa-paper-plane"></i> Enviar Triaje Manual
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <h3 class="text-primary mb-0">{{ stats.enviados }}</h3>
+                    <small class="text-muted">Enviados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <h3 class="text-success mb-0">{{ stats.completados }}</h3>
+                    <small class="text-muted">Completados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <h3 class="text-warning mb-0">{{ stats.pendientes }}</h3>
+                    <small class="text-muted">Pendientes</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <h3 class="text-info mb-0">{{ stats.tasa_respuesta }}%</h3>
+                    <small class="text-muted">Tasa de Respuesta</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Triajes pendientes -->
+    {% if triajes_pendientes %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-hourglass-half"></i> Pendientes de Respuesta</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Paciente</th>
+                            <th>Cita</th>
+                            <th>Enviado</th>
+                            <th>Canal</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in triajes_pendientes %}
+                        <tr>
+                            <td>
+                                <strong>{{ t.paciente.nombre_completo }}</strong>
+                                {% if t.paciente.telefono %}
+                                    <br><small class="text-muted">{{ t.paciente.telefono }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ t.cita.fecha_cita|date:"d/m/Y" }} {{ t.cita.hora_cita|time:"H:i" }}</td>
+                            <td>{{ t.fecha_envio|date:"d/m/Y H:i" }}</td>
+                            <td><span class="badge bg-secondary">{{ t.get_canal_display }}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-warning" title="Reenviar">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Triajes completados -->
+    {% if triajes_completados %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-check-circle"></i> Triajes Completados (Recientes)</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Paciente</th>
+                            <th>Motivo</th>
+                            <th>Síntomas Reportados</th>
+                            <th>Urgencia</th>
+                            <th>Completado</th>
+                            <th>Ver</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in triajes_completados %}
+                        <tr>
+                            <td><strong>{{ t.paciente.nombre_completo }}</strong></td>
+                            <td>{{ t.motivo_consulta|truncatewords:8 }}</td>
+                            <td>{{ t.sintomas_principales|truncatewords:10 }}</td>
+                            <td>
+                                {% if t.nivel_urgencia == 'ALTA' %}
+                                    <span class="badge bg-danger">Alta</span>
+                                {% elif t.nivel_urgencia == 'MEDIA' %}
+                                    <span class="badge bg-warning text-dark">Media</span>
+                                {% else %}
+                                    <span class="badge bg-success">Normal</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ t.fecha_respuesta|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" title="Ver detalle">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% elif not triajes_pendientes %}
+    <div class="text-center py-5">
+        <i class="fas fa-clipboard-list fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">Sin triajes registrados</h4>
+        <p class="text-muted">
+            Los triajes se envían automáticamente cuando un paciente agenda una cita
+            (si está activado en <a href="{% url 'consultorio:configuracion_medico' %}">Configuración</a>).
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Enviar Triaje Manual -->
+<div class="modal fade" id="modalEnviarTriaje" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-paper-plane"></i> Enviar Triaje Manual</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Buscar Paciente</label>
+                    <input type="text" class="form-control" id="triaje-buscar-paciente" placeholder="Nombre del paciente...">
+                    <div id="triaje-resultados-paciente" class="list-group mt-1" style="max-height:200px;overflow:auto;"></div>
+                    <input type="hidden" id="triaje-paciente-id">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Medio de envío</label>
+                    <select class="form-select" id="triaje-medio">
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="email">Email</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="alert('Funcionalidad en desarrollo')">
+                    <i class="fas fa-paper-plane"></i> Enviar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

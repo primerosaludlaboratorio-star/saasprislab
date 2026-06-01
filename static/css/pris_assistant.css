@@ -1,0 +1,402 @@
+/**
+ * PRIS ASSISTANT - Asistente Virtual Interactivo
+ * La Doctora Gimnasta que cobra vida en PRISLAB
+ * 
+ * Concepto: Avatar 3D animado con CSS que realiza acrobacias
+ * y asiste al usuario de forma inteligente y no intrusiva.
+ */
+
+/* ========================================
+   CONTENEDOR PRINCIPAL
+   ======================================== */
+#pris-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    pointer-events: none; /* No bloquea clics en el contenido */
+}
+
+#pris-container.hidden {
+    opacity: 0;
+    transform: scale(0.3) translateY(100px);
+    pointer-events: none;
+}
+
+#pris-container.visible {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+}
+
+/* ========================================
+   AVATAR DE PRIS
+   ======================================== */
+#pris-avatar {
+    width: 120px;
+    height: 120px;
+    cursor: pointer;
+    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.15));
+    transition: all 0.3s ease;
+    animation: respiracion-idle 3s ease-in-out infinite;
+    pointer-events: auto;
+}
+
+#pris-avatar:hover {
+    transform: translateY(-10px) scale(1.05);
+    filter: drop-shadow(0 12px 30px rgba(13, 110, 253, 0.3));
+}
+
+/* Animación de "Respiración" en modo Idle */
+@keyframes respiracion-idle {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+/* ========================================
+   GLOBO DE DIÁLOGO
+   ======================================== */
+#pris-bubble {
+    position: relative;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 2px solid #e0e0e0;
+    border-radius: 20px;
+    padding: 15px 20px;
+    max-width: 280px;
+    min-width: 200px;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #2c3e50;
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    pointer-events: auto;
+}
+
+#pris-bubble.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* Cola del globo (apunta hacia Pris) */
+#pris-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    right: 40px;
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 15px solid #ffffff;
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.1));
+}
+
+/* Texto del globo */
+#pris-bubble-text {
+    margin: 0;
+    font-weight: 500;
+}
+
+/* Botón cerrar (X) */
+#pris-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    color: #999;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    pointer-events: auto;
+}
+
+#pris-close:hover {
+    background: #f0f0f0;
+    color: #333;
+    transform: rotate(90deg);
+}
+
+/* ========================================
+   BOTÓN DE RECALL (Llamar a Pris)
+   ======================================== */
+#pris-recall-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border: 3px solid #ffffff;
+    box-shadow: 0 8px 25px rgba(13, 110, 253, 0.4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    color: white;
+    z-index: 9998;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    opacity: 0;
+    transform: scale(0);
+    pointer-events: none;
+}
+
+#pris-recall-btn.visible {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+#pris-recall-btn:hover {
+    transform: scale(1.15) rotate(10deg);
+    box-shadow: 0 12px 35px rgba(13, 110, 253, 0.6);
+}
+
+#pris-recall-btn:active {
+    transform: scale(0.95);
+}
+
+/* Animación de pulso para llamar la atención */
+#pris-recall-btn::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(13, 110, 253, 0.3);
+    animation: pulso-recall 2s ease-out infinite;
+}
+
+@keyframes pulso-recall {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.8);
+        opacity: 0;
+    }
+}
+
+/* ========================================
+   ANIMACIONES DE GIMNASIA
+   ======================================== */
+
+/* ACROBACIA 1: Salto Mortal */
+@keyframes acrobacia-salto-mortal {
+    0% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+        bottom: 20px;
+        right: 20px;
+    }
+    25% {
+        transform: translate(-150px, -300px) rotate(90deg) scale(0.9);
+        bottom: auto;
+        right: auto;
+    }
+    50% {
+        transform: translate(-250px, -350px) rotate(180deg) scale(0.8);
+    }
+    75% {
+        transform: translate(-150px, -300px) rotate(270deg) scale(0.9);
+    }
+    100% {
+        transform: translate(0, 0) rotate(360deg) scale(1);
+        bottom: 20px;
+        right: 20px;
+    }
+}
+
+/* ACROBACIA 2: Vuelta Carro */
+@keyframes acrobacia-vuelta-carro {
+    0% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+    }
+    20% {
+        transform: translate(-100px, -50px) rotate(144deg) scale(0.95);
+    }
+    40% {
+        transform: translate(-200px, -80px) rotate(288deg) scale(0.9);
+    }
+    60% {
+        transform: translate(-300px, -50px) rotate(432deg) scale(0.95);
+    }
+    80% {
+        transform: translate(-400px, 0) rotate(576deg) scale(1);
+    }
+    100% {
+        transform: translate(0, 0) rotate(720deg) scale(1);
+    }
+}
+
+/* ACROBACIA 3: Giro Vertical (Salto con Twist) */
+@keyframes acrobacia-giro-vertical {
+    0% {
+        transform: translate(0, 0) rotate(0deg) rotateY(0deg) scale(1);
+    }
+    30% {
+        transform: translate(0, -200px) rotate(180deg) rotateY(180deg) scale(0.9);
+    }
+    60% {
+        transform: translate(0, -250px) rotate(360deg) rotateY(360deg) scale(0.85);
+    }
+    100% {
+        transform: translate(0, 0) rotate(540deg) rotateY(540deg) scale(1);
+    }
+}
+
+/* ACROBACIA 4: Rondada (Sideways Flip) */
+@keyframes acrobacia-rondada {
+    0% {
+        transform: translate(0, 0) rotate(0deg) scaleX(1);
+    }
+    25% {
+        transform: translate(-80px, -100px) rotate(90deg) scaleX(-1);
+    }
+    50% {
+        transform: translate(-160px, -120px) rotate(180deg) scaleX(1);
+    }
+    75% {
+        transform: translate(-80px, -100px) rotate(270deg) scaleX(-1);
+    }
+    100% {
+        transform: translate(0, 0) rotate(360deg) scaleX(1);
+    }
+}
+
+/* Clases de activación para aplicar las animaciones */
+.doing-salto-mortal {
+    animation: acrobacia-salto-mortal 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards !important;
+}
+
+.doing-vuelta-carro {
+    animation: acrobacia-vuelta-carro 2.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards !important;
+}
+
+.doing-giro-vertical {
+    animation: acrobacia-giro-vertical 2s ease-in-out forwards !important;
+}
+
+.doing-rondada {
+    animation: acrobacia-rondada 1.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards !important;
+}
+
+/* ========================================
+   RESPONSIVIDAD
+   ======================================== */
+@media (max-width: 768px) {
+    #pris-container {
+        bottom: 10px;
+        right: 10px;
+    }
+    
+    #pris-avatar {
+        width: 90px;
+        height: 90px;
+    }
+    
+    #pris-bubble {
+        max-width: 220px;
+        font-size: 13px;
+        padding: 12px 16px;
+    }
+    
+    #pris-recall-btn {
+        width: 48px;
+        height: 48px;
+        font-size: 22px;
+        bottom: 10px;
+        right: 10px;
+    }
+}
+
+/* ========================================
+   EFECTOS ESPECIALES
+   ======================================== */
+
+/* Partículas brillantes al hacer acrobacia */
+@keyframes particulas-brillo {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(0.5);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--tx, 0), var(--ty, 0)) scale(1.5);
+    }
+}
+
+/* Efecto de "aterrizaje" suave */
+.aterrizaje-suave {
+    animation: aterrizaje-bounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes aterrizaje-bounce {
+    0% {
+        transform: translateY(-30px) scale(0.9);
+    }
+    50% {
+        transform: translateY(5px) scale(1.05);
+    }
+    100% {
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Efecto de brillo cuando está hablando */
+.pris-hablando #pris-avatar {
+    animation: brillo-hablar 1.5s ease-in-out infinite;
+}
+
+@keyframes brillo-hablar {
+    0%, 100% {
+        filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.15));
+    }
+    50% {
+        filter: drop-shadow(0 12px 30px rgba(13, 110, 253, 0.4));
+    }
+}
+
+/* ========================================
+   MODO OSCURO (OPCIONAL)
+   ======================================== */
+@media (prefers-color-scheme: dark) {
+    #pris-bubble {
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        border-color: #4a5f7f;
+        color: #ecf0f1;
+    }
+    
+    #pris-bubble::after {
+        border-top-color: #2c3e50;
+    }
+    
+    #pris-close {
+        color: #bdc3c7;
+    }
+    
+    #pris-close:hover {
+        background: #34495e;
+        color: #ecf0f1;
+    }
+}

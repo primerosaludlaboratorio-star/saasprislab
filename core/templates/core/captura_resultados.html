@@ -1,0 +1,793 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_js %}
+<script src="{% static 'js/speech_recognition.js' %}"></script>
+{% endblock %}
+
+{% block title %}Captura de Resultados - {{ orden.folio_orden }}{% endblock %}
+
+{% block extra_css %}
+<style>
+        body {
+            background-color: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .header-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .folio-badge {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .work-sheet {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .estudio-header {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #e6f2ff;
+            border-left: 4px solid #003366;
+        }
+        .estudio-codigo {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .parametros-table {
+            width: 100%;
+            margin-top: 15px;
+        }
+        .parametros-table thead {
+            background-color: #003366;
+            color: white;
+        }
+        .parametros-table th {
+            padding: 12px;
+            font-weight: bold;
+            font-size: 11pt;
+            text-align: center;
+        }
+        .parametros-table td {
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+        .parametros-table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .parametros-table tbody tr:hover {
+            background-color: #e9ecef;
+        }
+        .input-resultado {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #dee2e6;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .input-resultado:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        /* Iluminación Neón para Valores Críticos (Rojo Prislab) */
+        .input-resultado.fuera-rango {
+            background-color: #fff5f5;
+            color: #D9230F;
+            font-weight: 900;
+            border: 2px solid #D9230F;
+            box-shadow: 
+                0 0 10px rgba(217, 35, 15, 0.5),
+                0 0 20px rgba(217, 35, 15, 0.3),
+                inset 0 0 10px rgba(217, 35, 15, 0.1);
+            animation: neonPulse 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes neonPulse {
+            from {
+                box-shadow: 
+                    0 0 10px rgba(217, 35, 15, 0.5),
+                    0 0 20px rgba(217, 35, 15, 0.3),
+                    inset 0 0 10px rgba(217, 35, 15, 0.1);
+            }
+            to {
+                box-shadow: 
+                    0 0 20px rgba(217, 35, 15, 0.8),
+                    0 0 30px rgba(217, 35, 15, 0.5),
+                    0 0 40px rgba(217, 35, 15, 0.3),
+                    inset 0 0 15px rgba(217, 35, 15, 0.2);
+            }
+        }
+        .input-resultado.dentro-rango {
+            background-color: #f0fff4;
+            color: #28a745;
+            border-color: #28a745;
+            box-shadow: 0 0 5px rgba(40, 167, 69, 0.2);
+        }
+        
+        /* Efecto Neón en la fila completa cuando está fuera de rango */
+        .parametros-table tbody tr:has(.input-resultado.fuera-rango) {
+            background-color: #fff5f5;
+            border-left: 4px solid #D9230F;
+            animation: rowNeonPulse 2s ease-in-out infinite alternate;
+        }
+        @keyframes rowNeonPulse {
+            from {
+                background-color: #fff5f5;
+            }
+            to {
+                background-color: #ffe5e5;
+            }
+        }
+        .input-resultado:disabled,
+        .resultado-textarea:disabled,
+        textarea:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        /* Mobile: touch targets 44px min, font 16px to prevent iOS zoom */
+        @media (max-width: 768px) {
+            .input-resultado, .resultado-textarea {
+                min-height: 44px;
+                font-size: 16px !important;
+            }
+        }
+        .bloqueado-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+        }
+        .ref-min-max {
+            font-size: 0.9em;
+            color: #666;
+            text-align: center;
+        }
+        .unidades-col {
+            font-size: 0.9em;
+            color: #666;
+            font-style: italic;
+            text-align: center;
+        }
+        .descripcion-col {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .resultado-textarea {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            resize: vertical;
+        }
+        .btn-imprimir {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .btn-imprimir:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid py-4">
+        <!-- Encabezado -->
+        <div class="header-section">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3 class="mb-2">
+                        <i class="bi bi-clipboard-data text-primary"></i> Hoja de Trabajo - Captura de Resultados
+                    </h3>
+                    <div class="folio-badge">Folio: {{ orden.folio_orden }}</div>
+                    <div class="mt-2">
+                        <span class="badge bg-info me-2">
+                            <i class="bi bi-person"></i> {{ paciente.nombre_completo }}
+                        </span>
+                        {% if paciente.edad %}
+                        <span class="badge bg-secondary me-2">
+                            <i class="bi bi-calendar"></i> {{ paciente.edad }} años
+                        </span>
+                        {% endif %}
+                        {% if paciente.sexo %}
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-gender-ambiguous"></i> {{ paciente.get_sexo_display|default:paciente.sexo }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                    <div class="col-md-4 text-end">
+                    <a href="{% url 'lista_trabajo_lab' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Volver al Trabajo
+                    </a>
+                    {% if esta_validado %}
+                    <div class="alert alert-success mt-2 mb-0">
+                        <i class="bi bi-check-circle-fill"></i> <strong>Orden Validada</strong>
+                        <br><small>Los resultados están bloqueados para edición.</small>
+                    </div>
+                    {% endif %}
+                    {% if orden.estado == 'RESULTADOS_LISTOS' %}
+                    <!-- Triple Llave de Envío: Verificación de 3 condiciones -->
+                    <div class="card mt-3 mb-2 border-{% if triple_llave_completa %}success{% else %}warning{% endif %}">
+                        <div class="card-body p-3">
+                            <label class="form-label fw-bold small mb-2">
+                                <i class="bi bi-{% if triple_llave_completa %}shield-check{% else %}shield-exclamation{% endif %}"></i> Triple Llave de Envío:
+                            </label>
+                            
+                            <!-- Condición 1: Saldo $0.00 -->
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" {% if saldo_cero %}checked{% endif %} disabled>
+                                <label class="form-check-label {% if not saldo_cero %}text-danger{% endif %}" for="llave1">
+                                    {% if saldo_cero %}
+                                        ✅ Saldo: $0.00 (Orden pagada completamente)
+                                    {% else %}
+                                        ❌ Saldo pendiente: ${{ saldo_pendiente|floatformat:2 }}
+                                    {% endif %}
+                                </label>
+                            </div>
+                            
+                            <!-- Condición 2: Validación Químico -->
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" {% if esta_validado %}checked{% endif %} disabled>
+                                <label class="form-check-label {% if not esta_validado %}text-danger{% endif %}" for="llave2">
+                                    {% if esta_validado %}
+                                        ✅ Orden validada por Químico
+                                    {% else %}
+                                        ❌ Orden no validada
+                                    {% endif %}
+                                </label>
+                            </div>
+                            
+                            <!-- Condición 3: Firma de Privacidad -->
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" {% if firma_privacidad %}checked{% endif %} disabled>
+                                <label class="form-check-label {% if not firma_privacidad %}text-danger{% endif %}" for="llave3">
+                                    {% if firma_privacidad %}
+                                        ✅ Firma de aviso de privacidad registrada
+                                    {% else %}
+                                        ❌ Firma de privacidad faltante
+                                    {% endif %}
+                                </label>
+                            </div>
+                            
+                            {% if not triple_llave_completa %}
+                            <div class="alert alert-warning mt-2 mb-0 p-2">
+                                <small><i class="bi bi-exclamation-triangle"></i> <strong>Bloqueado:</strong> No se puede enviar el PDF hasta cumplir las 3 condiciones.</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Selector de Modo de Impresión -->
+                    <div class="card mt-2 mb-2">
+                        <div class="card-body p-3">
+                            <label class="form-label fw-bold small mb-2">
+                                <i class="bi bi-printer"></i> Modo de Impresión:
+                            </label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="modoImpresion" id="modoBlanca" value="blanca" checked>
+                                <label class="form-check-label" for="modoBlanca">
+                                    📄 Hoja Blanca (Con logo digital)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="modoImpresion" id="modoMembrete" value="membrete">
+                                <label class="form-check-label" for="modoMembrete">
+                                    🏢 Hoja Membretada (Logo físico)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button 
+                        onclick="{% if triple_llave_completa %}imprimirResultados(){% else %}mostrarMensajeTripleLlave(){% endif %}" 
+                        class="btn {% if triple_llave_completa %}btn-imprimir{% else %}btn-secondary{% endif %} w-100"
+                        {% if not triple_llave_completa %}disabled{% endif %}
+                        title="{% if not triple_llave_completa %}Triple Llave incompleta: Bloqueado{% else %}Imprimir PDF de resultados{% endif %}"
+                    >
+                        {% if triple_llave_completa %}
+                            🖨️ IMPRIMIR REPORTE (PDF)
+                        {% else %}
+                            🔒 BLOQUEADO: Triple Llave Incompleta
+                        {% endif %}
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Hoja de Trabajo -->
+        <div class="work-sheet">
+            <form id="formResultados">
+                {% for item in detalles %}
+                <div class="estudio-section mb-4">
+                    <div class="estudio-header">
+                        {{ item.detalle.estudio.nombre }}
+                        <div class="estudio-codigo">{{ item.detalle.estudio.codigo }}</div>
+                        {% if item.detalle.estudio.es_perfil %}
+                        <span class="badge bg-warning text-dark mt-1">PAQUETE</span>
+                        {% endif %}
+                    </div>
+
+                    {% if item.parametros and item.parametros|length > 0 %}
+                    <!-- Tabla de Parámetros Estructurados (Paquetes) -->
+                    <div class="table-responsive">
+                    <table class="parametros-table table-bordered">
+                        <thead>
+                            <tr>
+                                <th style="width: 35%;">PARÁMETRO</th>
+                                <th style="width: 25%;">RESULTADO</th>
+                                <th style="width: 15%;">UNIDADES</th>
+                                <th style="width: 25%;">REFERENCIA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for param in item.parametros %}
+                            <tr>
+                                <td class="descripcion-col"><strong>{{ param.descripcion }}</strong></td>
+                                <td>
+                                    <input 
+                                        type="number" 
+                                        step="0.01"
+                                        class="form-control input-resultado" 
+                                        name="parametro_{{ item.detalle.id }}_{{ forloop.counter0 }}"
+                                        id="param_{{ item.detalle.id }}_{{ forloop.counter0 }}"
+                                        data-descripcion="{{ param.descripcion }}"
+                                        data-ref-min="{% if param.ref_min != None %}{{ param.ref_min|floatformat:2 }}{% endif %}"
+                                        data-ref-max="{% if param.ref_max != None %}{{ param.ref_max|floatformat:2 }}{% endif %}"
+                                        data-unidades="{{ param.unidades }}"
+                                        data-param-id="{{ param.id|default:'' }}"
+                                        placeholder="0.00"
+                                        oninput="validarRango(this)"
+                                        {% if esta_validado %}readonly{% endif %}
+                                    >
+                                </td>
+                                <td class="unidades-col">{{ param.unidades|default:"-" }}</td>
+                                <td class="ref-min-max">
+                                    {% if param.ref_min or param.ref_max %}
+                                        {% if param.ref_min %}{{ param.ref_min|floatformat:2 }}{% else %}-{% endif %}
+                                        –
+                                        {% if param.ref_max %}{{ param.ref_max|floatformat:2 }}{% else %}-{% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    </div>
+                    {% else %}
+                    <!-- Textarea para Estudios Simples -->
+                    <textarea 
+                        name="resultado_{{ item.detalle.id }}" 
+                        id="resultado_{{ item.detalle.id }}"
+                        class="form-control resultado-textarea"
+                        rows="8"
+                        placeholder="Ingrese los resultados aquí..."
+                        {% if esta_validado %}readonly{% endif %}>{{ item.valor_inicial }}</textarea>
+                    {% endif %}
+                    
+                    <!-- Observaciones (opcional) -->
+                    <div class="mt-3">
+                        <label class="small text-muted fw-bold">Observaciones (opcional):</label>
+                        <textarea 
+                            name="observaciones_{{ item.detalle.id }}" 
+                            id="observaciones_{{ item.detalle.id }}"
+                            class="form-control form-control-sm"
+                            rows="2"
+                            placeholder="Observaciones adicionales..."
+                            {% if esta_validado %}readonly{% endif %}>{% if item.detalle.observaciones %}{{ item.detalle.observaciones }}{% endif %}</textarea>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-4">
+                    No hay estudios en esta orden
+                </div>
+                {% endfor %}
+            </form>
+
+            <!-- Botones de Acción -->
+            <div class="mt-4 text-center d-flex flex-wrap gap-2 justify-content-center">
+                {% if esta_validado %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-lock-fill"></i> Esta orden está <strong>VALIDADA</strong> y bloqueada para edición.
+                        {% if es_admin %}
+                        <button type="button" class="btn btn-warning btn-sm ms-2" onclick="desbloquearOrden()">
+                            <i class="bi bi-unlock"></i> Desbloquear (Admin)
+                        </button>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <button type="button" class="btn btn-secondary btn-lg px-4 me-2" onclick="guardarBorrador()">
+                        <i class="bi bi-file-earmark"></i> Guardar (Borrador)
+                    </button>
+                    <button type="button" class="btn btn-success btn-lg px-5" onclick="validarYPublicar()">
+                        <i class="bi bi-check-circle-fill"></i> Validar y Publicar
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ordenId = {{ orden.id }};
+        const csrfToken = '{{ csrf_token }}';
+
+        // Función para validar rangos automáticamente con Iluminación Neón
+        // Utiliza los valores de referencia del catálogo maestro (Valor Bajo/Alto del CSV)
+        function validarRango(input) {
+            const valorStr = input.value.trim();
+            if (!valorStr) {
+                // Si está vacío, remover todas las clases
+                input.classList.remove('fuera-rango', 'dentro-rango');
+                return;
+            }
+            
+            const valor = parseFloat(valorStr.replace(',', '.'));
+            const refMin = parseFloat(input.dataset.refMin) || null;
+            const refMax = parseFloat(input.dataset.refMax) || null;
+            
+            // Remover clases anteriores
+            input.classList.remove('fuera-rango', 'dentro-rango');
+            
+            // Si hay valor y hay rangos definidos
+            if (!isNaN(valor)) {
+                let fueraRango = false;
+                
+                if (refMin !== null && refMax !== null) {
+                    // Tiene ambos límites
+                    if (valor < refMin || valor > refMax) {
+                        fueraRango = true;
+                    }
+                } else if (refMin !== null && valor < refMin) {
+                    // Solo mínimo definido
+                    fueraRango = true;
+                } else if (refMax !== null && valor > refMax) {
+                    // Solo máximo definido
+                    fueraRango = true;
+                }
+                
+                if (fueraRango) {
+                    // Valor crítico: Iluminación Neón Rojo Prislab (#D9230F)
+                    input.classList.add('fuera-rango');
+                    
+                    // Opcional: Sonido de alerta discreto (desactivado por defecto)
+                    // const audio = new Audio('/static/sounds/alert.mp3');
+                    // audio.volume = 0.3;
+                    // audio.play().catch(() => {}); // Ignorar errores si no hay audio
+                    
+                    // Opcional: Scroll suave hacia el input con alerta
+                    if (!input.dataset.alertaVista) {
+                        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        input.dataset.alertaVista = 'true';
+                    }
+                } else {
+                    // Dentro de rango: Verde suave
+                    input.classList.add('dentro-rango');
+                    input.dataset.alertaVista = '';
+                }
+            }
+        }
+
+        let ordenBloqueada = {{ esta_validado|yesno:"true,false" }};
+
+        function desbloquearOrden() {
+            if (confirm('¿Está seguro que desea desbloquear esta orden validada? Esto permitirá editar los resultados.')) {
+                ordenBloqueada = false;
+                // Habilitar todos los inputs
+                document.querySelectorAll('.input-resultado, .resultado-textarea, textarea').forEach(input => {
+                    input.removeAttribute('readonly');
+                });
+                // Mostrar botones de acción
+                document.querySelector('.mt-4.text-center').innerHTML = `
+                    <button type="button" class="btn btn-secondary btn-lg px-4 me-2" onclick="guardarBorrador()">
+                        <i class="bi bi-file-earmark"></i> Guardar (Borrador)
+                    </button>
+                    <button type="button" class="btn btn-success btn-lg px-5" onclick="validarYPublicar()">
+                        <i class="bi bi-check-circle-fill"></i> Validar y Publicar
+                    </button>
+                `;
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Orden desbloqueada',
+                    text: 'Ahora puede editar los resultados.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+        }
+
+        async function guardarBorrador() {
+            await guardarResultados('borrador');
+        }
+
+        async function validarYPublicar() {
+            const confirmacion = await Swal.fire({
+                icon: 'question',
+                title: '¿Validar y Publicar?',
+                text: '¿Está seguro que los datos son correctos? Una vez validado, la orden quedará bloqueada.',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, Validar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#28a745'
+            });
+
+            if (confirmacion.isConfirmed) {
+                await guardarResultados('validar');
+            }
+        }
+
+        async function guardarResultados(accion = 'borrador') {
+            // Recopilar todos los resultados
+            const resultados = {};
+            let hayResultados = false;
+            
+            // Recopilar de textareas (estudios simples)
+            const textareas = document.querySelectorAll('[id^="resultado_"]');
+            textareas.forEach(textarea => {
+                const detalleId = textarea.id.replace('resultado_', '');
+                const valor = textarea.value.trim();
+                if (valor) hayResultados = true;
+                
+                const observacionesId = 'observaciones_' + detalleId;
+                const observacionesInput = document.getElementById(observacionesId);
+                
+                if (!resultados[detalleId]) {
+                    resultados[detalleId] = {
+                        resultado: '',
+                        parametros: [],
+                        observaciones: observacionesInput ? observacionesInput.value.trim() : ''
+                    };
+                }
+                resultados[detalleId].resultado = valor;
+            });
+            
+            // Recopilar de inputs de parámetros (paquetes)
+            const parametrosInputs = document.querySelectorAll('[id^="param_"]');
+            parametrosInputs.forEach(input => {
+                const partes = input.id.split('_');
+                const detalleId = partes[1];
+                const paramIndex = parseInt(partes[2]);
+                const valor = input.value.trim();
+                
+                if (valor) hayResultados = true;
+                
+                if (!resultados[detalleId]) {
+                    resultados[detalleId] = {
+                        resultado: '',
+                        parametros: [],
+                        observaciones: ''
+                    };
+                }
+                
+                // Construir línea del parámetro: "DESCRIPCIÓN: valor unidades"
+                const descripcion = input.dataset.descripcion;
+                const unidades = input.dataset.unidades || '';
+                const linea = `${descripcion}: ${valor}${unidades ? ' ' + unidades : ''}`;
+                
+                if (!resultados[detalleId].parametros) {
+                    resultados[detalleId].parametros = [];
+                }
+                resultados[detalleId].parametros[paramIndex] = linea;
+            });
+            
+            // Convertir arrays de parámetros a texto
+            for (let detalleId in resultados) {
+                if (resultados[detalleId].parametros && resultados[detalleId].parametros.length > 0) {
+                    resultados[detalleId].resultado = resultados[detalleId].parametros.filter(p => p).join('\n');
+                }
+            }
+
+            if (!hayResultados) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sin resultados',
+                    text: 'Debe ingresar al menos un resultado para continuar.',
+                    confirmButtonText: 'Entendido'
+                });
+                return;
+            }
+
+            // Mostrar loading
+            Swal.fire({
+                title: 'Guardando resultados...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                const response = await fetch(`/laboratorio/api/guardar-resultados/${ordenId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        resultados: resultados,
+                        accion: accion
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    if (accion === 'validar') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Orden Validada!',
+                            html: `
+                                <p>Los resultados han sido validados y publicados correctamente.</p>
+                                <p><strong>La orden ahora está bloqueada para edición.</strong></p>
+                            `,
+                            showCancelButton: true,
+                            confirmButtonText: '🖨️ IMPRIMIR REPORTE (PDF)',
+                            cancelButtonText: 'Volver al Trabajo',
+                            confirmButtonColor: '#667eea'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                imprimirResultados();
+                            } else {
+                                window.location.href = '{% url "lista_trabajo_lab" %}';
+                            }
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Borrador guardado',
+                            text: 'Los resultados se han guardado como borrador. Puede continuar editando.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.mensaje || 'Ocurrió un error al guardar los resultados.',
+                        confirmButtonText: 'Reintentar'
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de conexión',
+                    text: 'No se pudo conectar con el servidor. Por favor, verifique su conexión.',
+                    confirmButtonText: 'Reintentar'
+                });
+                console.error('Error:', error);
+            }
+        }
+
+        // ===== FUNCIÓN DE IMPRESIÓN DUAL CON TRIPLE LLAVE =====
+        function imprimirResultados() {
+            // Verificar Triple Llave una vez más antes de imprimir
+            {% if triple_llave_completa %}
+            const modo = document.querySelector('input[name="modoImpresion"]:checked').value;
+            const url = `/laboratorio/imprimir/${ordenId}/?modo=${modo}`;
+            window.open(url, '_blank');
+            {% else %}
+            mostrarMensajeTripleLlave();
+            {% endif %}
+        }
+        
+        // Función para mostrar mensaje de Triple Llave incompleta
+        function mostrarMensajeTripleLlave() {
+            Swal.fire({
+                icon: 'warning',
+                title: '🔒 Triple Llave Incompleta',
+                html: `
+                    <p><strong>No se puede enviar el PDF hasta cumplir las 3 condiciones:</strong></p>
+                    <ul class="text-start">
+                        <li>{% if saldo_cero %}✅{% else %}❌{% endif %} Saldo de orden = $0.00</li>
+                        <li>{% if esta_validado %}✅{% else %}❌{% endif %} Validación técnica completa por Químico</li>
+                        <li>{% if firma_privacidad %}✅{% else %}❌{% endif %} Firma de aviso de privacidad registrada</li>
+                    </ul>
+                    {% if not saldo_cero %}
+                    <p class="text-danger mt-3"><strong>Saldo pendiente: ${{ saldo_pendiente|floatformat:2 }}</strong></p>
+                    {% endif %}
+                    {% if not esta_validado %}
+                    <p class="text-danger mt-2">La orden debe estar validada por el Químico.</p>
+                    {% endif %}
+                    {% if not firma_privacidad %}
+                    <p class="text-danger mt-2">El paciente debe tener verificada la firma de privacidad.</p>
+                    {% endif %}
+                `,
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#D9230F'
+            });
+        }
+        
+        // ===== NAVEGACIÓN RÁPIDA CON TECLADO (Preparación para Matriz) =====
+        // Esta función prepara la estructura para navegación rápida tipo Develab
+        function setupKeyboardNavigation() {
+            const inputs = document.querySelectorAll('.input-resultado');
+            
+            inputs.forEach((input, index) => {
+                // Enter: Siguiente campo
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const nextIndex = index + 1;
+                        if (nextIndex < inputs.length) {
+                            inputs[nextIndex].focus();
+                            inputs[nextIndex].select();
+                        }
+                    }
+                    
+                    // Flecha abajo: Siguiente campo
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        const nextIndex = index + 1;
+                        if (nextIndex < inputs.length) {
+                            inputs[nextIndex].focus();
+                            inputs[nextIndex].select();
+                        }
+                    }
+                    
+                    // Flecha arriba: Campo anterior
+                    if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        const prevIndex = index - 1;
+                        if (prevIndex >= 0) {
+                            inputs[prevIndex].focus();
+                            inputs[prevIndex].select();
+                        }
+                    }
+                    
+                    // Tab: Siguiente campo (comportamiento estándar mejorado)
+                    if (e.key === 'Tab' && !e.shiftKey) {
+                        const nextIndex = index + 1;
+                        if (nextIndex < inputs.length) {
+                            setTimeout(() => {
+                                inputs[nextIndex].focus();
+                                inputs[nextIndex].select();
+                            }, 10);
+                        }
+                    }
+                });
+                
+                // Auto-seleccionar texto al enfocar (para reemplazo rápido)
+                input.addEventListener('focus', function() {
+                    this.select();
+                });
+            });
+        }
+        
+        // Inicializar navegación con teclado al cargar
+        document.addEventListener('DOMContentLoaded', function() {
+            setupKeyboardNavigation();
+        });
+        
+        // Atajo de teclado Ctrl+S para guardar
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                guardarResultados();
+            }
+        });
+    </script>
+
+{% endblock %}

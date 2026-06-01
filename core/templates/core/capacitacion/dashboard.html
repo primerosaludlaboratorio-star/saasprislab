@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Biblioteca RAG — PRIS-IA{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Layout ── */
+.lib-header { background: linear-gradient(135deg,#003366 0%,#0055a5 100%); color:#fff; padding:20px 24px 16px; border-radius:10px; margin-bottom:20px; }
+.lib-header h2 { font-size:1.4rem; font-weight:800; margin:0 0 4px; }
+.lib-header p  { font-size:0.85rem; opacity:.85; margin:0; }
+
+/* ── Stats row ── */
+.stat-pill { display:flex; flex-direction:column; align-items:center; background:#fff; border-radius:8px; padding:12px 18px; min-width:100px; box-shadow:0 2px 8px rgba(0,0,0,.08); }
+.stat-pill .num { font-size:1.6rem; font-weight:900; line-height:1; }
+.stat-pill .lbl { font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:#6b7280; margin-top:2px; }
+
+/* ── Drop zone ── */
+.drop-zone {
+    border: 2px dashed #6b7280; border-radius:12px; padding:32px 20px; text-align:center;
+    cursor:pointer; transition:all .25s; background:#f8fafc;
+}
+.drop-zone.active, .drop-zone:hover { border-color:#003366; background:#e8f0fe; }
+.drop-zone .drop-icon { font-size:2.8rem; color:#003366; }
+.drop-zone .drop-label { font-size:.85rem; color:#374151; margin-top:6px; }
+.drop-zone .drop-sub   { font-size:.75rem; color:#9ca3af; }
+
+/* ── Semáforo ── */
+.semaforo-dot { width:12px; height:12px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.semaforo-dot.red    { background:#ef4444; }
+.semaforo-dot.yellow { background:#f59e0b; animation: semPulse .9s infinite; }
+.semaforo-dot.green  { background:#22c55e; }
+.semaforo-dot.gray   { background:#9ca3af; }
+@keyframes semPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── Document card ── */
+.doc-card { border:1px solid #e5e7eb; border-radius:8px; padding:12px 14px; margin-bottom:8px; transition:box-shadow .2s; }
+.doc-card:hover { box-shadow:0 4px 12px rgba(0,0,0,.08); }
+.doc-card .doc-title { font-weight:700; font-size:.92rem; color:#1e293b; }
+.doc-card .doc-meta  { font-size:.75rem; color:#6b7280; }
+.doc-card .doc-tags  { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+.doc-card .tag       { font-size:.68rem; padding:2px 7px; border-radius:20px; background:#e8f0fe; color:#003366; font-weight:600; }
+
+/* ── Progreso upload ── */
+.upload-bar { height:6px; border-radius:3px; background:#e5e7eb; overflow:hidden; margin-top:8px; }
+.upload-fill { height:100%; background:linear-gradient(90deg,#003366,#0066cc); transition:width .3s; }
+
+/* ── Panel PRIS chat ── */
+.pris-rag-panel { background:#fff; border:1px solid #dee2e6; border-radius:10px; padding:16px; }
+.pris-msg { border-radius:8px; padding:10px 14px; font-size:.85rem; margin-bottom:8px; max-width:90%; }
+.pris-msg.user { background:#e8f0fe; align-self:flex-end; margin-left:auto; }
+.pris-msg.bot  { background:#f0fdf4; border-left:3px solid #22c55e; }
+.pris-msg.fuente { font-size:.72rem; color:#6b7280; font-style:italic; padding:4px 10px; background:none; border-left:2px solid #d1d5db; }
+.pris-history { display:flex; flex-direction:column; gap:4px; max-height:300px; overflow-y:auto; padding:4px; }
+
+/* ── Estado badge ── */
+.badge-rag-SUBIDO      { background:#fee2e2; color:#dc2626; }
+.badge-rag-PROCESANDO  { background:#fef3c7; color:#b45309; }
+.badge-rag-ENTRENADO   { background:#dcfce7; color:#16a34a; }
+.badge-rag-ERROR       { background:#f3f4f6; color:#6b7280; }
+.badge-rag { font-size:.7rem; padding:3px 8px; border-radius:20px; font-weight:700; }
+
+/* ── Responsive ── */
+@media(max-width:768px){ .stat-pill{min-width:80px; padding:8px;} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3" style="max-width:1200px;">
+
+    <!-- Header -->
+    <div class="lib-header">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+                <h2><i class="bi bi-brain me-2"></i>Biblioteca de Entrenamiento — PRIS-IA</h2>
+                <p>Los PDFs subidos aquí se convierten en la <strong>fuente de verdad</strong> de PRIS-IA para la Worklist Analítica. Costo de consulta: <strong>$0</strong> (vectores locales).</p>
+            </div>
+            {% if es_director %}
+            <button class="btn btn-light btn-sm fw-bold" data-bs-toggle="collapse" data-bs-target="#panelSubir">
+                <i class="bi bi-upload me-1"></i> Subir Manual
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Estadísticas semáforo -->
+    <div class="d-flex gap-3 flex-wrap mb-4">
+        <div class="stat-pill">
+            <span class="num text-success">{{ stats.entrenados }}</span>
+            <span class="lbl"><span class="semaforo-dot green me-1"></span>Entrenados</span>
+        </div>
+        <div class="stat-pill">
+            <span class="num text-warning">{{ stats.procesando }}</span>
+            <span class="lbl"><span class="semaforo-dot yellow me-1"></span>Procesando</span>
+        </div>
+        <div class="stat-pill">
+            <span class="num text-danger">{{ stats.subidos }}</span>
+            <span class="lbl"><span class="semaforo-dot red me-1"></span>Pendientes</span>
+        </div>
+        <div class="stat-pill">
+            <span class="num text-primary">{{ stats.total_chunks|default:"0" }}</span>
+            <span class="lbl">Fragmentos RAG</span>
+        </div>
+        <div class="stat-pill">
+            <span class="num text-secondary">{{ stats.total }}</span>
+            <span class="lbl">Docs totales</span>
+        </div>
+    </div>
+
+    <!-- Panel de carga (Director QC) -->
+    {% if es_director %}
+    <div class="collapse mb-4" id="panelSubir">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white fw-bold">
+                <i class="bi bi-cloud-arrow-up me-2"></i>Subir Manual / Documento al Motor RAG
+            </div>
+            <div class="card-body">
+                <form id="form-subir" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <!-- Drop Zone -->
+                            <div class="drop-zone" id="dropZone">
+                                <div class="drop-icon"><i class="bi bi-file-earmark-pdf"></i></div>
+                                <div class="drop-label fw-bold">Arrastra el PDF aquí</div>
+                                <div class="drop-sub">o haz clic para seleccionar</div>
+                                <div class="drop-sub text-muted mt-1">Max 100 MB · PDF, DOCX, TXT</div>
+                                <input type="file" id="archivo-input" name="archivo" accept=".pdf,.docx,.doc,.txt" class="d-none">
+                                <div id="archivo-info" class="mt-2 text-primary fw-semibold" style="font-size:.8rem;"></div>
+                            </div>
+                            <div class="upload-bar mt-2 d-none" id="upload-bar">
+                                <div class="upload-fill" id="upload-fill" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold" style="font-size:.82rem;">Título del Manual *</label>
+                                <input type="text" name="titulo" class="form-control form-control-sm" required placeholder="Ej. Manual de Bethesda de Hematología 4ta Ed.">
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold" style="font-size:.82rem;">Tipo</label>
+                                    <select name="tipo_documento" class="form-select form-select-sm">
+                                        {% for val,label in TIPO_CHOICES %}
+                                        <option value="{{ val }}">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold" style="font-size:.82rem;">Módulo</label>
+                                    <select name="modulo_relacionado" class="form-select form-select-sm">
+                                        {% for val,label in MODULO_CHOICES %}
+                                        <option value="{{ val }}" {% if val == 'LABORATORIO' %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold" style="font-size:.82rem;">Descripción</label>
+                                <textarea name="descripcion" class="form-control form-control-sm" rows="2" placeholder="Resumen del contenido…"></textarea>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-5">
+                                    <label class="form-label fw-semibold" style="font-size:.82rem;">Versión</label>
+                                    <input type="text" name="version" class="form-control form-control-sm" value="1.0" placeholder="1.0">
+                                </div>
+                                <div class="col-7">
+                                    <label class="form-label fw-semibold" style="font-size:.82rem;">Validado por</label>
+                                    <input type="text" name="validado_por_nombre" class="form-control form-control-sm"
+                                           value="Q.B. Giselle Margarita López Gutiérrez">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-end mt-3">
+                        <button type="button" class="btn btn-secondary btn-sm me-2" data-bs-toggle="collapse" data-bs-target="#panelSubir">Cancelar</button>
+                        <button type="submit" class="btn btn-primary btn-sm fw-bold px-4">
+                            <i class="bi bi-cloud-arrow-up me-1"></i>Subir e Indexar
+                        </button>
+                    </div>
+                </form>
+                <div id="upload-status" class="mt-3 d-none alert"></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <!-- Columna izquierda: documentos -->
+        <div class="col-lg-7">
+            <h6 class="fw-bold text-uppercase text-muted mb-3" style="font-size:.72rem; letter-spacing:.1em;">
+                <i class="bi bi-archive me-1"></i>Documentos en la Biblioteca
+            </h6>
+
+            <div id="lista-documentos">
+            {% for doc in documentos %}
+            <div class="doc-card" id="card-doc-{{ doc.token_acceso }}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1 me-2">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="semaforo-dot {{ doc.semaforo_class|cut:'success'|cut:'warning'|cut:'danger'|cut:'secondary' }}
+                                {% if doc.estado_rag == 'ENTRENADO' %}green{% elif doc.estado_rag == 'PROCESANDO' %}yellow{% elif doc.estado_rag == 'SUBIDO' %}red{% else %}gray{% endif %}"></span>
+                            <span class="doc-title">{{ doc.titulo }}</span>
+                            <span class="badge-rag badge-rag-{{ doc.estado_rag }}" id="badge-{{ doc.token_acceso }}">
+                                {{ doc.semaforo_emoji }} {{ doc.get_estado_rag_display|truncatewords:2 }}
+                            </span>
+                        </div>
+                        <div class="doc-meta">
+                            {{ doc.get_tipo_display }} &middot; {{ doc.get_modulo_relacionado_display }} &middot; v{{ doc.version }}
+                            {% if doc.validado_por_nombre %}
+                            &middot; <i class="bi bi-shield-check text-success"></i> {{ doc.validado_por_nombre }}
+                            {% endif %}
+                        </div>
+                        {% if doc.descripcion %}
+                        <div class="doc-meta mt-1">{{ doc.descripcion|truncatewords:15 }}</div>
+                        {% endif %}
+                        <div class="doc-tags">
+                            {% if doc.chunks_rag %}
+                            <span class="tag"><i class="bi bi-diagram-3 me-1"></i>{{ doc.chunks_rag }} fragmentos</span>
+                            {% endif %}
+                            <span class="tag">{{ doc.fecha_creacion|date:"d/m/Y" }}</span>
+                            {% if doc.subido_por %}
+                            <span class="tag"><i class="bi bi-person me-1"></i>{{ doc.subido_por.get_full_name|default:doc.subido_por.username }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column gap-1">
+                        <a href="{{ doc.archivo.url }}" target="_blank" class="btn btn-outline-primary btn-sm" title="Descargar">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        {% if es_director %}
+                        <button class="btn btn-outline-warning btn-sm" title="Re-indexar"
+                                onclick="reprocesar('{{ doc.token_acceso }}')">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" title="Eliminar"
+                                onclick="eliminarDoc('{{ doc.token_acceso }}', '{{ doc.titulo|escapejs }}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if doc.estado_rag == 'ERROR' and doc.error_rag %}
+                <div class="alert alert-danger py-1 mt-2 mb-0" style="font-size:.75rem;">
+                    <i class="bi bi-exclamation-triangle me-1"></i>{{ doc.error_rag }}
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox" style="font-size:3rem; opacity:.4;"></i>
+                <p class="mt-2">No hay documentos en la Biblioteca.</p>
+                {% if es_director %}
+                <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#panelSubir">
+                    <i class="bi bi-upload me-1"></i>Subir el primer manual
+                </button>
+                {% endif %}
+            </div>
+            {% endfor %}
+            </div>
+        </div>
+
+        <!-- Columna derecha: chat PRIS RAG -->
+        <div class="col-lg-5">
+            <div class="pris-rag-panel">
+                <h6 class="fw-bold mb-1" style="font-size:.85rem;">
+                    <i class="bi bi-chat-dots-fill text-success me-1"></i>Consulta a PRIS — Biblioteca Interna
+                </h6>
+                <p class="text-muted mb-3" style="font-size:.75rem;">
+                    PRIS buscará <strong>primero en tus manuales</strong> antes de dar cualquier sugerencia. Costo $0.
+                </p>
+                <div class="mb-2">
+                    <select id="filtro-modulo" class="form-select form-select-sm">
+                        <option value="GENERAL">Todos los módulos</option>
+                        {% for val,label in MODULO_CHOICES %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="pris-history mb-2" id="pris-history"></div>
+
+                <div class="input-group input-group-sm">
+                    <input type="text" id="pris-consulta" class="form-control" placeholder="Ej: ¿Qué indica un VCM alto con HGB baja?">
+                    <button class="btn btn-success fw-bold" onclick="enviarConsulta()" id="btn-consultar">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </div>
+                <div class="text-muted mt-1" style="font-size:.7rem;">
+                    <i class="bi bi-shield-lock text-success me-1"></i>
+                    Validación clínica: <strong>Q.B. Giselle Margarita López Gutiérrez</strong>
+                </div>
+            </div>
+
+            <!-- Cápsulas de sabiduría -->
+            {% if capsulas %}
+            <div class="card mt-3 shadow-sm">
+                <div class="card-header fw-bold" style="font-size:.8rem; background:#f8fafc;">
+                    <i class="bi bi-lightbulb-fill text-warning me-1"></i>Cápsulas de Sabiduría
+                </div>
+                <div class="card-body p-2">
+                    {% for cap in capsulas %}
+                    <div class="py-2 border-bottom" style="font-size:.8rem;">
+                        <div class="fw-semibold">{{ cap.titulo }}</div>
+                        <div class="text-muted">{{ cap.contenido|truncatewords:20 }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- JS -->
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+/* ──── Drop Zone ──── */
+const dropZone  = document.getElementById('dropZone');
+const fileInput = document.getElementById('archivo-input');
+
+if (dropZone) {
+    dropZone.addEventListener('click', () => fileInput && fileInput.click());
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('active'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('active'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('active');
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            mostrarInfoArchivo(e.dataTransfer.files[0]);
+        }
+    });
+    if (fileInput) {
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) mostrarInfoArchivo(fileInput.files[0]);
+        });
+    }
+}
+
+function mostrarInfoArchivo(f) {
+    const info = document.getElementById('archivo-info');
+    if (info) info.textContent = `📄 ${f.name} (${(f.size/1024/1024).toFixed(1)} MB)`;
+}
+
+/* ──── Subir documento ──── */
+const formSubir = document.getElementById('form-subir');
+if (formSubir) {
+    formSubir.addEventListener('submit', async e => {
+        e.preventDefault();
+        const statusEl = document.getElementById('upload-status');
+        const barEl    = document.getElementById('upload-bar');
+        const fillEl   = document.getElementById('upload-fill');
+        const archivo  = fileInput && fileInput.files[0];
+        if (!archivo) { alert('Selecciona un archivo primero'); return; }
+
+        const fd = new FormData(formSubir);
+        statusEl.className = 'mt-3 alert alert-info';
+        statusEl.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Subiendo y procesando…';
+        statusEl.classList.remove('d-none');
+        if (barEl) { barEl.classList.remove('d-none'); }
+
+        // Simular barra de progreso durante upload
+        let pct = 0;
+        const timer = setInterval(() => {
+            pct = Math.min(pct + Math.random() * 15, 85);
+            if (fillEl) fillEl.style.width = pct + '%';
+        }, 400);
+
+        try {
+            const resp = await fetch('{% url "subir_documento_capacitacion" %}', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: fd,
+            });
+            clearInterval(timer);
+            if (fillEl) fillEl.style.width = '100%';
+            const data = await resp.json();
+            if (data.status === 'success') {
+                statusEl.className = 'mt-3 alert alert-success';
+                statusEl.innerHTML = `<i class="bi bi-check-circle me-1"></i>${data.mensaje}`;
+                setTimeout(() => location.reload(), 2200);
+            } else {
+                statusEl.className = 'mt-3 alert alert-danger';
+                statusEl.innerHTML = `<i class="bi bi-x-circle me-1"></i>${data.mensaje}`;
+            }
+        } catch (err) {
+            clearInterval(timer);
+            statusEl.className = 'mt-3 alert alert-danger';
+            statusEl.innerHTML = `<i class="bi bi-x-circle me-1"></i>Error de conexión: ${err.message}`;
+        }
+    });
+}
+
+/* ──── Polling semáforo para documentos en PROCESANDO ──── */
+function iniciarPolling(docToken) {
+    const interval = setInterval(async () => {
+        try {
+            const r = await fetch(`/capacitacion/rag/estado/${docToken}/`);
+            const d = await r.json();
+            const badge = document.getElementById(`badge-${docToken}`);
+            if (badge) {
+                badge.className = `badge-rag badge-rag-${d.estado_rag}`;
+                badge.textContent = `${d.semaforo} ${d.estado_rag}`;
+            }
+            if (d.estado_rag !== 'PROCESANDO') clearInterval(interval);
+        } catch { clearInterval(interval); }
+    }, 3000);
+}
+
+document.querySelectorAll('[id^="badge-"]').forEach(el => {
+    if (el.textContent.includes('PROCESANDO')) {
+        const token = el.id.replace('badge-','');
+        iniciarPolling(token);
+    }
+});
+
+/* ──── Re-procesar ──── */
+async function reprocesar(docToken) {
+    if (!confirm('¿Re-indexar este documento en la IA?')) return;
+    const r = await fetch(`/capacitacion/rag/reprocesar/${docToken}/`, {
+        method: 'POST', headers: { 'X-CSRFToken': csrfToken }
+    });
+    const d = await r.json();
+    alert(d.mensaje || 'Iniciado');
+    iniciarPolling(docToken);
+    const badge = document.getElementById(`badge-${docToken}`);
+    if (badge) { badge.className = 'badge-rag badge-rag-PROCESANDO'; badge.textContent = '🟡 PROCESANDO'; }
+}
+
+/* ──── Eliminar ──── */
+async function eliminarDoc(docToken, titulo) {
+    if (!confirm(`¿Eliminar "${titulo}" de la Biblioteca? Esta acción no elimina el RAG vectorial.`)) return;
+    const r = await fetch(`/capacitacion/rag/eliminar/${docToken}/`, {
+        method: 'POST', headers: { 'X-CSRFToken': csrfToken }
+    });
+    const d = await r.json();
+    if (d.status === 'success') {
+        const card = document.getElementById(`card-doc-${docToken}`);
+        if (card) card.remove();
+    } else { alert(d.mensaje); }
+}
+
+/* ──── Chat PRIS RAG ──── */
+const history = document.getElementById('pris-history');
+
+function addMsg(text, type, fuentes=[]) {
+    if (!history) return;
+    const div = document.createElement('div');
+    div.className = `pris-msg ${type}`;
+    div.innerHTML = text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+    history.appendChild(div);
+    if (fuentes.length) {
+        const f = document.createElement('div');
+        f.className = 'pris-msg fuente';
+        f.textContent = fuentes.join(' · ');
+        history.appendChild(f);
+    }
+    history.scrollTop = history.scrollHeight;
+}
+
+async function enviarConsulta() {
+    const input  = document.getElementById('pris-consulta');
+    const modulo = document.getElementById('filtro-modulo');
+    const btn    = document.getElementById('btn-consultar');
+    if (!input) return;
+    const q = input.value.trim();
+    if (!q) return;
+
+    addMsg(q, 'user');
+    input.value = '';
+    if (btn) btn.disabled = true;
+    addMsg('<i class="bi bi-hourglass-split"></i> PRIS buscando en la Biblioteca…', 'bot');
+
+    try {
+        const r = await fetch('{% url "consultar_pris_rag" %}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ consulta: q, modulo_contexto: modulo ? modulo.value : 'GENERAL' }),
+        });
+        const d = await r.json();
+        // Quitar el "buscando…"
+        if (history && history.lastChild) history.removeChild(history.lastChild);
+        const motor = d.motor ? `<br><small class="text-muted">Motor: ${d.motor}</small>` : '';
+        addMsg((d.respuesta || 'Sin respuesta') + motor, 'bot', d.fuentes || []);
+    } catch (err) {
+        if (history && history.lastChild) history.removeChild(history.lastChild);
+        addMsg('Error de conexión con PRIS-RAG.', 'bot');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+document.getElementById('pris-consulta')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarConsulta(); }
+});
+</script>
+{% endblock %}

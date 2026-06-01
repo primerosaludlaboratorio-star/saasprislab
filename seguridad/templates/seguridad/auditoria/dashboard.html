@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Auditoría de Seguridad - PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="bi bi-shield-exclamation"></i> Auditoría de Seguridad</h2>
+            <p class="text-muted">Monitor de acciones sensibles del sistema (ISO 27001 / GDPR Art. 30).</p>
+        </div>
+    </div>
+    <!-- KPIs -->
+    <div class="row g-3 mt-1">
+        <div class="col-md-3">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ total_eventos|default:0 }}</h3>
+                    <p class="text-muted mb-0">Eventos Hoy</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ eventos_warning|default:0 }}</h3>
+                    <p class="text-muted mb-0">Advertencias</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h3 class="text-danger">{{ eventos_criticos|default:0 }}</h3>
+                    <p class="text-muted mb-0">Críticos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h3 class="text-success">{{ usuarios_activos|default:0 }}</h3>
+                    <p class="text-muted mb-0">Usuarios Activos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Accesos Recientes -->
+    <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Eventos de Seguridad Recientes</h5>
+            <a href="{% url 'seguridad:logs_auditoria' %}" class="btn btn-outline-primary btn-sm">
+                Ver todos los logs
+            </a>
+        </div>
+        <div class="card-body">
+            {% if logs_recientes %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr><th>Hora</th><th>Usuario</th><th>Acción</th><th>Severidad</th><th>IP</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs_recientes %}
+                        <tr>
+                            <td><small>{{ log.fecha_hora|date:"H:i:s" }}</small></td>
+                            <td>{{ log.usuario.username }}</td>
+                            <td>{{ log.get_accion_display }}</td>
+                            <td><span class="badge bg-{% if log.severidad == 'CRITICAL' %}danger{% elif log.severidad == 'WARNING' %}warning text-dark{% else %}secondary{% endif %}">{{ log.severidad }}</span></td>
+                            <td><code>{{ log.ip_address|default:"-" }}</code></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-3">No hay eventos registrados hoy.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

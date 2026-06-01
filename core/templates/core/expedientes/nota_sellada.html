@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota Médica - {{ sello.folio_unico }}</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 2cm;
+        }
+        
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #2c5282;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #2c5282;
+            font-size: 18pt;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .badge-sellado {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 10px 0;
+            border: 2px solid #22543d;
+        }
+        
+        .folio-box {
+            background: #f7fafc;
+            border: 2px solid #4a5568;
+            padding: 15px;
+            text-align: center;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .folio {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #2d3748;
+            font-family: 'Courier', monospace;
+            letter-spacing: 2px;
+        }
+        
+        .datos-paciente {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .datos-paciente table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .datos-paciente td {
+            padding: 5px 0;
+            vertical-align: top;
+        }
+        
+        .datos-paciente .label {
+            font-weight: bold;
+            color: #4a5568;
+            width: 35%;
+        }
+        
+        .section {
+            margin: 25px 0;
+            page-break-inside: avoid;
+        }
+        
+        .section-title {
+            color: #2c5282;
+            font-size: 12pt;
+            font-weight: bold;
+            border-bottom: 2px solid #2c5282;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .section-content {
+            text-align: justify;
+            padding: 10px 0;
+        }
+        
+        .firma-box {
+            background: #f7fafc;
+            border: 2px solid #cbd5e0;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 5px;
+        }
+        
+        .firma-info {
+            text-align: center;
+        }
+        
+        .firma-nombre {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .firma-detalle {
+            color: #718096;
+            font-size: 10pt;
+        }
+        
+        .verificacion-box {
+            margin-top: 30px;
+            padding: 20px;
+            background: #ebf8ff;
+            border: 2px solid #3182ce;
+            border-radius: 5px;
+        }
+        
+        .verificacion-title {
+            color: #2c5282;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .hash-box {
+            font-family: 'Courier', monospace;
+            font-size: 8pt;
+            color: #718096;
+            word-break: break-all;
+            background: #f7fafc;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+        
+        .qr-placeholder {
+            width: 120px;
+            height: 120px;
+            background: #e2e8f0;
+            border: 2px dashed #a0aec0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8pt;
+            color: #718096;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 8pt;
+            color: #a0aec0;
+            text-align: center;
+        }
+        
+        .disclaimer {
+            font-size: 8pt;
+            color: #718096;
+            font-style: italic;
+            margin-top: 20px;
+            text-align: justify;
+        }
+    </style>
+</head>
+<body>
+    <!-- Encabezado -->
+    <div class="header">
+        <h1>Nota Médica Electrónica</h1>
+        <div class="badge-sellado">
+            ✓ DOCUMENTO SELLADO ELECTRÓNICAMENTE
+        </div>
+    </div>
+    
+    <!-- Folio -->
+    <div class="folio-box">
+        <div style="font-size: 10pt; color: #718096; margin-bottom: 5px;">FOLIO ÚNICO DE EXPEDIENTE</div>
+        <div class="folio">{{ sello.folio_unico }}</div>
+    </div>
+    
+    <!-- Datos del Paciente -->
+    <div class="datos-paciente">
+        <table>
+            <tr>
+                <td class="label">PACIENTE:</td>
+                <td>{{ paciente.nombre_completo }}</td>
+            </tr>
+            <tr>
+                <td class="label">FECHA DE NACIMIENTO:</td>
+                <td>{{ paciente.fecha_nacimiento|default:"N/A" }}</td>
+            </tr>
+            <tr>
+                <td class="label">FECHA DE CONSULTA:</td>
+                <td>{{ nota.fecha_consulta|date:"d/m/Y H:i" }}</td>
+            </tr>
+            <tr>
+                <td class="label">MÉDICO:</td>
+                <td>{{ medico.get_full_name|default:"N/A" }}</td>
+            </tr>
+            <tr>
+                <td class="label">CÉDULA PROFESIONAL:</td>
+                <td>{{ sello.cedula_profesional|default:"N/A" }}</td>
+            </tr>
+            <tr>
+                <td class="label">ESPECIALIDAD:</td>
+                <td>{{ sello.especialidad|default:"N/A" }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <!-- Secciones SOAP -->
+    <div class="section">
+        <div class="section-title">Subjetivo</div>
+        <div class="section-content">
+            {{ nota.subjetivo|default:"<em>No registrado</em>"|linebreaksbr }}
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Objetivo</div>
+        <div class="section-content">
+            {{ nota.objetivo|default:"<em>No registrado</em>"|linebreaksbr }}
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Análisis</div>
+        <div class="section-content">
+            {{ nota.analisis|default:"<em>No registrado</em>"|linebreaksbr }}
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Plan</div>
+        <div class="section-content">
+            {{ nota.plan|default:"<em>No registrado</em>"|linebreaksbr }}
+        </div>
+    </div>
+    
+    {% if nota.diagnostico_principal %}
+    <div class="section">
+        <div class="section-title">Diagnóstico Principal</div>
+        <div class="section-content">
+            {{ nota.diagnostico_principal|linebreaksbr }}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if nota.diagnosticos_secundarios %}
+    <div class="section">
+        <div class="section-title">Diagnósticos Secundarios</div>
+        <div class="section-content">
+            {{ nota.diagnosticos_secundarios|linebreaksbr }}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Firma Electrónica -->
+    <div class="firma-box">
+        <div class="firma-info">
+            <div class="firma-nombre">Firmado electrónicamente por:</div>
+            <p style="margin: 10px 0;">
+                <strong>{{ medico.get_full_name|default:"N/A" }}</strong><br>
+                Cédula Profesional: {{ sello.cedula_profesional|default:"N/A" }}<br>
+                Especialidad: {{ sello.especialidad|default:"N/A" }}
+            </p>
+            <div class="firma-detalle">
+                Fecha de sellado: {{ sello.timestamp_sellado|date:"d/m/Y H:i:s" }}<br>
+                Token de verificación: {{ token_corto }}...
+            </div>
+        </div>
+    </div>
+    
+    <!-- Verificación -->
+    <div class="verificacion-box">
+        <div class="verificacion-title">VERIFICACIÓN DE AUTENTICIDAD</div>
+        <p style="font-size: 9pt; margin: 10px 0;">
+            Este documento ha sido generado electrónicamente conforme a la 
+            <strong>NOM-004-SSA3-2012</strong> y <strong>NOM-024-SSA3-2012</strong> 
+            del Sistema de Salud de México.
+        </p>
+        
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 140px; vertical-align: top;">
+                    {% if qr_url %}
+                    <img src="{{ qr_url }}" alt="QR de verificación" style="width: 120px; height: 120px;">
+                    {% else %}
+                    <div class="qr-placeholder">
+                        QR<br>Verificación
+                    </div>
+                    {% endif %}
+                </td>
+                <td style="vertical-align: top; padding-left: 20px;">
+                    <p style="font-size: 9pt; margin: 0;">
+                        <strong>Token:</strong> {{ sello.token_verificacion }}<br><br>
+                        <strong>URL de verificación:</strong><br>
+                        {{ sello.qr_verificacion|default:"URL no disponible" }}<br><br>
+                        <strong>Hash SHA256 (verificación):</strong>
+                    </p>
+                    <div class="hash-box">
+                        {{ hash_corto }}...
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    
+    <!-- Hash Completo -->
+    <div style="margin-top: 20px;">
+        <p style="font-size: 8pt; color: #718096; margin: 0;">
+            <strong>HASH SHA256 COMPLETO DEL DOCUMENTO:</strong>
+        </p>
+        <div class="hash-box" style="font-size: 7pt;">
+            {{ expediente.hash_sha256 }}
+        </div>
+    </div>
+    
+    <!-- Disclaimer -->
+    <div class="disclaimer">
+        <strong>Aviso importante:</strong> Este documento es una representación 
+        digital de la nota médica y tiene validez legal conforme a la 
+        NOM-004-SSA3-2012. La integridad del documento puede ser verificada 
+        mediante el hash SHA256. Cualquier modificación invalidaría la firma 
+        electrónica. Para verificar la autenticidad, escanee el código QR o 
+        visite la URL de verificación proporcionada.
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+        Documento generado el {{ fecha_generacion }}<br>
+        PRISLAB — Sistema de Gestión de Laboratorio Clínico<br>
+        NOM-004-SSA3-2012 · NOM-024-SSA3-2012
+    </div>
+</body>
+</html>

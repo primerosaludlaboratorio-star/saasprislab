@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Configuración de Tarifas{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <h2 class="mb-4"><i class="fas fa-tags me-2"></i>Configuración de Tarifas</h2>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <span class="fw-semibold">Tarifas activas</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th class="text-end">Estudios</th><th></th></tr>
+              </thead>
+              <tbody>
+                {% for tarifa in tarifas %}
+                <tr>
+                  <td class="fw-semibold">{{ tarifa.nombre }}</td>
+                  <td>{{ tarifa.tipo|default:"General" }}</td>
+                  <td>
+                    <span class="badge bg-{% if tarifa.activa %}success{% else %}secondary{% endif %}">
+                      {% if tarifa.activa %}Activa{% else %}Inactiva{% endif %}
+                    </span>
+                  </td>
+                  <td class="text-end">{{ tarifa.num_estudios|default:0 }}</td>
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center py-5">
+                    <i class="fas fa-tags fa-3x text-muted mb-3 d-block"></i>
+                    <p class="text-muted mb-3">Sin tarifas configuradas</p>
+                    <p class="text-muted small">Las tarifas se configuran a través del módulo de Catálogos.</p>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white"><span class="fw-semibold">Importación inteligente</span></div>
+        <div class="card-body">
+          <p class="text-muted small mb-3">Importa tarifas masivamente desde un archivo Excel o CSV.</p>
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label">Archivo de tarifas</label>
+              <input type="file" name="archivo_tarifas" class="form-control" accept=".xlsx,.csv">
+            </div>
+            <button type="submit" class="btn btn-outline-primary w-100">
+              <i class="fas fa-upload me-1"></i>Importar
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

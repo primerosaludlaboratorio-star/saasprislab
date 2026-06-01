@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="fas fa-file-medical-alt text-info"></i> Libro de Control de Antibióticos</h2>
+            <p class="text-muted mb-0">Cumplimiento Normativo NOM-072-SSA1-2012</p>
+        </div>
+        <a href="?formato=csv" class="btn btn-success btn-lg shadow-sm">
+            <i class="fas fa-file-csv"></i> Descargar Reporte (Excel)
+        </a>
+    </div>
+
+    <div class="card shadow border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0 align-middle">
+                    <thead class="bg-dark text-white">
+                        <tr>
+                            <th class="py-3 ps-4">Fecha</th>
+                            <th class="py-3">Folio Venta</th>
+                            <th class="py-3">Médico Prescriptor</th>
+                            <th class="py-3">Cédula Prof.</th>
+                            <th class="py-3">Paciente</th>
+                            <th class="py-3">Antibiótico / Producto</th>
+                            <th class="py-3 text-center">Cant.</th>
+                            <th class="py-3">No. Receta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reg in registros %}
+                        <tr>
+                            <td class="ps-4 fw-bold">{{ reg.fecha_venta|date:"d/m/Y H:i" }}</td>
+                            <td><span class="badge bg-secondary">{{ reg.venta.folio_operacion|default:reg.venta.id }}</span></td>
+                            <td class="text-primary">{{ reg.medico_nombre }}</td>
+                            <td><span class="badge bg-warning text-dark border border-warning">{{ reg.medico_cedula }}</span></td>
+                            <td>{{ reg.paciente_nombre }}</td>
+                            <td>{{ reg.producto.nombre }}</td>
+                            <td class="text-center fw-bold">{{ reg.cantidad_vendida }}</td>
+                            <td class="small text-muted">{{ reg.receta_folio|default:"--" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+                                <p class="h5 text-muted">Todo en orden. No hay movimientos recientes.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light text-end text-muted small">
+            Sistema de Farmacia v5.0 | PRISLAB
+        </div>
+    </div>
+</div>
+{% endblock %}

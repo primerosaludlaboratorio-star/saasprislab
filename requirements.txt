@@ -1,0 +1,74 @@
+# ======================================================
+# PRISLAB v5.2 — Requirements de Producción
+# Resuelto para compatibilidad con google-genai==1.69.0
+# ======================================================
+
+# Framework
+Django==5.0.6
+django-ninja>=1.3.0,<2
+asgiref>=3.8.1
+whitenoise==6.6.0
+django-cors-headers==4.6.0
+
+# Base de Datos
+psycopg2-binary==2.9.9
+
+# Google AI — SDK principal (requiere google-auth>=2.48.1)
+google-genai==1.69.0
+
+# Google Cloud — versiones mínimas compatibles con google-genai 1.69.0
+google-auth>=2.48.1
+google-auth-httplib2>=0.2.0
+google-auth-oauthlib>=1.0.0
+google-api-python-client>=2.100.0
+google-cloud-secret-manager>=2.18.0
+google-cloud-storage>=2.16.0
+google-cloud-vision>=3.7.0
+google-cloud-speech>=2.20.0
+
+# Encriptación
+cryptography>=41.0.0
+
+# Tareas asíncronas
+celery==5.3.6
+kombu==5.3.4
+redis==5.0.4
+channels==4.0.0
+channels-redis==4.1.0
+
+# Web / Servidor
+gunicorn==22.0.0
+django-pwa==1.1.0
+django-storages==1.14.2
+
+# Datos y Análisis
+numpy>=1.26.4
+pandas>=2.2.1
+openpyxl==3.1.2
+
+# PDFs e Imágenes
+reportlab==4.1.0
+weasyprint==61.2
+pillow>=10.2.0
+lxml>=5.1.0
+pypdf>=4.1.0
+
+# RAG — Motor de Biblioteca de Entrenamiento PRIS-IA
+chromadb>=0.4.24
+numpy>=1.26.0
+
+# Seguridad / Auth
+pyotp==2.9.0
+pywebpush==1.14.0
+
+# Utilidades
+python-decouple==3.8
+pytz==2024.1
+qrcode[pil]==7.4.2
+six==1.16.0
+user-agents==2.2.0
+zeep==4.2.1
+colorama>=0.4.6
+psutil>=5.9.0
+
+# Pruebas E2E (Selenium) y pytest: ver requirements-dev.txt

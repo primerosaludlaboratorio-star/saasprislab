@@ -1,0 +1,314 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}PRIS Sentinel - Guía de Conexión SSH{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ssh-guide { margin-top: 70px; }
+    .step-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        transition: transform 0.2s;
+        overflow: hidden;
+    }
+    .step-card:hover { transform: translateY(-3px); }
+    .step-number {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 1.3rem;
+        color: white;
+        flex-shrink: 0;
+    }
+    .step-1 .step-number { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .step-2 .step-number { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+    .step-3 .step-number { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+    .step-4 .step-number { background: linear-gradient(135deg, #f5af19, #f12711); }
+    .step-5 .step-number { background: linear-gradient(135deg, #667eea, #764ba2); }
+
+    .cmd-block {
+        background: #0d1117;
+        color: #00ff41;
+        font-family: 'Consolas', monospace;
+        padding: 1rem 1.2rem;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        border: 1px solid #30363d;
+        position: relative;
+    }
+    .cmd-block .comment { color: #6a737d; }
+    .cmd-block .highlight { color: #f78166; }
+
+    .btn-copy-cmd {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: #d4d4d4;
+        border-radius: 6px;
+        padding: 3px 10px;
+        font-size: 0.7rem;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .btn-copy-cmd:hover { background: rgba(255,255,255,0.2); }
+
+    .sentinel-logo {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 900;
+    }
+
+    .flow-diagram {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+    }
+    .flow-step {
+        display: inline-block;
+        padding: 0.6rem 1.2rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin: 0.3rem;
+    }
+    .flow-arrow {
+        display: inline-block;
+        color: #667eea;
+        font-size: 1.2rem;
+        margin: 0 0.3rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container ssh-guide px-4">
+    <!-- HEADER -->
+    <div class="mb-4">
+        <a href="{% url 'consultorio:sentinel_dashboard' %}" class="text-decoration-none text-muted small">
+            <i class="bi bi-arrow-left"></i> Volver al Panel Sentinel
+        </a>
+        <h2 class="sentinel-logo mt-2 mb-1">
+            <i class="bi bi-terminal-fill"></i> Guía de Conexión Remote SSH
+        </h2>
+        <p class="text-muted">
+            Configura Cursor para reparar errores en vivo directamente en el servidor de producción
+        </p>
+    </div>
+
+    <!-- DIAGRAMA DE FLUJO -->
+    <div class="flow-diagram mb-4">
+        <h6 class="fw-bold text-muted mb-3">FLUJO DE AUTOCURACIÓN</h6>
+        <div>
+            <span class="flow-step bg-danger text-white"><i class="bi bi-bug"></i> Error detectado</span>
+            <span class="flow-arrow"><i class="bi bi-arrow-right"></i></span>
+            <span class="flow-step bg-primary text-white"><i class="bi bi-robot"></i> Gemini analiza</span>
+            <span class="flow-arrow"><i class="bi bi-arrow-right"></i></span>
+            <span class="flow-step bg-warning text-dark"><i class="bi bi-bell"></i> Sentinel notifica</span>
+            <span class="flow-arrow"><i class="bi bi-arrow-right"></i></span>
+            <span class="flow-step bg-dark text-white"><i class="bi bi-terminal"></i> SSH + Cursor</span>
+            <span class="flow-arrow"><i class="bi bi-arrow-right"></i></span>
+            <span class="flow-step bg-success text-white"><i class="bi bi-check-circle"></i> Reparado</span>
+        </div>
+    </div>
+
+    <!-- PASOS -->
+    <div class="row g-4">
+
+        <!-- PASO 1: Instalar extensión -->
+        <div class="col-12">
+            <div class="step-card step-1">
+                <div class="card-body p-4">
+                    <div class="d-flex gap-3 align-items-start">
+                        <div class="step-number">1</div>
+                        <div class="flex-grow-1">
+                            <h5 class="fw-bold mb-2">Instalar la extensión Remote SSH en Cursor</h5>
+                            <p class="text-muted mb-3">
+                                Cursor usa el mismo sistema de extensiones que VS Code.
+                                Instala "Remote - SSH" de Microsoft.
+                            </p>
+                            <div class="cmd-block">
+                                <button class="btn-copy-cmd" onclick="copiarCmd(this)">Copiar</button>
+                                <span class="comment"># En Cursor, presiona Ctrl+Shift+X (Extensiones)</span><br>
+                                <span class="comment"># Busca: "Remote - SSH"</span><br>
+                                <span class="comment"># Instala la extensión de Microsoft</span><br>
+                                <br>
+                                <span class="comment"># También instala:</span><br>
+                                <span class="comment"># "Remote - SSH: Editing Configuration Files"</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 2: Configurar llave SSH -->
+        <div class="col-12">
+            <div class="step-card step-2">
+                <div class="card-body p-4">
+                    <div class="d-flex gap-3 align-items-start">
+                        <div class="step-number">2</div>
+                        <div class="flex-grow-1">
+                            <h5 class="fw-bold mb-2">Configurar Llave SSH de Google Cloud</h5>
+                            <p class="text-muted mb-3">
+                                Genera una llave SSH y agrégala a tu instancia de Google Cloud.
+                            </p>
+                            <div class="cmd-block mb-3">
+                                <button class="btn-copy-cmd" onclick="copiarCmd(this)">Copiar</button>
+                                <span class="comment"># Generar llave SSH (solo una vez)</span><br>
+                                ssh-keygen -t ed25519 -C "<span class="highlight">tu-email@gmail.com</span>"<br>
+                                <br>
+                                <span class="comment"># Copiar la llave pública</span><br>
+                                type %USERPROFILE%\.ssh\id_ed25519.pub<br>
+                                <br>
+                                <span class="comment"># Agregar la llave a Google Cloud:</span><br>
+                                <span class="comment"># 1. Ve a console.cloud.google.com</span><br>
+                                <span class="comment"># 2. Compute Engine → Metadatos → Llaves SSH</span><br>
+                                <span class="comment"># 3. Pega el contenido de id_ed25519.pub</span>
+                            </div>
+                            <div class="cmd-block">
+                                <button class="btn-copy-cmd" onclick="copiarCmd(this)">Copiar</button>
+                                <span class="comment"># Configurar archivo SSH (~/.ssh/config)</span><br>
+                                Host <span class="highlight">prislab-server</span><br>
+                                &nbsp;&nbsp;HostName <span class="highlight">XX.XX.XX.XX</span><br>
+                                &nbsp;&nbsp;User <span class="highlight">jonathan</span><br>
+                                &nbsp;&nbsp;IdentityFile ~/.ssh/id_ed25519<br>
+                                &nbsp;&nbsp;StrictHostKeyChecking no
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 3: Conectar desde Cursor -->
+        <div class="col-12">
+            <div class="step-card step-3">
+                <div class="card-body p-4">
+                    <div class="d-flex gap-3 align-items-start">
+                        <div class="step-number">3</div>
+                        <div class="flex-grow-1">
+                            <h5 class="fw-bold mb-2">Conectar Cursor al Servidor</h5>
+                            <p class="text-muted mb-3">
+                                Una vez configurado, conéctate al servidor desde Cursor.
+                            </p>
+                            <div class="cmd-block">
+                                <button class="btn-copy-cmd" onclick="copiarCmd(this)">Copiar</button>
+                                <span class="comment"># En Cursor:</span><br>
+                                <span class="comment"># 1. Presiona Ctrl+Shift+P</span><br>
+                                <span class="comment"># 2. Escribe: "Remote-SSH: Connect to Host"</span><br>
+                                <span class="comment"># 3. Selecciona "prislab-server"</span><br>
+                                <span class="comment"># 4. Se abrirá una nueva ventana conectada al servidor</span><br>
+                                <br>
+                                <span class="comment"># 5. Abre la carpeta del proyecto:</span><br>
+                                <span class="comment">#    Archivo → Abrir Carpeta → /app/</span><br>
+                                <br>
+                                <span class="comment"># Si usas Docker, entra al contenedor:</span><br>
+                                docker exec -it prislab_app bash
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 4: Usar Sentinel -->
+        <div class="col-12">
+            <div class="step-card step-4">
+                <div class="card-body p-4">
+                    <div class="d-flex gap-3 align-items-start">
+                        <div class="step-number">4</div>
+                        <div class="flex-grow-1">
+                            <h5 class="fw-bold mb-2">Reparar con PRIS Sentinel + Cursor</h5>
+                            <p class="text-muted mb-3">
+                                Cuando Sentinel detecte un error, así es como lo reparas:
+                            </p>
+                            <ol class="mb-3">
+                                <li class="mb-2">Ve al <strong>Panel Sentinel</strong> y busca la incidencia con estado <span class="badge bg-warning">Pendiente</span></li>
+                                <li class="mb-2">Haz clic en <button class="btn btn-sm text-white" style="background: linear-gradient(135deg, #667eea, #764ba2); pointer-events:none;"><i class="bi bi-lightning-charge-fill"></i> SOLUCIONAR CON CURSOR</button></li>
+                                <li class="mb-2">Se abrirá un modal con el <strong>prompt completo</strong> que incluye:
+                                    <ul class="mt-1">
+                                        <li>Archivo exacto y línea del error</li>
+                                        <li>Código que falla vs código propuesto</li>
+                                        <li>Instrucciones SSH</li>
+                                    </ul>
+                                </li>
+                                <li class="mb-2">Copia el prompt → Pégalo en el <strong>chat de Cursor</strong> (conectado via SSH)</li>
+                                <li class="mb-2">Cursor abrirá el archivo, irá a la línea y aplicará la corrección</li>
+                                <li>Gunicorn se reinicia automáticamente → <strong>Error reparado en vivo</strong></li>
+                            </ol>
+                            <div class="alert alert-success small mb-0">
+                                <i class="bi bi-shield-check"></i>
+                                <strong>Resultado:</strong> El error se corrige directamente en producción sin necesidad 
+                                de hacer git push, rebuild de Docker ni redeploy. Los cambios se aplican al instante.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 5: Verificar -->
+        <div class="col-12">
+            <div class="step-card step-5">
+                <div class="card-body p-4">
+                    <div class="d-flex gap-3 align-items-start">
+                        <div class="step-number">5</div>
+                        <div class="flex-grow-1">
+                            <h5 class="fw-bold mb-2">Verificar y Cerrar la Incidencia</h5>
+                            <p class="text-muted mb-3">
+                                Después de aplicar la corrección:
+                            </p>
+                            <div class="cmd-block mb-3">
+                                <button class="btn-copy-cmd" onclick="copiarCmd(this)">Copiar</button>
+                                <span class="comment"># Verificar que no haya errores de importación</span><br>
+                                python manage.py check --deploy<br>
+                                <br>
+                                <span class="comment"># Reiniciar Gunicorn sin downtime</span><br>
+                                kill -HUP 1<br>
+                                <br>
+                                <span class="comment"># Verificar que la URL afectada ya no da error</span><br>
+                                curl -s -o /dev/null -w "%{http_code}" https://tu-dominio.com/URL_AFECTADA
+                            </div>
+                            <p class="text-muted small">
+                                Vuelve al Panel Sentinel, actualiza el estado a <span class="badge bg-success">Solucionado</span> 
+                                y agrega notas de resolución.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copiarCmd(btn) {
+        const block = btn.parentElement;
+        // Extraer solo el texto, sin los botones
+        const clone = block.cloneNode(true);
+        clone.querySelectorAll('.btn-copy-cmd').forEach(b => b.remove());
+        const text = clone.innerText;
+
+        navigator.clipboard.writeText(text).then(() => {
+            btn.textContent = 'Copiado!';
+            btn.style.color = '#00ff41';
+            setTimeout(() => {
+                btn.textContent = 'Copiar';
+                btn.style.color = '#d4d4d4';
+            }, 1500);
+        });
+    }
+</script>
+{% endblock %}

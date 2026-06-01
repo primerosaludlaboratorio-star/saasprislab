@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+/* ==============================================================================
+   DASHBOARD FARMACIA - PERSONALIZADO
+   ============================================================================== */
+
+.dashboard-farmacia {
+    padding: 2rem 1rem;
+}
+
+.widget-farmacia {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s;
+}
+
+.widget-farmacia:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.stat-grande {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.producto-agotado {
+    background: #fff5f5;
+    border-left: 4px solid #dc3545;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+}
+
+.producto-por-agotar {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+}
+
+.venta-item {
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    transition: background 0.3s;
+}
+
+.venta-item:hover {
+    background: #f8f9fa;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-farmacia">
+    
+    <!-- ==================================================================
+         HEADER: SALUDO PERSONALIZADO
+         ================================================================== -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>
+                <i class="fas fa-pills text-success me-2"></i>
+                Bienvenido, {{ request.user.get_full_name }}
+            </h2>
+            <p class="text-muted">
+                <i class="fas fa-calendar-day me-2"></i>
+                {% now "l, j de F de Y" %} • 
+                <i class="fas fa-clock ms-2 me-2"></i>
+                {% now "H:i" %}
+            </p>
+        </div>
+    </div>
+    
+    <!-- ==================================================================
+         WIDGETS: ESTADÍSTICAS DE FARMACIA
+         ================================================================== -->
+    <div class="row">
+        
+        <!-- Widget: Ventas del Día -->
+        <div class="col-lg-3 col-md-6">
+            <div class="widget-farmacia">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="text-muted mb-0">Ventas Hoy</h6>
+                        <div class="stat-grande text-success">
+                            ${{ ventas_hoy_total|default:0|floatformat:2 }}
+                        </div>
+                        <small class="text-muted">{{ ventas_hoy_cantidad|default:0 }} transacciones</small>
+                    </div>
+                    <div style="width: 50px; height: 50px; background: #d4edda; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-dollar-sign text-success" style="font-size: 1.5rem;"></i>
+                    </div>
+                </div>
+                <a href="{% url 'lista_ventas_farmacia' %}" class="btn btn-sm btn-outline-success w-100 mt-3">
+                    <i class="fas fa-list me-2"></i>Ver Ventas
+                </a>
+            </div>
+        </div>
+        
+        <!-- Widget: Productos Vendidos -->
+        <div class="col-lg-3 col-md-6">
+            <div class="widget-farmacia">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="text-muted mb-0">Productos Vendidos</h6>
+                        <div class="stat-grande text-info">{{ productos_vendidos|default:0 }}</div>
+                        <small class="text-muted">Unidades hoy</small>
+                    </div>
+                    <div style="width: 50px; height: 50px; background: #d1ecf1; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-shopping-cart text-info" style="font-size: 1.5rem;"></i>
+                    </div>
+                </div>
+                <a href="{% url 'pdv_farmacia' %}" class="btn btn-sm btn-outline-info w-100 mt-3">
+                    <i class="fas fa-cash-register me-2"></i>Punto de Venta
+                </a>
+            </div>
+        </div>
+        
+        <!-- Widget: Productos Agotados -->
+        <div class="col-lg-3 col-md-6">
+            <div class="widget-farmacia">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="text-muted mb-0">Productos Agotados</h6>
+                        <div class="stat-grande text-danger">{{ productos_agotados|default:0 }}</div>
+                        <small class="text-muted">Requieren reorden</small>
+                    </div>
+                    <div style="width: 50px; height: 50px; background: #f8d7da; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-exclamation-triangle text-danger" style="font-size: 1.5rem;"></i>
+                    </div>
+                </div>
+                <a href="{% url 'inventario_general' %}?filtro=agotados" class="btn btn-sm btn-outline-danger w-100 mt-3">
+                    <i class="fas fa-boxes me-2"></i>Ver Inventario
+                </a>
+            </div>
+        </div>
+        
+        <!-- Widget: Caducidad Próxima -->
+        <div class="col-lg-3 col-md-6">
+            <div class="widget-farmacia">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="text-muted mb-0">Próximos a Caducar</h6>
+                        <div class="stat-grande text-warning">{{ productos_caducidad|default:0 }}</div>
+                        <small class="text-muted">En 30 días</small>
+                    </div>
+                    <div style="width: 50px; height: 50px; background: #fff3cd; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-calendar-times text-warning" style="font-size: 1.5rem;"></i>
+                    </div>
+                </div>
+                <a href="{% url 'farmacia:dashboard_semaforo_caducidad' %}" class="btn btn-sm btn-outline-warning w-100 mt-3">
+                    <i class="fas fa-clock me-2"></i>Ver Caducidades
+                </a>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- ==================================================================
+         ALERTA: PRODUCTOS AGOTADOS
+         ================================================================== -->
+    {% if lista_agotados %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-danger" role="alert">
+                <h5 class="alert-heading">
+                    <i class="fas fa-box-open me-2"></i>
+                    ⚠️ ALERTA: {{ lista_agotados|length }} Producto(s) Agotado(s)
+                </h5>
+                <hr>
+                <div class="row">
+                    {% for producto in lista_agotados %}
+                    <div class="col-md-6">
+                        <div class="producto-agotado">
+                            <strong>{{ producto.nombre }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                Código: {{ producto.codigo }} | 
+                                Stock: {{ producto.stock_actual }} {{ producto.unidad }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <a href="{% url 'entrada_mercancia' %}" class="btn btn-danger mt-2">
+                    <i class="fas fa-truck-loading me-2"></i>Registrar Entrada de Mercancía
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- ==================================================================
+         SECCIÓN: VENTAS RECIENTES Y PRODUCTOS MÁS VENDIDOS
+         ================================================================== -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="widget-farmacia">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>
+                        <i class="fas fa-receipt text-primary me-2"></i>
+                        Ventas Recientes
+                    </h5>
+                    <a href="{% url 'lista_ventas_farmacia' %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-history me-2"></i>Ver Todas
+                    </a>
+                </div>
+                
+                {% if ventas_recientes %}
+                <div>
+                    {% for venta in ventas_recientes %}
+                    <div class="venta-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>Ticket {{ venta.folio }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="fas fa-user me-1"></i>
+                                    {{ venta.cliente_nombre|default:"Público General" }}
+                                </small>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ venta.fecha_hora|date:"d/m/Y H:i" }}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <div class="text-success fw-bold">${{ venta.total|floatformat:2 }}</div>
+                                <small class="text-muted">{{ venta.productos_cantidad }} productos</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-receipt text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-3">No hay ventas registradas hoy</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <!-- Productos Más Vendidos -->
+            <div class="widget-farmacia">
+                <h5>
+                    <i class="fas fa-chart-bar text-success me-2"></i>
+                    Productos Más Vendidos (Hoy)
+                </h5>
+                {% if productos_mas_vendidos %}
+                <div class="list-group list-group-flush">
+                    {% for producto in productos_mas_vendidos %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ producto.nombre }}</strong>
+                            <br>
+                            <small class="text-muted">{{ producto.presentacion }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-success" style="font-size: 1rem;">{{ producto.cantidad_vendida }}</span>
+                            <br>
+                            <small class="text-muted">unidades</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No hay datos aún</p>
+                {% endif %}
+            </div>
+            
+            <!-- Recordatorio: Libro de Control -->
+            <div class="widget-farmacia mt-3">
+                <h5>
+                    <i class="fas fa-book text-danger me-2"></i>
+                    Libro de Control
+                </h5>
+                <p class="text-muted mb-3">
+                    Registra todas las ventas de medicamentos controlados según la normativa vigente.
+                </p>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'libro_control' %}" class="btn btn-outline-danger">
+                        <i class="fas fa-book-medical me-2"></i>Ver Libro de Control
+                    </a>
+                    {% if ventas_controlados_sin_registrar > 0 %}
+                    <div class="alert alert-warning mb-0" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {{ ventas_controlados_sin_registrar }} venta(s) de controlados sin registrar
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ==================================================================
+         SECCIÓN: INVENTARIO Y ALERTAS
+         ================================================================== -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="widget-farmacia">
+                <h5>
+                    <i class="fas fa-warehouse text-warning me-2"></i>
+                    Alertas de Inventario
+                </h5>
+                
+                <div class="row">
+                    <!-- Productos por Agotar -->
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Productos con Stock Bajo</h6>
+                        {% if productos_stock_bajo %}
+                        {% for producto in productos_stock_bajo %}
+                        <div class="producto-por-agotar">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ producto.nombre }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        Stock: {{ producto.stock_actual }} / Mínimo: {{ producto.stock_minimo }}
+                                    </small>
+                                </div>
+                                <span class="badge bg-warning text-dark">Bajo</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <p class="text-muted text-center py-3">
+                            <i class="fas fa-check-circle text-success"></i><br>
+                            Todos los productos tienen stock suficiente
+                        </p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Productos Próximos a Caducar -->
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Próximos a Caducar (30 días)</h6>
+                        {% if productos_proximos_caducar %}
+                        {% for producto in productos_proximos_caducar %}
+                        <div class="producto-por-agotar">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ producto.nombre }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        Lote: {{ producto.lote }} | 
+                                        Caduca: {{ producto.fecha_caducidad|date:"d/m/Y" }}
+                                    </small>
+                                </div>
+                                <span class="badge bg-warning text-dark">{{ producto.dias_restantes }}d</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <p class="text-muted text-center py-3">
+                            <i class="fas fa-check-circle text-success"></i><br>
+                            No hay productos próximos a caducar
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="d-flex gap-2 mt-3">
+                    <a href="{% url 'inventario_general' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-boxes me-2"></i>Ver Inventario Completo
+                    </a>
+                    <a href="{% url 'entrada_mercancia' %}" class="btn btn-outline-success">
+                        <i class="fas fa-truck-loading me-2"></i>Registrar Entrada
+                    </a>
+                    <a href="{% url 'ajustes_inventario' %}" class="btn btn-outline-warning">
+                        <i class="fas fa-balance-scale me-2"></i>Ajuste de Inventario
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

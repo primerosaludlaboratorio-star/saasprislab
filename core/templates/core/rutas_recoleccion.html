@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Rutas y Recolección{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="mb-1">Rutas y Recolección</h2>
+      <div class="text-muted">Módulo “Uber de Muestras” (MVP): lista y geolocalización base.</div>
+    </div>
+    <div class="d-flex gap-2">
+      <span class="badge bg-secondary">Órdenes: {{ total_ordenes }}</span>
+      <span class="badge bg-success">Con Geo: {{ total_con_geo }}</span>
+    </div>
+  </div>
+
+  <div class="alert alert-warning mt-3">
+    <strong>MVP:</strong> Este acceso ya existe. El siguiente paso es integrar mapa (Google Maps) + tracking de chofer + estados.
+  </div>
+
+  <div class="card shadow-sm mt-3">
+    <div class="card-header bg-white">
+      <strong>Órdenes recientes</strong>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Folio</th>
+              <th>Paciente</th>
+              <th>Fecha</th>
+              <th class="text-end">Total</th>
+              <th>Geo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for o in ordenes %}
+              <tr>
+                <td>{{ o.folio_orden|default:o.id }}</td>
+                <td>{{ o.paciente.nombre_completo }}</td>
+                <td>{{ o.fecha_creacion|date:"Y-m-d H:i" }}</td>
+                <td class="text-end">{{ o.total }}</td>
+                <td>
+                  {% if o.latitud and o.longitud %}
+                    <span class="badge bg-success">OK</span>
+                  {% else %}
+                    <span class="badge bg-secondary">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">Sin órdenes.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

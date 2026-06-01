@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Registrar Incidencia — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:620px">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="fas fa-exclamation-circle text-warning me-2"></i>
+      {{ incidencia|yesno:"Editar,Nueva" }} Incidencia
+    </h3>
+    <a href="{% url 'incidencias_asistencia' %}" class="btn btn-outline-secondary btn-sm">← Volver</a>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Empleado *</label>
+          <select name="empleado" class="form-select" required>
+            <option value="">— Seleccionar —</option>
+            {% for emp in empleados %}
+            <option value="{{ emp.id }}" {% if incidencia.empleado_id == emp.id %}selected{% endif %}>
+              {{ emp.usuario.get_full_name|default:emp.usuario.username }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Tipo de incidencia *</label>
+          <select name="tipo" class="form-select" required>
+            <option value="FALTA"       {% if incidencia.tipo == 'FALTA' %}selected{% endif %}>Falta</option>
+            <option value="RETARDO"     {% if incidencia.tipo == 'RETARDO' %}selected{% endif %}>Retardo</option>
+            <option value="PERMISO"     {% if incidencia.tipo == 'PERMISO' %}selected{% endif %}>Permiso con goce</option>
+            <option value="PERMISO_SG"  {% if incidencia.tipo == 'PERMISO_SG' %}selected{% endif %}>Permiso sin goce</option>
+            <option value="VACACIONES"  {% if incidencia.tipo == 'VACACIONES' %}selected{% endif %}>Vacaciones</option>
+            <option value="INCAPACIDAD" {% if incidencia.tipo == 'INCAPACIDAD' %}selected{% endif %}>Incapacidad médica</option>
+            <option value="OTRO"        {% if incidencia.tipo == 'OTRO' %}selected{% endif %}>Otro</option>
+          </select>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Fecha inicio *</label>
+            <input type="date" name="fecha_inicio" class="form-control"
+                   value="{{ incidencia.fecha_inicio|date:'Y-m-d'|default:today }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Fecha fin *</label>
+            <input type="date" name="fecha_fin" class="form-control"
+                   value="{{ incidencia.fecha_fin|date:'Y-m-d'|default:today }}" required>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Motivo / justificación</label>
+          <textarea name="motivo" rows="3" class="form-control" placeholder="Describe la incidencia...">{{ incidencia.motivo|default:'' }}</textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Documento de soporte</label>
+          <input type="file" name="documento_soporte" class="form-control" accept=".pdf,.jpg,.png">
+          <div class="form-text">PDF o imagen (incapacidad, permiso, etc.)</div>
+        </div>
+        <div class="d-flex gap-2 justify-content-end">
+          <a href="{% url 'incidencias_asistencia' %}" class="btn btn-outline-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-warning">Guardar incidencia</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

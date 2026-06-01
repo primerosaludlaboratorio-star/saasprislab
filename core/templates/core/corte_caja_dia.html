@@ -1,0 +1,416 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Corte de Caja - {{ empresa }}{% endblock %}
+
+{% block extra_css %}
+<style>
+        :root { --prislab-red: #D9230F; --prislab-gray: #54565A; }
+        .bg-primary { background-color: var(--prislab-red) !important; }
+        body { background-color: #f4f6f9; }
+        .card-resumen { border-left: 5px solid; }
+        .resumen-efectivo { border-left-color: #28a745; }
+        .resumen-digital { border-left-color: #17a2b8; }
+        .resumen-gastos { border-left-color: #dc3545; }
+        .resumen-saldo { border-left-color: #ffc107; }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4" style="margin-top: 70px;">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="fw-bold mb-0"><i class="bi bi-calculator"></i> CORTE DE CAJA</h2>
+            <small class="text-muted">{{ fecha|date:"d/m/Y" }} | {{ empresa }}</small>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <!-- FILTRO DE FECHA -->
+            <form method="get" class="d-flex align-items-center gap-2" id="filtro-fecha-form">
+                <div class="input-group" style="width: 200px;">
+                    <span class="input-group-text bg-primary text-white">
+                        <i class="bi bi-calendar3"></i>
+                    </span>
+                    <input type="date" 
+                           name="fecha" 
+                           id="filtro-fecha" 
+                           class="form-control" 
+                           value="{{ fecha_seleccionada|default:'' }}"
+                           style="border-color: #D9230F; color: #D9230F; font-weight: bold;"
+                           onchange="document.getElementById('filtro-fecha-form').submit();">
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetearFecha()" title="Ver fecha de hoy">
+                    <i class="bi bi-arrow-clockwise"></i> HOY
+                </button>
+            </form>
+            <a href="{% url 'pdv_farmacia' %}" class="btn btn-primary fw-bold">
+                <i class="bi bi-arrow-left"></i> VOLVER AL PDV
+            </a>
+        </div>
+    </div>
+
+    <!-- RESUMEN DE CAJA -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card card-resumen resumen-efectivo shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small mb-1">VENTAS EN EFECTIVO</h6>
+                    <h3 class="fw-bold mb-0 text-success">$ {{ ventas_efectivo|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card card-resumen resumen-digital shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small mb-1">VENTAS DIGITALES</h6>
+                    <h3 class="fw-bold mb-0 text-info">$ {{ ventas_digital|floatformat:2 }}</h3>
+                    <small class="text-muted">Tarjeta / Transferencia</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card card-resumen resumen-gastos shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small mb-1">GASTOS DEL DÍA</h6>
+                    <h3 class="fw-bold mb-0 text-danger">$ {{ total_gastos|floatformat:2 }}</h3>
+                    {% if total_devoluciones and total_devoluciones > 0 %}
+                    <small class="text-muted">Devoluciones: $ {{ total_devoluciones|floatformat:2 }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card card-resumen resumen-saldo shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small mb-1">SALDO ESPERADO</h6>
+                    <h3 class="fw-bold mb-0 text-warning" id="saldo-esperado" style="display: none;">$ {{ saldo_caja|floatformat:2 }}</h3>
+                    <div id="corte-ciego-container">
+                        <label class="form-label fw-bold mb-2">¿CUÁNTO TIENES EN CAJA?</label>
+                        <input type="number" 
+                               id="monto-reportado" 
+                               class="form-control form-control-lg fw-bold text-center" 
+                               step="0.01" 
+                               placeholder="0.00"
+                               style="font-size: 2rem; border: 3px solid var(--prislab-red);">
+                        <button class="btn btn-primary btn-lg w-100 mt-3 fw-bold" onclick="calcularDiferencia()">
+                            <i class="bi bi-calculator"></i> CALCULAR DIFERENCIA
+                        </button>
+                    </div>
+                    <div id="resultado-diferencia" style="display: none;" class="mt-3">
+                        <div id="mensaje-diferencia" class="alert fw-bold text-center"></div>
+                        <div class="d-flex justify-content-between small">
+                            <span>Esperado:</span>
+                            <span id="monto-esperado-valor" class="fw-bold">$0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span>Reportado:</span>
+                            <span id="monto-reportado-valor" class="fw-bold">$0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-top pt-2 mt-2">
+                            <span class="fw-bold">Diferencia:</span>
+                            <span id="diferencia-valor" class="fw-bold">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DESGLOSE POR AREA -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-pie-chart"></i> DESGLOSE POR AREA</span>
+                    <button class="btn btn-light btn-sm fw-bold" onclick="window.print()">
+                        <i class="bi bi-printer"></i> IMPRIMIR CORTE
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>AREA</th>
+                                    <th class="text-end">EFECTIVO</th>
+                                    <th class="text-end">DIGITAL</th>
+                                    <th class="text-end fw-bold">TOTAL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><i class="bi bi-capsule text-primary"></i> <b>Farmacia</b></td>
+                                    <td class="text-end text-success">$ {{ ventas_efectivo_farm|floatformat:2 }}</td>
+                                    <td class="text-end text-info">$ {{ ventas_digital_farm|floatformat:2 }}</td>
+                                    <td class="text-end fw-bold">$ {{ total_farmacia|floatformat:2 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="bi bi-droplet text-danger"></i> <b>Laboratorio</b></td>
+                                    <td class="text-end text-success">$ {{ lab_efectivo|floatformat:2 }}</td>
+                                    <td class="text-end text-info">$ {{ lab_digital|floatformat:2 }}</td>
+                                    <td class="text-end fw-bold">$ {{ total_lab|floatformat:2 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="bi bi-heart-pulse text-warning"></i> <b>Consultorio</b></td>
+                                    <td class="text-end text-success">$ {{ cons_efectivo|floatformat:2 }}</td>
+                                    <td class="text-end text-info">$ {{ cons_digital|floatformat:2 }}</td>
+                                    <td class="text-end fw-bold">$ {{ total_consultorio|floatformat:2 }}</td>
+                                </tr>
+                            </tbody>
+                            <tfoot class="table-dark">
+                                <tr>
+                                    <td class="fw-bold">TOTAL CONSOLIDADO</td>
+                                    <td class="text-end fw-bold text-success">$ {{ ventas_efectivo|floatformat:2 }}</td>
+                                    <td class="text-end fw-bold text-info">$ {{ ventas_digital|floatformat:2 }}</td>
+                                    <td class="text-end fw-bold" style="font-size:1.1rem;">$ {{ total_ventas|floatformat:2 }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GASTOS DEL DÍA -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white fw-bold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-dash-circle"></i> GASTOS / SALIDAS DE EFECTIVO</span>
+                    <button class="btn btn-light btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#modalGasto">
+                        <i class="bi bi-plus-circle"></i> Registrar Gasto
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>HORA</th>
+                                    <th>CONCEPTO</th>
+                                    <th>MONTO</th>
+                                    <th>USUARIO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for gasto in gastos %}
+                                <tr>
+                                    <td>{{ gasto.fecha|date:"H:i" }}</td>
+                                    <td>{{ gasto.concepto }}</td>
+                                    <td class="text-danger fw-bold">$ {{ gasto.monto|floatformat:2 }}</td>
+                                    <td>{{ gasto.usuario.get_full_name|default:gasto.usuario.username }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">
+                                        <i class="bi bi-check-circle"></i> Sin gastos registrados hoy
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: REGISTRAR GASTO -->
+    <div class="modal fade" id="modalGasto" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-cash-coin"></i> Registrar Salida de Efectivo
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Concepto <span class="text-danger">*</span></label>
+                        <select class="form-select" id="gastoConcepto">
+                            <option value="">-- Seleccionar --</option>
+                            <option value="Garrafon de agua">Garrafon de agua</option>
+                            <option value="Articulos de limpieza">Articulos de limpieza</option>
+                            <option value="Papeleria">Papeleria</option>
+                            <option value="Comida / Alimentos">Comida / Alimentos</option>
+                            <option value="Transporte / Mensajeria">Transporte / Mensajeria</option>
+                            <option value="Mantenimiento">Mantenimiento</option>
+                            <option value="Otro">Otro (especificar)</option>
+                        </select>
+                        <input type="text" class="form-control mt-2" id="gastoConceptoOtro" 
+                               placeholder="Especificar concepto..." style="display:none;">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Monto <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control form-control-lg fw-bold" 
+                                   id="gastoMonto" step="0.01" min="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger fw-bold" id="btnRegistrarGasto" onclick="registrarGasto()">
+                        <i class="bi bi-dash-circle"></i> Registrar Gasto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Persistencia de fecha seleccionada
+    document.addEventListener('DOMContentLoaded', function() {
+        const fechaInput = document.getElementById('filtro-fecha');
+        const fechaGuardada = localStorage.getItem('fechaFiltroCorte');
+        
+        if (fechaGuardada && !new URLSearchParams(window.location.search).get('fecha')) {
+            fechaInput.value = fechaGuardada;
+            if (fechaInput.value !== '{{ fecha_seleccionada|default:"" }}') {
+                window.location.href = window.location.pathname + '?fecha=' + fechaGuardada;
+            }
+        } else if (!fechaInput.value) {
+            const hoy = new Date().toISOString().split('T')[0];
+            fechaInput.value = hoy;
+        }
+        
+        fechaInput.addEventListener('change', function() {
+            localStorage.setItem('fechaFiltroCorte', this.value);
+        });
+    });
+    
+    function resetearFecha() {
+        const hoy = new Date().toISOString().split('T')[0];
+        localStorage.setItem('fechaFiltroCorte', hoy);
+        window.location.href = window.location.pathname;
+    }
+    
+    // ==============================================================================
+    // CORTE CIEGO (V 5.0) - El cajero no ve el monto esperado
+    // ==============================================================================
+    function calcularDiferencia() {
+        const montoReportadoEl = document.getElementById('monto-reportado');
+        if (!montoReportadoEl) return;
+        const montoReportado = parseFloat(montoReportadoEl.value) || 0;
+        const montoEsperado = {{ saldo_caja|default:0 }};
+        
+        if (montoReportado === 0) {
+            alert('Por favor ingresa el monto que tienes en caja.');
+            return;
+        }
+        
+        const diferencia = montoReportado - montoEsperado;
+        const tolerancia = 0.50;
+        
+        // Mostrar resultado
+        document.getElementById('monto-esperado-valor').textContent = `$${montoEsperado.toFixed(2)}`;
+        document.getElementById('monto-reportado-valor').textContent = `$${montoReportado.toFixed(2)}`;
+        document.getElementById('diferencia-valor').textContent = `$${diferencia.toFixed(2)}`;
+        
+        const mensajeDiv = document.getElementById('mensaje-diferencia');
+        const diferenciaValor = document.getElementById('diferencia-valor');
+        
+        if (Math.abs(diferencia) <= tolerancia) {
+            mensajeDiv.className = 'alert alert-success fw-bold text-center';
+            mensajeDiv.textContent = '✅ CORTE CORRECTO';
+            diferenciaValor.className = 'fw-bold text-success';
+        } else if (diferencia > 0) {
+            mensajeDiv.className = 'alert alert-warning fw-bold text-center';
+            mensajeDiv.textContent = `⚠️ SOBRANTE: $${diferencia.toFixed(2)}`;
+            diferenciaValor.className = 'fw-bold text-warning';
+        } else {
+            mensajeDiv.className = 'alert alert-danger fw-bold text-center';
+            mensajeDiv.textContent = `❌ FALTANTE: $${Math.abs(diferencia).toFixed(2)}`;
+            diferenciaValor.className = 'fw-bold text-danger';
+        }
+        
+        document.getElementById('resultado-diferencia').style.display = 'block';
+        document.getElementById('saldo-esperado').style.display = 'block';
+        
+        // Registrar incidencia si hay diferencia significativa
+        if (Math.abs(diferencia) > tolerancia) {
+            // Aquí se podría guardar en BD para auditoría
+            console.log('Incidencia registrada:', {
+                fecha: '{{ fecha|date:"Y-m-d" }}',
+                esperado: montoEsperado,
+                reportado: montoReportado,
+                diferencia: diferencia
+            });
+        }
+    }
+    
+    // Permitir Enter para calcular
+    document.getElementById('monto-reportado')?.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            calcularDiferencia();
+        }
+    });
+
+    // ================================================================
+    // REGISTRO DE GASTOS (CAJA CHICA)
+    // ================================================================
+    document.getElementById('gastoConcepto')?.addEventListener('change', function() {
+        const otro = document.getElementById('gastoConceptoOtro');
+        otro.style.display = this.value === 'Otro' ? 'block' : 'none';
+        if (this.value !== 'Otro') otro.value = '';
+    });
+
+    function registrarGasto() {
+        const conceptoEl = document.getElementById('gastoConcepto');
+        const otroEl = document.getElementById('gastoConceptoOtro');
+        const montoEl = document.getElementById('gastoMonto');
+        const btn = document.getElementById('btnRegistrarGasto');
+        if (!conceptoEl || !montoEl || !btn) return;
+        const selectVal = conceptoEl.value;
+        const otroVal = otroEl ? otroEl.value.trim() : '';
+        const concepto = selectVal === 'Otro' ? otroVal : selectVal;
+        const monto = parseFloat(montoEl.value);
+
+        if (!concepto) {
+            Swal.fire('Error', 'Selecciona o escribe un concepto.', 'warning');
+            return;
+        }
+        if (!monto || monto <= 0) {
+            Swal.fire('Error', 'Ingresa un monto valido.', 'warning');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Registrando...';
+
+        fetch("{% url 'registro_gasto' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ concepto: concepto, monto: monto })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Gasto registrado',
+                    text: `$${monto.toFixed(2)} - ${concepto}`,
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => location.reload());
+            } else {
+                throw new Error(data.mensaje || 'Error desconocido');
+            }
+        })
+        .catch(err => {
+            Swal.fire('Error', err.message, 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-dash-circle"></i> Registrar Gasto';
+        });
+    }
+</script>
+{% endblock %}

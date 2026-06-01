@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load math_filters %}
+
+{% block title %}Resultado Corte de Caja{% endblock %}
+
+{% block extra_css %}
+<style>
+    .resultado-header {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+    }
+    
+    .resultado-peligro {
+        background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        color: white;
+    }
+    
+    .resultado-warning {
+        background: linear-gradient(135deg, #f2994a 0%, #f2c94c 100%);
+        color: white;
+    }
+    
+    .stat-box {
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        color: white;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-sistema { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-declarado { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stat-diferencia { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+    
+    .tabla-comparativa {
+        font-size: 1.1rem;
+    }
+    
+    .tabla-comparativa th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+    
+    .print-button {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 1000;
+    }
+    
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        .print-button {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    
+    <!-- ========================================================== -->
+    <!-- HEADER RESULTADO -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            
+            {% if estado == 'CUADRADO' %}
+                <div class="resultado-header p-5 rounded shadow-lg">
+                    <i class="bi bi-check-circle" style="font-size: 5rem;"></i>
+                    <h1 class="display-4 mt-3">¡CAJA CUADRADA!</h1>
+                    <p class="lead mb-0">El arqueo coincide con el sistema</p>
+                </div>
+            {% elif estado == 'SOBRANTE' %}
+                <div class="resultado-warning p-5 rounded shadow-lg">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 5rem;"></i>
+                    <h1 class="display-4 mt-3">SOBRANTE DETECTADO</h1>
+                    <p class="lead mb-0">Hay más dinero del esperado</p>
+                </div>
+            {% else %}
+                <div class="resultado-peligro p-5 rounded shadow-lg">
+                    <i class="bi bi-x-circle" style="font-size: 5rem;"></i>
+                    <h1 class="display-4 mt-3">FALTANTE DETECTADO</h1>
+                    <p class="lead mb-0">Hay menos dinero del esperado</p>
+                </div>
+            {% endif %}
+            
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- INFORMACIÓN DEL CORTE -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-md-6 mx-auto">
+            <div class="card">
+                <div class="card-body text-center">
+                    <p class="mb-1"><strong>Folio de Corte:</strong> <code>{{ corte_id }}</code></p>
+                    <p class="mb-1"><strong>Fecha y Hora:</strong> {{ fecha_corte|date:"d/m/Y H:i:s" }}</p>
+                    <p class="mb-0"><strong>Total de Ventas:</strong> {{ total_ventas }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- TARJETAS DE RESUMEN -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="stat-box stat-sistema">
+                <h6 class="text-uppercase mb-2">Total Sistema</h6>
+                <h2 class="mb-0">${{ sistema_total|floatformat:2 }}</h2>
+                <small>Ventas registradas</small>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="stat-box stat-declarado">
+                <h6 class="text-uppercase mb-2">Total Declarado</h6>
+                <h2 class="mb-0">${{ declarado_total|floatformat:2 }}</h2>
+                <small>Arqueo del cajero</small>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="stat-box stat-diferencia">
+                <h6 class="text-uppercase mb-2">Diferencia</h6>
+                <h2 class="mb-0">
+                    {% if diferencia_total > 0 %}
+                        +${{ diferencia_total|floatformat:2 }}
+                    {% elif diferencia_total < 0 %}
+                        -${{ diferencia_total|abs|floatformat:2 }}
+                    {% else %}
+                        $0.00
+                    {% endif %}
+                </h2>
+                <small>
+                    {% if diferencia_total > 0 %}
+                        Sobrante
+                    {% elif diferencia_total < 0 %}
+                        Faltante
+                    {% else %}
+                        Exacto
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- TABLA COMPARATIVA DETALLADA -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-table"></i>
+                        Detalle Comparativo por Método de Pago
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table tabla-comparativa mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Método de Pago</th>
+                                    <th class="text-end">Sistema</th>
+                                    <th class="text-end">Declarado</th>
+                                    <th class="text-end">Diferencia</th>
+                                    <th class="text-center">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Efectivo -->
+                                <tr>
+                                    <td>
+                                        <i class="bi bi-cash text-success"></i>
+                                        <strong>Efectivo</strong>
+                                    </td>
+                                    <td class="text-end">${{ sistema_efectivo|floatformat:2 }}</td>
+                                    <td class="text-end">${{ declarado_efectivo|floatformat:2 }}</td>
+                                    <td class="text-end">
+                                        {% if diferencia_efectivo > 0 %}
+                                            <span class="text-warning">+${{ diferencia_efectivo|floatformat:2 }}</span>
+                                        {% elif diferencia_efectivo < 0 %}
+                                            <span class="text-danger">-${{ diferencia_efectivo|abs|floatformat:2 }}</span>
+                                        {% else %}
+                                            <span class="text-success">$0.00</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if diferencia_efectivo == 0 %}
+                                            <span class="badge bg-success">Cuadrado</span>
+                                        {% elif diferencia_efectivo > 0 %}
+                                            <span class="badge bg-warning">Sobrante</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Faltante</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                
+                                <!-- Tarjeta -->
+                                <tr>
+                                    <td>
+                                        <i class="bi bi-credit-card text-primary"></i>
+                                        <strong>Tarjeta/SPEI</strong>
+                                    </td>
+                                    <td class="text-end">${{ sistema_tarjeta|floatformat:2 }}</td>
+                                    <td class="text-end">
+                                        ${{ declarado_tarjeta|add:declarado_transferencia|floatformat:2 }}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if diferencia_tarjeta > 0 %}
+                                            <span class="text-warning">+${{ diferencia_tarjeta|floatformat:2 }}</span>
+                                        {% elif diferencia_tarjeta < 0 %}
+                                            <span class="text-danger">-${{ diferencia_tarjeta|abs|floatformat:2 }}</span>
+                                        {% else %}
+                                            <span class="text-success">$0.00</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if diferencia_tarjeta == 0 %}
+                                            <span class="badge bg-success">Cuadrado</span>
+                                        {% elif diferencia_tarjeta > 0 %}
+                                            <span class="badge bg-warning">Sobrante</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Faltante</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot class="table-dark">
+                                <tr>
+                                    <th>TOTAL</th>
+                                    <th class="text-end">${{ sistema_total|floatformat:2 }}</th>
+                                    <th class="text-end">${{ declarado_total|floatformat:2 }}</th>
+                                    <th class="text-end">
+                                        {% if diferencia_total > 0 %}
+                                            <span class="text-warning">+${{ diferencia_total|floatformat:2 }}</span>
+                                        {% elif diferencia_total < 0 %}
+                                            <span class="text-danger">-${{ diferencia_total|abs|floatformat:2 }}</span>
+                                        {% else %}
+                                            <span class="text-success">$0.00</span>
+                                        {% endif %}
+                                    </th>
+                                    <th class="text-center">
+                                        {% if estado == 'CUADRADO' %}
+                                            <span class="badge bg-success">Cuadrado</span>
+                                        {% elif estado == 'SOBRANTE' %}
+                                            <span class="badge bg-warning">Sobrante</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Faltante</span>
+                                        {% endif %}
+                                    </th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- OBSERVACIONES DEL CAJERO -->
+    <!-- ========================================================== -->
+    {% if observaciones %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-chat-left-text"></i>
+                        Observaciones del Cajero
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ observaciones }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- ========================================================== -->
+    <!-- BOTONES DE ACCIÓN -->
+    <!-- ========================================================== -->
+    <div class="row no-print">
+        <div class="col-12 text-center">
+            <button onclick="window.print()" class="btn btn-lg btn-primary me-2">
+                <i class="bi bi-printer"></i> Imprimir Corte
+            </button>
+            <a href="{% url 'farmacia:dashboard_alertas' %}" class="btn btn-lg btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+    
+    <!-- Botón Flotante de Impresión -->
+    <button onclick="window.print()" class="btn btn-primary btn-lg print-button shadow-lg">
+        <i class="bi bi-printer"></i>
+    </button>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Resaltar diferencias significativas
+    document.addEventListener('DOMContentLoaded', function() {
+        const diferencia = {{ diferencia_total }};
+        
+        if (Math.abs(diferencia) > 50) {
+            console.warn('Diferencia significativa detectada: $', diferencia);
+        }
+    });
+</script>
+{% endblock %}

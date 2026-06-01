@@ -1,0 +1,391 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+{% load l10n %}
+{% block title %}Gestión de Precios — LIMS{% endblock %}
+{% block extra_css %}
+<style>
+body { background: #f4f6f9; }
+.lims-header { background: linear-gradient(135deg, #1b2631 0%, #2e4057 100%); }
+.badge-A { background: #27ae60; }
+.badge-P { background: #2980b9; }
+.badge-Q { background: #e67e22; }
+.precio-input { max-width: 110px; }
+.btn-save-precio { display:none; }
+tr:hover .btn-save-precio { display:inline-flex; }
+#panel-ajuste { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top:70px;">
+
+  <!-- Header -->
+  <div class="lims-header rounded-3 p-4 mb-4 text-white d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="m-0 fw-bold"><i class="fas fa-dollar-sign me-2"></i>Ventana D — Gestión Financiera de Precios</h3>
+      <small class="opacity-75">Nivel 4 · Filas <code>PrecioItem</code> en BD (A/P/Q) · {{ total }} ítems</small>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <span class="badge bg-success badge-A px-3 py-2">A Analito</span>
+      <span class="badge bg-primary badge-P px-3 py-2">P Perfil</span>
+      <span class="badge bg-warning text-dark badge-Q px-3 py-2">Q Paquete</span>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Panel de ajuste masivo -->
+    <div class="col-md-3">
+      <div id="panel-ajuste" class="p-4 sticky-top" style="top:75px;">
+        <h6 class="fw-bold text-uppercase text-muted mb-3">
+          <i class="fas fa-chart-line me-1"></i> Ajuste por Inflación
+        </h6>
+        <div class="mb-3">
+          <label class="small fw-bold">Porcentaje de ajuste</label>
+          <div class="input-group">
+            <input type="number" id="inp-porcentaje" class="form-control" value="5" step="0.1"
+                   placeholder="5 = +5%, -3 = -3%">
+            <span class="input-group-text">%</span>
+          </div>
+          <div class="form-text">Positivo = aumento · Negativo = reducción</div>
+        </div>
+        <div class="mb-3">
+          <button class="btn btn-outline-secondary btn-sm w-100" id="btn-sel-todos">
+            <i class="fas fa-check-square me-1"></i> Seleccionar todos
+          </button>
+        </div>
+        <button id="btn-ajuste-masivo" class="btn btn-danger w-100 fw-bold py-2">
+          <i class="fas fa-bolt me-1"></i> Aplicar ajuste
+        </button>
+        <div id="msg-ajuste" class="mt-2 text-success small fw-bold" style="min-height:24px;"></div>
+        <hr>
+        <!-- Filtros -->
+        <h6 class="fw-bold text-uppercase text-muted mb-2">Filtrar vista</h6>
+        <form method="get">
+          <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm mb-2" placeholder="Nombre o código…">
+          <select name="tipo" class="form-select form-select-sm mb-2">
+            <option value="" {% if not tipo_filtro %}selected{% endif %}>Todos los tipos</option>
+            <option value="A" {% if tipo_filtro == 'A' %}selected{% endif %}>Solo Analitos</option>
+            <option value="P" {% if tipo_filtro == 'P' %}selected{% endif %}>Solo Perfiles</option>
+            <option value="Q" {% if tipo_filtro == 'Q' %}selected{% endif %}>Solo Paquetes</option>
+          </select>
+          <button type="submit" class="btn btn-primary btn-sm w-100">Filtrar</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tabla de precios -->
+    <div class="col-md-9">
+      <div class="card shadow-sm border-warning mb-3">
+        <div class="card-header bg-warning bg-opacity-25 fw-bold py-2">
+          <i class="fas fa-shield-alt me-1 text-warning"></i> Interruptor de venta (Nivel 4)
+        </div>
+        <div class="card-body py-3">
+          <p class="small text-muted mb-2">
+            La tabla inferior refleja los precios sincronizados (job <code>ensamblar_lims_v75</code> / Nivel 4). Para dar de alta un <strong>analito con venta directa</strong> que aún no tenga fila de precio, búsquelo aquí; si es <strong>técnico</strong>, el sistema avisará hasta que active PDV en
+            <a href="{% url 'lims_analitos' %}">Ventana A → Editar analito</a>.
+          </p>
+          <div class="position-relative">
+            <input type="text" id="precios-buscar-analito" class="form-control form-control-sm"
+                   placeholder="Escriba código, abreviatura o nombre (mín. 2 caracteres)…" autocomplete="off">
+            <div id="precios-ta-dropdown" class="list-group position-absolute w-100 shadow-sm mt-1"
+                 style="display:none; z-index:20; max-height:220px; overflow-y:auto;"></div>
+          </div>
+          <div id="precios-ta-msg" class="small mt-2 text-muted"></div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0" id="tabla-precios">
+            <thead class="table-dark">
+              <tr>
+                <th width="3%"><input type="checkbox" id="chk-all" title="Seleccionar todos"></th>
+                <th width="5%">Tipo</th>
+                <th width="14%">Código</th>
+                <th width="28%">Nombre</th>
+                <th width="18%">Info</th>
+                <th width="16%">Precio de Venta</th>
+                <th width="7%">Estado</th>
+                <th width="9%"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in items %}
+              <tr>
+                <td><input type="checkbox" class="chk-item" data-precio-id="{{ item.precio_id }}"></td>
+                <td>
+                  <span class="badge badge-{{ item.tipo }}">{{ item.tipo }}</span>
+                </td>
+                <td><code class="small text-break">{{ item.codigo|default:"—" }}</code></td>
+                <td class="fw-semibold">{{ item.nombre }}</td>
+                <td><small class="text-muted">{{ item.subtitulo }}</small></td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="input-group precio-input">
+                      <span class="input-group-text p-1"><small>$</small></span>
+                      <input type="number" step="0.01" min="0"
+                             class="form-control form-control-sm inp-precio"
+                             data-precio-id="{{ item.precio_id }}"
+                             {% localize off %}value="{{ item.precio_venta }}"{% endlocalize %}
+                             style="max-width:85px;">
+                    </div>
+                    <button class="btn btn-sm btn-success btn-save-precio" data-precio-id="{{ item.precio_id }}" title="Guardar precio">
+                      <i class="fas fa-check"></i>
+                    </button>
+                  </div>
+                </td>
+                <td>
+                  {% if item.activo %}
+                    <span class="badge bg-success">Activo</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Inact.</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-outline-success btn-guardar-precio"
+                          data-precio-id="{{ item.precio_id }}" title="Guardar">
+                    <i class="fas fa-save"></i>
+                  </button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="8" class="text-center py-5 text-muted">
+                  <i class="fas fa-dollar-sign fa-3x opacity-25 d-block mb-2"></i>
+                  No se encontraron ítems con los filtros aplicados.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal aviso analito técnico (422) -->
+<div class="modal fade" id="modalNoVentaDirecta" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-warning">
+      <div class="modal-header bg-warning bg-opacity-25">
+        <h5 class="modal-title" id="modalNoVentaTitulo"><i class="fas fa-exclamation-triangle me-1"></i> Aviso</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2" id="modalNoVentaTexto"></p>
+        <p class="small text-muted mb-0" id="modalNoVentaDetalle"></p>
+      </div>
+      <div class="modal-footer">
+        <a href="{% url 'lims_analitos' %}" class="btn btn-primary btn-sm">Ir a Ventana A (Analitos)</a>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var CSRF = '{{ csrf_token }}';
+var API_PREC_BUSCAR = '{% url "lims_api_precios_buscar_analitos" %}';
+var API_PREC_AGREGAR = '{% url "lims_api_precios_agregar_analito" %}';
+var API_PRECIO_ACT_TPL = '{% url "lims_precio_actualizar" precio_pk=999999999 %}';
+var API_AJUSTE_MASIVO = '{% url "lims_ajuste_masivo" %}';
+
+(function() {
+    var inp = document.getElementById('precios-buscar-analito');
+    var drop = document.getElementById('precios-ta-dropdown');
+    var msg = document.getElementById('precios-ta-msg');
+    if (!inp || !drop) return;
+    var t = null;
+    inp.addEventListener('input', function() {
+        clearTimeout(t);
+        var q = inp.value.trim();
+        if (q.length < 2) { drop.style.display = 'none'; return; }
+        t = setTimeout(function() {
+            fetch(API_PREC_BUSCAR + '?q=' + encodeURIComponent(q), {credentials: 'same-origin'})
+            .then(function(r) {
+                if (!r.ok) {
+                    return r.json().then(function(body) {
+                        throw new Error(body.error || ('HTTP ' + r.status));
+                    }).catch(function() {
+                        throw new Error('HTTP ' + r.status);
+                    });
+                }
+                return r.json();
+            })
+            .then(function(data) {
+                drop.innerHTML = '';
+                (data.resultados || []).forEach(function(a) {
+                    var vend = a.es_vendible_individualmente ? '<span class="badge bg-success ms-1">Venta</span>' : '<span class="badge bg-secondary ms-1">Técnico</span>';
+                    var ya = a.tiene_precio ? ' <small class="text-muted">(ya en precios)</small>' : '';
+                    var item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'list-group-item list-group-item-action py-2 text-start';
+                    item.innerHTML = '<strong>' + (a.codigo || '') + '</strong> ' + (a.abreviatura || '') + vend + ya +
+                        '<br><small class="text-muted">' + (a.nombre || '').substring(0, 80) + '</small>';
+                    item.addEventListener('click', function() { agregarAnalitoPrecio(a.id); });
+                    drop.appendChild(item);
+                });
+                drop.style.display = (data.resultados && data.resultados.length) ? 'block' : 'none';
+            })
+            .catch(function(err) {
+                msg.textContent = err.message || 'Error al buscar analitos';
+                msg.className = 'small mt-2 text-danger fw-bold';
+                drop.style.display = 'none';
+            });
+        }, 280);
+    });
+    document.addEventListener('click', function(e) {
+        if (!inp.contains(e.target) && !drop.contains(e.target)) drop.style.display = 'none';
+    });
+
+    function agregarAnalitoPrecio(id) {
+        drop.style.display = 'none';
+        msg.textContent = 'Procesando…';
+        fetch(API_PREC_AGREGAR, {
+            method: 'POST',
+            headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/json'},
+            body: JSON.stringify({analito_id: id}),
+            credentials: 'same-origin',
+        })
+        .then(function(r) {
+            return r.json().then(function(data) { return {ok: r.ok, status: r.status, data: data}; });
+        })
+        .then(function(res) {
+            if (res.status === 422 && (res.data.codigo === 'NO_VENTA_INDIVIDUAL' || res.data.codigo === 'NO_VENTA_DIRECTA')) {
+                msg.textContent = '';
+                document.getElementById('modalNoVentaTitulo').innerHTML =
+                    '<i class="fas fa-ban me-1"></i> ' + (res.data.titulo || 'No permitido');
+                document.getElementById('modalNoVentaTexto').textContent = res.data.mensaje || '';
+                var det = res.data.analito ? ('Código: ' + res.data.analito.codigo + ' — ' + res.data.analito.nombre) : '';
+                document.getElementById('modalNoVentaDetalle').textContent = det;
+                new bootstrap.Modal(document.getElementById('modalNoVentaDirecta')).show();
+                return;
+            }
+            if (res.data.ok) {
+                msg.textContent = res.data.mensaje || 'Listo.';
+                msg.className = 'small mt-2 text-success fw-bold';
+                setTimeout(function() { location.reload(); }, 800);
+                return;
+            }
+            msg.textContent = res.data.error || 'Error';
+            msg.className = 'small mt-2 text-danger';
+        })
+        .catch(function() {
+            msg.textContent = 'Error de red';
+            msg.className = 'small mt-2 text-danger';
+        });
+    }
+})();
+
+// ── Checkbox seleccionar todos ──────────────────────────────────────────────
+var chkAll = document.getElementById('chk-all');
+if (chkAll) chkAll.addEventListener('change', function() {
+    document.querySelectorAll('.chk-item').forEach(c => c.checked = this.checked);
+});
+document.getElementById('btn-sel-todos').addEventListener('click', function() {
+    var chks = document.querySelectorAll('.chk-item');
+    var todosSeleccionados = Array.from(chks).every(c => c.checked);
+    chks.forEach(c => c.checked = !todosSeleccionados);
+    if (chkAll) chkAll.checked = !todosSeleccionados;
+});
+
+// ── Guardar precio individual ───────────────────────────────────────────────
+function guardarPrecio(precioId) {
+    var inp = document.querySelector('.inp-precio[data-precio-id="'+precioId+'"]');
+    if (!inp) return;
+    fetch(API_PRECIO_ACT_TPL.replace('999999999', String(precioId)), {
+        method: 'POST',
+        headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/json'},
+        body: JSON.stringify({precio_venta: parseFloat(inp.value) || 0}),
+        credentials: 'same-origin',
+    })
+    .then(function(r) {
+        return r.json().then(function(data) { return { okHttp: r.ok, status: r.status, data: data }; });
+    })
+    .then(function(res) {
+        if (res.okHttp && res.data.ok) {
+            inp.style.background = '#d4edda';
+            setTimeout(function() { inp.style.background = ''; }, 1200);
+            return;
+        }
+        // FIX CONTRATO UI: mensaje legible en 403/400/500
+        var err = (res.data && res.data.error) ? res.data.error : ('Error HTTP ' + res.status);
+        alert(err);
+    })
+    .catch(function() {
+        alert('Error de red al guardar el precio.');
+    });
+}
+
+function bindGuardarPrecio(btn) {
+    btn.addEventListener('click', function() {
+        guardarPrecio(btn.getAttribute('data-precio-id'));
+    });
+}
+document.querySelectorAll('.btn-guardar-precio').forEach(bindGuardarPrecio);
+document.querySelectorAll('.btn-save-precio').forEach(bindGuardarPrecio);
+
+// Guardar al presionar Enter en el input
+document.querySelectorAll('.inp-precio').forEach(function(inp) {
+    inp.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') guardarPrecio(inp.dataset.precioId);
+    });
+});
+
+// ── Ajuste masivo de inflación ─────────────────────────────────────────────
+document.getElementById('btn-ajuste-masivo').addEventListener('click', function() {
+    var ids = Array.from(document.querySelectorAll('.chk-item:checked'))
+                   .map(c => parseInt(c.dataset.precioId));
+    if (ids.length === 0) {
+        alert('Selecciona al menos un ítem para ajustar.');
+        return;
+    }
+    var porcentaje = parseFloat(document.getElementById('inp-porcentaje').value);
+    if (isNaN(porcentaje) || porcentaje === 0) {
+        alert('Ingresa un porcentaje válido (≠ 0).');
+        return;
+    }
+    var msg = ids.length + ' ítems serán ajustados ' + (porcentaje > 0 ? '+' : '') + porcentaje + '%.\n¿Continuar?';
+    if (!confirm(msg)) return;
+
+    var btnAj = document.getElementById('btn-ajuste-masivo');
+    btnAj.disabled = true;
+    btnAj.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Aplicando…';
+
+    fetch(API_AJUSTE_MASIVO, {
+        method: 'POST',
+        headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/json'},
+        body: JSON.stringify({ids: ids, porcentaje: porcentaje}),
+        credentials: 'same-origin',
+    })
+    .then(function(r) {
+        return r.json().catch(function() {
+            return { ok: false, error: 'Respuesta no JSON (posible error ' + r.status + ')' };
+        }).then(function(data) { return { okHttp: r.ok, data: data }; });
+    })
+    .then(function(res) {
+        btnAj.disabled = false;
+        btnAj.innerHTML = '<i class="fas fa-bolt me-1"></i> Aplicar ajuste';
+        var slot = document.getElementById('msg-ajuste');
+        if (res.data.ok && res.okHttp) {
+            slot.textContent = '✓ ' + (res.data.mensaje || 'Ajuste aplicado');
+            slot.className = 'mt-2 text-success small fw-bold';
+            setTimeout(function() { location.reload(); }, 1500);
+            return;
+        }
+        slot.textContent = 'Error: ' + (res.data.error || 'desconocido');
+        slot.className = 'mt-2 text-danger small fw-bold';
+    })
+    .catch(function(err) {
+        btnAj.disabled = false;
+        btnAj.innerHTML = '<i class="fas fa-bolt me-1"></i> Aplicar ajuste';
+        var slot = document.getElementById('msg-ajuste');
+        slot.textContent = 'Error de red: ' + (err && err.message ? err.message : 'desconocido');
+        slot.className = 'mt-2 text-danger small fw-bold';
+    });
+});
+</script>
+{% endblock %}

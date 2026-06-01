@@ -1,0 +1,53 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% block title %}Alertas Burnout RRHH - PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <div style="width:44px;height:44px;border-radius:12px;background:rgba(231,76,60,.15);display:flex;align-items:center;justify-content:center;">
+      <i class="fas fa-exclamation-triangle" style="color:#e74c3c;font-size:1.2rem;"></i>
+    </div>
+    <div>
+      <h1 class="mb-0" style="font-size:1.5rem;font-weight:700;color:#d4d9e8;">Alertas de Bienestar — RRHH</h1>
+      <p class="mb-0" style="color:#7a8099;font-size:.85rem;">SOLO muestra tipo de alerta. Contenido privado protegido.</p>
+    </div>
+    {% if total_pendientes %}
+    <span class="badge-critico ms-auto" style="font-size:.9rem;">{{ total_pendientes }} pendientes</span>
+    {% endif %}
+  </div>
+  {% for msg in messages %}<div class="alert alert-{{ msg.tags }} alert-dismissible" role="alert">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+  <div class="tabla-resultados-lims">
+    <table class="table table-dark table-sm mb-0">
+      <thead><tr><th>Empleado</th><th>Tipo de Alerta</th><th>Nivel</th><th>Fecha</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+      {% for a in alertas %}
+      <tr class="{% if not a.atendida %}resultado-critico{% endif %}">
+        <td><strong>{{ a.empleado.get_full_name|default:a.empleado.username }}</strong></td>
+        <td>{{ a.get_tipo_display }}</td>
+        <td>
+          {% if a.nivel_riesgo >= 4 %}<span class="badge-critico">{{ a.get_nivel_riesgo_display }}</span>
+          {% elif a.nivel_riesgo == 3 %}<span class="badge-alto">{{ a.get_nivel_riesgo_display }}</span>
+          {% else %}<span class="badge-normal">{{ a.get_nivel_riesgo_display }}</span>{% endif %}
+        </td>
+        <td>{{ a.fecha|date:"d/m/Y H:i" }}</td>
+        <td>{% if a.atendida %}<span class="badge-normal">Atendida</span>{% else %}<span class="badge-critico">Pendiente</span>{% endif %}</td>
+        <td>
+          {% if not a.atendida %}
+          <form method="post" class="d-inline">{% csrf_token %}
+            <input type="hidden" name="alerta_id" value="{{ a.id }}">
+            <input type="text" name="notas" placeholder="Notas RRHH" class="form-control form-control-sm d-inline-block" style="width:140px;">
+            <button type="submit" class="btn btn-sm" style="background:rgba(39,174,96,.2);color:#27ae60;border:1px solid rgba(39,174,96,.3);">Atender</button>
+          </form>
+          {% else %}
+          <small style="color:#7a8099;">{{ a.notas_rrhh|truncatechars:40 }}</small>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center" style="color:#7a8099;padding:2rem;">Sin alertas registradas</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

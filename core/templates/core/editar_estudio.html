@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Editar Estudio{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'lista_estudios' %}" class="btn btn-outline-secondary me-3">
+      <i class="fas fa-arrow-left"></i>
+    </a>
+    <h2 class="mb-0">Editar Estudio</h2>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Nombre del estudio *</label>
+              <input type="text" name="nombre" class="form-control" value="{{ estudio.nombre }}" required>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Código</label>
+                <input type="text" name="codigo" class="form-control" value="{{ estudio.codigo|default:'' }}">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Categoría</label>
+                <select name="categoria" class="form-select">
+                  <option value="">— Sin categoría —</option>
+                  {% for cat in categorias %}
+                  <option value="{{ cat.id }}" {% if estudio.categoria_id == cat.id %}selected{% endif %}>{{ cat.nombre }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Precio</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" name="precio" step="0.01" class="form-control" value="{{ estudio.precio|default:0 }}">
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Tiempo estimado (hrs)</label>
+                <input type="number" name="tiempo_entrega" class="form-control" value="{{ estudio.tiempo_entrega|default:'' }}">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Muestra requerida</label>
+              <input type="text" name="muestra_requerida" class="form-control" value="{{ estudio.muestra_requerida|default:'' }}">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Método</label>
+              <input type="text" name="metodo" class="form-control" value="{{ estudio.metodo|default:'' }}">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Descripción</label>
+              <textarea name="descripcion" class="form-control" rows="3">{{ estudio.descripcion|default:'' }}</textarea>
+            </div>
+
+            <div class="form-check mb-4">
+              <input class="form-check-input" type="checkbox" name="activo" id="activo" {% if estudio.activo %}checked{% endif %}>
+              <label class="form-check-label" for="activo">Estudio activo</label>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-1"></i>Guardar cambios
+              </button>
+              <a href="{% url 'lista_estudios' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1616 @@
+{% load static %}
+{% load auth_extras %}
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+{# PRISLAB V8.0 — SIDEBAR DE ACORDEÓN VERTICAL (Flujo Clínico Real)          #}
+{# Orden de módulos: Recepción → Lab → Farmacia → Consultorio → Finanzas     #}
+{#                   Dirección → Personal → Bienestar → Seguridad/Admin       #}
+{# Regla: UN solo acordeón abierto a la vez. CERO funcionalidades eliminadas. #}
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+
+<nav id="islandSidebar" class="prsb" aria-label="Navegación principal PRISLAB">
+
+    {# ── Cabecera del sidebar ──────────────────────────────────────────────── #}
+    <div class="prsb-header">
+        <a href="{% url 'dashboard_director' %}" class="prsb-brand">
+            <i class="fas fa-dna prsb-brand-icon"></i>
+            <span class="prsb-brand-text">PRIS<span class="prsb-brand-accent">LAB</span></span>
+        </a>
+        {# Botón pin/clip eliminado — sidebar es hover-driven automático #}
+    </div>
+
+    {# ── Módulos en acordeón ───────────────────────────────────────────────── #}
+    <div class="prsb-nav" id="prsbNav">
+
+        {# Módulo "Recepción & Pacientes" eliminado — sus ítems se distribuyeron: #}
+        {# • Nueva Orden, Órdenes, Kiosco, Pendientes → Laboratorio Clínico     #}
+        {# • Tablero de Recepción, Agendar Cita       → Consultorio Médico      #}
+
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {# MÓDULO 2: LABORATORIO CLÍNICO (LIMS ISO 15189)                      #}
+        {# Flujo: muestra → toma → proceso → validación QC → entrega          #}
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {% if request.user|has_group:"LABORATORIO" or request.user|has_group:"RECEPCION" or request.user|is_role:"QUIMICO" or request.user|is_role:"LABORATORIO" or request.user|is_role:"RECEPCION" or request.user|has_group:"ENFERMERIA" or request.user|is_role:"ENFERMERA" or request.user.is_superuser %}
+        <div class="prsb-module" data-module="laboratorio">
+            <button class="prsb-trigger" type="button"
+                    data-mod="laboratorio"
+                    aria-expanded="false"
+                    aria-controls="prsb-c-laboratorio">
+                <span class="prsb-trigger-left">
+                    <span class="prsb-trigger-dot" style="background:#8e44ad;"></span>
+                    <i class="fas fa-flask prsb-trigger-icon" style="color:#8e44ad;"></i>
+                    <span class="prsb-trigger-label">Laboratorio Clínico</span>
+                </span>
+                <i class="fas fa-chevron-right prsb-chevron"></i>
+            </button>
+            <div class="prsb-content" id="prsb-c-laboratorio">
+
+                {# ════════════════════════════════════════════════════════ #}
+                {# GRUPO 1 — OPERACIÓN CLÍNICA (Flujo Lineal de la Muestra)#}
+                {# Línea recta: Recepción → Pre-analítica → Analítica → Post#}
+                {# ════════════════════════════════════════════════════════ #}
+                <div class="prsb-section-hdr">
+                    <i class="fas fa-circle-notch"></i> Operación Clínica
+                </div>
+
+                {# 1 · Recepción #}
+                <a href="{% url 'recepcion_lab' %}"
+                   class="prsb-link prsb-flow-step {% if '/laboratorio/recepcion/' in request.path %}prsb-active{% endif %}">
+                    <span class="prsb-step-num">1</span>
+                    <i class="fas fa-plus-circle"></i> Nueva Orden / Paciente
+                </a>
+
+                {# 2 · Toma de Muestra #}
+                <a href="{% url 'toma_muestra_index' %}"
+                   class="prsb-link prsb-flow-step {% if '/toma-muestra/' in request.path %}prsb-active{% endif %}">
+                    <span class="prsb-step-num">2</span>
+                    <i class="fas fa-syringe"></i> Toma de Muestra
+                </a>
+
+                {# 3 · Analítica — Monitor #}
+                <a href="{% url 'laboratorio:monitor_produccion' %}"
+                   class="prsb-link prsb-flow-step {% if '/monitor/' in request.path %}prsb-active{% endif %}">
+                    <span class="prsb-step-num">3</span>
+                    <i class="fas fa-tv"></i> Monitor de Producción
+                </a>
+
+                {# 4 · Registro de Resultados (entrada inteligente estilo DevelLab) #}
+                <a href="{% url 'registro_resultados' %}"
+                   class="prsb-link prsb-flow-step {% if '/registro-resultados/' in request.path or '/captura/' in request.path %}prsb-active{% endif %}"
+                   title="Abre el primer paciente pendiente — panel dual lista+captura">
+                    <span class="prsb-step-num">4</span>
+                    <i class="fas fa-clipboard-list"></i> Registro de Resultados
+                </a>
+                {# 4b · Lista de trabajo completa (todos los filtros) #}
+                <a href="{% url 'lista_trabajo_lab' %}"
+                   class="prsb-link prsb-sub {% if '/lista-trabajo/' in request.path %}prsb-active{% endif %}"
+                   style="padding-left:2.4rem; font-size:11.5px; opacity:.85;">
+                    <i class="fas fa-list-ul" style="font-size:10px;"></i> Worklist Completa
+                </a>
+
+                {# 5 · QC #}
+                <a href="{% url 'control_calidad' %}"
+                   class="prsb-link prsb-flow-step {% if '/control-calidad/' in request.path %}prsb-active{% endif %}">
+                    <span class="prsb-step-num">5</span>
+                    <i class="fas fa-chart-line"></i> Control de Calidad (QC)
+                </a>
+
+                {# 6 · Entrega #}
+                <a href="{% url 'entrega_resultados' %}"
+                   class="prsb-link prsb-flow-step {% if '/entrega-resultados/' in request.path %}prsb-active{% endif %}">
+                    <span class="prsb-step-num">6</span>
+                    <i class="fas fa-envelope-open-text"></i> Validación y Entrega
+                </a>
+
+                {# Urgencias — siempre visible para el turno #}
+                <a href="{% url 'dashboard_pendientes' %}"
+                   class="prsb-link {% if '/dashboard-pendientes/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-exclamation-triangle text-warning"></i> Pendientes / Urgencias
+                </a>
+
+                {# ── Cierre de Turno: Corte de Caja y Ventas ── #}
+                <div class="prsb-group-label ps-1 mt-2" style="font-size:10.5px;opacity:.75;text-transform:uppercase;letter-spacing:.5px;">
+                    <i class="fas fa-cash-register me-1"></i> Cierre de Turno
+                </div>
+                <a href="{% url 'farmacia:corte_caja' %}"
+                   class="prsb-link {% if '/corte-caja/' in request.path %}prsb-active{% endif %}"
+                   title="Realizar corte de caja y cerrar turno">
+                    <i class="fas fa-calculator"></i> Corte de Caja
+                </a>
+                <a href="{% url 'lista_ventas_farmacia' %}"
+                   class="prsb-link {% if '/historial-ventas/' in request.path %}prsb-active{% endif %}"
+                   title="Revisar ventas y cobros del turno">
+                    <i class="fas fa-receipt"></i> Ventas del Turno
+                </a>
+                <a href="{% url 'estadisticas_ventas' %}"
+                   class="prsb-link {% if '/estadisticas/' in request.path %}prsb-active{% endif %}"
+                   title="Reporte detallado de ingresos por estudio, medico y convenio">
+                    <i class="fas fa-chart-bar"></i> Reporte de Ingresos
+                </a>
+
+                {# ════════════════════════════════════════════════════════ #}
+                {# GRUPO 2 — CONSULTA Y ARCHIVO (Históricos)               #}
+                {# ════════════════════════════════════════════════════════ #}
+                <div class="prsb-section-hdr mt-1">
+                    <i class="fas fa-archive"></i> Consulta y Archivo
+                </div>
+
+                <a href="{% url 'consulta_ordenes' %}"
+                   class="prsb-link {% if '/consulta-ordenes/' in request.path or '/detalle-orden/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-search"></i> Búsqueda de Órdenes
+                </a>
+                <a href="{% url 'laboratorio:lista_pacientes' %}"
+                   class="prsb-link {% if '/laboratorio/pacientes/' in request.path or '/laboratorio/paciente/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-users"></i> Pacientes / Historial Lab
+                </a>
+                <a href="{% url 'cotizacion_rapida' %}"
+                   class="prsb-link {% if '/cotizacion/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-file-invoice"></i> Cotización Rápida
+                </a>
+                <a href="{% url 'kiosko_index' %}"
+                   class="prsb-link {% if '/kiosko/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-qrcode"></i> Kiosco Auto Check-In
+                </a>
+                <a href="{% url 'maquila_envios' %}"
+                   class="prsb-link {% if '/maquila/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-shipping-fast"></i> Maquila
+                </a>
+                <a href="{% url 'reporte_tiempos_proceso' %}"
+                   class="prsb-link {% if '/reporte-tiempos/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-stopwatch"></i> Reporte de Tiempos
+                </a>
+
+                {# ════════════════════════════════════════════════════════ #}
+                {# GRUPO 3 — GESTIÓN Y CONFIGURACIÓN (colapsado por defecto)#}
+                {# Solo roles LABORATORIO/QUIMICO/ADMIN lo ven              #}
+                {# ════════════════════════════════════════════════════════ #}
+                {% if request.user|has_group:"LABORATORIO" or request.user|is_role:"QUIMICO" or request.user.is_superuser or request.user.is_staff %}
+                <button class="prsb-accordion-btn mt-1
+                    {% if '/lims/' in request.path or '/silo-lab/' in request.path or '/mantenimiento/' in request.path or '/inventario/' in request.path or '/configuracion/' in request.path or '/director/analizadores' in request.path %}active{% endif %}"
+                        data-target="lab-gestion-accordion">
+                    <span>
+                        <i class="fas fa-cog me-1 opacity-75"></i>
+                        <small>Gestión y Configuración</small>
+                    </span>
+                    <i class="fas fa-chevron-down prsb-chevron"></i>
+                </button>
+                <div class="prsb-accordion-body
+                    {% if '/lims/' in request.path or '/silo-lab/' in request.path or '/mantenimiento/' in request.path or '/inventario/' in request.path or '/configuracion/' in request.path or '/director/analizadores' in request.path %}show{% endif %}"
+                     id="lab-gestion-accordion">
+
+                    {# ── Catálogo LIMS ── #}
+                    <span class="prsb-group-label ps-2">Catálogo LIMS</span>
+                    <a href="{% url 'lista_pruebas' %}"
+                       class="prsb-link ps-3 {% if '/lims/' in request.path %}prsb-active{% endif %}">
+                        <i class="fas fa-flask"></i> Estudios & Parámetros
+                    </a>
+                    <a href="{% url 'director_analizadores' %}"
+                       class="prsb-link ps-3 {% if '/director/analizadores' in request.path %}prsb-active{% endif %}">
+                        <i class="fas fa-cpu"></i> Analizadores (Config)
+                    </a>
+                    <a href="{% url 'inventario_prediccion' %}"
+                       class="prsb-link ps-3 {% if '/inventario/prediccion' in request.path %}prsb-active{% endif %}">
+                        <i class="fas fa-chart-area"></i> Predicción de Stock
+                    </a>
+
+                    {# ── Almacenes / Inventarios (sub-acordeón) ── #}
+                    <span class="prsb-group-label ps-2 mt-1">Almacenes</span>
+                    <button class="prsb-accordion-btn ps-3 {% if '/silo-lab/' in request.path %}active{% endif %}"
+                            data-target="inv-accordion">
+                        <span><i class="fas fa-warehouse me-1"></i> Inventarios / Silos</span>
+                        <i class="fas fa-chevron-down prsb-chevron"></i>
+                    </button>
+                    <div class="prsb-accordion-body {% if '/silo-lab/' in request.path %}show{% endif %}"
+                         id="inv-accordion">
+
+                      <span class="prsb-group-label ps-4">🔬 Silo Lab</span>
+                      <a href="{% url 'inventario:dashboard_reactivos' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/lab/' in request.path and 'lotes' not in request.path and 'catalogo' not in request.path and 'consumo' not in request.path and 'salidas' not in request.path and 'trazabilidad' not in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-tachometer-alt"></i> Dashboard
+                      </a>
+                      <a href="{% url 'inventario:lista_reactivos' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/lab/catalogo' in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-th-list"></i> Catálogo Reactivos
+                      </a>
+                      <a href="{% url 'inventario:lista_lotes' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/lab/lotes' in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-boxes"></i> Lotes (FEFO)
+                      </a>
+                      <a href="{% url 'inventario:lista_consumo' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/lab/consumo' in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-sliders-h"></i> Fórmulas de Consumo
+                      </a>
+                      <a href="{% url 'inventario:lista_salidas_tecnicas' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/lab/salidas-tecnicas' in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-tools"></i> Descuentos Técnicos
+                      </a>
+                      <a href="{% url 'inventario:trazabilidad_lote' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/lab/trazabilidad' in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-search"></i> Trazabilidad Forense
+                      </a>
+
+                      <span class="prsb-group-label ps-4 mt-1">🩺 Silo Consultorio</span>
+                      <a href="{% url 'inventario:dashboard_consultorio' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/consultorio/' in request.path and 'catalogo' not in request.path and 'lotes' not in request.path and 'salidas' not in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-heartbeat"></i> Dashboard
+                      </a>
+                      <a href="{% url 'inventario:lista_insumos_consultorio' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/consultorio/catalogo' in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-band-aid"></i> Catálogo Insumos
+                      </a>
+                      <a href="{% url 'inventario:lista_lotes_consultorio' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/consultorio/lotes' in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-box-open"></i> Lotes
+                      </a>
+                      <a href="{% url 'inventario:lista_salidas_consultorio' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/consultorio/salidas' in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-arrow-circle-down"></i> Consumos
+                      </a>
+
+                      <span class="prsb-group-label ps-4 mt-1">🧹 Silo Generales</span>
+                      <a href="{% url 'inventario:dashboard_generales' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/generales/' in request.path and 'catalogo' not in request.path and 'lotes' not in request.path and 'vales' not in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-clipboard-list"></i> Dashboard
+                      </a>
+                      <a href="{% url 'inventario:lista_insumos_generales' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/generales/catalogo' in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-boxes"></i> Catálogo
+                      </a>
+                      <a href="{% url 'inventario:lista_lotes_generales' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/generales/lotes' in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-pallet"></i> Entradas / Lotes
+                      </a>
+                      <a href="{% url 'inventario:lista_vales' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/generales/vales' in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-file-alt"></i> Vales de Requisición
+                      </a>
+
+                      <span class="prsb-group-label ps-4 mt-1">🛒 Compras</span>
+                      <a href="{% url 'inventario:lista_ordenes_compra' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/compras/' in request.path and 'proveedores' not in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-shopping-cart"></i> Órdenes de Compra
+                      </a>
+                      <a href="{% url 'inventario:lista_proveedores' %}"
+                         class="prsb-link ps-5 {% if '/silo-lab/compras/proveedores' in request.path %}prsb-active{% endif %}">
+                          <i class="fas fa-building"></i> Proveedores
+                      </a>
+
+                    </div>{# /inv-accordion #}
+
+                    {# ── Logística ── #}
+                    <span class="prsb-group-label ps-2 mt-1">Logística</span>
+                    <a href="{% url 'inventario:lista_traspasos' %}"
+                       class="prsb-link ps-3 {% if '/inventario/traspasos' in request.path %}prsb-active{% endif %}">
+                        <i class="fas fa-exchange-alt"></i> Traspasos Inter-Sedes
+                    </a>
+                    <a href="{% url 'inventario:lista_notificaciones' %}"
+                       class="prsb-link ps-3 {% if '/inventario/notificaciones' in request.path %}prsb-active{% endif %}">
+                        <i class="fas fa-bell"></i> Notificaciones
+                    </a>
+
+                    {# ── CMMS ── #}
+                    <span class="prsb-group-label ps-2 mt-1">Mantenimiento (CMMS)</span>
+                    <a href="{% url 'mantenimiento:lista_equipos_operativo' %}"
+                       class="prsb-link ps-3 {% if '/mantenimiento/operativo' in request.path %}prsb-active{% endif %}">
+                        <i class="fas fa-tools"></i> Panel Operativo
+                    </a>
+                    <a href="{% url 'mantenimiento:lista_tickets' %}"
+                       class="prsb-link ps-3 {% if '/mantenimiento/tickets' in request.path %}prsb-active{% endif %}">
+                        <i class="fas fa-ticket-alt"></i> Tickets
+                    </a>
+                    <a href="{% url 'mantenimiento:lista_expedientes' %}"
+                       class="prsb-link ps-3 {% if '/mantenimiento/equipos' in request.path %}prsb-active{% endif %}">
+                        <i class="fas fa-cpu"></i> Expedientes de Equipos
+                    </a>
+                    <a href="{% url 'mantenimiento:lista_certificados' %}"
+                       class="prsb-link ps-3 {% if '/mantenimiento/metrologia' in request.path %}prsb-active{% endif %}">
+                        <i class="fas fa-certificate"></i> Metrología / Certs
+                    </a>
+                    <a href="{% url 'mantenimiento:dashboard_sensores' %}"
+                       class="prsb-link ps-3 {% if '/mantenimiento/sensores' in request.path %}prsb-active{% endif %}">
+                        <i class="fas fa-thermometer-half"></i> Telemetría IoT
+                    </a>
+                    {% if request.user.is_superuser or request.user|is_role:"DIRECTOR" %}
+                    <a href="{% url 'mantenimiento:wizard_dashboard' %}"
+                       class="prsb-link ps-3 {% if '/mantenimiento/wizard' in request.path %}prsb-active{% endif %}">
+                        <i class="fas fa-magic"></i> Wizard Director
+                    </a>
+                    <a href="{% url 'mantenimiento:dashboard_tco' %}"
+                       class="prsb-link ps-3 {% if '/mantenimiento/tco' in request.path %}prsb-active{% endif %}">
+                        <i class="fas fa-chart-bar"></i> TCO — Costos
+                    </a>
+                    {% endif %}
+
+                    {# ── Sistema ── #}
+                    {% if request.user.is_superuser or request.user.is_staff %}
+                    <span class="prsb-group-label ps-2 mt-1">Sistema</span>
+                    <a href="{% url 'configuracion_dashboard' %}"
+                       class="prsb-link ps-3 {% if '/configuracion/' in request.path and '/flags' not in request.path and '/usuarios' not in request.path %}prsb-active{% endif %}">
+                        <i class="fas fa-sliders-h"></i> Catálogos / Config
+                    </a>
+                    {% endif %}
+
+                </div>{# /lab-gestion-accordion #}
+                {% endif %}
+
+            </div>
+        </div>
+        {% endif %}
+
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {# MÓDULO LIMS 4 NIVELES (Ingeniería del Analito → Precios)            #}
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {% if request.user|has_group:"LABORATORIO" or request.user|has_group:"LIMS" or request.user|is_role:"LABORATORIO" or request.user|is_role:"QUIMICO" or request.user.is_superuser %}
+        <div class="prsb-module" data-module="lims4">
+            <button class="prsb-trigger" type="button"
+                    data-mod="lims4"
+                    aria-expanded="false"
+                    aria-controls="prsb-c-lims4">
+                <span class="prsb-trigger-left">
+                    <span class="prsb-trigger-dot" style="background:#117a65;"></span>
+                    <i class="fas fa-microscope prsb-trigger-icon" style="color:#117a65;"></i>
+                    <span class="prsb-trigger-label">LIMS — 4 Niveles</span>
+                </span>
+                <i class="fas fa-chevron-right prsb-chevron"></i>
+            </button>
+            <div class="prsb-content" id="prsb-c-lims4">
+
+                <div class="prsb-section-hdr">
+                    <i class="fas fa-layer-group"></i> Ingeniería del Catálogo
+                </div>
+
+                {# Ventana A — Analitos #}
+                <a href="{% url 'lims_analitos' %}"
+                   class="prsb-link prsb-flow-step {% if '/lims/analitos' in request.path %}prsb-active{% endif %}">
+                    <span class="prsb-step-num">A</span>
+                    <i class="fas fa-vial"></i> Analitos (Nivel 1)
+                </a>
+
+                {# Ventana B — Perfiles #}
+                <a href="{% url 'lims_perfiles' %}"
+                   class="prsb-link prsb-flow-step {% if '/lims/perfiles' in request.path %}prsb-active{% endif %}">
+                    <span class="prsb-step-num">B</span>
+                    <i class="fas fa-layer-group"></i> Perfiles (Nivel 2)
+                </a>
+
+                {# Ventana C — Paquetes #}
+                <a href="{% url 'lims_paquetes' %}"
+                   class="prsb-link prsb-flow-step {% if '/lims/paquetes' in request.path %}prsb-active{% endif %}">
+                    <span class="prsb-step-num">C</span>
+                    <i class="fas fa-box-open"></i> Paquetes (Nivel 3)
+                </a>
+
+                <div class="prsb-section-hdr mt-1">
+                    <i class="fas fa-dollar-sign"></i> Gestión Financiera
+                </div>
+
+                {# Ventana D — Precios #}
+                <a href="{% url 'lims_precios' %}"
+                   class="prsb-link {% if '/lims/precios' in request.path %}prsb-active{% endif %}">
+                    <span class="prsb-step-num">D</span>
+                    <i class="fas fa-tags"></i> Precios e Inflación
+                </a>
+
+            </div>
+        </div>
+        {% endif %}
+
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {# MÓDULO 3: FARMACIA (ERP + PDV)                                      #}
+        {# Flujo: venta → descuento FEFO → kardex → corte de caja             #}
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {% if request.user|has_group:"FARMACIA" or request.user|has_group:"CAJERO" or request.user|is_role:"CAJERO" or request.user|is_role:"FARMACIA" or request.user.is_superuser %}
+        <div class="prsb-module" data-module="farmacia">
+            <button class="prsb-trigger" type="button"
+                    data-mod="farmacia"
+                    aria-expanded="false"
+                    aria-controls="prsb-c-farmacia">
+                <span class="prsb-trigger-left">
+                    <span class="prsb-trigger-dot" style="background:#27ae60;"></span>
+                    <i class="fas fa-pills prsb-trigger-icon" style="color:#27ae60;"></i>
+                    <span class="prsb-trigger-label">Farmacia</span>
+                </span>
+                <i class="fas fa-chevron-right prsb-chevron"></i>
+            </button>
+            <div class="prsb-content" id="prsb-c-farmacia">
+                <span class="prsb-group-label">Punto de Venta</span>
+                <a href="{% url 'pdv_farmacia' %}" class="prsb-link {% if '/pdv/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-cash-register"></i> Punto de Venta (PDV)
+                </a>
+                <a href="{% url 'lista_ventas_farmacia' %}" class="prsb-link {% if '/historial-ventas/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-history"></i> Historial de Ventas
+                </a>
+                <a href="{% url 'historial_devoluciones' %}" class="prsb-link {% if '/devoluciones/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-undo"></i> Devoluciones
+                </a>
+
+                <span class="prsb-group-label">Inventario & Lotes</span>
+                <a href="{% url 'farmacia_inventario_general' %}" class="prsb-link {% if '/farmacia/inventario/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-warehouse"></i> Ver Stock por Lote
+                </a>
+                <a href="{% url 'farmacia:kardex_list' %}" class="prsb-link {% if '/farmacia/erp/kardex/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-scroll"></i> Kardex (Movimientos)
+                </a>
+                <a href="{% url 'entrada_mercancia' %}" class="prsb-link {% if '/entradas/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-truck-loading"></i> Entrada de Mercancía
+                </a>
+                <a href="{% url 'farmacia:registrar_compra' %}" class="prsb-link {% if '/compras/registrar/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-boxes"></i> Compras Multi-Lote
+                </a>
+                <a href="{% url 'ajustes_inventario' %}" class="prsb-link {% if '/ajustes/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-balance-scale"></i> Ajustes / Mermas
+                </a>
+
+                <span class="prsb-group-label">Control & Cierre</span>
+                <a href="{% url 'libro_control' %}" class="prsb-link {% if '/libro-control/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-book"></i> Libro Control COFEPRIS
+                </a>
+                <a href="{% url 'farmacia:corte_caja' %}" class="prsb-link {% if '/corte-caja/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-calculator"></i> Corte de Caja Farmacia
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {# MÓDULO 4: CONSULTORIO MÉDICO                                         #}
+        {# Flujo: agenda → consulta SOAP → receta → cobro                     #}
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {% if request.user|has_group:"MEDICOS" or request.user|has_group:"MEDICO" or request.user|is_role:"MEDICO" or request.user|has_group:"RECEPCION" or request.user|is_role:"RECEPCION" or request.user.is_superuser %}
+        <div class="prsb-module" data-module="consultorio">
+            <button class="prsb-trigger" type="button"
+                    data-mod="consultorio"
+                    aria-expanded="false"
+                    aria-controls="prsb-c-consultorio">
+                <span class="prsb-trigger-left">
+                    <span class="prsb-trigger-dot" style="background:#4a90e2;"></span>
+                    <i class="fas fa-stethoscope prsb-trigger-icon" style="color:#4a90e2;"></i>
+                    <span class="prsb-trigger-label">Consultorio Médico</span>
+                </span>
+                <i class="fas fa-chevron-right prsb-chevron"></i>
+            </button>
+            <div class="prsb-content" id="prsb-c-consultorio">
+                {# ── Recepción Médica — visible para Recepción y Médicos ─── #}
+                <span class="prsb-group-label">Recepción Médica</span>
+                <a href="{% url 'consultorio:tablero_recepcion' %}" class="prsb-link {% if '/consultorio/recepcion/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-desktop"></i> Tablero de Recepción
+                </a>
+                <a href="{% url 'consultorio:agendar_cita' %}" class="prsb-link {% if '/consultorio/recepcion/agendar/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-calendar-plus"></i> Agendar Cita
+                </a>
+                <div class="prsb-divider"></div>
+                {# ── Herramientas clínicas — solo para Médicos ─────────── #}
+                {% if request.user|has_group:"MEDICOS" or request.user|has_group:"MEDICO" or request.user|is_role:"MEDICO" or request.user.is_superuser %}
+                <a href="{% url 'medico' %}" class="prsb-link {% if request.path == '/medico/' %}prsb-active{% endif %}">
+                    <i class="fas fa-home"></i> Mi Consultorio
+                </a>
+                <a href="{% url 'consultorio:lista_trabajo_medico' %}" class="prsb-link {% if '/lista-trabajo/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-list-alt"></i> Mis Pacientes Hoy
+                </a>
+                <a href="{% url 'consultorio:nueva_consulta' %}" class="prsb-link {% if '/nueva-consulta/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-plus-circle"></i> Nueva Consulta
+                </a>
+                <a href="{% url 'consultorio:agenda_medico' %}" class="prsb-link {% if '/agenda/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-calendar-alt"></i> Mi Agenda
+                </a>
+                <a href="{% url 'consultorio:lista_espera' %}" class="prsb-link {% if '/lista-espera/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-clock"></i> Lista de Espera
+                </a>
+
+                <div class="prsb-divider"></div>
+                <span class="prsb-group-label">Herramientas Clínicas</span>
+                <a href="{% url 'consultorio:vademecum_lista' %}" class="prsb-link {% if '/vademecum/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-book-medical"></i> Vademécum
+                </a>
+                <a href="{% url 'lista_trabajo_usg' %}" class="prsb-link {% if '/ultrasonido/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-wave-square"></i> Ultrasonido
+                </a>
+                <a href="{% url 'consultorio:analisis_patrones' %}" class="prsb-link {% if '/analisis-patrones/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-brain"></i> Análisis IA
+                </a>
+                <a href="{% url 'consultorio:videollamada_segura' %}" class="prsb-link {% if '/telemedicina/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-video"></i> Telemedicina
+                </a>
+
+                <div class="prsb-divider"></div>
+                <span class="prsb-group-label">Ingresos & Reportes</span>
+                <a href="{% url 'consultorio:cobro_consulta' %}" class="prsb-link {% if '/cobros/' in request.path and '/liquidacion/' not in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-cash-register"></i> Cobro de Consulta
+                </a>
+                <a href="{% url 'consultorio:reporte_liquidacion' %}" class="prsb-link {% if '/liquidacion/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-file-invoice-dollar"></i> Liquidación
+                </a>
+                <a href="{% url 'consultorio:seguimiento_tratamiento' %}" class="prsb-link {% if '/seguimiento/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-heartbeat"></i> Seguimiento Tratamiento
+                </a>
+                <a href="{% url 'consultorio:reportes_productividad' %}" class="prsb-link {% if '/reportes/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-chart-line"></i> Productividad
+                </a>
+                {% endif %}{# /médicos #}
+            </div>
+        </div>
+        {% endif %}
+
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {# MÓDULO 5: FINANZAS & CAJA                                            #}
+        {# Flujo: corte → caja → cuentas por cobrar → facturación → reportes  #}
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {% if request.user.is_superuser or request.user.is_staff or request.user|is_role:"ADMIN" or request.user|is_role:"GERENTE" or request.user|is_role:"DIRECTOR" or request.user|has_group:"GERENCIA" or request.user|has_group:"DIRECTOR" or request.user|has_group:"SOCIOS" %}
+        <div class="prsb-module" data-module="finanzas">
+            <button class="prsb-trigger" type="button"
+                    data-mod="finanzas"
+                    aria-expanded="false"
+                    aria-controls="prsb-c-finanzas">
+                <span class="prsb-trigger-left">
+                    <span class="prsb-trigger-dot" style="background:#f39c12;"></span>
+                    <i class="fas fa-coins prsb-trigger-icon" style="color:#f39c12;"></i>
+                    <span class="prsb-trigger-label">Finanzas & Caja</span>
+                </span>
+                <i class="fas fa-chevron-right prsb-chevron"></i>
+            </button>
+            <div class="prsb-content" id="prsb-c-finanzas">
+                <span class="prsb-group-label">Dashboard</span>
+                <a href="{% url 'master_dashboard' %}" class="prsb-link {% if '/finanzas/master/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-tachometer-alt"></i> Finanzas Master
+                </a>
+
+                <span class="prsb-group-label">Caja</span>
+                <a href="{% url 'caja_laboratorio' %}" class="prsb-link {% if '/finanzas/lab/caja/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-flask"></i> Caja Laboratorio
+                </a>
+                <a href="{% url 'caja_farmacia' %}" class="prsb-link {% if '/finanzas/farmacia/caja/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-pills"></i> Caja Farmacia
+                </a>
+                <a href="{% url 'corte_dia' %}" class="prsb-link {% if '/finanzas/corte/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-lock"></i> Corte del Día
+                </a>
+                <a href="{% url 'genera_reporte_caja' %}" class="prsb-link {% if '/reportes/reporte-caja/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-print"></i> Reporte de Caja
+                </a>
+
+                <span class="prsb-group-label">Cartera</span>
+                <a href="{% url 'cuentas_por_cobrar' %}" class="prsb-link {% if '/cuentas-por-cobrar/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-file-invoice"></i> Cuentas por Cobrar
+                </a>
+                <a href="{% url 'convenios_lista' %}" class="prsb-link {% if '/finanzas/convenios/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-handshake"></i> Convenios
+                </a>
+                <a href="{% url 'lista_transferencias' %}" class="prsb-link {% if '/transferencias/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-exchange-alt"></i> Transferencias
+                </a>
+
+                <span class="prsb-group-label">Facturación & Gastos</span>
+                <a href="{% url 'facturacion_40' %}" class="prsb-link {% if '/finanzas/facturacion/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-file-invoice-dollar"></i> Facturación CFDI 4.0
+                </a>
+                {% if request.user.is_superuser or request.user|is_role:"DIRECTOR" or request.user|is_role:"ADMIN" or request.user|is_role:"GERENTE" %}
+                <a href="{% url 'bandeja_cfdi' %}" class="prsb-link {% if '/facturacion/solicitudes/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-inbox"></i> Solicitudes CFDI
+                    <span class="ms-auto badge bg-warning text-dark" id="badge-cfdi-pendientes" style="font-size:.65rem;display:none;">0</span>
+                </a>
+                {% endif %}
+                <a href="{% url 'registro_gasto' %}" class="prsb-link {% if '/finanzas/registro-gasto/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-receipt"></i> Registro de Gastos
+                </a>
+                <a href="{% url 'reporte_fiscal' %}" class="prsb-link {% if '/finanzas/reporte-fiscal/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-landmark"></i> Reporte Fiscal
+                </a>
+
+                <span class="prsb-group-label">Reportes Financieros</span>
+                <a href="{% url 'reporte_ingresos_egresos' %}" class="prsb-link {% if '/reportes/ingresos' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-exchange-alt"></i> Ingresos / Egresos
+                </a>
+                <a href="{% url 'reporte_balance_general' %}" class="prsb-link {% if '/reportes/balance' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-balance-scale"></i> Balance General
+                </a>
+                <a href="{% url 'reporte_flujo_caja' %}" class="prsb-link {% if '/reportes/flujo' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-water"></i> Flujo de Caja
+                </a>
+
+                <div class="prsb-divider"></div>
+                <span class="prsb-group-label">Contabilidad</span>
+                <a href="{% url 'dashboard_contabilidad' %}" class="prsb-link {% if '/contabilidad/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-calculator"></i> Dashboard Contable
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {# MÓDULO 6: DIRECCIÓN EJECUTIVA                                        #}
+        {# War Room → Analytics → CRM → IA → Buzón                            #}
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {% if request.user.is_superuser or request.user.is_staff or request.user|is_role:"ADMIN" or request.user|is_role:"GERENTE" or request.user|is_role:"DIRECTOR" or request.user|has_group:"GERENCIA" or request.user|has_group:"DIRECTOR" or request.user|has_group:"SOCIOS" %}
+        <div class="prsb-module" data-module="direccion">
+            <button class="prsb-trigger" type="button"
+                    data-mod="direccion"
+                    aria-expanded="false"
+                    aria-controls="prsb-c-direccion">
+                <span class="prsb-trigger-left">
+                    <span class="prsb-trigger-dot" style="background:#e67e22;"></span>
+                    <i class="fas fa-chess-king prsb-trigger-icon" style="color:#e67e22;"></i>
+                    <span class="prsb-trigger-label">Dirección Ejecutiva</span>
+                </span>
+                <i class="fas fa-chevron-right prsb-chevron"></i>
+            </button>
+            <div class="prsb-content" id="prsb-c-direccion">
+                <a href="{% url 'dashboard_director' %}" class="prsb-link {% if '/director/' in request.path and '/war-room' not in request.path and '/coach' not in request.path and '/analizadores' not in request.path and '/ranking' not in request.path and '/autorizaciones' not in request.path and '/auditoria' not in request.path and '/buzon' not in request.path and '/biblioteca' not in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard Director
+                </a>
+
+                {# War Room — sección crítica destacada #}
+                {% if request.user.is_superuser or request.user|is_role:"ADMIN" or request.user|is_role:"DIRECTOR" %}
+                <a href="{% url 'war_room' %}"
+                   class="prsb-link prsb-war-room {% if '/director/war-room' in request.path %}prsb-active{% endif %}"
+                   id="war-room-sidebar-link">
+                    <i class="fas fa-satellite-dish" style="color:#ef4444;"></i>
+                    <span>War Room</span>
+                    <small class="prsb-badge-count" id="war-room-badge-count" style="display:none;">0</small>
+                </a>
+                {% endif %}
+
+                <span class="prsb-group-label">Inteligencia de Negocios</span>
+                <a href="{% url 'dashboard_analytics' %}" class="prsb-link {% if '/analytics/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-chart-bar"></i> Analytics
+                </a>
+                <a href="{% url 'dashboard_unificado' %}" class="prsb-link {% if '/dashboard-unificado/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-th-large"></i> Dashboard Unificado
+                </a>
+                <a href="{% url 'ia_dashboard' %}" class="prsb-link {% if '/ia/panel/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-robot"></i> IA Dashboard
+                </a>
+                <a href="{% url 'consultorio:sentinel_dashboard' %}" class="prsb-link {% if '/sentinel/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-shield-alt"></i> PRIS Sentinel
+                </a>
+
+                <span class="prsb-group-label">CRM & Crecimiento</span>
+                <a href="{% url 'crm_dashboard' %}" class="prsb-link {% if '/crm/' in request.path and '/clientes' not in request.path and '/oportunidades' not in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-user-tag"></i> CRM Dashboard
+                </a>
+                <a href="{% url 'lista_oportunidades_crm' %}" class="prsb-link {% if '/crm/oportunidades' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-funnel-dollar"></i> Oportunidades
+                </a>
+                <a href="{% url 'lista_clientes_crm' %}" class="prsb-link {% if '/crm/clientes' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-handshake"></i> Clientes CRM
+                </a>
+
+                <span class="prsb-group-label">Gestión Operativa</span>
+                <a href="{% url 'coach_ejecutivo' %}" class="prsb-link {% if '/coach/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-graduation-cap"></i> Coach Ejecutivo
+                </a>
+                <a href="{% url 'buzon_kanban' %}" class="prsb-link {% if '/buzon/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-inbox"></i> Buzón / Calidad
+                </a>
+                <a href="{% url 'biblioteca_liderazgo' %}" class="prsb-link {% if '/biblioteca/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-book-reader"></i> Biblioteca
+                </a>
+                <a href="{% url 'listar_autorizaciones_pendientes' %}" class="prsb-link {% if '/autorizaciones/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-check-double"></i> Autorizaciones
+                </a>
+                <a href="{% url 'panel_auditoria_incidencias' %}" class="prsb-link {% if '/auditoria/incidencias/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-exclamation-triangle"></i> Incidencias
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {# MÓDULO 7: PERSONAL & RRHH                                            #}
+        {# Flujo: asistencia → nómina → desempeño → capacitación              #}
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {% if request.user.is_superuser or request.user.is_staff or request.user|is_role:"ADMIN" or request.user|is_role:"GERENTE" or request.user|is_role:"DIRECTOR" or request.user|has_group:"GERENCIA" or request.user|has_group:"DIRECTOR" %}
+        <div class="prsb-module" data-module="personal">
+            <button class="prsb-trigger" type="button"
+                    data-mod="personal"
+                    aria-expanded="false"
+                    aria-controls="prsb-c-personal">
+                <span class="prsb-trigger-left">
+                    <span class="prsb-trigger-dot" style="background:#16a085;"></span>
+                    <i class="fas fa-users prsb-trigger-icon" style="color:#16a085;"></i>
+                    <span class="prsb-trigger-label">Personal & RRHH</span>
+                </span>
+                <i class="fas fa-chevron-right prsb-chevron"></i>
+            </button>
+            <div class="prsb-content" id="prsb-c-personal">
+                <span class="prsb-group-label">Asistencia</span>
+                <a href="{% url 'dashboard_asistencia' %}" class="prsb-link {% if '/asistencia/' in request.path and '/incidencias' not in request.path and '/horarios' not in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-user-clock"></i> Dashboard Asistencia
+                </a>
+                <a href="{% url 'horarios_trabajo' %}" class="prsb-link {% if '/asistencia/horarios/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-calendar-week"></i> Horarios
+                </a>
+                <a href="{% url 'incidencias_asistencia' %}" class="prsb-link {% if '/asistencia/incidencias/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-user-times"></i> Incidencias
+                </a>
+
+                <span class="prsb-group-label">Nómina</span>
+                <a href="{% url 'nomina_dashboard' %}" class="prsb-link {% if '/nomina/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-file-invoice-dollar"></i> Dashboard Nómina
+                </a>
+
+                <span class="prsb-group-label">Desempeño</span>
+                <a href="{% url 'ranking_desempeno' %}" class="prsb-link {% if '/ranking/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-trophy"></i> Ranking Desempeño
+                </a>
+                <a href="{% url 'lista_evaluaciones_39a' %}" class="prsb-link {% if '/rh/evaluaciones/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-clipboard-check"></i> Evaluaciones 39-A
+                </a>
+                <a href="{% url 'matriz_talento' %}" class="prsb-link {% if '/rh/matriz-talento/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-th"></i> Matriz de Talento
+                </a>
+                <a href="{% url 'mis_resultados' %}" class="prsb-link {% if '/rh/mis-resultados/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-star"></i> Mis Resultados
+                </a>
+
+                <span class="prsb-group-label">Capacitación</span>
+                <a href="{% url 'dashboard_capacitacion' %}" class="prsb-link {% if '/capacitacion/rag/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-graduation-cap"></i> Capacitación RAG
+                </a>
+                <a href="{% url 'capacitacion_personal' %}" class="prsb-link {% if '/capacitacion/personal/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-chalkboard-teacher"></i> Programa Personal
+                </a>
+                <a href="{% url 'capacitacion_ejecutiva' %}" class="prsb-link {% if '/capacitacion/ejecutiva/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-user-tie"></i> Capacitación Ejecutiva
+                </a>
+
+                <span class="prsb-group-label">Marketing & IA</span>
+                <a href="{% url 'marketing:dashboard_marketing' %}" class="prsb-link {% if '/marketing/' in request.path and '/ia/' not in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-bullhorn"></i> Campañas
+                </a>
+                <a href="{% url 'marketing:reactivacion_ia' %}" class="prsb-link {% if '/marketing/ia/reactivacion' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-robot"></i> Reactivación IA
+                    <span style="font-size:.65rem; background:#10b981; color:#fff; border-radius:4px; padding:1px 5px; margin-left:4px;">NUEVO</span>
+                </a>
+                <a href="{% url 'consultorio:encuestas_satisfaccion' %}" class="prsb-link {% if '/encuestas/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-star"></i> Encuestas NPS
+                </a>
+
+            </div>
+        </div>
+        {% endif %}
+
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {# MÓDULO 8: BIENESTAR STAFF (NOM-035)                                  #}
+        {# Acceso para todo el personal — datos cifrados AES-256              #}
+        {# ─────────────────────────────────────────────────────────────────── #}
+        <div class="prsb-module" data-module="bienestar">
+            <button class="prsb-trigger" type="button"
+                    data-mod="bienestar"
+                    aria-expanded="false"
+                    aria-controls="prsb-c-bienestar">
+                <span class="prsb-trigger-left">
+                    <span class="prsb-trigger-dot" style="background:#2ecc71;"></span>
+                    <i class="fas fa-heart-pulse prsb-trigger-icon" style="color:#2ecc71;"></i>
+                    <span class="prsb-trigger-label">Bienestar & Cultura</span>
+                </span>
+                <i class="fas fa-chevron-right prsb-chevron"></i>
+            </button>
+            <div class="prsb-content" id="prsb-c-bienestar">
+                <a href="{% url 'bienestar_dashboard' %}" class="prsb-link {% if '/bienestar/' in request.path and '/pris/' not in request.path and '/nom035' not in request.path and '/diario' not in request.path and '/alertas' not in request.path and '/capacitaciones' not in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-spa"></i> Dashboard Bienestar
+                </a>
+                <a href="{% url 'diario_emocional' %}" class="prsb-link {% if '/bienestar/diario/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-journal-whills"></i> Diario Emocional
+                </a>
+                <a href="{% url 'evaluacion_nom035' %}" class="prsb-link {% if '/bienestar/nom035/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-clipboard-list"></i> Evaluación NOM-035
+                </a>
+                <a href="{% url 'chat_bienestar' %}" class="prsb-link {% if '/bienestar/pris/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-comments-medical"></i> Chat PRIS Bienestar
+                </a>
+                <a href="{% url 'capacitaciones_bienestar' %}" class="prsb-link {% if '/bienestar/capacitaciones/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-brain"></i> Capacitaciones
+                </a>
+                {% if request.user.is_superuser or request.user.is_staff or request.user|is_role:"DIRECTOR" or request.user|is_role:"ADMIN" %}
+                <a href="{% url 'bienestar_alertas_rrhh' %}" class="prsb-link {% if '/bienestar/alertas-rrhh/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-bell"></i> Alertas RRHH
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {# MÓDULO 9: SEGURIDAD, SISTEMA & ADMINISTRACIÓN                       #}
+        {# Solo Director / Superusuario                                        #}
+        {# ─────────────────────────────────────────────────────────────────── #}
+        {% if request.user.is_superuser or request.user.is_staff or request.user|is_role:"ADMIN" or request.user|is_role:"DIRECTOR" %}
+        <div class="prsb-module" data-module="sistema">
+            <button class="prsb-trigger" type="button"
+                    data-mod="sistema"
+                    aria-expanded="false"
+                    aria-controls="prsb-c-sistema">
+                <span class="prsb-trigger-left">
+                    <span class="prsb-trigger-dot" style="background:#e74c3c;"></span>
+                    <i class="fas fa-shield-alt prsb-trigger-icon" style="color:#e74c3c;"></i>
+                    <span class="prsb-trigger-label">Seguridad & Sistema</span>
+                </span>
+                <i class="fas fa-chevron-right prsb-chevron"></i>
+            </button>
+            <div class="prsb-content" id="prsb-c-sistema">
+                <span class="prsb-group-label">Seguridad</span>
+                <a href="{% url 'seguridad:dashboard_auditoria' %}" class="prsb-link {% if '/seguridad/auditoria' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-file-shield"></i> Auditoría NOM-024
+                </a>
+                <a href="{% url 'seguridad:sesiones_activas' %}" class="prsb-link {% if '/seguridad/sesiones' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-desktop"></i> Sesiones Activas
+                </a>
+                <a href="{% url 'lista_acciones_pris' %}" class="prsb-link {% if '/pris/acciones' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-robot"></i> Acciones PRIS
+                </a>
+
+                <span class="prsb-group-label">Administración</span>
+                <a href="{% url 'gestionar_usuarios' %}" class="prsb-link {% if '/configuracion/usuarios/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-users-cog"></i> Gestión de Usuarios
+                </a>
+                <a href="{% url 'notificaciones_lista' %}" class="prsb-link {% if '/notificaciones/' in request.path and 'configurar' not in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-bell"></i> Notificaciones
+                </a>
+                <a href="{% url 'configurar_notificaciones' %}" class="prsb-link {% if 'notificaciones/configurar' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-sliders-h"></i> Config. Notificaciones
+                </a>
+                <a href="{% url 'voice_logs_dashboard' %}" class="prsb-link {% if '/voice/logs/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-microphone-alt"></i> Voice Logs
+                </a>
+
+                <span class="prsb-group-label">Sistema</span>
+                <a href="{% url 'panel_feature_flags' %}"
+                   class="prsb-link {% if '/configuracion/flags' in request.path %}prsb-active{% endif %}"
+                   style="border-left: 3px solid #f7971e; padding-left: 18px;">
+                    <i class="fas fa-toggle-on" style="color:#f7971e;"></i>
+                    <span>Torre de Control</span>
+                    <small style="margin-left:auto; background:#f7971e; color:#000; font-size:0.6rem; padding:1px 5px; border-radius:3px; font-weight:700;">FLAGS</small>
+                </a>
+                <a href="/admin/" class="prsb-link" target="_blank">
+                    <i class="fas fa-database"></i> Panel Admin (DB)
+                </a>
+                <a href="{% url 'onboarding_wizard' %}" class="prsb-link {% if '/onboarding/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-magic"></i> Onboarding Wizard
+                </a>
+                <a href="{% url 'manual_operativo' %}" class="prsb-link {% if '/manual/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-book-open"></i> Manual Operativo
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>{# /prsb-nav #}
+
+    {# ── PRIS Dock — herramientas de IA siempre visibles ─────────────────── #}
+    <div class="prsb-dock">
+        <a href="{% url 'pris_ia_asistente' %}"
+           class="prsb-dock-btn prsb-dock-pris {% if '/ia/asistente/' in request.path %}prsb-active{% endif %}"
+           title="PRIS — Agente IA">
+            <i class="fas fa-robot"></i>
+            <span>PRIS IA</span>
+        </a>
+        <a href="{% url 'pris_chat' %}" id="btnAbrirChat"
+           class="prsb-dock-btn prsb-dock-chat {% if '/chat/' in request.path %}prsb-active{% endif %}"
+           title="Chat con PRIS">
+            <i class="fas fa-comments"></i>
+            <span>Chat</span>
+            <span class="prsb-chat-badge" id="badgeNoLeidos" style="display:none;">0</span>
+        </a>
+        <a href="javascript:void(0)" role="button"
+           class="prsb-dock-btn prsb-dock-feedback"
+           data-bs-toggle="modal" data-bs-target="#modalFeedback"
+           title="Quejas / Sugerencias">
+            <i class="fas fa-comment-dots"></i>
+            <span>Feedback</span>
+        </a>
+        <a href="{% url 'logout' %}"
+           class="prsb-dock-btn prsb-dock-logout"
+           title="Cerrar sesión"
+           data-prislab-logout="forensic"
+           onclick="return confirm('¿Cerrar sesión?');">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Salir</span>
+        </a>
+    </div>
+
+</nav>
+
+{# ── Overlay móvil ───────────────────────────────────────────────────────── #}
+<div class="prsb-overlay" id="prsbOverlay" onclick="prsbCloseMobile()"></div>
+
+{# ════════════════════════════════════════════════════════════════════════════ #}
+{# CSS DEL SIDEBAR ACORDEÓN                                                    #}
+{# ════════════════════════════════════════════════════════════════════════════ #}
+<style>
+/* ── Variables ─────────────────────────────────────────────────────────────── */
+:root {
+    --prsb-width:       272px;
+    --prsb-collapsed:   0px;
+    --prsb-bg:          #111827;
+    --prsb-bg-hover:    rgba(255,255,255,0.05);
+    --prsb-bg-active:   rgba(255,255,255,0.10);
+    --prsb-border:      rgba(255,255,255,0.07);
+    --prsb-text:        rgba(255,255,255,0.78);
+    --prsb-text-muted:  rgba(255,255,255,0.38);
+    --prsb-text-active: #ffffff;
+    --prsb-header-h:    60px;
+    --prsb-dock-h:      62px;
+    --prsb-transition:  0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Contenedor principal ──────────────────────────────────────────────────── */
+.prsb {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 64px; /* icon-only por defecto — hover expande a var(--prsb-width) */
+    height: 100vh;
+    background: var(--prsb-bg);
+    display: flex;
+    flex-direction: column;
+    z-index: 9999; /* encima de cualquier overlay o capa fantasma */
+    overflow: hidden;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+    transition: transform var(--prsb-transition), width var(--prsb-transition);
+    border-right: 1px solid rgba(255,255,255,0.04);
+}
+
+/* ── Cabecera ──────────────────────────────────────────────────────────────── */
+.prsb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px 0 18px;
+    height: var(--prsb-header-h);
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--prsb-border);
+    background: rgba(0,0,0,0.25);
+}
+.prsb-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none !important;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.prsb-brand-icon {
+    font-size: 20px;
+    color: var(--empresa-color-primario, #D9230F);
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 6px rgba(217,35,15,0.4));
+}
+.prsb-brand-text {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.4px;
+    color: #ffffff;
+}
+.prsb-brand-accent {
+    color: var(--empresa-color-primario, #D9230F);
+}
+.prsb-toggle-btn {
+    width: 30px; height: 30px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.06);
+    color: var(--prsb-text-muted);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    transition: all .2s;
+    flex-shrink: 0;
+}
+.prsb-toggle-btn:hover {
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+}
+
+/* ── Área de navegación con scroll ────────────────────────────────────────── */
+.prsb-nav {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.prsb-nav::-webkit-scrollbar { width: 4px; }
+.prsb-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+.prsb-nav::-webkit-scrollbar-track { background: transparent; }
+
+/* ── Módulo (contenedor del acordeón) ─────────────────────────────────────── */
+.prsb-module {
+    border-bottom: 1px solid var(--prsb-border);
+}
+.prsb-module:last-child { border-bottom: none; }
+
+/* ── Trigger del acordeón ─────────────────────────────────────────────────── */
+.prsb-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px 11px 18px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    color: var(--prsb-text);
+    font-size: 0.83rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: background var(--prsb-transition), color var(--prsb-transition);
+    border-radius: 0;
+}
+.prsb-trigger:hover {
+    background: var(--prsb-bg-hover);
+    color: var(--prsb-text-active);
+}
+.prsb-trigger[aria-expanded="true"] {
+    background: var(--prsb-bg-active);
+    color: var(--prsb-text-active);
+}
+.prsb-trigger-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.prsb-trigger-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: transform .2s;
+}
+.prsb-trigger[aria-expanded="true"] .prsb-trigger-dot {
+    transform: scale(1.4);
+}
+.prsb-trigger-icon {
+    font-size: 14px;
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.prsb-trigger-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.82rem;
+}
+.prsb-chevron {
+    font-size: 10px;
+    color: var(--prsb-text-muted);
+    transition: transform var(--prsb-transition);
+    flex-shrink: 0;
+}
+.prsb-trigger[aria-expanded="true"] .prsb-chevron {
+    transform: rotate(90deg);
+    color: var(--prsb-text-active);
+}
+
+/* ── Contenido del acordeón (animación max-height) ─────────────────────────── */
+.prsb-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(0,0,0,0.18);
+}
+.prsb-content.prsb-open {
+    max-height: 1200px;
+}
+
+/* ── Links de navegación ───────────────────────────────────────────────────── */
+.prsb-link {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 14px 7px 36px;
+    color: var(--prsb-text);
+    text-decoration: none !important;
+    font-size: 0.79rem;
+    font-weight: 400;
+    transition: background .15s, color .15s, padding-left .15s;
+    border-left: 3px solid transparent;
+    line-height: 1.35;
+}
+.prsb-link:hover {
+    background: var(--prsb-bg-hover);
+    color: #fff;
+    padding-left: 40px;
+}
+.prsb-link.prsb-active {
+    background: var(--prsb-bg-active);
+    color: #fff;
+    border-left-color: var(--empresa-color-primario, #D9230F);
+    font-weight: 600;
+    padding-left: 40px;
+}
+.prsb-link i {
+    font-size: 12px;
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+.prsb-link.prsb-active i,
+.prsb-link:hover i {
+    opacity: 1;
+}
+
+/* War Room link especial */
+.prsb-war-room {
+    background: rgba(239,68,68,0.08) !important;
+    border-left-color: rgba(239,68,68,0.5) !important;
+}
+.prsb-war-room:hover,
+.prsb-war-room.prsb-active {
+    background: rgba(239,68,68,0.16) !important;
+    border-left-color: #ef4444 !important;
+}
+.prsb-badge-count {
+    margin-left: auto;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.6rem;
+    padding: 1px 5px;
+    border-radius: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* ── Separadores y etiquetas de grupo ─────────────────────────────────────── */
+.prsb-divider {
+    height: 1px;
+    background: var(--prsb-border);
+    margin: 4px 18px;
+}
+.prsb-group-label {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--prsb-text-muted);
+    padding: 8px 18px 3px;
+}
+
+/* ── Encabezado de sección (Flujo Biológico) ────────────────────────────────── */
+.prsb-section-hdr {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--prsb-accent, #8e44ad);
+    padding: 10px 14px 4px;
+    margin-top: 6px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+.prsb-section-hdr:first-child,
+.prsb-section-hdr.mt-1 { margin-top: 2px; }
+.prsb-section-hdr i { font-size: 0.6rem; opacity: 0.8; }
+
+/* ── Paso numerado del flujo clínico ─────────────────────────────────────────── */
+.prsb-flow-step {
+    position: relative;
+}
+.prsb-step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(142, 68, 173, 0.18);
+    border: 1px solid rgba(142, 68, 173, 0.35);
+    color: var(--prsb-accent, #8e44ad);
+    font-size: 0.6rem;
+    font-weight: 700;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+.prsb-flow-step.prsb-active .prsb-step-num {
+    background: var(--empresa-color-primario, #D9230F);
+    border-color: var(--empresa-color-primario, #D9230F);
+    color: #fff;
+}
+
+/* ── Dock de PRIS (fijo al fondo) ─────────────────────────────────────────── */
+.prsb-dock {
+    flex-shrink: 0;
+    display: flex;
+    align-items: stretch;
+    border-top: 1px solid var(--prsb-border);
+    background: rgba(0,0,0,0.3);
+    height: var(--prsb-dock-h);
+}
+.prsb-dock-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    text-decoration: none !important;
+    color: var(--prsb-text-muted);
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    transition: background .2s, color .2s;
+    border: none;
+    background: none;
+    cursor: pointer;
+    position: relative;
+    border-right: 1px solid var(--prsb-border);
+}
+.prsb-dock-btn:last-child { border-right: none; }
+.prsb-dock-btn i { font-size: 15px; }
+.prsb-dock-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.prsb-dock-btn.prsb-active { color: #fff; }
+.prsb-dock-pris  { color: #a78bfa; }
+.prsb-dock-pris:hover { background: rgba(167,139,250,0.12); color: #a78bfa; }
+.prsb-dock-chat  { color: #34d399; }
+.prsb-dock-chat:hover { background: rgba(52,211,153,0.12); color: #34d399; }
+.prsb-dock-feedback { color: #fbbf24; }
+.prsb-dock-feedback:hover { background: rgba(251,191,36,0.12); color: #fbbf24; }
+.prsb-dock-logout { color: rgba(255,100,100,0.7); }
+.prsb-dock-logout:hover { background: rgba(255,60,60,0.10); color: #ff6464; }
+.prsb-chat-badge {
+    position: absolute; top: 6px; right: calc(50% - 14px);
+    background: #ef4444; color: #fff; border-radius: 999px;
+    font-size: 0.55rem; padding: 1px 4px; font-weight: 700; min-width: 14px; text-align: center;
+}
+
+/* ── Overlay móvil ─────────────────────────────────────────────────────────── */
+.prsb-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 1039;
+    backdrop-filter: blur(2px);
+}
+.prsb-overlay.prsb-overlay-show { display: block; }
+
+/* ── Layout global: offset por la barra de iconos (64px siempre visible) ─── */
+.header-liquido,
+.island-header-bar {
+    left: 64px !important;
+    transition: left var(--prsb-transition) !important;
+}
+.header-liquido.island-panel-expanded,
+.island-header-bar.island-panel-expanded {
+    left: 64px !important;
+}
+.main-wrapper {
+    margin-left: 64px !important;
+    transition: margin-left var(--prsb-transition), opacity 0.3s, transform 0.3s, background 0.5s !important;
+}
+.main-wrapper.island-panel-expanded {
+    margin-left: 64px !important;
+}
+.main-wrapper::before {
+    left: 64px !important;
+}
+.main-wrapper.island-panel-expanded::before {
+    left: 64px !important;
+}
+
+/* ── Sidebar expandido (hover) — overlay encima del contenido ────────────── */
+.prsb.prsb-expanded {
+    width: var(--prsb-width);
+    box-shadow: 6px 0 36px rgba(0,0,0,0.5);
+}
+
+/* ── En modo icono: ocultar acordeones y texto del dock ──────────────────── */
+.prsb:not(.prsb-expanded) .prsb-content.prsb-open {
+    max-height: 0 !important;
+    overflow: hidden;
+}
+.prsb:not(.prsb-expanded) .prsb-dock-btn span {
+    display: none;
+}
+.prsb:not(.prsb-expanded) .prsb-dock {
+    flex-direction: column;
+    height: auto;
+    padding: 6px 0;
+    gap: 2px;
+}
+.prsb:not(.prsb-expanded) .prsb-dock-btn {
+    flex: none;
+    width: 100%;
+    padding: 10px 0;
+    border-right: none;
+    border-bottom: 1px solid var(--prsb-border);
+}
+.prsb:not(.prsb-expanded) .prsb-dock-btn:last-child { border-bottom: none; }
+
+/* ── Sub-acordeón interno (Gestión y Configuración) ─────────────────────── */
+.prsb-accordion-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 6px 14px 6px 28px;
+    background: none;
+    border: none;
+    color: var(--prsb-text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    transition: background .15s, color .15s;
+    border-radius: 0;
+}
+.prsb-accordion-btn:hover { background: var(--prsb-bg-hover); color: #fff; }
+.prsb-accordion-btn.active { color: var(--prsb-text-active); }
+.prsb-accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.prsb-accordion-body.show {
+    max-height: 700px;
+}
+
+/* ── Responsive: móvil ─────────────────────────────────────────────────────── */
+@media (max-width: 991px) {
+    .prsb {
+        transform: translateX(-100%);
+        width: min(var(--prsb-width), 88vw);
+        box-shadow: 8px 0 32px rgba(0,0,0,0.35);
+    }
+    .prsb.prsb-mobile-open {
+        transform: translateX(0);
+    }
+    .header-liquido,
+    .island-header-bar {
+        left: 0 !important;
+    }
+    .main-wrapper {
+        margin-left: 0 !important;
+    }
+    .main-wrapper::before {
+        left: 0 !important;
+    }
+}
+
+/* ── Colores empresa en items activos ─────────────────────────────────────── */
+.prsb-link.prsb-active {
+    border-left-color: var(--empresa-color-primario, #D9230F);
+}
+</style>
+
+{# ════════════════════════════════════════════════════════════════════════════ #}
+{# JAVASCRIPT DEL ACORDEÓN                                                      #}
+{# ════════════════════════════════════════════════════════════════════════════ #}
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRISLAB SIDEBAR — HOVER-DRIVEN V2
+   • Sin botón de pin/clip. El sidebar se expande al pasar el mouse.
+   • EMERGENCY RESET: limpia cualquier estado "atrapado" de localStorage.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function () {
+    'use strict';
+
+    var STORAGE_KEY = 'prsb_open_module';
+
+    // ── EMERGENCY RESET — limpiar estado atrapado al instante ───────────────
+    // Ejecuta ANTES de DOMContentLoaded para que nunca arranque colapsado.
+    try {
+        localStorage.removeItem('prsb_collapsed');
+        var _sb = document.getElementById('islandSidebar');
+        if (_sb) {
+            _sb.classList.remove('prsb-collapsed');
+            _sb.classList.remove('prsb-expanded');
+        }
+        document.body.classList.remove('prsb-collapsed-mode');
+    } catch (e) {}
+
+    // ── Detectar módulo activo por URL ──────────────────────────────────────
+    function detectModuleFromPath() {
+        var p = window.location.pathname;
+        if (p.startsWith('/laboratorio/') || p.startsWith('/lims/') ||
+            p.startsWith('/director/analizadores') || p.startsWith('/silo-lab/') ||
+            p.startsWith('/mantenimiento/') || p.startsWith('/toma-muestra/') ||
+            p.startsWith('/captura/') || p.startsWith('/lista-trabajo/') ||
+            p.startsWith('/control-calidad/') || p.startsWith('/entrega-resultados/'))
+            return 'laboratorio';
+        if (p.startsWith('/farmacia/') || p.startsWith('/inventario/'))
+            return 'farmacia';
+        if (p.startsWith('/consultorio/') || p.startsWith('/medico/'))
+            return 'consultorio';
+        if (p.startsWith('/finanzas/') || p.startsWith('/reportes/') ||
+            p.startsWith('/transferencias/') || p.startsWith('/contabilidad/'))
+            return 'finanzas';
+        if (p.startsWith('/director/') || p.startsWith('/analytics/') ||
+            p.startsWith('/dashboard-unificado/') || p.startsWith('/crm/') ||
+            p.startsWith('/ia/panel/'))
+            return 'direccion';
+        if (p.startsWith('/nomina/') || p.startsWith('/asistencia/') ||
+            p.startsWith('/rh/') || p.startsWith('/capacitacion/') ||
+            p.startsWith('/marketing/'))
+            return 'personal';
+        if (p.startsWith('/bienestar/'))
+            return 'bienestar';
+        if (p.startsWith('/seguridad/') || p.startsWith('/configuracion/') ||
+            p.startsWith('/admin/') || p.startsWith('/pris/') ||
+            p.startsWith('/onboarding/') || p.startsWith('/manual/') ||
+            p.startsWith('/notificaciones/') || p.startsWith('/voice/'))
+            return 'sistema';
+        if (p.startsWith('/cotizacion/') || p.startsWith('/kiosko/') ||
+            p.startsWith('/dashboard-pendientes/') || p.startsWith('/consulta-ordenes/') ||
+            p.startsWith('/detalle-orden/'))
+            return 'laboratorio';
+        return null;
+    }
+
+    // ── Abrir módulo de acordeón ────────────────────────────────────────────
+    function openModule(modId, save) {
+        document.querySelectorAll('.prsb-trigger[data-mod]').forEach(function (btn) {
+            var isThis    = btn.dataset.mod === modId;
+            var contentEl = document.getElementById('prsb-c-' + btn.dataset.mod);
+            btn.setAttribute('aria-expanded', isThis ? 'true' : 'false');
+            if (contentEl) contentEl.classList.toggle('prsb-open', isThis);
+        });
+        if (save !== false) {
+            try { localStorage.setItem(STORAGE_KEY, modId); } catch (e) {}
+        }
+    }
+
+    // ── Toggle módulo ───────────────────────────────────────────────────────
+    function toggleModule(modId) {
+        var trigger = document.querySelector('.prsb-trigger[data-mod="' + modId + '"]');
+        if (!trigger) return;
+        if (trigger.getAttribute('aria-expanded') === 'true') {
+            trigger.setAttribute('aria-expanded', 'false');
+            var c = document.getElementById('prsb-c-' + modId);
+            if (c) c.classList.remove('prsb-open');
+            try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+        } else {
+            openModule(modId, true);
+        }
+    }
+
+    // ── Retrocompatibilidad — no-ops (no hay botón de pin) ──────────────────
+    window.prsbToggle    = function () {};
+    window.activarIsla   = function () {};
+    window.colapsarPanel = function () {};
+
+    // ── Móvil ───────────────────────────────────────────────────────────────
+    window.prsbOpenMobile = function () {
+        var sb = document.getElementById('islandSidebar');
+        var ov = document.getElementById('prsbOverlay');
+        if (sb) sb.classList.add('prsb-mobile-open');
+        if (ov) ov.classList.add('prsb-overlay-show');
+        document.body.style.overflow = 'hidden';
+    };
+    window.prsbCloseMobile = function () {
+        var sb = document.getElementById('islandSidebar');
+        var ov = document.getElementById('prsbOverlay');
+        if (sb) sb.classList.remove('prsb-mobile-open');
+        if (ov) ov.classList.remove('prsb-overlay-show');
+        document.body.style.overflow = '';
+    };
+
+    // ── Inicialización ──────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+
+        var sidebar = document.getElementById('islandSidebar');
+
+        // ① Bind triggers de módulo (acordeón principal)
+        document.querySelectorAll('.prsb-trigger[data-mod]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                toggleModule(this.dataset.mod);
+            });
+        });
+
+        // ② Bind sub-acordeones internos (Gestión y Configuración)
+        document.querySelectorAll('.prsb-accordion-btn[data-target]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var targetId = this.dataset.target;
+                var body     = document.getElementById(targetId);
+                if (!body) return;
+                var isOpen = body.classList.toggle('show');
+                this.classList.toggle('active', isOpen);
+                var chevron = this.querySelector('.prsb-chevron');
+                if (chevron) chevron.style.transform = isOpen ? 'rotate(90deg)' : '';
+            });
+        });
+
+        // ③ HOVER-DRIVEN: expandir al entrar, colapsar al salir (solo desktop)
+        if (sidebar && window.innerWidth >= 992) {
+            sidebar.addEventListener('mouseenter', function () {
+                sidebar.classList.add('prsb-expanded');
+            });
+            sidebar.addEventListener('mouseleave', function () {
+                sidebar.classList.remove('prsb-expanded');
+            });
+        }
+
+        // ④ Detectar módulo activo por URL y abrirlo
+        var activeModule = detectModuleFromPath();
+        if (!activeModule) {
+            try { activeModule = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+        }
+        if (activeModule) {
+            var activeTrigger = document.querySelector('.prsb-trigger[data-mod="' + activeModule + '"]');
+            if (activeTrigger) {
+                openModule(activeModule, false);
+                setTimeout(function () {
+                    activeTrigger.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }, 150);
+            }
+        }
+
+        // ⑤ Cerrar sidebar en móvil al navegar
+        document.querySelectorAll('.prsb-link').forEach(function (link) {
+            link.addEventListener('click', function () {
+                if (window.innerWidth < 992) prsbCloseMobile();
+            });
+        });
+
+        // ⑥ Redirigir hamburger del navbar al nuevo prsbOpenMobile
+        var hamburger = document.querySelector('.hamburger-btn-island');
+        if (hamburger) {
+            hamburger.removeAttribute('onclick');
+            hamburger.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                prsbOpenMobile();
+            });
+        }
+    });
+
+}());
+</script>
+
+{# ── War Room badge — mantiene funcionalidad existente ────────────────────── #}
+{% if request.user.is_superuser or request.user.rol == 'ADMIN' or request.user.rol == 'DIRECTOR' or request.user.rol == 'GERENTE' %}
+<script>
+(function warRoomBadge() {
+    var badge = document.getElementById('war-room-badge-count');
+    if (!badge) return;
+    function checkWarRoom() {
+        fetch('/director/war-room/api/anomalias/')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var criticos = data.total_criticos || 0;
+                badge.textContent = criticos;
+                badge.style.display = criticos > 0 ? 'inline-block' : 'none';
+                var link = document.getElementById('war-room-sidebar-link');
+                if (link) link.style.animation = criticos > 0 ? 'pulse-war-room 2s ease-in-out infinite' : '';
+            })
+            .catch(function() {});
+    }
+    setTimeout(checkWarRoom, 3000);
+    setInterval(checkWarRoom, 90000);
+})();
+</script>
+<style>
+@keyframes pulse-war-room {
+    0%,100% { background: rgba(239,68,68,0.08); }
+    50%      { background: rgba(239,68,68,0.22); }
+}
+</style>
+{% endif %}
+
+{# ── Badge CFDI pendientes ──────────────────────────────────────────────── #}
+{% if request.user.is_superuser or request.user.rol == 'ADMIN' or request.user.rol == 'DIRECTOR' or request.user.rol == 'GERENTE' %}
+<script>
+(function cfdiPendientesBadge() {
+    var badge = document.getElementById('badge-cfdi-pendientes');
+    if (!badge) return;
+    function check() {
+        fetch('/director/war-room/api/anomalias/')
+            .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+            .then(function(data) {
+                var cfdi = ((data.metricas_marketing) || {}).cfdi_pendientes || 0;
+                badge.textContent = cfdi;
+                badge.style.display = cfdi > 0 ? 'inline-block' : 'none';
+            })
+            .catch(function() { /* silencioso: usuario puede no ser Director */ });
+    }
+    setTimeout(check, 5000);
+    setInterval(check, 300000);
+})();
+</script>
+{% endif %}

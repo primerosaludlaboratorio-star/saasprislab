@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Agendar Cita{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2><i class="fas fa-calendar-plus"></i> Agendar Nueva Cita</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="card shadow-sm">
+            <div class="card-body">
+                {{ form.as_p }}
+            </div>
+        </div>
+        <div class="mt-3">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Agendar</button>
+            <a href="{% url 'recepcion:dashboard_recepcion' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
