@@ -135,12 +135,9 @@ def _log_tenant_shadow_unscoped(model):
         )
         extra = (model.__name__, getattr(user, 'pk', '?'), getattr(user, 'username', '?'))
     elif superuser:
-        level = logging.WARNING
-        msg = (
-            'TENANT_SHADOW_UNSCOPED_QUERY modelo=%s superuser=%s '
-            '— consulta global esperada; revisar si el flujo debe filtrar.'
-        )
-        extra = (model.__name__, getattr(user, 'username', '?'))
+        # La consulta global de un superuser es esperada en flujos de admin,
+        # War Room y auditoría. Evitamos ruido innecesario en logs de producción.
+        return
     elif req is not None:
         level = logging.WARNING
         msg = 'TENANT_SHADOW_UNSCOPED_QUERY modelo=%s request_anon_or_sin_usuario=%s'
