@@ -1653,18 +1653,16 @@
             ordenEstudios.forEach(agregar);
         }
 
-        if (!salida.length) {
-            document.querySelectorAll('#tabla-estudios tr[data-estudio-id], #tabla-carrito-body tr[data-estudio-id]').forEach(function(tr) {
-                agregar({
-                    id: tr.dataset.estudioId,
-                    codigo: tr.dataset.estudioCodigo,
-                    nombre: tr.dataset.estudioNombre,
-                    precio: tr.dataset.estudioPrecio,
-                    indicaciones: tr.dataset.estudioIndicaciones,
-                    es_perfil: tr.dataset.estudioEsPerfil === 'true',
-                });
+        document.querySelectorAll('#tabla-estudios tr[data-estudio-id], #tabla-carrito-body tr[data-estudio-id]').forEach(function(tr) {
+            agregar({
+                id: tr.dataset.estudioId,
+                codigo: tr.dataset.estudioCodigo,
+                nombre: tr.dataset.estudioNombre,
+                precio: tr.dataset.estudioPrecio,
+                indicaciones: tr.dataset.estudioIndicaciones,
+                es_perfil: tr.dataset.estudioEsPerfil === 'true',
             });
-        }
+        });
 
         return salida;
     }
@@ -2869,17 +2867,33 @@
             const lista = (data.estudios || data.resultados || []);
             if (!lista.length) { wrap.style.display='none'; return; }
             wrap.innerHTML = lista.slice(0,8).map(e => `
-                <button class="list-group-item list-group-item-action py-1" style="font-size:12px;"
-                        onclick="agregarEstudioEdicion(${e.id}, '${escapeHtml(e.nombre)}', '${escapeHtml(e.codigo||'')}', ${e.precio||0})">
+                <button class="list-group-item list-group-item-action py-1 js-agregar-estudio-edicion" style="font-size:12px;"
+                        type="button"
+                        data-estudio-id="${escapeHtml(String(e.id ?? ''))}"
+                        data-estudio-nombre="${escapeHtml(String(e.nombre ?? ''))}"
+                        data-estudio-codigo="${escapeHtml(String(e.codigo ?? ''))}"
+                        data-estudio-precio="${escapeHtml(String(e.precio ?? 0))}">
                     <strong>${escapeHtml(e.codigo||'')}</strong> ${escapeHtml(e.nombre)} — $${parseFloat(e.precio||0).toFixed(2)}
                 </button>`).join('');
+            wrap.querySelectorAll('.js-agregar-estudio-edicion').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    agregarEstudioEdicion(
+                        btn.dataset.estudioId,
+                        btn.dataset.estudioNombre,
+                        btn.dataset.estudioCodigo,
+                        btn.dataset.estudioPrecio
+                    );
+                });
+            });
             wrap.style.display = 'block';
         })
         .catch(()=>{});
     }
     function agregarEstudioEdicion(id, nombre, codigo, precio) {
-        if (!_editEstudios.find(e => e.id === id)) {
-            _editEstudios.push({id, nombre, codigo, precio: parseFloat(precio)});
+        const estudioId = String(id ?? '').trim();
+        if (!estudioId) return;
+        if (!_editEstudios.find(e => String(e.id) === estudioId)) {
+            _editEstudios.push({id: estudioId, nombre, codigo, precio: parseFloat(precio)});
             renderEditEstudios();
             calcularTotalEdicion();
         }
@@ -3101,8 +3115,9 @@
                 return;
             }
             cont.innerHTML = estudios.slice(0, 15).map(e => `
-                <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1"
-                        onclick="agregarEstudioAOrden(${e.id}, '${e.source || 'core'}', this)">
+                <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1 js-agregar-estudio-orden"
+                        data-estudio-id="${escapeHtml(String(e.id ?? ''))}"
+                        data-estudio-source="${escapeHtml(String(e.source || 'core'))}">
                     <div>
                         <strong>${escapeHtml(e.nombre)}</strong>
                         ${e.es_perfil ? '<span class="badge bg-warning text-dark ms-1">PERFIL</span>' : ''}
@@ -3111,6 +3126,15 @@
                     <span class="badge bg-success rounded-pill">$${parseFloat(e.precio || 0).toFixed(2)}</span>
                 </button>
             `).join('');
+            cont.querySelectorAll('.js-agregar-estudio-orden').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    agregarEstudioAOrden(
+                        btn.dataset.estudioId,
+                        btn.dataset.estudioSource,
+                        btn
+                    );
+                });
+            });
         })
         .catch(() => { cont.innerHTML = '<div class="list-group-item text-danger">Error de conexión</div>'; });
     }
