@@ -353,8 +353,8 @@
                                         {% if param_data.rango %}
                                         data-min="{% if param_data.rango.valor_minimo != None %}{{ param_data.rango.valor_minimo|floatformat:2 }}{% endif %}"
                                         data-max="{% if param_data.rango.valor_maximo != None %}{{ param_data.rango.valor_maximo|floatformat:2 }}{% endif %}"
-                                        data-panico-min="{{ param_data.rango.panico_minimo }}"
-                                        data-panico-max="{{ param_data.rango.panico_maximo }}"
+                                        data-panico-min="{{ param_data.rango.panico_minimo|default:'' }}"
+                                        data-panico-max="{{ param_data.rango.panico_maximo|default:'' }}"
                                         {% endif %}
                                         placeholder="Ingrese valor..."
                                         autocomplete="off"
@@ -362,8 +362,10 @@
                                 </td>
                                 <td class="col-referencia">
                                     {% if param_data.rango %}
-                                        {% if param_data.rango.valor_minimo and param_data.rango.valor_maximo %}
-                                            {{ param_data.rango.valor_minimo|floatformat:2 }} - {{ param_data.rango.valor_maximo|floatformat:2 }}
+                                        {% if param_data.rango.valor_minimo != None or param_data.rango.valor_maximo != None %}
+                                            {% if param_data.rango.valor_minimo != None %}{{ param_data.rango.valor_minimo|floatformat:2 }}{% else %}-{% endif %}
+                                            -
+                                            {% if param_data.rango.valor_maximo != None %}{{ param_data.rango.valor_maximo|floatformat:2 }}{% else %}-{% endif %}
                                             {{ param_data.parametro.unidad|default:"" }}
                                         {% elif param_data.rango.texto_referencia %}
                                             {{ param_data.rango.texto_referencia }}
@@ -371,16 +373,21 @@
                                             <span class="text-muted">Sin rango definido</span>
                                         {% endif %}
                                         
-                                        {% if param_data.rango.panico_minimo or param_data.rango.panico_maximo %}
+                                        {% if param_data.rango.panico_minimo != None or param_data.rango.panico_maximo != None %}
                                             <br>
                                             <small class="text-danger">
                                                 <i class="fas fa-exclamation-triangle me-1"></i>
                                                 Pánico: 
-                                                {% if param_data.rango.panico_minimo %}&lt;{{ param_data.rango.panico_minimo }}{% endif %}
-                                                {% if param_data.rango.panico_minimo and param_data.rango.panico_maximo %} o {% endif %}
-                                                {% if param_data.rango.panico_maximo %}&gt;{{ param_data.rango.panico_maximo }}{% endif %}
+                                                {% if param_data.rango.panico_minimo != None %}&lt;{{ param_data.rango.panico_minimo }}{% endif %}
+                                                {% if param_data.rango.panico_minimo != None and param_data.rango.panico_maximo != None %} o {% endif %}
+                                                {% if param_data.rango.panico_maximo != None %}&gt;{{ param_data.rango.panico_maximo }}{% endif %}
                                             </small>
                                         {% endif %}
+                                    {% elif param_data.ref_min != None or param_data.ref_max != None or param_data.ref_texto %}
+                                        {% if param_data.ref_min != None %}{{ param_data.ref_min|floatformat:2 }}{% else %}-{% endif %}
+                                        -
+                                        {% if param_data.ref_max != None %}{{ param_data.ref_max|floatformat:2 }}{% else %}-{% endif %}
+                                        {% if param_data.ref_texto %}{{ param_data.ref_texto }}{% endif %}
                                     {% else %}
                                         <span class="text-muted">
                                             <i class="fas fa-info-circle me-1"></i>

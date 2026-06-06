@@ -460,7 +460,7 @@
                             {# Línea simple (analito LIMS o legado con estudio) #}
                             {% with val=item.detalle.resultado %}
                             {% if item.detalle.estudio %}
-                                {% with ref_min=item.detalle.estudio.valor_minimo ref_max=item.detalle.estudio.valor_maximo %}
+                                {% with ref_min=item.detalle.estudio.valor_minimo ref_max=item.detalle.estudio.valor_maximo ref_texto=item.detalle.estudio.texto_referencia %}
                             <tr {% if item.es_critico %}style="background:#fff0f0"{% elif item.es_anormal %}style="background:#fffbf0"{% endif %}>
                                 <td class="col-param">{{ item.detalle.estudio.nombre }}</td>
                                 <td class="col-valor">
@@ -476,10 +476,12 @@
                                 </td>
                                 <td class="col-unid">{{ item.detalle.estudio.unidades|default:"-" }}</td>
                                 <td class="col-ref">
-                                    {% if ref_min or ref_max %}
-                                        {% if ref_min %}{{ ref_min|floatformat:2 }}{% else %}-{% endif %}
+                                    {% if ref_min is not None or ref_max is not None %}
+                                        {% if ref_min is not None %}{{ ref_min|floatformat:2 }}{% else %}-{% endif %}
                                         –
-                                        {% if ref_max %}{{ ref_max|floatformat:2 }}{% else %}-{% endif %}
+                                        {% if ref_max is not None %}{{ ref_max|floatformat:2 }}{% else %}-{% endif %}
+                                    {% elif ref_texto %}
+                                        {{ ref_texto }}
                                     {% else %}-{% endif %}
                                 </td>
                             </tr>

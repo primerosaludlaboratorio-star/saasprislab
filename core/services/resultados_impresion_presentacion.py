@@ -2,10 +2,13 @@
 Construcción de `detalles_procesados` para HTML de resultados (portal paciente e impresión).
 Unifica la lógica que antes vivía solo en `imprimir_resultados_pdf` (perfiles LIMS + flags).
 """
+from datetime import date
+from types import SimpleNamespace
+
 from django.db.models import Q
 
 from core.models import ResultadoParametro
-from lims.models import Analito
+from lims.models import Analito, ValorReferenciaAnalito
 
 
 def _categoria_grupo_detalle(detalle) -> str:
@@ -19,6 +22,61 @@ def _categoria_grupo_detalle(detalle) -> str:
     )
 
 
+def _rango_referencia_para_analito(analito, paciente):
+    """
+    Resuelve el rango de referencia más adecuado para un analito y paciente.
+    Prioriza coincidencia exacta por sexo y edad; cae a indiferente si no hay match.
+    """
+    if not analito:
+        return None
+
+    sexo = (getattr(paciente, "sexo", None) or "I").upper()
+    edad_anios = getattr(paciente, "edad", None)
+    dias_vida = None
+    fecha_nacimiento = getattr(paciente, "fecha_nacimiento", None)
+    if fecha_nacimiento:
+        try:
+            dias_vida = max((date.today() - fecha_nacimiento).days, 0)
+        except Exception:
+            dias_vida = None
+
+    rangos = list(ValorReferenciaAnalito.objects.filter(analito=analito).order_by("edad_minima", "sexo"))
+    if not rangos:
+        return None
+
+    def _aplica(r):
+        if r.sexo not in (sexo, "I"):
+            return False
+        if r.unidad_edad == "ANOS":
+            if edad_anios is None:
+                return False
+            return r.edad_minima <= edad_anios <= r.edad_maxima
+        if r.unidad_edad == "DIAS":
+            if dias_vida is None:
+                return False
+            return r.edad_minima <= dias_vida <= r.edad_maxima
+        return True
+
+    seleccionado = next((r for r in rangos if _aplica(r)), None)
+    if seleccionado is None:
+        seleccionado = next((r for r in rangos if r.sexo in (sexo, "I")), rangos[0])
+
+    ref_min = seleccionado.ref_minimo
+    ref_max = seleccionado.ref_maximo
+    ref_texto = (seleccionado.texto_referencia or "").strip()
+    if not ref_texto and ref_min is not None and ref_max is not None:
+        ref_texto = f"{float(ref_min):.2f} - {float(ref_max):.2f}"
+
+    return {
+        "ref_min": float(ref_min) if ref_min is not None else None,
+        "ref_max": float(ref_max) if ref_max is not None else None,
+        "ref_texto": ref_texto,
+        "critico_min": float(seleccionado.valor_critico_bajo) if seleccionado.valor_critico_bajo is not None else None,
+        "critico_max": float(seleccionado.valor_critico_alto) if seleccionado.valor_critico_alto is not None else None,
+        "panico_fuera_ref": bool(seleccionado.es_critico_si_fuera_de_rango),
+    }
+
+
 def construir_detalles_procesados_orden(orden):
     """
     Devuelve (detalles_procesados, ultimo_validador).
@@ -26,7 +84,7 @@ def construir_detalles_procesados_orden(orden):
     """
     detalles = orden.detalles.select_related(
         "analito", "perfil_lims", "paquete_lims", "validado_por"
-    ).all()
+    ).prefetch_related("analito__rangos").all()
 
     ultimo_validador = None
     if detalles.exists():
@@ -59,14 +117,27 @@ def construir_detalles_procesados_orden(orden):
                             .filter(activo=True)
                             .first()
                         )
+                        rango = _rango_referencia_para_analito(an, orden.paciente) if an else None
                         resultado_parseado.append(
                             {
                                 "descripcion": descripcion,
                                 "valor": valor,
                                 "unidades": unidades,
                                 "analito_id": an.id if an else None,
+                                **(rango or {}),
                             }
                         )
+
+        if detalle.analito_id and detalle.analito:
+            rango_detalle = _rango_referencia_para_analito(detalle.analito, orden.paciente)
+            if rango_detalle:
+                detalle.estudio = SimpleNamespace(
+                    nombre=detalle.analito.nombre,
+                    unidades=detalle.analito.unidades or "",
+                    valor_minimo=rango_detalle.get("ref_min"),
+                    valor_maximo=rango_detalle.get("ref_max"),
+                    texto_referencia=rango_detalle.get("ref_texto", ""),
+                )
 
         detalles_procesados.append(
             {"detalle": detalle, "resultado_parseado": resultado_parseado}
