@@ -1534,8 +1534,13 @@
     });
 
     function agregarEstudio(estudio) {
+        const estudioId = String(estudio?.id ?? '').trim();
+        if (!estudioId || estudioId === 'null' || estudioId === 'undefined') {
+            Swal.fire('Error', 'No se pudo identificar el estudio seleccionado', 'error');
+            return;
+        }
         // Verificar si ya está en la orden
-        if (ordenEstudios.find(e => e.id === estudio.id)) {
+        if (ordenEstudios.find(e => String(e.id) === estudioId)) {
             Swal.fire('Info', 'Este estudio ya está en la orden', 'info');
             return;
         }
@@ -1553,7 +1558,7 @@
         
         const indicacionesTexto = estudio.indicaciones || '';
         ordenEstudios.push({
-            id: estudio.id,
+            id: estudioId,
             codigo: estudio.codigo,
             nombre: estudio.nombre,
             precio_base: precioBase,
@@ -4095,13 +4100,10 @@
                 if (data.estudios && data.estudios.length > 0) {
                     // Agregar el primer estudio encontrado
                     const estudio = data.estudios[0];
-                    // Asumir que existe una función agregarEstudioOrden
-                    if (typeof agregarEstudioOrden === 'function') {
-                        agregarEstudioOrden(estudio.id);
+                    if (typeof agregarEstudio === 'function') {
+                        agregarEstudio(estudio);
                     } else {
-                        // Fallback: agregar manualmente
                         console.log('Estudio encontrado:', estudio);
-                        // Aquí deberías tener tu lógica para agregar estudios a la orden
                     }
                 }
             })
@@ -4198,7 +4200,7 @@
     // Agregar estudios seleccionados a la orden
     function agregarTodosSugeridos() {
         const checks = document.querySelectorAll('.chk-sugerencia:checked');
-        const estudiosIds = Array.from(checks).map(chk => parseInt(chk.dataset.estudioId));
+        const estudiosIds = Array.from(checks).map(chk => String(chk.dataset.estudioId || '').trim()).filter(Boolean);
         
         if (estudiosIds.length === 0) {
             alert('Selecciona al menos un estudio para agregar.');
@@ -4207,10 +4209,10 @@
         
         // Agregar cada estudio a la orden
         estudiosIds.forEach(estudioId => {
-            if (typeof agregarEstudioOrden === 'function') {
-                agregarEstudioOrden(estudioId);
+            const estudio = (window.estudiosSugeridosGlobal || []).find(e => String(e.id) === String(estudioId));
+            if (typeof agregarEstudio === 'function' && estudio) {
+                agregarEstudio(estudio);
             } else {
-                // Fallback: buscar y agregar manualmente
                 buscarYAgregarEstudio(estudioId);
             }
         });

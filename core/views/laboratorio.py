@@ -359,11 +359,22 @@ def crear_orden_servicio(request):
         data = json.loads(request.body)
         paciente_id = data.get('paciente_id')
         estudios_ids = data.get('estudios') or data.get('estudio_ids') or []
+        estudios_ids = [str(e).strip() for e in estudios_ids if str(e).strip()]
+        estudios_ids = list(dict.fromkeys(estudios_ids))
         if not paciente_id or not estudios_ids:
             return JsonResponse({'error': 'Datos incompletos'}, status=400)
         empresa = request.user.empresa
         total = Decimal('0')
         estudios = Estudio.objects.filter(id__in=estudios_ids, empresa=empresa)
+        if not estudios.exists():
+            return JsonResponse({'error': 'No se encontraron estudios válidos para la empresa actual'}, status=400)
+        encontrados = {str(e.id) for e in estudios}
+        faltantes = [e for e in estudios_ids if e not in encontrados]
+        if faltantes:
+            return JsonResponse({
+                'error': 'Algunos estudios ya no están disponibles para esta empresa',
+                'faltantes': faltantes,
+            }, status=400)
         for e in estudios:
             total += e.precio_publico or Decimal('0')
         orden = OrdenDeServicio.objects.create(
