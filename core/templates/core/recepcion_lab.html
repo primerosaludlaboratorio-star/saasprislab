@@ -1618,6 +1618,52 @@
         return text.replace(/[&<>"']/g, m => map[m]);
     }
 
+    function normalizarEstudioOrden(estudio) {
+        if (!estudio) return null;
+        const precio = parseFloat(estudio.precio);
+        return {
+            id: estudio.id,
+            codigo: estudio.codigo || '',
+            nombre: estudio.nombre || '',
+            precio: Number.isFinite(precio) ? precio : 0,
+            indicaciones: estudio.indicaciones || '',
+            es_perfil: !!estudio.es_perfil,
+        };
+    }
+
+    function obtenerEstudiosSeleccionados() {
+        const salida = [];
+        const vistos = new Set();
+
+        const agregar = function(estudio) {
+            const normalizado = normalizarEstudioOrden(estudio);
+            if (!normalizado) return;
+            const clave = String(normalizado.id ?? '').trim();
+            if (!clave || clave === 'null' || clave === 'undefined' || vistos.has(clave)) return;
+            vistos.add(clave);
+            salida.push(normalizado);
+        };
+
+        if (Array.isArray(ordenEstudios) && ordenEstudios.length > 0) {
+            ordenEstudios.forEach(agregar);
+        }
+
+        if (!salida.length) {
+            document.querySelectorAll('#tabla-estudios tr[data-estudio-id], #tabla-carrito-body tr[data-estudio-id]').forEach(function(tr) {
+                agregar({
+                    id: tr.dataset.estudioId,
+                    codigo: tr.dataset.estudioCodigo,
+                    nombre: tr.dataset.estudioNombre,
+                    precio: tr.dataset.estudioPrecio,
+                    indicaciones: tr.dataset.estudioIndicaciones,
+                    es_perfil: tr.dataset.estudioEsPerfil === 'true',
+                });
+            });
+        }
+
+        return salida;
+    }
+
     function renderizarTabla() {
         const tbody = document.getElementById('tabla-estudios');
         
@@ -1649,7 +1695,14 @@
                 : '';
             
             return `
-            <tr>
+            <tr
+                data-estudio-id="${estudio.id}"
+                data-estudio-codigo="${escapeHtml(estudio.codigo || '')}"
+                data-estudio-nombre="${escapeHtml(estudio.nombre || '')}"
+                data-estudio-precio="${Number(estudio.precio || 0).toFixed(2)}"
+                data-estudio-indicaciones="${escapeHtml(estudio.indicaciones || '')}"
+                data-estudio-es-perfil="${estudio.es_perfil ? 'true' : 'false'}"
+            >
                 <td class="fw-bold">${estudio.codigo}</td>
                 <td ${tooltipAttr}>
                     ${estudio.nombre}
@@ -2006,12 +2059,13 @@
 
     function generarOrden() {
         const pacienteId = document.getElementById('paciente-id')?.value;
+        const estudiosSeleccionados = obtenerEstudiosSeleccionados();
         
         if (!pacienteId) {
             return Swal.fire('Error', 'Debe seleccionar un paciente', 'error');
         }
         
-        if (ordenEstudios.length === 0) {
+        if (!estudiosSeleccionados.length) {
             return Swal.fire('Error', 'Debe agregar al menos un estudio', 'error');
         }
         
@@ -2030,7 +2084,7 @@
             }
         }
         
-        const subtotal = ordenEstudios.reduce((sum, e) => sum + e.precio, 0);
+        const subtotal = estudiosSeleccionados.reduce((sum, e) => sum + (parseFloat(e.precio) || 0), 0);
         const efectivo = parseFloat(document.getElementById('init_pago_efectivo')?.value || 0) || 0;
         const credito  = parseFloat(document.getElementById('init_pago_credito')?.value || 0) || 0;
         const debito   = parseFloat(document.getElementById('init_pago_debito')?.value || 0) || 0;
@@ -2077,7 +2131,7 @@
             html: `
                 <div class="text-start">
                     <p><strong>Paciente:</strong> ${document.getElementById('pac-nombre')?.textContent || 'N/A'}</p>
-                    <p><strong>Estudios:</strong> ${ordenEstudios.length} — <strong>Total:</strong> $${subtotal.toFixed(2)}</p>
+                    <p><strong>Estudios:</strong> ${estudiosSeleccionados.length} — <strong>Total:</strong> $${subtotal.toFixed(2)}</p>
                     ${cortesiaInfo}${cxcInfo}
                     <hr style="margin:6px 0">
                     <p class="mb-1"><strong>Desglose de Cobro:</strong></p>
@@ -2125,8 +2179,9 @@
         }
 
         const pacienteId = (document.getElementById('paciente-id') || {}).value || '';
-        const estudioIds = (ordenEstudios || []).map(function(e) { return parseInt(e.id, 10); }).filter(Boolean);
-        const subtotal = (ordenEstudios || []).reduce(function(sum, e) { return sum + (parseFloat(e.precio) || 0); }, 0);
+        const estudiosSeleccionados = obtenerEstudiosSeleccionados();
+        const estudioIds = estudiosSeleccionados.map(function(e) { return e.id; });
+        const subtotal = estudiosSeleccionados.reduce(function(sum, e) { return sum + (parseFloat(e.precio) || 0); }, 0);
         const preordenId = window.preordenIdSeleccionada || null;
         
         // Validar cortesía
@@ -2166,6 +2221,7 @@
 
         var payload = {
             paciente_id: pacienteId,
+            estudios: estudioIds,
             estudio_ids: estudioIds,
             total: totalFinal,
             total_original: subtotal,

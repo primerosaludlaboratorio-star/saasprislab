@@ -15,7 +15,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 logger = logging.getLogger('core')
 from django.db import transaction, IntegrityError
 from django.db.models import Q, Value, IntegerField
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -230,8 +230,16 @@ def dashboard_laboratorio(request):
     except Exception:
         logger.warning('Dashboard Lab: error cargando widget reactivos_stock_bajo', exc_info=True)
 
-    # Controles de calidad hoy (placeholder)
     controles_hoy = []
+    try:
+        controles_hoy = list(
+            ControlCalidad.objects.filter(
+                empresa=empresa,
+                fecha_registro__range=(inicio_dia, timezone.now()),
+            ).order_by('-fecha_registro')[:10]
+        )
+    except Exception:
+        logger.warning('Dashboard Lab: error cargando controles de calidad del dia', exc_info=True)
 
     return render(request, 'dashboards/dashboard_laboratorio.html', {
         'empresa': empresa.nombre if hasattr(empresa, 'nombre') else str(empresa),
@@ -342,17 +350,32 @@ def api_precios_convenio(request, convenio_id: int):
 
 
 @login_required
+
 def crear_orden_servicio(request):
-    """Crea una nueva orden de servicio de laboratorio (delega en OrdenServicioLims)."""
-    if request.method != 'POST':
-        return JsonResponse({'status': 'error', 'mensaje': 'Método no permitido'}, status=405)
-
-    empresa = getattr(request.user, 'empresa', None)
-    if not empresa:
-        return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}, status=403)
-
-    out = OrdenServicioLims.crear_desde_recepcion(request, empresa)
-    return JsonResponse(out['body'], status=out['http_status'])
+    from core.models import OrdenDeServicio, OrdenDetalle, Estudio
+    from decimal import Decimal
+    import json
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        paciente_id = data.get('paciente_id')
+        estudios_ids = data.get('estudios') or data.get('estudio_ids') or []
+        if not paciente_id or not estudios_ids:
+            return JsonResponse({'error': 'Datos incompletos'}, status=400)
+        empresa = request.user.empresa
+        total = Decimal('0')
+        estudios = Estudio.objects.filter(id__in=estudios_ids, empresa=empresa)
+        for e in estudios:
+            total += e.precio_publico or Decimal('0')
+        orden = OrdenDeServicio.objects.create(
+            paciente_id=paciente_id,
+            empresa=empresa,
+            usuario=request.user,
+            total=total,
+            estado='PENDIENTE'
+        )
+    for e in estudios:
+        OrdenDetalle.objects.create(orden=orden, estudio=e, precio_unitario=e.precio_publico)
+    return JsonResponse({'orden_id': orden.id, 'folio': orden.folio_orden})
 
 @login_required
 def api_ordenes_recientes(request):
@@ -1013,11 +1036,11 @@ def imprimir_resultados_pdf(request, orden_id):
     saldo_cero = saldo_pendiente <= Decimal('0.00')
     
     # 2. Validación técnica (solo core.OrdenDeServicio)
-    esta_validado = orden.estado == 'RESULTADOS_LISTOS'
+    esta_validado = orden.estado in ('RESULTADOS_LISTOS', 'ENTREGADO')
     
-    # 3. Firma de aviso de privacidad registrada (verificación de teléfono)
-    # Usamos telefono_verificado como proxy para la firma de privacidad
-    firma_privacidad = getattr(orden.paciente, 'telefono_verificado', False) or False
+    # 3. Firma de aviso de privacidad y tratamiento de datos registrada.
+    from core.utils.lfpdppp_resultados import paciente_autorizado_canal_digital_resultados
+    firma_privacidad = paciente_autorizado_canal_digital_resultados(orden.paciente)
     
     # ── CANDADO FINANCIERO (TRIPLE LLAVE — Saldo) ────────────────────────────
     if not saldo_cero:
@@ -1050,7 +1073,7 @@ def imprimir_resultados_pdf(request, orden_id):
     detalles_procesados, ultimo_validador = construir_detalles_procesados_orden(orden)
 
     # Generar QR único para esta orden con URL pública de verificación
-    url_base = getattr(settings, 'SITE_URL', 'https://prislab-saas-811785477499.us-central1.run.app')
+    url_base = getattr(settings, 'SITE_URL', '') or os.environ.get('SITE_URL', 'http://localhost:8000')
     url_verificacion = f"{url_base}/laboratorio/verificar/{orden.folio_orden or orden_id}/"
     qr_image_base64 = generar_qr_orden(orden_id, orden.folio_orden, url_verificacion)
     
@@ -1084,6 +1107,41 @@ def imprimir_resultados_pdf(request, orden_id):
         es_publico=False,
         empresa=empresa,
     )
+
+    if (request.GET.get('formato') or '').lower() == 'pdf':
+        pdf_bytes = None
+        if orden.archivo_resultado and getattr(orden.archivo_resultado, 'name', None):
+            try:
+                with orden.archivo_resultado.open('rb') as archivo_pdf:
+                    pdf_bytes = archivo_pdf.read()
+            except Exception:
+                logger_core.warning(
+                    'imprimir_resultados_pdf: no se pudo leer PDF almacenado, se regenerara orden=%s',
+                    orden.id,
+                    exc_info=True,
+                )
+
+        if pdf_bytes is None:
+            from core.services.motor_reportes_lab import (
+                generar_reporte_pdf,
+                generar_reporte_pdf_simple,
+                guardar_reporte_en_storage,
+            )
+            try:
+                pdf_bytes = generar_reporte_pdf(orden, request=request)
+            except Exception:
+                logger_core.warning(
+                    'imprimir_resultados_pdf: motor principal fallo, usando contingencia orden=%s',
+                    orden.id,
+                    exc_info=True,
+                )
+                pdf_bytes = generar_reporte_pdf_simple(orden, request=request)
+            guardar_reporte_en_storage(orden, pdf_bytes)
+
+        filename = f"resultados_{orden.folio_orden or orden.id}.pdf"
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
 
     return render(request, 'core/resultados_print.html', {
         'orden': orden,
@@ -1323,8 +1381,54 @@ def api_validar_pin(request, orden_id: int):
     if not orden:
         return JsonResponse({"ok": False, "error": "Orden no encontrada"}, status=404)
 
+    try:
+        from core.utils.candado_financiero import tiene_saldo_pendiente
+        if not tiene_saldo_pendiente(orden) and not (
+            orden.archivo_resultado and getattr(orden.archivo_resultado, 'name', None)
+        ):
+            from core.services.motor_reportes_lab import (
+                generar_reporte_pdf,
+                generar_reporte_pdf_simple,
+                guardar_reporte_en_storage,
+            )
+            try:
+                pdf_bytes = generar_reporte_pdf(orden, request=request)
+            except Exception:
+                logger_core.warning(
+                    'api_validar_pin: motor PDF principal fallo, usando contingencia orden=%s',
+                    orden.id,
+                    exc_info=True,
+                )
+                pdf_bytes = generar_reporte_pdf_simple(orden, request=request)
+
+            pdf_url = guardar_reporte_en_storage(orden, pdf_bytes)
+            orden.refresh_from_db(fields=['archivo_resultado'])
+            if not pdf_url and not (
+                orden.archivo_resultado and getattr(orden.archivo_resultado, 'name', None)
+            ):
+                return JsonResponse(
+                    {"ok": False, "error": "No se pudo guardar el PDF de resultados"},
+                    status=500,
+                )
+    except Exception:
+        logger_core.exception(
+            'api_validar_pin: no se pudo preparar PDF antes de validar orden=%s',
+            orden.id,
+        )
+        return JsonResponse(
+            {"ok": False, "error": "No se pudo generar el PDF de resultados"},
+            status=500,
+        )
+
     orden.estado = 'RESULTADOS_LISTOS'
-    orden.save(update_fields=['estado'])
+    try:
+        OrdenDeServicio.objects.filter(id=orden.id, empresa=empresa).update(estado='RESULTADOS_LISTOS')
+    except Exception:
+        logger_core.exception('api_validar_pin: no se pudo marcar orden validada orden=%s', orden.id)
+        return JsonResponse(
+            {"ok": False, "error": "No se pudo validar la orden"},
+            status=500,
+        )
 
     try:
         registrar_auditoria(
@@ -1360,7 +1464,6 @@ def api_validar_pin(request, orden_id: int):
             # Incluir link al PDF público si el token de acceso existe
             pdf_link = ''
             try:
-                from django.conf import settings
                 site_url = getattr(settings, 'SITE_URL', '')
                 if not site_url:
                     site_url = request.build_absolute_uri('/').rstrip('/')
@@ -2003,11 +2106,12 @@ def escanear_identidad_ia(request):
         if not getattr(request.user, "puede_usar_ia", False):
             return JsonResponse({"error": "Acceso IA no habilitado para este usuario."}, status=403)
 
-        # Usar cliente centralizado de Gemini (API v1 estable)
-        from core.utils.gemini_client import get_gemini_model
-        
+        # Usar cliente centralizado de Gemini Vision (API v1 estable)
+        from core.utils.gemini_client import get_gemini_client, get_gemini_model
+
         try:
-            model = get_gemini_model('gemini-2.0-flash')
+            client = get_gemini_client()
+            model_name = get_gemini_model('gemini-2.0-flash')
         except Exception as e:
             return JsonResponse(
                 {"error": f"Error al inicializar Gemini: {str(e)}"},
@@ -2043,11 +2147,18 @@ Reglas:
         try:
             from PIL import Image
 
-            imagen_pil = Image.open(io.BytesIO(imagen_bytes))
+            Image.open(io.BytesIO(imagen_bytes)).verify()
         except Exception as e:
             return JsonResponse({"error": f"Error al procesar la imagen: {str(e)}"}, status=400)
 
-        response = model.generate_content([prompt_sistema, imagen_pil])
+        from google.genai import types as genai_types
+
+        mime_type = imagen_file.content_type or "image/jpeg"
+        image_part = genai_types.Part.from_bytes(data=imagen_bytes, mime_type=mime_type)
+        response = client.models.generate_content(
+            model=model_name,
+            contents=[prompt_sistema, image_part],
+        )
         texto_respuesta = (response.text or "").strip()
 
         # Limpieza defensiva (a veces viene con fences)
