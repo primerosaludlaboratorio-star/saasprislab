@@ -177,13 +177,25 @@
                     <span class="badge bg-success" id="status-conn"><i class="bi bi-wifi"></i> Online</span>
                 </div>
                 
-                <!-- Datos de Venta (Paciente / Médico) - NUEVO -->
+                <!-- Datos de Venta (Paciente / Médico) -->
                 <div class="input-group mb-2">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-person-badge"></i></span>
                     <input type="text" id="input-paciente" class="form-control border-start-0" placeholder="Público General (F3)" title="Asignar Paciente">
                     <button class="btn btn-outline-secondary" type="button" title="Asignar Médico/Receta" onclick="abrirModalReceta()">
                         <i class="bi bi-prescription2"></i> Rx
                     </button>
+                </div>
+                <!-- Selector de Lista de Precios -->
+                <div class="input-group mb-2" id="lista-precios-group">
+                    <span class="input-group-text bg-white border-end-0" title="Lista de Precios">
+                        <i class="bi bi-tags text-primary"></i>
+                    </span>
+                    <select id="selector-lista-precio" class="form-select border-start-0" onchange="aplicarListaPrecio()" title="Lista de Precios Activa">
+                        <option value="0" data-pct="0">💲 Precio Público</option>
+                    </select>
+                    <span class="input-group-text bg-success text-white d-none" id="badge-lista-activa" style="font-size:.75rem;">
+                        <i class="bi bi-check-circle-fill me-1"></i><span id="txt-lista-activa">—</span>
+                    </span>
                 </div>
 
                 <!-- Barra de Búsqueda Principal (resultados = HTML del servidor, no JSON) -->
@@ -383,6 +395,7 @@
 <script>
 window.PDV_BUSCAR_FRAGMENT_URL = "";
 window.PDV_BUSCAR_URL = "{% url 'api_buscar_producto_pdv' %}";
+window.PDV_LISTAS_PRECIO_URL = "{% url 'api_listas_precio_pdv' %}";
 </script>
 <!-- Dependencias para Impresión y Lógica -->
 <script src="https://cdn.jsdelivr.net/npm/rsvp@4.8.2/dist/rsvp.min.js"></script>
@@ -392,10 +405,32 @@ window.PDV_BUSCAR_URL = "{% url 'api_buscar_producto_pdv' %}";
 <script>
     // === LÓGICA DE INTERFAZ & ATAJOS ===
     
-    // Focus automático en buscador
+    // Focus automático en buscador + cargar listas de precio
     window.onload = function() {
         const el = document.getElementById('input-buscador');
         if (el) el.focus();
+        // Cargar listas de precio disponibles
+        if (window.PDV_LISTAS_PRECIO_URL) {
+            fetch(window.PDV_LISTAS_PRECIO_URL, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (!data || !data.listas || !data.listas.length) return;
+                    const sel = document.getElementById('selector-lista-precio');
+                    if (!sel) return;
+                    data.listas.forEach(l => {
+                        const opt = document.createElement('option');
+                        opt.value = l.id;
+                        opt.dataset.pct = l.porcentaje;
+                        opt.dataset.nombre = l.nombre;
+                        opt.dataset.auth = l.requiere_auth ? '1' : '0';
+                        opt.textContent = `🏷️ ${l.nombre} (-${l.porcentaje}%)`;
+                        sel.appendChild(opt);
+                    });
+                    // Mostrar el grupo solo si hay listas cargadas
+                    document.getElementById('lista-precios-group').classList.remove('d-none');
+                })
+                .catch(() => {});
+        }
     };
 
     // Toggle Teclado Virtual

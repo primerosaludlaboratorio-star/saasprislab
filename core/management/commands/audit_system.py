@@ -5,7 +5,7 @@ python manage.py audit_system
 
 Revisa la integridad de TODAS las conexiones, servicios y datos:
 - Base de datos (PostgreSQL / SQLite)
-- Google Cloud Storage (Bucket)
+- Almacenamiento externo / Drive
 - APIs externas (Gemini, GitHub, Email)
 - Integridad de modelos criticos
 - Estado de archivos estaticos y templates
@@ -29,7 +29,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--verbose', '-v',
+            '--details',
             action='store_true',
             dest='verbose',
             help='Mostrar detalles completos de cada check',
@@ -52,7 +52,7 @@ class Command(BaseCommand):
         # ── 2. MIGRACIONES PENDIENTES ──
         resultados.append(self._check_migrations(verbose))
 
-        # ── 3. GOOGLE CLOUD STORAGE ──
+        # ── 3. ALMACENAMIENTO EXTERNO ──
         resultados.append(self._check_gcs(verbose))
 
         # ── 4. API GEMINI (IA) ──
@@ -73,6 +73,9 @@ class Command(BaseCommand):
         # ── 9. SERVICIOS INTERNOS ──
         resultados.append(self._check_internal_services(verbose))
 
+        # ── 10. PARIDAD LEGADO VS SAAS ──
+        resultados.append(self._check_migration_readiness(verbose))
+
         # ── RESUMEN ──
         elapsed = time.time() - inicio_total
         ok_count = sum(1 for r in resultados if r['status'] == 'OK')
@@ -84,10 +87,13 @@ class Command(BaseCommand):
         self.stdout.write(f'  Tiempo total: {elapsed:.2f}s')
         self.stdout.write('=' * 70)
 
-        if fail_count == 0:
+        if fail_count == 0 and warn_count == 0:
             self.stdout.write(self.style.SUCCESS(
-                '\n  SISTEMA PRISLAB OPERATIVO AL 100%. '
-                'IA INTEGRADA EN TODAS LAS AREAS. SIN PUNTOS CIEGOS.\n'
+                '\n  SISTEMA PRISLAB OPERATIVO AL 100% SIN ADVERTENCIAS.\n'
+            ))
+        elif fail_count == 0:
+            self.stdout.write(self.style.WARNING(
+                f'\n  SISTEMA OPERATIVO CON {warn_count} ADVERTENCIA(S) NO BLOQUEANTE(S).\n'
             ))
         else:
             self.stdout.write(self.style.ERROR(
@@ -113,7 +119,7 @@ class Command(BaseCommand):
             pass
 
     def _print_check(self, name, status, detail=''):
-        icons = {'OK': '✓', 'WARN': '⚠', 'FAIL': '✗'}
+        icons = {'OK': 'OK', 'WARN': 'WARN', 'FAIL': 'FAIL'}
         styles = {
             'OK': self.style.SUCCESS,
             'WARN': self.style.WARNING,
@@ -132,7 +138,7 @@ class Command(BaseCommand):
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     def _check_database(self, verbose):
-        self.stdout.write('\n── BASE DE DATOS ──')
+        self.stdout.write('\n[BASE DE DATOS]')
         try:
             t0 = time.time()
             with connection.cursor() as cursor:
@@ -165,7 +171,7 @@ class Command(BaseCommand):
             return self._print_check('Migraciones', 'WARN', str(e))
 
     def _check_gcs(self, verbose):
-        self.stdout.write('\n── GOOGLE CLOUD STORAGE ──')
+        self.stdout.write('\n[ALMACENAMIENTO EXTERNO]')
         try:
             bucket_name = getattr(settings, 'GS_BUCKET_NAME', '')
             if not bucket_name:
@@ -185,7 +191,7 @@ class Command(BaseCommand):
             return self._print_check('GCS Bucket', 'FAIL', str(e)[:100])
 
     def _check_gemini(self, verbose):
-        self.stdout.write('\n── APIs EXTERNAS ──')
+        self.stdout.write('\n[APIS EXTERNAS]')
         try:
             api_key = getattr(settings, 'GOOGLE_API_KEY', '')
             if not api_key:
@@ -212,7 +218,7 @@ class Command(BaseCommand):
             return self._print_check('Email', 'FAIL', str(e)[:100])
 
     def _check_models_integrity(self, verbose):
-        self.stdout.write('\n── INTEGRIDAD DE DATOS ──')
+        self.stdout.write('\n[INTEGRIDAD DE DATOS]')
         checks = []
         try:
             from core.models import Empresa, Paciente, OrdenDeServicio, Producto
@@ -247,7 +253,7 @@ class Command(BaseCommand):
         return checks[-1] if checks else self._print_check('Integridad', 'WARN', 'Sin datos')
 
     def _check_templates(self, verbose):
-        self.stdout.write('\n── TEMPLATES CRITICOS ──')
+        self.stdout.write('\n[TEMPLATES CRITICOS]')
         import os
         templates_criticos = [
             'core/ia_dashboard.html',
@@ -282,7 +288,7 @@ class Command(BaseCommand):
         return self._print_check('Templates', 'OK', f'{len(templates_criticos)} verificados')
 
     def _check_query_latency(self, verbose):
-        self.stdout.write('\n── LATENCIA DE QUERIES ──')
+        self.stdout.write('\n[LATENCIA DE QUERIES]')
         try:
             from core.models import OrdenDeServicio
             t0 = time.time()
@@ -298,7 +304,7 @@ class Command(BaseCommand):
             return self._print_check('Query Ordenes', 'FAIL', str(e)[:100])
 
     def _check_internal_services(self, verbose):
-        self.stdout.write('\n── SERVICIOS INTERNOS ──')
+        self.stdout.write('\n[SERVICIOS INTERNOS]')
         services_ok = []
         services_fail = []
 
@@ -342,3 +348,22 @@ class Command(BaseCommand):
             detail += f' | FAIL: {", ".join(services_fail)}'
             return self._print_check('Servicios', 'WARN', detail)
         return self._print_check('Servicios', 'OK', detail)
+
+    def _check_migration_readiness(self, verbose):
+        self.stdout.write('\n[PARIDAD LEGADO VS SAAS]')
+        try:
+            from core.services.migration_readiness import summarize_migration_readiness
+
+            data = summarize_migration_readiness()
+            summary = data.get('summary', {})
+            ok = summary.get('OK', 0)
+            warn = summary.get('WARN', 0)
+            fail = summary.get('FAIL', 0)
+            detail = f'OK:{ok} WARN:{warn} FAIL:{fail}'
+            if fail > 0:
+                return self._print_check('Paridad Legacy/SaaS', 'WARN', detail)
+            if warn > 0:
+                return self._print_check('Paridad Legacy/SaaS', 'WARN', detail)
+            return self._print_check('Paridad Legacy/SaaS', 'OK', detail)
+        except Exception as e:
+            return self._print_check('Paridad Legacy/SaaS', 'FAIL', str(e)[:100])

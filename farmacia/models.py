@@ -441,8 +441,8 @@ class MovimientoInventario(models.Model):
             with transaction.atomic():
                 # 1. Generar folio único si no existe (ANTES de full_clean)
                 if not self.folio:
-                    from datetime import datetime
-                    año = datetime.now().year
+                    from django.utils import timezone as _tz
+                    año = _tz.localtime(_tz.now()).year
                     ultimo = MovimientoInventario.objects.filter(
                         folio__startswith=f'KDX-{año}'
                     ).count()
@@ -689,8 +689,8 @@ class MermaFarmacia(models.Model):
             with transaction.atomic():
                 # 1. Generar folio si no existe
                 if not self.folio:
-                    from datetime import datetime
-                    año = datetime.now().year
+                    from django.utils import timezone as _tz
+                    año = _tz.localtime(_tz.now()).year
                     ultimo = MermaFarmacia.objects.filter(
                         folio__startswith=f'MERMA-{año}'
                     ).count()
@@ -919,8 +919,8 @@ class CierreTurnoFarmacia(models.Model):
         """
         # 1. Generar folio si no existe
         if not self.folio:
-            from datetime import datetime
-            año = datetime.now().year
+            from django.utils import timezone as _tz
+            año = _tz.localtime(_tz.now()).year
             ultimo = CierreTurnoFarmacia.objects.filter(
                 folio__startswith=f'CIERRE-{año}'
             ).count()
@@ -1076,8 +1076,8 @@ class AperturaCaja(models.Model):
     def save(self, *args, **kwargs):
         """Genera folio automáticamente."""
         if not self.folio:
-            from datetime import datetime
-            año = datetime.now().year
+            from django.utils import timezone as _tz
+            año = _tz.localtime(_tz.now()).year
             ultimo = AperturaCaja.objects.filter(
                 folio__startswith=f'APERT-{año}'
             ).count()
@@ -1236,8 +1236,8 @@ class DevolucionVenta(models.Model):
         """
         # Generar folio
         if not self.folio:
-            from datetime import datetime
-            año = datetime.now().year
+            from django.utils import timezone as _tz
+            año = _tz.localtime(_tz.now()).year
             ultimo = DevolucionVenta.objects.filter(
                 folio__startswith=f'DEV-{año}'
             ).count()
@@ -1462,8 +1462,8 @@ class RegistroAntibiotico(models.Model):
     def save(self, *args, **kwargs):
         """Genera folio y valida."""
         if not self.folio:
-            from datetime import datetime
-            año = datetime.now().year
+            from django.utils import timezone as _tz
+            año = _tz.localtime(_tz.now()).year
             ultimo = RegistroAntibiotico.objects.filter(
                 folio__startswith=f'ATB-{año}'
             ).count()

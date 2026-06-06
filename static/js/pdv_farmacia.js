@@ -13,6 +13,163 @@ window.recetaActual = null;
 window.precioNetoActivo = false;
 window._productoAntibioticoTemp = null;
 
+// ============================================================
+// MULTI-TAB: Carritos múltiples en espera (estilo Pulpos)
+// ============================================================
+var _tabs = {
+    activo: 1,
+    maxId: 1,
+    data: {
+        1: { carrito: [], receta: null, cupon: null, paciente: '', pacienteId: null, precioNeto: false }
+    }
+};
+
+function _guardarTabActual() {
+    var t = _tabs.data[_tabs.activo];
+    if (!t) return;
+    t.carrito = (window.carrito || []).slice();
+    t.receta = window.recetaActual;
+    t.cupon = window.cuponAplicado;
+    t.precioNeto = window.precioNetoActivo;
+    var pac = document.getElementById('input-paciente');
+    var pacId = document.getElementById('p-paciente-id');
+    t.paciente = pac ? pac.value : '';
+    t.pacienteId = pacId ? pacId.value : null;
+}
+
+function _restaurarTab(id) {
+    var t = _tabs.data[id];
+    if (!t) return;
+    window.carrito = (t.carrito || []).slice();
+    window.recetaActual = t.receta || null;
+    window.cuponAplicado = t.cupon || null;
+    window.precioNetoActivo = !!t.precioNeto;
+    var pac = document.getElementById('input-paciente');
+    var pacId = document.getElementById('p-paciente-id');
+    if (pac) pac.value = t.paciente || '';
+    if (pacId) pacId.value = t.pacienteId || '';
+}
+
+function _renderTabs() {
+    var ul = document.getElementById('ticketTabs');
+    if (!ul) return;
+    var html = '';
+    Object.keys(_tabs.data).forEach(function(id) {
+        id = parseInt(id);
+        var t = _tabs.data[id];
+        var items = (t.carrito || []).reduce(function(s, i) { return s + i.cantidad; }, 0);
+        var isActive = id === _tabs.activo;
+        html += '<li class="nav-item">' +
+            '<a class="nav-link ' + (isActive ? 'active fw-bold bg-white' : 'text-muted') + '" href="#" onclick="switchTicket(' + id + ');return false;" style="padding:.4rem .75rem;">' +
+            '<i class="bi bi-receipt"></i> Ticket ' + id +
+            (items > 0 ? ' <span class="badge bg-primary rounded-pill ms-1" style="font-size:.7rem;">' + items + '</span>' : '') +
+            (Object.keys(_tabs.data).length > 1 && !isActive ? ' <span class="ms-1 text-danger" onclick="cerrarTab(' + id + ');event.stopPropagation();return false;" style="cursor:pointer;font-size:.8rem;" title="Cerrar">×</span>' : '') +
+            '</a></li>';
+    });
+    html += '<li class="nav-item">' +
+        '<a class="nav-link text-muted" href="#" onclick="nuevoTicket();return false;" title="Nuevo Ticket en espera">' +
+        '<i class="bi bi-plus-lg"></i></a></li>';
+    ul.innerHTML = html;
+}
+
+window.nuevoTicket = function() {
+    if (Object.keys(_tabs.data).length >= 5) {
+        _mostrarAlerta('Límite de tickets', 'Máximo 5 tickets simultáneos.', 'warning');
+        return;
+    }
+    _guardarTabActual();
+    _tabs.maxId++;
+    var nuevoId = _tabs.maxId;
+    _tabs.data[nuevoId] = { carrito: [], receta: null, cupon: null, paciente: '', pacienteId: null, precioNeto: false };
+    _tabs.activo = nuevoId;
+    _restaurarTab(nuevoId);
+    renderCarrito();
+    _renderTabs();
+    var b = document.getElementById('input-buscador');
+    if (b) { b.value = ''; b.focus(); }
+    _mostrarAlerta('Ticket ' + nuevoId, 'Nuevo ticket abierto. El anterior queda en espera.', 'info');
+};
+
+window.switchTicket = function(id) {
+    id = parseInt(id);
+    if (id === _tabs.activo) return;
+    _guardarTabActual();
+    _tabs.activo = id;
+    _restaurarTab(id);
+    renderCarrito();
+    _renderTabs();
+    var b = document.getElementById('input-buscador');
+    if (b) { b.value = ''; b.focus(); }
+};
+
+window.cerrarTab = function(id) {
+    id = parseInt(id);
+    var t = _tabs.data[id];
+    if (!t) return;
+    if ((t.carrito || []).length > 0 && !confirm('El ticket ' + id + ' tiene productos. ¿Cerrarlo sin cobrar?')) return;
+    delete _tabs.data[id];
+    if (_tabs.activo === id) {
+        var keys = Object.keys(_tabs.data).map(Number);
+        _tabs.activo = keys[keys.length - 1] || 1;
+        _restaurarTab(_tabs.activo);
+        renderCarrito();
+    }
+    _renderTabs();
+};
+
+// Inicializar tabs al cargar
+document.addEventListener('DOMContentLoaded', function() {
+    _renderTabs();
+});
+
+// ============================================================
+// LISTA DE PRECIOS — aplica descuento global al carrito
+// ============================================================
+window._listaPrecioActiva = { id: 0, pct: 0, nombre: 'Precio Público', requiere_auth: false };
+
+window.aplicarListaPrecio = function() {
+    var sel = document.getElementById('selector-lista-precio');
+    if (!sel) return;
+    var opt = sel.options[sel.selectedIndex];
+    var pct = parseFloat(opt ? opt.dataset.pct : 0) || 0;
+    var nombre = opt ? (opt.dataset.nombre || 'Precio Público') : 'Precio Público';
+    var requiere_auth = opt ? opt.dataset.auth === '1' : false;
+
+    if (requiere_auth && pct > 0) {
+        if (!confirm('La lista "' + nombre + '" requiere autorización del gerente. ¿Confirmar?')) {
+            sel.value = '0';
+            return;
+        }
+    }
+
+    window._listaPrecioActiva = { id: parseInt(sel.value) || 0, pct: pct, nombre: nombre };
+
+    // Actualizar badge
+    var badge = document.getElementById('badge-lista-activa');
+    var txt = document.getElementById('txt-lista-activa');
+    if (badge && txt) {
+        if (pct > 0) {
+            txt.textContent = nombre + ' -' + pct + '%';
+            badge.classList.remove('d-none');
+        } else {
+            badge.classList.add('d-none');
+        }
+    }
+
+    // Recalcular precios en el carrito con el descuento de lista
+    window.carrito.forEach(function(item) {
+        var precioBase = item.precio_base || item.precio_venta;
+        if (pct > 0) {
+            item.precio_venta = parseFloat((precioBase * (1 - pct / 100)).toFixed(2));
+        } else {
+            // Restaurar precio original (precio_base es la fuente de verdad)
+            item.precio_venta = window.precioNetoActivo ? item.precio_neto : item.precio_base;
+        }
+    });
+    renderCarrito();
+    if (pct > 0) _mostrarAlerta('Lista ' + nombre, 'Descuento del ' + pct + '% aplicado a todos los productos.', 'success');
+};
+
 // UTILIDADES
 function _fmt(n) {
     return '$' + (parseFloat(n) || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -213,6 +370,7 @@ function _agregarAlCarrito(prod) {
         window.carrito.push({id:prod.id,nombre:prod.nombre_comercial||"",sustancia:prod.sustancia_activa||"",precio_base:parseFloat(prod.precio_base)||0,precio_neto:parseFloat(prod.precio_compra)||0,precio_venta:pv,iva_pct:parseFloat(prod.iva_pct)||0,cantidad:1,lote_id:prod.lote_id||null,lote_num:prod.numero_lote_proximo||"",stock:stock,dias_restantes:diasRestantes,es_antibiotico:!!prod.es_antibiotico,es_controlado:!!prod.es_controlado,requiere_receta:!!(prod.requiere_receta||prod.es_antibiotico||prod.es_controlado),costo:costo});
     }
     renderCarrito();
+    _renderTabs();
     var b=document.getElementById("input-buscador"); if(b){b.value="";b.focus();}
     var c=document.getElementById("search-results-container"); if(c) c.innerHTML="<div class=\"text-center py-4 text-success\"><i class=\"bi bi-cart-check display-4\"></i><p class=\"mt-2 fw-bold\">Producto agregado.</p></div>";
 }
@@ -260,7 +418,18 @@ window.setCantidad = function(idx, val) {
     renderCarrito();
 };
 window.quitarItem = function(idx){window.carrito.splice(idx,1);renderCarrito();};
-window.limpiarCarrito = function(){if(!window.carrito.length)return;if(!confirm('Limpiar el carrito?'))return;window.carrito=[];window.cuponAplicado=null;window.recetaActual=null;window.precioNetoActivo=false;renderCarrito();};
+window.limpiarCarrito = function(){
+    if(!window.carrito.length)return;
+    if(!confirm('¿Limpiar el ticket actual?'))return;
+    window.carrito=[];window.cuponAplicado=null;window.recetaActual=null;window.precioNetoActivo=false;
+    if (_tabs.data[_tabs.activo]) {
+        _tabs.data[_tabs.activo].carrito = [];
+        _tabs.data[_tabs.activo].cupon = null;
+        _tabs.data[_tabs.activo].receta = null;
+    }
+    renderCarrito();
+    _renderTabs();
+};
 
 // MODAL PAGO
 window.abrirModalPago = function(){
@@ -336,10 +505,16 @@ function _onVentaExitosa(data, cambio) {
     }, 0);
 }
 
-// NUEVA VENTA
+// NUEVA VENTA — limpia el tab actual y actualiza estado global de tabs
 window.startNewSale = function(){
     var me=_getModal('modalExito');if(me)me.hide();
-    window.carrito=[];window.cuponAplicado=null;window.recetaActual=null;window.precioNetoActivo=false;renderCarrito();
+    window.carrito=[];window.cuponAplicado=null;window.recetaActual=null;window.precioNetoActivo=false;
+    // Limpiar también el estado del tab activo
+    if (_tabs.data[_tabs.activo]) {
+        _tabs.data[_tabs.activo] = { carrito: [], receta: null, cupon: null, paciente: '', pacienteId: null, precioNeto: false };
+    }
+    renderCarrito();
+    _renderTabs();
     ['p-efectivo-recibido','p-tarjeta','p-transferencia'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='0.00';});
     var b=document.getElementById('input-buscador');if(b){b.value='';b.focus();}
 };

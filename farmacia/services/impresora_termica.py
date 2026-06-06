@@ -23,7 +23,7 @@ Uso:
 """
 import socket
 import logging
-from datetime import datetime
+from django.utils import timezone
 
 logger = logging.getLogger('farmacia.impresora_termica')
 
@@ -68,7 +68,7 @@ class TicketBuilder:
         return self
 
     def fecha_folio(self, folio: str = '', cajero: str = '') -> 'TicketBuilder':
-        now = datetime.now().strftime('%d/%m/%Y %H:%M')
+        now = timezone.localtime(timezone.now()).strftime('%d/%m/%Y %H:%M')
         self._buffer += f'Fecha: {now}'.encode('latin-1', errors='replace') + LF
         if folio:
             self._buffer += f'Folio: {folio}'.encode('latin-1', errors='replace') + LF

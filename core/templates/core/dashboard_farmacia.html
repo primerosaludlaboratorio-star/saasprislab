@@ -175,13 +175,11 @@
             <div class="d-flex align-items-center gap-3 w-100">
                 <div class="fw-bold" style="white-space: nowrap;"><i class="bi bi-trophy"></i> Meta Diaria:</div>
                 <div class="progress w-100 bg-white bg-opacity-25" style="height: 20px;">
-                    <!-- Calcular porcentaje: (total_ventas_hoy / meta_diaria) * 100 -->
-                    <!-- Asumiendo meta fija de $50,000 por defecto si no hay dato -->
-                    <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated text-dark fw-bold" 
-                         role="progressbar" 
-                         style="width: 35%;" 
-                         aria-valuenow="35" aria-valuemin="0" aria-valuemax="100">
-                         $ {{ total_ventas_hoy|floatformat:0 }} / $ 50,000
+                    <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated text-dark fw-bold"
+                         role="progressbar"
+                         style="width: {{ porcentaje_meta|floatformat:0 }}%;"
+                         aria-valuenow="{{ porcentaje_meta|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
+                         $ {{ total_ventas_hoy|floatformat:0 }} / $ {{ monto_meta|floatformat:0 }}
                     </div>
                 </div>
             </div>
@@ -194,15 +192,17 @@
         <div class="col-lg-8 mb-3 mb-lg-0">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                    <h5 class="mb-0 fw-bold"><i class="bi bi-graph-up text-primary"></i> Tendencia de Ventas (7 Días)</h5>
-                    <div class="dropdown">
-                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            Esta Semana
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">Esta Semana</a></li>
-                            <li><a class="dropdown-item" href="#">Este Mes</a></li>
-                        </ul>
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-graph-up text-primary"></i> Tendencia de Ventas</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- KPIs inline del período -->
+                        <span class="badge bg-success-subtle text-success border border-success small" id="kpi-total-periodo" style="font-size:.8rem;">...</span>
+                        <span class="badge bg-info-subtle text-info border border-info small" id="kpi-margen-periodo" style="font-size:.8rem;">...</span>
+                        <!-- Selector de período -->
+                        <div class="btn-group btn-group-sm" role="group" id="periodo-selector">
+                            <button type="button" class="btn btn-primary active" data-periodo="7d">7 días</button>
+                            <button type="button" class="btn btn-outline-secondary" data-periodo="30d">30 días</button>
+                            <button type="button" class="btn btn-outline-secondary" data-periodo="mes_actual">Este mes</button>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -379,49 +379,94 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    // Inicialización de Gráficos y Datos Dinámicos
+    const KPIS_URL = "{% url 'api_farmacia_kpis' %}";
+    let salesChartInstance = null;
+    let periodoActual = '7d';
+
     document.addEventListener('DOMContentLoaded', function() {
-        initSalesChart();
-        loadTopProducts();
+        cargarKpis('7d');
+
+        // Selector de período
+        document.querySelectorAll('#periodo-selector button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('#periodo-selector button').forEach(b => {
+                    b.classList.remove('btn-primary', 'active');
+                    b.classList.add('btn-outline-secondary');
+                });
+                this.classList.remove('btn-outline-secondary');
+                this.classList.add('btn-primary', 'active');
+                periodoActual = this.dataset.periodo;
+                cargarKpis(periodoActual);
+            });
+        });
     });
 
-    // Gráfico de Ventas (Chart.js)
-    function initSalesChart() {
+    function cargarKpis(periodo) {
+        fetch(KPIS_URL + '?periodo=' + periodo, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin'
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status !== 'success') return;
+            actualizarGrafico(data.labels, data.data, data.margenes);
+            actualizarTopProductos(data.top_productos || []);
+            actualizarKpisBadges(data);
+        })
+        .catch(err => console.error('[Dashboard KPIs] Error:', err));
+    }
+
+    function actualizarGrafico(labels, ventas, margenes) {
         const ctx = document.getElementById('salesChart').getContext('2d');
-        
-        // Simulación de carga (en producción esto vendrá de la API)
-        // Por ahora usamos datos dummy o los pasados por contexto si existieran
-        const labels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-        const data = [12000, 19000, 15000, 22000, 18000, 25000, 10000]; // Placeholder
-        
-        new Chart(ctx, {
+        if (salesChartInstance) salesChartInstance.destroy();
+
+        salesChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: 'Ventas ($)',
-                    data: data,
-                    borderColor: '#D9230F',
-                    backgroundColor: 'rgba(217, 35, 15, 0.1)',
-                    borderWidth: 3,
-                    tension: 0.4,
-                    fill: true,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#D9230F',
-                    pointRadius: 5
-                }]
+                datasets: [
+                    {
+                        label: 'Ventas ($)',
+                        data: ventas,
+                        borderColor: '#D9230F',
+                        backgroundColor: 'rgba(217, 35, 15, 0.08)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#D9230F',
+                        pointRadius: 4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Margen ($)',
+                        data: margenes,
+                        borderColor: '#28a745',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        tension: 0.4,
+                        fill: false,
+                        pointRadius: 3,
+                        pointBorderColor: '#28a745',
+                        yAxisID: 'y'
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { display: false },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: { boxWidth: 12, font: { size: 11 } }
+                    },
                     tooltip: {
-                        mode: 'index',
-                        intersect: false,
                         callbacks: {
-                            label: function(context) {
-                                return '$ ' + context.parsed.y.toLocaleString('es-MX', {minimumFractionDigits: 2});
+                            label: function(ctx) {
+                                return ctx.dataset.label + ': $' + ctx.parsed.y.toLocaleString('es-MX', { minimumFractionDigits: 2 });
                             }
                         }
                     }
@@ -429,41 +474,42 @@
                 scales: {
                     y: {
                         beginAtZero: true,
+                        ticks: {
+                            callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(1)+'k' : v)
+                        },
                         grid: { borderDash: [2, 2] }
                     },
-                    x: {
-                        grid: { display: false }
-                    }
+                    x: { grid: { display: false } }
                 }
             }
         });
     }
 
-    // Cargar Top Productos (Simulado / API Placeholder)
-    function loadTopProducts() {
+    function actualizarTopProductos(productos) {
         const tbody = document.getElementById('tabla-top-productos');
-        // Aquí iría el fetch a la API real. Simulamos respuesta:
-        setTimeout(() => {
-            const products = [
-                {name: 'Paracetamol 500mg', qty: 45, total: 2250},
-                {name: 'Amoxicilina 500mg', qty: 32, total: 3200},
-                {name: 'Omeprazol 20mg', qty: 28, total: 1400},
-                {name: 'Ibuprofeno 400mg', qty: 25, total: 1250},
-                {name: 'Electrolit Uva', qty: 20, total: 600}
-            ];
-            
-            let html = '';
-            products.forEach(p => {
-                html += `
-                    <tr>
-                        <td><small class="fw-bold">${p.name}</small></td>
-                        <td class="text-center">${p.qty}</td>
-                        <td class="text-end small text-success fw-bold">$${p.total}</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html;
-        }, 800);
+        if (!tbody) return;
+        if (!productos.length) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">Sin ventas en el período</td></tr>';
+            return;
+        }
+        tbody.innerHTML = productos.map((p, i) => `
+            <tr>
+                <td>
+                    <span class="badge bg-secondary me-1" style="font-size:.65rem">${i+1}</span>
+                    <small class="fw-bold">${p.nombre}</small>
+                </td>
+                <td class="text-center"><small>${Math.round(p.cantidad)}</small></td>
+                <td class="text-end small text-success fw-bold">$${p.total.toLocaleString('es-MX',{minimumFractionDigits:0})}</td>
+            </tr>
+        `).join('');
+    }
+
+    function actualizarKpisBadges(data) {
+        const elTotal = document.getElementById('kpi-total-periodo');
+        const elMargen = document.getElementById('kpi-margen-periodo');
+        const fmt = v => '$' + (v >= 1000 ? (v/1000).toFixed(1)+'k' : v.toFixed(0));
+        if (elTotal) elTotal.textContent = 'Total: ' + fmt(data.total_periodo || 0);
+        if (elMargen) elMargen.textContent = 'Margen: ' + fmt(data.margen_periodo || 0) + ' (' + (data.pct_margen || 0) + '%)';
     }
 
     function resetearFecha() {

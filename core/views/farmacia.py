@@ -571,7 +571,7 @@ def lista_ventas_farmacia(request):
     elif filtro_actual == 'canceladas':
         ventas_query = ventas_query.filter(estado='CANCELADA')
     elif filtro_actual == 'todos':
-        pass  # Mostrar todas incluyendo canceladas
+        ventas_query = ventas_query.all()
     else:
         # Por defecto excluir canceladas del listado activo
         ventas_query = ventas_query.exclude(estado='CANCELADA')
@@ -594,7 +594,7 @@ def procesar_venta(request, data, empresa):
 
 
 # ==============================================================================
-# 3. ENTRADA DE MERCANCÍA Y OTRAS FUNCIONES (Placeholders)
+# 3. ENTRADA DE MERCANCIA Y OPERACIONES DE CATALOGO
 # ==============================================================================
 
 @login_required
@@ -688,8 +688,141 @@ def api_buscar_productos_compra(request):
 
 @login_required
 def carga_masiva_excel(request):
-    """Vista para carga masiva desde Excel."""
-    return JsonResponse({'status': 'error', 'mensaje': 'Función no implementada aún'})
+    """Importa productos y lotes desde CSV/XLSX usando el servicio masivo del catalogo."""
+    if not _verificar_acceso(
+        request.user,
+        ['ADMIN', 'ADMINISTRADOR', 'GERENTE'],
+        ['GERENCIA_OPERATIVA', 'GERENCIA'],
+    ):
+        return JsonResponse({'status': 'error', 'mensaje': 'Sin permisos para carga masiva'}, status=403)
+
+    empresa = _empresa_desde_request(request)
+    if not empresa:
+        return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}, status=403)
+
+    if request.method == 'GET':
+        return JsonResponse({
+            'status': 'ready',
+            'columnas_requeridas': ['nombre'],
+            'columnas_opcionales': [
+                'codigo_barras', 'descripcion', 'marca', 'unidad', 'concentracion',
+                'presentacion', 'costo', 'precio_publico', 'iva_porcentaje', 'stock',
+                'stock_minimo', 'clasificacion', 'categoria', 'es_antibiotico',
+                'es_servicio', 'numero_lote', 'caducidad', 'stock_lote', 'ubicacion_lote',
+            ],
+            'formatos': ['csv', 'xlsx'],
+        })
+
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'mensaje': 'Metodo no permitido'}, status=405)
+
+    uploaded = request.FILES.get('archivo') or request.FILES.get('file') or request.FILES.get('excel')
+    if not uploaded:
+        return JsonResponse({'status': 'error', 'mensaje': 'Debe adjuntar un archivo CSV o XLSX'}, status=400)
+
+    def _normalizar_header(value):
+        import unicodedata
+        raw = str(value or '').strip().lower().replace(' ', '_').replace('-', '_')
+        return ''.join(c for c in unicodedata.normalize('NFKD', raw) if not unicodedata.combining(c))
+
+    def _valor_bool(value):
+        if isinstance(value, bool):
+            return value
+        return str(value or '').strip().lower() in {'1', 'si', 'sí', 'true', 'x', 'yes'}
+
+    def _fila_a_producto(row):
+        def val(*keys, default=''):
+            for key in keys:
+                found = row.get(key)
+                if found not in (None, ''):
+                    return found
+            return default
+
+        producto = {
+            'codigo_barras': str(val('codigo_barras', 'codigo', 'sku')).strip(),
+            'nombre': str(val('nombre', 'producto', 'descripcion_comercial')).strip(),
+            'descripcion': str(val('descripcion', 'sustancia_activa')).strip(),
+            'marca': str(val('marca', 'laboratorio', 'marca_laboratorio', default='GENERICO')).strip(),
+            'unidad': str(val('unidad', 'forma_farmaceutica', default='Unidad')).strip(),
+            'concentracion': str(val('concentracion', default='N/A')).strip(),
+            'presentacion': str(val('presentacion', default='1')).strip(),
+            'costo': val('costo', 'precio_compra', default=0),
+            'precio_publico': val('precio_publico', 'precio_venta', 'precio', default=0),
+            'iva_porcentaje': val('iva_porcentaje', 'iva', default=0),
+            'stock': val('stock', 'existencia', default=0),
+            'stock_minimo': val('stock_minimo', 'minimo', default=0),
+            'clasificacion': str(val('clasificacion', 'clasificacion_sanitaria', default='VI')).strip(),
+            'categoria': str(val('categoria', default='GENERICO')).strip(),
+            'es_antibiotico': _valor_bool(val('es_antibiotico', 'antibiotico')),
+            'es_servicio': _valor_bool(val('es_servicio', 'servicio')),
+        }
+
+        numero_lote = str(val('numero_lote', 'lote')).strip()
+        caducidad = str(val('caducidad', 'fecha_caducidad')).strip()
+        if numero_lote and caducidad:
+            producto['lotes'] = [{
+                'numero': numero_lote,
+                'caducidad': caducidad,
+                'fabricacion': str(val('fabricacion', 'fecha_fabricacion')).strip(),
+                'stock': val('stock_lote', 'cantidad_lote', default=producto['stock']),
+                'ubicacion': str(val('ubicacion_lote', 'ubicacion')).strip(),
+            }]
+        return producto
+
+    nombre_archivo = uploaded.name.lower()
+    try:
+        if nombre_archivo.endswith('.csv'):
+            import csv
+            import io
+            text = uploaded.read().decode('utf-8-sig')
+            reader = csv.DictReader(io.StringIO(text))
+            rows = [
+                {_normalizar_header(k): v for k, v in row.items()}
+                for row in reader
+            ]
+        elif nombre_archivo.endswith('.xlsx'):
+            import openpyxl
+            workbook = openpyxl.load_workbook(uploaded, read_only=True, data_only=True)
+            sheet = workbook.active
+            raw_headers = next(sheet.iter_rows(min_row=1, max_row=1, values_only=True), None)
+            if not raw_headers:
+                return JsonResponse({'status': 'error', 'mensaje': 'Archivo sin encabezados'}, status=400)
+            headers = [_normalizar_header(h) for h in raw_headers]
+            rows = []
+            for values in sheet.iter_rows(min_row=2, values_only=True):
+                if not any(values):
+                    continue
+                rows.append({headers[idx]: value for idx, value in enumerate(values) if idx < len(headers)})
+        else:
+            return JsonResponse({'status': 'error', 'mensaje': 'Formato no soportado. Use CSV o XLSX'}, status=400)
+    except Exception as exc:
+        logger.exception('Error leyendo carga masiva farmacia: %s', exc)
+        return JsonResponse({'status': 'error', 'mensaje': f'No se pudo leer el archivo: {exc}'}, status=400)
+
+    productos_data = []
+    errores = []
+    for idx, row in enumerate(rows, start=2):
+        producto = _fila_a_producto(row)
+        if not producto['nombre']:
+            errores.append(f'Fila {idx}: nombre requerido')
+            continue
+        productos_data.append(producto)
+
+    if not productos_data:
+        return JsonResponse({'status': 'error', 'mensaje': 'No hay productos validos para importar', 'errores': errores}, status=400)
+
+    sucursal = empresa.sucursales.first()
+    limpiar = str(request.POST.get('limpiar', '')).lower() in {'1', 'true', 'si', 'sí'}
+    out = CatalogoFarmaciaService.carga_masiva_productos(
+        empresa,
+        sucursal,
+        productos_data,
+        limpiar=limpiar,
+    )
+    body = dict(out['body'])
+    body['errores_parseo'] = errores
+    body['procesados_archivo'] = len(productos_data)
+    return JsonResponse(body, status=out['http_status'])
 
 @login_required
 def libro_control_antibioticos(request):
@@ -718,14 +851,14 @@ def libro_control_antibioticos(request):
             fd = _date.fromisoformat(fecha_desde_str)
             qs = qs.filter(fecha_venta__gte=fd)
         except ValueError:
-            pass
+            logger.info("Fecha desde invalida en libro de antibioticos: %s", fecha_desde_str)
     if fecha_hasta_str:
         try:
             from datetime import date as _date
             fh = _date.fromisoformat(fecha_hasta_str)
             qs = qs.filter(fecha_venta__lte=fh)
         except ValueError:
-            pass
+            logger.info("Fecha hasta invalida en libro de antibioticos: %s", fecha_hasta_str)
     if producto_q:
         qs = qs.filter(producto__nombre__icontains=producto_q)
 
@@ -744,7 +877,7 @@ def libro_control_antibioticos(request):
             'ref': reg.venta.folio_operacion if reg.venta else '---',
             'lote_usado': reg.lote_vendido,
             'cantidad': reg.cantidad_vendida,
-            'doctor': f"{reg.medico_nombre or reg.nombre_medico or ''} | Cédula: {reg.medico_cedula or reg.cedula_medico or ''}".strip('| '),
+            'doctor': f"{reg.medico_nombre or ''} | Cédula: {reg.medico_cedula or ''}".strip('| '),
         })
 
     reporte = list(grupos.values())
@@ -880,7 +1013,7 @@ def registrar_gasto(request):
                     request=request,
                 )
             except Exception:
-                pass
+                logger.exception("No se pudo registrar auditoria de gasto de caja %s", gasto.id)
             return JsonResponse({'status': 'success'})
         except ValidationError as e:
             err = getattr(e, 'message_dict', None) or str(e)
@@ -958,39 +1091,116 @@ def api_saldo_caja(request):
 def api_farmacia_kpis(request):
     """
     API para alimentar los gráficos del Dashboard de Farmacia.
-    Retorna JSON con ventas de los últimos 7 días.
+    Soporta periodo: 7d (default), 30d, mes_actual.
+    Retorna labels, ventas diarias, margen, top_productos.
     """
     empresa = _empresa_desde_request(request)
     if not empresa:
         return JsonResponse({'status': 'error', 'message': 'Sin empresa'}, status=403)
-        
+
     try:
         hoy = timezone.now().date()
-        fechas = []
-        ventas = []
-        
-        # Últimos 7 días
-        for i in range(6, -1, -1):
+        periodo = request.GET.get('periodo', '7d')
+
+        if periodo == '30d':
+            dias = 30
+        elif periodo == 'mes_actual':
+            dias = hoy.day  # días transcurridos del mes
+        else:
+            dias = 7
+
+        fechas, ventas_data, margenes_data = [], [], []
+
+        for i in range(dias - 1, -1, -1):
             fecha = hoy - timedelta(days=i)
-            # Inicio y fin del día
             inicio_dia = timezone.make_aware(datetime.combine(fecha, datetime.min.time()))
             fin_dia = timezone.make_aware(datetime.combine(fecha, datetime.max.time()))
-            
-            total_dia = Venta.objects.filter(
-                empresa=empresa,
-                fecha__range=(inicio_dia, fin_dia)
-            ).aggregate(total=Sum('total'))['total'] or 0
-            
-            fechas.append(fecha.strftime('%d/%m')) # Ej: "24/01"
-            ventas.append(float(total_dia))
-            
+
+            qs = Venta.objects.filter(empresa=empresa, fecha__range=(inicio_dia, fin_dia), estado='COMPLETADA')
+            total_dia = qs.aggregate(total=Sum('total'))['total'] or 0
+
+            # Margen: ingresos - costo de productos vendidos en el día
+            costo_dia = DetalleVenta.objects.filter(
+                venta__empresa=empresa,
+                venta__fecha__range=(inicio_dia, fin_dia),
+                venta__estado='COMPLETADA'
+            ).aggregate(
+                costo=Sum(F('cantidad') * F('producto__precio_compra'), output_field=DecimalField())
+            )['costo'] or 0
+
+            margen_dia = float(total_dia) - float(costo_dia)
+
+            label = fecha.strftime('%d/%m') if dias <= 30 else fecha.strftime('%d/%m')
+            fechas.append(label)
+            ventas_data.append(float(total_dia))
+            margenes_data.append(round(margen_dia, 2))
+
+        # Top 5 productos del período completo
+        inicio_periodo = timezone.make_aware(datetime.combine(hoy - timedelta(days=dias - 1), datetime.min.time()))
+        fin_periodo = timezone.make_aware(datetime.combine(hoy, datetime.max.time()))
+
+        top_qs = DetalleVenta.objects.filter(
+            venta__empresa=empresa,
+            venta__fecha__range=(inicio_periodo, fin_periodo),
+            venta__estado='COMPLETADA'
+        ).values('producto__nombre').annotate(
+            cantidad_total=Sum('cantidad'),
+            ingreso_total=Sum('subtotal')
+        ).order_by('-ingreso_total')[:5]
+
+        top_productos = [
+            {
+                'nombre': t['producto__nombre'] or 'Sin nombre',
+                'cantidad': float(t['cantidad_total'] or 0),
+                'total': float(t['ingreso_total'] or 0),
+            }
+            for t in top_qs
+        ]
+
+        # Totales del período
+        total_periodo = sum(ventas_data)
+        margen_periodo = sum(margenes_data)
+        pct_margen = round((margen_periodo / total_periodo * 100), 1) if total_periodo > 0 else 0
+
         return JsonResponse({
             'status': 'success',
+            'periodo': periodo,
             'labels': fechas,
-            'data': ventas
+            'data': ventas_data,
+            'margenes': margenes_data,
+            'top_productos': top_productos,
+            'total_periodo': round(total_periodo, 2),
+            'margen_periodo': round(margen_periodo, 2),
+            'pct_margen': pct_margen,
         })
     except Exception as e:
+        logger.error('[api_farmacia_kpis] %s', e, exc_info=True)
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+def api_listas_precio_pdv(request):
+    """
+    Devuelve las políticas de descuento activas de la empresa para el selector del PDV.
+    GET /farmacia/api/listas-precio/
+    """
+    empresa = _empresa_desde_request(request)
+    if not empresa:
+        return JsonResponse({'listas': []}, status=403)
+
+    politicas = DiscountPolicy.objects.filter(empresa=empresa, activa=True).values(
+        'id', 'nombre', 'porcentaje_descuento', 'requiere_autorizacion'
+    )
+    listas = [
+        {
+            'id': p['id'],
+            'nombre': p['nombre'],
+            'porcentaje': float(p['porcentaje_descuento']),
+            'requiere_auth': p['requiere_autorizacion'],
+        }
+        for p in politicas
+    ]
+    return JsonResponse({'listas': listas})
 
 
 @login_required
@@ -1155,7 +1365,7 @@ def dashboard_farmacia(request):
                 'productos_cantidad': v.detalles.count(),
             })
         except Exception:
-            pass
+            logger.exception("No se pudo serializar venta reciente %s para dashboard farmacia", getattr(v, "id", None))
 
     return render(request, 'core/dashboard_farmacia.html', {
         'empresa': empresa,
@@ -1511,7 +1721,7 @@ def corte_caja_dia(request):
         if apertura:
             fondo_apertura = Decimal(str(apertura.fondo_efectivo or 0))
     except Exception:
-        pass
+        logger.exception("No se pudo obtener fondo de apertura para corte de caja %s", fecha_seleccionada)
 
     # ========== 4. DEVOLUCIONES (restar del corte) ==========
     # Incluir: core.DevolucionVenta (forense), farmacia.DevolucionVenta (soporte) y SalesReturn (core flow)
@@ -1536,7 +1746,7 @@ def corte_caja_dia(request):
             )['total'] or Decimal('0.00')
             total_devoluciones += devoluciones_soporte
         except Exception:
-            pass
+            logger.exception("No se pudieron sumar devoluciones de soporte para corte de caja")
         # SalesReturn (core/views/farmacia.procesar_devolucion) — no se sumaba antes
         sales_returns_dia = SalesReturn.objects.filter(
             empresa=empresa,
@@ -1546,7 +1756,7 @@ def corte_caja_dia(request):
         )['total'] or Decimal('0.00')
         total_devoluciones += sales_returns_dia
     except Exception:
-        pass
+        logger.exception("No se pudieron calcular devoluciones para corte de caja")
 
     total_ventas_neto = total_ventas - total_devoluciones
     ventas_efectivo_neto = ventas_efectivo - total_devoluciones

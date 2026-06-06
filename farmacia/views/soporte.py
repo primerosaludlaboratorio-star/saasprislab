@@ -663,10 +663,16 @@ def entrada_express(request):
             return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
         
         codigo_barras = data.get('codigo_barras', '').strip()
-        cantidad = int(data.get('cantidad', 0))
+        try:
+            cantidad = int(data.get('cantidad', 0))
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'error': 'Cantidad debe ser un número entero válido.'}, status=400)
         numero_lote = data.get('numero_lote', '').strip()
         fecha_caducidad = data.get('fecha_caducidad')  # YYYY-MM-DD
-        precio_compra = Decimal(data.get('precio_compra', '0.00'))
+        try:
+            precio_compra = Decimal(str(data.get('precio_compra', '0.00')))
+        except Exception:
+            precio_compra = Decimal('0.00')
         
         # Validaciones
         if not codigo_barras or cantidad <= 0 or not numero_lote or not fecha_caducidad:

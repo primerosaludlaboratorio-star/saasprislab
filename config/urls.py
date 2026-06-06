@@ -17,6 +17,7 @@ from core.views import crm as crm_views
 from core.views import voice as voice_views
 from core.views import comunicacion as chat_views
 from core.views import pris_ia as ia_views
+from core.views import prisci_webhook
 from core.views.administracion_usuarios import gestionar_usuarios
 from core.views.general import CustomLoginView, service_worker_view
 from core.views import autenticacion_2fa as views_2fa
@@ -114,6 +115,8 @@ urlpatterns = [
     path('ia/asistente/', ia_views.asistente_page, name='pris_ia_asistente'),
     path('ia/asistente/chat/', ia_views.asistente_chat, name='pris_ia_chat'),
     path('ia/asistente/reset/', ia_views.asistente_reset, name='pris_ia_reset'),
+    path('api/prisci/webhook/', prisci_webhook.webhook, name='prisci_webhook'),
+    path('api/prisci/webhook/verify/', prisci_webhook.verify, name='prisci_webhook_verify'),
     # AccionPRIS — Auditoría ISO 15189
     path('pris/api/acciones/pendientes/', ia_views.api_acciones_pendientes, name='pris_acciones_pendientes'),
     path('pris/api/accion/<int:accion_id>/confirmar/', ia_views.api_confirmar_accion, name='pris_confirmar_accion'),
@@ -178,11 +181,13 @@ urlpatterns = [
     # 2. MÓDULO ALMACÉN (Entradas de Mercancía)
     path('farmacia/almacen/entradas/', views.entrada_mercancia, name='entrada_mercancia'),
     path('farmacia/api/carga-masiva/', views.api_carga_masiva_productos, name='api_carga_masiva_productos'),
+    path('farmacia/api/carga-masiva/excel/', views.carga_masiva_excel, name='carga_masiva_excel'),
     path('farmacia/compras/registrar/', views.registrar_compra, name='registrar_compra'),
     path('farmacia/almacen/ajustes/', views.ajustes_inventario, name='ajustes_inventario'),
     path('farmacia/inventario/', farmacia_views.inventario_general, name='farmacia_inventario_general'),
     path('farmacia/estadisticas/', views.estadisticas_ventas, name='estadisticas_ventas'),
     path('farmacia/api/kpis/', farmacia_views.api_farmacia_kpis, name='api_farmacia_kpis'),
+    path('farmacia/api/listas-precio/', farmacia_views.api_listas_precio_pdv, name='api_listas_precio_pdv'),
     path('farmacia/api/buscar-productos-compra/', views.api_buscar_productos_compra, name='api_buscar_productos_compra'),
     path('farmacia/api/buscar-producto-pdv/', views.api_buscar_producto_pdv, name='api_buscar_producto_pdv'),
     path('farmacia/api/lotes-producto/<int:producto_id>/', views.api_lotes_producto, name='api_lotes_producto'),
@@ -707,8 +712,8 @@ urlpatterns = [
     ),
 
     # ══════════════════════════════════════════════════════════════════════════
-    # CLOUD SCHEDULER — Endpoints protegidos para tareas programadas GCP
-    # Llamados por Cloud Scheduler con cabecera X-Cron-Secret
+    # CRON INTERNO — Endpoints protegidos para tareas programadas del sistema
+    # Llamados por cron, systemd timer o un scheduler externo con X-Cron-Secret
     # ══════════════════════════════════════════════════════════════════════════
     path(
         'cron/check-metrologia/',

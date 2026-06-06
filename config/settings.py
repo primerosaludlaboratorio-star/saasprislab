@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -7,40 +8,86 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Variables de entorno (estándar)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "").strip()
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "").strip().replace('\r', '').replace('\n', '')
+AI_PROVIDER = os.environ.get("AI_PROVIDER", "").strip().lower()
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "").strip().replace('\r', '').replace('\n', '')
+DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat").strip()
+DEEPSEEK_API_URL = os.environ.get(
+    "DEEPSEEK_API_URL",
+    "https://api.deepseek.com/v1/chat/completions",
+).strip()
+PRISCI_WEBHOOK_TOKEN = os.environ.get("PRISCI_WEBHOOK_TOKEN", "").strip()
+PRISCI_WEBHOOK_VERIFY_TOKEN = os.environ.get("PRISCI_WEBHOOK_VERIFY_TOKEN", "").strip()
 
 # PRIS Sentinel -> GitHub Auto-Reporte
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 GITHUB_REPO = os.environ.get("GITHUB_REPO", "")  # formato: owner/repo
 
 # Configuración de entorno (producción vs desarrollo)
-# En local (sin GOOGLE_CLOUD_PROJECT) DEBUG=True por defecto
-# En producción (Cloud Run) DEBUG=False por defecto
-_is_cloud_env = bool(os.environ.get('GOOGLE_CLOUD_PROJECT') or os.environ.get('GAE_ENV', '').startswith('standard'))
-DEBUG = os.environ.get('DEBUG', str(not _is_cloud_env)) == 'True'
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-prislab-saas-key-2025')
+# En local, si no se especifica nada, usamos desarrollo para no bloquear herramientas.
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+
+# Detectar si estamos corriendo tests (manage.py test)
+_TESTING = 'test' in sys.argv
+DEPLOYMENT_ENV = (
+    os.environ.get('PRISLAB_ENV')
+    or os.environ.get('DJANGO_ENV')
+    or ('test' if _TESTING else 'development')
+).strip().lower()
+IS_PRODUCTION = DEPLOYMENT_ENV == 'production'
+# SECRET_KEY: obligatoria via variable de entorno. En dev local usa fallback solo si no esta definida.
+_SECRET_KEY_ENV = os.environ.get('SECRET_KEY', '').strip()
+if not _SECRET_KEY_ENV:
+    # Fallback solo en desarrollo local — NUNCA usar en produccion
+    _SECRET_KEY_ENV = 'dev-only-fallback-key-not-for-production-prislab-2026-local'
+SECRET_KEY = _SECRET_KEY_ENV
+
+
+def _env_bool(name, default=False):
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+def _env_list(name, default=None):
+    raw = os.environ.get(name)
+    if raw is None:
+        return list(default or [])
+    return [item.strip() for item in raw.split(',') if item.strip()]
 
 # Tenant por defecto (PRISLAB mononodo / rescate). Opcional: entero explícito.
 _raw_def_emp = (os.environ.get('PRISLAB_DEFAULT_EMPRESA_ID') or '').strip()
 PRISLAB_DEFAULT_EMPRESA_ID = int(_raw_def_emp) if _raw_def_emp.isdigit() else None
 
-# URL pública del backend SaaS (p. ej. llamadas desde otro servicio Cloud Run / integraciones)
+# URL pública del backend SaaS para integraciones internas o frontend separado
 API_URL = (os.environ.get('API_URL') or os.environ.get('PRISLAB_SAAS_URL') or '').strip()
 
-# CORS: en cloud el valor por defecto es restrictivo; en local permisivo para desarrollo.
+# URL pública del sitio — usada en QR de resultados de laboratorio, links en PDF, etc.
+# En producción VPS: SITE_URL=https://tu-dominio.com
+SITE_URL = (os.environ.get('SITE_URL') or API_URL or 'http://localhost:8000').strip().rstrip('/')
+
+# CORS: restrictivo por defecto. En local se permite solo localhost explicito.
 # Explícito: CORS_ALLOW_ALL_ORIGINS=true|false | Lista: CORS_ALLOWED_ORIGINS=https://a.com,https://b.com
 _cors_allow_raw = (os.environ.get('CORS_ALLOW_ALL_ORIGINS') or '').strip().lower()
 if _cors_allow_raw:
     CORS_ALLOW_ALL_ORIGINS = _cors_allow_raw in ('true', '1', 'yes', 'on')
 else:
-    CORS_ALLOW_ALL_ORIGINS = not _is_cloud_env
+    CORS_ALLOW_ALL_ORIGINS = False
 
+_default_local_cors_origins = (
+    'http://127.0.0.1:8000,http://localhost:8000,'
+    'http://127.0.0.1:3000,http://localhost:3000'
+)
+_cors_origins_raw = os.environ.get('CORS_ALLOWED_ORIGINS')
+if _cors_origins_raw is None and not IS_PRODUCTION:
+    _cors_origins_raw = _default_local_cors_origins
 CORS_ALLOWED_ORIGINS = [
-    x.strip() for x in (os.environ.get('CORS_ALLOWED_ORIGINS') or '').split(',') if x.strip()
+    x.strip() for x in (_cors_origins_raw or '').split(',') if x.strip()
 ]
-if _is_cloud_env and not CORS_ALLOW_ALL_ORIGINS and not CORS_ALLOWED_ORIGINS:
+if IS_PRODUCTION and not CORS_ALLOW_ALL_ORIGINS and not CORS_ALLOWED_ORIGINS:
     logging.getLogger('config').warning(
         'CORS: en producción CORS_ALLOW_ALL_ORIGINS está en False y CORS_ALLOWED_ORIGINS está vacío. '
-        'Las peticiones desde otros orígenes (p. ej. otro servicio Cloud Run) pueden fallar. '
+        'Las peticiones desde otros orígenes pueden fallar. '
         'Defina CORS_ALLOWED_ORIGINS o, temporalmente, CORS_ALLOW_ALL_ORIGINS=true.'
     )
 
@@ -54,32 +101,59 @@ CORS_ALLOW_HEADERS = [
     'origin',
     'user-agent',
     'x-csrftoken',
+    'x-cron-secret',
+    'x-empresa-id',
+    'x-frontend-log-token',
+    'x-prislab-api-key',
+    'x-prislab-api-token',
+    'x-prislab-kiosco-token',
     'x-requested-with',
 ]
 
 # ── Validación de seguridad en producción ────────────────────────────────────
-_SECRET_INSEGURA = 'django-insecure-prislab-saas-key-2025'
-if _is_cloud_env:
-    if not os.environ.get('SECRET_KEY') or SECRET_KEY == _SECRET_INSEGURA:
+_CLAVES_INSEGURAS = {
+    'django-insecure-prislab-saas-key-2025',
+    'dev-only-fallback-key-not-for-production-prislab-2026-local',
+    'generate-a-random-key-here-min-50-chars',
+    '4k*0c0z8gacu(%_)ug*y*t9xp*u55(u*$rv+pou#b=#o!4p4eo',
+}
+if IS_PRODUCTION:
+    if not os.environ.get('SECRET_KEY') or SECRET_KEY in _CLAVES_INSEGURAS:
         raise RuntimeError(
-            '🔴 PRISLAB SEGURIDAD: SECRET_KEY no está configurada en producción.\n'
+            '🔴 PRISLAB SEGURIDAD: SECRET_KEY no está configurada o usa un valor inseguro en producción.\n'
             'Defina la variable de entorno SECRET_KEY con una clave segura de al menos 50 caracteres.\n'
             'Genere una con: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"'
         )
-    if not os.environ.get('GOOGLE_API_KEY'):
+    if len(SECRET_KEY) < 50:
+        raise RuntimeError(
+            '🔴 PRISLAB SEGURIDAD: SECRET_KEY en producción debe tener al menos 50 caracteres.'
+        )
+    if not (os.environ.get('GOOGLE_API_KEY') or os.environ.get('DEEPSEEK_API_KEY')):
         import logging as _log
         _log.getLogger('core').warning(
-            'GOOGLE_API_KEY no está configurada. Las funciones de IA (dictado, OCR, análisis) no estarán disponibles.'
+            'No hay API key de IA configurada. Defina GOOGLE_API_KEY o DEEPSEEK_API_KEY para activar Prisci.'
+        )
+    # Validar tokens de servicio requeridos en produccion
+    _TOKENS_REQUERIDOS = {
+        'PRISLAB_API_TOKEN': os.environ.get('PRISLAB_API_TOKEN', ''),
+        'PRISLAB_FRONTEND_LOG_TOKEN': os.environ.get('PRISLAB_FRONTEND_LOG_TOKEN', ''),
+        'CRON_SECRET': os.environ.get('CRON_SECRET', ''),
+    }
+    _tokens_faltantes = [k for k, v in _TOKENS_REQUERIDOS.items() if not v or v.startswith('replace-with')]
+    if _tokens_faltantes:
+        import logging as _log_tok
+        _log_tok.getLogger('core').warning(
+            f'🔴 PRISLAB SEGURIDAD: Tokens de servicio no configurados en produccion: {_tokens_faltantes}. '
+            'Los endpoints protegidos por estos tokens retornarán 503.'
         )
 
 # BLINDAJE R104: Hosts restringidos por entorno
-if _is_cloud_env:
-    ALLOWED_HOSTS = [
-        'prislab-v5-oswjakz55a-uc.a.run.app',
-        'prislab-v5-811785477499.us-central1.run.app',
-        '.run.app',
-        'localhost',
-    ]
+_allowed_hosts_env = [x.strip() for x in os.environ.get('ALLOWED_HOSTS', '').split(',') if x.strip()]
+if _allowed_hosts_env:
+    ALLOWED_HOSTS = _allowed_hosts_env
+elif IS_PRODUCTION:
+    _server_name = (os.environ.get('SERVER_NAME') or os.environ.get('DOMAIN_NAME') or '').strip()
+    ALLOWED_HOSTS = [x for x in [_server_name, 'localhost', '127.0.0.1'] if x]
 else:
     ALLOWED_HOSTS = ['*']  # Solo en desarrollo local
 
@@ -115,7 +189,7 @@ INSTALLED_APPS = [
     'bienestar',    # Módulo 'Espacio Seguro' - Diario Emocional y Recursos
     'contabilidad', # Facturación CFDI 4.0 y Contabilidad
 
-    # Storage Cloud + PWA
+    # Storage local/Drive + PWA
     'storages',
     'pwa',
     
@@ -193,26 +267,8 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Configuración de Base de Datos
-# Detectar si estamos en Google Cloud PRIMERO
-IS_CLOUD = os.getenv('GAE_ENV', '').startswith('standard') or os.getenv('GOOGLE_CLOUD_PROJECT')
-
-if IS_CLOUD:
-    # PRODUCCIÓN: Usar Cloud SQL (PostgreSQL) via socket Unix
-    # CONN_MAX_AGE: conexiones persistentes para reducir overhead bajo carga (stress test)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME', 'prislab_v5'),
-            'USER': os.environ.get('DB_USER', 'prislab_user'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-            'HOST': os.environ.get('DB_HOST', '/cloudsql/' + os.environ.get('CLOUD_SQL_CONNECTION_NAME', 'prislab-v5-ai:us-central1:prislab-db')),
-            'PORT': '',
-            'CONN_MAX_AGE': 60,  # Conexiones persistentes: reduce overhead bajo 1000+ req concurrentes
-        }
-    }
-    # Sin print en producción (evitar ruido I/O bajo carga)
-elif os.environ.get('DB_HOST'):
-    # DESARROLLO con PostgreSQL remoto
+if os.environ.get('DB_HOST'):
+    # PostgreSQL local o remoto en Vultr
     db_host = os.environ.get('DB_HOST', '')
     DATABASES = {
         'default': {
@@ -254,19 +310,13 @@ USE_I18N = True
 USE_TZ = True
 
 # ==============================================================================
-# ESTRATEGIA HÍBRIDA DE ALMACENAMIENTO (WHITENOISE + GOOGLE DRIVE)
+# ESTRATEGIA DE ALMACENAMIENTO (WhiteNoise + Google Drive opcional)
 # ==============================================================================
-# STATIC (CSS, JS, imágenes del sistema) → WhiteNoise (en memoria de Cloud Run)
-# MEDIA (PDFs, recetas, audio) → Google Drive (10TB)
-# ==============================================================================
-
-# Usar la variable IS_CLOUD definida anteriormente para configuración de almacenamiento
-IS_GOOGLE_CLOUD = IS_CLOUD
 
 # ------------------------------------------------------------------------------
 # ARCHIVOS ESTÁTICOS (STATIC) - WHITENOISE
 # ------------------------------------------------------------------------------
-# Estos archivos se sirven RÁPIDO desde la memoria de Cloud Run
+# Estos archivos se sirven rápido desde WhiteNoise / Nginx
 # Incluye: logos, iconos, CSS, JavaScript, fuentes, imágenes del tema
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
@@ -276,11 +326,11 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Ventajas: Ultra rápido, sin latencia, sin costos adicionales
 # USE_MANIFEST_STORAGE se usa durante Docker build para que collectstatic
 # genere el manifest (staticfiles.json) que la producción necesita.
-if IS_GOOGLE_CLOUD or os.environ.get('USE_MANIFEST_STORAGE'):
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-else:
-    # En desarrollo local, usar storage simple para evitar errores de manifest
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+_static_backend = (
+    'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    if (IS_PRODUCTION or os.environ.get('USE_MANIFEST_STORAGE'))
+    else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+)
 
 # Configuración de WhiteNoise
 WHITENOISE_MAX_AGE = 31536000  # 1 año de cache para archivos estáticos
@@ -288,10 +338,10 @@ WHITENOISE_COMPRESS_OFFLINE = True  # Pre-comprimir archivos
 WHITENOISE_USE_FINDERS = True  # Buscar archivos automáticamente
 
 # ------------------------------------------------------------------------------
-# ARCHIVOS MEDIA (DINÁMICOS) - GOOGLE CLOUD STORAGE
+# ARCHIVOS MEDIA (DINÁMICOS) - DISCO LOCAL + GOOGLE DRIVE OPCIONAL
 # ------------------------------------------------------------------------------
 # Audios de PRIS-Chat, fotos de pacientes, PDFs, recetas OCR, etc.
-# En producción se suben al Bucket GCS. En local se usa carpeta media/.
+# En producción se guardan localmente en la VPS y pueden sincronizarse a Drive.
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -300,16 +350,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 FILE_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 
-# ==============================================================================
-# ALMACENAMIENTO MEDIA: Google Drive (2 TB) - OBLIGATORIO EN PRODUCCIÓN
-# ==============================================================================
-# El cliente configuró la carpeta maestra PRISLAB_Media y otorgó permisos de
-# Editor a prislab-drive@prislab-v5-ai.iam.gserviceaccount.com
-# ==============================================================================
-GS_BUCKET_NAME = os.environ.get('GS_BUCKET_NAME', '')  # Legacy: solo fallback si Drive no está
-
 # Carpeta maestra en Google Drive (ID de la carpeta PRISLAB_Media)
-# Sin valor por defecto en código: evita filtrar IDs de carpeta y fuerza configuración explícita (.env / Secret Manager).
+# Sin valor por defecto en código: evita filtrar IDs de carpeta y fuerza configuración explícita (.env)
 GOOGLE_DRIVE_FOLDER_ID = (
     os.environ.get('GOOGLE_DRIVE_FOLDER_ID') or
     os.environ.get('DRIVE_FOLDER_ID') or
@@ -320,49 +362,30 @@ GOOGLE_DRIVE_FOLDER_ID = (
 GOOGLE_DRIVE_CREDENTIALS = None
 _DRIVE_STORAGE_ACTIVO = False  # pylint: disable=invalid-name
 
+# STORAGES base (puede ser sobreescrito por Drive abajo)
+STORAGES = {
+    "default": {"BACKEND": "config.storage_backends.BufferLocalStorage"},
+    "staticfiles": {"BACKEND": 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+}
+
 try:
     from config.drive_credentials import get_drive_credentials
     _drive_creds = get_drive_credentials()
     if _drive_creds and GOOGLE_DRIVE_FOLDER_ID:
         GOOGLE_DRIVE_CREDENTIALS = _drive_creds
-        DEFAULT_FILE_STORAGE = 'config.storage_backends.GoogleDriveStorage'
+        STORAGES["default"] = {"BACKEND": "config.storage_backends.GoogleDriveStorage"}
         _DRIVE_STORAGE_ACTIVO = True
-        if IS_GOOGLE_CLOUD:
-            import logging as _log_drive
-            _log_drive.getLogger('config').info(
-                f"[PRODUCCION] Google Drive configurado -> Carpeta ID: {GOOGLE_DRIVE_FOLDER_ID[:20]}..."
-            )
-        elif GOOGLE_DRIVE_FOLDER_ID:
-            import logging as _log_drive
-            _log_drive.getLogger('config').info("[DEV] Google Drive configurado (carpeta maestra)")
-    elif IS_GOOGLE_CLOUD and GOOGLE_DRIVE_FOLDER_ID and not _drive_creds:
+        import logging as _log_drive
+        _log_drive.getLogger('config').info("[STORAGE] Google Drive activo para archivos media")
+    elif GOOGLE_DRIVE_FOLDER_ID and not _drive_creds:
         import logging as _log_drive
         _log_drive.getLogger('config').warning(
-            "[PRODUCCION] GOOGLE_DRIVE_FOLDER_ID configurado pero credenciales no disponibles. "
-            "Configure OAuth2 (GOOGLE_DRIVE_CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN) o Service Account."
+            "[STORAGE] GOOGLE_DRIVE_FOLDER_ID configurado pero credenciales no disponibles. "
+            "Configure GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON o GOOGLE_APPLICATION_CREDENTIALS."
         )
 except Exception as e:
     import logging as _log_drive
-    _log_drive.getLogger('config').warning(f"Error configurando Google Drive: {e}")
-
-# Fallback: GCS solo si Drive NO está activo (compatibilidad legacy)
-if not _DRIVE_STORAGE_ACTIVO and IS_GOOGLE_CLOUD and GS_BUCKET_NAME:
-    try:
-        DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-        GS_DEFAULT_ACL = 'publicRead'
-        GS_QUERYSTRING_AUTH = False
-        GS_FILE_OVERWRITE = False
-        GS_LOCATION = 'media'
-        import logging as _log_gcs
-        _log_gcs.getLogger('config').info(f"[PRODUCCION] Fallback GCS: gs://{GS_BUCKET_NAME}/media/")
-    except Exception as e:
-        import logging as _log_gcs
-        _log_gcs.getLogger('config').warning(f"Error GCS: {e}. Usando almacenamiento local (efímero)")
-elif not _DRIVE_STORAGE_ACTIVO and IS_GOOGLE_CLOUD:
-    import logging as _log_warn
-    _log_warn.getLogger('config').warning(
-        "Almacenamiento MEDIA: Configure GOOGLE_DRIVE_FOLDER_ID + credenciales para usar Drive."
-    )
+    _log_drive.getLogger('config').warning(f"Error configurando Google Drive: {e}. Usando almacenamiento local.")
 
 # ==============================================================================
 # EMAIL - NOTIFICACIONES AL DIRECTOR
@@ -393,7 +416,7 @@ DIRECTOR_EMAIL = os.environ.get('DIRECTOR_EMAIL', '')
 CISO_EMAIL = os.environ.get('CISO_EMAIL', DIRECTOR_EMAIL)
 
 # Código maestro de recuperación 2FA (CISO bypass de emergencia)
-# Configurar en Cloud Run como secret: PRISLAB_MASTER_RECOVERY_CODE
+# Configurar como variable de entorno segura: PRISLAB_MASTER_RECOVERY_CODE
 PRISLAB_MASTER_RECOVERY_CODE = os.environ.get('PRISLAB_MASTER_RECOVERY_CODE', '')
 
 # Telegram Bot para alertas en tiempo real
@@ -410,7 +433,7 @@ NOM024_ALERTA_ACCESOS_UMBRAL = int(os.environ.get('NOM024_ALERTA_ACCESOS_UMBRAL'
 # ==============================================================================
 # FASE 5 — MODO MANTENIMIENTO (activa antes de Migración Maestra)
 # ==============================================================================
-# Activar vía env var en Cloud Run:  SYSTEM_MAINTENANCE_MODE=true
+# Activar vía env var en producción:  SYSTEM_MAINTENANCE_MODE=true
 SYSTEM_MAINTENANCE_MODE = os.environ.get('SYSTEM_MAINTENANCE_MODE', 'false').lower() == 'true'
 MAINTENANCE_MESSAGE = os.environ.get('MAINTENANCE_MESSAGE', '')
 MAINTENANCE_ETA = os.environ.get('MAINTENANCE_ETA', '')
@@ -526,19 +549,17 @@ SESSION_SAVE_EVERY_REQUEST = True          # Renueva la sesión con cada request
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False    # Persistir aunque se cierre el navegador
 SESSION_COOKIE_HTTPONLY = True             # BLINDAJE: No accesible via JS
 SESSION_COOKIE_SAMESITE = 'Lax'           # BLINDAJE: Proteccion CSRF adicional
+CSRF_COOKIE_HTTPONLY = True              # BLINDAJE: Cookie CSRF no accesible via JS
 
-# Configuración CSRF para Google Cloud Run
-CSRF_TRUSTED_ORIGINS = [
-    # Cloud Run — dominios de producción PRISLAB (actualizados)
-    'https://prislab-saas-811785477499.us-central1.run.app',
-    'https://prislab-farmacia-811785477499.us-central1.run.app',
-    'https://prislab-v5-oswjakz55a-uc.a.run.app',
-    'https://prislab-v5-811785477499.us-central1.run.app',
-    # Wildcard para futuras revisiones de Cloud Run
-    'https://*.run.app',
-    'https://*.a.run.app',
+CSRF_TRUSTED_ORIGINS = []
+_extra_csrf = [
+    x.strip()
+    for x in (
+        os.environ.get('CSRF_TRUSTED_ORIGINS')
+        or os.environ.get('CSRF_TRUSTED_ORIGINS_EXTRA', '')
+    ).split(',')
+    if x.strip()
 ]
-_extra_csrf = [x.strip() for x in os.environ.get('CSRF_TRUSTED_ORIGINS_EXTRA', '').split(',') if x.strip()]
 for _o in _extra_csrf:
     if _o not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(_o)
@@ -565,18 +586,18 @@ ADMIN_GROUP_RESTRICTION_ENABLED = os.environ.get('ADMIN_GROUP_RESTRICTION_ENABLE
 BACKUP_IMMUTABLE_LOG_AUTO = os.environ.get('BACKUP_IMMUTABLE_LOG_AUTO', 'False').lower() in ('true', '1', 'yes')
 
 # PIN de validación de resultados — OBLIGATORIO configurar en producción
-# FASE SECRETS (Cloud Run / GAE / VPS): FERNET_KEY, LAB_VALIDATION_PIN, PRISLAB_ESCUDO_USUARIO_ID
+# FASE SECRETOS (VPS): FERNET_KEY, LAB_VALIDATION_PIN, PRISLAB_ESCUDO_USUARIO_ID
 LAB_VALIDATION_PIN = os.environ.get("LAB_VALIDATION_PIN", "1234")
-if _is_cloud_env and LAB_VALIDATION_PIN == "1234":
+if IS_PRODUCTION and LAB_VALIDATION_PIN == "1234":
     raise RuntimeError(
         '🔴 PRISLAB SEGURIDAD: LAB_VALIDATION_PIN usa el valor por defecto "1234" en producción.\n'
-        'Configure LAB_VALIDATION_PIN vía Secret Manager (p. ej. lab-validation-pin) con un PIN seguro.'
+        'Configure LAB_VALIDATION_PIN vía una variable de entorno segura con un PIN seguro.'
     )
 _pin_stripped = (LAB_VALIDATION_PIN or "").strip()
-if _is_cloud_env and _pin_stripped and len(_pin_stripped) < 8:
+if IS_PRODUCTION and _pin_stripped and len(_pin_stripped) < 8:
     raise RuntimeError(
         '🔴 PRISLAB SEGURIDAD: en producción LAB_VALIDATION_PIN debe tener al menos 8 caracteres '
-        '(auditoría ISO / gobierno de acceso). Actualice el secreto lab-validation-pin en GCP.'
+        '(auditoría ISO / gobierno de acceso). Actualice el valor en el servidor.'
     )
 
 # Escudo clínico LIMS (HL7 / notificaciones automáticas sin sesión): PK de usuario activo
@@ -587,24 +608,40 @@ if _raw_escudo:
         PRISLAB_ESCUDO_USUARIO_ID = int(_raw_escudo)
     except ValueError:
         PRISLAB_ESCUDO_USUARIO_ID = None
-if _is_cloud_env and not PRISLAB_ESCUDO_USUARIO_ID:
+if IS_PRODUCTION and not PRISLAB_ESCUDO_USUARIO_ID:
     raise RuntimeError(
         '🔴 PRISLAB SEGURIDAD: PRISLAB_ESCUDO_USUARIO_ID es obligatoria en producción.\n'
         'Defina el ID numérico del usuario de sistema que firmará acciones del Escudo Clínico (HL7 / LIMS).'
     )
 
 # Clave Fernet para cifrado de campos sensibles (NOM-035, Bienestar, Expedientes)
-# En Cloud Run se inyecta desde Secret Manager; en local puede omitirse según uso de features cifradas
+# En producción se inyecta desde variables de entorno seguras; en local puede omitirse
 FERNET_KEY = os.environ.get("FERNET_KEY", None)
-if _is_cloud_env and not FERNET_KEY:
+if IS_PRODUCTION and not FERNET_KEY:
     raise RuntimeError(
         '🔴 PRISLAB SEGURIDAD: FERNET_KEY no está configurada en producción.\n'
-        'Defina FERNET_KEY (env / Secret Manager). Genere una con:\n'
+        'Defina FERNET_KEY (env). Genere una con:\n'
         '  python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
     )
 
 # DRP Punto 14: kill switch de solo lectura (sin excepción admin/superuser en escrituras)
 PRISLAB_READ_ONLY = os.environ.get('PRISLAB_READ_ONLY', '').strip().lower() in ('1', 'true', 'yes', 'on')
+
+# Auditoría controlada: excepción deliberada para pruebas funcionales de farmacia/inventario.
+# Se activa solo si el entorno lo define explícitamente y para usuarios/rutas permitidos.
+PRISLAB_READ_ONLY_AUDIT_ALLOWED_PATH_PREFIXES = _env_list(
+    'PRISLAB_READ_ONLY_AUDIT_ALLOWED_PATH_PREFIXES',
+    default=['/farmacia/', '/inventario/', '/pdv/', '/pdv-farmacia/'],
+)
+PRISLAB_READ_ONLY_AUDIT_ALLOWED_USERNAMES = _env_list(
+    'PRISLAB_READ_ONLY_AUDIT_ALLOWED_USERNAMES',
+    default=[],
+)
+PRISLAB_READ_ONLY_AUDIT_ALLOWED_ROLES = _env_list(
+    'PRISLAB_READ_ONLY_AUDIT_ALLOWED_ROLES',
+    default=['ADMIN', 'DIRECTOR', 'GERENTE'],
+)
+PRISLAB_READ_ONLY_ALLOW_SUPERUSERS = _env_bool('PRISLAB_READ_ONLY_ALLOW_SUPERUSERS', False)
 
 # Fase 1 v8.5 — Shadow Mode ORM: log de consultas TenantModel sin filtro por empresa (sin bloquear).
 # Desactivar con PRISLAB_TENANT_SHADOW_MODE=0 solo tras auditoría y blindaje estricto.
@@ -615,18 +652,15 @@ PRISLAB_TENANT_SHADOW_LOG_CLI = os.environ.get('PRISLAB_TENANT_SHADOW_LOG_CLI', 
     '1', 'true', 'yes', 'on',
 )
 
-# Bucket GCS dedicado a volcados pg_dump cifrados (manage.py backup_database); opcional hasta usar el comando
-GCS_BACKUP_BUCKET = os.environ.get('GCS_BACKUP_BUCKET', '').strip()
-
-# Configuración para que Django entienda que Google maneja el HTTPS
+# Configuración para que Django entienda el HTTPS detrás de Nginx / reverse proxy
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Configuración de cookies seguras (solo en PROD para no bloquear DEV en http)
-SESSION_COOKIE_SECURE = IS_GOOGLE_CLOUD
-CSRF_COOKIE_SECURE = IS_GOOGLE_CLOUD
+SESSION_COOKIE_SECURE = _env_bool('SESSION_COOKIE_SECURE', IS_PRODUCTION)
+CSRF_COOKIE_SECURE = _env_bool('CSRF_COOKIE_SECURE', IS_PRODUCTION)
 
-# No redirigir SSL (Cloud Run ya maneja HTTPS)
-SECURE_SSL_REDIRECT = False
+# No redirigir SSL en local; en staging/prod se puede forzar por entorno.
+SECURE_SSL_REDIRECT = _env_bool('SECURE_SSL_REDIRECT', False)
 
 # Headers de seguridad adicionales (clínica: protección de datos sensibles)
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -644,15 +678,16 @@ PERMISSIONS_POLICY = {
     'fullscreen': ['self'],
 }
 
-if IS_GOOGLE_CLOUD:
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+SECURE_HSTS_SECONDS = int(os.environ.get(
+    'SECURE_HSTS_SECONDS',
+    '31536000' if IS_PRODUCTION else '0',
+))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', IS_PRODUCTION)
+SECURE_HSTS_PRELOAD = _env_bool('SECURE_HSTS_PRELOAD', IS_PRODUCTION)
 
 # ==============================================================================
 # SISTEMA DE AUDITORÍA Y LOGGING INTEGRAL
-# Cloud Run → stdout capturado por Cloud Logging
-# Local → prislab_*.log rotados; Bankguard → logs/bankguard_audit.log (también VPS/Cloud con FS escribible)
+# VPS/Prod → stdout o logs locales; Bankguard → logs/bankguard_audit.log
 # ==============================================================================
 _LOG_DIR = BASE_DIR / 'logs'
 _LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -672,7 +707,7 @@ _BANKGUARD_HANDLERS = {
     },
 }
 
-if not _is_cloud_env:
+if not IS_PRODUCTION:
     _EXTRA_HANDLERS = {
         'file_errors': {
             'level': 'WARNING',
@@ -790,7 +825,7 @@ LOGGING = {
 }
 
 # ============================================================================
-# Punto 23 — Sandbox de capacitación (servicio Cloud Run dedicado)
+# Punto 23 — Sandbox de capacitación (perfil lógico de despliegue)
 # ============================================================================
 PRISLAB_DEPLOYMENT_MODE = (os.environ.get('PRISLAB_DEPLOYMENT_MODE') or '').strip().lower()
 IS_SANDBOX = PRISLAB_DEPLOYMENT_MODE == 'training_sandbox'
@@ -834,7 +869,7 @@ if REDIS_URL:
         },
     }
 else:
-    # Sin Redis: backend en memoria (desarrollo / Cloud Run sin Redis)
+    # Sin Redis: backend en memoria (desarrollo o VPS sin Redis)
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels.layers.InMemoryChannelLayer'
@@ -886,4 +921,31 @@ MEDIA_BUFFER_DIR = os.path.join(MEDIA_ROOT, 'buffer')
 #   Celery worker: lee local → sube a Drive → elimina buffer → cache.set(sync=True)
 #   Si Drive falla: archivo queda en buffer, task reintenta hasta 5 veces.
 # ==============================================================================
-DEFAULT_FILE_STORAGE = 'config.storage_backends.BufferLocalStorage'
+STORAGES["staticfiles"] = {"BACKEND": _static_backend}
+
+# ==============================================================================
+# 🔐 CONFIGURACIONES DE SEGURIDAD PARA PRODUCCIÓN
+# ==============================================================================
+# Correcciones post-auditoría - Bloque 1.2
+# Disable SSL for E2E testing with: E2E_DISABLE_SSL=1
+_e2e_disable_ssl = os.environ.get('E2E_DISABLE_SSL', '') == '1'
+if not DEBUG and not _e2e_disable_ssl and not _TESTING:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 año
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+# ==============================================================================
+# 🔐 ALLOWED_HOSTS CONFIGURACIÓN SEGURA
+# ==============================================================================
+# Correcciones post-auditoría - Bloque 1.3
+_allowed_hosts_env = os.environ.get('ALLOWED_HOSTS', '')
+if _allowed_hosts_env:
+    ALLOWED_HOSTS = [host.strip() for host in _allowed_hosts_env.split(',') if host.strip()]
+elif IS_PRODUCTION:
+    _server_name = (os.environ.get('SERVER_NAME') or os.environ.get('DOMAIN_NAME') or '').strip()
+    ALLOWED_HOSTS = [x for x in [_server_name, 'localhost', '127.0.0.1'] if x]
+else:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
