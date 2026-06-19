@@ -19,6 +19,9 @@ import logging
 import os
 import threading
 
+from django.conf import settings
+from django.core.exceptions import PermissionDenied
+
 logger = logging.getLogger('core.middleware.empresa')
 
 
@@ -73,6 +76,21 @@ class EmpresaIdentityMiddleware:
                     from core.utils.default_empresa import resolve_default_empresa_sistema
 
                     empresa = resolve_default_empresa_sistema()
+                if (
+                    empresa is None
+                    and not request.user.is_superuser
+                    and getattr(settings, 'PRISLAB_TENANT_STRICT_MODE', False)
+                ):
+                    logger.critical(
+                        'TENANT_STRICT_MODE_BLOCK middleware user=%s path=%s '
+                        'sin empresa asignada ni empresa por defecto resolvible.',
+                        getattr(request.user, 'username', '?'),
+                        getattr(request, 'path', ''),
+                    )
+                    raise PermissionDenied(
+                        'Usuario autenticado sin empresa asignada. '
+                        'Acceso bloqueado por PRISLAB_TENANT_STRICT_MODE.'
+                    )
 
             request.empresa_actual = empresa
 

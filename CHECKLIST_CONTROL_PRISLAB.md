@@ -1,9 +1,35 @@
 # Checklist de control PRISLAB
 
-Fecha de corte: 2026-06-06
+Fecha de corte: 2026-06-18
 
 Este checklist consolida el estado de la migración entre el sistema legado y PRISLAB SaaS.
 La intención es tener un tablero único para avanzar sin perder contexto.
+
+## Protocolo obligatorio de actualización
+
+Toda IA, desarrollador o revisor que haga cambios en código, despliegue, pruebas, variables, infraestructura o datos debe actualizar este archivo en el mismo movimiento.
+
+También debe actualizar:
+
+- [REPORTE_COMPLETO_PARA_CLAUDE_2026-06-18.md](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\REPORTE_COMPLETO_PARA_CLAUDE_2026-06-18.md)
+- [PROTOCOLO_AUDITORIA_MULTI_IA_PRISLAB.md](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\PROTOCOLO_AUDITORIA_MULTI_IA_PRISLAB.md) si cambia el enfoque de auditoría o la forma oficial de revisión
+
+Si este checklist no se actualiza, el cambio no cuenta como cerrado.
+
+## Estado técnico de corte
+
+- [x] `manage.py check` OK
+- [x] `makemigrations --check --dry-run` OK
+- [x] `manage.py test` global OK (`251 tests`, `23 skipped`, `0 failures`, `0 errors`)
+- [x] Endurecimiento post-auditoría aplicado en `settings.py`, `docker-compose.yml` y `nginx/conf.d/prislab.conf`
+- [x] Regresión focalizada post-endurecimiento OK (`16 tests`, `0 failures`)
+- [x] Hallazgos reales de auditoría cerrados en código: rate limit con IP final de `X-Forwarded-For` y bloqueo de cantidades no válidas en `registrar_venta_farmacia`
+- [x] Regresión de auditoría adicional OK (`4 tests`, `0 failures`) en `core.tests.test_rate_limit_middleware` y `core.tests.test_pris_tools_operativos_security`
+- [x] Endurecimiento adicional aplicado: `PRISLAB_TENANT_STRICT_MODE`, `buscar_o_crear_paciente` ya no crea sin confirmación, y `OMNI_BYPASS_TOKEN` queda bloqueado por defecto en producción salvo habilitación explícita
+- [x] Regresión de endurecimiento final OK (`4 tests`, `0 failures`) en `core.tests.test_tenant_strict_mode` y `core.tests.test_buscar_o_crear_paciente_confirmation`
+- [x] `PRIS IA` desbloqueado del stub y flujo real activo
+- [x] `Academia` cubierta con pruebas y blindaje tenant
+- [~] Producción funcional localmente validada; falta seguir la verificación manual módulo por módulo en el entorno real
 
 ## Estado general
 
@@ -164,9 +190,10 @@ Leyenda:
 
 ## Próximo orden de trabajo recomendado
 
-1. Terminar Bloque 1 al 3 al nivel de paridad exacta.
-2. Cerrar Bloques 4, 5 y 6.
-3. Cerrar Bloque 13 porque impacta operación diaria.
-4. Cerrar Bloques 11, 12 y 14.
-5. Ejecutar Bloque 15 como auditoría final.
-
+1. Ejecutar revisión externa de Claude y Cascada usando como fuente inicial este checklist y el reporte maestro.
+2. Continuar pruebas funcionales reales en producción módulo por módulo.
+3. Terminar Bloque 1 al 3 al nivel de paridad exacta contra el legacy.
+4. Cerrar Bloques 4, 5 y 6.
+5. Cerrar Bloque 13 porque impacta operación diaria.
+6. Cerrar Bloques 11, 12 y 14.
+7. Ejecutar Bloque 15 como auditoría final de reemplazo total.

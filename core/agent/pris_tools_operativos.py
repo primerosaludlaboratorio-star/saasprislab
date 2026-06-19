@@ -384,7 +384,17 @@ def tool_registrar_venta_farmacia(args: dict, empresa, user) -> dict:
     for item in productos_req:
         pid = item.get("id")
         nombre = item.get("nombre", "")
-        cantidad = int(item.get("cantidad") or 1)
+        cantidad_raw = item.get("cantidad")
+        if cantidad_raw in (None, ""):
+            cantidad = 1
+        else:
+            try:
+                cantidad = int(cantidad_raw)
+            except (TypeError, ValueError):
+                return {"error": f"La cantidad para '{nombre or pid}' debe ser un entero válido."}
+
+        if cantidad <= 0:
+            return {"error": f"La cantidad para '{nombre or pid}' debe ser mayor a cero."}
 
         if pid:
             try:
@@ -544,6 +554,7 @@ def tool_buscar_o_crear_paciente(args: dict, empresa, user) -> dict:
     from core.models import Paciente
     from django.db.models import Q
 
+    confirmado = args.get("confirmado", False)
     nombres = (args.get("nombres") or args.get("nombre") or "").strip()
     apellido_p = (args.get("apellido_paterno") or "").strip()
     telefono = (args.get("telefono") or "").strip()
@@ -570,9 +581,21 @@ def tool_buscar_o_crear_paciente(args: dict, empresa, user) -> dict:
             "mensaje": f"Paciente encontrado: {p.nombre_completo} (ID: {p.id}).",
         }
 
-    # No existe: crear
-    args["confirmado"] = True  # flujo directo
-    return tool_crear_paciente(args, empresa, user)
+    if not confirmado:
+        nombre_completo = f"{nombres} {apellido_p}".strip()
+        return {
+            "necesita_confirmacion": True,
+            "resumen": (
+                f"No encontré un paciente existente con esos datos.\n"
+                f"Voy a crear un nuevo paciente:\n"
+                f"• Nombre: {nombre_completo}\n"
+                f"• Teléfono: {telefono or 'no proporcionado'}\n\n"
+                "¿Confirmas que quieres crearlo? Responde 'sí' para proceder."
+            ),
+            "plan": {"accion": "buscar_o_crear_paciente", "datos": args},
+        }
+
+    return tool_crear_paciente({**args, "confirmado": True}, empresa, user)
 
 
 def tool_actualizar_resultado_laboratorio(args: dict, empresa, user) -> dict:
@@ -1274,9 +1297,9 @@ def tool_gestionar_usuario(args: dict, empresa, user) -> dict:
 
 
 # ─── MAPA DE HERRAMIENTAS OPERATIVAS ──────────────────────────────────────────
-# PRIS-Jarvis: RBAC eliminado. La confirmación humana ES la seguridad.
-# grupos=[] significa que cualquier usuario autenticado puede usar la herramienta
-# a través de PRIS (con confirmación obligatoria para escrituras).
+# PRIS/Prisci aplica RBAC en core.views.pris_ia antes de llegar aqui.
+# grupos=[] mantiene compatibilidad con el mapa central _TOOL_RBAC.
+# La confirmacion humana es una defensa adicional para escrituras.
 
 TOOLS_OPERATIVOS = {
     # ── Recepción / Laboratorio ──────────────────────────────────────────────

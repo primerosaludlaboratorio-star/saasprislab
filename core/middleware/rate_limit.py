@@ -3,7 +3,7 @@ PRISLAB V5 - Rate Limiting Middleware (BLINDAJE R104)
 =====================================================
 Protege endpoints sensibles contra ataques de fuerza bruta.
 - Login: Max 5 intentos por IP cada 5 minutos.
-- APIs: Max 60 requests por IP cada minuto.
+- APIs: Max 120 requests por IP cada minuto.
 """
 import os
 import time
@@ -48,7 +48,23 @@ class RateLimitMiddleware:
         if config and request.method == 'POST':
             bypass = os.environ.get('OMNI_BYPASS_TOKEN')
             if bypass and request.headers.get('X-Omni-Bypass') == bypass:
-                return self.get_response(request)
+                from django.conf import settings
+
+                if getattr(settings, 'IS_PRODUCTION', False) and not self._env_truthy('PRISLAB_ALLOW_OMNI_BYPASS_IN_PRODUCTION'):
+                    logger.critical(
+                        'OMNI_BYPASS_BLOCKED path=%s ip=%s user=%s ambiente=production',
+                        path,
+                        self._get_client_ip(request),
+                        getattr(getattr(request, 'user', None), 'username', 'anon'),
+                    )
+                else:
+                    logger.warning(
+                        'OMNI_BYPASS_USED path=%s ip=%s user=%s',
+                        path,
+                        self._get_client_ip(request),
+                        getattr(getattr(request, 'user', None), 'username', 'anon'),
+                    )
+                    return self.get_response(request)
             ip = self._get_client_ip(request)
             key = f"rl:{config['scope']}:{ip}"
             if self._is_rate_limited(key, config['max_requests'], config['window_seconds']):
@@ -88,11 +104,19 @@ class RateLimitMiddleware:
 
         return self.get_response(request)
 
+    @staticmethod
+    def _env_truthy(name):
+        return os.environ.get(name, '').strip().lower() in ('1', 'true', 'yes', 'on')
+
     def _get_client_ip(self, request):
-        """Obtiene IP real (soporta proxy Cloud Run)."""
+        """Obtiene IP real (soporta proxy Nginx)."""
         xff = request.META.get('HTTP_X_FORWARDED_FOR')
         if xff:
-            return xff.split(',')[0].strip()
+            # Con Nginx usando $proxy_add_x_forwarded_for, la IP real del cliente
+            # llega al final de la cadena; tomar la primera permite spoofing.
+            forwarded_ips = [ip.strip() for ip in xff.split(',') if ip.strip()]
+            if forwarded_ips:
+                return forwarded_ips[-1]
         return request.META.get('REMOTE_ADDR', '0.0.0.0')
 
     def _is_rate_limited(self, key, max_requests, window_seconds):

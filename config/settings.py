@@ -8,6 +8,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Variables de entorno (estándar)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "").strip()
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "").strip().replace('\r', '').replace('\n', '')
+GOOGLE_GEMINI_API_KEY = os.environ.get("GOOGLE_GEMINI_API_KEY", "").strip().replace('\r', '').replace('\n', '')
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip().replace('\r', '').replace('\n', '')
 AI_PROVIDER = os.environ.get("AI_PROVIDER", "").strip().lower()
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "").strip().replace('\r', '').replace('\n', '')
 DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat").strip()
@@ -17,6 +19,15 @@ DEEPSEEK_API_URL = os.environ.get(
 ).strip()
 PRISCI_WEBHOOK_TOKEN = os.environ.get("PRISCI_WEBHOOK_TOKEN", "").strip()
 PRISCI_WEBHOOK_VERIFY_TOKEN = os.environ.get("PRISCI_WEBHOOK_VERIFY_TOKEN", "").strip()
+
+# Canonicalización: una sola clave puede alimentar Gemini.
+# Orden de preferencia: GOOGLE_API_KEY -> GOOGLE_GEMINI_API_KEY -> GEMINI_API_KEY
+if not GOOGLE_API_KEY:
+    GOOGLE_API_KEY = GOOGLE_GEMINI_API_KEY or GEMINI_API_KEY
+if not GOOGLE_GEMINI_API_KEY:
+    GOOGLE_GEMINI_API_KEY = GOOGLE_API_KEY
+if not GEMINI_API_KEY:
+    GEMINI_API_KEY = GOOGLE_API_KEY
 
 # PRIS Sentinel -> GitHub Auto-Reporte
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
@@ -58,6 +69,10 @@ def _env_list(name, default=None):
 # Tenant por defecto (PRISLAB mononodo / rescate). Opcional: entero explícito.
 _raw_def_emp = (os.environ.get('PRISLAB_DEFAULT_EMPRESA_ID') or '').strip()
 PRISLAB_DEFAULT_EMPRESA_ID = int(_raw_def_emp) if _raw_def_emp.isdigit() else None
+
+# Módulos de academia permitidos por empresa.
+# Por defecto solo PRISLAB; para abrir a otros laboratorios, agregar nombre, slug o ID en el entorno.
+ACADEMIA_EMPRESAS_PERMITIDAS = _env_list('ACADEMIA_EMPRESAS_PERMITIDAS', default=['prislab'])
 
 # URL pública del backend SaaS para integraciones internas o frontend separado
 API_URL = (os.environ.get('API_URL') or os.environ.get('PRISLAB_SAAS_URL') or '').strip()
@@ -180,6 +195,7 @@ INSTALLED_APPS = [
     'ia',           # Inteligencia Artificial (OCR y Voz)
     'reglas_negocio',  # Reglas de negocio estrictas
     'marketing',    # Crecimiento, campañas éticas, cupones, academy
+    'academia',     # Diplomados / video learning
     'recepcion',    # Recepción y agendamiento de citas
     'enfermeria',   # Triage y signos vitales (opcional)
     'consultorio',  # Consultorio / Agenda / Expediente clínico
@@ -587,14 +603,13 @@ BACKUP_IMMUTABLE_LOG_AUTO = os.environ.get('BACKUP_IMMUTABLE_LOG_AUTO', 'False')
 
 # PIN de validación de resultados — OBLIGATORIO configurar en producción
 # FASE SECRETOS (VPS): FERNET_KEY, LAB_VALIDATION_PIN, PRISLAB_ESCUDO_USUARIO_ID
-LAB_VALIDATION_PIN = os.environ.get("LAB_VALIDATION_PIN", "1234")
-if IS_PRODUCTION and LAB_VALIDATION_PIN == "1234":
+LAB_VALIDATION_PIN = os.environ.get("LAB_VALIDATION_PIN", "").strip()
+if IS_PRODUCTION and not LAB_VALIDATION_PIN:
     raise RuntimeError(
-        '🔴 PRISLAB SEGURIDAD: LAB_VALIDATION_PIN usa el valor por defecto "1234" en producción.\n'
+        '🔴 PRISLAB SEGURIDAD: LAB_VALIDATION_PIN no está configurado en producción.\n'
         'Configure LAB_VALIDATION_PIN vía una variable de entorno segura con un PIN seguro.'
     )
-_pin_stripped = (LAB_VALIDATION_PIN or "").strip()
-if IS_PRODUCTION and _pin_stripped and len(_pin_stripped) < 8:
+if IS_PRODUCTION and len(LAB_VALIDATION_PIN) < 8:
     raise RuntimeError(
         '🔴 PRISLAB SEGURIDAD: en producción LAB_VALIDATION_PIN debe tener al menos 8 caracteres '
         '(auditoría ISO / gobierno de acceso). Actualice el valor en el servidor.'
@@ -647,6 +662,7 @@ PRISLAB_READ_ONLY_ALLOW_SUPERUSERS = _env_bool('PRISLAB_READ_ONLY_ALLOW_SUPERUSE
 # Desactivar con PRISLAB_TENANT_SHADOW_MODE=0 solo tras auditoría y blindaje estricto.
 _raw_tenant_shadow = (os.environ.get('PRISLAB_TENANT_SHADOW_MODE') or '1').strip().lower()
 PRISLAB_TENANT_SHADOW_MODE = _raw_tenant_shadow not in ('0', 'false', 'no', 'off')
+PRISLAB_TENANT_STRICT_MODE = _env_bool('PRISLAB_TENANT_STRICT_MODE', IS_PRODUCTION)
 # En management commands sin HTTP, registrar stacks solo si=1 (evita ruido en migrate/cron).
 PRISLAB_TENANT_SHADOW_LOG_CLI = os.environ.get('PRISLAB_TENANT_SHADOW_LOG_CLI', '').strip().lower() in (
     '1', 'true', 'yes', 'on',

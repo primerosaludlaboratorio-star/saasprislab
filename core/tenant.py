@@ -72,11 +72,12 @@ def _shadow_settings():
         from django.conf import settings
         return (
             getattr(settings, 'PRISLAB_TENANT_SHADOW_MODE', True),
+            getattr(settings, 'PRISLAB_TENANT_STRICT_MODE', False),
             getattr(settings, 'PRISLAB_TENANT_SHADOW_LOG_CLI', False),
             getattr(settings, 'DEBUG', False),
         )
     except Exception:
-        return True, False, False
+        return True, False, False, False
 
 
 def _get_http_request():
@@ -108,7 +109,7 @@ def _log_tenant_shadow_unscoped(model):
     """
     import os
 
-    shadow_on, log_cli, debug = _shadow_settings()
+    shadow_on, _strict_mode, log_cli, debug = _shadow_settings()
     if not shadow_on or not _is_tenant_scoped_model(model):
         return
 
@@ -226,6 +227,22 @@ class TenantManager(models.Manager):
             return qs.filter(empresa=empresa)
         # Sin filtro por tenant: operación normal (superuser, Celery, etc.) pero Shadow Mode registra riesgo.
         if not bypass and empresa is None:
+            _shadow_on, strict_mode, _log_cli, _debug = _shadow_settings()
+            if strict_mode:
+                req = _get_http_request()
+                user = getattr(req, 'user', None) if req is not None else None
+                if bool(getattr(user, 'is_authenticated', False)) and not bool(getattr(user, 'is_superuser', False)):
+                    logger.error(
+                        'TENANT_STRICT_MODE_BLOCK modelo=%s usuario_id=%s username=%s path=%s',
+                        self.model.__name__,
+                        getattr(user, 'pk', '?'),
+                        getattr(user, 'username', '?'),
+                        getattr(req, 'path', ''),
+                    )
+                    raise PermissionDenied(
+                        'Contexto de empresa ausente para usuario autenticado. '
+                        'Operación bloqueada por PRISLAB_TENANT_STRICT_MODE.'
+                    )
             _log_tenant_shadow_unscoped(self.model)
         return qs
 
