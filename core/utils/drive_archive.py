@@ -18,6 +18,7 @@ import os
 import socket
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
+from config.drive_credentials import get_drive_credentials
 
 # Timeout para operaciones de red (modo supervivencia)
 DRIVE_NETWORK_TIMEOUT = 30
@@ -39,22 +40,19 @@ def _build_drive_service():
     """
     Construye cliente Drive v3 usando Service Account.
     """
-    sa_path = (os.getenv("GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", "") or "").strip()
-    if not sa_path:
-        raise RuntimeError("Falta GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON")
-
     try:
-        from google.oauth2 import service_account
         from googleapiclient.discovery import build
     except Exception as e:
         raise RuntimeError(
             "Faltan dependencias de Google Drive. Instala google-api-python-client y google-auth."
         ) from e
 
-    creds = service_account.Credentials.from_service_account_file(
-        sa_path,
-        scopes=["https://www.googleapis.com/auth/drive.file"],
-    )
+    creds = get_drive_credentials()
+    if not creds:
+        raise RuntimeError(
+            "No se resolvieron credenciales de Google Drive. "
+            "Configura GOOGLE_APPLICATION_CREDENTIALS o GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON."
+        )
     return build("drive", "v3", credentials=creds, cache_discovery=False)
 
 
@@ -96,4 +94,3 @@ def subir_archivo_a_drive(*, file_path: str, file_name: Optional[str] = None, fo
         )
     except Exception as e:
         return DriveUploadResult(ok=False, error=str(e), folder_id=folder_id)
-

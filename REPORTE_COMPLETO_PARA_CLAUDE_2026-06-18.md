@@ -107,6 +107,34 @@ Estado:
 - Drive usa cuenta de servicio, no API key
 - sin credenciales, el sistema cae a fallback local sin tumbar el arranque
 - errores 403 y 404 de Drive ya devuelven mensajes utiles
+- `config/drive_credentials.py`, `core/utils/google_drive.py` y `core/utils/drive_archive.py` quedaron alineados a una sola fuente de credenciales centralizada
+- el scope activo quedó unificado a `https://www.googleapis.com/auth/drive`
+- en la VPS ya se instaló el archivo de credenciales en la ruta configurada por `GOOGLE_APPLICATION_CREDENTIALS`
+- se ejecutó una prueba real en producción con la cuenta de servicio: la credencial carga correctamente, pero el `GOOGLE_DRIVE_FOLDER_ID` actual responde `404 notFound`
+- conclusion operativa: el bloqueo actual ya no es la llave ni el código, sino el ID de carpeta configurado en producción o el hecho de que la carpeta compartida no corresponde exactamente a ese ID
+
+## 4.3.1 Estado real Google Drive en produccion al 2026-06-19
+
+Verificacion ejecutada por Codex en VPS:
+
+- lectura de `.env` de produccion OK
+- deteccion de `GOOGLE_APPLICATION_CREDENTIALS` OK
+- deteccion de `GOOGLE_DRIVE_FOLDER_ID` OK
+- carga de Service Account OK
+- intento de lectura de carpeta maestra Drive FAIL con `404 notFound`
+
+Interpretacion correcta:
+
+- si Google devuelve `404` para `files().get(fileId=...)`, normalmente significa una de dos:
+  - el ID configurado no corresponde a la carpeta correcta
+  - la carpeta existe pero no esta compartida realmente con la cuenta de servicio usada por PRISLAB
+
+Pendiente exacto para cerrar:
+
+- confirmar el ID real de la carpeta maestra de Drive que se quiere usar
+- compartir esa carpeta exacta con la cuenta de servicio oficial
+- actualizar el `.env` de produccion si el ID actual no corresponde
+- reejecutar la prueba de subida/borrado real para cerrar el punto
 
 ### 4.4 Academia
 

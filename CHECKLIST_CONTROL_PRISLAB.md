@@ -29,6 +29,8 @@ Si este checklist no se actualiza, el cambio no cuenta como cerrado.
 - [x] Regresión de endurecimiento final OK (`4 tests`, `0 failures`) en `core.tests.test_tenant_strict_mode` y `core.tests.test_buscar_o_crear_paciente_confirmation`
 - [x] `PRIS IA` desbloqueado del stub y flujo real activo
 - [x] `Academia` cubierta con pruebas y blindaje tenant
+- [x] Integración Google Drive unificada a Service Account centralizada (`GOOGLE_APPLICATION_CREDENTIALS` / `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON`) con scope único `https://www.googleapis.com/auth/drive`
+- [~] Verificación real contra VPS ejecutada: la cuenta de servicio carga, pero el `GOOGLE_DRIVE_FOLDER_ID` actual en producción responde `404 notFound`; falta corregir el ID real de carpeta o compartir exactamente esa carpeta con la cuenta de servicio
 - [~] Producción funcional localmente validada; falta seguir la verificación manual módulo por módulo en el entorno real
 
 ## Estado general
@@ -175,6 +177,10 @@ Leyenda:
 - [~] TuLab soportado parcialmente
 - [~] CFDI / facturación soportado parcialmente
 - [~] Interfaces de analizadores soportadas parcialmente
+- [x] Google Drive centralizado por Service Account
+- [x] Manejo explícito de errores `403` / `404` en capa Drive
+- [~] Carpeta maestra de Google Drive validada en producción
+- [ ] Subida real de archivo a carpeta maestra confirmada en producción
 - [ ] WhatsApp validado como en legacy
 - [ ] DICOM PACs validado
 - [ ] EvaPacs validado

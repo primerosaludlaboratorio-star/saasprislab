@@ -12,18 +12,39 @@ Autor: PRISLAB Engineering Team
 """
 import os
 from datetime import datetime
+from django.utils import timezone as _tz_drive
 from threading import Lock
 from typing import Dict, Optional
 import logging
 
 from django.conf import settings
-from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from googleapiclient.errors import HttpError
 import socket
+from config.drive_credentials import get_drive_credentials
 
 logger = logging.getLogger(__name__)
+
+
+def _drive_http_error_message(exc: HttpError, contexto: str) -> str:
+    """Genera mensajes útiles para fallos HTTP de Drive, especialmente 403."""
+    status = getattr(getattr(exc, 'resp', None), 'status', None)
+    try:
+        raw = exc.content.decode() if getattr(exc, 'content', None) else str(exc)
+    except Exception:
+        raw = str(exc)
+    raw_lower = raw.lower()
+    if status == 403 or 'forbidden' in raw_lower or 'insufficient permissions' in raw_lower:
+        return (
+            f"Drive devolvió 403/Forbidden durante {contexto}. "
+            "Revisa que la carpeta de destino esté compartida con la cuenta de servicio "
+            "y que la API de Drive tenga permisos válidos para escritura. "
+            f"Detalle técnico: {raw}"
+        )
+    if status == 404:
+        return f"Drive devolvió 404 durante {contexto}. Verifica que el ID de carpeta exista. Detalle técnico: {raw}"
+    return f"Drive devolvió error HTTP durante {contexto}: {raw}"
 
 # ==============================================================================
 # SINGLETON: DriveService (Una instancia por ciclo de vida del servidor)
@@ -51,32 +72,17 @@ class DriveService:
     def _authenticate(self):
         """
         Autenticación usando Service Account.
-        Scope mínimo: drive.file (solo archivos creados por esta app).
+        Usa las credenciales centralizadas resueltas desde entorno.
         """
         try:
-            # Buscar credenciales en .env
-            sa_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-            
-            if not sa_path:
+            creds = get_drive_credentials()
+            if not creds:
                 logger.warning(
-                    "[DRIVE] GOOGLE_APPLICATION_CREDENTIALS no configurado. "
+                    "[DRIVE] No se resolvieron credenciales de Google Drive. "
                     "Storage Layer deshabilitado. Sistema funcionará localmente."
                 )
                 return
-            
-            if not os.path.exists(sa_path):
-                logger.error(
-                    f"[DRIVE] Archivo de credenciales no encontrado: {sa_path}. "
-                    "Verificar ruta en .env"
-                )
-                return
 
-            # Crear credenciales con scope mínimo
-            creds = service_account.Credentials.from_service_account_file(
-                sa_path,
-                scopes=["https://www.googleapis.com/auth/drive.file"]
-            )
-            
             # Construir servicio (cache_discovery=False para evitar warnings)
             self._service = build(
                 "drive", 
@@ -174,7 +180,7 @@ def _find_or_create_folder(service, folder_name: str, parent_folder_id: Optional
             return folder_id
             
     except HttpError as e:
-        logger.error(f"[DRIVE] Error HTTP al gestionar carpeta '{folder_name}': {e}")
+        logger.error(f"[DRIVE] {_drive_http_error_message(e, f'gestión de carpeta {folder_name}')}")
         return None
     except Exception as e:
         logger.error(f"[DRIVE] Error inesperado al gestionar carpeta '{folder_name}': {e}")
@@ -218,7 +224,7 @@ def _build_folder_structure(service, base_folder_name: str, subfolder_month: boo
         return base_folder_id
     
     # Estructura mensual: PRISLAB / base_folder / AÑO / MES
-    now = datetime.now()
+    now = _tz_drive.localtime(_tz_drive.now())
     year_str = str(now.year)
     month_str = f"{now.month:02d}"  # 01, 02, ..., 12
     
@@ -385,7 +391,7 @@ def sync_to_drive(
         }
     
     except HttpError as e:
-        error_msg = f"Error HTTP de Google API: {e.resp.status} - {e.content.decode()}"
+        error_msg = _drive_http_error_message(e, f"subida del archivo '{file_name}'")
         logger.error(f"[DRIVE] {error_msg}")
         return {
             'success': False,

@@ -6,8 +6,7 @@ Estrategia de resolución (prioridad descendente):
 
   1. GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON  — JSON completo de SA en env var
   2. GOOGLE_APPLICATION_CREDENTIALS      — ruta al archivo .json del SA
-  3. google.auth.default() con scopes    — ADC de Cloud Run / Workload Identity
-  4. None                                — sin Drive, fallback a almacenamiento local
+  3. None                                — sin Drive, fallback a almacenamiento local
 
 El backend GoogleDriveStorage en config/storage_backends.py usa el resultado
 de esta función para autenticarse con Drive API v3.
@@ -21,7 +20,6 @@ logger = logging.getLogger('config.drive_credentials')
 
 _DRIVE_SCOPES = [
     'https://www.googleapis.com/auth/drive',
-    'https://www.googleapis.com/auth/drive.file',
 ]
 
 
@@ -54,23 +52,9 @@ def get_drive_credentials():
         except Exception as exc:
             logger.warning(f"[Drive Credentials] Fallo con GOOGLE_APPLICATION_CREDENTIALS: {exc}")
 
-    # ── Estrategia 3: Application Default Credentials (Cloud Run / GCE) ────────
-    try:
-        import google.auth
-        from google.auth.transport.requests import Request
-        from google.oauth2.credentials import Credentials as OAuth2Credentials
-
-        creds, project = google.auth.default(scopes=_DRIVE_SCOPES)
-        # Refrescar para validar
-        creds.refresh(Request())
-        logger.info(f"[Drive Credentials] Usando Application Default Credentials (proyecto: {project})")
-        return creds
-    except Exception as exc:
-        logger.warning(f"[Drive Credentials] ADC no disponible: {exc}")
-
     # ── Sin credenciales ────────────────────────────────────────────────────────
     logger.warning(
         "[Drive Credentials] No se encontraron credenciales para Google Drive. "
-        "El almacenamiento usará el fallback local/GCS."
+        "El almacenamiento usará el fallback local."
     )
     return None
