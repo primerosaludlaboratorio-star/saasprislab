@@ -55,6 +55,8 @@ Thumbs.db
 # Secrets and keys
 secrets.json
 credentials.json
+credentials/
+credentials/*.json
 service-account-key.json
 service-account*.json
 *.pem

@@ -33,6 +33,7 @@ Si este checklist no se actualiza, el cambio no cuenta como cerrado.
 - [~] Verificación real contra VPS ejecutada: la cuenta de servicio carga, pero el `GOOGLE_DRIVE_FOLDER_ID` actual en producción responde `404 notFound`; falta corregir el ID real de carpeta o compartir exactamente esa carpeta con la cuenta de servicio
 - [x] Diagnóstico final Drive completado: lectura de carpeta productiva OK, escritura bloqueada por `403 storageQuotaExceeded` al usar Service Account sobre `My Drive`
 - [x] Producción blindada para seguir operando con `BufferLocalStorage` por defecto mientras se migra a `Shared Drive` o se cambia el modelo de autenticación
+- [x] Validado el `2026-06-19` que el JSON entregado localmente corresponde a `811785477499-compute@developer.gserviceaccount.com`; la identidad debe coincidir exactamente con el share activo de la carpeta o del `Shared Drive`
 - [~] Producción funcional localmente validada; falta seguir la verificación manual módulo por módulo en el entorno real
 - [x] Endurecimiento de seguridad complementario aplicado el `2026-06-19` en cron, audio médico/laboratorio y storage Drive
 - [x] Drive ya no publica archivos con permiso `anyone-with-link` al guardar desde `GoogleDriveStorage`
@@ -236,6 +237,7 @@ Leyenda:
 - [~] Lectura real de carpeta maestra confirmada en producción
 - [ ] Subida real de archivo a carpeta maestra confirmada en producción
 - [x] Fallback seguro a buffer local desplegado en producción mientras se resuelve `Shared Drive`
+- [x] Documento operativo de cierre Drive agregado: `docs/DRIVE_CIERRE_OPERATIVO_2026-06-19.md`
 - [ ] WhatsApp validado como en legacy
 - [ ] DICOM PACs validado
 - [ ] EvaPacs validado

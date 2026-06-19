@@ -153,6 +153,8 @@ Verificacion ejecutada por Codex en VPS:
 - deteccion de `GOOGLE_APPLICATION_CREDENTIALS` OK
 - deteccion de `GOOGLE_DRIVE_FOLDER_ID` OK
 - carga de Service Account OK
+- validacion local adicional `2026-06-19`: el JSON entregado corresponde a `811785477499-compute@developer.gserviceaccount.com`
+- conclusion de esa validacion: no basta con \"tener un JSON\"; la identidad del Service Account debe coincidir exactamente con la carpeta o `Shared Drive` compartido
 - intento inicial de lectura de carpeta maestra Drive FAIL con `404 notFound`
 - causa detectada: la carpeta estaba compartida con otra Service Account distinta a la instalada en VPS
 - tras corregir el share, lectura de carpeta maestra Drive OK
