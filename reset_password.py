@@ -18,8 +18,6 @@ def resetear_password(username, password):
     try:
         usuario = Usuario.objects.get(username=username)
         usuario.set_password(password)
-        usuario.is_staff = True
-        usuario.is_superuser = True
         usuario.is_active = True
         usuario.save()
         print(f"[OK] Contrasena reseteada para '{username}'")

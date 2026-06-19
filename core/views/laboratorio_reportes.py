@@ -123,13 +123,19 @@ def api_generar_y_guardar_reporte(request, orden_id):
     try:
         pdf_bytes = generar_reporte_pdf(orden, request=request)
         url = guardar_reporte_en_storage(orden, pdf_bytes)
-        
+        if not url:
+            return JsonResponse({
+                'status': 'error',
+                'codigo': 'STORAGE_ERROR',
+                'mensaje': 'No se pudo guardar el reporte en storage. Revise la configuración de almacenamiento.',
+            }, status=503)
+
         return JsonResponse({
             'status': 'success',
             'url': url,
             'folio': orden.folio_orden,
             'paciente': orden.paciente.nombre_completo,
-            'mensaje': f'Reporte generado y guardado correctamente'
+            'mensaje': 'Reporte generado y guardado correctamente'
         })
         
     except ReportePdfSaldoPendienteError as e:

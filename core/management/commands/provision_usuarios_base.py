@@ -26,7 +26,12 @@ class Command(BaseCommand):
     def crear_admin(self, empresa):
         from os import environ
         username = 'admin'
-        password = environ.get('PRISLAB_INIT_PASSWORD', environ.get('PRISLAB_INIT_ADMIN_PASSWORD', 'PrislabV5_2026'))
+        password = environ.get('PRISLAB_INIT_PASSWORD') or environ.get('PRISLAB_INIT_ADMIN_PASSWORD')
+        if not password:
+            raise RuntimeError(
+                "Debe configurar PRISLAB_INIT_PASSWORD o PRISLAB_INIT_ADMIN_PASSWORD "
+                "antes de provisionar el usuario admin."
+            )
         email = 'admin@prislab.com'
 
         user, created = User.objects.get_or_create(
@@ -62,7 +67,12 @@ class Command(BaseCommand):
     def crear_dra_brizia(self, empresa):
         from os import environ
         username = 'brizia.nolasco'
-        password = environ.get('PRISLAB_INIT_PASSWORD_BRIZIA', environ.get('PRISLAB_INIT_PASSWORD', 'Prislab2026!'))
+        password = environ.get('PRISLAB_INIT_PASSWORD_BRIZIA') or environ.get('PRISLAB_INIT_PASSWORD')
+        if not password:
+            raise RuntimeError(
+                "Debe configurar PRISLAB_INIT_PASSWORD_BRIZIA o PRISLAB_INIT_PASSWORD "
+                "antes de provisionar el usuario brizia.nolasco."
+            )
         cedula = '11852035'
 
         user, created = User.objects.get_or_create(

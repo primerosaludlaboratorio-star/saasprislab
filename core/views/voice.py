@@ -192,21 +192,28 @@ def verificar_webauthn(request):
     }
     """
     # Verificación biométrica real via WebAuthn pendiente de integración con librería py_webauthn.
-    # Actualmente simula verificación exitosa para no bloquear el flujo.
+    # Se bloquea explícitamente: no se acepta autenticación simulada en producción.
     
     try:
         data = json.loads(request.body)
-        command_id = data.get('command_id')
-        
-        # Simular verificación exitosa
-        # En producción, usar webauthn library
-        
+        # command_id = data.get('command_id')
+        # TODO: implementar verificación real con py_webauthn antes de habilitar.
+        logger.warning(
+            "verificar_webauthn: intento de autenticación biométrica bloqueado "
+            "(verificación real no implementada)."
+        )
         return JsonResponse({
-            'status': 'success',
-            'authenticated': True,
-            'message': 'Autenticación biométrica exitosa'
-        })
+            'status': 'error',
+            'authenticated': False,
+            'message': 'Autenticación biométrica no habilitada: verificación real no implementada'
+        }, status=403)
     
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'status': 'error',
+            'authenticated': False,
+            'message': 'JSON inválido'
+        }, status=400)
     except Exception as e:
         logger.error(f"Error en verificación WebAuthn: {e}", exc_info=True)
         return JsonResponse({

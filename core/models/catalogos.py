@@ -219,7 +219,7 @@ class Medico(models.Model):
         related_name='medicos', verbose_name="Empresa"
     )
     nombre_completo = models.CharField(max_length=255, verbose_name="Nombre del Médico")
-    cedula_profesional = models.CharField(max_length=50, unique=True, verbose_name="Cédula Profesional")
+    cedula_profesional = models.CharField(max_length=50, verbose_name="Cédula Profesional")
     especialidad = models.CharField(max_length=150, default="Médico General", verbose_name="Especialidad")
     activo = models.BooleanField(default=True, verbose_name="Activo")
     
@@ -253,6 +253,12 @@ class Medico(models.Model):
         verbose_name = "Médico"
         verbose_name_plural = "Médicos"
         ordering = ['nombre_completo']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'cedula_profesional'],
+                name='unique_empresa_cedula_medico',
+            ),
+        ]
 
     def save(self, *args, **kwargs):
         if self.nombre_completo:

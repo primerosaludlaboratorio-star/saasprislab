@@ -71,6 +71,10 @@ RUN mkdir -p /app/staticfiles /app/media /app/logs
 # ValueError: Missing staticfiles manifest entry.
 RUN USE_MANIFEST_STORAGE=1 python manage.py collectstatic --noinput
 
+# ── Crear usuario no-root y ceder propiedad de /app ──────────────────────────
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser \
+    && chown -R appuser:appgroup /app
+
 # ── Puerto ───────────────────────────────────────────────────────────────────
 EXPOSE ${PORT}
 
@@ -78,4 +82,6 @@ EXPOSE ${PORT}
 # scripts/cloudrun_web_entrypoint.sh: migrate (salvo PRISLAB_SKIP_MIGRATE_ON_STARTUP=1) + gunicorn.
 # sed quita CR (\r) si el repo se clonó en Windows — sin esto: env: 'sh\r': No such file (exit 127).
 RUN sed -i 's/\r$//' /app/scripts/cloudrun_web_entrypoint.sh && chmod +x /app/scripts/cloudrun_web_entrypoint.sh
+
+USER appuser
 CMD ["/app/scripts/cloudrun_web_entrypoint.sh"]

@@ -18,9 +18,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import ElementClickInterceptedException
 
-BASE_URL = "https://prislab-v5-811785477499.us-central1.run.app"
-USERNAME = "admin"
-PASSWORD = "PrislabV5_2026"
+BASE_URL = os.environ.get("PRISLAB_TEST_BASE_URL", "https://prislab-v5-811785477499.us-central1.run.app")
+USERNAME = os.environ.get("PRISLAB_TEST_USERNAME", "admin")
+PASSWORD = os.environ.get("PRISLAB_TEST_PASSWORD")
+if not PASSWORD:
+    raise RuntimeError("Debe configurar la variable de entorno PRISLAB_TEST_PASSWORD antes de ejecutar este test.")
 SCREENSHOT_DIR = "test_screenshots_final_verification"
 TIMEOUT = 15
 WAIT = 1.5

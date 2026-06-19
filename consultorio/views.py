@@ -171,6 +171,7 @@ def agendar_cita(request):
     if request.method == 'POST':
         try:
             paciente_id = request.POST.get('paciente_id')
+            paciente_nombre = request.POST.get('paciente_nombre', '').strip()
             medico_id = request.POST.get('medico_id')
             fecha_cita = request.POST.get('fecha_cita')
             hora_cita_str = request.POST.get('hora_cita', '').strip()
@@ -186,6 +187,7 @@ def agendar_cita(request):
                     'medicos': medicos_qs,
                     'form_data': {
                         'paciente_id': paciente_id or '',
+                        'paciente_nombre': paciente_nombre or '',
                         'medico_id': medico_id or '',
                         'fecha_cita': fecha_cita or '',
                         'hora_cita': hora_cita_str or '',
@@ -3027,10 +3029,17 @@ def agenda_medico(request):
     fecha_siguiente = fecha_actual + timedelta(days=1)
 
     # Obtener citas del día
-    citas = CitaMedica.objects.filter(
+    citas_qs = CitaMedica.objects.filter(
         empresa=empresa,
         fecha_cita=fecha_actual
-    ).select_related('paciente', 'medico').order_by('hora_cita')
+    )
+    # Si el usuario está vinculado a un médico de la empresa, mostrar solo su agenda
+    medico_vinculado = None
+    if hasattr(request.user, 'medico_profile') and getattr(request.user.medico_profile, 'empresa_id', None) == empresa.id:
+        medico_vinculado = request.user.medico_profile
+    if medico_vinculado and not request.user.is_superuser:
+        citas_qs = citas_qs.filter(medico=medico_vinculado)
+    citas = citas_qs.select_related('paciente', 'medico').order_by('hora_cita')
 
     stats = {
         'total': citas.count(),
@@ -4418,7 +4427,6 @@ def api_test_github_sentinel(request):
             'mensaje': msg,
             'config': {
                 'token_configurado': bool(GITHUB_TOKEN),
-                'token_preview': f"{GITHUB_TOKEN[:8]}..." if GITHUB_TOKEN else 'NO CONFIGURADO',
                 'repo': GITHUB_REPO or 'NO CONFIGURADO',
             }
         })

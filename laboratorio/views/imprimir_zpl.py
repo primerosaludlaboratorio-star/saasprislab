@@ -161,15 +161,18 @@ def kiosko_check_in_qr(request, qr_token: str):
         paciente = orden_ods.paciente
         folio_display = orden_ods.folio_orden or token_clean
 
-        # Marcar check-in: actualizar estado a ESPERANDO_TOMA si está en estado inicial
+        # Kiosko público: NO muta estado operativo sin autenticación ni token firmado.
+        # Solo registra el check-in en sesión para notificación a recepción.
+        # El cambio de estado a EN_PROCESO debe hacerse desde recepción autenticada.
         try:
             estados_previos_ok = {'PENDIENTE_PAGO', 'PAGADO', 'EN_ESPERA', 'PENDIENTE'}
-            if orden_ods.estado in estados_previos_ok or not orden_ods.estado:
-                orden_ods.estado = 'EN_PROCESO'
-                orden_ods.save(update_fields=['estado'])
-                logger.info('kiosko check-in: orden %s marcada EN_PROCESO', folio_display)
+            if orden_ods.estado not in estados_previos_ok and orden_ods.estado:
+                logger.warning(
+                    'kiosko check-in: orden %s en estado %s no admite check-in automático',
+                    folio_display, orden_ods.estado
+                )
         except Exception as e:
-            logger.warning('kiosko_check_in_qr: no se pudo actualizar estado: %s', e)
+            logger.warning('kiosko_check_in_qr: error verificando estado: %s', e)
 
         # Registrar timestamp de llegada en sesión (para notificación a recepción)
         request.session[f'kiosko_checkin_{folio_display}'] = timezone.now().isoformat()

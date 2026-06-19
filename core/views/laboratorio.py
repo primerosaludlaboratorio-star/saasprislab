@@ -4,6 +4,7 @@ Incluye: Recepción, búsqueda de estudios, órdenes de servicio, tickets, lista
 """
 import json
 import io
+import os
 from types import SimpleNamespace
 import base64
 import re
@@ -382,7 +383,7 @@ def crear_orden_servicio(request):
             empresa=empresa,
             usuario=request.user,
             total=total,
-            estado='PENDIENTE'
+            estado='PENDIENTE_PAGO'
         )
     for e in estudios:
         OrdenDetalle.objects.create(orden=orden, estudio=e, precio_unitario=e.precio_publico)
@@ -785,7 +786,12 @@ def imprimir_hoja_trabajo_pdf(request):
     )
     
     if departamento:
-        qs = qs.filter(detalles__analito__departamento__icontains=departamento).distinct()
+        qs = qs.filter(
+            Q(detalles__analito__departamento__icontains=departamento)
+            | Q(detalles__perfil_lims__analitos__departamento__icontains=departamento)
+            | Q(detalles__paquete_lims__analitos__departamento__icontains=departamento)
+            | Q(detalles__paquete_lims__perfiles__analitos__departamento__icontains=departamento)
+        ).distinct()
     
     # Filtro por sucursal
     if sucursal_id:
@@ -1085,7 +1091,7 @@ def imprimir_resultados_pdf(request, orden_id):
 
     # Generar QR único para esta orden con URL pública de verificación
     url_base = getattr(settings, 'SITE_URL', '') or os.environ.get('SITE_URL', 'http://localhost:8000')
-    url_verificacion = f"{url_base}/laboratorio/verificar/{orden.folio_orden or orden_id}/"
+    url_verificacion = f"{url_base}/validar/resultado/{orden.token_acceso}/"
     qr_image_base64 = generar_qr_orden(orden_id, orden.folio_orden, url_verificacion)
     
     # Integridad forense: usar snapshot de paciente en el documento (no datos actuales)

@@ -230,7 +230,7 @@
                 return;
             }
 
-            fetch(`/farmacia/buscar-venta-devolucion/?busqueda=${encodeURIComponent(busqueda)}`, {
+            fetch(`/farmacia/devoluciones/buscar/?busqueda=${encodeURIComponent(busqueda)}`, {
                 headers: {'X-Requested-With': 'XMLHttpRequest'}
             })
             .then(r => r.json())

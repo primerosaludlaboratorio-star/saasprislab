@@ -1450,25 +1450,50 @@ def historial_devoluciones(request):
     return render(request, 'core/devoluciones.html', {
         'empresa': empresa,
         'devoluciones': devoluciones,
-        'fecha_seleccionada': fecha_seleccionada.strftime('%Y-%m-%d')
+        'fecha_seleccionada_str': fecha_seleccionada.strftime('%Y-%m-%d')
     })
 
 @login_required
 def buscar_venta_devolucion(request):
     """API para buscar venta para devolución."""
-    folio = request.GET.get('folio', '')
+    busqueda = request.GET.get('busqueda', '').strip() or request.GET.get('folio', '').strip()
     empresa = _empresa_desde_request(request)
     if not empresa:
         return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}, status=403)
+    if not busqueda:
+        return JsonResponse({'status': 'error', 'mensaje': 'Proporcione un folio o término de búsqueda'}, status=400)
     try:
-        venta = Venta.objects.get(folio_operacion=folio, empresa=empresa)
+        venta = Venta.objects.select_related('paciente', 'usuario').prefetch_related('detalles__producto').get(
+            folio_operacion=busqueda, empresa=empresa
+        )
+        cliente = ''
+        if venta.paciente:
+            cliente = getattr(venta.paciente, 'nombre_completo', '') or ''
+        if not cliente and venta.paciente_nombre:
+            cliente = venta.paciente_nombre
+        if not cliente:
+            cliente = 'Público General'
+        cajero_original = getattr(venta.usuario, 'get_full_name', lambda: '')() or venta.usuario.username
+        detalles = []
+        for d in venta.detalles.all():
+            detalles.append({
+                'id': d.id,
+                'producto_id': d.producto_id,
+                'producto_nombre': getattr(d.producto, 'nombre', 'Producto desconocido'),
+                'cantidad': d.cantidad,
+                'precio_unitario': float(d.precio_unitario),
+                'subtotal': float(d.subtotal),
+            })
         return JsonResponse({
             'status': 'success',
             'venta': {
                 'id': venta.id,
                 'folio': venta.folio_operacion,
                 'total': float(venta.total),
-                'fecha': venta.fecha.strftime('%Y-%m-%d %H:%M')
+                'fecha': venta.fecha.strftime('%Y-%m-%d %H:%M'),
+                'cliente': cliente,
+                'cajero_original': cajero_original,
+                'detalles': detalles,
             }
         })
     except Venta.DoesNotExist:
@@ -1919,18 +1944,12 @@ def imprimir_etiquetas(request):
             if not lotes_ids:
                  return JsonResponse({'error': 'No se seleccionaron lotes'}, status=400)
 
-            # Lógica de generación de PDF (Simulada o Real)
-            # En un entorno real usaríamos reportlab o similar.
-            # Aquí simularemos la respuesta exitosa y la instrucción de guardado en Drive.
-            
-            # Integración Drive: la tarea Celery de sincronización (farmacia.tasks.sync_to_drive)
-            # toma el archivo del buffer local y lo sube en segundo plano (arquitectura híbrida asíncrona).
-            
+            # TODO: implementar generación real de PDF de etiquetas de productos con reportlab.
+            # Mientras tanto, no se simula éxito: se informa al frontend que la función no está disponible.
             return JsonResponse({
-                'status': 'success', 
-                'message': f'Se generaron {len(lotes_ids)} etiquetas. Guardado en Drive/REPORTES.',
-                'url_pdf': '#' # URL ficticia o real si se generara
-            })
+                'status': 'error',
+                'message': 'Generación de etiquetas de farmacia no implementada. Contacte al administrador.',
+            }, status=501)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Método no permitido'}, status=405)

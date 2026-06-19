@@ -17,10 +17,12 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, ElementClickInterceptedException
 
-BASE_URL = "https://prislab-v5-811785477499.us-central1.run.app"
-USERNAME = "admin"
-PASSWORD_PRIMARY = "PrislabV5_2026"
-PASSWORD_FALLBACK = "Admin2741"
+BASE_URL = os.environ.get("PRISLAB_TEST_BASE_URL", "https://prislab-v5-811785477499.us-central1.run.app")
+USERNAME = os.environ.get("PRISLAB_TEST_USERNAME", "admin")
+PASSWORD_PRIMARY = os.environ.get("PRISLAB_TEST_PASSWORD")
+if not PASSWORD_PRIMARY:
+    raise RuntimeError("Debe configurar la variable de entorno PRISLAB_TEST_PASSWORD antes de ejecutar este test.")
+PASSWORD_FALLBACK = os.environ.get("PRISLAB_TEST_FALLBACK_PASSWORD") or PASSWORD_PRIMARY
 SCREENSHOT_DIR = "test_screenshots_farmacia_full"
 TIMEOUT = 15
 WAIT = 1.5

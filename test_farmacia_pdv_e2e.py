@@ -16,12 +16,14 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
-BASE_URL = "https://prislab-v5-811785477499.us-central1.run.app"
+BASE_URL = os.environ.get("PRISLAB_TEST_BASE_URL", "https://prislab-v5-811785477499.us-central1.run.app")
 # Try nancy first; fallback to admin if login fails
-USERNAME = "nancy"
-PASSWORD = "Primerasalud2025*"
-FALLBACK_USER = "admin"
-FALLBACK_PASS = "PrislabV5_2026"
+USERNAME = os.environ.get("PRISLAB_TEST_USERNAME", "nancy")
+PASSWORD = os.environ.get("PRISLAB_TEST_PASSWORD")
+if not PASSWORD:
+    raise RuntimeError("Debe configurar la variable de entorno PRISLAB_TEST_PASSWORD antes de ejecutar este test.")
+FALLBACK_USER = os.environ.get("PRISLAB_TEST_FALLBACK_USERNAME", "admin")
+FALLBACK_PASS = os.environ.get("PRISLAB_TEST_FALLBACK_PASSWORD") or PASSWORD
 SCREENSHOT_DIR = "test_screenshots_farmacia"
 TIMEOUT = 15
 WAIT_AFTER_ACTION = 1.5

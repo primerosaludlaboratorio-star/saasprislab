@@ -256,9 +256,9 @@ def get_redirect_url_by_role(user):
         if user.groups.filter(name='FARMACIA').exists():
             return reverse('pdv_farmacia')
         
-        # Recepcion -> Recepcion de Laboratorio
+        # Recepcion -> Recepcion de Consultorio (agenda y check-in)
         if user.groups.filter(name='RECEPCION').exists():
-            return reverse('recepcion_lab')
+            return reverse('consultorio:tablero_recepcion')
         
         # Enfermeria -> Recepcion
         if user.groups.filter(name='ENFERMERIA').exists():

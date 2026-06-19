@@ -83,7 +83,7 @@ services:
       DJANGO_SETTINGS_MODULE: config.settings
       DEBUG: "False"
       SECRET_KEY: ${SECRET_KEY:?Debes definir SECRET_KEY en .env}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:?Debes definir ALLOWED_HOSTS en .env}
       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://prislab.example.com}
 
       # PostgreSQL

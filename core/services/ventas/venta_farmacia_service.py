@@ -2,6 +2,7 @@
 Servicio de dominio PDV Farmacia (v8.5 Fase 2): búsqueda de catálogo y cobro atómico.
 transaction.atomic vive en ejecutar_venta_pdv; las vistas solo delegan.
 """
+import json
 import logging
 import time as time_module
 import uuid as uuid_module
@@ -33,6 +34,13 @@ from core.utils.trazabilidad import registrar_trazabilidad
 logger = logging.getLogger("core.farmacia")
 logger_core = logging.getLogger("core")
 
+
+def _int_or_none(value):
+    """Convierte un valor a int si es posible; de lo contrario None."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 class VentaFarmaciaService:
@@ -777,11 +785,12 @@ class VentaFarmaciaService:
         if not venta_id:
             return {'http_status': 400, 'body': {'status': 'error', 'mensaje': 'venta_id requerido'}}
         try:
-            monto = Decimal(str(data.get('monto', 0)))
+            monto = Decimal(str(data.get('monto_reembolsado') or data.get('monto', 0)))
         except (InvalidOperation, TypeError, ValueError):
             monto = Decimal('0')
-        tipo = data.get('tipo', 'TOTAL')
-        motivo = data.get('motivo', '')
+        tipo = data.get('tipo_devolucion') or data.get('tipo', 'TOTAL')
+        motivo = data.get('motivo_error') or data.get('motivo', '')
+        accion_stock = data.get('accion_stock') or 'RETORNO_ALMACEN'
         try:
             venta = Venta.objects.get(id=venta_id, empresa=empresa)
         except Venta.DoesNotExist:
@@ -796,6 +805,26 @@ class VentaFarmaciaService:
                     'mensaje': f'Monto excede el total de la venta (${venta.total})',
                 },
             }
+        productos = data.get('productos') or []
+        if isinstance(productos, str):
+            try:
+                productos = json.loads(productos)
+            except (json.JSONDecodeError, TypeError):
+                productos = []
+        detalle_ids_venta = set(venta.detalles.values_list('id', flat=True))
+        productos_validados = []
+        for p in productos:
+            detalle_id = _int_or_none(p.get('detalle_id')) or _int_or_none(p.get('id'))
+            if detalle_id and detalle_id in detalle_ids_venta:
+                productos_validados.append({
+                    'detalle_id': detalle_id,
+                    'cantidad': p.get('cantidad', 1),
+                    'motivo': p.get('motivo', '') or motivo,
+                })
+        observaciones = data.get('observaciones', '')
+        if productos_validados:
+            observaciones_json = json.dumps({'productos_devueltos': productos_validados}, ensure_ascii=False)
+            observaciones = f"{observaciones}\n\nDetalle de productos:\n{observaciones_json}".strip()
         try:
             from core.services.audit_service import registrar_auditoria
             with transaction.atomic():
@@ -807,7 +836,8 @@ class VentaFarmaciaService:
                     motivo_error=motivo,
                     usuario_error_origen=request.user,
                     usuario_autorizo=request.user,
-                    accion_stock='RETORNO_ALMACEN',
+                    accion_stock=accion_stock,
+                    observaciones=observaciones or None,
                 )
                 registrar_auditoria(
                     accion='CREATE',

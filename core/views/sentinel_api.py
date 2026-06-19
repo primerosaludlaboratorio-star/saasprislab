@@ -28,7 +28,7 @@ def _sentinel_remote_token_valid(admin_token):
     """
     Token fuerte para operaciones Sentinel remotas (cloud obligatorio).
     Acepta PRISLAB_SENTINEL_RESET_TOKEN o, si no existe, PRISLAB_SENTINEL_DIAGNOSTIC_TOKEN.
-    En desarrollo local permite prefijo débil de SECRET_KEY (solo compatibilidad).
+    NO usa SECRET_KEY como fallback en ningún entorno.
     """
     import os
 
@@ -38,12 +38,9 @@ def _sentinel_remote_token_valid(admin_token):
         (os.environ.get('PRISLAB_SENTINEL_RESET_TOKEN') or '').strip()
         or (os.environ.get('PRISLAB_SENTINEL_DIAGNOSTIC_TOKEN') or '').strip()
     )
-    if ops:
-        return admin_token == ops
-    if _is_cloud_runtime():
+    if not ops:
         return False
-    legacy = (os.environ.get('SECRET_KEY', '') or 'x')[:16]
-    return admin_token == legacy
+    return admin_token == ops
 
 
 @csrf_exempt
@@ -77,34 +74,33 @@ def api_shield_telemetry(request):
 
 
 @csrf_exempt
-@require_http_methods(["POST", "GET"])
+@require_POST
 def api_sentinel_reset(request):
     """
     Reset del dashboard de Sentinel: marca todas las incidencias como SOLUCIONADO
     o las elimina. Accesible por superusuarios o con token de operaciones.
 
-    GET/POST params:
+    POST params:
         action: 'resolve' (default) o 'delete'
-        admin_token: en cloud → PRISLAB_SENTINEL_RESET_TOKEN (o PRISLAB_SENTINEL_DIAGNOSTIC_TOKEN);
-                     en local puede usarse el prefijo legacy de SECRET_KEY si no hay token configurado.
+    Header:
+        X-Admin-Token: PRISLAB_SENTINEL_RESET_TOKEN (o PRISLAB_SENTINEL_DIAGNOSTIC_TOKEN)
     """
-    admin_token = request.GET.get('admin_token', request.POST.get('admin_token', ''))
+    admin_token = request.headers.get('X-Admin-Token', request.POST.get('admin_token', ''))
 
     is_superuser = hasattr(request, 'user') and request.user.is_authenticated and request.user.is_superuser
     is_token_valid = _sentinel_remote_token_valid(admin_token)
 
     if not is_superuser and not is_token_valid:
-        if _is_cloud_runtime():
-            logger.warning(
-                'api_sentinel_reset: acceso denegado (use PRISLAB_SENTINEL_RESET_TOKEN o superusuario)'
-            )
+        logger.warning(
+            'api_sentinel_reset: acceso denegado (use PRISLAB_SENTINEL_RESET_TOKEN o superusuario)'
+        )
         return JsonResponse({'status': 'error', 'mensaje': 'Acceso denegado'}, status=403)
 
     try:
         from consultorio.models import IncidenciaSentinel
         from django.utils import timezone
 
-        action = request.GET.get('action', request.POST.get('action', 'resolve'))
+        action = request.POST.get('action', 'resolve')
         total = IncidenciaSentinel.objects.count()
         pendientes = IncidenciaSentinel.objects.exclude(estado='SOLUCIONADO').count()
 
@@ -139,30 +135,24 @@ def api_sentinel_reset(request):
 
 
 @csrf_exempt
-@require_http_methods(["GET"])
+@require_POST
 def api_sentinel_diagnostico(request):
     """Diagnostico rapido del estado del sistema. Requiere admin_token."""
     import os
 
-    _is_cloud = _is_cloud_runtime()
-    admin_token = request.GET.get('admin_token', '')
+    admin_token = request.headers.get('X-Admin-Token', request.POST.get('admin_token', ''))
     diag_secret = (os.environ.get('PRISLAB_SENTINEL_DIAGNOSTIC_TOKEN') or '').strip()
-    if diag_secret:
-        expected_token = diag_secret
-    elif _is_cloud:
-        logger.warning('api_sentinel_diagnostico rechazado: falta PRISLAB_SENTINEL_DIAGNOSTIC_TOKEN en cloud')
+    if not diag_secret:
+        logger.warning('api_sentinel_diagnostico rechazado: falta PRISLAB_SENTINEL_DIAGNOSTIC_TOKEN')
         return JsonResponse(
             {
                 'status': 'error',
-                'mensaje': 'Configure PRISLAB_SENTINEL_DIAGNOSTIC_TOKEN (no usar prefijo de SECRET_KEY en producción).',
+                'mensaje': 'Configure PRISLAB_SENTINEL_DIAGNOSTIC_TOKEN.',
             },
             status=503,
         )
-    else:
-        # Solo desarrollo local: compatibilidad legacy (débil); migrar a PRISLAB_SENTINEL_DIAGNOSTIC_TOKEN
-        expected_token = (os.environ.get('SECRET_KEY', '') or 'x')[:16]
 
-    if admin_token != expected_token:
+    if admin_token != diag_secret:
         return JsonResponse({'status': 'error', 'mensaje': 'Token invalido'}, status=403)
 
     try:

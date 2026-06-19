@@ -471,4 +471,5 @@ class ConsultorioAudioSecurityTests(TestCase):
         response = procesar_audio_laboratorio(request)
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn('No se encontraron parámetros', response.content.decode())
+        data = json.loads(response.content.decode())
+        self.assertIn('No se encontraron parámetros', data.get('error', ''))

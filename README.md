@@ -233,22 +233,33 @@ Flujo recomendado:
 
 ## 🔐 Credenciales de Acceso
 
-### Superusuario (Admin)
-```
-Usuario: admin
-Contraseña: PrislabV5_2026
+Las credenciales no se documentan en este archivo por seguridad.
+Configura las contraseñas iniciales mediante variables de entorno antes de ejecutar el provisionamiento:
+
+```bash
+export PRISLAB_INIT_ADMIN_PASSWORD="tu_password_seguro_para_admin"
+export PRISLAB_INIT_PASSWORD="tu_password_seguro_para_equipo"
+export PRISLAB_INIT_PASSWORD_BRIZIA="tu_password_seguro_para_brizia"
 ```
 
-### Equipo Prislab (7 usuarios)
-| Usuario | Nombre | Rol | Contraseña |
-|---------|--------|-----|------------|
-| jonathan | Jonathan Alonso | CEO/Super Admin | Prislab2024$ |
-| nancy | Nancy | Gerente General | Prislab2024$ |
-| gabriela | Gabriela | Q.C. Laboratorio | Prislab2024$ |
-| janette | Janette | Recepcionista | Prislab2024$ |
-| tania | Tania | Recepcionista | Prislab2024$ |
-| deyaneira | Deyaneira | Auxiliar Lab | Prislab2024$ |
-| brizia.nolasco | Brizia Nolasco | Médico | Prislab2024$ |
+Luego ejecuta:
+
+```bash
+python scripts/run_manage_with_env.py provision_usuarios_base
+```
+
+Para sincronizar usuarios de auditoría en producción, usa:
+
+```bash
+python scripts/run_manage_with_env.py sync_usuarios_auditoria \
+  --empresa-id 1 \
+  --admin-password 'CAMBIAR' \
+  --jonathan-password 'CAMBIAR' \
+  --olga-password 'CAMBIAR' \
+  --admin-director-password 'CAMBIAR'
+```
+
+Nunca subas contraseñas reales a GitHub.
 
 ---
 

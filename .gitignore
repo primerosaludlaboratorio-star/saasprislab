@@ -152,6 +152,13 @@ e2e_verify_*.txt
 reporte_*.json
 v2_report.json
 e2e_360_reporte.json
+test_output*.txt
+test_boost*.txt
+
+# Artefactos manuales / deploy temporales
+prislab_deploy_payload.zip
+temp_create_admin_remote.py
+screenshots_e2e/
 
 # HTML de inspeccion temporales
 inspeccion_*.html

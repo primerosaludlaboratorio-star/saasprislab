@@ -22,7 +22,7 @@
                 <div class="mb-3">
                     <label class="form-label fw-bold">Paciente *</label>
                     <div class="position-relative">
-                        <input type="text" id="paciente-search" class="form-control"
+                        <input type="text" id="paciente-search" name="paciente_nombre" class="form-control"
                                placeholder="Buscar por nombre, teléfono o folio..."
                                autocomplete="off"
                                value="{{ form_data.paciente_nombre|default:'' }}">
@@ -35,12 +35,16 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="medico_id" class="form-label fw-bold">Médico *</label>
-                    <select name="medico_id" id="medico_id" class="form-select" required>
+                    <label for="medico_id" class="form-label fw-bold">Médico</label>
+                    <select name="medico_id" id="medico_id" class="form-select" {% if medicos %}required{% endif %}>
+                        {% if medicos %}
                         <option value="">— Seleccionar médico —</option>
                         {% for m in medicos %}
                         <option value="{{ m.id }}" {% if form_data.medico_id == m.id|stringformat:"d" %}selected{% endif %}>Dr(a). {{ m.nombre_completo }} — {{ m.especialidad|default:"General" }}</option>
                         {% endfor %}
+                        {% else %}
+                        <option value="">No hay médicos configurados; se creará uno automáticamente</option>
+                        {% endif %}
                     </select>
                 </div>
 
