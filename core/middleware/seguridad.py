@@ -14,7 +14,7 @@ usuario, timestamp, IP, sección y tipo de acción.
 import logging
 import re
 import threading
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.contrib.auth import logout
@@ -76,7 +76,7 @@ class SessionTimeoutMiddleware:
             return
 
         try:
-            last_activity = timezone.datetime.fromisoformat(last_activity_str)
+            last_activity = datetime.fromisoformat(last_activity_str)
             if timezone.is_naive(last_activity):
                 last_activity = timezone.make_aware(last_activity)
 
@@ -268,7 +268,7 @@ class LogAccesoExpedienteMiddleware:
 
 
 def _get_client_ip(request) -> str:
-    """Extrae IP real del cliente considerando proxies (Cloud Run/NGINX)."""
+    """Extrae IP real del cliente considerando proxies (Nginx / reverse proxy)."""
     forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
     if forwarded:
         return forwarded.split(',')[0].strip()

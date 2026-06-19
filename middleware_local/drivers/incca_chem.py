@@ -10,12 +10,12 @@ Características:
 - Decodificación de tramas estándar
 """
 
-import serial
-import serial.tools.list_ports
 import threading
 import logging
 from typing import Optional, Callable, Dict, Any
 import time
+
+from .serial_compat import serial
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +169,7 @@ class InCCAChemDriver:
     
     def _procesar_buffer(self):
         """Procesa el buffer de datos buscando tramas ASTM 1394 completas."""
-        while self.running:
+        while True:
             # Buscar STX (Start of Text)
             stx_pos = self.buffer.find(self.STX)
             if stx_pos == -1:
@@ -220,10 +220,10 @@ class InCCAChemDriver:
             # Checksum son los últimos 2 bytes (ASCII hexadecimal)
             checksum_recibido = trama[-2:].decode('ascii')
             
-            # Calcular checksum de los datos entre STX y ETX (excluyendo STX y ETX)
-            datos = trama[1:-3]  # Entre STX y ETX
-            suma = sum(datos) & 0xFFFF
-            checksum_calculado = f"{suma:04X}"
+            # ASTM suma desde el primer byte tras STX hasta ETX incluido.
+            datos = trama[1:-2]
+            suma = sum(datos) & 0xFF
+            checksum_calculado = f"{suma:02X}"
             
             return checksum_recibido == checksum_calculado
             
@@ -317,5 +317,32 @@ class InCCAChemDriver:
     
     def procesar(self):
         """Procesa datos pendientes (método llamado en loop principal)."""
-        # El procesamiento se hace en el hilo de lectura
-        pass
+        if self.thread and self.thread.is_alive():
+            return {
+                'modo': 'hilo_serial',
+                'conectado': bool(self.serial_port and self.serial_port.is_open),
+                'buffer_pendiente': len(self.buffer),
+            }
+
+        bytes_leidos = 0
+        try:
+            if self.serial_port and self.serial_port.is_open:
+                disponibles = int(getattr(self.serial_port, 'in_waiting', 0) or 0)
+                if disponibles > 0:
+                    data = self.serial_port.read(disponibles)
+                    if data:
+                        self.buffer += data
+                        bytes_leidos = len(data)
+
+            if self.buffer:
+                self._procesar_buffer()
+
+            return {
+                'modo': 'loop_serial',
+                'conectado': bool(self.serial_port and self.serial_port.is_open),
+                'bytes_leidos': bytes_leidos,
+                'buffer_pendiente': len(self.buffer),
+            }
+        except serial.SerialException as e:
+            logger.error(f"Error de lectura serial en {self.nombre}: {e}")
+            raise

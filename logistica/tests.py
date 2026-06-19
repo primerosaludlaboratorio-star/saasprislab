@@ -1,16 +1,20 @@
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.utils import timezone
 
 Usuario = get_user_model()
 
 try:
-    from core.models import Empresa
+    from core.models import Empresa, Sucursal
 except ImportError:
     Empresa = None
+    Sucursal = None
 
 try:
-    from logistica.models import TransferenciaSucursal, RutaRecoleccion, VisitaDomiciliaria
+    from logistica.models import TransferenciaInventario, RutaRecoleccion, VisitaDomicilio
+    TransferenciaSucursal = TransferenciaInventario
+    VisitaDomiciliaria = VisitaDomicilio
 except ImportError:
     TransferenciaSucursal = None
     RutaRecoleccion = None
@@ -35,6 +39,18 @@ class LogisticaModelsTest(TestCase):
             password='test123',
             empresa=self.empresa
         )
+
+        if Sucursal is not None:
+            self.sucursal_origen = Sucursal.objects.create(
+                empresa=self.empresa,
+                nombre='Sucursal Origen',
+                codigo_sucursal='LOG-ORIGEN',
+            )
+            self.sucursal_destino = Sucursal.objects.create(
+                empresa=self.empresa,
+                nombre='Sucursal Destino',
+                codigo_sucursal='LOG-DESTINO',
+            )
         
         self.client = Client()
     
@@ -44,9 +60,11 @@ class LogisticaModelsTest(TestCase):
             self.skipTest("TransferenciaSucursal model not available")
         
         try:
-            # Try to create with minimal required fields
             transferencia = TransferenciaSucursal.objects.create(
-                empresa=self.empresa
+                empresa=self.empresa,
+                sucursal_origen=self.sucursal_origen,
+                sucursal_destino=self.sucursal_destino,
+                solicitado_por=self.usuario,
             )
             self.assertIsNotNone(transferencia)
             self.assertEqual(transferencia.empresa, self.empresa)
@@ -60,9 +78,10 @@ class LogisticaModelsTest(TestCase):
             self.skipTest("RutaRecoleccion model not available")
         
         try:
-            # Try to create with minimal required fields
             ruta = RutaRecoleccion.objects.create(
-                empresa=self.empresa
+                empresa=self.empresa,
+                chofer='Operador de ruta',
+                hora_salida=timezone.now(),
             )
             self.assertIsNotNone(ruta)
             self.assertEqual(ruta.empresa, self.empresa)
@@ -76,9 +95,9 @@ class LogisticaModelsTest(TestCase):
             self.skipTest("VisitaDomiciliaria model not available")
         
         try:
-            # Try to create with minimal required fields
             visita = VisitaDomiciliaria.objects.create(
-                empresa=self.empresa
+                empresa=self.empresa,
+                direccion='Av. Prueba 123',
             )
             self.assertIsNotNone(visita)
             self.assertEqual(visita.empresa, self.empresa)
@@ -116,3 +135,23 @@ class LogisticaModelsTest(TestCase):
         
         # Test that at least one view returns a valid response
         self.assertGreater(len(accessible_views), 0)
+
+    def test_monitor_rutas_alias_renderiza_mapa(self):
+        """El alias principal de logística debe cargar el monitor real, sin 500."""
+        self.client.login(username='testuser', password='test123')
+
+        response = self.client.get(reverse('logistica:monitor_rutas'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('rutas', response.context)
+        self.assertIn('visitas', response.context)
+
+    def test_core_rutas_recoleccion_renderiza_dashboard(self):
+        """El alias core de rutas de recolección debe responder con el dashboard operativo."""
+        self.client.login(username='testuser', password='test123')
+
+        response = self.client.get(reverse('rutas_recoleccion'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('ordenes', response.context)
+        self.assertIn('ordenes_con_geo', response.context)

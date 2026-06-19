@@ -9,7 +9,8 @@ Sin migraciones nuevas. Caché en memoria por 5 minutos.
 from __future__ import annotations
 import logging
 import threading
-from datetime import datetime, timedelta
+from datetime import timedelta
+from django.utils import timezone
 from typing import Any
 
 logger = logging.getLogger('core.feature_flags')
@@ -270,11 +271,11 @@ def _get_flags(empresa_id: int | None) -> dict[str, bool]:
     with _cache_lock:
         entry = _cache.get(key)
         if entry:
-            if datetime.utcnow() - entry['_ts'] < timedelta(seconds=_CACHE_TTL_SECONDS):
+            if timezone.now() - entry['_ts'] < timedelta(seconds=_CACHE_TTL_SECONDS):
                 return {k: v for k, v in entry.items() if k != '_ts'}
     flags = _load_from_db(empresa_id)
     with _cache_lock:
-        _cache[key] = {**flags, '_ts': datetime.utcnow()}
+        _cache[key] = {**flags, '_ts': timezone.now()}
     return flags
 
 

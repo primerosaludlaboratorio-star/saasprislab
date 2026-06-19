@@ -6,7 +6,7 @@ Comando: python manage.py backup_db_drive
 Genera un dump comprimido de PostgreSQL y lo sube automáticamente a Google Drive
 en la carpeta:  PRISLAB_Media/backups/YYYY/MM/YYYYMMDD_HHMMSS_prislab.sql.gz
 
-Diseñado para ejecutarse desde Cloud Scheduler (CRON diario) o manualmente.
+Diseñado para ejecutarse desde cron diario o manualmente.
 Registra el evento en core.BackupRegistro para trazabilidad.
 
 Uso:
@@ -29,7 +29,7 @@ logger = logging.getLogger('core.backup')
 
 
 class Command(BaseCommand):
-    help = 'Backup de PostgreSQL a Google Drive. Ejecutar con Cloud Scheduler diariamente.'
+    help = 'Backup de PostgreSQL a Google Drive. Ejecutar con cron diariamente.'
 
     def add_arguments(self, parser):
         parser.add_argument(

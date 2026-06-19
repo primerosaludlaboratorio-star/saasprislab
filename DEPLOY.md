@@ -1,5 +1,7 @@
 # Guía de Despliegue en Vultr VPS
 
+> **Nota:** esta es la guía canónica actual para VPS. Los documentos de Cloud Run, Railway y Nixpacks quedan solo como histórico.
+
 ## Objetivo
 
 Dejar PRISLAB corriendo en una VPS limpia con:
@@ -18,8 +20,8 @@ Producción actual:
 ## Prerrequisitos
 
 1. Tener acceso root a la VPS
-2. Tener el repositorio clonado en el servidor
-3. Contar con un archivo `.env` de producción
+2. Tener el repositorio clonado en `/opt/prislab/app`
+3. Contar con un archivo `.env` de producción en `/opt/prislab/app/.env`
 4. Tener un dominio apuntando a la IP de la VPS para activar SSL
 
 ## Flujo recomendado
@@ -51,6 +53,7 @@ sudo -u postgres psql -c "ALTER USER prislab_user WITH PASSWORD 'cambia-esta-cla
 ### 4. Configurar entorno Python
 
 ```bash
+cd /opt/prislab/app
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
@@ -74,43 +77,71 @@ Variables mínimas:
 ### 6. Migraciones y estáticos
 
 ```bash
-python manage.py migrate --noinput
-python manage.py collectstatic --noinput
+python scripts/run_manage_with_env.py migrate --noinput
+python scripts/run_manage_with_env.py collectstatic --noinput
 ```
 
-### 7. Levantar Gunicorn
+Importante:
+
+- en esta VPS no debe usarse `source .env` para tareas operativas, porque `SECRET_KEY` y otras variables pueden contener caracteres especiales válidos para `systemd` pero no para `bash`
+- para cualquier comando manual de producción usar `python scripts/run_manage_with_env.py ...`
+- esto evita caer por error en una configuración parcial y terminar trabajando contra `sqlite` local en vez de PostgreSQL productivo
+
+### 7. Configurar Nginx, servicios y SSL
+
+Usar los scripts del repo:
 
 ```bash
-gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 2 --threads 4 --timeout 120
+sudo bash /opt/prislab/app/scripts/deploy_vps.sh
 ```
 
-### 8. Configurar Nginx
-
-Crear un server block que:
-- sirva `static/` y `staticfiles/`
-- haga reverse proxy a `127.0.0.1:8000`
-- fuerce HTTPS después de emitir el certificado
-
-### 9. Emitir SSL
+Para aplicar fixes y reiniciar servicios después de un pull:
 
 ```bash
-certbot --nginx -d labcorecloud.com -d prislab.labcorecloud.com
+sudo bash /opt/prislab/app/scripts/aplicar_fixes_produccion.sh
 ```
 
-### 10. Activar wildcard cuando tengas el token DNS de Cloudflare
+Si necesitas sincronizar usuarios de auditoría directamente en la base real de producción:
 
 ```bash
-CF_API_TOKEN="tu-token-cloudflare" bash /opt/prislab/scripts/activar_wildcard_ssl.sh
+cd /opt/prislab/app
+.venv/bin/python scripts/run_manage_with_env.py sync_usuarios_auditoria \
+  --empresa-id 1 \
+  --admin-password 'CAMBIAR' \
+  --jonathan-password 'CAMBIAR' \
+  --olga-password 'CAMBIAR' \
+  --admin-director-password 'CAMBIAR'
 ```
 
-Este paso deja listo `*.labcorecloud.com` para futuros subdominios cuando el token tenga acceso a la zona DNS.
+Si ya existe el dominio y solo quieres el certificado wildcard:
+
+```bash
+CF_API_TOKEN="tu-token-cloudflare" bash /opt/prislab/app/scripts/activar_wildcard_ssl.sh
+```
+
+Renovación manual del wildcard, si hiciera falta:
+
+```bash
+sudo certbot renew --dry-run
+sudo systemctl reload nginx
+```
+
+El certificado wildcard actual usa `labcorecloud-wildcard` y cubre:
+
+- `labcorecloud.com`
+- `*.labcorecloud.com`
+
+Servicios reales:
+- `prislab-gunicorn`
+- `prislab-celery`
+- `prislab-celerybeat`
 
 ## Arranque automático recomendado
 
 Usar `systemd` para:
-- iniciar Gunicorn al arrancar el servidor
+- iniciar Gunicorn, Celery y Celery Beat al arrancar el servidor
 - reiniciar en fallos
-- mantener logs en `journalctl`
+ - mantener logs en `journalctl`
 
 ## Integraciones Google que sí se conservan
 
@@ -123,4 +154,4 @@ Usar `systemd` para:
 2. Confirmar login
 3. Confirmar acceso a farmacia, laboratorio y consultorio
 4. Probar carga de archivo a Drive
-5. Validar que `nginx`, `postgresql`, `redis-server`, `gunicorn` y `celery` estén activos
+5. Validar que `nginx`, `postgresql`, `redis-server`, `prislab-gunicorn`, `prislab-celery` y `prislab-celerybeat` estén activos

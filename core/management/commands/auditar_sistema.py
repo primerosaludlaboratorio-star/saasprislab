@@ -157,16 +157,19 @@ class Command(BaseCommand):
         
         dependencias_requeridas = [
             'Django', 'qrcode', 'reportlab', 'cryptography', 'pillow',
-            'pandas', 'openpyxl', 'selenium', 'psycopg2-binary'
+            'pandas', 'openpyxl', 'selenium', 'psycopg[binary]'
         ]
         
         dependencias = {}
         
         for dep in dependencias_requeridas:
             try:
-                if dep == 'psycopg2-binary':
-                    import psycopg2
-                    version = psycopg2.__version__
+                if dep == 'psycopg[binary]':
+                    try:
+                        import psycopg as pg_driver
+                    except ImportError:
+                        import psycopg2 as pg_driver
+                    version = getattr(pg_driver, '__version__', 'N/A')
                     dependencias[dep] = {'instalada': True, 'version': version}
                 elif dep == 'pillow':
                     # Pillow se importa como PIL, no como "pillow"

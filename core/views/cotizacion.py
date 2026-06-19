@@ -135,8 +135,10 @@ def api_buscar_estudios_cotizacion(request):
         except Exception:
             estudios = []
 
+        # PerfilLaboratorio no tiene FK a empresa en el modelo actual.
+        # Filtrar por `empresa` aquí dispara FieldError y rompe la cotización.
         perfiles = PerfilLaboratorio.objects.filter(
-            empresa=empresa,
+            activo=True,
             nombre__icontains=query
         )[:10]
 
@@ -161,7 +163,7 @@ def api_buscar_estudios_cotizacion(request):
             'id': p.id,
             'nombre': p.nombre,
             'tipo': 'perfil',
-            'precio': float(p.precio),
+            'precio': float(getattr(p, 'precio', 0) or 0),
             'descripcion': p.descripcion or '',
             'pruebas_incluidas': p.pruebas.count()
         } for p in perfiles]

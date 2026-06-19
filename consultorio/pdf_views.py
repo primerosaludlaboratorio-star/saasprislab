@@ -5,6 +5,7 @@ Sistema de generación de PDFs con dos enfoques:
 2. PDF FORENSE: Expediente completo con trazabilidad
 """
 from datetime import datetime
+from django.utils import timezone
 from io import BytesIO
 
 from django.http import HttpResponse
@@ -271,7 +272,7 @@ def imprimir_receta_paciente(request, consulta_id):
     # ========== PIE DE PÁGINA ==========
     elements.append(Spacer(1, 0.5*cm))
     elements.append(Paragraph(
-        f'<font size="7" color="grey">Impreso el {datetime.now().strftime("%d/%m/%Y %H:%M")} | {consulta.folio_consulta}</font>',
+        f'<font size="7" color="grey">Impreso el {timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M")} | {consulta.folio_consulta}</font>',
         ParagraphStyle('footer', parent=style_normal, alignment=TA_CENTER, fontSize=7, textColor=colors.grey)
     ))
     
@@ -529,12 +530,12 @@ def imprimir_expediente_forense(request, consulta_id):
     except Exception:
         pass
     
-    elements.append(Paragraph(f"<b>Documento generado:</b> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", style_normal))
+    elements.append(Paragraph(f"<b>Documento generado:</b> {timezone.localtime(timezone.now()).strftime('%d/%m/%Y %H:%M:%S')}", style_normal))
     elements.append(Paragraph(f"<b>Generado por:</b> {request.user.get_full_name()}", style_normal))
     
     # Hash de integridad del documento
     import hashlib
-    hash_doc = hashlib.sha256(f"{consulta.id}{consulta.folio_consulta}{datetime.now()}".encode()).hexdigest()
+    hash_doc = hashlib.sha256(f"{consulta.id}{consulta.folio_consulta}{timezone.localtime(timezone.now())}".encode()).hexdigest()
     elements.append(Paragraph(f"<b>Hash del documento:</b> <font face='Courier' size='6'>{hash_doc}</font>", style_codigo))
     
     # Construir PDF

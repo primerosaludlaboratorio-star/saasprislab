@@ -3,6 +3,7 @@ from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.test import TestCase
 
 from core.models import Empresa, OrdenDeServicio, Paciente, ResultadoParametro

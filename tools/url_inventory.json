@@ -1,15 +1,23 @@
 {
   "protocol": "PRISLAB_URL_INVENTORY",
-  "timestamp": "2026-04-02T03:54:18.784175Z",
+  "timestamp": "2026-05-08T19:03:57.971617Z",
   "ok": true,
   "settings": {
     "root_urlconf": "config.urls",
-    "installed_apps_count": 27
+    "installed_apps_count": 29
   },
-  "count": 1732,
+  "count": 1812,
   "items": [
     {
       "path": "/favicon.ico",
+      "name": null,
+      "view": "django.views.generic.base.view",
+      "lookup_str": "django.views.generic.base.RedirectView",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/media/logos/LOGO_PRISLAB.png",
       "name": null,
       "view": "django.views.generic.base.view",
       "lookup_str": "django.views.generic.base.RedirectView",
@@ -569,102 +577,6 @@
       "kind": "ui"
     },
     {
-      "path": "/admin/core/seccionlaboratorio/",
-      "name": "core_seccionlaboratorio_changelist",
-      "view": "django.contrib.admin.options.changelist_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/seccionlaboratorio/add/",
-      "name": "core_seccionlaboratorio_add",
-      "view": "django.contrib.admin.options.add_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/seccionlaboratorio/<path:object_id>/history/",
-      "name": "core_seccionlaboratorio_history",
-      "view": "django.contrib.admin.options.history_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/seccionlaboratorio/<path:object_id>/delete/",
-      "name": "core_seccionlaboratorio_delete",
-      "view": "django.contrib.admin.options.delete_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/seccionlaboratorio/<path:object_id>/change/",
-      "name": "core_seccionlaboratorio_change",
-      "view": "django.contrib.admin.options.change_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/seccionlaboratorio/<path:object_id>/",
-      "name": null,
-      "view": "django.views.generic.base.view",
-      "lookup_str": "django.views.generic.base.RedirectView",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/estudio/",
-      "name": "core_estudio_changelist",
-      "view": "django.contrib.admin.options.changelist_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/estudio/add/",
-      "name": "core_estudio_add",
-      "view": "django.contrib.admin.options.add_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/estudio/<path:object_id>/history/",
-      "name": "core_estudio_history",
-      "view": "django.contrib.admin.options.history_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/estudio/<path:object_id>/delete/",
-      "name": "core_estudio_delete",
-      "view": "django.contrib.admin.options.delete_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/estudio/<path:object_id>/change/",
-      "name": "core_estudio_change",
-      "view": "django.contrib.admin.options.change_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/estudio/<path:object_id>/",
-      "name": null,
-      "view": "django.views.generic.base.view",
-      "lookup_str": "django.views.generic.base.RedirectView",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
       "path": "/admin/core/ordendeservicio/",
       "name": "core_ordendeservicio_changelist",
       "view": "django.contrib.admin.options.changelist_view",
@@ -1138,102 +1050,6 @@
     },
     {
       "path": "/admin/core/configuracionmodulos/<path:object_id>/",
-      "name": null,
-      "view": "django.views.generic.base.view",
-      "lookup_str": "django.views.generic.base.RedirectView",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/parametro/",
-      "name": "core_parametro_changelist",
-      "view": "django.contrib.admin.options.changelist_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/parametro/add/",
-      "name": "core_parametro_add",
-      "view": "django.contrib.admin.options.add_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/parametro/<path:object_id>/history/",
-      "name": "core_parametro_history",
-      "view": "django.contrib.admin.options.history_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/parametro/<path:object_id>/delete/",
-      "name": "core_parametro_delete",
-      "view": "django.contrib.admin.options.delete_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/parametro/<path:object_id>/change/",
-      "name": "core_parametro_change",
-      "view": "django.contrib.admin.options.change_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/parametro/<path:object_id>/",
-      "name": null,
-      "view": "django.views.generic.base.view",
-      "lookup_str": "django.views.generic.base.RedirectView",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/rangoreferencia/",
-      "name": "core_rangoreferencia_changelist",
-      "view": "django.contrib.admin.options.changelist_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/rangoreferencia/add/",
-      "name": "core_rangoreferencia_add",
-      "view": "django.contrib.admin.options.add_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/rangoreferencia/<path:object_id>/history/",
-      "name": "core_rangoreferencia_history",
-      "view": "django.contrib.admin.options.history_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/rangoreferencia/<path:object_id>/delete/",
-      "name": "core_rangoreferencia_delete",
-      "view": "django.contrib.admin.options.delete_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/rangoreferencia/<path:object_id>/change/",
-      "name": "core_rangoreferencia_change",
-      "view": "django.contrib.admin.options.change_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/core/rangoreferencia/<path:object_id>/",
       "name": null,
       "view": "django.views.generic.base.view",
       "lookup_str": "django.views.generic.base.RedirectView",
@@ -2482,6 +2298,54 @@
     },
     {
       "path": "/admin/core/auditlog/<path:object_id>/",
+      "name": null,
+      "view": "django.views.generic.base.view",
+      "lookup_str": "django.views.generic.base.RedirectView",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/core/forenseacceso/",
+      "name": "core_forenseacceso_changelist",
+      "view": "django.contrib.admin.options.changelist_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/core/forenseacceso/add/",
+      "name": "core_forenseacceso_add",
+      "view": "django.contrib.admin.options.add_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/core/forenseacceso/<path:object_id>/history/",
+      "name": "core_forenseacceso_history",
+      "view": "django.contrib.admin.options.history_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/core/forenseacceso/<path:object_id>/delete/",
+      "name": "core_forenseacceso_delete",
+      "view": "django.contrib.admin.options.delete_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/core/forenseacceso/<path:object_id>/change/",
+      "name": "core_forenseacceso_change",
+      "view": "django.contrib.admin.options.change_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/core/forenseacceso/<path:object_id>/",
       "name": null,
       "view": "django.views.generic.base.view",
       "lookup_str": "django.views.generic.base.RedirectView",
@@ -3977,54 +3841,6 @@
       "kind": "ui"
     },
     {
-      "path": "/admin/pacientes/paciente/",
-      "name": "pacientes_paciente_changelist",
-      "view": "django.contrib.admin.options.changelist_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/pacientes/paciente/add/",
-      "name": "pacientes_paciente_add",
-      "view": "django.contrib.admin.options.add_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/pacientes/paciente/<path:object_id>/history/",
-      "name": "pacientes_paciente_history",
-      "view": "django.contrib.admin.options.history_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/pacientes/paciente/<path:object_id>/delete/",
-      "name": "pacientes_paciente_delete",
-      "view": "django.contrib.admin.options.delete_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/pacientes/paciente/<path:object_id>/change/",
-      "name": "pacientes_paciente_change",
-      "view": "django.contrib.admin.options.change_view",
-      "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
-      "path": "/admin/pacientes/paciente/<path:object_id>/",
-      "name": null,
-      "view": "django.views.generic.base.view",
-      "lookup_str": "django.views.generic.base.RedirectView",
-      "default_args": {},
-      "kind": "ui"
-    },
-    {
       "path": "/admin/pacientes/usuariopaciente/",
       "name": "pacientes_usuariopaciente_changelist",
       "view": "django.contrib.admin.options.changelist_view",
@@ -4841,6 +4657,54 @@
       "kind": "ui"
     },
     {
+      "path": "/admin/laboratorio/resultadohl7huerfano/",
+      "name": "laboratorio_resultadohl7huerfano_changelist",
+      "view": "django.contrib.admin.options.changelist_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/laboratorio/resultadohl7huerfano/add/",
+      "name": "laboratorio_resultadohl7huerfano_add",
+      "view": "django.contrib.admin.options.add_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/laboratorio/resultadohl7huerfano/<path:object_id>/history/",
+      "name": "laboratorio_resultadohl7huerfano_history",
+      "view": "django.contrib.admin.options.history_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/laboratorio/resultadohl7huerfano/<path:object_id>/delete/",
+      "name": "laboratorio_resultadohl7huerfano_delete",
+      "view": "django.contrib.admin.options.delete_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/laboratorio/resultadohl7huerfano/<path:object_id>/change/",
+      "name": "laboratorio_resultadohl7huerfano_change",
+      "view": "django.contrib.admin.options.change_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/laboratorio/resultadohl7huerfano/<path:object_id>/",
+      "name": null,
+      "view": "django.views.generic.base.view",
+      "lookup_str": "django.views.generic.base.RedirectView",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
       "path": "/admin/laboratorio/bitacoramantenimiento/",
       "name": "laboratorio_bitacoramantenimiento_changelist",
       "view": "django.contrib.admin.options.changelist_view",
@@ -4978,6 +4842,246 @@
     },
     {
       "path": "/admin/laboratorio/responsablesanitario/<path:object_id>/",
+      "name": null,
+      "view": "django.views.generic.base.view",
+      "lookup_str": "django.views.generic.base.RedirectView",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/valorreferenciaanalito/",
+      "name": "lims_valorreferenciaanalito_changelist",
+      "view": "django.contrib.admin.options.changelist_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/valorreferenciaanalito/add/",
+      "name": "lims_valorreferenciaanalito_add",
+      "view": "django.contrib.admin.options.add_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/valorreferenciaanalito/<path:object_id>/history/",
+      "name": "lims_valorreferenciaanalito_history",
+      "view": "django.contrib.admin.options.history_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/valorreferenciaanalito/<path:object_id>/delete/",
+      "name": "lims_valorreferenciaanalito_delete",
+      "view": "django.contrib.admin.options.delete_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/valorreferenciaanalito/<path:object_id>/change/",
+      "name": "lims_valorreferenciaanalito_change",
+      "view": "django.contrib.admin.options.change_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/valorreferenciaanalito/<path:object_id>/",
+      "name": null,
+      "view": "django.views.generic.base.view",
+      "lookup_str": "django.views.generic.base.RedirectView",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/analito/",
+      "name": "lims_analito_changelist",
+      "view": "django.contrib.admin.options.changelist_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/analito/add/",
+      "name": "lims_analito_add",
+      "view": "django.contrib.admin.options.add_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/analito/<path:object_id>/history/",
+      "name": "lims_analito_history",
+      "view": "django.contrib.admin.options.history_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/analito/<path:object_id>/delete/",
+      "name": "lims_analito_delete",
+      "view": "django.contrib.admin.options.delete_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/analito/<path:object_id>/change/",
+      "name": "lims_analito_change",
+      "view": "django.contrib.admin.options.change_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/analito/<path:object_id>/",
+      "name": null,
+      "view": "django.views.generic.base.view",
+      "lookup_str": "django.views.generic.base.RedirectView",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/perfillims/",
+      "name": "lims_perfillims_changelist",
+      "view": "django.contrib.admin.options.changelist_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/perfillims/add/",
+      "name": "lims_perfillims_add",
+      "view": "django.contrib.admin.options.add_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/perfillims/<path:object_id>/history/",
+      "name": "lims_perfillims_history",
+      "view": "django.contrib.admin.options.history_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/perfillims/<path:object_id>/delete/",
+      "name": "lims_perfillims_delete",
+      "view": "django.contrib.admin.options.delete_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/perfillims/<path:object_id>/change/",
+      "name": "lims_perfillims_change",
+      "view": "django.contrib.admin.options.change_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/perfillims/<path:object_id>/",
+      "name": null,
+      "view": "django.views.generic.base.view",
+      "lookup_str": "django.views.generic.base.RedirectView",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/paquetelims/",
+      "name": "lims_paquetelims_changelist",
+      "view": "django.contrib.admin.options.changelist_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/paquetelims/add/",
+      "name": "lims_paquetelims_add",
+      "view": "django.contrib.admin.options.add_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/paquetelims/<path:object_id>/history/",
+      "name": "lims_paquetelims_history",
+      "view": "django.contrib.admin.options.history_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/paquetelims/<path:object_id>/delete/",
+      "name": "lims_paquetelims_delete",
+      "view": "django.contrib.admin.options.delete_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/paquetelims/<path:object_id>/change/",
+      "name": "lims_paquetelims_change",
+      "view": "django.contrib.admin.options.change_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/paquetelims/<path:object_id>/",
+      "name": null,
+      "view": "django.views.generic.base.view",
+      "lookup_str": "django.views.generic.base.RedirectView",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/precioitem/",
+      "name": "lims_precioitem_changelist",
+      "view": "django.contrib.admin.options.changelist_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/precioitem/add/",
+      "name": "lims_precioitem_add",
+      "view": "django.contrib.admin.options.add_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/precioitem/<path:object_id>/history/",
+      "name": "lims_precioitem_history",
+      "view": "django.contrib.admin.options.history_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/precioitem/<path:object_id>/delete/",
+      "name": "lims_precioitem_delete",
+      "view": "django.contrib.admin.options.delete_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/precioitem/<path:object_id>/change/",
+      "name": "lims_precioitem_change",
+      "view": "django.contrib.admin.options.change_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/lims/precioitem/<path:object_id>/",
       "name": null,
       "view": "django.views.generic.base.view",
       "lookup_str": "django.views.generic.base.RedirectView",
@@ -5698,6 +5802,102 @@
     },
     {
       "path": "/admin/marketing/cuponmarketing/<path:object_id>/",
+      "name": null,
+      "view": "django.views.generic.base.view",
+      "lookup_str": "django.views.generic.base.RedirectView",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/marketing/cuponuso/",
+      "name": "marketing_cuponuso_changelist",
+      "view": "django.contrib.admin.options.changelist_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/marketing/cuponuso/add/",
+      "name": "marketing_cuponuso_add",
+      "view": "django.contrib.admin.options.add_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/marketing/cuponuso/<path:object_id>/history/",
+      "name": "marketing_cuponuso_history",
+      "view": "django.contrib.admin.options.history_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/marketing/cuponuso/<path:object_id>/delete/",
+      "name": "marketing_cuponuso_delete",
+      "view": "django.contrib.admin.options.delete_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/marketing/cuponuso/<path:object_id>/change/",
+      "name": "marketing_cuponuso_change",
+      "view": "django.contrib.admin.options.change_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/marketing/cuponuso/<path:object_id>/",
+      "name": null,
+      "view": "django.views.generic.base.view",
+      "lookup_str": "django.views.generic.base.RedirectView",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/marketing/marketingtrackinghit/",
+      "name": "marketing_marketingtrackinghit_changelist",
+      "view": "django.contrib.admin.options.changelist_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/marketing/marketingtrackinghit/add/",
+      "name": "marketing_marketingtrackinghit_add",
+      "view": "django.contrib.admin.options.add_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/marketing/marketingtrackinghit/<path:object_id>/history/",
+      "name": "marketing_marketingtrackinghit_history",
+      "view": "django.contrib.admin.options.history_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/marketing/marketingtrackinghit/<path:object_id>/delete/",
+      "name": "marketing_marketingtrackinghit_delete",
+      "view": "django.contrib.admin.options.delete_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/marketing/marketingtrackinghit/<path:object_id>/change/",
+      "name": "marketing_marketingtrackinghit_change",
+      "view": "django.contrib.admin.options.change_view",
+      "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/admin/marketing/marketingtrackinghit/<path:object_id>/",
       "name": null,
       "view": "django.views.generic.base.view",
       "lookup_str": "django.views.generic.base.RedirectView",
@@ -8153,7 +8353,7 @@
       "kind": "ui"
     },
     {
-      "path": "/admin/^(?P<app_label>auth|core|farmacia|pacientes|laboratorio|seguridad|iot|ia|reglas_negocio|marketing|consultorio|logistica|inventario|mantenimiento|bienestar|contabilidad)/$",
+      "path": "/admin/^(?P<app_label>auth|core|farmacia|pacientes|laboratorio|lims|seguridad|iot|ia|reglas_negocio|marketing|consultorio|logistica|inventario|mantenimiento|bienestar|contabilidad)/$",
       "name": "app_list",
       "view": "django.contrib.admin.sites.app_index",
       "lookup_str": "django.contrib.admin.sites.AdminSite.app_index",
@@ -8219,8 +8419,56 @@
     {
       "path": "/api/iot/hl7/",
       "name": "hl7_receptor",
-      "view": "laboratorio.views.hl7_receptor.receptor_hl7",
-      "lookup_str": "laboratorio.views.hl7_receptor.receptor_hl7",
+      "view": "core.services.lims.interfaces_lims_service.receptor_hl7",
+      "lookup_str": "core.services.lims.interfaces_lims_service.receptor_hl7",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/api/v3/openapi.json",
+      "name": "openapi-json",
+      "view": "functools.partial",
+      "lookup_str": "ninja.openapi.views.openapi_json",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/api/v3/docs",
+      "name": "openapi-view",
+      "view": "functools.partial",
+      "lookup_str": "ninja.openapi.views.openapi_view",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/api/v3/farmacia/pdv/productos",
+      "name": "buscar_productos_pdv_v3",
+      "view": "ninja.operation.sync_view_wrapper",
+      "lookup_str": "ninja.operation.PathView.get_view.<locals>.sync_view_wrapper",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/api/v3/farmacia/pdv/cobrar",
+      "name": "farmacia_pdv_cobrar_v3",
+      "view": "ninja.operation.sync_view_wrapper",
+      "lookup_str": "ninja.operation.PathView.get_view.<locals>.sync_view_wrapper",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/api/v3/lims/resultados/captura",
+      "name": "lims_resultados_captura_v3",
+      "view": "ninja.operation.sync_view_wrapper",
+      "lookup_str": "ninja.operation.PathView.get_view.<locals>.sync_view_wrapper",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/api/v3/",
+      "name": "api-root",
+      "view": "functools.partial",
+      "lookup_str": "ninja.openapi.views.default_home",
       "default_args": {},
       "kind": "api"
     },
@@ -8415,6 +8663,22 @@
       "lookup_str": "core.views.pris_ia.asistente_reset",
       "default_args": {},
       "kind": "ui"
+    },
+    {
+      "path": "/api/prisci/webhook/",
+      "name": "prisci_webhook",
+      "view": "core.views.prisci_webhook.webhook",
+      "lookup_str": "core.views.prisci_webhook.webhook",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/api/prisci/webhook/verify/",
+      "name": "prisci_webhook_verify",
+      "view": "core.views.prisci_webhook.verify",
+      "lookup_str": "core.views.prisci_webhook.verify",
+      "default_args": {},
+      "kind": "api"
     },
     {
       "path": "/pris/api/acciones/pendientes/",
@@ -8697,6 +8961,14 @@
       "kind": "ui"
     },
     {
+      "path": "/seguridad/rastro-paciente/",
+      "name": "rastro_paciente",
+      "view": "seguridad.views.rastro_paciente",
+      "lookup_str": "seguridad.views.rastro_paciente",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
       "path": "/seguridad/api/verificar-2fa/",
       "name": "api_verificar_2fa",
       "view": "seguridad.views.api_verificar_codigo_2fa",
@@ -8709,6 +8981,14 @@
       "name": "api_estadisticas",
       "view": "seguridad.views.api_estadisticas_seguridad",
       "lookup_str": "seguridad.views.api_estadisticas_seguridad",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/seguridad/api/panic/",
+      "name": "panic_button",
+      "view": "seguridad.views.panic_button",
+      "lookup_str": "seguridad.views.panic_button",
       "default_args": {},
       "kind": "api"
     },
@@ -8767,6 +9047,14 @@
       "lookup_str": "contabilidad.views.descargar_pdf",
       "default_args": {},
       "kind": "pdf"
+    },
+    {
+      "path": "/contabilidad/facturas/<int:factura_id>/xml/",
+      "name": "descargar_xml",
+      "view": "contabilidad.views.descargar_xml",
+      "lookup_str": "contabilidad.views.descargar_xml",
+      "default_args": {},
+      "kind": "ui"
     },
     {
       "path": "/contabilidad/api/clientes/buscar/",
@@ -8913,6 +9201,14 @@
       "kind": "api"
     },
     {
+      "path": "/farmacia/api/carga-masiva/excel/",
+      "name": "carga_masiva_excel",
+      "view": "core.views.farmacia.carga_masiva_excel",
+      "lookup_str": "core.views.farmacia.carga_masiva_excel",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
       "path": "/farmacia/compras/registrar/",
       "name": "registrar_compra",
       "view": "core.views.farmacia.registrar_compra",
@@ -8925,6 +9221,14 @@
       "name": "ajustes_inventario",
       "view": "core.views.farmacia.ajustes_inventario",
       "lookup_str": "core.views.farmacia.ajustes_inventario",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/farmacia/inventario/",
+      "name": "farmacia_inventario_general",
+      "view": "core.views.farmacia.inventario_general",
+      "lookup_str": "core.views.farmacia.inventario_general",
       "default_args": {},
       "kind": "ui"
     },
@@ -9417,6 +9721,14 @@
       "kind": "api"
     },
     {
+      "path": "/laboratorio/api/preview-formulas/<int:orden_id>/",
+      "name": "api_preview_formulas_lims",
+      "view": "core.views.laboratorio.api_preview_formulas_lims",
+      "lookup_str": "core.views.laboratorio.api_preview_formulas_lims",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
       "path": "/laboratorio/api/bulk-validar/",
       "name": "api_bulk_validar",
       "view": "core.views.laboratorio.api_bulk_validar",
@@ -9805,6 +10117,14 @@
       "name": "dashboard_director",
       "view": "core.views.director.dashboard_director",
       "lookup_str": "core.views.director.dashboard_director",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/director/sucursales/modo-inventario-lab/",
+      "name": "sucursales_modo_inventario_lab",
+      "view": "core.views.sucursal_modo_inventario_lab.sucursales_modo_inventario_lab",
+      "lookup_str": "core.views.sucursal_modo_inventario_lab.sucursales_modo_inventario_lab",
       "default_args": {},
       "kind": "ui"
     },
@@ -10449,6 +10769,14 @@
       "kind": "ui"
     },
     {
+      "path": "/laboratorio/resultados/publico/<str:token>/pdf/",
+      "name": "resultados_publicos_pdf",
+      "view": "core.views.entrega_resultados.resultados_publicos_pdf",
+      "lookup_str": "core.views.entrega_resultados.resultados_publicos_pdf",
+      "default_args": {},
+      "kind": "pdf"
+    },
+    {
       "path": "/laboratorio/resultados/publico/<str:token>/",
       "name": "resultados_publicos",
       "view": "core.views.entrega_resultados.resultados_publicos",
@@ -10649,7 +10977,7 @@
       "kind": "ui"
     },
     {
-      "path": "/capacitacion/rag/reprocesar/<int:documento_id>/",
+      "path": "/capacitacion/rag/reprocesar/<uuid:documento_id>/",
       "name": "reprocesar_documento_rag",
       "view": "core.views.capacitacion_rag.reprocesar_documento",
       "lookup_str": "core.views.capacitacion_rag.reprocesar_documento",
@@ -10657,7 +10985,7 @@
       "kind": "ui"
     },
     {
-      "path": "/capacitacion/rag/estado/<int:documento_id>/",
+      "path": "/capacitacion/rag/estado/<uuid:documento_id>/",
       "name": "estado_documento_rag",
       "view": "core.views.capacitacion_rag.estado_documento_rag",
       "lookup_str": "core.views.capacitacion_rag.estado_documento_rag",
@@ -10665,7 +10993,7 @@
       "kind": "ui"
     },
     {
-      "path": "/capacitacion/rag/eliminar/<int:documento_id>/",
+      "path": "/capacitacion/rag/eliminar/<uuid:documento_id>/",
       "name": "eliminar_documento_rag",
       "view": "core.views.capacitacion_rag.eliminar_documento",
       "lookup_str": "core.views.capacitacion_rag.eliminar_documento",
@@ -11013,6 +11341,62 @@
       "name": "buscar_paciente",
       "view": "core.views.pacientes.buscar_paciente",
       "lookup_str": "core.views.pacientes.buscar_paciente",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/blindaje/nota/<int:nota_id>/pre-sellar/",
+      "name": "pre_sellar_nota",
+      "view": "core.views.blindaje_expediente.pre_sellar_nota",
+      "lookup_str": "core.views.blindaje_expediente.pre_sellar_nota",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/blindaje/nota/<int:nota_id>/sellar/",
+      "name": "sellar_con_pin",
+      "view": "core.views.blindaje_expediente.sellar_con_pin",
+      "lookup_str": "core.views.blindaje_expediente.sellar_con_pin",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/blindaje/nota/<int:nota_id>/verificar/",
+      "name": "verificar_nota",
+      "view": "core.views.blindaje_expediente.verificar_nota",
+      "lookup_str": "core.views.blindaje_expediente.verificar_nota",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/blindaje/nota/<int:nota_id>/desbloquear/",
+      "name": "desbloqueo_forense",
+      "view": "core.views.blindaje_expediente.desbloqueo_forense",
+      "lookup_str": "core.views.blindaje_expediente.desbloqueo_forense",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/blindaje/medico/configurar-pin/",
+      "name": "configurar_pin_lab",
+      "view": "core.views.blindaje_expediente.configurar_pin_lab",
+      "lookup_str": "core.views.blindaje_expediente.configurar_pin_lab",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/blindaje/cie10/buscar/",
+      "name": "buscar_cie10",
+      "view": "core.views.blindaje_expediente.buscar_cie10",
+      "lookup_str": "core.views.blindaje_expediente.buscar_cie10",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/verificar/<uuid:token>/",
+      "name": "verificar_publico",
+      "view": "core.views.blindaje_expediente.verificar_publico",
+      "lookup_str": "core.views.blindaje_expediente.verificar_publico",
       "default_args": {},
       "kind": "ui"
     },
@@ -11849,6 +12233,14 @@
       "kind": "ui"
     },
     {
+      "path": "/consultorio/api/telemedicina/sala/",
+      "name": "api_crear_sala_videollamada",
+      "view": "consultorio.views.api_crear_sala_videollamada",
+      "lookup_str": "consultorio.views.api_crear_sala_videollamada",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
       "path": "/consultorio/cobros/",
       "name": "cobro_consulta",
       "view": "consultorio.views.cobro_consulta",
@@ -12209,6 +12601,14 @@
       "kind": "ui"
     },
     {
+      "path": "/marketing/api/track/",
+      "name": "marketing_track_pixel",
+      "view": "marketing.views_tracking.track_pixel_204",
+      "lookup_str": "marketing.views_tracking.track_pixel_204",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
       "path": "/marketing/",
       "name": "dashboard_marketing",
       "view": "marketing.views.dashboard_marketing",
@@ -12293,6 +12693,14 @@
       "name": "api_generar_cupon",
       "view": "marketing.views.api_generar_cupon",
       "lookup_str": "marketing.views.api_generar_cupon",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/marketing/api/aplicar-cupon/",
+      "name": "api_aplicar_cupon",
+      "view": "marketing.views.api_aplicar_cupon",
+      "lookup_str": "marketing.views.api_aplicar_cupon",
       "default_args": {},
       "kind": "api"
     },
@@ -12737,6 +13145,22 @@
       "kind": "api"
     },
     {
+      "path": "/laboratorio/api/cci/lj-summary/",
+      "name": "api_cci_lj_summary",
+      "view": "laboratorio.views.cci_api.api_cci_lj_summary",
+      "lookup_str": "laboratorio.views.cci_api.api_cci_lj_summary",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/laboratorio/api/cci/lj-series/",
+      "name": "api_cci_lj_series",
+      "view": "laboratorio.views.cci_api.api_cci_lj_series",
+      "lookup_str": "laboratorio.views.cci_api.api_cci_lj_series",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
       "path": "/laboratorio/api/toma-muestra/<int:orden_id>/",
       "name": "api_toma_muestra",
       "view": "core.views.laboratorio.api_toma_muestra",
@@ -12823,6 +13247,222 @@
       "lookup_str": "laboratorio.views_admin.cargar_tarifas_desde_csv",
       "default_args": {},
       "kind": "ui"
+    },
+    {
+      "path": "/lims/analitos/",
+      "name": "lims_analitos",
+      "view": "lims.views.analitos.lista",
+      "lookup_str": "lims.views.analitos.lista",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/lims/analitos/<int:pk>/",
+      "name": "lims_analito_detalle",
+      "view": "lims.views.analitos.detalle",
+      "lookup_str": "lims.views.analitos.detalle",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/lims/analitos/<int:pk>/editar/",
+      "name": "lims_analito_editar",
+      "view": "lims.views.analitos.editar",
+      "lookup_str": "lims.views.analitos.editar",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/lims/api/analitos/<int:pk>/rangos/<int:rango_pk>/",
+      "name": "lims_api_rango_item",
+      "view": "lims.views.analitos.api_rango_item",
+      "lookup_str": "lims.views.analitos.api_rango_item",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/lims/api/analitos/<int:pk>/rangos/",
+      "name": "lims_api_rangos",
+      "view": "lims.views.analitos.api_rangos",
+      "lookup_str": "lims.views.analitos.api_rangos",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/lims/api/rangos/<int:rango_pk>/eliminar/",
+      "name": "lims_api_rango_eliminar",
+      "view": "lims.views.analitos.api_rango_eliminar",
+      "lookup_str": "lims.views.analitos.api_rango_eliminar",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/lims/perfiles/",
+      "name": "lims_perfiles",
+      "view": "lims.views.perfiles.lista",
+      "lookup_str": "lims.views.perfiles.lista",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/lims/perfiles/nuevo/",
+      "name": "lims_perfil_nuevo",
+      "view": "lims.views.perfiles.nuevo",
+      "lookup_str": "lims.views.perfiles.nuevo",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/lims/perfiles/<int:pk>/",
+      "name": "lims_perfil_detalle",
+      "view": "lims.views.perfiles.detalle",
+      "lookup_str": "lims.views.perfiles.detalle",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/lims/perfiles/<int:pk>/editar/",
+      "name": "lims_perfil_editar",
+      "view": "lims.views.perfiles.editar",
+      "lookup_str": "lims.views.perfiles.editar",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/lims/api/analitos/buscar/",
+      "name": "lims_api_buscar_analitos",
+      "view": "lims.views.perfiles.api_buscar_analitos",
+      "lookup_str": "lims.views.perfiles.api_buscar_analitos",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/lims/api/perfiles/",
+      "name": "lims_api_perfiles",
+      "view": "lims.urls._api_perfiles_lista",
+      "lookup_str": "lims.urls._api_perfiles_lista",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/lims/perfiles/<int:pk>/api/agregar-analito/",
+      "name": "lims_perfil_agregar_analito",
+      "view": "lims.views.perfiles.api_agregar_analito",
+      "lookup_str": "lims.views.perfiles.api_agregar_analito",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/lims/perfiles/<int:pk>/api/quitar-analito/<int:analito_pk>/",
+      "name": "lims_perfil_quitar_analito",
+      "view": "lims.views.perfiles.api_quitar_analito",
+      "lookup_str": "lims.views.perfiles.api_quitar_analito",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/lims/paquetes/",
+      "name": "lims_paquetes",
+      "view": "lims.views.paquetes.lista",
+      "lookup_str": "lims.views.paquetes.lista",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/lims/paquetes/nuevo/",
+      "name": "lims_paquete_nuevo",
+      "view": "lims.views.paquetes.nuevo",
+      "lookup_str": "lims.views.paquetes.nuevo",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/lims/paquetes/<int:pk>/",
+      "name": "lims_paquete_detalle",
+      "view": "lims.views.paquetes.detalle",
+      "lookup_str": "lims.views.paquetes.detalle",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/lims/paquetes/<int:pk>/editar/",
+      "name": "lims_paquete_editar",
+      "view": "lims.views.paquetes.editar",
+      "lookup_str": "lims.views.paquetes.editar",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/lims/paquetes/<int:pk>/api/agregar-analito/",
+      "name": "lims_paquete_agregar_analito",
+      "view": "lims.views.paquetes.api_agregar_analito",
+      "lookup_str": "lims.views.paquetes.api_agregar_analito",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/lims/paquetes/<int:pk>/api/quitar-analito/<int:analito_pk>/",
+      "name": "lims_paquete_quitar_analito",
+      "view": "lims.views.paquetes.api_quitar_analito",
+      "lookup_str": "lims.views.paquetes.api_quitar_analito",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/lims/paquetes/<int:pk>/api/agregar-perfil/",
+      "name": "lims_paquete_agregar_perfil",
+      "view": "lims.views.paquetes.api_agregar_perfil",
+      "lookup_str": "lims.views.paquetes.api_agregar_perfil",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/lims/paquetes/<int:pk>/api/quitar-perfil/<int:perfil_pk>/",
+      "name": "lims_paquete_quitar_perfil",
+      "view": "lims.views.paquetes.api_quitar_perfil",
+      "lookup_str": "lims.views.paquetes.api_quitar_perfil",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/lims/precios/",
+      "name": "lims_precios",
+      "view": "lims.views.precios.lista",
+      "lookup_str": "lims.views.precios.lista",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/lims/precios/<int:precio_pk>/actualizar/",
+      "name": "lims_precio_actualizar",
+      "view": "lims.views.precios.actualizar_precio",
+      "lookup_str": "lims.views.precios.actualizar_precio",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/lims/precios/ajuste-masivo/",
+      "name": "lims_ajuste_masivo",
+      "view": "lims.views.precios.ajuste_masivo",
+      "lookup_str": "lims.views.precios.ajuste_masivo",
+      "default_args": {},
+      "kind": "ui"
+    },
+    {
+      "path": "/lims/api/precios/buscar-analitos/",
+      "name": "lims_api_precios_buscar_analitos",
+      "view": "lims.views.precios.api_buscar_analitos_precios",
+      "lookup_str": "lims.views.precios.api_buscar_analitos_precios",
+      "default_args": {},
+      "kind": "api"
+    },
+    {
+      "path": "/lims/api/precios/agregar-analito/",
+      "name": "lims_api_precios_agregar_analito",
+      "view": "lims.views.precios.api_agregar_analito_precio",
+      "lookup_str": "lims.views.precios.api_agregar_analito_precio",
+      "default_args": {},
+      "kind": "api"
     },
     {
       "path": "/chat/",
@@ -13857,13 +14497,11 @@
       "kind": "ui"
     },
     {
-      "path": "/^media/(?P<path>.*)$",
-      "name": null,
-      "view": "django.views.static.serve",
-      "lookup_str": "django.views.static.serve",
-      "default_args": {
-        "document_root": "C:\\Users\\jonil\\Desktop\\PRISLAB_SaaS\\media"
-      },
+      "path": "/cron/verify-escudo-clinico/",
+      "name": "cron_verify_escudo_clinico",
+      "view": "core.views.cron_tasks.cron_verify_escudo_clinico",
+      "lookup_str": "core.views.cron_tasks.cron_verify_escudo_clinico",
+      "default_args": {},
       "kind": "ui"
     }
   ]

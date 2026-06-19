@@ -50,6 +50,7 @@ class NormaIconDriver:
         self.running = False
         self.thread = None
         self.on_result: Optional[Callable] = None
+        self._buffer_loop = b""
         
         logger.info(f"Driver Norma Icon inicializado: {self.nombre} - {self.ip}:{self.puerto}")
     
@@ -251,5 +252,42 @@ class NormaIconDriver:
     
     def procesar(self):
         """Procesa datos pendientes (método llamado en loop principal)."""
-        # El procesamiento se hace en el hilo de escucha
-        pass
+        if self.thread and self.thread.is_alive():
+            return {
+                'modo': 'hilo_tcp',
+                'escuchando': bool(self.socket),
+                'cliente_conectado': bool(self.cliente_socket),
+                'buffer_pendiente': len(self._buffer_loop),
+            }
+
+        bytes_leidos = 0
+        if self.cliente_socket:
+            try:
+                data = self.cliente_socket.recv(4096)
+            except socket.timeout:
+                data = b''
+
+            if data:
+                self._buffer_loop += data
+                bytes_leidos = len(data)
+                self._procesar_buffer_loop()
+
+        return {
+            'modo': 'loop_tcp',
+            'escuchando': bool(self.socket),
+            'cliente_conectado': bool(self.cliente_socket),
+            'bytes_leidos': bytes_leidos,
+            'buffer_pendiente': len(self._buffer_loop),
+        }
+
+    def _procesar_buffer_loop(self):
+        """Drena mensajes HL7 completos acumulados por procesar()."""
+        while True:
+            if self.use_mllp:
+                msg, self._buffer_loop = self._try_extract_mllp(self._buffer_loop)
+            else:
+                msg, self._buffer_loop = self._try_extract_plain_hl7(self._buffer_loop)
+
+            if msg is None:
+                break
+            self._handle_hl7_v2_message(msg)

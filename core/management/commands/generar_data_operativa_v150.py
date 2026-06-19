@@ -13,7 +13,7 @@ Nota: Sucursal.gestion_inventario_activa aplica al bypass FEFO de laboratorio al
 Uso:
   python manage.py generar_data_operativa_v150
   python manage.py generar_data_operativa_v150 --empresa-id 1 --force
-  python manage.py generar_data_operativa_v150 --no-local-pdf   # Cloud Run / credenciales Drive-GCS completas
+  python manage.py generar_data_operativa_v150 --no-local-pdf   # Producción / credenciales Drive completas
 
 Con DEBUG=True se fuerza guardar el PDF en media local (campo archivo_resultado) para evitar 403 de Drive
 sin scopes; en producción use --no-local-pdf si el tenant escribe ya en GCS/Drive.

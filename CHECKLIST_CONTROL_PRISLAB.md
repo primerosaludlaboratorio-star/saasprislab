@@ -34,6 +34,19 @@ Si este checklist no se actualiza, el cambio no cuenta como cerrado.
 - [x] Diagnóstico final Drive completado: lectura de carpeta productiva OK, escritura bloqueada por `403 storageQuotaExceeded` al usar Service Account sobre `My Drive`
 - [x] Producción blindada para seguir operando con `BufferLocalStorage` por defecto mientras se migra a `Shared Drive` o se cambia el modelo de autenticación
 - [~] Producción funcional localmente validada; falta seguir la verificación manual módulo por módulo en el entorno real
+- [x] Endurecimiento de seguridad complementario aplicado el `2026-06-19` en cron, audio médico/laboratorio y storage Drive
+- [x] Drive ya no publica archivos con permiso `anyone-with-link` al guardar desde `GoogleDriveStorage`
+- [x] `GoogleDriveStorage` preparado para `Shared Drive` con `supportsAllDrives/includeItemsFromAllDrives`
+- [x] Endpoints `cron/*` ahora exigen `CRON_SECRET` en producción; fallback por headers solo queda permitido en `DEBUG=True`
+- [x] Endpoints de audio médico/laboratorio ya no usan `csrf_exempt`, validan rol autorizado y requieren usuario con empresa asignada
+- [x] Bug real corregido en audio laboratorio: ya no consulta `Parametro.keywords` inexistente; usa `abreviatura` como contexto derivado
+- [x] Smoke verification directa `2026-06-19` OK: `403` para rol no autorizado en audio consulta, `403` para usuario sin empresa, `400` para analito de otra empresa y `403/200` correctos en cron sin/con secreto
+- [x] Hallazgo de producción documentado: pruebas manuales fuera de `systemd` podían caer en `sqlite` local en vez de PostgreSQL por carga insegura de `.env`
+- [x] Wrapper seguro agregado: `scripts/run_manage_with_env.py`
+- [x] Scripts de despliegue/fixes actualizados para no usar `source .env`
+- [~] Sincronización final de usuarios de auditoría pendiente de ejecutarse en PostgreSQL real con `sync_usuarios_auditoria`
+- [x] Nuevo comando de carga masiva operativa agregado: `simular_operacion_anual`
+- [x] Nuevo importador de catálogo médico agregado: `importar_medicos_xlsx`
 
 ## Estado general
 
@@ -115,7 +128,7 @@ Leyenda:
 
 ## Bloque 6 - Médicos
 
-- [ ] Catálogo médico comparado
+- [~] Catálogo médico ya tiene ruta formal de importación desde Excel legacy (`importar_medicos_xlsx`)
 - [ ] Médico que refiere validado
 - [ ] Entrega de solicitudes físicas validada
 - [ ] Comisión por médico validada
@@ -201,9 +214,10 @@ Leyenda:
 ## Próximo orden de trabajo recomendado
 
 1. Ejecutar revisión externa de Claude y Cascada usando como fuente inicial este checklist y el reporte maestro.
-2. Continuar pruebas funcionales reales en producción módulo por módulo.
-3. Terminar Bloque 1 al 3 al nivel de paridad exacta contra el legacy.
-4. Cerrar Bloques 4, 5 y 6.
-5. Cerrar Bloque 13 porque impacta operación diaria.
-6. Cerrar Bloques 11, 12 y 14.
-7. Ejecutar Bloque 15 como auditoría final de reemplazo total.
+2. Ejecutar `simular_operacion_anual` e `importar_medicos_xlsx` para poblar datos reales de estrés antes de la siguiente ronda funcional.
+3. Continuar pruebas funcionales reales en producción módulo por módulo.
+4. Terminar Bloque 1 al 3 al nivel de paridad exacta contra el legacy.
+5. Cerrar Bloques 4, 5 y 6.
+6. Cerrar Bloque 13 porque impacta operación diaria.
+7. Cerrar Bloques 11, 12 y 14.
+8. Ejecutar Bloque 15 como auditoría final de reemplazo total.

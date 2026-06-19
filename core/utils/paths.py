@@ -157,7 +157,7 @@ def generar_ruta_drive(instance, filename):
         logger.error(f"[DRIVE] Error al generar ruta: {e}", exc_info=True)
         
         # Generar ruta segura de fallback
-        timestamp_fallback = datetime.now().strftime('%Y%m%d-%H%M%S')
+        timestamp_fallback = timezone.localtime(timezone.now()).strftime('%Y%m%d-%H%M%S')
         ruta_fallback = f"ERROR/{timestamp_fallback}/{filename}"
         
         logger.warning(f"[DRIVE] Usando ruta de fallback: {ruta_fallback}")

@@ -53,6 +53,26 @@ logger = logging.getLogger('config.storage')
 DRIVE_REQUEST_TIMEOUT = 30
 
 
+def _drive_http_error_message(exc: HttpError, contexto: str) -> str:
+    """Devuelve un mensaje útil para HttpError de Drive, especialmente 403."""
+    status = getattr(getattr(exc, 'resp', None), 'status', None)
+    try:
+        raw = exc.content.decode() if getattr(exc, 'content', None) else str(exc)
+    except Exception:
+        raw = str(exc)
+    raw_lower = raw.lower()
+    if status == 403 or 'forbidden' in raw_lower or 'insufficient permissions' in raw_lower:
+        return (
+            f'Drive devolvió 403/Forbidden durante {contexto}. '
+            'Revisa que la carpeta o Shared Drive esté compartida con la cuenta de servicio '
+            'y que el archivo o parent ID pertenezca a la zona autorizada. '
+            f'Detalle técnico: {raw}'
+        )
+    if status == 404:
+        return f'Drive devolvió 404 durante {contexto}. Verifica el ID de carpeta o archivo. Detalle técnico: {raw}'
+    return f'Drive devolvió error HTTP durante {contexto}: {raw}'
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. BUFFER LOCAL — Almacenamiento inmediato (respuesta <5ms al usuario)
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -134,8 +154,20 @@ class GoogleDriveStorage(Storage):
     def service(self):
         """Lazy loading del servicio Drive API v3."""
         if self._service is None:
-            self._service = build('drive', 'v3', credentials=self.credentials)
+            self._service = build(
+                'drive',
+                'v3',
+                credentials=self.credentials,
+                cache_discovery=False,
+            )
         return self._service
+
+    @staticmethod
+    def _shared_drive_kwargs(include_items: bool = False):
+        kwargs = {'supportsAllDrives': True}
+        if include_items:
+            kwargs['includeItemsFromAllDrives'] = True
+        return kwargs
 
     def _save(self, name, content):
         folder_path = os.path.dirname(name)
@@ -160,20 +192,15 @@ class GoogleDriveStorage(Storage):
             file = self.service.files().create(
                 body=file_metadata,
                 media_body=media,
-                fields='id, name, webViewLink'
-            ).execute()
-
-            # Hacer accesible con enlace (lectura para cualquier persona con el link)
-            self.service.permissions().create(
-                fileId=file['id'],
-                body={'type': 'anyone', 'role': 'reader', 'allowFileDiscovery': False},
+                fields='id, name, webViewLink',
+                **self._shared_drive_kwargs(),
             ).execute()
 
             return name
         except socket.timeout:
             raise Exception('Drive: timeout al subir archivo. Reintentando...')
         except HttpError as exc:
-            raise Exception(f'Drive: HttpError al subir: {exc}')
+            raise Exception(_drive_http_error_message(exc, f'subida de {name}'))
         finally:
             socket.setdefaulttimeout(old_timeout)
 
@@ -184,7 +211,10 @@ class GoogleDriveStorage(Storage):
         old_timeout = socket.getdefaulttimeout()
         socket.setdefaulttimeout(DRIVE_REQUEST_TIMEOUT)
         try:
-            request = self.service.files().get_media(fileId=file_id)
+            request = self.service.files().get_media(
+                fileId=file_id,
+                **self._shared_drive_kwargs(),
+            )
             fh = io.BytesIO()
             from googleapiclient.http import MediaIoBaseDownload
             downloader = MediaIoBaseDownload(fh, request)
@@ -204,7 +234,11 @@ class GoogleDriveStorage(Storage):
         if not file_id:
             return 0
         try:
-            f = self.service.files().get(fileId=file_id, fields='size').execute()
+            f = self.service.files().get(
+                fileId=file_id,
+                fields='size',
+                **self._shared_drive_kwargs(),
+            ).execute()
             return int(f.get('size', 0))
         except HttpError:
             return 0
@@ -219,7 +253,10 @@ class GoogleDriveStorage(Storage):
         file_id = self._get_file_id_by_path(name)
         if file_id:
             try:
-                self.service.files().delete(fileId=file_id).execute()
+                self.service.files().delete(
+                    fileId=file_id,
+                    **self._shared_drive_kwargs(),
+                ).execute()
             except HttpError as exc:
                 logger.warning(f'Drive: error al eliminar {name}: {exc}')
 
@@ -230,6 +267,8 @@ class GoogleDriveStorage(Storage):
                 q=f"'{folder_id}' in parents and trashed=false",
                 fields='files(id, name, mimeType)',
                 pageSize=1000,
+                corpora='allDrives',
+                **self._shared_drive_kwargs(include_items=True),
             ).execute()
             files = results.get('files', [])
             dirs = [f['name'] for f in files if 'folder' in f['mimeType']]
@@ -249,10 +288,15 @@ class GoogleDriveStorage(Storage):
         if not file_id:
             return None
         try:
-            f = self.service.files().get(fileId=file_id, fields='createdTime').execute()
+            f = self.service.files().get(
+                fileId=file_id,
+                fields='createdTime',
+                **self._shared_drive_kwargs(),
+            ).execute()
             from datetime import datetime
             return datetime.fromisoformat(f['createdTime'].replace('Z', '+00:00'))
-        except HttpError:
+        except HttpError as exc:
+            logger.warning(_drive_http_error_message(exc, f'búsqueda de carpeta {name}'))
             return None
 
     def get_modified_time(self, name):
@@ -260,7 +304,11 @@ class GoogleDriveStorage(Storage):
         if not file_id:
             return None
         try:
-            f = self.service.files().get(fileId=file_id, fields='modifiedTime').execute()
+            f = self.service.files().get(
+                fileId=file_id,
+                fields='modifiedTime',
+                **self._shared_drive_kwargs(),
+            ).execute()
             from datetime import datetime
             return datetime.fromisoformat(f['modifiedTime'].replace('Z', '+00:00'))
         except HttpError:
@@ -275,6 +323,8 @@ class GoogleDriveStorage(Storage):
                 q=f"name='{filename}' and '{parent_id}' in parents and trashed=false",
                 fields='files(id)',
                 pageSize=1,
+                corpora='allDrives',
+                **self._shared_drive_kwargs(include_items=True),
             ).execute()
             files = results.get('files', [])
             return files[0]['id'] if files else None
@@ -305,6 +355,8 @@ class GoogleDriveStorage(Storage):
                   f"and '{parent_id}' in parents and trashed=false",
                 fields='files(id)',
                 pageSize=1,
+                corpora='allDrives',
+                **self._shared_drive_kwargs(include_items=True),
             ).execute()
             folders = results.get('files', [])
             return folders[0]['id'] if folders else None
@@ -318,10 +370,11 @@ class GoogleDriveStorage(Storage):
                       'mimeType': 'application/vnd.google-apps.folder',
                       'parents': [parent_id]},
                 fields='id',
+                **self._shared_drive_kwargs(),
             ).execute()
             return folder['id']
         except HttpError as exc:
-            raise Exception(f'Drive: error al crear carpeta "{name}": {exc}')
+            raise Exception(_drive_http_error_message(exc, f'creación de carpeta {name}'))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

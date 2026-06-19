@@ -19,6 +19,7 @@ FILOSOFÍA:
 import io
 import logging
 from datetime import datetime
+from django.utils import timezone
 from typing import Optional
 
 from reportlab.lib.pagesizes import mm
@@ -80,7 +81,7 @@ def generar_etiqueta_tubo(
             folio_orden='ORD-001',
             nombre_paciente='Juan Pérez López',
             tipo_muestra='Suero',
-            fecha=datetime.now()
+            fecha=timezone.localtime(timezone.now())
         )
     """
     try:
@@ -97,7 +98,7 @@ def generar_etiqueta_tubo(
         
         # Usar fecha actual si no se proporciona
         if fecha is None:
-            fecha = datetime.now()
+            fecha = timezone.localtime(timezone.now())
         
         # Truncar nombre del paciente si es muy largo
         nombre_truncado = truncar_texto(nombre_paciente, max_chars=25)
@@ -235,7 +236,7 @@ def generar_etiquetas_multiples(ordenes: list) -> bytes:
                     'folio_orden': 'ORD-001',
                     'nombre_paciente': 'Juan Pérez',
                     'tipo_muestra': 'Suero',
-                    'fecha': datetime.now()
+                    'fecha': timezone.localtime(timezone.now())
                 },
                 ...
             ]
@@ -258,7 +259,7 @@ def generar_etiquetas_multiples(ordenes: list) -> bytes:
             folio_orden = orden.get('folio_orden', 'SIN-FOLIO')
             nombre_paciente = orden.get('nombre_paciente', 'SIN NOMBRE')
             tipo_muestra = orden.get('tipo_muestra', 'Suero')
-            fecha = orden.get('fecha', datetime.now())
+            fecha = orden.get('fecha', timezone.localtime(timezone.now()))
             
             # Nombre del paciente
             nombre_truncado = truncar_texto(nombre_paciente, max_chars=25)
@@ -349,7 +350,7 @@ def generar_etiqueta_con_qr(
         
         # Folio y fecha
         if fecha is None:
-            fecha = datetime.now()
+            fecha = timezone.localtime(timezone.now())
         
         c.setFont("Helvetica", 6)
         fecha_str = fecha.strftime("%d/%m/%Y")
@@ -435,7 +436,7 @@ def test_generar_etiqueta():
             folio_orden='ORD-001',
             nombre_paciente='Juan Pérez López',
             tipo_muestra='Suero',
-            fecha=datetime.now()
+            fecha=timezone.localtime(timezone.now())
         )
         
         # Guardar en archivo temporal (autoeliminado al salir)

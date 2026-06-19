@@ -180,7 +180,7 @@ def consulta_medica(request, paciente_id=None):
                             )
                         total_orden = total_orden.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-                        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+                        timestamp = django_timezone.localtime(django_timezone.now()).strftime('%Y%m%d%H%M%S')
                         folio_orden = f"ORD-{timestamp}-{hashlib.md5(f'{empresa.id}-{request.user.id}'.encode()).hexdigest()[:4].upper()}"
 
                         orden_servicio = OrdenDeServicio.objects.create(
@@ -263,7 +263,7 @@ def consulta_medica(request, paciente_id=None):
                     medico = None
                 
                 # Generar folio único
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+                timestamp = django_timezone.localtime(django_timezone.now()).strftime('%Y%m%d%H%M%S')
                 folio_receta = f"REC-{timestamp}-{hashlib.md5(f'{empresa.id}-{request.user.id}'.encode()).hexdigest()[:4].upper()}"
                 
                 # Crear receta 4.0

@@ -14,6 +14,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
 
+from core.decorators import rate_limit, require_api_token
 from core.models import Empresa, Usuario
 
 # Logger específico para errores del frontend
@@ -158,6 +159,8 @@ def ingreso_magico(request):
 # ==============================================================================
 @csrf_exempt
 @require_http_methods(["POST"])
+@rate_limit('frontend_log', limit=120, window_seconds=60)
+@require_api_token('PRISLAB_FRONTEND_LOG_TOKEN')
 def log_frontend_error(request):
     """
     Vista para recibir errores del frontend (JavaScript) y registrarlos en el log.

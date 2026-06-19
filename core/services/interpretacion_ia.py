@@ -55,7 +55,7 @@ def generar_resumen_bienestar(orden):
             valor=''
         ).exclude(
             valor='Pendiente'
-        ).select_related('parametro')
+        ).select_related('analito')
         
         if not resultados.exists():
             return None
@@ -66,9 +66,10 @@ def generar_resumen_bienestar(orden):
         hay_critico = False
         
         for r in resultados:
-            nombre = r.parametro.nombre if r.parametro else 'Parametro'
+            analito = getattr(r, 'analito', None)
+            nombre = analito.nombre if analito else 'Parametro'
             valor = r.valor
-            unidad = r.parametro.unidad or '' if r.parametro else ''
+            unidad = getattr(analito, 'unidades', '') or ''
             estado = 'normal'
             
             if r.fuera_rango:

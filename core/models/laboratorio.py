@@ -564,8 +564,8 @@ class OrdenDeServicio(TenantModel):
         if self.estado in ('RESULTADOS_LISTOS', 'ENTREGADO'):
             self.full_clean()
         if not self.folio_orden:
-            from datetime import datetime
-            ahora = datetime.now()
+            from django.utils import timezone as _tz
+            ahora = _tz.localtime(_tz.now())
             prefijo = f'LAB-{ahora.strftime("%Y%m")}-'
             ultimos = OrdenDeServicio.objects.filter(folio_orden__startswith=prefijo).count()
             self.folio_orden = f'{prefijo}{str(ultimos + 1).zfill(5)}'

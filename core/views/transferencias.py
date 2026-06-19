@@ -64,7 +64,7 @@ def crear_transferencia(request):
         try:
             with transaction.atomic():
                 # Generar folio
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+                timestamp = timezone.localtime(timezone.now()).strftime('%Y%m%d%H%M%S')
                 folio = f'TRF-{timestamp}'
                 
                 # Crear transferencia

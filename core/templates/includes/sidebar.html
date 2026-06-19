@@ -1,5 +1,6 @@
 {% load static %}
 {% load auth_extras %}
+{% load academia_tags %}
 {# ═══════════════════════════════════════════════════════════════════════════ #}
 {# PRISLAB V8.0 — SIDEBAR DE ACORDEÓN VERTICAL (Flujo Clínico Real)          #}
 {# Orden de módulos: Recepción → Lab → Farmacia → Consultorio → Finanzas     #}
@@ -751,6 +752,11 @@
                 <a href="{% url 'capacitacion_ejecutiva' %}" class="prsb-link {% if '/capacitacion/ejecutiva/' in request.path %}prsb-active{% endif %}">
                     <i class="fas fa-user-tie"></i> Capacitación Ejecutiva
                 </a>
+                {% if empresa_actual|academia_activa_para_empresa %}
+                <a href="{% url 'academia:dashboard' %}" class="prsb-link {% if '/academia/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-film"></i> Academia / Diplomados
+                </a>
+                {% endif %}
 
                 <span class="prsb-group-label">Marketing & IA</span>
                 <a href="{% url 'marketing:dashboard_marketing' %}" class="prsb-link {% if '/marketing/' in request.path and '/ia/' not in request.path %}prsb-active{% endif %}">

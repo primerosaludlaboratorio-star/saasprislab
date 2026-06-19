@@ -28,6 +28,9 @@ from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from core.models import Empresa
+from core.tenant import clear_current_empresa, set_current_empresa, tenant_bypass
+from core.utils.default_empresa import resolve_default_empresa_sistema
 from lims.models import Analito, ValorReferenciaAnalito
 
 
@@ -108,6 +111,10 @@ class Command(BaseCommand):
             help='Simular importación sin guardar nada en la BD',
         )
         parser.add_argument(
+            '--empresa-id', type=int, default=None,
+            help='Empresa destino para fijar contexto tenant durante la importación.',
+        )
+        parser.add_argument(
             '--reset', action='store_true',
             help='Eliminar todos los analitos lims.* antes de importar',
         )
@@ -119,180 +126,198 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         dry_run = options['dry_run']
         reset   = options['reset']
+        empresa = self._resolver_empresa(options.get('empresa_id'))
+
+        if empresa:
+            self.stdout.write(self.style.NOTICE(
+                f'Empresa contexto: {empresa.pk} — {empresa.nombre}'
+            ))
+        else:
+            self.stdout.write(self.style.WARNING(
+                'Sin empresa contexto explícita. La importación dependerá del contexto tenant actual.'
+            ))
 
         if dry_run:
             self.stdout.write(self.style.WARNING('  [DRY-RUN] No se guardarán cambios.\n'))
 
-        # ── Opcional: reset previo ────────────────────────────────────────────
-        if reset and not dry_run:
-            self.stdout.write('Borrando registros lims.* previos...')
-            ValorReferenciaAnalito.objects.all().delete()
-            Analito.objects.all().delete()
-            self.stdout.write(self.style.SUCCESS('  Registros lims.* eliminados.\n'))
+        try:
+            with tenant_bypass():
+                if empresa:
+                    set_current_empresa(empresa)
 
-        # ── Fase A: importar Parametros.csv → Analito ────────────────────────
-        self.stdout.write(f'Leyendo {CSV_PARAMETROS} ...')
-        if not os.path.exists(CSV_PARAMETROS):
-            self.stdout.write(self.style.ERROR(f'  Archivo no encontrado: {CSV_PARAMETROS}'))
-            return
+                # ── Opcional: reset previo ────────────────────────────────────
+                if reset and not dry_run:
+                    self.stdout.write('Borrando registros lims.* previos...')
+                    ValorReferenciaAnalito.objects.all().delete()
+                    Analito.objects.all().delete()
+                    self.stdout.write(self.style.SUCCESS('  Registros lims.* eliminados.\n'))
 
-        creados = actualizados = errores = omitidos = 0
-        id_legacy_set = {}  # id_legacy → pk para cruzar con valores de referencia
+                # ── Fase A: importar Parametros.csv → Analito ───────────────
+                self.stdout.write(f'Leyendo {CSV_PARAMETROS} ...')
+                if not os.path.exists(CSV_PARAMETROS):
+                    self.stdout.write(self.style.ERROR(f'  Archivo no encontrado: {CSV_PARAMETROS}'))
+                    return
 
-        with open(CSV_PARAMETROS, newline='', encoding='utf-8-sig', errors='replace') as f:
-            reader = csv.DictReader(f)
-            with transaction.atomic():
-                for fila in reader:
-                    id_leg = _int_o_none(fila.get('Id_parametro', ''))
-                    codigo = (fila.get('Codigo') or '').strip()
-                    if not codigo:
-                        omitidos += 1
-                        continue
+                creados = actualizados = errores = omitidos = 0
+                id_legacy_set = {}  # id_legacy → pk para cruzar con valores de referencia
 
-                    abrev   = (fila.get('Abreviatura') or codigo).strip()
-                    nombre  = (fila.get('Descripcion') or codigo).strip()
+                with open(CSV_PARAMETROS, newline='', encoding='utf-8-sig', errors='replace') as f:
+                    reader = csv.DictReader(f)
+                    with transaction.atomic():
+                        for fila in reader:
+                            id_leg = _int_o_none(fila.get('Id_parametro', ''))
+                            codigo = (fila.get('Codigo') or '').strip()
+                            if not codigo:
+                                omitidos += 1
+                                continue
 
-                    # Evitar duplicados por código — ajustar si código ya existe
-                    codigo_final = codigo
-                    if Analito.objects.filter(codigo=codigo_final).exists() and not reset:
-                        # Buscar por id_legacy para actualizar
-                        if id_leg and Analito.objects.filter(id_legacy=id_leg).exists():
-                            # Actualizar en su lugar
-                            pass
-                        else:
-                            # Hacer único añadiendo sufijo del id_legacy
-                            codigo_final = f'{codigo}-{id_leg}' if id_leg else f'{codigo}-x'
+                            abrev   = (fila.get('Abreviatura') or codigo).strip()
+                            nombre  = (fila.get('Descripcion') or codigo).strip()
 
-                    fm = (fila.get('Formula') or '').strip()
-                    datos = {
-                        'abreviatura':      abrev,
-                        'nombre':           nombre,
-                        'clave_hoja':       (fila.get('Clave_hoja_trabajo') or '').strip(),
-                        'departamento':     (fila.get('Departamento') or 'Sin departamento').strip(),
-                        'tipo_muestra':     (fila.get('Tipo_muestra') or '').strip(),
-                        'metodologia':      (fila.get('Metodo') or '').strip(),
-                        'tipo_resultado':   _mapear_tipo_resultado(fila.get('Tipo_resultado', '')),
-                        'unidades':         (fila.get('Unidades') or '').strip(),
-                        'decimales':        _int_o_none(fila.get('Decimales', '')) or 2,
-                        'formula':          fm,
-                        'es_calculado':     bool(fm),
-                        'opciones_texto':   (fila.get('Resultado_opciones') or '').strip(),
-                        'imprime_en_negritas': _bool(fila.get('Imprime_en_negritas', '')),
-                        'imprimir_metodo':  _bool(fila.get('Imprimir_metodo_resultado', '')),
-                        'es_vendible_individualmente': _bool(fila.get('Permite_venta_directa', '')),
-                        'indicaciones':     (fila.get('Indicaciones') or '').strip(),
-                        'notas':            (fila.get('Notas') or '').strip(),
-                        'activo':           True,
-                        'costo_lista':      _decimal_costo(fila.get('Costo')),
-                    }
+                            # Evitar duplicados por código — ajustar si código ya existe
+                            codigo_final = codigo
+                            if Analito.objects.filter(codigo=codigo_final).exists():
+                                if id_leg and Analito.objects.filter(id_legacy=id_leg).exists():
+                                    pass
+                                else:
+                                    codigo_final = f'{codigo}-{id_leg}' if id_leg else f'{codigo}-x'
 
-                    try:
-                        if dry_run:
-                            nombre_safe = nombre[:60].encode('ascii', 'replace').decode()
-                            self.stdout.write(
-                                f'  [DRY] Analito: {codigo_final} | {nombre_safe}'
-                            )
-                            creados += 1
-                        else:
-                            obj, created = Analito.objects.update_or_create(
-                                id_legacy=id_leg if id_leg else None,
-                                defaults={**datos, 'codigo': codigo_final},
-                            ) if id_leg else Analito.objects.get_or_create(
-                                codigo=codigo_final,
-                                defaults=datos,
-                            )
-                            if id_leg:
-                                id_legacy_set[id_leg] = obj.pk
-                            if created:
-                                creados += 1
-                            else:
-                                actualizados += 1
-                    except Exception as e:
-                        errores += 1
-                        self.stdout.write(
-                            self.style.ERROR(
-                                f'  [ERR] {codigo}: {str(e).encode("ascii","replace").decode()}'
-                            )
-                        )
+                            fm = (fila.get('Formula') or '').strip()
+                            datos = {
+                                'abreviatura':      abrev,
+                                'nombre':           nombre,
+                                'clave_hoja':       (fila.get('Clave_hoja_trabajo') or '').strip(),
+                                'departamento':     (fila.get('Departamento') or 'Sin departamento').strip(),
+                                'tipo_muestra':     (fila.get('Tipo_muestra') or '').strip(),
+                                'metodologia':      (fila.get('Metodo') or '').strip(),
+                                'tipo_resultado':   _mapear_tipo_resultado(fila.get('Tipo_resultado', '')),
+                                'unidades':         (fila.get('Unidades') or '').strip(),
+                                'decimales':        _int_o_none(fila.get('Decimales', '')) or 2,
+                                'formula':          fm,
+                                'es_calculado':     bool(fm),
+                                'opciones_texto':   (fila.get('Resultado_opciones') or '').strip(),
+                                'imprime_en_negritas': _bool(fila.get('Imprime_en_negritas', '')),
+                                'imprimir_metodo':  _bool(fila.get('Imprimir_metodo_resultado', '')),
+                                'es_vendible_individualmente': _bool(fila.get('Permite_venta_directa', '')),
+                                'indicaciones':     (fila.get('Indicaciones') or '').strip(),
+                                'notas':            (fila.get('Notas') or '').strip(),
+                                'activo':           True,
+                                'costo_lista':      _decimal_costo(fila.get('Costo')),
+                            }
 
-        self.stdout.write(
-            f'\n  Analitos — creados: {creados} | actualizados: {actualizados} '
-            f'| omitidos: {omitidos} | errores: {errores}'
-        )
+                            try:
+                                if dry_run:
+                                    nombre_safe = nombre[:60].encode('ascii', 'replace').decode()
+                                    self.stdout.write(
+                                        f'  [DRY] Analito: {codigo_final} | {nombre_safe}'
+                                    )
+                                    creados += 1
+                                else:
+                                    obj, created = Analito.objects.update_or_create(
+                                        id_legacy=id_leg if id_leg else None,
+                                        defaults={**datos, 'codigo': codigo_final},
+                                    ) if id_leg else Analito.objects.get_or_create(
+                                        codigo=codigo_final,
+                                        defaults=datos,
+                                    )
+                                    if id_leg:
+                                        id_legacy_set[id_leg] = obj.pk
+                                    if created:
+                                        creados += 1
+                                    else:
+                                        actualizados += 1
+                            except Exception as e:
+                                errores += 1
+                                self.stdout.write(
+                                    self.style.ERROR(
+                                        f'  [ERR] {codigo}: {str(e).encode("ascii","replace").decode()}'
+                                    )
+                                )
 
-        # ── Fase B: importar Valores_normalidad.csv → ValorReferenciaAnalito ─
-        self.stdout.write(f'\nLeyendo {CSV_VALORES_REF} ...')
-        if not os.path.exists(CSV_VALORES_REF):
-            self.stdout.write(self.style.WARNING(
-                f'  Archivo no encontrado: {CSV_VALORES_REF} — se omite la fase B'
-            ))
-            self._resumen_final(dry_run, options.get('con_perfiles', False))
-            return
+                self.stdout.write(
+                    f'\n  Analitos — creados: {creados} | actualizados: {actualizados} '
+                    f'| omitidos: {omitidos} | errores: {errores}'
+                )
 
-        # Siempre reconstruir el mapa desde la BD (evita errores en re-runs)
-        id_legacy_set = {
-            a.id_legacy: a.pk
-            for a in Analito.objects.exclude(id_legacy=None)
-        }
-        self.stdout.write(f'  Mapa id_legacy: {len(id_legacy_set)} analitos indexados')
+                # ── Fase B: importar Valores_normalidad.csv → ValorReferenciaAnalito ─
+                self.stdout.write(f'\nLeyendo {CSV_VALORES_REF} ...')
+                if not os.path.exists(CSV_VALORES_REF):
+                    self.stdout.write(self.style.WARNING(
+                        f'  Archivo no encontrado: {CSV_VALORES_REF} — se omite la fase B'
+                    ))
+                    self._resumen_final(dry_run, options.get('con_perfiles', False))
+                    return
 
-        v_creados = v_errores = v_omitidos = 0
+                id_legacy_set = {
+                    a.id_legacy: a.pk
+                    for a in Analito.objects.exclude(id_legacy=None)
+                }
+                self.stdout.write(f'  Mapa id_legacy: {len(id_legacy_set)} analitos indexados')
 
-        with open(CSV_VALORES_REF, newline='', encoding='utf-8-sig', errors='replace') as f:
-            reader = csv.DictReader(f)
-            with transaction.atomic():
-                for fila in reader:
-                    id_leg  = _int_o_none(fila.get('Id_parametro', ''))
-                    if id_leg is None or id_leg not in id_legacy_set:
-                        v_omitidos += 1
-                        continue
+                v_creados = v_errores = v_omitidos = 0
 
-                    analito_pk = id_legacy_set[id_leg]
-                    sexo       = _mapear_sexo(fila.get('Sexo', ''))
-                    unidad     = _mapear_unidad_edad(fila.get('Unidad', ''))
-                    e_min      = _int_o_none(fila.get('Edad_min', ''))
-                    e_max      = _int_o_none(fila.get('Edad_max', ''))
-                    r_min      = _decimal_o_none(fila.get('Ref_min', ''))
-                    r_max      = _decimal_o_none(fila.get('Ref_max', ''))
+                with open(CSV_VALORES_REF, newline='', encoding='utf-8-sig', errors='replace') as f:
+                    reader = csv.DictReader(f)
+                    with transaction.atomic():
+                        for fila in reader:
+                            id_leg  = _int_o_none(fila.get('Id_parametro', ''))
+                            if id_leg is None or id_leg not in id_legacy_set:
+                                v_omitidos += 1
+                                continue
 
-                    if e_min is None or e_max is None:
-                        v_omitidos += 1
-                        continue
+                            analito_pk = id_legacy_set[id_leg]
+                            sexo       = _mapear_sexo(fila.get('Sexo', ''))
+                            unidad     = _mapear_unidad_edad(fila.get('Unidad', ''))
+                            e_min      = _int_o_none(fila.get('Edad_min', ''))
+                            e_max      = _int_o_none(fila.get('Edad_max', ''))
+                            r_min      = _decimal_o_none(fila.get('Ref_min', ''))
+                            r_max      = _decimal_o_none(fila.get('Ref_max', ''))
 
-                    try:
-                        if dry_run:
-                            self.stdout.write(
-                                f'  [DRY] Rango: analito_id={analito_pk} | '
-                                f'{sexo} | {unidad} | {e_min}–{e_max}'
-                            )
-                            v_creados += 1
-                        else:
-                            ValorReferenciaAnalito.objects.update_or_create(
-                                analito_id=analito_pk,
-                                sexo=sexo,
-                                unidad_edad=unidad,
-                                edad_minima=e_min,
-                                edad_maxima=e_max,
-                                defaults={
-                                    'ref_minimo': r_min,
-                                    'ref_maximo': r_max,
-                                },
-                            )
-                            v_creados += 1
-                    except Exception as e:
-                        v_errores += 1
-                        self.stdout.write(
-                            self.style.ERROR(
-                                f'  [ERR] Rango analito_id={analito_pk}: {e}'
-                            )
-                        )
+                            if e_min is None or e_max is None:
+                                v_omitidos += 1
+                                continue
 
-        self.stdout.write(
-            f'  Rangos — creados/actualizados: {v_creados} '
-            f'| omitidos: {v_omitidos} | errores: {v_errores}'
-        )
+                            try:
+                                if dry_run:
+                                    self.stdout.write(
+                                        f'  [DRY] Rango: analito_id={analito_pk} | '
+                                        f'{sexo} | {unidad} | {e_min}–{e_max}'
+                                    )
+                                    v_creados += 1
+                                else:
+                                    ValorReferenciaAnalito.objects.update_or_create(
+                                        analito_id=analito_pk,
+                                        sexo=sexo,
+                                        unidad_edad=unidad,
+                                        edad_minima=e_min,
+                                        edad_maxima=e_max,
+                                        defaults={
+                                            'ref_minimo': r_min,
+                                            'ref_maximo': r_max,
+                                        },
+                                    )
+                                    v_creados += 1
+                            except Exception as e:
+                                v_errores += 1
+                                self.stdout.write(
+                                    self.style.ERROR(
+                                        f'  [ERR] Rango analito_id={analito_pk}: {e}'
+                                    )
+                                )
 
-        self._resumen_final(dry_run, options.get('con_perfiles', False))
+                self.stdout.write(
+                    f'  Rangos — creados/actualizados: {v_creados} '
+                    f'| omitidos: {v_omitidos} | errores: {v_errores}'
+                )
+
+                self._resumen_final(dry_run, options.get('con_perfiles', False))
+        finally:
+            clear_current_empresa()
+
+    def _resolver_empresa(self, empresa_id):
+        if empresa_id:
+            return Empresa.objects.filter(pk=empresa_id, activa=True).first()
+        return resolve_default_empresa_sistema()
 
     def _resumen_final(self, dry_run: bool, con_perfiles: bool = False):
         if dry_run:

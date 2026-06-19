@@ -13,6 +13,7 @@ Ajuste de Texto: Margenes automaticos para no invadir logos/pie
 import logging
 import os
 from datetime import date, datetime
+from django.utils import timezone
 from io import BytesIO
 
 from django.conf import settings
@@ -185,7 +186,7 @@ def _build_patient_info(consulta, styles):
     """Bloque: Nombre, Edad, Fecha."""
     paciente = consulta.paciente
     edad = _calcular_edad(paciente.fecha_nacimiento)
-    fecha = consulta.fecha_consulta.strftime('%d/%m/%Y') if consulta.fecha_consulta else datetime.now().strftime('%d/%m/%Y')
+    fecha = consulta.fecha_consulta.strftime('%d/%m/%Y') if consulta.fecha_consulta else timezone.localtime(timezone.now()).strftime('%d/%m/%Y')
 
     data = [
         [
@@ -497,7 +498,7 @@ class NumberedCanvas(_canvas_module.Canvas):
 
     def save(self):
         total = len(self._saved_page_states)
-        fecha_impresion = datetime.now().strftime('%d/%m/%Y %H:%M')
+        fecha_impresion = timezone.localtime(timezone.now()).strftime('%d/%m/%Y %H:%M')
         for idx, state in enumerate(self._saved_page_states, 1):
             self.__dict__.update(state)
             self.saveState()

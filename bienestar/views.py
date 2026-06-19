@@ -87,10 +87,7 @@ def calcular_racha(usuario):
 @login_required
 def chat_bienestar(request):
     """Chat confidencial con PRIS para apoyo emocional."""
-    try:
-        empresa = getattr(request.user, 'empresa', None)
-    except:
-        empresa = None
+    empresa = getattr(request.user, 'empresa', None)
     
     return render(request, 'bienestar/chat.html', {
         'empresa': empresa,
@@ -111,10 +108,9 @@ def api_chat_bienestar(request):
                 'mensaje': 'Por favor escribe un mensaje'
             }, status=400)
         
-        # Obtener respuesta de Gemini usando el módulo central
+        # Obtener respuesta usando el proveedor central de IA.
         try:
-            from core.utils.gemini_client import get_gemini_model
-            model = get_gemini_model('gemini-2.0-flash')
+            from core.utils.gemini_client import generate_content
             
             # Contexto especializado para bienestar emocional
             contexto_bienestar = """Eres PRIS, una asistente de inteligencia artificial especializada en apoyo emocional y bienestar.
@@ -140,26 +136,12 @@ Responde de forma breve, cálida y empática:"""
             
             prompt_completo = contexto_bienestar.replace('{pregunta}', mensaje_usuario)
             
-            # Generar respuesta
-            try:
-                # Importar GenerationConfig
-                try:
-                    from google.genai.types import GenerationConfig
-                except ImportError:
-                    from google.generativeai.types import GenerationConfig
-                
-                config = GenerationConfig(
-                    temperature=0.8,
-                    max_output_tokens=300,  # Respuestas más cortas
-                    top_p=0.9,
-                    top_k=40
-                )
-                response = model.generate_content(prompt_completo, generation_config=config, request_options={'timeout': 10})
-            except Exception:
-                # Si falla con config, intentar sin config
-                response = model.generate_content(prompt_completo, request_options={'timeout': 10})
-            
-            respuesta_ia = response.text if response and response.text else "Lo siento, no pude generar una respuesta. ¿Podrías reformular tu mensaje?"
+            # Generar respuesta con el proveedor central configurado para Prisci.
+            respuesta_ia = generate_content(
+                prompt_completo,
+                temperature=0.8,
+                max_tokens=300,
+            ) or "Lo siento, no pude generar una respuesta. ¿Podrías reformular tu mensaje?"
             
         except Exception as e:
             logger = logging.getLogger('bienestar')
@@ -215,10 +197,7 @@ def detectar_riesgo_emocional(texto):
 def diario_emocional(request):
     """Vista del diario emocional - Lista de entradas."""
     usuario = request.user
-    try:
-        empresa = getattr(request.user, 'empresa', None)
-    except:
-        empresa = None
+    empresa = getattr(request.user, 'empresa', None)
     
     # Obtener entradas del usuario
     entradas = DiarioEmocional.objects.filter(usuario=usuario).order_by('-fecha')[:30]
@@ -269,26 +248,17 @@ def nueva_entrada_diario(request):
         try:
             # Analizar sentimiento con IA
             try:
-                from core.utils.gemini_client import get_gemini_model
-                model = get_gemini_model('gemini-2.0-flash')
+                from core.utils.gemini_client import generate_content
                 
                 prompt_analisis = f"""Analiza el siguiente texto emocional y responde SOLO con una palabra que describa el sentimiento principal.
 
 Texto: {contenido}
 
 Responde solo con UNA de estas palabras: feliz, triste, ansioso, enojado, neutral, esperanzado, confundido, frustrado"""
-                
-                try:
-                    from google.genai.types import GenerationConfig
-                except ImportError:
-                    from google.generativeai.types import GenerationConfig
-                
-                config = GenerationConfig(
-                    temperature=0.3,
-                    max_output_tokens=10,
-                )
-                response = model.generate_content(prompt_analisis, generation_config=config, request_options={'timeout': 8})
-                sentimiento_ia = response.text.strip().lower() if response and response.text else 'neutral'
+
+                sentimiento_ia = (
+                    generate_content(prompt_analisis, temperature=0.3, max_tokens=10) or 'neutral'
+                ).strip().lower()
                 
             except Exception:
                 # Si falla la IA, usar detección simple
@@ -372,10 +342,7 @@ Sistema PRISLAB - Módulo de Bienestar
             return redirect('bienestar:nueva_entrada_diario')
     
     # GET: Mostrar formulario
-    try:
-        empresa = getattr(request.user, 'empresa', None)
-    except:
-        empresa = None
+    empresa = getattr(request.user, 'empresa', None)
         
     emociones_sugeridas = [
         {'emoji': '😊', 'nombre': 'Feliz', 'color': '#4CAF50'},
@@ -396,10 +363,7 @@ Sistema PRISLAB - Módulo de Bienestar
 def estadisticas_diario(request):
     """Estadísticas y patrones emocionales."""
     usuario = request.user
-    try:
-        empresa = getattr(request.user, 'empresa', None)
-    except:
-        empresa = None
+    empresa = getattr(request.user, 'empresa', None)
     
     # Obtener entradas de los últimos 30 días
     hace_30_dias = timezone.now().date() - timedelta(days=30)
@@ -461,10 +425,7 @@ def estadisticas_diario(request):
 @login_required
 def recursos_bienestar(request):
     """Biblioteca de recursos de bienestar."""
-    try:
-        empresa = getattr(request.user, 'empresa', None)
-    except:
-        empresa = None
+    empresa = getattr(request.user, 'empresa', None)
         
     categoria = request.GET.get('categoria', 'TODOS')
     
@@ -489,10 +450,7 @@ def recursos_bienestar(request):
 @login_required
 def detalle_recurso(request, recurso_id):
     """Detalle de un recurso de bienestar."""
-    try:
-        empresa = getattr(request.user, 'empresa', None)
-    except:
-        empresa = None
+    empresa = getattr(request.user, 'empresa', None)
         
     recurso = get_object_or_404(RecursoCrecimiento, id=recurso_id, activo=True)
     
@@ -514,10 +472,7 @@ def detalle_recurso(request, recurso_id):
 @login_required
 def agendar_consultorio_bienestar(request):
     """Agendar consulta de bienestar (nutricional, psicológica)."""
-    try:
-        empresa = getattr(request.user, 'empresa', None)
-    except:
-        empresa = None
+    empresa = getattr(request.user, 'empresa', None)
         
     if request.method == 'POST':
         servicio = request.POST.get('servicio')

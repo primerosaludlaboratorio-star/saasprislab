@@ -10,12 +10,13 @@ Características:
 - Parsing de resultados de laboratorio
 """
 
-import serial
 import threading
 import logging
 from typing import Optional, Callable, Dict, Any
 import time
 import re
+
+from .serial_compat import serial
 
 logger = logging.getLogger(__name__)
 
@@ -234,5 +235,32 @@ class MissionU120Driver:
     
     def procesar(self):
         """Procesa datos pendientes (método llamado en loop principal)."""
-        # El procesamiento se hace en el hilo de lectura
-        pass
+        if self.thread and self.thread.is_alive():
+            return {
+                'modo': 'hilo_serial',
+                'conectado': bool(self.serial_port and self.serial_port.is_open),
+                'buffer_pendiente': len(self.buffer),
+            }
+
+        bytes_leidos = 0
+        try:
+            if self.serial_port and self.serial_port.is_open:
+                disponibles = int(getattr(self.serial_port, 'in_waiting', 0) or 0)
+                if disponibles > 0:
+                    data = self.serial_port.read(disponibles)
+                    if data:
+                        self.buffer += data.decode('utf-8', errors='ignore')
+                        bytes_leidos = len(data)
+
+            if self.buffer:
+                self._procesar_buffer()
+
+            return {
+                'modo': 'loop_serial',
+                'conectado': bool(self.serial_port and self.serial_port.is_open),
+                'bytes_leidos': bytes_leidos,
+                'buffer_pendiente': len(self.buffer),
+            }
+        except serial.SerialException as e:
+            logger.error(f"Error de lectura serial en {self.nombre}: {e}")
+            raise

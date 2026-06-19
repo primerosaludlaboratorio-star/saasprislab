@@ -163,7 +163,10 @@ def crear_orden_desde_ocr(request, pk):
         }, status=400)
     
     # Obtener datos del formulario
-    data = json.loads(request.body)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
     paciente_id = data.get('paciente_id')
     estudios_seleccionados = data.get('estudios', [])
     
@@ -189,32 +192,38 @@ def crear_orden_desde_ocr(request, pk):
     sucursal = getattr(request.user, 'sucursal', None)
 
     total_orden = _Dec('0')
-    with transaction.atomic():
-        orden = OrdenDeServicio.objects.create(
-            empresa=empresa,
-            sucursal=sucursal,
-            paciente=paciente,
-            responsable_ingreso=request.user,
-            total=_Dec('0'),
-            anticipo=_Dec('0'),
-            estado='PAGADO',
-            estado_pago='PAGADO',
-            estado_clinico='PENDIENTE_TOMA',
-            notas_internas=f'OCR automático. Confianza: {cotizacion.confianza_promedio}%'[:500],
-        )
-        for estudio_data in estudios_seleccionados:
-            estudio = Estudio.objects.get(pk=estudio_data['estudio_id'])
-            precio = estudio.precio_base or _Dec('0')
-            DetalleOrden.objects.create(
-                orden=orden,
-                descripcion_linea=(estudio.nombre or '')[:300],
-                precio_momento=precio,
+    try:
+        with transaction.atomic():
+            orden = OrdenDeServicio.objects.create(
+                empresa=empresa,
+                sucursal=sucursal,
+                paciente=paciente,
+                responsable_ingreso=request.user,
+                total=_Dec('0'),
+                anticipo=_Dec('0'),
+                estado='PAGADO',
+                estado_pago='PAGADO',
+                estado_clinico='PENDIENTE_TOMA',
+                notas_internas=f'OCR automático. Confianza: {cotizacion.confianza_promedio}%'[:500],
             )
-            total_orden += precio
-        orden.total = total_orden
-        orden.save(update_fields=['total'])
-        cotizacion.orden_asociada = orden
-        cotizacion.save(update_fields=['orden_asociada'])
+            for estudio_data in estudios_seleccionados:
+                try:
+                    estudio = Estudio.objects.get(pk=estudio_data['estudio_id'], empresa=empresa)
+                except Estudio.DoesNotExist:
+                    raise ValueError(f"Estudio {estudio_data.get('estudio_id')} no válido para esta empresa.")
+                precio = estudio.precio_base or _Dec('0')
+                DetalleOrden.objects.create(
+                    orden=orden,
+                    descripcion_linea=(estudio.nombre or '')[:300],
+                    precio_momento=precio,
+                )
+                total_orden += precio
+            orden.total = total_orden
+            orden.save(update_fields=['total'])
+            cotizacion.orden_asociada = orden
+            cotizacion.save(update_fields=['orden_asociada'])
+    except ValueError as _ve:
+        return JsonResponse({'success': False, 'error': str(_ve)}, status=400)
 
     return JsonResponse({
         'success': True,
@@ -462,7 +471,7 @@ def _extraer_texto_fallback(imagen):
     
     OBSERVACIONES:
     Ayuno de 8-12 horas previo a la toma de muestra.
-    """.format(fecha=datetime.now().strftime('%Y-%m-%d'))
+    """.format(fecha=timezone.localtime(timezone.now()).strftime('%Y-%m-%d'))
 
 
 def _transcribir_audio_con_speech_api(audio):

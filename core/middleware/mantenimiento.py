@@ -7,7 +7,7 @@ Activar antes de la Migración Maestra para proteger integridad de datos.
 Bloquea toda escritura (POST/PUT/PATCH/DELETE) y muestra mensaje institucional.
 
 Activar:
-  Cloud Run env var:  SYSTEM_MAINTENANCE_MODE=true
+  Producción env var:  SYSTEM_MAINTENANCE_MODE=true
   O desde settings:   SYSTEM_MAINTENANCE_MODE = True
 
 Rutas exentas (siempre accesibles):

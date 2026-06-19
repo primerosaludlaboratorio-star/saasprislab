@@ -237,24 +237,12 @@ def procesar_comando_voz(transcripcion, usuario, url_actual, datos_pantalla=None
 """
     
     try:
-        # Intentar usar Gemini
-        from google.generativeai import configure, GenerativeModel
-        
-        api_key = settings.GOOGLE_API_KEY or settings.OPENAI_API_KEY
-        if not api_key:
-            raise ValueError("No hay API key configurada")
-        
-        configure(api_key=api_key)
-        model = GenerativeModel('gemini-2.0-flash')
-        
-        response = model.generate_content(
+        from core.utils.gemini_client import generate_content
+
+        texto_respuesta = generate_content(
             prompt,
-            generation_config={'max_output_tokens': 512},
-            request_options={'timeout': 10}
-        )
-        
-        # Parsear respuesta JSON
-        texto_respuesta = response.text.strip()
+            max_tokens=512,
+        ).strip()
         
         # Extraer JSON (puede venir con markdown)
         if '```json' in texto_respuesta:

@@ -17,13 +17,23 @@ import unittest
 from django.test import LiveServerTestCase
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
-from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 import time
 import re
 
+try:
+    from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
+except ModuleNotFoundError:
+    sync_playwright = None
+
+    class PlaywrightTimeoutError(Exception):
+        pass
+
 
 def _browser_e2e_enabled():
-    return os.environ.get('PRISLAB_RUN_BROWSER_E2E', '').lower() in ('1', 'true', 'yes')
+    return (
+        sync_playwright is not None
+        and os.environ.get('PRISLAB_RUN_BROWSER_E2E', '').lower() in ('1', 'true', 'yes')
+    )
 
 
 @unittest.skipUnless(

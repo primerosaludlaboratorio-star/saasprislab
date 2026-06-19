@@ -123,7 +123,7 @@ class SentinelTelemetryMiddleware:
         '/laboratorio/hoja-trabajo',     # PDF de hoja de trabajo
         '/api/push/',               # Push notifications
         '/chat/',                   # Chat interno (polling, websockets)
-        '/login',                   # Cold-start de Cloud Run (3-6s normal)
+        '/login',                   # Cold-start normal del servidor (3-6s)
     )
 
     def __init__(self, get_response):
@@ -480,7 +480,7 @@ class SentinelTelemetryMiddleware:
         """
         Redirige al usuario con un mensaje flash usando Django messages.
         IMPORTANTE: Fuerza el guardado de sesion ANTES de redirigir para que
-        Cloud Run no pierda la cookie de sesion en respuestas de error.
+        El reverse proxy no pierda la cookie de sesion en respuestas de error.
         """
         try:
             from django.contrib import messages
@@ -494,7 +494,7 @@ class SentinelTelemetryMiddleware:
         except Exception:
             pass
 
-        # Forzar guardado de sesion para evitar perdida en Cloud Run
+        # Forzar guardado de sesion para evitar perdida en respuestas fallidas
         self._preservar_sesion(request)
 
         return HttpResponseRedirect(url)
@@ -503,7 +503,7 @@ class SentinelTelemetryMiddleware:
     def _preservar_sesion(request):
         """
         Fuerza el guardado de la sesion del usuario actual.
-        Cloud Run puede descartar cookies Set-Cookie en respuestas 5xx,
+        Algunos proxies pueden descartar cookies Set-Cookie en respuestas 5xx,
         asi que nos aseguramos de que la sesion quede persistida en la DB.
         """
         try:
@@ -572,7 +572,7 @@ class SentinelTelemetryMiddleware:
         - Auto-recarga de la MISMA pagina (no de una ruta diferente)
         - Opciones de navegacion
 
-        IMPORTANTE: Devuelve status=200 para que Cloud Run NO descarte
+        IMPORTANTE: Devuelve status=200 para que el proxy NO descarte
         los headers Set-Cookie. La pagina ES una respuesta valida
         (renderizada con exito), no un error del servidor.
         """
@@ -608,7 +608,7 @@ class SentinelTelemetryMiddleware:
         reload_url = path
 
         try:
-            # STATUS 200: Cloud Run/proxies mantienen Set-Cookie en 2xx
+            # STATUS 200: proxies mantienen Set-Cookie en 2xx
             # La pagina de error ES una respuesta exitosa del servidor
             return render(request, 'core/error_sentinel.html', {
                 'tipo_error': tipo_exc,
@@ -687,6 +687,11 @@ class SentinelTelemetryMiddleware:
                 'post_data': sanitizar_datos(dict(request.POST)) if request.POST else {},
             }
 
+            from django.db import connection
+            if connection.vendor == 'sqlite':
+                self._crear_incidencia(datos)
+                return
+
             thread = threading.Thread(
                 target=self._crear_incidencia,
                 args=(datos,),
@@ -710,22 +715,14 @@ class SentinelTelemetryMiddleware:
 
             from consultorio.models import IncidenciaSentinel
             from consultorio.sentinel_service import sanitizar_datos
-            from core.models import Empresa, Usuario
-
-            empresa = None
-            if datos.get('empresa_id'):
-                empresa = Empresa.objects.filter(id=datos['empresa_id']).first()
-
-            if not empresa:
+            empresa_id = datos.get('empresa_id')
+            if not empresa_id:
                 logger.error(
-                    "SENTINEL: Sin empresa en contexto (empresa_id vacío o inválido); "
-                    "no se crea incidencia (multi-tenant: prohibido Empresa.objects.first())."
+                    "SENTINEL: Sin empresa en contexto; no se crea incidencia "
+                    "(multi-tenant: prohibido Empresa.objects.first())."
                 )
                 return
-
-            usuario = None
-            if datos['user_id']:
-                usuario = Usuario.objects.filter(id=datos['user_id']).first()
+            usuario_id = datos.get('user_id') or None
 
             datos_sanitizados = {
                 'GET': sanitizar_datos(datos['get_data']),
@@ -739,7 +736,7 @@ class SentinelTelemetryMiddleware:
             from datetime import timedelta as _td
             hace_6h = timezone.now() - _td(hours=6)
             duplicada = IncidenciaSentinel.objects.filter(
-                empresa=empresa,
+                empresa_id=empresa_id,
                 url_afectada=datos['url'][:500],
                 tipo_excepcion=datos['tipo_excepcion'][:255],
                 codigo_http=datos['codigo_http'],
@@ -751,9 +748,9 @@ class SentinelTelemetryMiddleware:
 
             # PASO 1: Crear incidencia
             incidencia = IncidenciaSentinel.objects.create(
-                empresa=empresa,
+                empresa_id=empresa_id,
                 origen='MIDDLEWARE',
-                usuario_reporta=usuario,
+                usuario_reporta_id=usuario_id,
                 url_afectada=datos['url'][:500],
                 metodo_http=datos['metodo'],
                 namespace=ns,
@@ -777,6 +774,13 @@ class SentinelTelemetryMiddleware:
             # AuditLog
             try:
                 from core.services.audit_service import registrar_auditoria
+                from core.models import Empresa, Usuario
+
+                empresa = Empresa.objects.filter(id=empresa_id).first()
+                usuario = Usuario.objects.filter(id=usuario_id).first() if usuario_id else None
+                if not empresa:
+                    raise ValueError("empresa_id no resoluble para auditoria Sentinel")
+
                 registrar_auditoria(
                     accion='CREATE',
                     modelo='IncidenciaSentinel',

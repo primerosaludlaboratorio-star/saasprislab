@@ -50,7 +50,7 @@ def asignar_visita(request, visita_id: int):
 
 @login_required
 def monitor_rutas(request):
-    """Alias del monitor de rutas (placeholder)."""
+    """Alias estable del monitor de rutas para conservar compatibilidad de navegación."""
     return mapa_rutas(request)
 
 
@@ -220,9 +220,12 @@ def agregar_producto_transferencia(request, transferencia_id):
     
     try:
         producto_id = request.POST.get('producto_id')
-        cantidad = Decimal(request.POST.get('cantidad', '0'))
+        try:
+            cantidad = Decimal(request.POST.get('cantidad', '0'))
+        except Exception:
+            return JsonResponse({'error': 'Cantidad inválida'}, status=400)
         lote_id = request.POST.get('lote_id')
-        
+
         if cantidad <= 0:
             return JsonResponse({'error': 'La cantidad debe ser mayor a 0'}, status=400)
         
@@ -458,13 +461,13 @@ def api_cadena_frio_temperatura(request, transferencia_id: int):
 @login_required
 def rastrear_transferencia(request, token):
     """
-    Vista pública para rastrear una transferencia por token UUID.
+    Rastrear una transferencia por token UUID — requiere misma empresa del usuario.
     """
-    transferencia = get_object_or_404(TransferenciaInventario, token_rastreo=token)
+    empresa = getattr(request.user, 'empresa', None)
+    transferencia = get_object_or_404(TransferenciaInventario, token_rastreo=token, empresa=empresa)
     logs = transferencia.logs.select_related('usuario').all()
     
     return render(request, 'logistica/rastrear_transferencia.html', {
         'transferencia': transferencia,
         'logs': logs,
     })
-

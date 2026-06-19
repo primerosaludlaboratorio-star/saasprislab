@@ -32,7 +32,7 @@ def _fill_analito_from_parametro(apps, schema_editor):
         return
     fallback = Analito.objects.filter(activo=True).order_by('pk').first()
     if not fallback:
-        # Cloud Run / BD sin catálogo previo: sin esto migrate aborta y el servicio nunca escucha :8080.
+        # BD sin catálogo previo: sin esto migrate aborta y el servicio nunca escucha :8080.
         fallback = _placeholder_analito(apps, schema_editor)
     for rp in RP.objects.all().iterator():
         param_id = getattr(rp, 'parametro_id', None)

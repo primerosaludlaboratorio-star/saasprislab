@@ -12,8 +12,10 @@ Autenticación: API Key (X-PRISLAB-API-KEY) o IP whitelistada.
 Tenant: HL7_IP_EMPRESA_MAP o X-EMPRESA-ID / empresa_id.
 ════════════════════════════════════════════════════════════════════════════════
 """
+import hmac
 import logging
 import json
+import math
 import os
 import re
 import hashlib
@@ -264,9 +266,9 @@ def _autenticar_request_hl7(request):
     ip = _get_ip(request)
     api_key_header = request.META.get('HTTP_X_PRISLAB_API_KEY', '')
 
-    # 1) API Key
+    # 1) API Key — comparación en tiempo constante para evitar timing attacks
     hl7_api_key = _get_hl7_api_key()
-    if hl7_api_key and api_key_header and api_key_header == hl7_api_key:
+    if hl7_api_key and api_key_header and hmac.compare_digest(api_key_header, hl7_api_key):
         return True
 
     # 2) IP allowlist
@@ -709,8 +711,13 @@ def _procesar_item_hl7(
                 return respuesta
             try:
                 vf = float(str(valor_str).replace(',', '.'))
+                if math.isnan(vf) or math.isinf(vf):
+                    respuesta['estado'] = 'CCI_VALOR_INVALIDO'
+                    logger.warning('[HL7/CCI] Valor NaN o Inf recibido: %s', valor_str)
+                    return respuesta
             except (TypeError, ValueError):
                 respuesta['estado'] = 'CCI_VALOR_INVALIDO'
+                logger.warning('[HL7/CCI] Valor no numérico: %s', valor_str)
                 return respuesta
             from laboratorio.services.cci_canal import procesar_medicion_control_hl7
 

@@ -19,12 +19,12 @@ from core.validators import (
 
 
 # ==============================================================================
-# FUNCIÓN HELPER PARA STORAGE BACKEND (GCS / Local)
+# FUNCIÓN HELPER PARA STORAGE BACKEND (Drive / Local)
 # ==============================================================================
 def get_google_drive_storage():
     """
-    Retorna el storage backend apropiado (Drive → GCS → local).
-    Prioridad: Google Drive 20TB → GCS fallback → FileSystem (dev).
+    Retorna el storage backend apropiado (Drive → local).
+    Prioridad: Google Drive → FileSystem (dev).
     """
     from django.conf import settings
 
@@ -36,15 +36,7 @@ def get_google_drive_storage():
         except Exception:
             pass
 
-    # Prioridad 2: GCS fallback
-    if getattr(settings, 'GS_BUCKET_NAME', '') and getattr(settings, 'IS_GOOGLE_CLOUD', False):
-        try:
-            from storages.backends.gcloud import GoogleCloudStorage
-            return GoogleCloudStorage()
-        except Exception:
-            pass
-
-    # Prioridad 3: Local (desarrollo)
+    # Prioridad 2: Local (desarrollo o VPS sin Drive)
     from django.core.files.storage import default_storage
     return default_storage
 
@@ -74,7 +66,6 @@ class AuditoriaModel(models.Model):
         null=True, blank=True,
         verbose_name="Actualizado el",
     )
-
     class Meta:
         abstract = True
 
@@ -344,6 +335,12 @@ class Usuario(AbstractUser):
         default=False,
         verbose_name="2FA Activado",
         help_text="Si True, se requiere código TOTP en cada inicio de sesión"
+    )
+
+    es_auditor_supremo = models.BooleanField(
+        default=False,
+        verbose_name="Auditor Supremo / Super Master",
+        help_text="Flag adicional para superusuarios con auditoria total sobre Prisci y el sistema.",
     )
 
     class Meta:

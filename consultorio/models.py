@@ -1032,8 +1032,8 @@ class ValeLiquidacion(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.folio_vale:
-            import datetime
-            año = datetime.date.today().year
+            from django.utils import timezone as _tz
+            año = _tz.localtime(_tz.now()).year
             ultimos = ValeLiquidacion.objects.filter(
                 folio_vale__startswith=f'VALE-{año}-'
             ).count()

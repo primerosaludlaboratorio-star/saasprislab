@@ -4,6 +4,7 @@ Vista para Entrega de Resultados de Laboratorio.
 import json
 import logging
 from decimal import Decimal
+from types import SimpleNamespace
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -17,11 +18,80 @@ from django.urls import reverse
 from django.conf import settings
 from urllib.parse import quote
 
-from core.models import OrdenDeServicio, Empresa, BitacoraEntregaResultados, ForenseAcceso
+from core.models import OrdenDeServicio, BitacoraEntregaResultados, ForenseAcceso
 from core.services.forense_service import metadata_consentimiento_snapshot, registrar_acceso_forense
 from core.utils.lfpdppp_resultados import paciente_autorizado_canal_digital_resultados
 
 logger = logging.getLogger(__name__)
+
+
+def _paciente_nombre_para_bitacora(orden):
+    return (
+        getattr(orden, "paciente_nombre_snapshot", None)
+        or getattr(getattr(orden, "paciente", None), "nombre_completo", "")
+        or "Paciente sin nombre"
+    )[:200]
+
+
+def _estado_bitacora_vacio():
+    return SimpleNamespace(
+        ultima=None,
+        fecha_enviado_mail=None,
+        fecha_whatsapp_enviado=None,
+        fecha_leido_paciente=None,
+    )
+
+
+def _crear_bitacora_entrega(
+    orden,
+    *,
+    canal,
+    request=None,
+    usuario=None,
+    destino="",
+    estado="ENTREGADO",
+    observaciones="",
+    confirmado_lectura=False,
+):
+    """Registra una entrega de resultados usando el modelo core vigente."""
+    try:
+        return BitacoraEntregaResultados.objects.create(
+            empresa=orden.empresa,
+            sucursal=getattr(orden, "sucursal", None),
+            usuario_entrega=usuario if getattr(usuario, "is_authenticated", False) else None,
+            orden_id=orden.id,
+            folio_orden=orden.folio_orden or f"ORD-{orden.id}",
+            paciente_nombre=_paciente_nombre_para_bitacora(orden),
+            paciente_id=orden.paciente_id,
+            canal=canal,
+            estado=estado,
+            destino_envio=(destino or "")[:200],
+            confirmado_lectura=confirmado_lectura,
+            observaciones=observaciones or "",
+        )
+    except Exception as exc:
+        logger.exception("No se pudo registrar bitacora de entrega orden=%s canal=%s: %s", orden.id, canal, exc)
+        return None
+
+
+def _bitacoras_por_orden(empresa, orden_ids):
+    estado_por_orden = {orden_id: _estado_bitacora_vacio() for orden_id in orden_ids}
+    if not orden_ids:
+        return estado_por_orden
+
+    for bit in (
+        BitacoraEntregaResultados.objects.filter(empresa=empresa, orden_id__in=orden_ids)
+        .order_by("orden_id", "fecha_entrega")
+    ):
+        estado = estado_por_orden.setdefault(bit.orden_id, _estado_bitacora_vacio())
+        estado.ultima = bit
+        if bit.canal == "EMAIL":
+            estado.fecha_enviado_mail = bit.fecha_entrega
+        elif bit.canal == "WHATSAPP":
+            estado.fecha_whatsapp_enviado = bit.fecha_entrega
+        elif bit.canal == "PORTAL":
+            estado.fecha_leido_paciente = bit.fecha_entrega
+    return estado_por_orden
 
 
 def _contexto_meta_portal_paciente(request):
@@ -87,9 +157,12 @@ def entrega_resultados(request):
     
     from core.utils.candado_financiero import tiene_saldo_pendiente, calcular_saldo
 
+    ordenes_visibles = list(ordenes_listas[:500])
+    bitacoras = _bitacoras_por_orden(empresa, [o.id for o in ordenes_visibles])
+
     items = []
-    for o in ordenes_listas[:500]:
-        bitacora = getattr(o, "bitacora_entrega", None)
+    for o in ordenes_visibles:
+        bitacora = bitacoras.get(o.id) or _estado_bitacora_vacio()
         token = signing.dumps({"oid": o.id, "eid": empresa.id}, salt="resultados-publicos")
         link_publico = request.build_absolute_uri(reverse("resultados_publicos", args=[token]))
         tel = (getattr(o.paciente, "telefono", "") or "").strip().replace(" ", "")
@@ -105,10 +178,10 @@ def entrega_resultados(request):
             whatsapp_link = f"https://wa.me/52{tel}?text={quote(mensaje)}"
 
         # Estado del semáforo
-        email_enviado = bitacora and bitacora.fecha_enviado_mail is not None
-        whatsapp_enviado = bitacora and bitacora.fecha_whatsapp_enviado is not None
+        email_enviado = bitacora.fecha_enviado_mail is not None
+        whatsapp_enviado = bitacora.fecha_whatsapp_enviado is not None
         pdf_generado = True  # Si está en RESULTADOS_LISTOS, el PDF ya se puede generar
-        leido_paciente = bitacora and bitacora.fecha_leido_paciente is not None
+        leido_paciente = bitacora.fecha_leido_paciente is not None
 
         items.append(
             {
@@ -148,6 +221,13 @@ def marcar_entregado(request, orden_id):
     
     orden.estado = 'ENTREGADO'
     orden.save()
+    _crear_bitacora_entrega(
+        orden,
+        canal="PRESENCIAL",
+        request=request,
+        usuario=request.user,
+        observaciones="Resultado marcado como entregado desde logistica de entrega.",
+    )
     
     messages.success(request, f'Resultado entregado: {orden.folio_orden}')
     return redirect('entrega_resultados')
@@ -243,20 +323,14 @@ def api_enviar_email_masivo_resultados(request):
             )
             sent_count = msg.send(fail_silently=False)
             if sent_count:
-                # Registrar en BitacoraEntregaResultados si el modelo existe
-                try:
-                    from laboratorio.models import BitacoraEntregaResultados
-                    bit, _ = BitacoraEntregaResultados.objects.get_or_create(
-                        orden=orden,
-                        defaults={"empresa": empresa},
-                    )
-                    bit.fecha_enviado_mail = timezone.now()
-                    bit.email_destino = email_destino
-                    bit.ip_ultimo_evento = request.META.get("REMOTE_ADDR")
-                    bit.user_agent_ultimo_evento = request.META.get("HTTP_USER_AGENT", "")[:1000]
-                    bit.save()
-                except (ImportError, Exception):
-                    pass  # Modelo aún no migrado — no bloquear envío
+                _crear_bitacora_entrega(
+                    orden,
+                    canal="EMAIL",
+                    request=request,
+                    usuario=request.user,
+                    destino=email_destino,
+                    observaciones=f"Resultados enviados por correo. Link publico: {link_publico}",
+                )
 
                 enviados.append({"orden_id": orden.id, "email": email_destino, "link": link_publico})
             else:
@@ -321,8 +395,8 @@ def resultados_publicos(request, token: str):
         }
         return render(request, "core/resultados_portal_paciente.html", ctx)
 
-    esta_validado = orden.estado == "RESULTADOS_LISTOS"
-    firma_privacidad = getattr(orden.paciente, "telefono_verificado", False) or False
+    esta_validado = orden.estado in ("RESULTADOS_LISTOS", "ENTREGADO")
+    firma_privacidad = paciente_autorizado_canal_digital_resultados(orden.paciente)
 
     if not esta_validado:
         return HttpResponse(
@@ -335,10 +409,14 @@ def resultados_publicos(request, token: str):
             status=403,
         )
 
-    try:
-        pass  # BitacoraEntregaResultados (placeholder)
-    except Exception:
-        pass
+    _crear_bitacora_entrega(
+        orden,
+        canal="PORTAL",
+        request=request,
+        destino="portal paciente",
+        confirmado_lectura=True,
+        observaciones="Paciente abrió el portal público de resultados.",
+    )
 
     meta = metadata_consentimiento_snapshot(orden.paciente) if orden.paciente_id else {}
     meta["vista"] = "resultados_publicos"
@@ -426,9 +504,9 @@ def resultados_publicos_pdf(request, token: str):
             content_type="text/plain; charset=utf-8",
         )
 
-    if orden.estado != "RESULTADOS_LISTOS":
+    if orden.estado not in ("RESULTADOS_LISTOS", "ENTREGADO"):
         return HttpResponse("Resultados no disponibles.", status=403)
-    if not getattr(orden.paciente, "telefono_verificado", False):
+    if not paciente_autorizado_canal_digital_resultados(orden.paciente):
         return HttpResponse("Se requiere aviso de privacidad firmado.", status=403)
 
     meta = metadata_consentimiento_snapshot(orden.paciente) if orden.paciente_id else {}
@@ -474,26 +552,14 @@ def api_marcar_whatsapp_enviado(request, orden_id: int):
         return redirect('home')
     orden = get_object_or_404(OrdenDeServicio, id=orden_id, empresa=empresa)
 
-    try:
-        from laboratorio.models import BitacoraEntregaResultados
-        bit, _ = BitacoraEntregaResultados.objects.get_or_create(
-            orden=orden, defaults={"empresa": empresa}
-        )
-        bit.fecha_whatsapp_enviado = timezone.now()
-        bit.whatsapp_destino = getattr(orden.paciente, "telefono", None) or getattr(bit, 'whatsapp_destino', '')
-        bit.ip_ultimo_evento = request.META.get("REMOTE_ADDR")
-        bit.user_agent_ultimo_evento = request.META.get("HTTP_USER_AGENT", "")[:1000]
-        bit.save()
-    except (ImportError, Exception) as e:
-        # BitacoraEntregaResultados aún no migrado — registrar en AuditLog
-        import logging
-        logging.getLogger(__name__).warning(
-            f"WhatsApp marcado sin BitacoraEntregaResultados: orden {orden_id} - {e}"
-        )
-        # Guardar fecha en campo directo de la orden si existe
-        if hasattr(orden, 'fecha_whatsapp_enviado'):
-            orden.fecha_whatsapp_enviado = timezone.now()
-            orden.save(update_fields=['fecha_whatsapp_enviado'])
+    _crear_bitacora_entrega(
+        orden,
+        canal="WHATSAPP",
+        request=request,
+        usuario=request.user,
+        destino=getattr(orden.paciente, "telefono", "") or "",
+        observaciones="WhatsApp marcado como enviado desde logistica de entrega.",
+    )
 
     meta = metadata_consentimiento_snapshot(orden.paciente) if orden.paciente_id else {}
     meta['origen'] = 'api_marcar_whatsapp_enviado'

@@ -24,7 +24,8 @@ import signal
 import time
 import threading
 from collections import deque
-from datetime import datetime, timedelta
+from datetime import timedelta
+from django.utils import timezone
 
 logger = logging.getLogger('sentinel.repair')
 
@@ -57,7 +58,7 @@ def registrar_error_critico(tipo_excepcion, mensaje_error=''):
     Returns:
         bool: True si se disparó un restart
     """
-    now = datetime.utcnow()
+    now = timezone.now()
     
     # Verificar si el tipo de error es relevante para restart
     is_restart_trigger = (
@@ -103,7 +104,7 @@ def _ejecutar_soft_restart():
     """
     global _last_restart_time
     
-    now = datetime.utcnow()
+    now = timezone.now()
     
     # Cooldown: no reiniciar muy seguido
     if _last_restart_time:
@@ -116,7 +117,7 @@ def _ejecutar_soft_restart():
             return False
     
     try:
-        # En Cloud Run, el master Gunicorn es el PID 1 o el padre del worker actual
+        # En producción, el master Gunicorn es el PID 1 o el padre del worker actual
         master_pid = _encontrar_gunicorn_master()
         
         if master_pid:
@@ -178,7 +179,7 @@ def _encontrar_gunicorn_master():
                     if 'gunicorn' in cmdline:
                         return ppid
             except (FileNotFoundError, PermissionError):
-                # En Cloud Run /proc puede no estar disponible
+                # En algunos entornos /proc puede no estar disponible
                 # Asumir que el padre es Gunicorn si ppid > 1
                 return ppid
     except Exception:
@@ -225,7 +226,7 @@ def recuperar_conexiones_db(mensaje_error=''):
     """
     global _last_db_recovery_time
     
-    now = datetime.utcnow()
+    now = timezone.now()
     
     # Verificar si es un error de conexiones
     error_lower = mensaje_error.lower()
@@ -477,7 +478,7 @@ def _regenerar_sesion_permisos(request, user):
             request.session.modified = True
             # Guardar flag para que el siguiente request recargue permisos
             request.session['_sentinel_perms_refreshed'] = True
-            request.session['_sentinel_perms_timestamp'] = datetime.utcnow().isoformat()
+            request.session['_sentinel_perms_timestamp'] = timezone.now().isoformat()
         
         logger.info(
             f"SENTINEL REPAIR [Permisos]: Permisos regenerados para {user.username}. "

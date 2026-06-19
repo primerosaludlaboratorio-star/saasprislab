@@ -158,9 +158,9 @@
                     <div class="d-flex gap-3 align-items-start">
                         <div class="step-number">2</div>
                         <div class="flex-grow-1">
-                            <h5 class="fw-bold mb-2">Configurar Llave SSH de Google Cloud</h5>
+                            <h5 class="fw-bold mb-2">Configurar Llave SSH de la VPS</h5>
                             <p class="text-muted mb-3">
-                                Genera una llave SSH y agrégala a tu instancia de Google Cloud.
+                                Genera una llave SSH y agrégala a tu servidor remoto.
                             </p>
                             <div class="cmd-block mb-3">
                                 <button class="btn-copy-cmd" onclick="copiarCmd(this)">Copiar</button>
@@ -170,10 +170,9 @@
                                 <span class="comment"># Copiar la llave pública</span><br>
                                 type %USERPROFILE%\.ssh\id_ed25519.pub<br>
                                 <br>
-                                <span class="comment"># Agregar la llave a Google Cloud:</span><br>
-                                <span class="comment"># 1. Ve a console.cloud.google.com</span><br>
-                                <span class="comment"># 2. Compute Engine → Metadatos → Llaves SSH</span><br>
-                                <span class="comment"># 3. Pega el contenido de id_ed25519.pub</span>
+                                <span class="comment"># Agregar la llave al servidor remoto:</span><br>
+                                <span class="comment"># 1. Accede al panel de tu VPS o al archivo authorized_keys</span><br>
+                                <span class="comment"># 2. Pega el contenido de id_ed25519.pub</span><br>
                             </div>
                             <div class="cmd-block">
                                 <button class="btn-copy-cmd" onclick="copiarCmd(this)">Copiar</button>

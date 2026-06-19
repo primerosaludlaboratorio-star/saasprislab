@@ -19,12 +19,13 @@ class Command(BaseCommand):
         parser.add_argument(
             '--strict-cloud',
             action='store_true',
-            help='En nube (GOOGLE_CLOUD_PROJECT / GAE), fallar con exit 1 si el escudo no es válido.',
+            help='En producción (VPS/servidor), fallar con exit 1 si el escudo no es válido.',
         )
 
     def handle(self, *args, **options):
         strict = options['strict_cloud']
-        is_cloud = bool(os.environ.get('GOOGLE_CLOUD_PROJECT') or os.environ.get('GAE_ENV'))
+        from django.conf import settings as _s
+        is_cloud = getattr(_s, 'IS_PRODUCTION', False) or os.environ.get('PRISLAB_ENV', '').lower() == 'production'
 
         ok, msg = verificar_escudo_clinico()
         if ok:

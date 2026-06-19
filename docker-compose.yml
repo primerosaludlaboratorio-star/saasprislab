@@ -53,13 +53,13 @@ services:
         --appendonly yes
         --maxmemory 256mb
         --maxmemory-policy allkeys-lru
-        --requirepass ${REDIS_PASSWORD:-prislab_redis_2026}
+        --requirepass ${REDIS_PASSWORD:?Debes definir REDIS_PASSWORD en .env}
     volumes:
       - redis_data:/data
     ports:
       - "127.0.0.1:6379:6379"   # Solo acceso local
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-prislab_redis_2026}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:?Debes definir REDIS_PASSWORD en .env}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -94,11 +94,15 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?Debes definir DB_PASSWORD en .env}
 
       # Redis
-      REDIS_URL: redis://:${REDIS_PASSWORD:-prislab_redis_2026}@redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Debes definir REDIS_PASSWORD en .env}@redis:6379/0
       CACHE_BACKEND: django_redis.cache.RedisCache
-      CACHE_LOCATION: redis://:${REDIS_PASSWORD:-prislab_redis_2026}@redis:6379/1
+      CACHE_LOCATION: redis://:${REDIS_PASSWORD:?Debes definir REDIS_PASSWORD en .env}@redis:6379/1
 
-      # IA (Gemini)
+      # IA (Gemini como canónico, DeepSeek como alternativo)
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+      DEEPSEEK_API_URL: ${DEEPSEEK_API_URL:-https://api.deepseek.com/v1/chat/completions}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
@@ -114,7 +118,7 @@ services:
       FACTURAMA_SANDBOX: ${FACTURAMA_SANDBOX:-True}
 
       # Lab
-      LAB_VALIDATION_PIN: ${LAB_VALIDATION_PIN:-1234}
+      LAB_VALIDATION_PIN: ${LAB_VALIDATION_PIN:?Debes definir LAB_VALIDATION_PIN en .env}
     volumes:
       # ── VOLÚMENES PERSISTENTES (CRÍTICO) ──
       - media_data:/app/media          # Firmas, PDFs, radiografías, USG

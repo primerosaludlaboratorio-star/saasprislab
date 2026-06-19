@@ -643,11 +643,6 @@ window.pedirGasto = function(){
 // CORTE
 window.cargarCorte = function(){window.location.href='/farmacia/corte-caja/';};
 
-// TABS MULTIPLES
-var _tickets={1:[]};var _ticketActual=1;
-window.switchTicket = function(n){_tickets[_ticketActual]=[...window.carrito];_ticketActual=n;window.carrito=_tickets[n]||[];renderCarrito();document.querySelectorAll('#ticketTabs .nav-link').forEach(function(el){el.classList.remove('active','bg-white');});};
-window.nuevoTicket = function(){_tickets[_ticketActual]=[...window.carrito];var ids=Object.keys(_tickets).map(Number);var nId=Math.max.apply(null,ids)+1;_tickets[nId]=[];var tabs=document.getElementById('ticketTabs');if(tabs){var li=document.createElement('li');li.className='nav-item';li.innerHTML='<a class="nav-link" href="#" onclick="switchTicket('+nId+')"><i class="bi bi-receipt"></i> Ticket '+nId+'</a>';tabs.insertBefore(li,tabs.lastElementChild);}window.switchTicket(nId);};
-
 // TECLADO VIRTUAL
 window.typeKey = function(key){var a=document.activeElement;if(!a||!['INPUT','TEXTAREA'].includes(a.tagName))return;if(key==='BACK'){a.value=a.value.slice(0,-1);}else if(key==='ENTER'){a.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));}else{a.value+=key;}a.dispatchEvent(new Event('input',{bubbles:true}));};
 window.toggleVirtualKeyboard = function(){var kb=document.getElementById('virtual-keyboard');if(!kb)return;kb.style.display=(kb.style.display==='none'||kb.style.display==='')?'block':'none';};

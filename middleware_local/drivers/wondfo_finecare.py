@@ -10,12 +10,13 @@ Características:
 - Parsing flexible de resultados
 """
 
-import serial
 import socket
 import threading
 import logging
 from typing import Optional, Callable, Dict, Any
 import time
+
+from .serial_compat import serial
 
 logger = logging.getLogger(__name__)
 
@@ -248,5 +249,48 @@ class WondfoFinecareDriver:
     
     def procesar(self):
         """Procesa datos pendientes (método llamado en loop principal)."""
-        # El procesamiento se hace en el hilo de lectura
-        pass
+        if self.thread and self.thread.is_alive():
+            return {
+                'modo': f'hilo_{self.tipo}',
+                'conectado': self._esta_conectado(),
+                'buffer_pendiente': len(self.buffer),
+            }
+
+        bytes_leidos = 0
+        try:
+            if self.tipo == 'serial' and self.serial_port and self.serial_port.is_open:
+                disponibles = int(getattr(self.serial_port, 'in_waiting', 0) or 0)
+                if disponibles > 0:
+                    data = self.serial_port.read(disponibles)
+                    if data:
+                        self.buffer += data.decode(self.encoding, errors='ignore')
+                        bytes_leidos = len(data)
+            elif self.tipo == 'tcp' and self.socket:
+                try:
+                    data = self.socket.recv(4096)
+                except socket.timeout:
+                    data = b''
+                if data:
+                    self.buffer += data.decode(self.encoding, errors='ignore')
+                    bytes_leidos = len(data)
+
+            if self.buffer:
+                self._procesar_buffer()
+
+            return {
+                'modo': f'loop_{self.tipo}',
+                'conectado': self._esta_conectado(),
+                'bytes_leidos': bytes_leidos,
+                'buffer_pendiente': len(self.buffer),
+            }
+        except serial.SerialException as e:
+            logger.error(f"Error de lectura serial en {self.nombre}: {e}")
+            raise
+
+    def _esta_conectado(self) -> bool:
+        """Indica si el transporte configurado sigue disponible."""
+        if self.tipo == 'serial':
+            return bool(self.serial_port and self.serial_port.is_open)
+        if self.tipo == 'tcp':
+            return bool(self.socket)
+        return False

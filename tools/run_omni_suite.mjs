@@ -106,8 +106,12 @@ function collectFindings(obj) {
   }
 
   // PDV
-  if (Array.isArray(obj.network_api_buscar_html) && obj.network_api_buscar_html.length === 0) {
-    add({ type: 'pdv_no_search_calls', detail: 'No hubo llamadas a buscar-fragmento.' });
+  if (proto === 'PRISLAB_PDV_E2E_AUDIT') {
+    const pdvSearchJson = Array.isArray(obj.network_api_buscar_json) ? obj.network_api_buscar_json : [];
+    const pdvSearchHtml = Array.isArray(obj.network_api_buscar_html) ? obj.network_api_buscar_html : [];
+    if (pdvSearchJson.length === 0 && pdvSearchHtml.length === 0) {
+      add({ type: 'pdv_no_search_calls', detail: 'No hubo llamadas a busqueda PDV JSON ni HTML.' });
+    }
   }
 
   if (Array.isArray(obj.network_api_lotes_producto)) {
@@ -138,20 +142,46 @@ function dedupeFindings(findings) {
   return out;
 }
 
+function resolveAuditorCommand(repoRoot, auditor) {
+  let cmd = auditor.cmd;
+  const args = [...auditor.args];
+
+  if (process.platform === 'win32') {
+    if (cmd === 'node') {
+      cmd = process.execPath;
+    } else if (cmd === 'python') {
+      const venvPython = path.join(repoRoot, '.venv', 'Scripts', 'python.exe');
+      if (process.env.PYTHON && fs.existsSync(process.env.PYTHON)) {
+        cmd = process.env.PYTHON;
+      } else if (fs.existsSync(venvPython)) {
+        cmd = venvPython;
+      } else {
+        cmd = 'python.exe';
+      }
+    }
+  }
+
+  return { cmd, args };
+}
+
 function runAuditor(repoRoot, auditor, vars) {
   const env = { ...process.env, ...substituteEnv(auditor.env, vars) };
   const cwd = repoRoot;
   const timeoutMs = Number(process.env.OMNI_TIMEOUT_MS || 120000);
-  const label = `${auditor.cmd} ${auditor.args.join(' ')}`;
+  const resolved = resolveAuditorCommand(repoRoot, auditor);
+  const label = `${resolved.cmd} ${resolved.args.join(' ')}`;
   process.stderr.write(`[omni] start: ${auditor.id} (${label})\n`);
   const started = Date.now();
-  const res = spawnSync(auditor.cmd, auditor.args, {
+  const res = spawnSync(resolved.cmd, resolved.args, {
     cwd,
     env,
     encoding: 'utf8',
     timeout: Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : undefined,
   });
   process.stderr.write(`[omni] end:   ${auditor.id} (ms=${Date.now() - started}, status=${res.status})\n`);
+  if (res.error) {
+    process.stderr.write(`[omni] error: ${auditor.id} ${res.error.message}\n`);
+  }
 
   const stdout = (res.stdout || '').trim();
   const stderr = (res.stderr || '').trim();
@@ -163,13 +193,14 @@ function runAuditor(repoRoot, auditor, vars) {
 
   return {
     id: auditor.id,
-    cmd: auditor.cmd,
-    args: auditor.args,
+    cmd: resolved.cmd,
+    args: resolved.args,
     exitCode: typeof res.status === 'number' ? res.status : null,
     ok,
     jsonOk,
     stdout,
     stderr,
+    error: res.error ? String(res.error.message || res.error) : null,
     json,
   };
 }
@@ -333,6 +364,8 @@ async function main() {
     lastSuite: 'tools/last_suite.json',
     lastSummary: 'tools/last_suite_summary.json',
   }, null, 2));
+
+  process.exitCode = suite.summary.ok ? 0 : 1;
 }
 
 main();

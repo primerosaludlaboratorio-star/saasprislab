@@ -98,7 +98,7 @@ def manual_operativo_pdf(request):
         )
     )
     story.append(Spacer(1, 0.2 * inch))
-    story.append(Paragraph("Capturas de pantalla (placeholders):", styles["Heading3"]))
+    story.append(Paragraph("Capturas de pantalla sugeridas:", styles["Heading3"]))
     story.append(Paragraph("- PDV: búsqueda + agregar al carrito", styles["BodyText"]))
     story.append(Paragraph("- Pop-up Neón FEFO: confirmación obligatoria", styles["BodyText"]))
     story.append(Paragraph("- Cierre de venta: bloqueo si no se confirmó FEFO", styles["BodyText"]))
@@ -123,7 +123,7 @@ def manual_operativo_pdf(request):
     for p in pasos:
         story.append(Paragraph(f"• {p}", styles["BodyText"]))
     story.append(Spacer(1, 0.2 * inch))
-    story.append(Paragraph("Capturas de pantalla (placeholders):", styles["Heading3"]))
+    story.append(Paragraph("Capturas de pantalla sugeridas:", styles["Heading3"]))
     story.append(Paragraph("- Cotización Flash: pantalla principal", styles["BodyText"]))
     story.append(Paragraph("- Autocompletado de estudios", styles["BodyText"]))
     story.append(Paragraph("- Botones grandes: WhatsApp / Convertir a Orden", styles["BodyText"]))
@@ -160,4 +160,3 @@ def manual_operativo_pdf(request):
     resp = HttpResponse(pdf, content_type="application/pdf")
     resp["Content-Disposition"] = f'attachment; filename="manual_operativo_{empresa_nombre.lower()}.pdf"'
     return resp
-

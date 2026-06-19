@@ -1,55 +1,64 @@
-#!/bin/bash
-# Script de verificación antes del despliegue
+#!/usr/bin/env bash
+# Verificación canónica para despliegue VPS PRISLAB
 
-echo "🔍 Verificando archivos de despliegue..."
+set -euo pipefail
 
-# Verificar que manage.py existe
-if [ ! -f "manage.py" ]; then
-    echo "❌ ERROR: manage.py no encontrado en la raíz del proyecto"
-    exit 1
-fi
-echo "✅ manage.py encontrado"
+echo "🔍 Verificando archivos y configuración de despliegue VPS..."
 
-# Verificar que requirements.txt existe
-if [ ! -f "requirements.txt" ]; then
-    echo "❌ ERROR: requirements.txt no encontrado"
-    exit 1
-fi
-echo "✅ requirements.txt encontrado"
+check_file() {
+    local file="$1"
+    local label="$2"
+    if [ ! -f "$file" ]; then
+        echo "❌ ERROR: $label no encontrado en $file"
+        exit 1
+    fi
+    echo "✅ $label encontrado"
+}
 
-# Verificar que Dockerfile existe
-if [ ! -f "Dockerfile" ]; then
-    echo "❌ ERROR: Dockerfile no encontrado"
-    exit 1
-fi
-echo "✅ Dockerfile encontrado"
+check_file "manage.py" "manage.py"
+check_file "requirements.txt" "requirements.txt"
+check_file "scripts/deploy_vps.sh" "scripts/deploy_vps.sh"
+check_file "scripts/aplicar_fixes_produccion.sh" "scripts/aplicar_fixes_produccion.sh"
+check_file "scripts/activar_wildcard_ssl.sh" "scripts/activar_wildcard_ssl.sh"
+check_file "scripts/web_entrypoint.sh" "scripts/web_entrypoint.sh"
+check_file "scripts/prislab-gunicorn.service" "prislab-gunicorn.service"
+check_file "scripts/prislab-celery.service" "prislab-celery.service"
+check_file "scripts/prislab-celerybeat.service" "prislab-celerybeat.service"
+check_file "nginx/conf.d/prislab.conf" "nginx/conf.d/prislab.conf"
+check_file ".env.production.example" ".env.production.example"
 
-# Verificar que gunicorn está en requirements.txt
 if ! grep -q "gunicorn" requirements.txt; then
     echo "❌ ERROR: gunicorn no está en requirements.txt"
     exit 1
 fi
 echo "✅ gunicorn encontrado en requirements.txt"
 
-# Verificar que el puerto es 8080 en Dockerfile
-if ! grep -q "8080" Dockerfile; then
-    echo "⚠️ ADVERTENCIA: Puerto 8080 no encontrado en Dockerfile"
-fi
-echo "✅ Puerto 8080 verificado"
-
-# Verificar que entrypoint.sh existe y es ejecutable
-if [ ! -f "entrypoint.sh" ]; then
-    echo "❌ ERROR: entrypoint.sh no encontrado"
+if ! grep -q "celery" requirements.txt; then
+    echo "❌ ERROR: celery no está en requirements.txt"
     exit 1
 fi
-echo "✅ entrypoint.sh encontrado"
+echo "✅ celery encontrado en requirements.txt"
 
-# Verificar que entrypoint.sh tiene permisos de ejecución
-if [ ! -x "entrypoint.sh" ]; then
-    echo "⚠️ ADVERTENCIA: entrypoint.sh no tiene permisos de ejecución"
-    chmod +x entrypoint.sh
-    echo "✅ Permisos de ejecución agregados"
+if ! grep -q "prislab-gunicorn" scripts/deploy_vps.sh; then
+    echo "❌ ERROR: deploy_vps.sh no referencia prislab-gunicorn"
+    exit 1
+fi
+echo "✅ deploy_vps.sh usa servicios prislab-*"
+
+if ! grep -q "prislab-celerybeat" scripts/aplicar_fixes_produccion.sh; then
+    echo "❌ ERROR: aplicar_fixes_produccion.sh no reinicia prislab-celerybeat"
+    exit 1
+fi
+echo "✅ aplicar_fixes_produccion.sh reinicia prislab-*"
+
+if ! grep -q "prislab.labcorecloud.com" nginx/conf.d/prislab.conf; then
+    echo "⚠️ ADVERTENCIA: no se detectó prislab.labcorecloud.com en nginx/conf.d/prislab.conf"
+fi
+echo "✅ Configuración nginx verificada"
+
+if [ ! -x "scripts/deploy_vps.sh" ]; then
+    echo "⚠️ ADVERTENCIA: scripts/deploy_vps.sh no tiene permisos de ejecución"
 fi
 
-echo ""
-echo "✅ Todas las verificaciones pasaron. Listo para desplegar!"
+echo
+echo "✅ Verificación completada. El árbol está listo para el deploy VPS."

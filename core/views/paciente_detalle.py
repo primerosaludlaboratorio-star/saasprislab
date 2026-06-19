@@ -289,7 +289,7 @@ class ExpedienteClinicoView(LoginRequiredMixin, DetailView):
         if orden.archivo_resultado:
             try:
                 archivo_url = orden.archivo_resultado.url
-            except:
+            except Exception:
                 archivo_url = None
         
         return {

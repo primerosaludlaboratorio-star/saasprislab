@@ -16,6 +16,7 @@ import hashlib
 import json
 import logging
 from datetime import datetime
+from django.utils import timezone
 
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
@@ -91,10 +92,13 @@ class BlindajeExpedienteMiddleware:
             return int(match.group(1))
         
         # Intentar extraer del POST
-        if hasattr(request, 'POST'):
+        if request.method in ('POST', 'PUT', 'PATCH'):
             nota_id = request.POST.get('nota_id') or request.POST.get('soap_id')
             if nota_id:
-                return int(nota_id)
+                try:
+                    return int(nota_id)
+                except (ValueError, TypeError):
+                    return None
         
         return None
 
@@ -113,7 +117,7 @@ class SnapshotMiddleware:
         request._blindaje_metadata = {
             'ip_origen': self._get_client_ip(request),
             'user_agent': request.META.get('HTTP_USER_AGENT', '')[:500],
-            'timestamp_middleware': datetime.now().isoformat(),
+            'timestamp_middleware': timezone.localtime(timezone.now()).isoformat(),
         }
         
         response = self.get_response(request)
@@ -261,7 +265,7 @@ def _generar_snapshot_jsonb(nota):
         'archivos_adjuntos': nota.archivos_adjuntos,
         'fecha_consulta': nota.fecha_consulta.isoformat() if nota.fecha_consulta else None,
         'ultima_modificacion': nota.ultima_modificacion.isoformat() if nota.ultima_modificacion else None,
-        'snapshot_generado_en': datetime.now().isoformat(),
+        'snapshot_generado_en': timezone.localtime(timezone.now()).isoformat(),
         'version_snapshot': '2.0',
     }
     

@@ -141,8 +141,8 @@ class HistoriaClinica(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.numero_expediente:
-            from datetime import datetime
-            año = datetime.now().year
+            from django.utils import timezone as _tz
+            año = _tz.localtime(_tz.now()).year
             ultimos = HistoriaClinica.objects.filter(
                 empresa=self.empresa,
                 numero_expediente__startswith=f'HC-{año}-'
@@ -250,16 +250,16 @@ class ConsultaMedica(models.Model):
     cita = models.OneToOneField(CitaMedica, on_delete=models.SET_NULL, null=True, blank=True, related_name='consulta')
     signos_vitales = models.ForeignKey(SignosVitales, on_delete=models.SET_NULL, null=True, blank=True, related_name='consultas')
 
-    motivo_consulta = models.TextField(verbose_name="Motivo de Consulta")
-    padecimiento_actual = models.TextField(verbose_name="Padecimiento Actual")
+    motivo_consulta = models.TextField(null=True, blank=True, verbose_name="Motivo de Consulta")
+    padecimiento_actual = models.TextField(null=True, blank=True, verbose_name="Padecimiento Actual")
 
-    exploracion_fisica = models.TextField(verbose_name="Exploración Física")
+    exploracion_fisica = models.TextField(null=True, blank=True, verbose_name="Exploración Física")
 
-    diagnostico_principal = models.CharField(max_length=500, verbose_name="Diagnóstico Principal")
+    diagnostico_principal = models.CharField(max_length=500, null=True, blank=True, verbose_name="Diagnóstico Principal")
     diagnostico_cie10 = models.CharField(max_length=20, null=True, blank=True, verbose_name="Código CIE-10")
     diagnosticos_secundarios = models.TextField(null=True, blank=True, verbose_name="Diagnósticos Secundarios")
 
-    plan_tratamiento = models.TextField(verbose_name="Plan de Tratamiento")
+    plan_tratamiento = models.TextField(null=True, blank=True, verbose_name="Plan de Tratamiento")
     estudios_solicitados = models.TextField(null=True, blank=True, verbose_name="Estudios Solicitados")
     pronostico = models.CharField(max_length=20, choices=PRONOSTICO_CHOICES, default='BUENO')
     fecha_proxima_cita = models.DateField(null=True, blank=True, verbose_name="Próxima Cita")
@@ -299,17 +299,22 @@ class ConsultaMedica(models.Model):
     def clean(self):
         from django.core.exceptions import ValidationError
         super().clean()
-        if self.estado == 'FINALIZADA' and not self.diagnostico_cie10:
-            raise ValidationError({
-                'diagnostico_cie10': 'No se puede finalizar una consulta sin un diagnóstico CIE-10.'
-            })
+        # Solo validar campos mínimos al finalizar - los defaults permiten flujo flexible
+        if self.estado == 'FINALIZADA':
+            errores = {}
+            # El folio es generado automáticamente
+            if not self.folio_consulta:
+                errores['folio_consulta'] = 'El folio de consulta es requerido.'
+            # Permitir finalizar con defaults - solo requerir campos técnicos
+            if errores:
+                raise ValidationError(errores)
 
     def save(self, *args, **kwargs):
         if self.estado == 'FINALIZADA':
             self.full_clean()
         if not self.folio_consulta:
-            from datetime import datetime
-            año = datetime.now().year
+            from django.utils import timezone as _tz
+            año = _tz.localtime(_tz.now()).year
             # Prefijo incluye empresa_id para garantizar unicidad multi-tenant
             prefijo = f'CONS-{self.empresa_id}-{año}-'
             ultimas = ConsultaMedica.objects.filter(
@@ -368,8 +373,8 @@ class CertificadoMedico(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.folio_certificado:
-            from datetime import datetime
-            año = datetime.now().year
+            from django.utils import timezone as _tz
+            año = _tz.localtime(_tz.now()).year
             tipo_corto = self.tipo_certificado[:3].upper()
             # Prefijo incluye empresa_id para garantizar unicidad multi-tenant
             prefijo = f'CERT-{self.empresa_id}-{tipo_corto}-{año}-'
@@ -620,8 +625,8 @@ class EstudioImagen(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.folio_estudio:
-            from datetime import datetime
-            año = datetime.now().year
+            from django.utils import timezone as _tz
+            año = _tz.localtime(_tz.now()).year
             tipo_corto = self.tipo_estudio.split('_')[0][:3].upper()
             ultimos = EstudioImagen.objects.filter(
                 empresa=self.empresa,

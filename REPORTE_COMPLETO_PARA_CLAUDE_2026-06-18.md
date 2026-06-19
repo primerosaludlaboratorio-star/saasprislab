@@ -4,6 +4,34 @@ Fecha de consolidacion: 2026-06-18
 Estado de corte: listo para revision externa tecnica y funcional  
 Responsable de este corte: Codex
 
+## Actualizacion critica 2026-06-19 - Diagnostico real del login en produccion
+
+Hallazgo confirmado:
+
+- las verificaciones iniciales de usuarios en VPS se ejecutaron con `manage.py shell` fuera del entorno real cargado por `systemd`
+- en ese contexto, Django cayó a la base local `sqlite` del servidor en lugar de PostgreSQL productivo
+- por eso las cuentas parecían autenticar en consola pero seguían fallando en `https://prislab.labcorecloud.com/login/`
+- el login web no estaba contradiciendo a Django: estaban usando dos bases distintas
+
+Causa raíz:
+
+- el archivo `/opt/prislab/app/.env` es válido para `EnvironmentFile=` de `systemd`
+- pero no es seguro usar `source .env` en bash porque `SECRET_KEY` contiene caracteres especiales sin quoting shell
+- eso vuelve frágiles o engañosas las pruebas manuales en producción
+
+Corrección estructural aplicada en el repo:
+
+- nuevo wrapper seguro: [scripts/run_manage_with_env.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\scripts\run_manage_with_env.py)
+- nuevo comando de sincronización: [core/management/commands/sync_usuarios_auditoria.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\management\commands\sync_usuarios_auditoria.py)
+- `scripts/aplicar_fixes_produccion.sh` ya no usa `source .env`
+- `scripts/deploy_vps.sh` ya no usa `source .env`
+
+Regla nueva obligatoria para producción:
+
+- no usar `python manage.py ...` directo para operaciones manuales críticas en VPS si dependen del `.env`
+- usar siempre `python scripts/run_manage_with_env.py ...`
+- si no se sigue esta regla, existe riesgo real de tocar la base equivocada y validar datos falsos
+
 ## 1. Regla operativa obligatoria
 
 Toda persona, agente o IA que haga cualquiera de estas acciones:
@@ -59,6 +87,8 @@ Estado actual confirmado en local:
 - `PRIS IA` ya no esta bloqueado por el stub muerto
 - proveedor de IA ya tiene fallback seguro entre Gemini y DeepSeek
 - smoke script de integracion ya no rompe descubrimiento de pruebas
+- se agrego `core/management/commands/simular_operacion_anual.py` para poblar pacientes, ordenes LIMS y ventas/devoluciones reales de farmacia con carga masiva controlada
+- se agrego `core/management/commands/importar_medicos_xlsx.py` para importar el catalogo medico desde el Excel original del laboratorio
 
 Conclusiones:
 
@@ -138,6 +168,42 @@ Pendiente exacto para cerrar:
 - crear o migrar `PRISLAB_Media` a `Shared Drive`
 - compartir esa unidad/carpeta con `vertex-express@prislab-v5-ai.iam.gserviceaccount.com`
 - mantener mientras tanto el backend por defecto en `BufferLocalStorage` para no romper cargas productivas
+
+## 4.3.2 Endurecimiento adicional aplicado el 2026-06-19
+
+Archivos principales:
+
+- [config/storage_backends.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\config\storage_backends.py)
+- [core/views/cron_tasks.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\cron_tasks.py)
+- [consultorio/api_views.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\consultorio\api_views.py)
+- [core/tests/test_storage_backends_security.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\tests\test_storage_backends_security.py)
+- [core/tests/test_cron_tasks_security.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\tests\test_cron_tasks_security.py)
+- [consultorio/tests.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\consultorio\tests.py)
+
+Cambios ejecutados:
+
+- se eliminó la creación automática de permisos públicos `anyone/reader` al guardar archivos en Google Drive
+- se añadió compatibilidad explícita con `Shared Drive` usando `supportsAllDrives=True` e `includeItemsFromAllDrives=True` en búsquedas, lecturas, borrados y creación de carpetas/archivos
+- los endpoints `cron/*` ya no aceptan headers spoofeables en producción cuando `CRON_SECRET` no está configurado; en ese caso responden `403`
+- el fallback por headers tipo scheduler quedó permitido solo en entornos `DEBUG=True`
+- los endpoints de audio de consultorio y laboratorio dejaron de usar `csrf_exempt`
+- esos endpoints ahora validan rol autorizado y rechazan usuarios sin empresa asignada
+- el flujo de laboratorio ahora filtra `Analito` por `empresa` del usuario para evitar consulta cruzada por tenant
+- se corrigió un bug real oculto: el endpoint de audio de laboratorio intentaba leer `Parametro.keywords`, campo inexistente; ahora deriva `keywords` desde `abreviatura`
+
+Evidencia de verificación:
+
+- test focal de storage ejecutado OK: `core.tests.test_storage_backends_security` (`2 tests`, `0 failures`)
+- smoke verification directa contra Django local ejecutada OK con estos resultados:
+  - audio consulta con rol no autorizado -> `403`
+  - audio consulta con usuario sin empresa -> `403`
+  - audio laboratorio contra analito de otra empresa -> `400`
+  - cron en producción sin `CRON_SECRET` -> `403`
+  - cron con `X-Cron-Secret` válido -> `200`
+
+Nota operacional importante:
+
+- el harness completo de pruebas en Windows sigue teniendo fricción por salida `cp1252` y `flush` durante migraciones de prueba cuando se usa cierto wrapper; no bloquea el cambio aplicado, pero sí conviene que Claude o Cascada vuelvan a correr estas clases en un entorno Linux o directamente en la VPS durante la siguiente ronda de verificación
 - una vez exista `Shared Drive`, reejecutar la prueba de subida/borrado real para cerrar el punto
 
 ### 4.4 Academia
@@ -281,6 +347,7 @@ Pendientes tecnicos que no bloquean la auditoria:
 - revision final de catálogos y valores de referencia contra el sistema legacy
 - revision final de flujos de laboratorio, pacientes, clientes, medicos y reportes para paridad total
 - despliegues finales de nuevos cambios al servidor conforme se vayan aprobando
+- ejecutar en entorno real la nueva carga controlada (`simular_operacion_anual`) y la importacion del Excel de medicos (`importar_medicos_xlsx`) antes de la siguiente auditoria funcional profunda
 
 Pendientes operativos:
 
@@ -330,6 +397,11 @@ Orden recomendado:
 7. Reportes
 8. Academia
 9. Integraciones Google
+
+Antes de esa ronda, si el entorno sigue casi vacio, usar primero:
+
+1. `python manage.py importar_medicos_xlsx "C:\\ruta\\Médicos.xlsx" --empresa-id <id>`
+2. `python manage.py simular_operacion_anual --empresa-id <id> --usuario <user> --pacientes 300 --ordenes-lab 800 --ventas-farmacia 1500 --devoluciones-farmacia 120 --dias 365`
 
 En cada modulo deben registrar:
 

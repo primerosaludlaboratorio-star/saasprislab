@@ -1,0 +1,126 @@
+/**
+ * Sidebar PIN CSS - Estilos para el botón de fijar sidebar
+ */
+
+/* Botón de PIN */
+.sidebar-pin-btn {
+    position: fixed;
+    top: 70px;
+    left: 245px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fff 0%, #f5f5f5 100%);
+    border: 2px solid #e0e0e0;
+    color: #666;
+    cursor: pointer;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* Mostrar botón cuando el sidebar está expandido */
+#islandSidebar:hover .sidebar-pin-btn,
+#islandSidebar.expanded .sidebar-pin-btn,
+#islandSidebar.sidebar-pinned .sidebar-pin-btn {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Estado activo (fijado) */
+.sidebar-pin-btn.active {
+    background: linear-gradient(135deg, #D9230F 0%, #ff4d2e 100%);
+    border-color: #D9230F;
+    color: white;
+    box-shadow: 0 2px 12px rgba(217, 35, 15, 0.4);
+}
+
+/* Hover del botón */
+.sidebar-pin-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.sidebar-pin-btn.active:hover {
+    box-shadow: 0 4px 16px rgba(217, 35, 15, 0.5);
+}
+
+/* Sidebar fijado - mantener expandido */
+#islandSidebar.sidebar-pinned,
+#islandSidebar.sidebar-pinned.expanded {
+    width: 280px !important;
+    min-width: 280px !important;
+}
+
+#islandSidebar.sidebar-pinned .island-panel,
+#islandSidebar.sidebar-pinned.expanded .island-panel {
+    width: 280px !important;
+}
+
+#islandSidebar.sidebar-pinned .prsb-content,
+#islandSidebar.sidebar-pinned .island-content {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Mantener visibles los chevrons cuando está fijado */
+#islandSidebar.sidebar-pinned .prsb-chevron {
+    transform: rotate(90deg);
+}
+
+/* Ajustar main-wrapper cuando sidebar está fijado */
+body.sidebar-pinned-active .main-wrapper {
+    margin-left: 280px !important;
+}
+
+/* Indicador visual de sidebar fijado */
+.sidebar-pin-indicator {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, #D9230F 0%, #ff6b4a 100%);
+    z-index: 1049;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+body.sidebar-pinned-active .sidebar-pin-indicator {
+    opacity: 1;
+}
+
+/* Responsive - ocultar en móvil */
+@media (max-width: 991.98px) {
+    .sidebar-pin-btn {
+        display: none !important;
+    }
+    
+    #islandSidebar.sidebar-pinned {
+        width: var(--island-rail-width) !important;
+    }
+}
+
+/* Animación suave para expansión/contracción */
+#islandSidebar {
+    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                min-width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Zona de tolerancia aumentada para el hover */
+#islandSidebar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -20px;
+    width: 40px;
+    height: 100%;
+    z-index: 1;
+}

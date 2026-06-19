@@ -6,7 +6,7 @@ legibles por el Director y bloques de contexto exportables para Cursor.
 
 v3: Genera contexto_reparacion (JSON) con archivo, línea, código propuesto,
 instrucciones SSH y prompt optimizado para Cursor Remote SSH. Soporta
-reparaciones en vivo en el servidor de producción de Google Cloud.
+reparaciones en vivo en el servidor de producción de la VPS.
 """
 import json
 import logging
@@ -126,8 +126,7 @@ def analizar_error_con_ia(tipo_excepcion, traceback_texto, url, metodo, datos_re
         return (analisis, contexto, reparacion)
 
     try:
-        from core.utils.gemini_client import get_gemini_client
-        client = get_gemini_client()
+        from core.utils.gemini_client import generate_content
 
         # ── Archivos involucrados (para el prompt) ──
         archivos_info = ""
@@ -137,7 +136,7 @@ def analizar_error_con_ia(tipo_excepcion, traceback_texto, url, metodo, datos_re
                 archivos_info += f"  - {e['archivo']} línea {e['linea']} en {e['funcion']}: {e['codigo']}\n"
 
         prompt = f"""Eres PRIS Sentinel, el sistema de telemetría inteligente de PRISLAB (Sistema Clínico SaaS en Django 5 + Python 3.12).
-El servidor de producción está en Google Cloud Run (contenedor Docker). El código fuente se edita via Cursor con Remote SSH.
+El servidor de producción está en una VPS Ubuntu (contenedor Docker o Gunicorn). El código fuente se edita via Cursor con Remote SSH.
 La ruta del proyecto en el contenedor es /app/ y en desarrollo local es el directorio raíz del workspace.
 
 CONTEXTO DEL ERROR:
@@ -184,12 +183,7 @@ Genera un JSON válido (sin markdown, sin ```json, SOLO el JSON puro) con esta e
 }}
 """
 
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=prompt,
-            config={'max_output_tokens': 2048}
-        )
-        texto_respuesta = response.text
+        texto_respuesta = generate_content(prompt, max_tokens=2048)
 
         # Separar los tres bloques
         analisis_ia = ''
@@ -383,8 +377,7 @@ def cruzar_feedback_con_error(descripcion_usuario, ultima_incidencia):
         )
 
     try:
-        from core.utils.gemini_client import get_gemini_client
-        client = get_gemini_client()
+        from core.utils.gemini_client import generate_content
 
         prompt = f"""Eres PRIS Sentinel. Una doctora reportó un problema con el sistema:
 
@@ -402,11 +395,7 @@ GENERA UN "TICKET DE REPARACIÓN MAESTRO":
 El ticket debe ser copiable directamente a Cursor por Jonathan Alonso.
 """
 
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=prompt
-        )
-        return response.text
+        return generate_content(prompt, max_tokens=1200)
 
     except Exception as e:
         logger.error(f"SENTINEL: Error al generar ticket maestro: {e}")
@@ -446,7 +435,7 @@ def generar_prompt_cursor_reparacion(incidencia):
     prompt = (
         f"@Codebase PRIS SENTINEL — TICKET DE REPARACIÓN EN VIVO #{incidencia.id}\n"
         f"{'=' * 70}\n"
-        f"MODO: REPARACIÓN REMOTA (Remote SSH → Servidor Ubuntu/Cloud Run)\n"
+        f"MODO: REPARACIÓN REMOTA (Remote SSH → Servidor Ubuntu)\n"
         f"SEVERIDAD: {incidencia.get_severidad_display()}\n"
         f"MÓDULO: {incidencia.namespace.upper()}\n"
         f"TAG: {incidencia.tag}\n"

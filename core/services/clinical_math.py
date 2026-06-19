@@ -364,8 +364,12 @@ def sync_calculated_resultados_for_orden(
                     vars_map[cod] = fv
                 if abr:
                     vars_map[abr] = fv
-            except (ValueError, OverflowError):
-                pass
+            except (ValueError, OverflowError) as _e:
+                avisos.append({
+                    'analito_id': a.id,
+                    'codigo': cod,
+                    'error': f'No se pudo registrar {num!r} como float para fórmulas en cascada: {_e}',
+                })
 
             if not dry_run:
                 rp, _ = ResultadoParametro.objects.update_or_create(

@@ -14,11 +14,13 @@ logger = logging.getLogger('sentinel.shield')
 
 
 def _is_cloud_runtime():
+    """Detecta entorno de producción (VPS, Cloud, cualquier servidor no-local)."""
     import os
-
+    from django.conf import settings as _s
     return bool(
-        os.environ.get('GOOGLE_CLOUD_PROJECT')
-        or os.environ.get('GAE_ENV', '').startswith('standard')
+        getattr(_s, 'IS_PRODUCTION', False)
+        or os.environ.get('PRISLAB_ENV', '').lower() == 'production'
+        or os.environ.get('DJANGO_ENV', '').lower() == 'production'
     )
 
 

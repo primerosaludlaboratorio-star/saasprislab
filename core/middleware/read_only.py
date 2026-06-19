@@ -43,6 +43,49 @@ def _post_allowed_path(path: str) -> bool:
     return any(p.startswith(pref) for pref in _POST_AUTH_PREFIXES)
 
 
+def _audit_write_allowed(request) -> bool:
+    """
+    Permite escrituras solo para auditoría explícita y acotada.
+
+    Requiere:
+    - usuario autenticado
+    - `PRISLAB_READ_ONLY_AUDIT_ALLOWED_PATH_PREFIXES` con el prefijo solicitado
+    - match por username o rol, o superuser si el flag lo habilita
+    """
+    user = getattr(request, 'user', None)
+    if not user or not user.is_authenticated:
+        return False
+
+    path = request.path_info or '/'
+    prefixes = getattr(settings, 'PRISLAB_READ_ONLY_AUDIT_ALLOWED_PATH_PREFIXES', ()) or ()
+    if not any(path.startswith(prefix) for prefix in prefixes):
+        return False
+
+    usernames = {
+        u.strip().lower()
+        for u in getattr(settings, 'PRISLAB_READ_ONLY_AUDIT_ALLOWED_USERNAMES', ()) or ()
+        if u and str(u).strip()
+    }
+    roles = {
+        r.strip().upper()
+        for r in getattr(settings, 'PRISLAB_READ_ONLY_AUDIT_ALLOWED_ROLES', ()) or ()
+        if r and str(r).strip()
+    }
+    allow_superusers = bool(getattr(settings, 'PRISLAB_READ_ONLY_ALLOW_SUPERUSERS', False))
+
+    if allow_superusers and getattr(user, 'is_superuser', False):
+        return True
+
+    if usernames and getattr(user, 'username', '').strip().lower() in usernames:
+        return True
+
+    user_role = getattr(user, 'rol', '') or ''
+    if roles and user_role.strip().upper() in roles:
+        return True
+
+    return False
+
+
 class ReadOnlyMiddleware:
     """Intercepta mutaciones HTTP cuando PRISLAB_READ_ONLY está activo."""
 
@@ -59,6 +102,15 @@ class ReadOnlyMiddleware:
             return self.get_response(request)
 
         if method == 'POST' and _post_allowed_path(request.path_info):
+            return self.get_response(request)
+
+        if method in {'POST', 'PUT', 'PATCH', 'DELETE'} and _audit_write_allowed(request):
+            logger.info(
+                '[READ_ONLY] Auditoría permitida %s %s (user=%s)',
+                method,
+                request.path_info,
+                getattr(request.user, 'username', 'anon'),
+            )
             return self.get_response(request)
 
         logger.warning(

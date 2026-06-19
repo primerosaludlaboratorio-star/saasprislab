@@ -1,10 +1,10 @@
 """
-Volcado PostgreSQL (pg_dump) → cifrado Fernet → Google Cloud Storage + huella WORM.
+Volcado PostgreSQL (pg_dump) → cifrado Fernet → almacenamiento seguro + huella WORM.
 
 Requisitos:
   - ENGINE postgresql y pg_dump en PATH
-  - FERNET_KEY (misma que producción / Secret Manager)
-  - GCS_BACKUP_BUCKET y credenciales GCP (ADC en Cloud Run o GOOGLE_APPLICATION_CREDENTIALS)
+  - FERNET_KEY (misma que producción)
+  - Ruta local o credenciales de archivo si se integra con almacenamiento externo
 
 Uso:
   python manage.py backup_database

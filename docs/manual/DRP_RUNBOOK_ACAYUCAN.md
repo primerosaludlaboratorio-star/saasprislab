@@ -82,6 +82,17 @@ done
 | `SYSTEM_MAINTENANCE_MODE` | Modo mantenimiento distinto (503, exenciones admin); no sustituye al búnker DRP. |
 | `DEBUG` | Debe ser `False` en nube (`cloudbuild` ya fija `DEBUG=False`). |
 
+**Auditoría funcional acotada de farmacia/inventario:** si se necesita validar el flujo real sin desactivar el búnker completo, el middleware ahora soporta un bypass deliberado y documentado, controlado por variables de entorno:
+
+| Variable | Rol |
+| :--- | :--- |
+| `PRISLAB_READ_ONLY_AUDIT_ALLOWED_PATH_PREFIXES` | Prefijos de ruta autorizados para escritura en auditoría, por ejemplo `/farmacia/`, `/inventario/`, `/pdv/`. |
+| `PRISLAB_READ_ONLY_AUDIT_ALLOWED_USERNAMES` | Lista de usuarios autorizados para ese bypass acotado. |
+| `PRISLAB_READ_ONLY_AUDIT_ALLOWED_ROLES` | Roles autorizados para el bypass acotado (p. ej. `ADMIN`, `DIRECTOR`, `GERENTE`). |
+| `PRISLAB_READ_ONLY_ALLOW_SUPERUSERS` | Si se activa, permite el bypass acotado también a superusuarios. |
+
+**Uso recomendado:** mantener `PRISLAB_READ_ONLY=1` para proteger el resto del sistema y habilitar el bypass solo para ventanas de auditoría controladas, con usuarios explícitos y rutas de farmacia/inventario. No usarlo como modo permanente.
+
 ### 2.4 Bypass de emergencia — filtro tenant ORM (v8.5 Fase 0)
 
 **Objetivo:** si el blindaje multi-tenant o una migración bloquea la operación, **sin reinstalar** la aplicación, relajar temporalmente el filtro `TenantManager` (los `QuerySet` ven datos de **todas** las empresas mientras el bypass esté activo).

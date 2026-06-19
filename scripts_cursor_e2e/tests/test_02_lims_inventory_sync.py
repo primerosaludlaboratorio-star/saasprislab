@@ -1,11 +1,14 @@
 """Enfoque 2 — LIMS ↔ inventario: validación descuenta lote FEFO (backend verificable)."""
 import json
+import os
 import shutil
-import tempfile
+import uuid
 from datetime import date
 from decimal import Decimal
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.storage import FileSystemStorage
+from django.contrib.auth.models import Group
 from django.test import Client, TestCase
 
 from core.models import DetalleOrden, Empresa, OrdenDeServicio, Paciente
@@ -19,7 +22,10 @@ class LimsInventorySyncTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls._media_tmp = tempfile.mkdtemp()
+        base_tmp = os.path.join(str(settings.BASE_DIR), '.tmp', 'test-media')
+        os.makedirs(base_tmp, exist_ok=True)
+        cls._media_tmp = os.path.join(base_tmp, f'lims-inventory-{uuid.uuid4().hex}')
+        os.makedirs(cls._media_tmp, exist_ok=True)
         cls._pdf_field = OrdenDeServicio._meta.get_field('archivo_resultado')
         cls._orig_pdf_storage = cls._pdf_field.storage
         cls._pdf_field.storage = FileSystemStorage(location=cls._media_tmp)

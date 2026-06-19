@@ -14,6 +14,7 @@ Persistencia: GCS Bucket (media/resultados_pdf/)
 import logging
 import os
 from datetime import date, datetime
+from django.utils import timezone
 from decimal import Decimal
 from io import BytesIO
 
@@ -708,7 +709,7 @@ def _obtener_responsable_sanitaria(orden=None) -> dict:
     except Exception:
         pass
 
-    # Fuente 3: variable de entorno (configurable en Cloud Run / .env)
+    # Fuente 3: variable de entorno (configurable en producción / .env)
     env_nombre = os.environ.get('PRISLAB_RESPONSABLE_NOMBRE', '').strip()
     if env_nombre:
         return {
@@ -954,7 +955,7 @@ def generar_reporte_pdf(orden, request=None):
     if request:
         base_url = f"{request.scheme}://{request.get_host()}"
     else:
-        base_url = getattr(settings, 'SITE_URL', 'https://prislab-v5-vygs7p3wuq-uc.a.run.app')
+        base_url = getattr(settings, 'SITE_URL', '') or os.environ.get('SITE_URL', 'http://localhost:8000')
     
     validacion_url = f"{base_url}/validar/resultado/{orden.token_acceso}/"
     
@@ -981,7 +982,7 @@ def generar_reporte_pdf(orden, request=None):
     
     # --- Construir overlay ---
     # Un solo build (dos builds consumían los elementos platypus y generaban 0 páginas)
-    fecha_impresion = datetime.now().strftime('%d/%m/%Y %H:%M')
+    fecha_impresion = timezone.localtime(timezone.now()).strftime('%d/%m/%Y %H:%M')
     page_counter = [0]
     
     # Pre-cargar logo de la empresa para PDFs sin portada estática
@@ -1260,7 +1261,7 @@ def guardar_reporte_en_storage(orden, pdf_bytes):
         filename = (
             f"resultados_pdf/"
             f"{orden.folio_orden or f'ORD-{orden.id}'}"
-            f"_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            f"_{timezone.localtime(timezone.now()).strftime('%Y%m%d_%H%M%S')}.pdf"
         )
         
         pdf_file = ContentFile(pdf_bytes)

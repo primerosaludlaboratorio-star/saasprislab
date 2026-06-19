@@ -28,8 +28,8 @@ class Command(BaseCommand):
                 '  ATENCION: Configura las variables de entorno:\n'
                 '    GITHUB_TOKEN = tu Personal Access Token (con permiso "repo")\n'
                 '    GITHUB_REPO  = owner/repo (ej: jonilsam/PRISLAB_SaaS)\n\n'
-                '  En Cloud Run:\n'
-                '    gcloud run services update prislab-v5 \\\n'
+                '  En producción:\n'
+                '    reinicia el servicio web si es necesario\n'
                 '      --region us-central1 \\\n'
                 '      --set-env-vars GITHUB_TOKEN=ghp_xxx,GITHUB_REPO=owner/repo\n'
             ))

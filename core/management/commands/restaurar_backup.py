@@ -1,10 +1,10 @@
 # EMERGENCY RESTORE PROCEDURE
 # ===========================
-# 1. Stop the application: gcloud run services update prislab --no-traffic
+# 1. Detener la aplicación o ponerla en mantenimiento antes de restaurar
 # 2. Run: python manage.py restaurar_backup --source gs://bucket/backups/prislab_backup_YYYYMMDD_HHMMSS.dump
 #    Or local: python manage.py restaurar_backup --source /path/to/prislab_backup_YYYYMMDD.dump
 # 3. Verify: python manage.py verificar_integridad
-# 4. Resume: gcloud run services update prislab --traffic 100
+# 4. Reanudar el servicio después de restaurar
 #
 # For encrypted backup_nocturno .encrypted files: decrypt first (using SECRET_KEY), extract tar,
 # then restore database.sql with: psql -h HOST -U USER -d DB -f database.sql
@@ -49,7 +49,7 @@ class Command(BaseCommand):
         if not force:
             self.stdout.write(self.style.WARNING(
                 '\n*** RESTAURACION DE EMERGENCIA ***\n'
-                'Asegurese de haber detenido el trafico a la app (ej. gcloud run services update prislab --no-traffic).\n'
+                'Asegurese de haber detenido el tráfico a la app antes de restaurar.\n'
                 'La restauracion SOBRESCRIBIRA la base de datos actual.\n'
             ))
             confirm = input('Escriba SI para continuar: ')

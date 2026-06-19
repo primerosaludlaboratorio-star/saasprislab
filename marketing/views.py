@@ -434,9 +434,9 @@ def lista_cupones(request):
     cupones = CuponMarketing.objects.filter(empresa=empresa)
     
     if estado == 'activos':
-        cupones = cupones.filter(usado=False)
+        cupones = cupones.filter(usos__isnull=True)
     elif estado == 'usados':
-        cupones = cupones.filter(usado=True)
+        cupones = cupones.filter(usos__isnull=False).distinct()
     
     cupones = cupones.order_by('-fecha_creacion')[:100]
     
@@ -465,10 +465,10 @@ def generar_cupon(request):
         cantidad = int(request.POST.get('cantidad', 1))
         
         try:
-            porcentaje_dec = Decimal(porcentaje)
+            porcentaje_dec = Decimal(str(porcentaje))
             if porcentaje_dec <= 0 or porcentaje_dec > 100:
                 raise ValueError("Porcentaje inválido")
-        except:
+        except (ValueError, Exception):
             messages.error(request, 'Porcentaje debe ser entre 1 y 100.')
             return redirect('marketing:generar_cupon')
         

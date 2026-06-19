@@ -179,7 +179,7 @@ except Exception as e:
 
 # TEST 19b: buscar_estudio sin venta_individual (bug fix crítico)
 try:
-    from core.models import Estudio
+    from laboratorio.models import Estudio
     from django.db.models import Q
     qs = Estudio.objects.filter(activo=True).filter(
         Q(nombre__icontains='glucosa') | Q(codigo__icontains='GLU')

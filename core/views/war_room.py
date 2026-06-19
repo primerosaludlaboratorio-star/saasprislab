@@ -48,6 +48,13 @@ def _requiere_director(view_func):
 
 # ── Detectores de anomalías ────────────────────────────────────────────────────
 
+def _model_has_field(model, field_name: str) -> bool:
+    """Devuelve True si el modelo realmente expone el campo pedido."""
+    try:
+        return any(f.name == field_name for f in model._meta.get_fields())
+    except Exception:
+        return False
+
 def _detectar_discrepancias_caja(empresa) -> list[dict]:
     """Detecta cortes de caja con discrepancia > 2% entre declarado y real."""
     anomalias = []
@@ -216,12 +223,16 @@ def _detectar_anomalias_silos(empresa) -> list[dict]:
         from inventario.models import (
             LoteReactivoLab, LoteInsumoConsultorio, LoteInsumoGeneral
         )
+        # has_caducidad indica si el modelo maneja fecha_caducidad (General no la tiene)
         silos = [
-            (LoteReactivoLab,      'reactivo__nombre',    'LAB',         '/inventario/lab/lotes/'),
-            (LoteInsumoConsultorio,'insumo__nombre',       'CONSULTORIO', '/inventario/consultorio/lotes/'),
-            (LoteInsumoGeneral,    'insumo__nombre',       'GENERAL',     '/inventario/generales/lotes/'),
+            (LoteReactivoLab,      'reactivo__nombre', 'LAB',         '/inventario/lab/lotes/'),
+            (LoteInsumoConsultorio,'insumo__nombre',   'CONSULTORIO', '/inventario/consultorio/lotes/'),
+            (LoteInsumoGeneral,    'insumo__nombre',   'GENERAL',     '/inventario/generales/lotes/'),
         ]
         for Model, nombre_field, silo_label, url in silos:
+            if not _model_has_field(Model, 'fecha_caducidad'):
+                continue
+
             # Lotes próximos a vencer
             por_vencer = Model.objects.filter(
                 empresa=empresa,
@@ -271,12 +282,13 @@ def _detectar_cmms_criticos(empresa) -> list[dict]:
         from mantenimiento.models import TicketMantenimientoCMMS, CertificadoMetrologia
         hoy = timezone.now().date()
 
-        # Equipos con tickets críticos abiertos
+        # Equipos con tickets en niveles de escalamiento que requieren intervención
+        niveles_criticos = ('DIRECTOR', 'PROVEEDOR')
         tickets_criticos = TicketMantenimientoCMMS.objects.filter(
             empresa=empresa,
-            prioridad='CRITICA',
+            nivel_escalamiento_actual__in=niveles_criticos,
             estado__in=('ABIERTO', 'EN_PROCESO'),
-        ).select_related('equipo').count()
+        ).count()
 
         if tickets_criticos:
             anomalias.append({

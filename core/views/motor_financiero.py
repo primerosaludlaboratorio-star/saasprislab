@@ -45,7 +45,7 @@ def genera_reporte_caja(request):
     try:
         fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
         fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
-    except:
+    except ValueError:
         fecha_inicio_dt = (timezone.now() - timedelta(days=30)).date()
         fecha_fin_dt = timezone.now().date()
     

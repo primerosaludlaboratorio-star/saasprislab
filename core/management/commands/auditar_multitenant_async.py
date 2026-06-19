@@ -1,4 +1,4 @@
-﻿"""
+"""
 Punto 17: barrido de patrones riesgosos en tasks / signals / management (sin rg obligatorio).
 """
 import re

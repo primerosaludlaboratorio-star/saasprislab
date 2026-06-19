@@ -115,19 +115,22 @@ def enviar_notificacion_push(subscription, titulo, cuerpo, url='/', datos_extra=
         return True
         
     except WebPushException as e:
-        logger.error(f"Error al enviar push notification: {e}")
+        status_code = getattr(getattr(e, 'response', None), 'status_code', None)
 
-        if e.response and e.response.status_code == 429:
+        if status_code == 429:
             retry_after = _retry_after_seconds(e.response)
             _block_push(subscription, retry_after)
             logger.warning(f"Push rate-limited en suscripción {subscription.id}; bloqueo por {retry_after}s")
             return False
         
         # Si el endpoint expiró (410 Gone), desactivar la suscripción
-        if e.response and e.response.status_code == 410:
+        if status_code == 410:
             logger.warning(f"Endpoint expirado, desactivando suscripción {subscription.id}")
             subscription.activa = False
             subscription.save(update_fields=['activa'])
+            return False
+
+        logger.error(f"Error al enviar push notification: {e}")
         
         return False
     except Exception as e:

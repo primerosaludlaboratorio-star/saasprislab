@@ -15,6 +15,7 @@ import hashlib
 import json
 import logging
 from datetime import datetime
+from django.utils import timezone
 
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, permission_required
@@ -89,7 +90,7 @@ def pre_sellar_nota(request, nota_id):
                 defaults={
                     'estado_sello': 'PRE_SELLADA',
                     'medico_firmante': request.user,
-                    'timestamp_pre_sellado': datetime.now(),
+                    'timestamp_pre_sellado': timezone.localtime(timezone.now()),
                     'cedula_profesional': medico_profile.cedula_profesional,
                     'especialidad': medico_profile.especialidad,
                 }
@@ -104,7 +105,7 @@ def pre_sellar_nota(request, nota_id):
                 
                 sello.estado_sello = 'PRE_SELLADA'
                 sello.medico_firmante = request.user
-                sello.timestamp_pre_sellado = datetime.now()
+                sello.timestamp_pre_sellado = timezone.localtime(timezone.now())
                 sello.cedula_profesional = medico_profile.cedula_profesional
                 sello.especialidad = medico_profile.especialidad
                 sello.save()
@@ -186,7 +187,7 @@ def sellar_con_pin(request, nota_id):
         
         with transaction.atomic():
             # 1. Generar folio único
-            año = datetime.now().year
+            año = timezone.localtime(timezone.now()).year
             prefijo = f"EXP-{nota.empresa_id}-{año}-"
             count = NotaClinicaSellar.objects.filter(
                 folio_unico__startswith=prefijo
@@ -215,7 +216,7 @@ def sellar_con_pin(request, nota_id):
                 user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
                 firmado_con_pin=True,
                 pin_hash=pin_hash_input,
-                timestamp_firma=datetime.now(),
+                timestamp_firma=timezone.localtime(timezone.now()),
             )
             
             # 3. Actualizar sello con metadatos forenses completos
@@ -259,7 +260,7 @@ def sellar_con_pin(request, nota_id):
             sello.estado_sello = 'SELLADA'
             sello.folio_unico = folio
             sello.pin_hash = pin_hash_input
-            sello.timestamp_sellado = datetime.now()
+            sello.timestamp_sellado = timezone.localtime(timezone.now())
             sello.expediente_sha = expediente
             sello.qr_verificacion = f"{getattr(settings, 'SITE_URL', 'https://prislab.app')}/verificar/{sello.token_verificacion}"
             
@@ -396,7 +397,7 @@ def desbloqueo_forense(request, nota_id):
                     'nuevo_estado': 'EDITABLE',
                     'justificacion': justificacion,
                     'desbloqueado_por': request.user.username,
-                    'timestamp_desbloqueo': datetime.now().isoformat(),
+                    'timestamp_desbloqueo': timezone.localtime(timezone.now()).isoformat(),
                 },
                 estado_nota='DESBLOQUEADA',
                 ip_origen=request.META.get('REMOTE_ADDR'),
@@ -468,7 +469,7 @@ def configurar_pin_lab(request):
         # Generar hash y guardar
         pin_hash = hashlib.sha256(pin.encode()).hexdigest()
         medico_profile.lab_validation_pin_hash = pin_hash
-        medico_profile.pin_configurado_en = datetime.now()
+        medico_profile.pin_configurado_en = timezone.localtime(timezone.now())
         medico_profile.save()
         
         logger.info(f"[BLINDAJE] PIN-LAB configurado para médico {request.user.username}")

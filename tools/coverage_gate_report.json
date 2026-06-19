@@ -1,31 +1,37 @@
 {
   "protocol": "PRISLAB_COVERAGE_GATE",
-  "timestamp": "2026-04-02T03:54:19.517834Z",
+  "timestamp": "2026-05-08T19:03:58.984877Z",
   "ok": true,
   "enforce": false,
   "inventory": {
     "path": "tools/url_inventory.json",
-    "count": 1732
+    "count": 1812
   },
   "manifest": {
     "path": "tools/omni_manifest.json",
     "coverage_targets_count": 6
   },
   "coverage": {
-    "covered": 1237,
-    "uncovered": 495,
-    "covered_ratio": 0.714203233256351,
+    "covered": 1275,
+    "uncovered": 537,
+    "covered_ratio": 0.7036423841059603,
     "covered_by_prefix": {
-      "/admin/": 1019,
-      "/laboratorio/": 62,
-      "/api/": 53,
-      "/laboratorio/api/": 52,
-      "/farmacia/": 42,
-      "/farmacia/api/": 9
+      "/admin/": 1043,
+      "/laboratorio/": 63,
+      "/api/": 61,
+      "/laboratorio/api/": 55,
+      "/farmacia/": 43,
+      "/farmacia/api/": 10
     },
     "uncovered_samples": [
       {
         "path": "/favicon.ico",
+        "kind": "ui",
+        "name": null,
+        "view": "django.views.generic.base.view"
+      },
+      {
+        "path": "/media/logos/LOGO_PRISLAB.png",
         "kind": "ui",
         "name": null,
         "view": "django.views.generic.base.view"
@@ -331,6 +337,12 @@
         "view": "seguridad.views.logs_auditoria"
       },
       {
+        "path": "/seguridad/rastro-paciente/",
+        "kind": "ui",
+        "name": "rastro_paciente",
+        "view": "seguridad.views.rastro_paciente"
+      },
+      {
         "path": "/seguridad/api/verificar-2fa/",
         "kind": "api",
         "name": "api_verificar_2fa",
@@ -341,6 +353,12 @@
         "kind": "api",
         "name": "api_estadisticas",
         "view": "seguridad.views.api_estadisticas_seguridad"
+      },
+      {
+        "path": "/seguridad/api/panic/",
+        "kind": "api",
+        "name": "panic_button",
+        "view": "seguridad.views.panic_button"
       },
       {
         "path": "/contabilidad/clientes/",
@@ -383,6 +401,12 @@
         "kind": "pdf",
         "name": "descargar_pdf",
         "view": "contabilidad.views.descargar_pdf"
+      },
+      {
+        "path": "/contabilidad/facturas/<int:factura_id>/xml/",
+        "kind": "ui",
+        "name": "descargar_xml",
+        "view": "contabilidad.views.descargar_xml"
       },
       {
         "path": "/contabilidad/api/clientes/buscar/",
@@ -479,30 +503,6 @@
         "kind": "api",
         "name": "api_rango_detalle",
         "view": "core.views.laboratorio_config.api_rango_detalle"
-      },
-      {
-        "path": "/lims/api/parametros/buscar/",
-        "kind": "api",
-        "name": "api_buscar_parametros",
-        "view": "core.views.laboratorio_config.api_buscar_parametros"
-      },
-      {
-        "path": "/lims/parametros/<int:parametro_id>/rangos/",
-        "kind": "ui",
-        "name": "configurar_rangos",
-        "view": "core.views.laboratorio_config.configurar_rangos"
-      },
-      {
-        "path": "/lims/api/estudios/<int:estudio_id>/parametros/",
-        "kind": "api",
-        "name": "api_parametros_estudio",
-        "view": "core.views.laboratorio_config.api_parametros_estudio"
-      },
-      {
-        "path": "/inventario/api/registrar-merma/",
-        "kind": "api",
-        "name": "registrar_merma",
-        "view": "core.views.excepciones_lab.registrar_merma"
       }
     ],
     "missing_owner_prefix_samples": []

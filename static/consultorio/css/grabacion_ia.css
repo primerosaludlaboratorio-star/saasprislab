@@ -1,4 +1,0 @@
-﻿/* PRISLAB Grabacion IA Consultorio */
-.grabacion-btn.grabando { animation: pulso-grab 1.2s infinite; background: #dc3545 !important; }
-@keyframes pulso-grab { 0%,100%{box-shadow:0 0 0 0 rgba(220,53,69,.4);} 50%{box-shadow:0 0 0 8px rgba(220,53,69,0);} }
-.transcripcion-container { font-size: 13px; min-height: 40px; background: #f8f9fa; border-radius: 6px; padding: 8px; border: 1px solid #dee2e6; }

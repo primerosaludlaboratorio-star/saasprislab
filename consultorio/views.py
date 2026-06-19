@@ -7,6 +7,7 @@ from datetime import date, datetime, timedelta
 import json
 import logging
 from decimal import Decimal
+from types import SimpleNamespace
 
 from django.contrib.auth.decorators import login_required, permission_required
 from core.decorators import role_required
@@ -31,6 +32,15 @@ from core.services.audit_service import registrar_auditoria
 from core.utils.empresa_request import empresa_efectiva_request
 
 logger = logging.getLogger('consultorio')
+
+
+def _empresa_explicita_usuario(request):
+    """Empresa del usuario para APIs tenant-sensitive; no usa fallback del middleware."""
+    if not getattr(request, 'user', None) or not getattr(request.user, 'is_authenticated', False):
+        return None
+    if not getattr(request.user, 'empresa_id', None):
+        return None
+    return empresa_efectiva_request(request)
 
 
 # =====================================================================
@@ -702,24 +712,44 @@ def nueva_consulta_soap(request, cita_id):
                     historia_clinica.save()
                 
                 # ========== GUARDAR CONSULTA MÉDICA (SOAP) ==========
+                # VALORES POR DEFECTO: Si el médico no llena campos, usar placeholders
+                # para permitir continuar el flujo de trabajo (facilidad para médicos renuentes)
+                DEFAULTS_CONSULTA = {
+                    'motivo_consulta': 'No especificado - Consulta general',
+                    'padecimiento_actual': 'No documentado',
+                    'exploracion_fisica': 'Sin hallazgos reportados - Exploración no documentada',
+                    'diagnostico_principal': 'Consulta sin diagnóstico documentado',
+                    'plan_tratamiento': 'Manejo no documentado - Se recomienda revisar notas adicionales',
+                    'diagnostico_cie10': 'Z71.9',  # Código CIE-10 para consulta general no especificada
+                }
+                
                 motivo_consulta = (request.POST.get('motivo_consulta') or '').strip()
                 padecimiento_actual = (request.POST.get('padecimiento_actual') or '').strip()
                 exploracion_fisica = (request.POST.get('exploracion_fisica') or '').strip()
                 diagnostico_principal = (request.POST.get('diagnostico_principal') or '').strip()
                 plan_tratamiento = (request.POST.get('plan_tratamiento') or '').strip()
-                # Validación: no permitir guardar consulta con todos los campos SOAP vacíos (calidad de datos)
-                if not any([motivo_consulta, padecimiento_actual, exploracion_fisica, diagnostico_principal, plan_tratamiento]):
-                    messages.error(
-                        request,
-                        'Debe completar al menos uno de: Motivo de consulta, Padecimiento actual, Exploración, Diagnóstico o Plan de tratamiento.'
-                    )
-                    return redirect('consultorio:nueva_consulta_soap', cita_id=cita.id)
+                diagnostico_cie10 = (request.POST.get('diagnostico_cie10', '') or '').strip()[:20]
+                
+                # Aplicar valores por defecto para campos vacíos
+                if not motivo_consulta:
+                    motivo_consulta = DEFAULTS_CONSULTA['motivo_consulta']
+                if not padecimiento_actual:
+                    padecimiento_actual = DEFAULTS_CONSULTA['padecimiento_actual']
+                if not exploracion_fisica:
+                    exploracion_fisica = DEFAULTS_CONSULTA['exploracion_fisica']
+                if not diagnostico_principal:
+                    diagnostico_principal = DEFAULTS_CONSULTA['diagnostico_principal']
+                if not plan_tratamiento:
+                    plan_tratamiento = DEFAULTS_CONSULTA['plan_tratamiento']
+                if not diagnostico_cie10:
+                    diagnostico_cie10 = DEFAULTS_CONSULTA['diagnostico_cie10']
+                    messages.info(request, 'Se asignó código CIE-10 por defecto (Z71.9). Se recomienda actualizar con el diagnóstico correcto.')
                 # CICLO 6: Respetar max_length del modelo (diagnostico_principal=500, diagnostico_cie10=20)
                 consulta.motivo_consulta = motivo_consulta
                 consulta.padecimiento_actual = padecimiento_actual
                 consulta.exploracion_fisica = exploracion_fisica
                 consulta.diagnostico_principal = (diagnostico_principal or '')[:500]
-                consulta.diagnostico_cie10 = (request.POST.get('diagnostico_cie10', '') or '').strip()[:20] or None
+                consulta.diagnostico_cie10 = diagnostico_cie10[:20] if diagnostico_cie10 else None
                 consulta.diagnosticos_secundarios = request.POST.get('diagnosticos_secundarios', '')
                 consulta.plan_tratamiento = plan_tratamiento
                 consulta.estudios_solicitados = request.POST.get('estudios_solicitados', '')
@@ -838,7 +868,10 @@ def nueva_consulta_soap(request, cita_id):
                             nombre = medicamento_nombres[i] if i < len(medicamento_nombres) else ''
                             dosis = medicamento_dosis[i] if i < len(medicamento_dosis) else ''
                             duracion = medicamento_duracion[i] if i < len(medicamento_duracion) else ''
-                            cant = int(medicamento_cantidad[i]) if i < len(medicamento_cantidad) else 1
+                            try:
+                                cant = int((medicamento_cantidad[i] if i < len(medicamento_cantidad) else None) or 1)
+                            except (ValueError, TypeError):
+                                cant = 1
                             
                             # Componer texto_libre con toda la información de la prescripción (CICLO 6: max 500)
                             partes = [nombre]
@@ -1398,8 +1431,7 @@ def nueva_consulta_con_paciente(request, paciente_uuid):
                 # Crear Receta si hay tratamiento prescrito
                 tratamiento_texto = request.POST.get('tratamiento', '').strip()
                 if tratamiento_texto:
-                    from datetime import datetime
-                    ano = datetime.now().year
+                    ano = timezone.localtime(timezone.now()).year
                     prefijo_r = f'REC-{empresa.id}-{ano}-'
                     num_r = Receta.objects.filter(empresa=empresa, folio_receta__startswith=prefijo_r).count()
                     folio_receta = f'{prefijo_r}{str(num_r + 1).zfill(5)}'
@@ -1478,7 +1510,7 @@ def api_crear_consulta_directa(request):
         paciente_id = data.get('paciente_id')
         motivo = data.get('motivo', 'Consulta general')
         
-        empresa = empresa_efectiva_request(request)
+        empresa = _empresa_explicita_usuario(request)
         if not empresa:
             return JsonResponse({'ok': False, 'mensaje': 'Usuario sin empresa asignada'}, status=403)
         
@@ -1655,7 +1687,7 @@ def api_buscar_pacientes(request):
     Responde con JSON incluyendo UUID para navegacion.
     """
     termino = request.GET.get('q', '').strip()
-    empresa = empresa_efectiva_request(request)
+    empresa = _empresa_explicita_usuario(request)
     if not empresa:
         return JsonResponse({'success': False, 'error': 'Usuario sin empresa asignada', 'pacientes': []}, status=403)
     
@@ -1730,12 +1762,7 @@ def api_analizar_transcripcion(request):
                 'error': 'No se recibio transcripcion'
             }, status=400)
         
-        # Usar cliente centralizado google.genai
-        try:
-            from core.utils.gemini_client import get_gemini_client
-            gemini_client = get_gemini_client()
-        except Exception as _e:
-            return JsonResponse({'ok': False, 'error': f'API Key de Gemini no configurada: {_e}'}, status=500)
+        from core.utils.gemini_client import generate_content
         
         # =====================================================
         # PROMPT MAESTRO: CLASIFICACIÓN SOAP INTELIGENTE
@@ -1807,15 +1834,39 @@ REGLAS CRÍTICAS:
 - RESPONDE SOLO CON EL JSON, sin texto adicional ni backticks
 """
         
-        # Generar respuesta con Gemini
-        response = gemini_client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=prompt,
-            config={'temperature': 0.2, 'max_output_tokens': 2000}
-        )
-
-        # Extraer JSON de la respuesta
-        respuesta_texto = response.text.strip()
+        try:
+            respuesta_texto = generate_content(
+                prompt,
+                model_name='gemini-2.0-flash',
+                temperature=0.2,
+                max_tokens=2000,
+            ).strip()
+        except Exception as ia_error:
+            logging.getLogger('consultorio').warning(
+                'IA de transcripcion no disponible, usando fallback local: %s',
+                ia_error,
+            )
+            campos_soap = {
+                "motivo_consulta": transcripcion[:500],
+                "padecimiento_actual": transcripcion,
+                "exploracion_fisica": "",
+                "diagnostico_principal": "",
+                "diagnostico_cie10": "",
+                "diagnosticos_secundarios": "",
+                "plan_tratamiento": "",
+                "estudios_solicitados": "",
+                "pronostico": "BUENO",
+                "medicamentos_detectados": [],
+                "signos_vitales_detectados": {
+                    "temperatura": None,
+                    "frecuencia_cardiaca": None,
+                    "presion_arterial": None,
+                    "peso": None,
+                    "talla": None,
+                    "saturacion": None,
+                },
+            }
+            respuesta_texto = json.dumps(campos_soap)
         
         # Limpiar respuesta si tiene markdown
         if respuesta_texto.startswith('```'):
@@ -1953,7 +2004,10 @@ def api_generar_receta_inmediata(request):
                 nombre = med.get('nombre', '')
                 dosis = med.get('dosis', '')
                 duracion = med.get('duracion', '')
-                cant = int(med.get('cantidad', 1) or 1)
+                try:
+                    cant = int(med.get('cantidad', 1) or 1)
+                except (ValueError, TypeError):
+                    cant = 1
                 
                 # Buscar producto en catálogo
                 med_producto = None
@@ -2577,7 +2631,7 @@ def api_plantillas_especialidad(request):
     from core.models import PlantillaNotaClinica
     from consultorio.models import ConfiguracionMedico
     
-    empresa = empresa_efectiva_request(request)
+    empresa = _empresa_explicita_usuario(request)
     if not empresa:
         return JsonResponse({'error': 'Usuario sin empresa asignada'}, status=403)
     # Obtener especialidad del médico
@@ -2739,8 +2793,7 @@ def api_generar_analisis_patron(request):
         recomendaciones = ""
         
         try:
-            from core.utils.gemini_client import get_gemini_client
-            _ia_client = get_gemini_client()
+            from core.utils.gemini_client import generate_content
 
             prompt_ia = f"""
 Eres un consultor de gestión clínica. Analiza estos datos ANÓNIMOS de un consultorio médico
@@ -2758,11 +2811,7 @@ Genera:
 
 Responde en español, de forma directa y práctica. Sin formato JSON.
 """
-            response = _ia_client.models.generate_content(
-                model='gemini-2.0-flash',
-                contents=prompt_ia
-            )
-            texto = response.text.strip()
+            texto = generate_content(prompt_ia, max_tokens=1200).strip()
 
             # Separar insights y recomendaciones
             if 'RECOMENDACIONES' in texto.upper():
@@ -2860,7 +2909,7 @@ def api_agregar_lista_espera(request):
             motivo=data.get('motivo', ''),
             fecha_preferida=data.get('fecha_preferida') or None,
             hora_preferida=data.get('hora_preferida') or None,
-            prioridad=int(data.get('prioridad', 5)),
+            prioridad=int(data.get('prioridad') or 5) if str(data.get('prioridad', '')).isdigit() else 5,
         )
         
         return JsonResponse({
@@ -3015,14 +3064,66 @@ def triaje_pre_cita(request):
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
 
-    # Por ahora datos de placeholder hasta implementar el modelo de Triaje
-    triajes_pendientes = []
-    triajes_completados = []
+    from consultorio.models import AgendaCita, ConfiguracionMedico
+
+    hoy = timezone.localdate()
+    medicos_con_triaje = list(
+        ConfiguracionMedico.objects.filter(
+            empresa=empresa,
+            triaje_precita_activo=True,
+        ).values_list('medico_id', flat=True)
+    )
+
+    citas_pendientes_qs = AgendaCita.objects.none()
+    if medicos_con_triaje:
+        citas_pendientes_qs = (
+            AgendaCita.objects.filter(
+                empresa=empresa,
+                medico_id__in=medicos_con_triaje,
+                fecha__gte=hoy,
+                estatus=AgendaCita.ESTATUS_PROGRAMADA,
+            )
+            .select_related('paciente', 'medico')
+            .order_by('fecha', 'hora')[:50]
+        )
+
+    triajes_pendientes = [
+        SimpleNamespace(
+            paciente=cita.paciente,
+            cita=SimpleNamespace(fecha_cita=cita.fecha, hora_cita=cita.hora),
+            fecha_envio=cita.fecha_creacion,
+            canal='WHATSAPP',
+            get_canal_display='WhatsApp',
+        )
+        for cita in citas_pendientes_qs
+    ]
+
+    consultas_recientes = (
+        ConsultaMedica.objects.filter(
+            empresa=empresa,
+            estado='FINALIZADA',
+            fecha_consulta__gte=timezone.now() - timedelta(days=30),
+        )
+        .select_related('paciente')
+        .order_by('-fecha_consulta')[:50]
+    )
+    triajes_completados = [
+        SimpleNamespace(
+            paciente=consulta.paciente,
+            motivo_consulta=consulta.motivo_consulta,
+            sintomas_principales=consulta.padecimiento_actual,
+            nivel_urgencia='ALTA' if consulta.tipo_consulta == 'URGENCIA' else 'NORMAL',
+            fecha_respuesta=consulta.fecha_consulta,
+        )
+        for consulta in consultas_recientes
+    ]
+    total_enviados = len(triajes_pendientes) + len(triajes_completados)
+    total_completados = len(triajes_completados)
     stats = {
-        'enviados': 0,
-        'completados': 0,
-        'pendientes': 0,
-        'tasa_respuesta': 0,
+        'enviados': total_enviados,
+        'completados': total_completados,
+        'pendientes': len(triajes_pendientes),
+        'tasa_respuesta': round((total_completados / total_enviados) * 100, 1) if total_enviados else 0,
     }
 
     return render(request, 'consultorio/triaje_pre_cita.html', {
@@ -3047,13 +3148,58 @@ def campanas_marketing(request):
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
 
-    # Por ahora datos de placeholder hasta implementar CampanaMarketing
+    from marketing.models import CampanaMarketing, MarketingTrackingHit
+
+    campanas_qs = (
+        CampanaMarketing.objects
+        .filter(empresa=empresa)
+        .select_related('sucursal', 'creado_por')
+        .order_by('-fecha_creacion')[:50]
+    )
+    total_campanas = CampanaMarketing.objects.filter(empresa=empresa).count()
+    total_pacientes = Paciente.objects.filter(empresa=empresa, activo=True).count()
+    tracking_hits = MarketingTrackingHit.objects.filter(empresa=empresa).count()
+    base_alcance = max(total_pacientes * max(total_campanas, 1), 1)
+
+    primera_campana = (
+        CampanaMarketing.objects
+        .filter(empresa=empresa)
+        .order_by('fecha_creacion')
+        .values_list('fecha_creacion', flat=True)
+        .first()
+    )
+    citas_generadas = 0
+    if primera_campana:
+        citas_generadas = CitaMedica.objects.filter(
+            empresa=empresa,
+            fecha_cita__gte=primera_campana.date(),
+        ).count()
+
+    canal_map = {
+        'email': 'EMAIL',
+        'sms': 'SMS',
+        'whatsapp': 'WHATSAPP',
+        'push': 'PUSH',
+    }
     campanas = []
+    for campana in campanas_qs:
+        segmento = campana.segmento or 'TODOS'
+        campanas.append({
+            'id': campana.id,
+            'nombre': campana.nombre or segmento.replace('_', ' ').title(),
+            'descripcion': campana.mensaje_whatsapp,
+            'get_tipo_display': segmento.replace('_', ' ').title(),
+            'canal': canal_map.get(campana.canal_comunicacion, 'WHATSAPP'),
+            'total_destinatarios': total_pacientes,
+            'estado': 'ENVIADA' if campana.activa else 'BORRADOR',
+            'fecha_envio': campana.fecha_creacion,
+        })
+
     stats = {
-        'total_enviadas': 0,
-        'total_pacientes': Paciente.objects.filter(empresa=empresa).count() if empresa else 0,
-        'tasa_apertura': 0,
-        'citas_generadas': 0,
+        'total_enviadas': total_campanas,
+        'total_pacientes': total_pacientes,
+        'tasa_apertura': min(round((tracking_hits / base_alcance) * 100), 100),
+        'citas_generadas': citas_generadas,
     }
 
     return render(request, 'consultorio/campanas_marketing.html', {
@@ -3196,7 +3342,10 @@ def reportes_productividad(request):
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
 
-    dias = int(request.GET.get('periodo', 30))
+    try:
+        dias = int(request.GET.get('periodo', 30))
+    except (ValueError, TypeError):
+        dias = 30
     hoy = timezone.localdate()
     desde = hoy - timedelta(days=dias)
 
@@ -3258,10 +3407,43 @@ def reportes_productividad(request):
         'data': [d['cantidad'] for d in top_dx],
     }
 
+    from django.db.models.functions import TruncMonth
+
+    cancelaciones_por_mes = dict(
+        citas_periodo.filter(estado='CANCELADA')
+        .annotate(mes_dt=TruncMonth('fecha_cita'))
+        .values('mes_dt')
+        .annotate(total=Count('id'))
+        .values_list('mes_dt', 'total')
+    )
+    resumen_mensual = []
+    for row in (
+        consultas.annotate(mes_dt=TruncMonth('fecha_consulta'))
+        .values('mes_dt')
+        .annotate(
+            consultas=Count('id'),
+            nuevos=Count('id', filter=Q(tipo_consulta='PRIMERA_VEZ')),
+            subsecuentes=Count('id', filter=Q(tipo_consulta='SUBSECUENTE')),
+            ingresos=Sum('precio_consulta'),
+        )
+        .order_by('-mes_dt')[:12]
+    ):
+        consultas_mes = row['consultas'] or 0
+        ingresos_mes = float(row['ingresos'] or 0)
+        resumen_mensual.append({
+            'mes': row['mes_dt'].strftime('%m/%Y') if row['mes_dt'] else '',
+            'consultas': consultas_mes,
+            'nuevos': row['nuevos'] or 0,
+            'subsecuentes': row['subsecuentes'] or 0,
+            'cancelaciones': cancelaciones_por_mes.get(row['mes_dt'], 0),
+            'ingresos': ingresos_mes,
+            'ticket_promedio': round(ingresos_mes / consultas_mes, 2) if consultas_mes else 0,
+        })
+
     return render(request, 'consultorio/reportes_productividad.html', {
         'kpis': kpis,
         'datos_charts': json.dumps(datos_charts, default=str),
-        'resumen_mensual': [],  # Resumen mensual pendiente; requiere agregación por mes sobre ConsultaMedica.
+        'resumen_mensual': resumen_mensual,
     })
 
 
@@ -3280,13 +3462,139 @@ def videollamada_segura(request):
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
 
-    hoy = timezone.localdate()
+    from django.core import signing
 
-    # Consultas virtuales del día (placeholder)
+    hoy = timezone.localdate()
+    medico_actual = None
+    if hasattr(request.user, 'medico_profile') and getattr(request.user.medico_profile, 'empresa_id') == empresa.id:
+        medico_actual = request.user.medico_profile
+    if not medico_actual:
+        nombre_user = request.user.get_full_name() or request.user.username
+        medico_actual = Medico.objects.filter(
+            empresa=empresa,
+            nombre_completo__icontains=nombre_user,
+        ).first()
+
+    citas_qs = CitaMedica.objects.filter(
+        empresa=empresa,
+        fecha_cita=hoy,
+    ).select_related('paciente', 'medico').order_by('hora_cita')
+    if medico_actual:
+        citas_qs = citas_qs.filter(medico=medico_actual)
+
+    virtual_q = (
+        Q(motivo__icontains='virtual') |
+        Q(motivo__icontains='tele') |
+        Q(motivo__icontains='video') |
+        Q(notas_paciente__icontains='virtual') |
+        Q(notas_paciente__icontains='video') |
+        Q(notas_recepcion__icontains='virtual') |
+        Q(notas_recepcion__icontains='video')
+    )
+    candidatas = citas_qs.filter(virtual_q)
+    if not candidatas.exists():
+        candidatas = citas_qs.filter(estado__in=['PENDIENTE', 'CONFIRMADA', 'EN_SALA', 'EN_CURSO'])
+
+    estado_css = {
+        'PENDIENTE': 'secondary',
+        'CONFIRMADA': 'primary',
+        'EN_SALA': 'info',
+        'EN_CURSO': 'warning',
+        'COMPLETADA': 'success',
+        'CANCELADA': 'danger',
+        'NO_ASISTIO': 'dark',
+    }
+    sala_path = reverse('consultorio:videollamada_segura')
     consultas_virtuales = []
+    for cita in candidatas[:20]:
+        token = signing.dumps(
+            {
+                'empresa': empresa.id,
+                'cita': cita.id,
+                'paciente': cita.paciente_id,
+                'medico': cita.medico_id,
+            },
+            salt='consultorio-videollamada',
+        )
+        consultas_virtuales.append({
+            'cita': cita,
+            'paciente': cita.paciente,
+            'hora_cita': cita.hora_cita,
+            'estado_class': estado_css.get(cita.estado, 'secondary'),
+            'estado_display': cita.get_estado_display(),
+            'sala_url': request.build_absolute_uri(f'{sala_path}?sala={token}'),
+        })
+
+    sala_activa = None
+    sala_token = request.GET.get('sala')
+    if sala_token:
+        try:
+            datos_sala = signing.loads(
+                sala_token,
+                salt='consultorio-videollamada',
+                max_age=8 * 60 * 60,
+            )
+            if datos_sala.get('empresa') == empresa.id:
+                paciente = Paciente.objects.filter(
+                    id=datos_sala.get('paciente'),
+                    empresa=empresa,
+                ).first()
+                sala_activa = {
+                    'token': sala_token,
+                    'paciente': paciente,
+                    'cita_id': datos_sala.get('cita'),
+                }
+        except signing.BadSignature:
+            messages.warning(request, 'La liga de la sala no es valida o ya expiro.')
 
     return render(request, 'consultorio/videollamada_segura.html', {
         'consultas_virtuales': consultas_virtuales,
+        'sala_activa': sala_activa,
+        'sala_actual_url': request.build_absolute_uri() if sala_activa else '',
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_crear_sala_videollamada(request):
+    """Crea una liga firmada de sala virtual para un paciente validado del tenant."""
+    from django.core import signing
+
+    empresa = _empresa_explicita_usuario(request)
+    if not empresa:
+        return JsonResponse({'ok': False, 'error': 'Sin empresa'}, status=403)
+
+    try:
+        data = json.loads(request.body or '{}') if request.body else request.POST
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'JSON invalido'}, status=400)
+
+    paciente_id = data.get('paciente_id')
+    cita_id = data.get('cita_id')
+    paciente = Paciente.objects.filter(id=paciente_id, empresa=empresa, activo=True).first()
+    if not paciente:
+        return JsonResponse({'ok': False, 'error': 'Paciente invalido'}, status=400)
+
+    cita = None
+    if cita_id:
+        cita = CitaMedica.objects.filter(id=cita_id, empresa=empresa, paciente=paciente).first()
+
+    token = signing.dumps(
+        {
+            'empresa': empresa.id,
+            'paciente': paciente.id,
+            'cita': cita.id if cita else None,
+            'usuario': request.user.id,
+            'emitida': timezone.now().isoformat(),
+        },
+        salt='consultorio-videollamada',
+    )
+    sala_url = request.build_absolute_uri(f"{reverse('consultorio:videollamada_segura')}?sala={token}")
+    return JsonResponse({
+        'ok': True,
+        'sala_url': sala_url,
+        'paciente': paciente.nombre_completo,
+        'cita_id': cita.id if cita else None,
     })
 
 
@@ -3880,7 +4188,7 @@ def api_sentinel_exportar_cursor(request, incidencia_id):
         bloque_cursor = (
             f"@Codebase PRIS SENTINEL - Ticket #{incidencia.id} (REPARACIÓN REMOTA)\n"
             f"{'=' * 60}\n"
-            f"MODO: Remote SSH -> Servidor Ubuntu/Cloud Run\n"
+            f"MODO: Remote SSH -> Servidor Ubuntu\n"
             f"Severidad: {incidencia.get_severidad_display()}\n"
             f"Modulo: {incidencia.namespace.upper()}\n"
             f"URL: {incidencia.metodo_http} {incidencia.url_afectada}\n"

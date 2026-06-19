@@ -9,8 +9,9 @@ from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 
+from core.decorators import rate_limit, require_api_token
 from .models import Kiosco, VerificacionKiosco
 
 
@@ -61,6 +62,9 @@ def api_toggle_kiosco(request, kiosco_id):
 # ======================================================================
 
 @csrf_exempt
+@require_http_methods(["GET", "POST"])
+@rate_limit('kiosco_heartbeat', limit=180, window_seconds=60)
+@require_api_token('PRISLAB_KIOSCO_API_TOKEN')
 def api_kiosco_heartbeat(request, kiosco_id):
     """Heartbeat del kiosco - actualiza conexion y retorna verificaciones pendientes."""
     try:
@@ -89,27 +93,42 @@ def api_kiosco_heartbeat(request, kiosco_id):
 
 @csrf_exempt
 @require_POST
+@rate_limit('kiosco_confirmar', limit=60, window_seconds=60)
+@require_api_token('PRISLAB_KIOSCO_API_TOKEN')
 def api_kiosco_confirmar(request, verificacion_id):
     """El paciente confirma sus datos desde el kiosco."""
     try:
-        verificacion = VerificacionKiosco.objects.get(id=verificacion_id, estado='PENDIENTE')
-        data = json.loads(request.body) if request.body else {}
+        verificacion = VerificacionKiosco.objects.get(
+            id=verificacion_id,
+            estado='PENDIENTE',
+            fecha_expiracion__gt=timezone.now(),
+        )
+        try:
+            data = json.loads(request.body) if request.body else {}
+        except (json.JSONDecodeError, ValueError):
+            data = {}
         verificacion.confirmar(datos_confirmados=data.get('datos', None))
         return JsonResponse({'status': 'success', 'mensaje': 'Datos confirmados'})
     except VerificacionKiosco.DoesNotExist:
-        return JsonResponse({'status': 'error', 'mensaje': 'Verificacion no encontrada'}, status=404)
+        return JsonResponse({'status': 'error', 'mensaje': 'Verificacion no encontrada o expirada'}, status=404)
 
 
 @csrf_exempt
 @require_POST
+@rate_limit('kiosco_rechazar', limit=60, window_seconds=60)
+@require_api_token('PRISLAB_KIOSCO_API_TOKEN')
 def api_kiosco_rechazar(request, verificacion_id):
     """El paciente rechaza sus datos desde el kiosco."""
     try:
-        verificacion = VerificacionKiosco.objects.get(id=verificacion_id, estado='PENDIENTE')
+        verificacion = VerificacionKiosco.objects.get(
+            id=verificacion_id,
+            estado='PENDIENTE',
+            fecha_expiracion__gt=timezone.now(),
+        )
         verificacion.rechazar()
         return JsonResponse({'status': 'success', 'mensaje': 'Verificacion rechazada'})
     except VerificacionKiosco.DoesNotExist:
-        return JsonResponse({'status': 'error', 'mensaje': 'Verificacion no encontrada'}, status=404)
+        return JsonResponse({'status': 'error', 'mensaje': 'Verificacion no encontrada o expirada'}, status=404)
 
 
 @login_required

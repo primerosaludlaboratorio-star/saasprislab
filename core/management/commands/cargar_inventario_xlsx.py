@@ -35,15 +35,21 @@ Columnas esperadas:
 
 Un mismo producto puede aparecer en MÚLTIPLES filas (una por lote).
 El comando consolida stock total y crea los lotes individuales.
+Puede detectar automáticamente el encabezado aunque el Excel traiga
+filas introductorias antes de la tabla real.
 
 Uso:
   python manage.py cargar_inventario_xlsx ruta/al/archivo.xlsx
   python manage.py cargar_inventario_xlsx ruta/al/archivo.xlsx --limpiar
 """
 import os
+import shutil
+import tempfile
+import zipfile
 from datetime import datetime, date
 from decimal import Decimal, InvalidOperation
 from collections import OrderedDict
+from xml.etree import ElementTree as ET
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -99,15 +105,23 @@ class Command(BaseCommand):
         self.stdout.write(f'  Dry-run:  {"SÍ" if dry_run else "No"}')
         self.stdout.write('=' * 80)
 
-        wb = openpyxl.load_workbook(archivo, read_only=True)
+        wb = self._abrir_workbook_seguro(openpyxl, archivo)
         ws = wb.active
 
-        headers = [cell.value for cell in ws[1]]
-        col_map = {h: i for i, h in enumerate(headers) if h}
+        header_row_idx, col_map = self._detectar_encabezados(ws)
+        if not col_map:
+            self.stdout.write(self.style.ERROR(
+                'No se detectó la fila de encabezados del inventario. '
+                'Verifica que el archivo incluya "Nombre del Producto" e '
+                '"Identificador (No Cambiar)".'
+            ))
+            wb.close()
+            return
         self.stdout.write(f'  Columnas detectadas: {len(col_map)}')
+        self.stdout.write(f'  Fila de encabezado detectada: {header_row_idx}')
 
         filas = []
-        for row in ws.iter_rows(min_row=2, values_only=True):
+        for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
             nombre = row[col_map.get('Nombre del Producto', 0)]
             if nombre and str(nombre).strip():
                 filas.append(row)
@@ -185,7 +199,7 @@ class Command(BaseCommand):
             ident = str(ident).strip() if ident else ''
             clave = cb or ident or f'AUTO-{abs(hash(nombre)) % 1000000:06d}'
 
-            stock_raw = fila[col_map.get('Stock Total ', 19)]
+            stock_raw = fila[col_map.get('Stock Total', 19)]
             try:
                 stock = int(float(stock_raw)) if stock_raw is not None else 0
             except (ValueError, TypeError):
@@ -205,7 +219,7 @@ class Command(BaseCommand):
             lote_num = str(lote_num_raw).strip() if lote_num_raw else ''
             caducidad_raw = fila[col_map.get('Caducidad del Lote', 17)]
             fabricacion_raw = fila[col_map.get('Fabricación del Lote', 16)]
-            ubicacion_raw = fila[col_map.get('Ubicación ', 22)]
+            ubicacion_raw = fila[col_map.get('Ubicación', 22)]
 
             if lote_num:
                 productos[clave]['lotes'].append({
@@ -269,7 +283,7 @@ class Command(BaseCommand):
 
                     stock_total = data['stock_total']
 
-                    stock_min_raw = info[col_map.get('Stock Mínimo ', 20)]
+                    stock_min_raw = info[col_map.get('Stock Mínimo', 20)]
                     try:
                         stock_minimo = int(float(stock_min_raw)) if stock_min_raw is not None else 0
                     except (ValueError, TypeError):
@@ -356,6 +370,95 @@ class Command(BaseCommand):
                     errores.append(f'Fila {idx} ({clave}): {e}')
 
         return creados, actualizados, lotes_creados, errores
+
+    def _abrir_workbook_seguro(self, openpyxl, archivo):
+        """
+        Abre el XLSX original y, si trae validaciones inválidas, genera una copia
+        temporal sin nodos <dataValidations> para que openpyxl pueda leerlo.
+        """
+        if self._requiere_sanitizar_validaciones(archivo):
+            copia_limpia = self._eliminar_validaciones_invalidas(archivo)
+            self.stdout.write(self.style.WARNING(
+                f'  Workbook sanitizado para importación segura: {copia_limpia}'
+            ))
+            return openpyxl.load_workbook(copia_limpia, read_only=True)
+
+        try:
+            return openpyxl.load_workbook(archivo, read_only=True)
+        except ValueError as exc:
+            mensaje = str(exc).lower()
+            if 'value must be one of' not in mensaje and 'datavalidation' not in mensaje:
+                raise
+
+            copia_limpia = self._eliminar_validaciones_invalidas(archivo)
+            self.stdout.write(self.style.WARNING(
+                f'  Workbook sanitizado para abrirlo sin validaciones inválidas: {copia_limpia}'
+            ))
+            return openpyxl.load_workbook(copia_limpia, read_only=True)
+
+    def _requiere_sanitizar_validaciones(self, archivo):
+        try:
+            with zipfile.ZipFile(archivo, 'r') as zin:
+                for item in zin.namelist():
+                    if not item.startswith('xl/worksheets/sheet') or not item.endswith('.xml'):
+                        continue
+                    data = zin.read(item)
+                    if b'<dataValidations' in data:
+                        return True
+        except OSError:
+            return False
+        return False
+
+    def _detectar_encabezados(self, ws, max_rows=10):
+        """
+        Algunos exports reales de PRISLAB traen 1-2 filas introductorias antes
+        del encabezado. Escaneamos las primeras filas y usamos la primera que
+        contenga las columnas clave del inventario.
+        """
+        requeridas = {'Nombre del Producto', 'Identificador (No Cambiar)'}
+
+        for idx, row in enumerate(
+            ws.iter_rows(min_row=1, max_row=max_rows, values_only=True),
+            start=1,
+        ):
+            headers = [self._normalizar_header(cell) for cell in row]
+            col_map = {header: pos for pos, header in enumerate(headers) if header}
+            if requeridas.issubset(col_map.keys()):
+                return idx, col_map
+
+        return None, {}
+
+    def _normalizar_header(self, value):
+        if value is None:
+            return ''
+        return str(value).replace('\n', ' ').strip()
+
+    def _eliminar_validaciones_invalidas(self, archivo):
+        """
+        Crea una copia temporal del XLSX eliminando los nodos de validación de datos
+        que provocan errores de parseo en openpyxl.
+        """
+        tmp_dir = tempfile.mkdtemp(prefix='prislab_inv_')
+        salida = os.path.join(tmp_dir, os.path.basename(archivo))
+
+        ns = {'main': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+        with zipfile.ZipFile(archivo, 'r') as zin, zipfile.ZipFile(salida, 'w', compression=zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.infolist():
+                data = zin.read(item.filename)
+                if item.filename.startswith('xl/worksheets/sheet') and item.filename.endswith('.xml'):
+                    try:
+                        root = ET.fromstring(data)
+                        changed = False
+                        for nodo in root.findall('main:dataValidations', ns):
+                            root.remove(nodo)
+                            changed = True
+                        if changed:
+                            data = ET.tostring(root, encoding='utf-8', xml_declaration=True)
+                    except ET.ParseError:
+                        pass
+                zout.writestr(item, data)
+
+        return salida
 
     def _parse_decimal(self, valor):
         if valor is None:

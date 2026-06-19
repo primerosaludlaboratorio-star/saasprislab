@@ -156,9 +156,8 @@ class TransferenciaInventario(models.Model):
     
     def save(self, *args, **kwargs):
         if not self.folio:
-            # Generar folio automático
-            from datetime import datetime
-            fecha = datetime.now().strftime('%Y%m%d')
+            from django.utils import timezone as _tz
+            fecha = _tz.localtime(_tz.now()).strftime('%Y%m%d')
             ultimo = TransferenciaInventario.objects.filter(
                 folio__startswith=f'TRANS-{fecha}'
             ).count()

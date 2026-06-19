@@ -13,12 +13,13 @@
 set -euo pipefail
 
 # ── Configuración ─────────────────────────────────────────────────────────────
-APP_DIR="/opt/prislab"
+ROOT_DIR="/opt/prislab"
+APP_DIR="$ROOT_DIR/app"
 APP_USER="prislab"
 DOMAIN="${DOMAIN:-tu-dominio.com}"          # Sobreescribir: DOMAIN=mi-dominio.com bash deploy_vps.sh
 PYTHON_VERSION="python3"
 VENV_DIR="$APP_DIR/.venv"
-LOG_DIR="$APP_DIR/logs"
+LOG_DIR="$ROOT_DIR/logs"
 MEDIA_DIR="$APP_DIR/media"
 STATIC_DIR="$APP_DIR/staticfiles"
 
@@ -31,7 +32,8 @@ err()  { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
 log "=== PRISLAB VPS Deploy ==="
 log "Dominio: $DOMAIN"
-log "Directorio: $APP_DIR"
+log "Directorio app: $APP_DIR"
+log "Directorio raíz: $ROOT_DIR"
 
 # ── 1. Dependencias del sistema ───────────────────────────────────────────────
 log "Instalando dependencias del sistema..."
@@ -78,8 +80,9 @@ log "PostgreSQL listo: base=$DB_NAME usuario=$DB_USER"
 
 # ── 5. Directorio de la aplicación ────────────────────────────────────────────
 log "Preparando directorios..."
-mkdir -p "$APP_DIR" "$LOG_DIR" "$MEDIA_DIR" "$STATIC_DIR"
+mkdir -p "$ROOT_DIR" "$APP_DIR" "$LOG_DIR" "$MEDIA_DIR" "$STATIC_DIR"
 chown -R "$APP_USER:$APP_USER" "$APP_DIR"
+chown -R "$APP_USER:$APP_USER" "$LOG_DIR"
 
 # ── 6. Verificar que el código está en $APP_DIR ───────────────────────────────
 if [ ! -f "$APP_DIR/manage.py" ]; then
@@ -103,21 +106,15 @@ sudo -u "$APP_USER" "$VENV_DIR/bin/pip" install -r "$APP_DIR/requirements.txt" -
 
 log "Dependencias Python instaladas"
 
-# ── 9. Variables de entorno para comandos de gestión ─────────────────────────
-set -o allexport
-# shellcheck disable=SC1090
-source "$APP_DIR/.env"
-set +o allexport
-
-# ── 10. Migraciones y estáticos ───────────────────────────────────────────────
+# ── 9. Migraciones y estáticos ───────────────────────────────────────────────
 log "Ejecutando migraciones..."
 cd "$APP_DIR"
-sudo -u "$APP_USER" "$VENV_DIR/bin/python" manage.py migrate --noinput
+sudo -u "$APP_USER" "$VENV_DIR/bin/python" scripts/run_manage_with_env.py migrate --noinput
 
 log "Recolectando archivos estáticos..."
-sudo -u "$APP_USER" "$VENV_DIR/bin/python" manage.py collectstatic --noinput
+sudo -u "$APP_USER" "$VENV_DIR/bin/python" scripts/run_manage_with_env.py collectstatic --noinput
 
-# ── 11. Nginx ────────────────────────────────────────────────────────────────
+# ── 10. Nginx ────────────────────────────────────────────────────────────────
 log "Configurando Nginx para $DOMAIN..."
 
 # Reemplazar el placeholder del dominio en la config
@@ -131,7 +128,7 @@ rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 log "Nginx configurado"
 
-# ── 12. Systemd services ──────────────────────────────────────────────────────
+# ── 11. Systemd services ──────────────────────────────────────────────────────
 log "Instalando servicios systemd..."
 
 for SERVICE in prislab-gunicorn prislab-celery prislab-celerybeat; do
@@ -147,10 +144,16 @@ done
 systemctl daemon-reload
 systemctl enable prislab-gunicorn
 systemctl start prislab-gunicorn
+systemctl enable prislab-celery
+systemctl start prislab-celery
+systemctl enable prislab-celerybeat
+systemctl start prislab-celerybeat
 
 log "Gunicorn iniciado"
+log "Celery iniciado"
+log "Celery Beat iniciado"
 
-# ── 13. SSL con Certbot ───────────────────────────────────────────────────────
+# ── 12. SSL con Certbot ───────────────────────────────────────────────────────
 if [[ "$DOMAIN" != "tu-dominio.com" ]]; then
     log "Emitiendo certificado SSL para $DOMAIN..."
     if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email "admin@$DOMAIN" --redirect; then
@@ -163,12 +166,12 @@ else
     warn "Dominio no configurado todavía; se omite Certbot por ahora"
 fi
 
-# ── 14. Redis ────────────────────────────────────────────────────────────────
+# ── 13. Redis ────────────────────────────────────────────────────────────────
 log "Configurando Redis..."
 systemctl enable redis-server
 systemctl start redis-server
 
-# ── 15. Verificación final ───────────────────────────────────────────────────
+# ── 14. Verificación final ───────────────────────────────────────────────────
 log ""
 log "=========================================="
 log "  PRISLAB SaaS — Deploy completado"

@@ -86,8 +86,8 @@ def api_generar_receta_pdf(request, consulta_id):
         if hasattr(consulta, 'receta') and consulta.receta:
             try:
                 from django.core.files.base import ContentFile
-                from datetime import datetime
-                filename = f"recetas_pdf/Receta_{consulta.folio_consulta}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                from django.utils import timezone as _tz
+                filename = f"recetas_pdf/Receta_{consulta.folio_consulta}_{_tz.localtime(_tz.now()).strftime('%Y%m%d_%H%M%S')}.pdf"
                 pdf_file = ContentFile(pdf_bytes)
 
                 if hasattr(consulta.receta, 'url_drive_backup'):

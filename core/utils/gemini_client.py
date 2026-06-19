@@ -26,6 +26,40 @@ _MIGRATION_MAP = {
 }
 
 
+def _get_ai_provider() -> str:
+    provider = (getattr(settings, 'AI_PROVIDER', '') or '').strip().lower()
+    has_gemini = bool(_get_api_key())
+    has_deepseek = bool(getattr(settings, 'DEEPSEEK_API_KEY', '').strip())
+
+    if provider == 'deepseek':
+        if has_deepseek:
+            return 'deepseek'
+        if has_gemini:
+            logger.warning(
+                "AI_PROVIDER=deepseek pero DEEPSEEK_API_KEY no esta configurada; "
+                "usando Gemini como fallback seguro."
+            )
+            return 'gemini'
+        return 'deepseek'
+
+    if provider == 'gemini':
+        if has_gemini:
+            return 'gemini'
+        if has_deepseek:
+            logger.warning(
+                "AI_PROVIDER=gemini pero GOOGLE_API_KEY no esta configurada; "
+                "usando DeepSeek como fallback seguro."
+            )
+            return 'deepseek'
+        return 'gemini'
+
+    if provider:
+        return provider
+    if has_deepseek:
+        return 'deepseek'
+    return 'gemini'
+
+
 def _get_api_key() -> str:
     """Obtiene y limpia la GOOGLE_API_KEY del entorno."""
     key = (
@@ -34,6 +68,30 @@ def _get_api_key() -> str:
         getattr(settings, 'GEMINI_API_KEY', '')
     )
     return key.strip().replace('\r', '').replace('\n', '') if key else ''
+
+
+def _is_forbidden_like_error(exc: Exception) -> bool:
+    """Detecta errores de permisos/403 sin depender del tipo exacto del SDK."""
+    text = f"{type(exc).__name__}: {exc}".lower()
+    return any(
+        token in text
+        for token in (
+            '403',
+            'forbidden',
+            'permission denied',
+            'permissiondenied',
+            'insufficient permissions',
+        )
+    )
+
+
+def _gemini_permission_message(exc: Exception) -> str:
+    return (
+        "Gemini devolvió un error de permisos (403/Forbidden). "
+        "Revisa que la API key esté habilitada para generativelanguage.googleapis.com "
+        "y que el proyecto tenga acceso activo al modelo solicitado. "
+        f"Detalle técnico: {type(exc).__name__}: {exc}"
+    )
 
 
 def get_gemini_client():
@@ -49,7 +107,7 @@ def get_gemini_client():
     if not api_key:
         raise ValueError(
             "GOOGLE_API_KEY no está configurada. "
-            "Defínala en .env o como variable de entorno en Cloud Run."
+            "Defínala en .env o como variable de entorno de producción."
         )
     try:
         from google import genai
@@ -59,6 +117,14 @@ def get_gemini_client():
         raise ImportError(
             "google-genai no está instalado. Ejecute: pip install google-genai"
         )
+
+
+def get_text_ai_client():
+    """Retorna el cliente de texto configurado para PRISLAB."""
+    if _get_ai_provider() == 'deepseek':
+        from core.utils.deepseek_client import get_deepseek_client
+        return get_deepseek_client()
+    return get_gemini_client()
 
 
 def get_gemini_model(model_name: str = 'gemini-2.0-flash') -> str:
@@ -92,6 +158,15 @@ def generate_content(prompt: str, model_name: str = 'gemini-2.0-flash',
     Raises:
         Exception si la API falla o no está configurada
     """
+    if _get_ai_provider() == 'deepseek':
+        from core.utils.deepseek_client import generate_content as _deepseek_generate
+        return _deepseek_generate(
+            prompt,
+            model_name=getattr(settings, 'DEEPSEEK_MODEL', 'deepseek-chat'),
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+
     client = get_gemini_client()
     model = get_gemini_model(model_name)
 
@@ -111,6 +186,9 @@ def generate_content(prompt: str, model_name: str = 'gemini-2.0-flash',
             logger.info("Gemini respuesta OK — modelo: %s", intento_model)
             return response.text or ""
         except Exception as e:
+            if _is_forbidden_like_error(e):
+                logger.error("Gemini permisos insuficientes para %s: %s", intento_model, e)
+                raise PermissionError(_gemini_permission_message(e)) from e
             logger.warning("Gemini fallo con %s: %s — reintentando con siguiente", intento_model, e)
 
     raise Exception(f"Gemini no respondió con ningún modelo. Último intento: {intento_model}")
@@ -125,6 +203,12 @@ def _test_gemini_connection_impl() -> dict:
             'message': 'Conexión exitosa con Gemini API',
             'model': 'gemini-2.0-flash',
             'response': texto.strip(),
+        }
+    except PermissionError as e:
+        return {
+            'success': False,
+            'message': str(e),
+            'model': 'gemini-2.0-flash',
         }
     except Exception as e:
         return {

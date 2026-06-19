@@ -2,7 +2,9 @@ from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.contrib.auth.models import Group
 from django.test import Client, TestCase
+from django.contrib.auth.models import Group
 from django.test import override_settings
 from django.urls import reverse
 

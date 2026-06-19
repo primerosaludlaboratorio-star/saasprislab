@@ -40,9 +40,9 @@ def api_auditoria_campo(request):
                 if len(partes) >= 2:
                     detalle_id = int(partes[1])
                     modelo_instancia = DetalleOrden.objects.get(id=detalle_id)
-        except:
+        except (ValueError, IndexError, DetalleOrden.DoesNotExist):
             pass
-        
+
         # Si no se pudo identificar, crear un log genérico
         if modelo_instancia:
             auditar_cambio_campo(

@@ -211,11 +211,11 @@ def registrar_movimiento_caja_al_vender(sender, instance, created, **kwargs):
                 if sucursal_caja is None:
                     sucursal_caja = venta_bloqueada.empresa.sucursales.order_by('pk').first()
                 if sucursal_caja is None:
-                    logger.error(
+                    logger.warning(
                         f"[CAJA-v1.14] Venta #{instance.id}: empresa sin sucursales; "
                         "no se puede crear MovimientoCaja (sucursal_id NOT NULL)."
                     )
-                    _bg.error(
+                    _bg.warning(
                         'MovimientoCaja omitido: empresa sin sucursal venta_id=%s empresa_id=%s',
                         instance.id,
                         venta_bloqueada.empresa_id,
@@ -376,7 +376,8 @@ def generar_folio_orden_automatico(sender, instance, **kwargs):
     
     # Solo si no tiene folio asignado
     if not instance.folio_orden:
-        año = datetime.now().year
+        from django.utils import timezone as _tz
+        año = _tz.localtime(_tz.now()).year
         sucursal_codigo = instance.empresa.codigo_sucursal if hasattr(instance.empresa, 'codigo_sucursal') else '001'
         
         # Contar órdenes existentes este año

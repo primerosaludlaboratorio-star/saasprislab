@@ -1,6 +1,6 @@
 """
 Script para crear usuarios de producción en PRISLAB v5.
-Ejecutar en Cloud Run Job o localmente conectado a Cloud SQL.
+Ejecutar en producción o localmente conectado a PostgreSQL.
 """
 
 from django.core.management.base import BaseCommand

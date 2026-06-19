@@ -2,7 +2,7 @@
 Rescate masivo multi-tenant (PRISLAB): asigna empresa principal a filas huérfanas
 y sincroniza Producto.stock desde lotes vigentes.
 
-Ejecutar solo en mantenimiento (management command / Cloud Run Job) con tenant_bypass().
+Ejecutar solo en mantenimiento (management command o tarea interna) con tenant_bypass().
 """
 from __future__ import annotations
 

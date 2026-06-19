@@ -4,6 +4,7 @@ GUARDIÁN 360 v5.3 — evidencias mínimas sin crear BD de prueba completa.
 - Ángulo 9 (CISO): War Room solo Director/Admin/Gerente; recepción → HTTP 403.
 """
 
+from django.contrib.auth.models import Group
 from django.test import RequestFactory, SimpleTestCase
 
 from core.views.war_room import api_war_room_anomalias, war_room

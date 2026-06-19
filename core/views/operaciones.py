@@ -40,7 +40,7 @@ def rutas_recoleccion(request):
 @login_required
 def monitor_rutas(request):
     """
-    Vista placeholder para el Monitor de Rutas.
-    Alias de rutas_recoleccion para compatibilidad.
+    Alias estable del Monitor de Rutas.
+    Mantiene compatibilidad con enlaces legacy y reutiliza el dashboard operativo actual.
     """
     return rutas_recoleccion(request)

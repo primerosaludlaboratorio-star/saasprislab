@@ -19,6 +19,7 @@ Reglas especiales:
   - Productos con codigo_barras vacio: se genera uno desde el identificador.
   - Se agrupan filas por Identificador para manejar multiples lotes por producto.
   - NO se borra ningun dato existente.
+  - Detecta el encabezado aunque el archivo traiga filas introductorias arriba.
 
 Uso:
   python manage.py importar_excel_inventario
@@ -28,9 +29,13 @@ Uso:
 import os
 import openpyxl
 import datetime
+import shutil
+import tempfile
+import zipfile
 from decimal import Decimal, InvalidOperation
 from collections import defaultdict
 from pathlib import Path
+from xml.etree import ElementTree as ET
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -219,10 +224,15 @@ class Command(BaseCommand):
         self.stdout.write(f"  Empresa: {empresa.nombre} (ID={empresa.id})")
 
         # ---- Leer Excel ----
-        wb = openpyxl.load_workbook(archivo, read_only=True, data_only=True)
+        wb = self._abrir_workbook_seguro(openpyxl, archivo)
         ws = wb.active
-        headers_raw = [str(c) if c else "" for c in next(ws.iter_rows(min_row=1, max_row=1, values_only=True))]
-        COL = {h.strip(): i for i, h in enumerate(headers_raw) if h.strip()}
+        header_row_idx, COL = self._detectar_encabezados(ws)
+        if not COL:
+            self.stdout.write(self.style.ERROR(
+                "No se detectó la fila de encabezados del Excel de inventario."
+            ))
+            return
+        self.stdout.write(f"  Fila de encabezado detectada: {header_row_idx}")
 
         def col(row, nombre, default=None):
             # Buscar con y sin espacios finales (el Excel puede tener "Stock Total ")
@@ -235,7 +245,7 @@ class Command(BaseCommand):
         # ---- Agrupar filas por identificador ----
         grupos = defaultdict(list)
         total_filas = 0
-        for row in ws.iter_rows(min_row=2, values_only=True):
+        for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
             if not row[0]:
                 continue
             ident = str(col(row, "Identificador (No Cambiar)", "") or row[0]).strip().lower()
@@ -455,3 +465,78 @@ class Command(BaseCommand):
             self.stdout.write(f"    Lotes en DB            : {total_lotes}")
             self.stdout.write(f"    Lotes con stock activo : {lotes_con_stock}")
         self.stdout.write(sep)
+
+    def _detectar_encabezados(self, ws, max_rows=10):
+        requeridas = {"Nombre del Producto", "Identificador (No Cambiar)"}
+        for idx, row in enumerate(
+            ws.iter_rows(min_row=1, max_row=max_rows, values_only=True),
+            start=1,
+        ):
+            headers = [self._normalizar_header(cell) for cell in row]
+            col_map = {header: pos for pos, header in enumerate(headers) if header}
+            if requeridas.issubset(col_map.keys()):
+                return idx, col_map
+        return None, {}
+
+    def _normalizar_header(self, value):
+        if value is None:
+            return ""
+        return str(value).replace("\n", " ").strip()
+
+    def _abrir_workbook_seguro(self, openpyxl, archivo):
+        if self._requiere_sanitizar_validaciones(archivo):
+            copia_limpia = self._eliminar_validaciones_invalidas(archivo)
+            self.stdout.write(self.style.WARNING(
+                f"  Workbook sanitizado para importación segura: {copia_limpia}"
+            ))
+            return openpyxl.load_workbook(copia_limpia, read_only=True, data_only=True)
+
+        try:
+            return openpyxl.load_workbook(archivo, read_only=True, data_only=True)
+        except ValueError as exc:
+            mensaje = str(exc).lower()
+            if "value must be one of" not in mensaje and "datavalidation" not in mensaje:
+                raise
+            copia_limpia = self._eliminar_validaciones_invalidas(archivo)
+            self.stdout.write(self.style.WARNING(
+                f"  Workbook sanitizado para importación segura: {copia_limpia}"
+            ))
+            return openpyxl.load_workbook(copia_limpia, read_only=True, data_only=True)
+
+    def _requiere_sanitizar_validaciones(self, archivo):
+        try:
+            with zipfile.ZipFile(archivo, "r") as zin:
+                for item in zin.namelist():
+                    if not item.startswith("xl/worksheets/sheet") or not item.endswith(".xml"):
+                        continue
+                    data = zin.read(item)
+                    if b"<dataValidations" in data:
+                        return True
+        except OSError:
+            return False
+        return False
+
+    def _eliminar_validaciones_invalidas(self, archivo):
+        tmp_dir = tempfile.mkdtemp(prefix="prislab_inv_")
+        salida = os.path.join(tmp_dir, os.path.basename(archivo))
+        ns = {"main": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+
+        with zipfile.ZipFile(archivo, "r") as zin, zipfile.ZipFile(
+            salida, "w", compression=zipfile.ZIP_DEFLATED
+        ) as zout:
+            for item in zin.infolist():
+                data = zin.read(item.filename)
+                if item.filename.startswith("xl/worksheets/sheet") and item.filename.endswith(".xml"):
+                    try:
+                        root = ET.fromstring(data)
+                        changed = False
+                        for nodo in root.findall("main:dataValidations", ns):
+                            root.remove(nodo)
+                            changed = True
+                        if changed:
+                            data = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+                    except ET.ParseError:
+                        pass
+                zout.writestr(item, data)
+
+        return salida

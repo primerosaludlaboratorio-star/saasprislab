@@ -208,22 +208,26 @@ http://localhost:8000
 
 ### Opción Única: VPS Vultr + Nginx + Gunicorn + PostgreSQL
 
-**Documentación:** Ver `DEPLOY.md`
+**Documentación canónica:** Ver [DEPLOY.md](DEPLOY.md)
 
 Flujo recomendado:
 1. Preparar la VPS con Ubuntu, `ufw`, `nginx`, `postgresql` y `certbot`
-2. Clonar el repositorio
-3. Crear `.env` con las variables de producción
-4. Ejecutar migraciones y `collectstatic`
-5. Levantar `gunicorn` detrás de `nginx`
-6. Conectar el dominio y emitir SSL con Let's Encrypt
-7. Si necesitas subdominios futuros, ejecutar `scripts/activar_wildcard_ssl.sh` con un token de Cloudflare válido
+2. Clonar el repositorio en `/opt/prislab/app`
+3. Copiar `.env.production.example` a `/opt/prislab/app/.env` y completar secretos
+4. Ejecutar `sudo bash /opt/prislab/app/scripts/deploy_vps.sh`
+5. Cuando hagas una actualización, ejecutar `sudo bash /opt/prislab/app/scripts/aplicar_fixes_produccion.sh`
+6. Si necesitas subdominios futuros, ejecutar `/opt/prislab/app/scripts/activar_wildcard_ssl.sh` con un token de Cloudflare válido
+
+**Wildcard SSL activo**
+- Certificado actual: `labcorecloud-wildcard`
+- Cubre `labcorecloud.com` y `*.labcorecloud.com`
+- Renovación de prueba: `sudo certbot renew --dry-run && sudo systemctl reload nginx`
 
 **Servicios que sí se conservan del ecosistema Google:**
 - Google Gemini
 - Google Drive API
 
-**Nota de operación:** la plataforma principal ya está activa en `https://prislab.labcorecloud.com`; el wildcard `*.labcorecloud.com` queda como el único paso pendiente de automatización.
+**Nota de operación:** la plataforma principal está diseñada para operar en `https://prislab.labcorecloud.com`; el wildcard `*.labcorecloud.com` queda como el paso opcional de ampliación.
 
 ---
 

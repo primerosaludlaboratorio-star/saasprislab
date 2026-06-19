@@ -24,7 +24,7 @@ def tiene_permiso(usuario, modulo, accion, recurso=None):
     # Obtener perfil del usuario
     try:
         perfil = usuario.perfil_usuario
-    except:
+    except Exception:
         # Si no tiene perfil asignado, verificar permisos por defecto
         return verificar_permisos_por_defecto(usuario, modulo, accion)
     

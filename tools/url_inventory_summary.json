@@ -1,36 +1,40 @@
 {
   "protocol": "PRISLAB_URL_INVENTORY_SUMMARY",
   "source": "tools/url_inventory.json",
-  "count": 1732,
+  "count": 1812,
   "kinds": {
-    "ui": 1494,
-    "api": 223,
-    "pdf": 15
+    "ui": 1544,
+    "api": 252,
+    "pdf": 16
   },
   "prefixes_top": [
     {
       "prefix": "/admin/",
-      "count": 1019
+      "count": 1043
     },
     {
       "prefix": "/laboratorio/",
-      "count": 114
+      "count": 118
     },
     {
       "prefix": "/consultorio/",
-      "count": 67
+      "count": 68
     },
     {
       "prefix": "/api/",
-      "count": 53
+      "count": 61
     },
     {
       "prefix": "/farmacia/",
-      "count": 51
+      "count": 53
     },
     {
       "prefix": "/silo-lab/",
       "count": 50
+    },
+    {
+      "prefix": "/lims/",
+      "count": 42
     },
     {
       "prefix": "/mantenimiento/",
@@ -38,7 +42,7 @@
     },
     {
       "prefix": "/director/",
-      "count": 23
+      "count": 24
     },
     {
       "prefix": "/bienestar/",
@@ -50,10 +54,14 @@
     },
     {
       "prefix": "/contabilidad/",
+      "count": 17
+    },
+    {
+      "prefix": "/marketing/",
       "count": 16
     },
     {
-      "prefix": "/lims/",
+      "prefix": "/seguridad/",
       "count": 15
     },
     {
@@ -71,14 +79,6 @@
     {
       "prefix": "/medico/",
       "count": 14
-    },
-    {
-      "prefix": "/marketing/",
-      "count": 14
-    },
-    {
-      "prefix": "/seguridad/",
-      "count": 13
     },
     {
       "prefix": "/finanzas/",
@@ -125,26 +125,30 @@
       "count": 6
     },
     {
-      "prefix": "/transferencias/",
+      "prefix": "/blindaje/",
       "count": 6
     }
   ],
   "view_modules_top": [
     {
       "module": "django.contrib",
-      "count": 849
+      "count": 869
     },
     {
       "module": "core.views",
-      "count": 420
+      "count": 435
     },
     {
       "module": "django.views",
-      "count": 173
+      "count": 177
     },
     {
       "module": "consultorio.views",
-      "count": 62
+      "count": 63
+    },
+    {
+      "module": "lims.views",
+      "count": 26
     },
     {
       "module": "farmacia.views",
@@ -159,24 +163,24 @@
       "count": 20
     },
     {
-      "module": "marketing.views",
-      "count": 14
+      "module": "seguridad.views",
+      "count": 15
     },
     {
-      "module": "seguridad.views",
-      "count": 13
+      "module": "marketing.views",
+      "count": 15
     },
     {
       "module": "bienestar.views",
       "count": 12
     },
     {
-      "module": "logistica.views",
+      "module": "laboratorio.views",
       "count": 11
     },
     {
-      "module": "laboratorio.views",
-      "count": 10
+      "module": "logistica.views",
+      "count": 11
     },
     {
       "module": "ia.views",
@@ -191,12 +195,12 @@
       "count": 10
     },
     {
-      "module": "mantenimiento.views_metrologia",
+      "module": "contabilidad.views",
       "count": 9
     },
     {
-      "module": "contabilidad.views",
-      "count": 8
+      "module": "mantenimiento.views_metrologia",
+      "count": 9
     },
     {
       "module": "inventario.views_consultorio",
@@ -227,6 +231,14 @@
       "count": 6
     },
     {
+      "module": "functools.partial",
+      "count": 3
+    },
+    {
+      "module": "ninja.operation",
+      "count": 3
+    },
+    {
       "module": "ia.admin",
       "count": 2
     },
@@ -237,40 +249,32 @@
     {
       "module": "consultorio.pdf_views_prislab",
       "count": 2
-    },
-    {
-      "module": "laboratorio.views_admin",
-      "count": 2
-    },
-    {
-      "module": "consultorio.pdf_views",
-      "count": 1
     }
   ],
   "views_top": [
     {
       "view": "django.views.generic.base.view",
-      "count": 172
+      "count": 177
     },
     {
       "view": "django.contrib.admin.options.history_view",
-      "count": 168
+      "count": 172
     },
     {
       "view": "django.contrib.admin.options.delete_view",
-      "count": 168
+      "count": 172
     },
     {
       "view": "django.contrib.admin.options.change_view",
-      "count": 168
+      "count": 172
     },
     {
       "view": "django.contrib.admin.options.add_view",
-      "count": 167
+      "count": 171
     },
     {
       "view": "django.contrib.admin.options.changelist_view",
-      "count": 166
+      "count": 170
     },
     {
       "view": "pacientes.portal_views.wrapper",
@@ -283,6 +287,14 @@
     {
       "view": "consultorio.views.nueva_consulta_soap",
       "count": 4
+    },
+    {
+      "view": "functools.partial",
+      "count": 3
+    },
+    {
+      "view": "ninja.operation.sync_view_wrapper",
+      "count": 3
     },
     {
       "view": "core.views.laboratorio.recepcion_lab",
@@ -358,14 +370,6 @@
     },
     {
       "view": "core.views.laboratorio.abrir_worklist_qr",
-      "count": 2
-    },
-    {
-      "view": "core.views.laboratorio.control_calidad",
-      "count": 2
-    },
-    {
-      "view": "core.views.laboratorio.toma_muestra_index",
       "count": 2
     }
   ]

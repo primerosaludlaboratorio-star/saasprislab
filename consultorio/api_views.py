@@ -2,21 +2,40 @@
 API endpoints para procesamiento de audio médico en tiempo real.
 Integración con Google Gemini para transcripción y análisis inteligente.
 """
+from django.db.models import Value
+from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
-import json
 import logging
 
 from core.services.ai_medico import procesar_consulta_medica, procesar_resultados_lab
 
 logger = logging.getLogger('ia')
 
+_ROLES_AUDIO_CONSULTA = {'DIRECTOR', 'ADMIN', 'ADMINISTRADOR', 'MEDICO'}
+_ROLES_AUDIO_LAB = {'DIRECTOR', 'ADMIN', 'ADMINISTRADOR', 'QUIMICO', 'LABORATORIO'}
+_GRUPOS_AUDIO_CONSULTA = {'MEDICOS', 'CONSULTORIO', 'GERENCIA_OPERATIVA'}
+_GRUPOS_AUDIO_LAB = {'LABORATORIO', 'GERENCIA_OPERATIVA'}
+
+
+def _has_audio_access(user, allowed_roles, allowed_groups):
+    if not getattr(user, 'is_authenticated', False):
+        return False
+    if user.is_superuser or user.is_staff:
+        return True
+    rol = (getattr(user, 'rol', '') or '').upper().strip()
+    if rol in allowed_roles:
+        return True
+    return user.groups.filter(name__in=allowed_groups).exists()
+
+
+def _require_empresa(user):
+    return getattr(user, 'empresa', None)
+
 
 @login_required
 @require_http_methods(["POST"])
-@csrf_exempt
 def procesar_audio_consulta(request):
     """
     Procesa audio de consulta médica y devuelve datos estructurados.
@@ -29,6 +48,18 @@ def procesar_audio_consulta(request):
         JSON con datos estructurados de la consulta
     """
     try:
+        if not _has_audio_access(request.user, _ROLES_AUDIO_CONSULTA, _GRUPOS_AUDIO_CONSULTA):
+            return JsonResponse({
+                'success': False,
+                'error': 'No autorizado para usar captura por audio en consultorio'
+            }, status=403)
+
+        if not _require_empresa(request.user):
+            return JsonResponse({
+                'success': False,
+                'error': 'Usuario sin empresa asignada'
+            }, status=403)
+
         # Verificar que se envió el audio
         if 'audio' not in request.FILES:
             return JsonResponse({
@@ -60,7 +91,6 @@ def procesar_audio_consulta(request):
 
 @login_required
 @require_http_methods(["POST"])
-@csrf_exempt
 def procesar_audio_laboratorio(request):
     """
     Procesa audio de resultados de laboratorio y mapea valores.
@@ -74,6 +104,19 @@ def procesar_audio_laboratorio(request):
         JSON con valores mapeados
     """
     try:
+        if not _has_audio_access(request.user, _ROLES_AUDIO_LAB, _GRUPOS_AUDIO_LAB):
+            return JsonResponse({
+                'success': False,
+                'error': 'No autorizado para usar captura por audio en laboratorio'
+            }, status=403)
+
+        empresa = _require_empresa(request.user)
+        if not empresa:
+            return JsonResponse({
+                'success': False,
+                'error': 'Usuario sin empresa asignada'
+            }, status=403)
+
         # Verificar que se envió el audio
         if 'audio' not in request.FILES:
             return JsonResponse({
@@ -100,7 +143,7 @@ def procesar_audio_laboratorio(request):
             }, status=400)
 
         from lims.models import Analito
-        an = Analito.objects.filter(pk=pk, activo=True).first()
+        an = Analito.objects.filter(pk=pk, activo=True, empresa=empresa).first()
         if an:
             kw = ' '.join(
                 x for x in (an.nombre, an.codigo, an.abreviatura or '') if x
@@ -109,7 +152,9 @@ def procesar_audio_laboratorio(request):
         else:
             from laboratorio.models import Parametro
             lista_parametros = list(
-                Parametro.objects.filter(estudio_id=pk).values('nombre', 'keywords')
+                Parametro.objects.filter(estudio_id=pk).annotate(
+                    keywords=Coalesce('abreviatura', Value(''))
+                ).values('nombre', 'keywords')
             )
 
         if not lista_parametros:

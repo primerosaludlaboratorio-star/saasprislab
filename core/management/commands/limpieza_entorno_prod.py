@@ -7,7 +7,7 @@ NO borra datos reales de usuarios.
 Ejecutar: python manage.py limpieza_entorno_prod
 """
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -70,7 +70,7 @@ class Command(BaseCommand):
                             path = os.path.join(d, f)
                             try:
                                 mtime = os.path.getmtime(path)
-                                age = timezone.now() - timezone.datetime.fromtimestamp(mtime)
+                                age = timezone.now() - timezone.make_aware(datetime.fromtimestamp(mtime))
                                 if age > timedelta(hours=24):
                                     if not dry:
                                         os.remove(path)

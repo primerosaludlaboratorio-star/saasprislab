@@ -1,14 +1,16 @@
 """
 core/views/cron_tasks.py
 ━━━━━━━━━━━━━━━━━━━━━━━━
-Endpoints HTTP para Cloud Scheduler (GCP).
+Endpoints HTTP para tareas programadas externas o internas.
 Cada ruta llama a un management command interno.
 Protección: cabecera X-Cron-Secret debe coincidir con la variable de entorno CRON_SECRET.
-Si CRON_SECRET no está configurada, solo se aceptan peticiones desde Cloud Run (GAE-/Google headers).
+Si CRON_SECRET no está configurada, solo se aceptan peticiones con cabeceras de cron conocidas.
 """
 import logging
 import os
+import secrets
 
+from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -19,11 +21,19 @@ _CRON_SECRET = os.environ.get('CRON_SECRET', '')
 
 
 def _verificar_cron(request) -> bool:
-    """Valida que la petición venga de Cloud Scheduler (por header secreto o Google IP)."""
-    # Si hay un secreto configurado, verificarlo
+    """Valida que la petición venga de un scheduler autorizado (por header secreto)."""
     if _CRON_SECRET:
-        return request.headers.get('X-Cron-Secret') == _CRON_SECRET
-    # Sin secreto: aceptar solo si viene con header de Google Cloud Scheduler
+        provided_secret = request.headers.get('X-Cron-Secret', '')
+        return secrets.compare_digest(provided_secret, _CRON_SECRET)
+
+    if not settings.DEBUG:
+        logger.error(
+            'Cron rechazado: CRON_SECRET no configurado en entorno no-debug para %s',
+            request.path,
+        )
+        return False
+
+    # Solo en desarrollo permitimos el fallback por headers conocidos del scheduler.
     return bool(request.headers.get('X-CloudScheduler-JobName') or
                 request.headers.get('X-Appengine-Cron'))
 
@@ -32,7 +42,7 @@ def _verificar_cron(request) -> bool:
 @require_http_methods(['GET', 'POST'])
 def cron_check_metrologia(request):
     """
-    Cloud Scheduler → 08:00 AM diario.
+    Cron diario → 08:00 AM.
     Ejecuta: python manage.py check_certificados_metrologicos
     Alerta al Director 30 días antes del vencimiento de certificados ISO/IQ/OQ/PQ.
     """
@@ -66,7 +76,7 @@ def cron_check_metrologia(request):
 @require_http_methods(['GET', 'POST'])
 def cron_check_stock_critico(request):
     """
-    Cloud Scheduler → 07:00 AM diario.
+    Cron diario → 07:00 AM.
     Detecta silos con stock por debajo del mínimo y genera notificaciones al Director.
     """
     if not _verificar_cron(request):
@@ -178,7 +188,7 @@ def cron_check_stock_critico(request):
 @require_http_methods(['GET', 'POST'])
 def cron_verify_escudo_clinico(request):
     """
-    Cloud Scheduler — verifica PRISLAB_ESCUDO_USUARIO_ID (pánico / NotificacionPanico).
+    Cron diario — verifica PRISLAB_ESCUDO_USUARIO_ID (pánico / NotificacionPanico).
     Respuesta 503 si el usuario no existe o está inactivo (alertas en Cloud Monitoring).
     """
     if not _verificar_cron(request):

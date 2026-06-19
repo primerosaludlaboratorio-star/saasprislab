@@ -59,6 +59,12 @@ service-account-key.json
 service-account*.json
 *.pem
 *.key
+gdrive_credentials.json
+env_produccion.txt
+*.env.production
+*.prod.env
+*_credentials.json
+*_secret.json
 
 # Temporary files
 *.tmp

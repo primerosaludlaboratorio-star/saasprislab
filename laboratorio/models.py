@@ -411,9 +411,11 @@ class PerfilLaboratorio(models.Model):
     def ahorro_porcentual(self):
         """Calcula el porcentaje de ahorro al comprar el perfil vs individual."""
         total_individual = self.calcular_precio_total_individual()
-        if total_individual == 0:
+        if total_individual <= 0:
             return 0
         ahorro = total_individual - self.precio
+        if ahorro <= 0:
+            return 0
         return (ahorro / total_individual) * 100
 
     def agregar_estudios_a_orden(self, orden, precio_perfil=None):
@@ -433,14 +435,15 @@ class PerfilLaboratorio(models.Model):
         
         estudios_agregados = []
         estudios_duplicados = []
-        estudios_perfil = self.pruebas.all()
-        
+        estudios_perfil = list(self.pruebas.all())
+        total_estudios = len(estudios_perfil)
+
         # Si no hay estudios, retornar
-        if not estudios_perfil.exists():
+        if not total_estudios:
             return estudios_agregados, estudios_duplicados, 0
-        
+
         # Precio por estudio (distribución proporcional del precio del perfil)
-        precio_por_estudio = precio_perfil / estudios_perfil.count()
+        precio_por_estudio = precio_perfil / total_estudios
         
         for estudio in estudios_perfil:
             # Verificar si el estudio ya existe en la orden (evitar duplicados)

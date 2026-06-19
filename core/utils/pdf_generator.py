@@ -24,6 +24,7 @@ import logging
 import qrcode
 from pathlib import Path
 from datetime import datetime
+from django.utils import timezone
 from typing import Dict, Any, Optional
 import uuid
 
@@ -288,7 +289,7 @@ def generar_pdf_receta(receta, paciente, medico) -> bytes:
             'paciente': paciente,
             'medico': medico,
             'qr_code': qr_base64,
-            'fecha_generacion': datetime.now(),
+            'fecha_generacion': timezone.localtime(timezone.now()),
             'empresa': getattr(medico, 'empresa', None),
         }
         
@@ -360,7 +361,7 @@ def generar_pdf_resultado_lab(orden, resultados, empresa) -> bytes:
             'paciente_sexo_display': paciente_sexo_display,
             'resultados': resultados,
             'qr_code': qr_base64,
-            'fecha_generacion': datetime.now(),
+            'fecha_generacion': timezone.localtime(timezone.now()),
             'empresa': empresa,
             'empresa_logo_uri': _empresa_logo_uri_para_weasyprint(empresa),
             'medico_solicitante': getattr(orden, 'medico', None),
@@ -471,7 +472,7 @@ def test_pdf_generation():
         # Renderizar
         from django.template import Template, Context
         template = Template(html_test)
-        html_string = template.render(Context({'fecha': datetime.now()}))
+        html_string = template.render(Context({'fecha': timezone.localtime(timezone.now())}))
         
         # Generar PDF
         html = HTML(string=html_string)
@@ -525,7 +526,7 @@ def generar_pdf_nota_sellada(nota_soap, sello, expediente_sha):
             'paciente': nota_soap.paciente,
             'medico': nota_soap.medico,
             'hash_corto': expediente_sha.hash_sha256[:32],
-            'fecha_generacion': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+            'fecha_generacion': timezone.localtime(timezone.now()).strftime('%d/%m/%Y %H:%M:%S'),
             'qr_url': sello.qr_verificacion,
             'token_corto': str(sello.token_verificacion)[:16],
         }
@@ -544,7 +545,7 @@ def generar_pdf_nota_sellada(nota_soap, sello, expediente_sha):
         hash_pdf = hashlib.sha256(pdf_bytes).hexdigest()
         
         # Guardar archivo
-        filename = f"expedientes/pdf_firmados/{datetime.now().year}/{datetime.now().month:02d}/{sello.folio_unico}_{hash_pdf[:8]}.pdf"
+        filename = f"expedientes/pdf_firmados/{timezone.localtime(timezone.now()).year}/{timezone.localtime(timezone.now()).month:02d}/{sello.folio_unico}_{hash_pdf[:8]}.pdf"
         path = default_storage.save(filename, ContentFile(pdf_bytes))
         
         logger.info(f"[PDF-BLINDAJE] Generado PDF firmado: {path} hash={hash_pdf[:16]}...")

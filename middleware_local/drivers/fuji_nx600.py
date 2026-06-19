@@ -11,14 +11,14 @@ Características:
 - Mapeo de códigos Fuji a códigos internos PRISLAB
 """
 
-import serial
-import serial.tools.list_ports
 import threading
 import logging
 import re
 from typing import Optional, Callable, Dict, Any, List
 import time
 from datetime import datetime
+
+from .serial_compat import serial
 
 logger = logging.getLogger(__name__)
 
@@ -409,5 +409,32 @@ class FujiNX600Driver:
     
     def procesar(self):
         """Procesa datos pendientes (método llamado en loop principal)."""
-        # El procesamiento se hace en el hilo de lectura
-        pass
+        if self.thread and self.thread.is_alive():
+            return {
+                'modo': 'hilo_serial',
+                'conectado': bool(self.serial_port and self.serial_port.is_open),
+                'buffer_pendiente': len(self.buffer),
+            }
+
+        bytes_leidos = 0
+        try:
+            if self.serial_port and self.serial_port.is_open:
+                disponibles = int(getattr(self.serial_port, 'in_waiting', 0) or 0)
+                if disponibles > 0:
+                    data = self.serial_port.read(disponibles)
+                    if data:
+                        self.buffer += data
+                        bytes_leidos = len(data)
+
+            if self.buffer:
+                self._procesar_buffer()
+
+            return {
+                'modo': 'loop_serial',
+                'conectado': bool(self.serial_port and self.serial_port.is_open),
+                'bytes_leidos': bytes_leidos,
+                'buffer_pendiente': len(self.buffer),
+            }
+        except serial.SerialException as e:
+            logger.error(f"Error de lectura serial en {self.nombre}: {e}")
+            raise

@@ -16,7 +16,7 @@ import hashlib
 import json
 import logging
 import os
-from datetime import datetime
+from django.utils import timezone
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 from urllib.parse import quote
@@ -25,7 +25,7 @@ logger = logging.getLogger('sentinel.github')
 
 # ── Configuracion ──────────────────────────────────────────────────────────
 GITHUB_API = 'https://api.github.com'
-# Limpieza agresiva de tokens (Cloud Run puede inyectar \r\n invisibles)
+# Limpieza agresiva de tokens (algunos entornos pueden inyectar \r\n invisibles)
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '').strip().replace('\r', '').replace('\n', '')
 GITHUB_REPO = os.environ.get('GITHUB_REPO', '').strip().replace('\r', '').replace('\n', '')  # formato: owner/repo
 
@@ -65,7 +65,7 @@ def _is_rate_limited(fingerprint):
     - Mas de MAX_ISSUES_PER_HOUR issues esta hora -> skip
     """
     global _issue_count_this_hour, _hour_marker
-    now = datetime.utcnow()
+    now = timezone.now()
     current_hour = now.hour
 
     # Reset contador cada hora
@@ -172,13 +172,13 @@ def crear_github_issue(datos):
     # Check si ya existe issue abierto en GitHub
     if _check_existing_issue(fingerprint):
         logger.info(f'SENTINEL-GITHUB: Issue abierto ya existe (fp={fingerprint}), skip')
-        _issue_cache[fingerprint] = datetime.utcnow()
+        _issue_cache[fingerprint] = timezone.now()
         return None
 
     # ── Construir Issue ────────────────────────────────────────────────
     label_name, sev_text = _severity_label(severidad)
     tag = f'#BUG_{namespace.upper()}'
-    now = datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')
+    now = timezone.now().strftime('%Y-%m-%d %H:%M UTC')
 
     # Titulo conciso
     title = f"[SENTINEL-{fingerprint}] {sev_text}: {tipo_exc} en {metodo} {url}"
@@ -238,7 +238,7 @@ def crear_github_issue(datos):
             issue_url = result.get('html_url')
 
             # Actualizar cache y contador
-            _issue_cache[fingerprint] = datetime.utcnow()
+            _issue_cache[fingerprint] = timezone.now()
             _issue_count_this_hour += 1
 
             logger.info(
@@ -284,7 +284,7 @@ def _crear_issue_sin_labels(title, body, fingerprint):
 
         with urlopen(req, timeout=10) as resp:
             result = json.loads(resp.read().decode())
-            _issue_cache[fingerprint] = datetime.utcnow()
+            _issue_cache[fingerprint] = timezone.now()
             _issue_count_this_hour += 1
             issue_url = result.get('html_url')
             logger.info(f'SENTINEL-GITHUB: Issue creado (sin labels) -> {issue_url}')
@@ -307,7 +307,7 @@ def _error_hint(tipo_exc):
         'AttributeError': 'Atributo inexistente. Posible modelo sin campo o None.',
         'DoesNotExist': 'Registro no encontrado en DB. Usar get_or_404 o filter.',
         'IntegrityError': 'Violacion de constraint en DB. Dato duplicado o FK rota.',
-        'OperationalError': 'Error de conexion a DB. Verificar Cloud SQL.',
+        'OperationalError': 'Error de conexion a DB. Verificar PostgreSQL.',
         'PermissionDenied': 'Permiso denegado. Verificar roles y decoradores.',
         'Http404': 'Ruta no encontrada. Verificar urls.py.',
         'ImportError': 'Modulo no encontrado. Verificar requirements.txt.',
@@ -329,7 +329,7 @@ def _generar_hotfix_ia(tipo_exc, traceback_texto, url, namespace):
         str: Bloque Markdown con la sugerencia, o string vacio si falla.
     """
     try:
-        from core.utils.gemini_client import get_gemini_model
+        from core.utils.gemini_client import generate_content
 
         # Extraer archivo y linea del traceback
         archivo_afectado = 'desconocido'
@@ -362,11 +362,9 @@ def _generar_hotfix_ia(tipo_exc, traceback_texto, url, namespace):
             "6. Usa formato Markdown con bloques de codigo Python\n"
         )
 
-        model = get_gemini_model('gemini-2.0-flash')
-        response = model.generate_content(prompt)
+        fix_text = (generate_content(prompt, max_tokens=1200) or "").strip()
 
-        if response and response.text:
-            fix_text = response.text.strip()
+        if fix_text:
             # Limitar a 3000 chars para no saturar el issue
             if len(fix_text) > 3000:
                 fix_text = fix_text[:3000] + '\n... (truncado)'

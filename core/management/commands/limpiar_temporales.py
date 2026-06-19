@@ -9,7 +9,7 @@ Nota: Los archivos temporales creados en el directorio del sistema (tempfile.get
 por ejemplo en core/services/ai_medico.py o restaurar_backup, se eliminan en bloque finally
 por el código que los crea; este comando no los procesa.
 
-Ejecución periódica recomendada: cron o Cloud Scheduler (ej. diario a las 4:00).
+Ejecución periódica recomendada: cron o scheduler externo (ej. diario a las 4:00).
 
 Uso:
   python manage.py limpiar_temporales

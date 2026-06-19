@@ -6,10 +6,10 @@ Revisa diariamente todos los CertificadoMetrologia activos y:
   2. Si vence en ≤30 días y no se envió alerta aún → crea NotificacionDiscrepancia.
   3. Si ya venció → crea NotificacionDiscrepancia CRITICA (si no existe una no resuelta).
 
-Ejecución recomendada vía Cloud Scheduler o cron:
+Ejecución recomendada vía cron o scheduler externo:
     python manage.py check_certificados_metrologicos
 
-Configurable en cloudbuild.yaml como step de Cloud Run Jobs.
+Configurable en el scheduler que use la producción.
 """
 from datetime import date, timedelta
 

@@ -121,6 +121,7 @@ urlpatterns = [
     
     # ========== TELEMEDICINA (VIDEOLLAMADA) ==========
     path("telemedicina/", views.videollamada_segura, name="videollamada_segura"),
+    path("api/telemedicina/sala/", views.api_crear_sala_videollamada, name="api_crear_sala_videollamada"),
     
     # ========== COBRO DE CONSULTA (FASE 10: BLINDAJE) ==========
     path("cobros/", views.cobro_consulta, name="cobro_consulta"),

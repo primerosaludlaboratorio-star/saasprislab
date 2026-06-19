@@ -10,13 +10,104 @@ FILOSOFÍA:
 - Mensajes de error claros para el usuario
 """
 
+import logging
+import os
+import secrets
 from functools import wraps
+
+from django.core.cache import cache
 from django.http import JsonResponse, HttpResponseForbidden
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-import logging
 
 logger = logging.getLogger('decorators')
+
+
+# ==============================================================================
+# DECORADORES: API TOKEN Y RATE LIMIT PARA ENDPOINTS PUBLICOS
+# ==============================================================================
+
+def _request_api_token(request):
+    auth = request.headers.get('Authorization', '')
+    if auth.lower().startswith('bearer '):
+        return auth.split(' ', 1)[1].strip()
+
+    for header in (
+        'X-PRISLAB-API-TOKEN',
+        'X-PRISLAB-KIOSCO-TOKEN',
+        'X-Frontend-Log-Token',
+        'X-API-Token',
+    ):
+        token = request.headers.get(header)
+        if token:
+            return token.strip()
+    return ''
+
+
+def require_api_token(*env_names):
+    """
+    Protege endpoints publicos con token de servicio.
+
+    Acepta Authorization: Bearer <token> o cabeceras X-PRISLAB-API-TOKEN,
+    X-PRISLAB-KIOSCO-TOKEN, X-Frontend-Log-Token y X-API-Token.
+    """
+    names = tuple(env_names) or ('PRISLAB_API_TOKEN',)
+
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            valid_tokens = [
+                os.environ.get(name, '').strip()
+                for name in (*names, 'PRISLAB_API_TOKEN')
+                if os.environ.get(name, '').strip()
+            ]
+            if not valid_tokens:
+                logger.error('API token no configurado para %s', view_func.__name__)
+                return JsonResponse(
+                    {'status': 'error', 'mensaje': 'API token no configurado'},
+                    status=503,
+                )
+
+            supplied = _request_api_token(request)
+            if not supplied or not any(secrets.compare_digest(supplied, token) for token in valid_tokens):
+                return JsonResponse({'status': 'error', 'mensaje': 'No autorizado'}, status=401)
+
+            return view_func(request, *args, **kwargs)
+
+        return wrapper
+    return decorator
+
+
+def rate_limit(key_prefix, limit=60, window_seconds=60):
+    """Rate limit simple por IP usando el cache configurado de Django."""
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
+            ip = forwarded.split(',')[0].strip() or request.META.get('REMOTE_ADDR', 'unknown')
+            key = f'rl:{key_prefix}:{ip}'
+            created = cache.add(key, 1, timeout=window_seconds)
+            if created:
+                count = 1
+            else:
+                try:
+                    count = cache.incr(key)
+                except ValueError:
+                    cache.set(key, 1, timeout=window_seconds)
+                    count = 1
+
+            if count > limit:
+                response = JsonResponse(
+                    {'status': 'error', 'mensaje': 'Demasiadas solicitudes'},
+                    status=429,
+                )
+                response['Retry-After'] = str(window_seconds)
+                return response
+
+            return view_func(request, *args, **kwargs)
+
+        return wrapper
+    return decorator
 
 
 # ==============================================================================

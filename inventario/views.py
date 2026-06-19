@@ -313,7 +313,11 @@ def crear_lote(request, empresa):
         d = request.POST
         try:
             reactivo = get_object_or_404(CatalogoReactivoLab, pk=d['reactivo'], empresa=empresa)
-            cantidad = float(d['cantidad_inicial'])
+            try:
+                cantidad = float(d['cantidad_inicial'])
+            except (ValueError, TypeError):
+                messages.error(request, 'Cantidad inicial inválida.')
+                return redirect('inventario:crear_lote')
             with transaction.atomic():
                 lote = LoteReactivoLab.objects.create(
                     empresa=empresa,
@@ -442,7 +446,11 @@ def crear_salida_tecnica(request, empresa):
     if request.method == 'POST':
         d = request.POST
         try:
-            cantidad = float(d['cantidad'])
+            try:
+                cantidad = float(d['cantidad'])
+            except (ValueError, TypeError):
+                messages.error(request, 'Cantidad inválida.')
+                return redirect('inventario:crear_salida_tecnica')
             err = None
             with transaction.atomic():
                 lote = get_object_or_404(

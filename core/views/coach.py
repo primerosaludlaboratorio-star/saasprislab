@@ -8,7 +8,6 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
-from django.conf import settings
 
 # Prompt del sistema para el Coach Ejecutivo
 PROMPT_SISTEMA_COACH = """Eres un consultor experto en liderazgo clínico (estilo Harvard Business Review). 
@@ -74,43 +73,22 @@ def api_coach_preguntar(request):
         if not pregunta:
             return JsonResponse({"status": "error", "mensaje": "Pregunta vacía."}, status=400)
 
-        # Verificar si hay API key de Google
-        api_key = getattr(settings, 'GOOGLE_API_KEY', '')
-        if not api_key:
-            return JsonResponse({
-                "status": "error",
-                "mensaje": "Google API Key no configurada. Contacte al administrador."
-            }, status=500)
-
-        # Usar cliente centralizado de Gemini (API v1 estable)
-        from core.utils.gemini_client import get_gemini_model
-        
-        try:
-            model = get_gemini_model('gemini-2.0-flash')
-        except Exception as e:
-            return JsonResponse({
-                "status": "error",
-                "mensaje": f"Error al inicializar Gemini: {str(e)}"
-            }, status=500)
-        
-        # Crear prompt combinado (Gemini no usa system messages como OpenAI)
+        # Crear prompt combinado para el proveedor central de IA.
         prompt_completo = f"""{PROMPT_SISTEMA_COACH}
 
 Pregunta del usuario: {pregunta}
 
 Responde como consultor experto:"""
-        
-        from google.generativeai.types import GenerationConfig
-        
-        response = model.generate_content(
+
+        from core.utils.gemini_client import generate_content
+
+        respuesta = generate_content(
             prompt_completo,
-            generation_config=GenerationConfig(
-                temperature=0.7,
-                max_output_tokens=500,
-            )
+            temperature=0.7,
+            max_tokens=500,
         )
-        
-        respuesta = response.text if response.text else "No se pudo generar una respuesta."
+        if not respuesta:
+            respuesta = "No se pudo generar una respuesta."
 
         return JsonResponse({
             "status": "success",

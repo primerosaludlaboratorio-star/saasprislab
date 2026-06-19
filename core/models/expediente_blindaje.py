@@ -471,8 +471,8 @@ class NotaClinicaSellar(models.Model):
     
     def generar_folio(self):
         """Genera un folio único basado en empresa, año y correlativo."""
-        from datetime import datetime
-        año = datetime.now().year
+        from django.utils import timezone as _tz
+        año = _tz.localtime(_tz.now()).year
         prefijo = f"EXP-{self.nota_soap.empresa_id}-{año}-"
         
         # Contar sellos existentes de esta empresa

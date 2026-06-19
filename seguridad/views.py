@@ -491,8 +491,14 @@ def api_verificar_codigo_2fa(request):
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
-    
+
     codigo = request.POST.get('codigo', '').strip()
+    if not codigo and request.content_type == 'application/json':
+        try:
+            payload = json.loads(request.body.decode('utf-8') or '{}')
+            codigo = str(payload.get('codigo', '')).strip()
+        except (TypeError, ValueError, UnicodeDecodeError):
+            return JsonResponse({'valido': False, 'mensaje': 'JSON inválido'}, status=400)
     
     if not codigo:
         return JsonResponse({'valido': False, 'mensaje': 'Código vacío'})
@@ -501,7 +507,13 @@ def api_verificar_codigo_2fa(request):
     dispositivos = DispositivoTOTP.objects.filter(usuario=request.user, activo=True)
     for dispositivo in dispositivos:
         if dispositivo.verificar_codigo(codigo):
-            return JsonResponse({'valido': True, 'mensaje': 'Código correcto'})
+            return JsonResponse({'valido': True, 'mensaje': 'Código correcto', 'tipo': 'totp'})
+
+    # Verificar códigos de respaldo de un solo uso.
+    codigos_backup = CodigoBackup2FA.objects.filter(usuario=request.user, usado=False)
+    for codigo_backup in codigos_backup:
+        if codigo_backup.verificar(codigo):
+            return JsonResponse({'valido': True, 'mensaje': 'Código de respaldo correcto', 'tipo': 'backup'})
     
     return JsonResponse({'valido': False, 'mensaje': 'Código incorrecto'})
 

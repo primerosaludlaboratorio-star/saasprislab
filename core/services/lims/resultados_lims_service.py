@@ -243,8 +243,8 @@ class ResultadosLimsService:
                             ),
                         }
 
-                        resultado_nuevo = datos.get('resultado', '').strip()
-                        observaciones_nueva = datos.get('observaciones', '').strip()
+                        resultado_nuevo = (datos.get('resultado') or '').strip()
+                        observaciones_nueva = (datos.get('observaciones') or '').strip()
 
                         if resultado_nuevo:
                             analito_linea = getattr(detalle, 'analito', None)

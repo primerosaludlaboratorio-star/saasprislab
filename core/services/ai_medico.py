@@ -39,6 +39,24 @@ logger = logging.getLogger('ia')
 
 
 # ==============================================================================
+# UTILIDADES DE ERROR
+# ==============================================================================
+
+def _es_error_403(exc: Exception) -> bool:
+    texto = f"{type(exc).__name__}: {exc}".lower()
+    return any(token in texto for token in ('403', 'forbidden', 'permission denied', 'permissiondenied', 'insufficient permissions'))
+
+
+def _mensaje_403_gemini(exc: Exception) -> str:
+    return (
+        "Gemini devolvió un error de permisos (403/Forbidden). "
+        "Verifica que la API key esté permitida para generativelanguage.googleapis.com "
+        "y que el proyecto tenga acceso activo al modelo. "
+        f"Detalle técnico: {type(exc).__name__}: {exc}"
+    )
+
+
+# ==============================================================================
 # CONFIGURACIÓN DE GEMINI
 # ==============================================================================
 
@@ -112,11 +130,16 @@ def procesar_consulta_medica(audio_file) -> Dict[str, Any]:
         logger.info("Subiendo archivo de audio: %s", audio_path)
         from core.utils.gemini_client import get_gemini_client
         client = get_gemini_client()
-        with open(audio_path, 'rb') as f:
-            audio_file_gemini = client.files.upload(
-                file=f,
-                config={'mime_type': 'audio/webm'},
-            )
+        try:
+            with open(audio_path, 'rb') as f:
+                audio_file_gemini = client.files.upload(
+                    file=f,
+                    config={'mime_type': 'audio/webm'},
+                )
+        except Exception as upload_exc:
+            if _es_error_403(upload_exc):
+                raise PermissionError(_mensaje_403_gemini(upload_exc)) from upload_exc
+            raise
 
         # Prompt especializado para consulta médica
         prompt = """
@@ -156,14 +179,19 @@ DEVUELVE SOLO EL JSON, SIN TEXTO ADICIONAL.
         # Generar respuesta con nueva API
         logger.info("Enviando audio a Gemini para análisis...")
         from google.genai import types as _genai_types
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=[prompt, audio_file_gemini],
-            config=_genai_types.GenerateContentConfig(
-                temperature=0.3,
-                max_output_tokens=2000,
-            ),
-        )
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=[prompt, audio_file_gemini],
+                config=_genai_types.GenerateContentConfig(
+                    temperature=0.3,
+                    max_output_tokens=2000,
+                ),
+            )
+        except Exception as gen_exc:
+            if _es_error_403(gen_exc):
+                raise PermissionError(_mensaje_403_gemini(gen_exc)) from gen_exc
+            raise
         
         # Parsear respuesta
         response_text = response.text.strip()
@@ -231,11 +259,16 @@ def procesar_resultados_lab(audio_file, lista_parametros: List[Dict[str, str]]) 
         logger.info("Subiendo archivo de audio: %s", audio_path)
         from core.utils.gemini_client import get_gemini_client
         client = get_gemini_client()
-        with open(audio_path, 'rb') as f:
-            audio_file_gemini = client.files.upload(
-                file=f,
-                config={'mime_type': 'audio/webm'},
-            )
+        try:
+            with open(audio_path, 'rb') as f:
+                audio_file_gemini = client.files.upload(
+                    file=f,
+                    config={'mime_type': 'audio/webm'},
+                )
+        except Exception as upload_exc:
+            if _es_error_403(upload_exc):
+                raise PermissionError(_mensaje_403_gemini(upload_exc)) from upload_exc
+            raise
 
         parametros_info = "\n".join([
             f"- {p['nombre']}: Keywords: {p['keywords']}"
@@ -264,14 +297,19 @@ DEVUELVE SOLO EL JSON, SIN TEXTO ADICIONAL.
 
         logger.info("Enviando audio a Gemini para análisis...")
         from google.genai import types as _genai_types
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=[prompt, audio_file_gemini],
-            config=_genai_types.GenerateContentConfig(
-                temperature=0.2,
-                max_output_tokens=1500,
-            ),
-        )
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=[prompt, audio_file_gemini],
+                config=_genai_types.GenerateContentConfig(
+                    temperature=0.2,
+                    max_output_tokens=1500,
+                ),
+            )
+        except Exception as gen_exc:
+            if _es_error_403(gen_exc):
+                raise PermissionError(_mensaje_403_gemini(gen_exc)) from gen_exc
+            raise
 
         response_text = response.text.strip()
         logger.info("Respuesta de Gemini: %s...", response_text[:200])
@@ -478,27 +516,17 @@ def test_gemini_connection():
         bool: True si la conexión es exitosa
     """
     try:
-        if not GEMINI_AVAILABLE:
-            print("❌ google-generativeai no está instalado")
-            print("   Instalar con: pip install google-generativeai")
-            return False
-        
-        if not configurar_gemini():
-            print("❌ No se pudo configurar Gemini")
-            return False
-        
-        # Hacer una prueba simple
-        print("🔄 Probando conexión con Gemini 1.5 Flash...")
-        model = genai.GenerativeModel('gemini-2.0-flash')
-        response = model.generate_content(
+        # Hacer una prueba simple usando el proveedor central de IA.
+        print("Probando conexion con proveedor IA...")
+        from core.utils.gemini_client import generate_content
+
+        response_text = generate_content(
             "Responde solo con 'OK' si me entiendes",
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.1,
-                max_output_tokens=10
-            )
+            temperature=0.1,
+            max_tokens=10,
         )
-        
-        print(f"✅ Gemini responde: {response.text}")
+
+        print(f"Proveedor IA responde: {response_text}")
         return True
         
     except Exception as e:

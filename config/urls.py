@@ -157,6 +157,9 @@ urlpatterns = [
     # ========== MÓDULO DE CONTABILIDAD (Facturación CFDI 4.0) ==========
     path('contabilidad/', include(('contabilidad.urls', 'contabilidad'), namespace='contabilidad')),
 
+    # ========== MÓDULO ACADEMIA / DIPLOMADOS ==========
+    path('academia/', include(('academia.urls', 'academia'), namespace='academia')),
+
     # ── Redirects legacy (eliminan 404s detectados por Omnitex) ─────────────
     # /farmacia/corte-caja/ era referenciado en war_room_stress_test → redirige al POS
     path('farmacia/corte-caja/', RedirectView.as_view(url='/farmacia/pdv/?accion=corte', permanent=False), name='corte_caja_legacy'),

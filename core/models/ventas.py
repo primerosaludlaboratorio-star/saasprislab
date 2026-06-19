@@ -113,8 +113,8 @@ class Receta(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.folio_receta:
-            from datetime import datetime
-            ahora = datetime.now()
+            from django.utils import timezone as _tz
+            ahora = _tz.localtime(_tz.now())
             prefijo = f'REC-{ahora.strftime("%Y%m")}-'
             ultimos = Receta.objects.filter(folio_receta__startswith=prefijo).count()
             self.folio_receta = f'{prefijo}{str(ultimos + 1).zfill(5)}'
@@ -272,8 +272,8 @@ class Venta(TenantModel):
 
     def save(self, *args, **kwargs):
         if not self.folio_operacion:
-            from datetime import datetime
-            ahora = datetime.now()
+            from django.utils import timezone as _tz
+            ahora = _tz.localtime(_tz.now())
             prefijo = f'VTA-{ahora.strftime("%Y%m")}-'
             ultimos = Venta.objects.filter(folio_operacion__startswith=prefijo).count()
             self.folio_operacion = f'{prefijo}{str(ultimos + 1).zfill(5)}'

@@ -81,6 +81,9 @@ class ClienteFacturacion(models.Model):
 
     def clean(self):
         super().clean()
+        from django.core.exceptions import ValidationError
+        if not self.empresa_id:
+            raise ValidationError({'empresa': 'La empresa es obligatoria para ClienteFiscal (multi-tenant).'})
         if self.rfc:
             self.rfc = self.rfc.strip().upper()
             validate_rfc_sat40(self.rfc)

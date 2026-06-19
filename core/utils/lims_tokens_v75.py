@@ -21,6 +21,7 @@ Se convierte automáticamente en una OrdenDeServicio con DetalleOrden.
 import re
 import logging
 from datetime import datetime
+from django.utils import timezone as _tz_lims
 
 from django.db import transaction
 from django.core.exceptions import ValidationError
@@ -234,7 +235,7 @@ class MotorOrdenesLIMS:
                 from core.models import OrdenDeServicio, DetalleOrden, OrdenTokenLIMS
                 
                 # Generar folio
-                año = datetime.now().year
+                año = _tz_lims.localtime(_tz_lims.now()).year
                 count = OrdenDeServicio.objects.filter(
                     empresa=empresa,
                     folio_orden__startswith=f'ORD-{año}-'

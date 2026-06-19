@@ -62,7 +62,7 @@ def obtener_resultados_anteriores_paciente(paciente, empresa, codigo_estudio=Non
                     if match:
                         try:
                             valor_numerico = float(match.group(1))
-                        except:
+                        except (ValueError, TypeError):
                             pass
                     
                     resultados_anteriores[codigo_estudio_actual] = {

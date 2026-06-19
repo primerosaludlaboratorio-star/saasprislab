@@ -29,8 +29,14 @@
                         <div class="d-flex align-items-center justify-content-center h-100" style="min-height:400px;">
                             <div class="text-center text-white">
                                 <i class="fas fa-video fa-5x mb-3 text-muted"></i>
-                                <h4>Sala de Videollamada</h4>
-                                <p class="text-muted">Seleccione un paciente e inicie la consulta</p>
+                                <h4>{% if sala_activa %}Sala lista{% else %}Sala de Videollamada{% endif %}</h4>
+                                <p class="text-muted">
+                                    {% if sala_activa and sala_activa.paciente %}
+                                        {{ sala_activa.paciente.nombre_completo }}
+                                    {% else %}
+                                        Seleccione un paciente e inicie la consulta
+                                    {% endif %}
+                                </p>
                             </div>
                         </div>
                         <!-- Mini vista del doctor (esquina) -->
@@ -97,7 +103,7 @@
                     </div>
                     <div class="input-group mt-2">
                         <input type="text" class="form-control form-control-sm" id="linkSala" 
-                               value="" placeholder="Link generado aquí" readonly>
+                               value="{{ sala_actual_url }}" placeholder="Link generado aquí" readonly>
                         <button class="btn btn-outline-secondary btn-sm" id="btnCopiarLink" title="Copiar">
                             <i class="fas fa-copy"></i>
                         </button>
@@ -122,6 +128,9 @@
                                 <br><small class="text-muted">{{ cv.hora_cita|time:"H:i" }}</small>
                             </div>
                             <span class="badge bg-{{ cv.estado_class }}">{{ cv.estado_display }}</span>
+                            <a class="btn btn-sm btn-outline-primary ms-2" href="{{ cv.sala_url }}" title="Abrir sala">
+                                <i class="fas fa-video"></i>
+                            </a>
                         </div>
                         {% endfor %}
                     {% else %}
@@ -148,6 +157,27 @@
 </div>
 
 <script>
+const csrfToken = '{{ csrf_token }}';
+let mediaStream = null;
+
+async function prepararVistaLocal() {
+    const areaVideo = document.getElementById('areaVideo');
+    try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        areaVideo.innerHTML = '';
+        const video = document.createElement('video');
+        video.autoplay = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.srcObject = mediaStream;
+        video.className = 'w-100 h-100';
+        video.style.minHeight = '400px';
+        video.style.objectFit = 'cover';
+        areaVideo.appendChild(video);
+    } catch (err) {
+        areaVideo.querySelector('.text-muted')?.classList.add('text-warning');
+    }
+}
 // Funcionalidad de búsqueda de pacientes
 let timeoutBusqueda;
 document.getElementById('buscarPacienteVideo').addEventListener('input', function() {
@@ -179,12 +209,53 @@ function seleccionarPacienteVideo(id, nombre) {
     document.getElementById('btnIniciarLlamada').disabled = false;
 }
 
+document.getElementById('btnIniciarLlamada').addEventListener('click', async function() {
+    const pacienteId = document.getElementById('pacienteVideoId').value;
+    if (!pacienteId) return;
+    this.disabled = true;
+    try {
+        const resp = await fetch("{% url 'consultorio:api_crear_sala_videollamada' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ paciente_id: pacienteId })
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            document.getElementById('linkSala').value = data.sala_url;
+            document.getElementById('statusConexion').innerHTML = '<i class="fas fa-circle"></i> Sala activa';
+            await prepararVistaLocal();
+        }
+    } finally {
+        this.disabled = false;
+    }
+});
+
+document.getElementById('btnCopiarLink').addEventListener('click', async function() {
+    const link = document.getElementById('linkSala').value;
+    if (!link) return;
+    await navigator.clipboard.writeText(link);
+});
+
+document.getElementById('btnColgar').addEventListener('click', function() {
+    if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+    }
+    document.getElementById('statusConexion').innerHTML = '<i class="fas fa-circle"></i> Disponible';
+});
+
 // Toggle controles
 document.getElementById('btnMicrofono').addEventListener('click', function() {
     this.classList.toggle('btn-danger');
     this.classList.toggle('btn-light');
     this.querySelector('i').classList.toggle('fa-microphone');
     this.querySelector('i').classList.toggle('fa-microphone-slash');
+    if (mediaStream) {
+        mediaStream.getAudioTracks().forEach(track => track.enabled = !this.classList.contains('btn-danger'));
+    }
 });
 
 document.getElementById('btnCamara').addEventListener('click', function() {
@@ -192,6 +263,13 @@ document.getElementById('btnCamara').addEventListener('click', function() {
     this.classList.toggle('btn-light');
     this.querySelector('i').classList.toggle('fa-video');
     this.querySelector('i').classList.toggle('fa-video-slash');
+    if (mediaStream) {
+        mediaStream.getVideoTracks().forEach(track => track.enabled = !this.classList.contains('btn-danger'));
+    }
 });
+
+{% if sala_activa %}
+prepararVistaLocal();
+{% endif %}
 </script>
 {% endblock %}

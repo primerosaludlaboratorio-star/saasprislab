@@ -1,3 +1,4 @@
+import os
 """
 PRIS — Sistema Nervioso Central v2 (Jarvis-Level)
 ==================================================
@@ -58,6 +59,18 @@ def _gemini_rest_call(api_key: str, prompt_text: str, imagen_b64: str = "",
     Soporta texto y una imagen opcional en base64.
     Retorna el texto de la respuesta.
     """
+    if not imagen_b64:
+        try:
+            from core.utils.gemini_client import generate_content
+            return generate_content(
+                prompt_text,
+                model_name=_DEFAULT_GEMINI_MODEL,
+                temperature=temperatura,
+                max_tokens=max_tokens,
+            ).strip()
+        except Exception as provider_error:
+            logger.warning("PRIS proveedor IA texto no disponible, intentando REST Gemini: %s", provider_error)
+
     parts = [{"text": prompt_text}]
 
     if imagen_b64:
@@ -109,6 +122,12 @@ def _gemini_rest_call(api_key: str, prompt_text: str, imagen_b64: str = "",
             except urllib.error.HTTPError as e:
                 err_body = e.read().decode("utf-8", errors="ignore")
                 logger.warning(f"PRIS Gemini '{model}' HTTP {e.code} intento {intento+1}: {err_body[:200]}")
+                if e.code == 403:
+                    raise PermissionError(
+                        "Gemini REST devolvió 403/Forbidden. "
+                        "Verifica que la API key esté autorizada para generativelanguage.googleapis.com "
+                        "y que el modelo solicitado esté habilitado."
+                    ) from e
                 if e.code in (429, 503) and intento < 2:
                     # Espera escalonada: 2s, 5s
                     time.sleep(2 + intento * 3)
@@ -209,6 +228,7 @@ def _build_system_prompt(request, contexto_pagina=""):
     """Construye el prompt del sistema con contexto del usuario."""
     user = request.user
     empresa = getattr(user, 'empresa', None)
+
     nombre_empresa = getattr(empresa, 'nombre', 'PRISLAB') if empresa else 'PRISLAB'
     nombre_usuario = user.get_full_name() or user.username
     rol_usuario = getattr(user, 'rol', 'ADMIN')
@@ -312,13 +332,40 @@ _TOOL_RBAC = {
     "registrar_venta_farmacia":           ["FARMACIA", "ADMIN", "Administrador", "GERENCIA"],
     # ── Escritura — Cotizaciones (acceso amplio) ─────────────────────────────
     "crear_cotizacion":                   ["RECEPCION", "LABORATORIO", "FARMACIA", "ADMIN", "Administrador", "GERENCIA"],
+    "consultar_expediente_paciente":      ["MEDICOS", "MEDICO", "LABORATORIO", "ADMIN", "Administrador", "GERENCIA"],
+    "aplicar_descuento_orden":            ["RECEPCION", "ADMIN", "Administrador", "GERENCIA"],
+    "cambiar_estado_orden":               ["RECEPCION", "LABORATORIO", "ADMIN", "Administrador", "GERENCIA"],
+    "programar_cita":                     ["RECEPCION", "MEDICOS", "MEDICO", "ADMIN", "Administrador", "GERENCIA"],
+    "enviar_notificacion_paciente":       ["RECEPCION", "MEDICOS", "MEDICO", "LABORATORIO", "ADMIN", "Administrador", "GERENCIA"],
+    "consultar_indicadores_kpi":          ["GERENCIA_OPERATIVA", "GERENCIA", "GERENTE", "ADMIN", "Administrador"],
+    "modificar_paciente":                 ["RECEPCION", "MEDICOS", "MEDICO", "ADMIN", "Administrador", "GERENCIA"],
+    "gestionar_usuario":                  ["DIRECTOR", "ADMIN", "Administrador", "GERENCIA"],
 }
 
 _SUPERUSER_ONLY_TOOLS = {"auditoria_sistema_completa"}
 
-# PRIS-Jarvis: cada herramienta respeta el rol del usuario en sesión.
-# La confirmación humana es una capa adicional, no la única defensa.
-_JARVIS_BYPASS_RBAC = False
+# PRIS/Prisci: cada herramienta respeta el rol del usuario en sesion.
+# La confirmacion humana es una capa adicional, no la unica defensa.
+_PRISCI_EXTERNAL_ALLOWED_TOOLS = {
+    "buscar_estudio",
+    "crear_cotizacion",
+    "consultar_manual_lab",
+    "buscar_medicamento",
+}
+
+
+def _rol_aliases_usuario(user) -> set[str]:
+    rol = (getattr(user, 'rol', '') or '').upper()
+    aliases = {rol} if rol else set()
+    mapa = {
+        'GERENTE': {'GERENCIA', 'GERENCIA_OPERATIVA'},
+        'QUIMICO': {'LABORATORIO'},
+        'MEDICO': {'MEDICOS'},
+        'ADMIN': {'Administrador'},
+        'DIRECTOR': {'GERENCIA', 'Administrador'},
+    }
+    aliases.update(mapa.get(rol, set()))
+    return {a for a in aliases if a}
 
 
 def _verificar_rbac(tool_name: str, user, jarvis_mode: bool = False) -> tuple:
@@ -327,16 +374,11 @@ def _verificar_rbac(tool_name: str, user, jarvis_mode: bool = False) -> tuple:
     El RBAC se aplica SIEMPRE, incluso en modo Jarvis.
     La confirmacion humana es una capa ADICIONAL, no el unico mecanismo de seguridad.
     """
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False, "No tienes autorizacion para hacer eso. Inicia sesion primero."
     if user.is_superuser:
         return True, ""
 
-    # En modo Jarvis, solo las herramientas de gestión de usuarios tienen restricción mínima
-    if jarvis_mode or _JARVIS_BYPASS_RBAC:
-        if tool_name == "auditoria_sistema_completa":
-            return False, "Esta auditoría completa requiere nivel de Superusuario (Director)."
-        return True, ""
-
-    # Modo legacy (llamada directa desde API, no desde chat)
     if tool_name in _SUPERUSER_ONLY_TOOLS:
         return False, "Disculpe, esta acción requiere nivel de Superusuario (Director)."
     grupos_req = _TOOL_RBAC.get(tool_name)
@@ -344,7 +386,10 @@ def _verificar_rbac(tool_name: str, user, jarvis_mode: bool = False) -> tuple:
         return True, ""
     if not grupos_req:
         return False, "Disculpe, esta acción está reservada para el Director del sistema."
-    if user.groups.filter(name__in=grupos_req).exists():
+    grupos_usuario = set(user.groups.values_list('name', flat=True))
+    roles_usuario = _rol_aliases_usuario(user)
+    permitidos = set(grupos_req)
+    if grupos_usuario.intersection(permitidos) or roles_usuario.intersection(permitidos):
         return True, ""
     return False, (
         "Disculpe, pero su rol no tiene autorización para esta acción. "
@@ -355,11 +400,17 @@ def _verificar_rbac(tool_name: str, user, jarvis_mode: bool = False) -> tuple:
 # ─── Ejecutores de herramientas ────────────────────────────────────────────────
 
 def _ejecutar_herramienta(nombre_tool, args, request, jarvis_mode=True):
-    """Punto de entrada centralizado. En modo Jarvis (por defecto), RBAC bypaseado."""
+    """Punto de entrada centralizado de Prisci para ejecutar herramientas con RBAC."""
     user = request.user
     empresa = getattr(user, 'empresa', None)
 
-    # Verificar permiso — en modo Jarvis solo bloquea auditoria_sistema_completa para no-superuser
+    if getattr(request, 'prisci_external_channel', False) and nombre_tool not in _PRISCI_EXTERNAL_ALLOWED_TOOLS:
+        return {
+            "denegado_rbac": True,
+            "error": "No tienes autorizacion para hacer eso. Contacta a tu supervisor.",
+        }
+
+    # Verificar permiso real del usuario humano que invoca Prisci.
     permitido, msg_rbac = _verificar_rbac(nombre_tool, user, jarvis_mode=jarvis_mode)
     if not permitido:
         return {"denegado_rbac": True, "error": msg_rbac}
@@ -409,11 +460,13 @@ def _ejecutar_herramienta(nombre_tool, args, request, jarvis_mode=True):
             from core.agent.pris_tools_operativos import TOOLS_OPERATIVOS
             if nombre_tool in TOOLS_OPERATIVOS:
                 entry = TOOLS_OPERATIVOS[nombre_tool]
-                # En modo Jarvis: grupos vacíos = acceso irrestricto.
-                # Solo verificamos si el entry tiene grupos Y no estamos en jarvis_mode.
+                # Capa adicional para herramientas operativas que declaren grupos propios.
                 grupos_req = entry.get("grupos", [])
-                if grupos_req and not jarvis_mode and not user.is_superuser:
-                    if not user.groups.filter(name__in=grupos_req).exists():
+                if grupos_req and not user.is_superuser:
+                    grupos_usuario = set(user.groups.values_list('name', flat=True))
+                    roles_usuario = _rol_aliases_usuario(user)
+                    permitidos = set(grupos_req)
+                    if not (grupos_usuario.intersection(permitidos) or roles_usuario.intersection(permitidos)):
                         return {
                             "denegado_rbac": True,
                             "error": (
@@ -1026,8 +1079,10 @@ def asistente_page(request):
 
 @login_required
 @require_http_methods(["POST"])
+
 def asistente_chat(request):
-    """PRIS con function-calling manual vía JSON."""
+    import json
+    from core.utils.gemini_client import _get_ai_provider
     try:
         data = json.loads(request.body)
         mensaje = (data.get('mensaje') or '').strip()
@@ -1048,10 +1103,22 @@ def asistente_chat(request):
 
         start = time.time()
 
+        # Ruta legacy opcional: DeepSeek si el entorno lo pide explícitamente.
+        # Por defecto, PRIS ejecuta el flujo real con Gemini + function calling.
+        if _get_ai_provider() == 'deepseek':
+            from core.utils.deepseek_client import generate_content as _deepseek_generate
+            respuesta = _deepseek_generate(mensaje, max_tokens=300)
+            return JsonResponse({
+                'status': 'success',
+                'respuesta': respuesta,
+                'tiempo_ms': int((time.time() - start) * 1000),
+                'herramientas_ejecutadas': [],
+            })
+
         from core.utils.gemini_client import _get_api_key
         api_key = _get_api_key()
-        if not api_key:
-            raise ValueError("GOOGLE_API_KEY no configurada.")
+        if imagen_b64 and not api_key:
+            raise ValueError("GOOGLE_API_KEY no configurada para analizar imagenes.")
 
         system_prompt = _build_system_prompt(request, contexto_pagina)
         herramientas_ejecutadas = []
@@ -1199,6 +1266,43 @@ def asistente_chat(request):
             'mensaje': type(e).__name__,
             'respuesta': f'Tuve un problema técnico: {error_msg[:120]}. Intenta de nuevo.',
         }, status=200)
+
+
+class _PrisciSession(dict):
+    modified = False
+
+
+def procesar_pregunta_con_ia(
+    mensaje: str,
+    user,
+    historial=None,
+    contexto_pagina: str = "",
+    external_channel: bool = False,
+) -> dict:
+    """Ejecuta el mismo asistente Prisci para canales internos o externos."""
+    from django.http import HttpRequest
+
+    req = HttpRequest()
+    req.method = "POST"
+    req.path = "/ia/asistente/chat/"
+    req.META = {"CONTENT_TYPE": "application/json", "REMOTE_ADDR": "127.0.0.1"}
+    req.user = user
+    req.session = _PrisciSession()
+    req.prisci_external_channel = external_channel
+    payload = {
+        "mensaje": mensaje,
+        "historial": historial or [],
+        "contexto_pagina": contexto_pagina,
+    }
+    req._body = json.dumps(payload).encode("utf-8")
+    response = asistente_chat(req)
+    try:
+        return json.loads(response.content.decode("utf-8"))
+    except Exception:
+        return {
+            "status": "error",
+            "respuesta": "Prisci no pudo procesar la respuesta del canal.",
+        }
 
 
 def _tool_buscar_reactivo_lab(args, empresa):
