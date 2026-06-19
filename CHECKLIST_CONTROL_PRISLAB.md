@@ -31,6 +31,8 @@ Si este checklist no se actualiza, el cambio no cuenta como cerrado.
 - [x] `Academia` cubierta con pruebas y blindaje tenant
 - [x] Integración Google Drive unificada a Service Account centralizada (`GOOGLE_APPLICATION_CREDENTIALS` / `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON`) con scope único `https://www.googleapis.com/auth/drive`
 - [~] Verificación real contra VPS ejecutada: la cuenta de servicio carga, pero el `GOOGLE_DRIVE_FOLDER_ID` actual en producción responde `404 notFound`; falta corregir el ID real de carpeta o compartir exactamente esa carpeta con la cuenta de servicio
+- [x] Diagnóstico final Drive completado: lectura de carpeta productiva OK, escritura bloqueada por `403 storageQuotaExceeded` al usar Service Account sobre `My Drive`
+- [x] Producción blindada para seguir operando con `BufferLocalStorage` por defecto mientras se migra a `Shared Drive` o se cambia el modelo de autenticación
 - [~] Producción funcional localmente validada; falta seguir la verificación manual módulo por módulo en el entorno real
 
 ## Estado general
@@ -180,7 +182,9 @@ Leyenda:
 - [x] Google Drive centralizado por Service Account
 - [x] Manejo explícito de errores `403` / `404` en capa Drive
 - [~] Carpeta maestra de Google Drive validada en producción
+- [~] Lectura real de carpeta maestra confirmada en producción
 - [ ] Subida real de archivo a carpeta maestra confirmada en producción
+- [x] Fallback seguro a buffer local desplegado en producción mientras se resuelve `Shared Drive`
 - [ ] WhatsApp validado como en legacy
 - [ ] DICOM PACs validado
 - [ ] EvaPacs validado

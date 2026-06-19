@@ -113,7 +113,7 @@ def sincronizar_archivo_drive(self, nombre: str, tenant_slug: str = 'default'):
 )
 def resinc_buffer_pendiente():
     """
-    Task periódica (Cloud Scheduler / Celery Beat): reencola archivos que
+    Task periódica (scheduler externo / Celery Beat): reencola archivos que
     llevan más de 10 minutos en el buffer sin sincronizarse.
     Actúa como red de seguridad si algún task se perdió.
     """
@@ -190,7 +190,7 @@ def _esta_sincronizado_cache(nombre: str) -> bool:
     try:
         from django.core.cache import cache
         estado = cache.get(f'drive_sync:{nombre}')
-        return bool(estado and estado.get('ok'))
+        return bool(estado and (estado.get('ok') or estado.get('fallido')))
     except Exception:
         return False
 

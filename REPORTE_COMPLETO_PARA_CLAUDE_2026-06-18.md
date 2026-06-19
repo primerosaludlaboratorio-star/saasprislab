@@ -110,8 +110,10 @@ Estado:
 - `config/drive_credentials.py`, `core/utils/google_drive.py` y `core/utils/drive_archive.py` quedaron alineados a una sola fuente de credenciales centralizada
 - el scope activo quedó unificado a `https://www.googleapis.com/auth/drive`
 - en la VPS ya se instaló el archivo de credenciales en la ruta configurada por `GOOGLE_APPLICATION_CREDENTIALS`
-- se ejecutó una prueba real en producción con la cuenta de servicio: la credencial carga correctamente, pero el `GOOGLE_DRIVE_FOLDER_ID` actual responde `404 notFound`
-- conclusion operativa: el bloqueo actual ya no es la llave ni el código, sino el ID de carpeta configurado en producción o el hecho de que la carpeta compartida no corresponde exactamente a ese ID
+- se ejecutó una primera prueba real en producción con la cuenta de servicio: la credencial carga correctamente, pero el `GOOGLE_DRIVE_FOLDER_ID` respondió `404 notFound` hasta alinear la cuenta de servicio correcta
+- tras compartir la carpeta con la cuenta correcta, la lectura de `PRISLAB_Media` quedó operativa
+- la subida real sigue bloqueada por Google con `403 storageQuotaExceeded` porque la carpeta vive en `My Drive` y no en `Shared Drive`
+- conclusion operativa actual: el código y la credencial ya están bien; el bloqueo restante es arquitectónico de Google Drive y se resuelve migrando a `Shared Drive` o usando autenticación de usuario
 
 ## 4.3.1 Estado real Google Drive en produccion al 2026-06-19
 
@@ -121,20 +123,22 @@ Verificacion ejecutada por Codex en VPS:
 - deteccion de `GOOGLE_APPLICATION_CREDENTIALS` OK
 - deteccion de `GOOGLE_DRIVE_FOLDER_ID` OK
 - carga de Service Account OK
-- intento de lectura de carpeta maestra Drive FAIL con `404 notFound`
+- intento inicial de lectura de carpeta maestra Drive FAIL con `404 notFound`
+- causa detectada: la carpeta estaba compartida con otra Service Account distinta a la instalada en VPS
+- tras corregir el share, lectura de carpeta maestra Drive OK
+- intento de subida real FAIL con `403 storageQuotaExceeded`
 
 Interpretacion correcta:
 
-- si Google devuelve `404` para `files().get(fileId=...)`, normalmente significa una de dos:
-  - el ID configurado no corresponde a la carpeta correcta
-  - la carpeta existe pero no esta compartida realmente con la cuenta de servicio usada por PRISLAB
+- si Google devuelve `404` para `files().get(fileId=...)`, normalmente significa que el recurso no está visible para la cuenta de servicio concreta que usa PRISLAB
+- si Google devuelve `403 storageQuotaExceeded` al crear archivos con Service Account en una carpeta de `My Drive`, el remedio correcto es usar `Shared Drive` o autenticación delegada de usuario
 
 Pendiente exacto para cerrar:
 
-- confirmar el ID real de la carpeta maestra de Drive que se quiere usar
-- compartir esa carpeta exacta con la cuenta de servicio oficial
-- actualizar el `.env` de produccion si el ID actual no corresponde
-- reejecutar la prueba de subida/borrado real para cerrar el punto
+- crear o migrar `PRISLAB_Media` a `Shared Drive`
+- compartir esa unidad/carpeta con `vertex-express@prislab-v5-ai.iam.gserviceaccount.com`
+- mantener mientras tanto el backend por defecto en `BufferLocalStorage` para no romper cargas productivas
+- una vez exista `Shared Drive`, reejecutar la prueba de subida/borrado real para cerrar el punto
 
 ### 4.4 Academia
 

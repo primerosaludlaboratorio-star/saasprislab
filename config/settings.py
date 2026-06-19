@@ -377,6 +377,11 @@ GOOGLE_DRIVE_FOLDER_ID = (
 # Credenciales: resolver desde env vars (JSON, Base64 o archivo)
 GOOGLE_DRIVE_CREDENTIALS = None
 _DRIVE_STORAGE_ACTIVO = False  # pylint: disable=invalid-name
+GOOGLE_DRIVE_DIRECT_STORAGE = (
+    os.environ.get('GOOGLE_DRIVE_DIRECT_STORAGE', '')
+    .strip()
+    .lower() in ('1', 'true', 'yes', 'on')
+)
 
 # STORAGES base (puede ser sobreescrito por Drive abajo)
 STORAGES = {
@@ -389,10 +394,17 @@ try:
     _drive_creds = get_drive_credentials()
     if _drive_creds and GOOGLE_DRIVE_FOLDER_ID:
         GOOGLE_DRIVE_CREDENTIALS = _drive_creds
-        STORAGES["default"] = {"BACKEND": "config.storage_backends.GoogleDriveStorage"}
-        _DRIVE_STORAGE_ACTIVO = True
         import logging as _log_drive
-        _log_drive.getLogger('config').info("[STORAGE] Google Drive activo para archivos media")
+        if GOOGLE_DRIVE_DIRECT_STORAGE:
+            STORAGES["default"] = {"BACKEND": "config.storage_backends.GoogleDriveStorage"}
+            _DRIVE_STORAGE_ACTIVO = True
+            _log_drive.getLogger('config').info("[STORAGE] Google Drive directo activo para archivos media")
+        else:
+            _log_drive.getLogger('config').info(
+                "[STORAGE] Credenciales Drive resueltas. "
+                "Se mantiene BufferLocalStorage como backend por defecto hasta habilitar "
+                "GOOGLE_DRIVE_DIRECT_STORAGE explícitamente."
+            )
     elif GOOGLE_DRIVE_FOLDER_ID and not _drive_creds:
         import logging as _log_drive
         _log_drive.getLogger('config').warning(
