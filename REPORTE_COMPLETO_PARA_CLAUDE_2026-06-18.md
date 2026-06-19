@@ -135,6 +135,7 @@ Archivos principales:
 Estado:
 
 - Drive usa cuenta de servicio, no API key
+- desde `2026-06-19` el código ya soporta también OAuth 2.0 de usuario vía `GOOGLE_DRIVE_TOKEN_PATH` y `GOOGLE_DRIVE_CREDENTIALS_PATH`, priorizándolo sobre Service Account para cuentas personales Gmail
 - sin credenciales, el sistema cae a fallback local sin tumbar el arranque
 - errores 403 y 404 de Drive ya devuelven mensajes utiles
 - `config/drive_credentials.py`, `core/utils/google_drive.py` y `core/utils/drive_archive.py` quedaron alineados a una sola fuente de credenciales centralizada

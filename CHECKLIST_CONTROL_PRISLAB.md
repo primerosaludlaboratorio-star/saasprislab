@@ -30,6 +30,7 @@ Si este checklist no se actualiza, el cambio no cuenta como cerrado.
 - [x] `PRIS IA` desbloqueado del stub y flujo real activo
 - [x] `Academia` cubierta con pruebas y blindaje tenant
 - [x] Integración Google Drive unificada a Service Account centralizada (`GOOGLE_APPLICATION_CREDENTIALS` / `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON`) con scope único `https://www.googleapis.com/auth/drive`
+- [x] Migración de código preparada para OAuth 2.0 de usuario (`GOOGLE_DRIVE_TOKEN_PATH` + `GOOGLE_DRIVE_CREDENTIALS_PATH`) con refresco automático de token y compatibilidad transitoria con Service Account
 - [~] Verificación real contra VPS ejecutada: la cuenta de servicio carga, pero el `GOOGLE_DRIVE_FOLDER_ID` actual en producción responde `404 notFound`; falta corregir el ID real de carpeta o compartir exactamente esa carpeta con la cuenta de servicio
 - [x] Diagnóstico final Drive completado: lectura de carpeta productiva OK, escritura bloqueada por `403 storageQuotaExceeded` al usar Service Account sobre `My Drive`
 - [x] Producción blindada para seguir operando con `BufferLocalStorage` por defecto mientras se migra a `Shared Drive` o se cambia el modelo de autenticación

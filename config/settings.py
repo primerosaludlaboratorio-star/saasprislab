@@ -374,7 +374,7 @@ GOOGLE_DRIVE_FOLDER_ID = (
     ''
 ).strip()
 
-# Credenciales: resolver desde env vars (JSON, Base64 o archivo)
+# Credenciales: OAuth 2.0 (prioridad) o Service Account legacy
 GOOGLE_DRIVE_CREDENTIALS = None
 _DRIVE_STORAGE_ACTIVO = False  # pylint: disable=invalid-name
 GOOGLE_DRIVE_DIRECT_STORAGE = (
@@ -409,7 +409,8 @@ try:
         import logging as _log_drive
         _log_drive.getLogger('config').warning(
             "[STORAGE] GOOGLE_DRIVE_FOLDER_ID configurado pero credenciales no disponibles. "
-            "Configure GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON o GOOGLE_APPLICATION_CREDENTIALS."
+            "Configure GOOGLE_DRIVE_TOKEN_PATH/GOOGLE_DRIVE_CREDENTIALS_PATH "
+            "o, transitoriamente, GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON/GOOGLE_APPLICATION_CREDENTIALS."
         )
 except Exception as e:
     import logging as _log_drive

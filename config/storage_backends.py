@@ -64,8 +64,8 @@ def _drive_http_error_message(exc: HttpError, contexto: str) -> str:
     if status == 403 or 'forbidden' in raw_lower or 'insufficient permissions' in raw_lower:
         return (
             f'Drive devolvió 403/Forbidden durante {contexto}. '
-            'Revisa que la carpeta o Shared Drive esté compartida con la cuenta de servicio '
-            'y que el archivo o parent ID pertenezca a la zona autorizada. '
+            'Revisa que la carpeta o Shared Drive esté compartida con la identidad activa '
+            '(OAuth o Service Account) y que el archivo o parent ID pertenezca a la zona autorizada. '
             f'Detalle técnico: {raw}'
         )
     if status == 404:
