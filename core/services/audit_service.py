@@ -139,8 +139,5 @@ def audit_critical_action(
 
 
 def _get_client_ip(request):
-    """Extrae la IP real del cliente (soporta proxies/reverse proxy)."""
-    x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded:
-        return x_forwarded.split(',')[0].strip()
+    """Extrae la IP real del cliente. Usa REMOTE_ADDR (no falsificable) — este valor alimenta la auditoría."""
     return request.META.get('REMOTE_ADDR')

@@ -426,7 +426,7 @@ class ValidadorPreparacion:
 def api_procesar_tokens_lims(request):
     """
     API endpoint para procesar tokens desde AJAX.
-    
+
     POST params:
         - texto: Texto con tokens
         - paciente_id: ID del paciente
@@ -434,25 +434,32 @@ def api_procesar_tokens_lims(request):
     """
     from django.http import JsonResponse
     from core.models import Paciente
-    
+
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'No autenticado'}, status=401)
+
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse({'success': False, 'error': 'Usuario sin empresa asignada'}, status=403)
+
     try:
         texto = request.POST.get('texto', '')
         paciente_id = request.POST.get('paciente_id')
         nota_soap_id = request.POST.get('nota_soap_id')
-        
+
         if not texto or not paciente_id:
             return JsonResponse({
                 'success': False,
                 'error': 'Faltan parámetros: texto y paciente_id son requeridos'
             }, status=400)
-        
-        paciente = Paciente.objects.get(id=paciente_id)
-        
+
+        paciente = Paciente.objects.get(id=paciente_id, empresa=empresa)
+
         # Obtener nota SOAP si se proporciona
         nota_soap = None
         if nota_soap_id:
             from core.models import NotaClinicaSOAP
-            nota_soap = NotaClinicaSOAP.objects.filter(id=nota_soap_id).first()
+            nota_soap = NotaClinicaSOAP.objects.filter(id=nota_soap_id, empresa=empresa).first()
         
         resultado = MotorOrdenesLIMS.generar_orden_desde_tokens(
             texto_nota=texto,

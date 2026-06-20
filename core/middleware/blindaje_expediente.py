@@ -124,13 +124,13 @@ class SnapshotMiddleware:
         return response
     
     def _get_client_ip(self, request):
-        """Obtiene la IP real del cliente considerando proxies."""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0].strip()
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
+        """
+        Obtiene la IP real del cliente. Usa REMOTE_ADDR (la IP que Nginx
+        ve directamente, no falsificable por el cliente) porque este valor
+        se usa como evidencia forense/legal (NOM-004) — no debe depender
+        de un header que el cliente puede manipular.
+        """
+        return request.META.get('REMOTE_ADDR', '')
 
 
 # =============================================================================
@@ -276,12 +276,9 @@ def _generar_snapshot_jsonb(nota):
 
 
 def _get_ip_from_request(request):
-    """Utility para obtener IP del request."""
+    """Utility para obtener IP del request. Usa REMOTE_ADDR (no falsificable) — este valor es evidencia forense."""
     if not request:
         return None
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        return x_forwarded_for.split(',')[0].strip()
     return request.META.get('REMOTE_ADDR')
 
 

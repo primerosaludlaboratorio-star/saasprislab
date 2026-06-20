@@ -1038,6 +1038,29 @@ class OrdenDeCompra(models.Model):
         help_text="Condiciones especiales, justificación de cancelación, etc.",
     )
 
+    # --- Control de pago y evidencia (Contabilidad Personal del Director) ---
+    FORMA_PAGO_CHOICES = [
+        ('EFECTIVO', 'Efectivo'),
+        ('TRANSFERENCIA', 'Transferencia'),
+        ('TARJETA_EMPRESARIAL', 'Tarjeta Empresarial'),
+        ('CREDITO', 'Crédito con proveedor'),
+    ]
+    factura_adjunta = models.FileField(
+        upload_to='compras/facturas/%Y/%m/', null=True, blank=True,
+        verbose_name="Factura del proveedor",
+    )
+    foto_evidencia = models.ImageField(
+        upload_to='compras/evidencia/%Y/%m/', null=True, blank=True,
+        verbose_name="Foto de evidencia (recepción de mercancía)",
+    )
+    forma_pago = models.CharField(
+        max_length=25, blank=True, choices=FORMA_PAGO_CHOICES,
+        verbose_name="Forma de pago",
+    )
+    referencia_transferencia = models.CharField(max_length=100, blank=True)
+    pagada = models.BooleanField(default=False, verbose_name="Pagada")
+    fecha_pago = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de pago")
+
     class Meta:
         verbose_name = "Orden de Compra"
         verbose_name_plural = "Órdenes de Compra"

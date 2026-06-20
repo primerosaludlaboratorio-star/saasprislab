@@ -93,6 +93,7 @@ def consulta_medica(request, paciente_id=None):
         if cedula_profesional:
             medico_registro = Medico.objects.filter(
                 cedula_profesional=cedula_profesional,
+                empresa=empresa,
             ).first()
             if medico_registro:
                 especialidad_medico = medico_registro.especialidad
@@ -876,8 +877,9 @@ def verificar_qr_receta(request):
             folio = qr_data.get('folio')
             if not folio:
                 return JsonResponse({'status': 'error', 'mensaje': 'Folio no válido'}, status=400)
-            
-            receta = Receta.objects.filter(folio_receta=folio).first()
+
+            empresa = empresa_efectiva_request(request)
+            receta = Receta.objects.filter(folio_receta=folio, empresa=empresa).first()
             if not receta:
                 return JsonResponse({
                     'status': 'error',

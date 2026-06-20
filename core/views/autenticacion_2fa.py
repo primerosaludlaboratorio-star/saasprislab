@@ -12,6 +12,7 @@ import hashlib
 from django.conf import settings
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.utils import timezone
@@ -24,9 +25,12 @@ ROLES_2FA_OBLIGATORIO = {'ADMIN', 'DIRECTOR'}
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
 def _get_client_ip(request) -> str:
-    xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
-    if xff:
-        return xff.split(',')[0].strip()
+    """
+    REMOTE_ADDR es la IP que Nginx ve directamente (no falsificable por
+    el cliente) y es la fuente de verdad para decisiones de seguridad.
+    Nunca usar X-Forwarded-For aquí: es un header controlado por el
+    cliente y permitiría spoofear una IP interna para saltar el 2FA.
+    """
     return request.META.get('REMOTE_ADDR', '127.0.0.1')
 
 
@@ -159,11 +163,23 @@ def verificar_2fa(request):
         request.session.pop('_2fa_backend', None)
         return redirect('home')
 
+    cache_key = f'2fa_intentos_{usuario.pk}'
+    intentos = cache.get(cache_key, 0)
+    if intentos >= 5:
+        logger.warning(
+            'Bloqueo temporal 2FA por exceso de intentos: usuario=%s id=%s',
+            usuario.username, usuario.pk,
+        )
+        return render(request, 'core/2fa/verificar.html', {
+            'error': 'Demasiados intentos fallidos. Espera 15 minutos antes de volver a intentar.',
+        })
+
     if request.method == 'POST':
         codigo = request.POST.get('codigo', '').strip()
 
         # Intentar con código maestro de emergencia
         if _verificar_codigo_maestro(codigo):
+            cache.delete(cache_key)
             _notificar_ciso_uso_codigo_maestro(usuario, request)
             login(request, usuario, backend=backend)
             request.session.pop('_2fa_user_id', None)
@@ -174,6 +190,7 @@ def verificar_2fa(request):
         from seguridad.models import CodigoBackup2FA
         for codigo_backup in CodigoBackup2FA.objects.filter(usuario=usuario, usado=False):
             if codigo_backup.verificar(codigo):
+                cache.delete(cache_key)
                 login(request, usuario, backend=backend)
                 request.session.pop('_2fa_user_id', None)
                 request.session.pop('_2fa_backend', None)
@@ -183,6 +200,7 @@ def verificar_2fa(request):
         dispositivos = usuario.dispositivos_totp.filter(activo=True, confirmado=True)
         for dispositivo in dispositivos:
             if dispositivo.verificar_codigo(codigo):
+                cache.delete(cache_key)
                 from seguridad.models import LogAccionSensible
                 try:
                     LogAccionSensible.registrar(
@@ -201,6 +219,7 @@ def verificar_2fa(request):
                 request.session.pop('_2fa_backend', None)
                 return redirect('home')
 
+        cache.set(cache_key, intentos + 1, timeout=900)  # 15 minutos
         return render(request, 'core/2fa/verificar.html', {
             'error': 'Código incorrecto. Verifica tu app de autenticación.',
         })

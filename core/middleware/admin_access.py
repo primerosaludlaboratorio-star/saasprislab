@@ -10,9 +10,13 @@ from django.http import HttpResponseForbidden
 
 
 def _client_ip(request):
-    forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '') or ''
-    if forwarded:
-        return forwarded.split(',')[0].strip()
+    """
+    REMOTE_ADDR es la IP que Nginx ve directamente (no falsificable por
+    el cliente). Nginx está configurado para fijar X-Forwarded-For con
+    $remote_addr (ver nginx/conf.d/prislab.conf), pero esta función no
+    confía en ese header de todos modos: es un allowlist de seguridad
+    y debe usar la fuente de verdad sin intermediarios.
+    """
     return (request.META.get('REMOTE_ADDR') or '').strip()
 
 

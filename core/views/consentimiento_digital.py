@@ -268,10 +268,9 @@ def api_guardar_consentimiento(request, orden_id: int):
         if not firma_aceptada or not firma_data_url:
             return JsonResponse({'ok': False, 'error': 'Firma o aceptacion faltante.'}, status=400)
 
-        ip_captura = (
-            request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
-            or request.META.get('REMOTE_ADDR', 'desconocida')
-        )
+        # REMOTE_ADDR: IP real vista por Nginx, no falsificable por el cliente.
+        # Este valor queda en el consentimiento firmado como evidencia legal.
+        ip_captura = request.META.get('REMOTE_ADDR', 'desconocida')
         timestamp = timezone.now().strftime('%Y-%m-%d %H:%M:%S UTC')
         folio = f'CI-{uuid.uuid4().hex[:8].upper()}'
 

@@ -83,8 +83,11 @@ def rate_limit(key_prefix, limit=60, window_seconds=60):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
-            ip = forwarded.split(',')[0].strip() or request.META.get('REMOTE_ADDR', 'unknown')
+            # REMOTE_ADDR: IP real vista por Nginx, no falsificable por el
+            # cliente. Un rate-limit basado en un header controlado por el
+            # cliente (X-Forwarded-For) sería evadible enviando un valor
+            # distinto en cada request.
+            ip = request.META.get('REMOTE_ADDR', 'unknown')
             key = f'rl:{key_prefix}:{ip}'
             created = cache.add(key, 1, timeout=window_seconds)
             if created:

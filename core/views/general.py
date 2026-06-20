@@ -363,10 +363,8 @@ class CustomLoginView(LoginView):
     def form_invalid(self, form):
         """Registra intentos fallidos de login para auditoría y War Room."""
         username_intentado = self.request.POST.get('username', '')
-        ip = (
-            self.request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
-            or self.request.META.get('REMOTE_ADDR', '0.0.0.0')
-        )
+        # REMOTE_ADDR: IP real vista por Nginx, no falsificable — alimenta War Room.
+        ip = self.request.META.get('REMOTE_ADDR', '0.0.0.0')
         try:
             from seguridad.models import LogAccionSensible
             LogAccionSensible.objects.create(

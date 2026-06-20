@@ -66,8 +66,7 @@ def _crear_accion_pris(tipo, instruccion, payload, modulo, empresa, usuario) -> 
 
 
 def _ip_cliente(request) -> str:
-    xff = request.META.get('HTTP_X_FORWARDED_FOR')
-    return xff.split(',')[0].strip() if xff else request.META.get('REMOTE_ADDR', '')
+    return request.META.get('REMOTE_ADDR', '')
 
 
 def _rbac_dictado_resultado(user) -> bool:

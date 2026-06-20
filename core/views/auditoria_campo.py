@@ -9,6 +9,7 @@ import json
 
 from core.utils.estandares_industriales import auditar_cambio_campo
 from core.models import DetalleOrden, OrdenDeServicio
+from core.utils.empresa_request import empresa_efectiva_request
 
 
 @login_required
@@ -39,7 +40,8 @@ def api_auditoria_campo(request):
                 partes = campo_id.split('_')
                 if len(partes) >= 2:
                     detalle_id = int(partes[1])
-                    modelo_instancia = DetalleOrden.objects.get(id=detalle_id)
+                    empresa = empresa_efectiva_request(request)
+                    modelo_instancia = DetalleOrden.objects.get(id=detalle_id, orden__empresa=empresa)
         except (ValueError, IndexError, DetalleOrden.DoesNotExist):
             pass
 

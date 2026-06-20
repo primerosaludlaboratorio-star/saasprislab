@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Historial de Pagos a Proveedores{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px;">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold text-primary">
+                    <i class="bi bi-clock-history"></i> Historial de Pagos a Proveedores
+                </h2>
+                <a href="{% url 'contabilidad_personal_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+            </div>
+
+            <form method="get" class="mb-3">
+                <div class="input-group" style="max-width: 400px;">
+                    <input type="text" name="q" class="form-control" placeholder="Buscar por proveedor o folio..." value="{{ q }}">
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+                </div>
+            </form>
+
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Folio</th>
+                                    <th>Proveedor</th>
+                                    <th>Total</th>
+                                    <th>Forma de pago</th>
+                                    <th>Referencia</th>
+                                    <th>Fecha de pago</th>
+                                    <th>Documentos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for orden in page_obj %}
+                                <tr>
+                                    <td>{{ orden.folio }}</td>
+                                    <td>{{ orden.proveedor.razon_social }}</td>
+                                    <td>${{ orden.total|floatformat:2 }}</td>
+                                    <td>{{ orden.get_forma_pago_display }}</td>
+                                    <td>{{ orden.referencia_transferencia|default:"—" }}</td>
+                                    <td>{{ orden.fecha_pago|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if orden.factura_adjunta %}
+                                            <a href="{{ orden.factura_adjunta.url }}" target="_blank" class="me-2" title="Factura">
+                                                <i class="bi bi-file-earmark-text text-primary"></i>
+                                            </a>
+                                        {% endif %}
+                                        {% if orden.foto_evidencia %}
+                                            <a href="{{ orden.foto_evidencia.url }}" target="_blank" title="Evidencia">
+                                                <i class="bi bi-image text-success"></i>
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="7" class="text-center text-muted py-4">Sin pagos registrados.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {% if page_obj.has_other_pages %}
+            <nav class="mt-3">
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}">Anterior</a></li>
+                    {% endif %}
+                    <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}">Siguiente</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

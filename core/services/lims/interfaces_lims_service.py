@@ -914,8 +914,7 @@ def _procesar_item_hl7(
 
 
 def _get_ip(request) -> str:
-    forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
-    return forwarded.split(',')[0].strip() if forwarded else request.META.get('REMOTE_ADDR', '')
+    return request.META.get('REMOTE_ADDR', '')
 
 
 class InterfacesLimsService:

@@ -284,13 +284,8 @@ class MasterDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         return redirect('dashboard')
     
     def get_client_ip(self):
-        """Obtener IP del cliente para auditoría"""
-        x_forwarded_for = self.request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = self.request.META.get('REMOTE_ADDR')
-        return ip
+        """Obtener IP del cliente para auditoría — REMOTE_ADDR (no falsificable)."""
+        return self.request.META.get('REMOTE_ADDR')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

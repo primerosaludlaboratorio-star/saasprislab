@@ -59,8 +59,7 @@ def _req_empresa(fn):
 
 
 def _get_ip(request):
-    xff = request.META.get('HTTP_X_FORWARDED_FOR')
-    return xff.split(',')[0] if xff else request.META.get('REMOTE_ADDR')
+    return request.META.get('REMOTE_ADDR')
 
 
 # =============================================================================

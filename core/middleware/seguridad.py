@@ -268,10 +268,12 @@ class LogAccesoExpedienteMiddleware:
 
 
 def _get_client_ip(request) -> str:
-    """Extrae IP real del cliente considerando proxies (Nginx / reverse proxy)."""
-    forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
-    if forwarded:
-        return forwarded.split(',')[0].strip()
+    """
+    Extrae la IP real del cliente. Usa REMOTE_ADDR (la IP que Nginx ve
+    directamente, no falsificable por el cliente) — este valor alimenta
+    alertas CISO de acceso masivo a expedientes (NOM-024) y no debe
+    depender de un header que el cliente puede manipular.
+    """
     return request.META.get('REMOTE_ADDR', '')
 
 

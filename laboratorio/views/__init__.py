@@ -319,7 +319,7 @@ def crear_medico_ajax(request):
             import uuid as _uuid
             cedula = f"PEND-{_uuid.uuid4().hex[:8].upper()}"
 
-        existing = CoreMedico.objects.filter(cedula_profesional=cedula).first()
+        existing = CoreMedico.objects.filter(cedula_profesional=cedula, empresa=empresa).first()
         if existing:
             return JsonResponse({
                 'success': True,

@@ -57,7 +57,7 @@ class Command(BaseCommand):
                 "activo": True,
             }
 
-            existente = Medico.objects.filter(cedula_profesional=cedula).first()
+            existente = Medico.objects.filter(cedula_profesional=cedula, empresa=empresa).first()
             if options["dry_run"]:
                 if existente:
                     actualizados += 1
@@ -67,6 +67,7 @@ class Command(BaseCommand):
 
             medico, created = Medico.objects.update_or_create(
                 cedula_profesional=cedula,
+                empresa=empresa,
                 defaults=defaults,
             )
             if created:

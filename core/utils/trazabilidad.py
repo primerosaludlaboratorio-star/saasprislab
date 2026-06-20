@@ -74,13 +74,8 @@ def registrar_trazabilidad(
 
 
 def get_client_ip(request):
-    """Obtiene la IP real del cliente."""
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
+    """Obtiene la IP real del cliente. Usa REMOTE_ADDR (no falsificable) — este valor queda en el registro de trazabilidad."""
+    return request.META.get('REMOTE_ADDR')
 
 
 def serializar_modelo(instancia):

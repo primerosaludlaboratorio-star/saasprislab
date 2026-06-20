@@ -56,7 +56,7 @@ def registrar_cambio_campo(
     # Obtener IP del request si está disponible
     ip_address = None
     if request:
-        ip_address = request.META.get('REMOTE_ADDR') or request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0]
+        ip_address = request.META.get('REMOTE_ADDR')
     
     # Crear log de auditoría usando la función helper existente
     # La función crear_log_auditoria usa modelo_afectado, datos_anteriores, datos_nuevos
@@ -117,7 +117,7 @@ def registrar_cambio_multiples_campos(
     # Obtener IP
     ip_address = None
     if request:
-        ip_address = request.META.get('REMOTE_ADDR') or request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0]
+        ip_address = request.META.get('REMOTE_ADDR')
     
     # Crear log
     log = AuditLog.objects.create(
