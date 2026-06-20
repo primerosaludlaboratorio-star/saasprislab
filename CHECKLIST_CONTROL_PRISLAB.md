@@ -230,6 +230,7 @@ Leyenda:
 
 ## Bloque 11 - Programa de lealtad
 
+- [ ] Implementación base localizada en código productivo
 - [ ] Monedero equivalente al legacy
 - [ ] Reglas de acumulación equivalentes
 - [ ] Excepciones de clientes equivalentes
@@ -237,6 +238,7 @@ Leyenda:
 
 ## Bloque 12 - Microbiología
 
+- [~] Módulo blindado para no romper imports ni requests aunque los modelos productivos aún no existen
 - [ ] Catálogo de bacterias validado
 - [ ] Catálogo de antibióticos validado
 - [ ] Grupos de antibiograma validados
@@ -295,10 +297,58 @@ Leyenda:
 - [x] Corte de caja unificado ya calcula laboratorio por cobranzas reales (`PagoOrden`) y no por órdenes creadas no cobradas
 - [x] Consultorio y timeline de paciente ya no enlazan a `/laboratorio/orden/<id>/` inexistente; ahora usan una ruta viva de laboratorio (`ticket` de orden)
 - [x] Soporte S3-compatible listo para Vultr Object Storage con backend multi-tenant (`TenantS3Storage`) y prioridad sobre Drive cuando `VULTR_OBJECT_STORAGE_ENABLED=True`
+- [x] Storage S3 ya no rompe el arranque del proyecto si `boto3` no está instalado y Vultr Object Storage no está habilitado
+- [x] Seguridad 2FA: ya no se bypass-ea por ausencia de TOTP cuando el usuario tiene 2FA activo por otro canal; se centralizó verificación y se habilitó el `PRISLAB_MASTER_RECOVERY_CODE`
 - [x] `consultorio/api_views.py` ya no importa IA médica pesada en top-level
 - [x] `config/urls.py` ahora difiere módulos pesados (`PRIS IA`, `voice`, `push`, `chat`, `notificaciones`, `nomina`, `crm`) para bajar costo del primer request
+- [x] Microbiología ya no cae por `NameError`/`ModuleNotFoundError`; el módulo responde `503` controlado mientras siga pendiente la implementación real de modelos
+- [x] Nueva regresión dirigida: `core.tests.test_microbiologia_views` valida respuesta controlada sin modelos y guardado JSON cuando el resolver está disponible
+- [x] Regresión del módulo `seguridad` validada tras ajuste 2FA (`5 tests OK`)
+- [x] `manage.py check` volvió a pasar localmente tras blindaje de microbiología y arranque opcional S3
+- [x] Regresión contable/CFDI revalidada `2026-06-20`: `contabilidad.tests.test_validators_cfdi40` (`12 OK`), `contabilidad.tests.test_cfdi_borrador_auto` + `core.tests.test_e2e_cfdi` (`7 OK`, `1 skipped`)
+- [~] Hallazgo funcional confirmado en auditoría: `core/views/contabilidad.py` sigue siendo un frente provisional con redirecciones/placeholders; el flujo serio de CFDI vive en `contabilidad/`
+- [~] Hallazgo funcional confirmado en auditoría: `core/views/reportes_financieros.py` opera, pero `balance_general` y parte del bloque contable aún usan proxies porque faltan modelos contables migrados
+- [x] Regresión de resultados/PDF/storage revalidada `2026-06-20`: `core.tests.test_lab_validation_pdf`, `core.tests.test_motor_reporte_pdf_candado`, `core.tests.test_entrega_resultados_bitacora`, `core.tests.test_storage_backends_security` (`10 OK`)
+- [x] Endurecimiento de entrega pública revalidado `2026-06-20`: `core.tests.test_entrega_resultados_bitacora` ampliado a `8 OK`
+- [x] Hallazgo real corregido `2026-06-20`: `api_marcar_whatsapp_enviado` ya no permite marcar auditoría falsa cuando la orden no está validada, tiene saldo pendiente, falta consentimiento digital o no existe teléfono del paciente
+- [x] Cobertura pública ampliada `2026-06-20`: el portal público de resultados ya tiene regresión para `token` inválido y para orden no validada
+- [x] Hallazgo real corregido `2026-06-20`: `reporte_ingresos_egresos` y `exportar_excel_ingresos_egresos` ya incluyen `GastoOperativo` en el detalle diario; antes el resumen mostraba egresos completos pero la gráfica/Excel diario omitían gastos operativos
+- [x] Hallazgo real corregido `2026-06-20`: `genera_reporte_caja` ya excluye ventas canceladas y pagos de ventas canceladas; antes podía inflar caja con operaciones no válidas
+- [x] Optimización aplicada `2026-06-20`: los reportes diarios (`reporte_ingresos_egresos`, `reporte_flujo_caja` y sus exportaciones Excel) dejaron de hacer loops N+1 por día y ahora usan agregaciones por fecha
+- [x] Nueva regresión agregada `2026-06-20`: `core.tests.test_reportes_financieros_regression` (`2 OK`) cubre egresos diarios completos y exclusión de ventas canceladas en reporte de caja
+- [x] Hallazgo real corregido `2026-06-20`: `consultorio/api_subir_archivo` ya rechaza cruces paciente-consulta; antes permitía intentar adjuntar un archivo a una consulta de otro paciente
+- [x] Hallazgo real corregido `2026-06-20`: `consultorio/api_liquidar_vale` ya rechaza montos `<= 0`; antes un `0` podía liquidar por completo el vale por caer en la rama de cierre total
+- [x] Hallazgo real corregido `2026-06-20`: el módulo médico dejó de resolver documentos/consultas con `Medico.objects.filter(...).first()`; ahora usa resolución por usuario actual y autocreación controlada (`USR-<user.id>`) para no firmar certificados, recetas u órdenes con el médico equivocado
+- [x] Nueva regresión agregada `2026-06-20`: `consultorio.tests.ConsultorioBillingAndFilesRegressionTests` amplió cobertura sobre liquidación inválida, adjuntos cruzados y resolución correcta del médico operativo en flujos inmediatos
+- [x] Hallazgo real corregido `2026-06-20`: `core.ConsultaMedica.save()` ahora autogenera `folio_consulta` antes de `full_clean()`; antes el flujo `/consultorio/medico/consulta/nueva/<uuid>/` fallaba al guardar con `{'folio_consulta': ['Este campo no puede estar en blanco.']}`
+- [x] Nueva regresión agregada `2026-06-20`: `consultorio.tests.ConsultorioViewTests.test_nueva_consulta_con_paciente_guarda_consulta_finalizada_con_folio` valida el guardado completo de la consulta médica con folio automático
+- [x] Auditoría local desbloqueada `2026-06-20`: `config/settings.py` ahora soporta `PRISLAB_DISABLE_FILE_LOG_HANDLERS=1` para correr `check` y tests sin depender de handlers de archivo bloqueados en Windows/local
+- [x] Verificación revalidada `2026-06-20`: `python manage.py check` -> `System check identified no issues (0 silenced)`
+- [x] Regresión completa de consultorio revalidada `2026-06-20`: `python manage.py test consultorio.tests --keepdb` -> `OK (30 tests, 4 skipped)`
+- [x] Auditoría funcional en producción `2026-06-20`: `consultorio/recepcion/agendar/` encontró paciente por búsqueda, mostró médico disponible y permitió agendar cita de prueba con éxito
+- [~] Producción sigue pendiente de deploy para absorber el fix de `folio_consulta`; la corrección ya quedó validada en local con `python manage.py test consultorio.tests.ConsultorioViewTests.test_nueva_consulta_con_paciente_guarda_consulta_finalizada_con_folio -v 2` -> `OK`
+- [~] Hallazgo funcional confirmado en auditoría: no se localizaron archivos productivos del bloque de lealtad/monedero, por lo que Bloque 11 sigue pendiente de implementación real
+- [~] Riesgo arquitectónico confirmado en auditoría: `EmpresaIdentityMiddleware` todavía puede asignar una empresa por defecto a usuarios autenticados sin `user.empresa` mediante `resolve_default_empresa_sistema()`. En el escenario actual monotenant puede ser una tolerancia operativa útil, pero antes de abrir multiempresa real debe decidirse si ese fallback sigue permitido o si `PRISLAB_TENANT_STRICT_MODE` debe bloquear siempre a cualquier usuario autenticado sin FK de empresa.
+- [~] Hallazgo de deuda técnica no bloqueante: `consultorio/api/procesar_audio.py` permanece como código legacy no cableado en rutas; el endpoint activo es `consultorio/api_views.py`
 - [~] Perfilado local confirmó que el cuello de botella mayor era carga de imports del router; quedó reducido, pero falta validar en VPS la mejora exacta con Gunicorn/Nginx
 - [~] Verificación local de `manage.py check` quedó bloqueada por permisos del handler `logs/prislab_audit.log`; el problema es del entorno local de logging, no de sintaxis del cambio
+- [x] `manage.py check` revalidado `2026-06-20` después del cierre de auditoría estructural adicional
+
+## Bloque agregado por Claude — 2026-06-20
+
+- [x] Hallazgo crítico corregido: bypass de 2FA vía spoofing de `X-Forwarded-For`. `nginx/conf.d/prislab.conf` ahora fija `$remote_addr`; `_get_client_ip()` en `core/views/autenticacion_2fa.py` solo lee `REMOTE_ADDR`. Defensa en profundidad aplicada en 12 archivos adicionales que leían el header sin sanitizar (`core/middleware/admin_access.py`, `core/middleware/blindaje_expediente.py`, `core/middleware/seguridad.py`, `core/utils/trazabilidad.py`, `core/services/audit_service.py`, `core/utils/auditoria_nativa.py`, `core/views/consentimiento_digital.py`, `core/views/general.py`, `core/views/finanzas.py`, `core/views/pris_jarvis.py`, `mantenimiento/views.py`, `core/services/lims/interfaces_lims_service.py`, `core/decorators.py`).
+- [x] Hallazgo corregido: sin rate limiting real en `verificar_2fa()`. Ahora bloquea tras 5 intentos fallidos con cache, 15 minutos de espera.
+- [x] Hallazgo corregido: fuga de tenant en `core/views/medico.py:94` (búsqueda por cédula sin `empresa=`).
+- [x] `CELERY_BEAT_SCHEDULE` activado en `config/settings.py` con tarea diaria 7am (`core/tasks/notificaciones_tasks.py`).
+- [x] Módulo nuevo: Contabilidad Personal privada (solo Director/superuser) en `core/views/contabilidad_personal.py`, exige factura + foto evidencia para marcar pagada una `OrdenDeCompra`. Migración `inventario/migrations/0008_agregar_evidencia_pagos_orden_compra.py` generada y aplicada.
+- [x] Confirmado por lectura de código: Panel de Configuración de Cumplimiento por Empresa (`core/services/feature_flags.py` + `/configuracion/flags/`) ya existía completo, construido previamente.
+- [x] `GAP_ANALYSIS_ISO15189.md` agregado: auditoría línea por línea contra ISO 15189; Westgard QC confirmado construido y probado pero apagado por defecto (`QC_WESTGARD_ACTIVO=False`).
+- [x] Segunda ronda de auditoría de tenant — 5 fugas adicionales corregidas: `core/views/medico.py:881` (QR de receta exponía datos de paciente/diagnóstico de cualquier empresa), `laboratorio/views/__init__.py:322` (alta de médico por cédula sin `empresa=`), `core/views/auditoria_campo.py:42` (forja de auditoría sobre `DetalleOrden` de otra empresa), `core/utils/lims_tokens_v75.py:426` (endpoint sin auth ni scope, código muerto, blindado preventivamente), `core/management/commands/importar_medicos_xlsx.py:60` (reasignación cruzada de médico por cédula).
+- [x] `VULTR_OBJECT_STORAGE_SETUP.md` agregado: guía completa de activación (el código ya soporta `TenantS3Storage`, solo falta bucket + credenciales del dueño).
+- [x] Alineación cruzada con Codex (`ALINEACION_CODEX_CLAUDE_2026-06-20.md`): confirmado que los 5 fixes de tenant y el fix de 2FA/Celery no chocan con el trabajo de Codex. Aceptado el hallazgo de Codex sobre `_solo_director()` en `contabilidad_personal.py` (permitía `ADMIN` además de `DIRECTOR`, contradiciendo el reporte original de Claude); fix de Codex verificado correcto.
+- [x] Revalidado `2026-06-20`: `python manage.py test consultorio.tests.ConsultorioViewTests.test_nueva_consulta_con_paciente_guarda_consulta_finalizada_con_folio core.tests.test_contabilidad_personal --keepdb` -> `OK (4 tests)`, confirma que el fix de `folio_consulta` de Codex y el fix de `_solo_director` no entran en conflicto con los cambios de Claude.
+- [~] Nada de lo anterior está commiteado todavía; el HEAD actual (`afc097e`) es de Codex. Pendiente decidir si se separa en varios commits (seguridad/tenant, contabilidad personal, docs) antes de mezclar autoría.
+- [~] Pendiente sin resolver: confirmar `PRISLAB_MASTER_RECOVERY_CODE` real en `.env` de producción (requiere acceso SSH).
 
 ## Próximo orden de trabajo recomendado
 

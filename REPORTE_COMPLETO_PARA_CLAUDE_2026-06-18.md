@@ -746,3 +746,403 @@ Impacto:
 - PRISLAB ya no queda atado solo a local + Drive para media
 - se puede mover media operativa del SaaS a `prislab-media` sin tocar Academia
 - Academia puede seguir yendo a una plataforma aparte de streaming protegido
+
+### 11.12 Blindaje 2FA: se cierra bypass lógico y se activa recovery code maestro
+
+Se detectó un hueco serio en autenticación de dos factores:
+
+- [seguridad/views.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\seguridad\views.py)
+
+Hallazgo:
+
+- `verificar_2fa_login()` solo revisaba `DispositivoTOTP.activo`
+- si un usuario tuviera 2FA activo por otro canal, la función podía considerar erróneamente que “no tiene 2FA” y devolver `True`
+- además, `PRISLAB_MASTER_RECOVERY_CODE` existía en configuración pero no participaba en la verificación real
+
+Corrección aplicada:
+
+- se centralizó la lógica en `_usuario_tiene_2fa_activo()` y `_verificar_codigo_2fa_usuario()`
+- login 2FA y API de verificación ahora comparten la misma validación
+- se agregó soporte efectivo para `master_recovery`
+- se deja warning en log cuando se usa el código maestro
+
+Impacto:
+
+- se elimina un bypass lógico de 2FA
+- el recovery code maestro ya funciona como mecanismo real de contingencia
+- se evita divergencia entre la API de validación y el flujo de login
+
+### 11.13 Auditoría estructural adicional 2026-06-20
+
+Se consolidaron varios hallazgos que cambian el criterio de "qué ya está realmente listo" frente a "qué solo parece existir":
+
+#### a) Microbiología no estaba parcialmente rota: estaba importando modelos inexistentes
+
+Archivo afectado:
+
+- [core/views/microbiologia.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\microbiologia.py)
+
+Hallazgo:
+
+- el módulo usaba `json.loads(...)` sin `import json`
+- además hacía `from core.models.microbiologia import ...`, pero ese módulo de modelos no existe en esta rama productiva
+- eso significa que microbiología no estaba "pendiente pero estable": podía romper por import o por request real
+
+Corrección aplicada:
+
+- `json` agregado explícitamente
+- la carga de modelos pasó a resolución diferida con `_resolver_modelos_microbiologia()`
+- si los modelos reales no existen todavía, el endpoint ya no revienta con `500`; responde `503` controlado indicando que el bloque sigue pendiente de implementación real
+
+Cobertura agregada:
+
+- [core/tests/test_microbiologia_views.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\tests\test_microbiologia_views.py)
+
+Validación:
+
+- `python manage.py test core.tests.test_microbiologia_views --keepdb` -> `OK (2 tests)`
+- `python manage.py check` -> `System check identified no issues (0 silenced)`
+- `python manage.py test seguridad.tests --keepdb` -> `OK (5 tests)`
+
+Conclusión:
+
+- Bloque 12 no está listo funcionalmente
+- pero ya no queda mintiendo ni rompiendo el sistema: quedó degradado de forma explícita y segura
+
+#### b) Soporte S3/Vultr ya no debe romper arranques locales o de auditoría
+
+Archivo afectado:
+
+- [config/storage_backends.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\config\storage_backends.py)
+
+Hallazgo:
+
+- el import top-level de `storages.backends.s3.S3Storage` obligaba a tener `boto3` instalado incluso cuando `VULTR_OBJECT_STORAGE_ENABLED=False`
+- eso volvía frágil el arranque de Django para cualquier entorno que todavía no hubiera actualizado dependencias, aunque S3 ni siquiera estuviera activado
+
+Corrección aplicada:
+
+- el import S3 ahora está protegido
+- si faltan bindings S3, el proyecto no cae durante import
+- solo falla con mensaje explícito si alguien intenta usar de verdad el backend S3 sin dependencias completas
+
+Conclusión:
+
+- la integración Vultr queda correctamente opcional hasta que se active
+- esto reduce falsos negativos durante auditoría local y evita que un despliegue parcial quede roto solo por orden de instalación
+
+#### c) Contabilidad y reportes financieros no deben confundirse con "contabilidad completa"
+
+Archivos auditados:
+
+- [contabilidad/views.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\contabilidad\views.py)
+- [contabilidad/urls.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\contabilidad\urls.py)
+- [contabilidad/services/timbrado_cfdi.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\contabilidad\services\timbrado_cfdi.py)
+- [contabilidad/facturama_api.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\contabilidad\facturama_api.py)
+- [core/views/contabilidad.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\contabilidad.py)
+- [core/views/reportes_financieros.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\reportes_financieros.py)
+- [core/views/motor_financiero.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\motor_financiero.py)
+
+Veredicto real:
+
+- el módulo `contabilidad/` de CFDI sí está estructuralmente serio: clientes fiscales, facturas, XML/PDF, timbrado con lock e idempotencia
+- el archivo [core/views/contabilidad.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\contabilidad.py) sigue siendo un frente provisional con redirecciones y placeholders
+- `reportes_financieros` y `motor_financiero` sí generan reportes útiles, pero parte del balance sigue usando proxies porque `CatalogoCuenta`, `PolizaContable`, `MovimientoContable`, `Nomina` y otros modelos no han migrado completamente
+
+Conclusión:
+
+- el bloque contable sirve para operación parcial y facturación CFDI
+- no debe venderse todavía como contabilidad completa ni como paridad exacta con el legacy
+
+#### d) Lealtad/monedero sigue pendiente de implementación visible
+
+Hallazgo:
+
+- en esta auditoría no se localizaron archivos productivos claros para `lealtad`, `monedero`, `puntos` o equivalentes
+- eso confirma que Bloque 11 sigue pendiente a nivel de implementación real, no solo de validación
+
+#### e) Código legacy no cableado detectado
+
+Archivo detectado:
+
+- [consultorio/api/procesar_audio.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\consultorio\api\procesar_audio.py)
+
+Hallazgo:
+
+- el endpoint activo está en [consultorio/api_views.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\consultorio\api_views.py)
+- `consultorio/api/procesar_audio.py` quedó como código legacy no referenciado por rutas
+
+Conclusión:
+
+- no es un bloqueante de producción inmediato
+- sí es deuda de limpieza porque puede confundir auditorías futuras o reintroducir imports pesados/seguridad vieja si alguien lo reactiva por error
+
+#### f) Riesgo de tenant por empresa por defecto sigue siendo una decisión arquitectónica abierta
+
+Archivos auditados:
+
+- [core/middleware/empresa.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\middleware\empresa.py)
+- [core/utils/default_empresa.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\utils\default_empresa.py)
+- [core/tests/test_tenant_strict_mode.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\tests\test_tenant_strict_mode.py)
+
+Hallazgo:
+
+- `PRISLAB_TENANT_STRICT_MODE` ya bloquea cuando no hay empresa asignada ni empresa por defecto resolvible
+- pero el middleware sigue intentando `resolve_default_empresa_sistema()` para cualquier usuario autenticado cuyo `user.empresa` sea `None`
+- ese resolver prioriza `PRISLAB_DEFAULT_EMPRESA_ID`, luego empresa activa única, luego `pk=1`, luego la primera activa
+
+Interpretación correcta:
+
+- en el escenario actual de una sola empresa (`PRISLAB`) este comportamiento puede ser útil para no romper usuarios heredados o cuentas operativas aún no normalizadas
+- en un escenario multiempresa real, el mismo fallback puede ocultar errores de asignación y permitir que un usuario autenticado "herede" tenant sin FK explícita
+
+Veredicto:
+
+- esto no debe parchearse a ciegas en esta ronda porque puede romper accesos productivos legítimos del entorno actual
+- sí debe quedar marcado como decisión arquitectónica pendiente antes de vender el sistema como multiempresa cerrado
+- recomendación de cierre futuro: cuando se termine la transición monotenant y se normalicen usuarios, endurecer el middleware para que, en modo estricto, cualquier usuario autenticado sin `user.empresa` quede bloqueado aunque exista empresa por defecto resolvible
+
+#### g) Evidencia contable/CFDI adicional
+
+Validación ejecutada en local:
+
+- `python manage.py test contabilidad.tests.test_validators_cfdi40 --keepdb` -> `OK (12 tests)`
+- `python manage.py test contabilidad.tests.test_cfdi_borrador_auto core.tests.test_e2e_cfdi --keepdb` -> `OK (7 tests, 1 skipped)`
+- `python manage.py check` -> `System check identified no issues (0 silenced)`
+
+Lectura honesta:
+
+- los validadores fiscales básicos sí están sanos
+- la parte de borradores automáticos y blindaje de timbrado concurrente también quedó revalidada en esta subronda
+- esto no convierte a PRISLAB en "contabilidad completa", pero sí confirma que el bloque CFDI operativo sigue íntegro después de los endurecimientos recientes
+
+#### h) Resultados, PDFs y storage siguen íntegros después de esta ronda
+
+Validación ejecutada en local:
+
+- `python manage.py test core.tests.test_lab_validation_pdf core.tests.test_motor_reporte_pdf_candado core.tests.test_entrega_resultados_bitacora core.tests.test_storage_backends_security --keepdb` -> `OK (10 tests)`
+
+Conclusión:
+
+- la generación y candado financiero del PDF de resultados sigue operativa
+- la bitácora de entrega digital/email/portal público sigue viva
+- el storage sigue respetando el blindaje de no publicar archivos y compatibilidad con `Shared Drive`
+
+#### i) Hallazgos reales corregidos en reportes financieros
+
+Archivos ajustados:
+
+- [core/views/reportes_financieros.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\reportes_financieros.py)
+- [core/views/motor_financiero.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\motor_financiero.py)
+- [core/tests/test_reportes_financieros_regression.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\tests\test_reportes_financieros_regression.py)
+
+Hallazgo 1:
+
+- `reporte_ingresos_egresos` calculaba `total_egresos` con `GastoCaja + GastoOperativo`
+- pero la gráfica diaria y la exportación Excel del detalle diario solo sumaban `GastoCaja`
+
+Impacto:
+
+- el encabezado del reporte podía decir una verdad y el desglose diario otra
+- esto era una inconsistencia funcional real, no solo estética
+
+Corrección aplicada:
+
+- el detalle diario del HTML y del Excel ahora suma `GastoCaja + GastoOperativo`
+
+Hallazgo 2:
+
+- `genera_reporte_caja` no filtraba `Venta.estado='COMPLETADA'`
+- por eso podía incluir ventas canceladas y sus pagos al calcular caja
+
+Corrección aplicada:
+
+- el queryset base de ventas y el desglose de pagos ahora filtran solo operaciones `COMPLETADA`
+
+Hallazgo 3:
+
+- los reportes diarios estaban haciendo queries dentro de un loop por cada día del rango
+- en la práctica eso generaba un patrón N+1 bastante claro
+
+Corrección aplicada:
+
+- se agregaron agregaciones por fecha con `TruncDay(...)`
+- `reporte_ingresos_egresos`, `reporte_flujo_caja` y ambas exportaciones Excel dejaron de disparar consultas por cada día
+
+Validación:
+
+- `python manage.py test core.tests.test_reportes_financieros_regression --keepdb` -> `OK (2 tests)`
+- `python manage.py check` -> `System check identified no issues (0 silenced)`
+
+#### j) Entrega pública y marcador manual de WhatsApp endurecidos
+
+Archivo ajustado:
+
+- [core/views/entrega_resultados.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\entrega_resultados.py)
+
+Cobertura ampliada:
+
+- [core/tests/test_entrega_resultados_bitacora.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\tests\test_entrega_resultados_bitacora.py)
+
+Hallazgo real:
+
+- `api_marcar_whatsapp_enviado` permitía registrar bitácora de "WhatsApp enviado" con muy pocos controles
+- eso hacía posible dejar trazabilidad falsa o inconsistente incluso si:
+  - la orden no estaba validada
+  - había saldo pendiente
+  - faltaba consentimiento digital LFPDPPP
+  - el paciente no tenía teléfono
+  - el usuario no pertenecía al grupo operativo mínimo
+
+Corrección aplicada:
+
+- se alineó el endpoint con las reglas reales del flujo de entrega
+- ahora exige:
+  - empresa válida
+  - rol autorizado (`RECEPCION`, `QUIMICO`, `ADMIN`, staff o superuser)
+  - orden en `RESULTADOS_LISTOS` o `ENTREGADO`
+  - sin saldo pendiente
+  - consentimiento digital válido
+  - teléfono disponible
+
+Cobertura nueva:
+
+- token público inválido -> `400`
+- portal público con orden aún no validada -> `403`
+- WhatsApp manual rechazado con orden no validada
+- WhatsApp manual rechazado con saldo pendiente
+- WhatsApp manual rechazado sin consentimiento digital
+
+Validación:
+
+- `python manage.py test core.tests.test_entrega_resultados_bitacora --keepdb` -> `OK (8 tests)`
+
+#### k) Consultorio blindado contra médico operativo incorrecto y adjuntos cruzados
+
+Archivos ajustados:
+
+- [consultorio/views.py](C:\\Users\\jonil\\Desktop\\PRISLAB_SaaS-master\\PRISLAB_SaaS-master\\consultorio\\views.py)
+- [consultorio/tests.py](C:\\Users\\jonil\\Desktop\\PRISLAB_SaaS-master\\PRISLAB_SaaS-master\\consultorio\\tests.py)
+
+Hallazgo 1:
+
+- `consultorio/api_subir_archivo` aceptaba `paciente_id` y `consulta_id` sin comprobar que ambos pertenecieran al mismo paciente
+- eso abría la puerta a intentos de adjuntar documentos clínicos en una consulta ajena
+
+Corrección aplicada:
+
+- ahora el endpoint compara explícitamente `consulta.paciente_id` contra el paciente recibido
+- si no coinciden, responde `400` con error funcional claro y no guarda nada
+
+Hallazgo 2:
+
+- `consultorio/api_liquidar_vale` trataba `monto <= 0` igual que una liquidación completa
+- con `monto=0` podía cerrar por completo un vale por error operativo
+
+Corrección aplicada:
+
+- el endpoint ahora rechaza montos `<= 0` con `400`
+- solo liquida totalmente cuando el monto es mayor a `0` y cubre el saldo pendiente
+
+Hallazgo 3:
+
+- varios flujos inmediatos del módulo médico resolvían el médico activo con `Medico.objects.filter(empresa=empresa).first()`
+- eso podía firmar recetas, certificados, órdenes o consultas rápidas con el primer médico de la empresa y no con el usuario que realmente estaba operando
+
+Corrección aplicada:
+
+- se centralizó la resolución del médico en `_resolver_medico_usuario(...)`
+- el helper usa, en este orden:
+  - `request.user.medico_profile` si pertenece a la empresa
+  - coincidencia exacta por nombre del usuario dentro de la empresa
+  - `cedula_interna` del usuario si existe
+  - autocreación controlada `USR-<user.id>` solo en flujos que sí necesitan médico operativo
+- se eliminó el fallback al \"primer médico\" en:
+  - lista de trabajo médico
+  - consulta sin cita
+  - creación rápida de consulta
+  - creación rápida de paciente + consulta
+  - receta inmediata
+  - certificado inmediato
+  - orden de laboratorio inmediata
+  - vista de validación/entrega rápida del consultorio
+
+Cobertura nueva:
+
+- `test_api_liquidar_vale_rechaza_monto_cero`
+- `test_api_subir_archivo_rechaza_consulta_de_otro_paciente`
+- `test_api_generar_certificado_inmediato_no_usa_primer_medico_de_empresa`
+- `test_api_crear_paciente_y_consulta_no_usa_primer_medico_de_empresa`
+- `test_nueva_consulta_con_paciente_guarda_consulta_finalizada_con_folio`
+
+Hallazgo 4:
+
+- en auditoría funcional real de producción, el flujo `/consultorio/medico/consulta/nueva/<uuid>/` sí creaba al paciente pero fallaba al guardar la consulta con el mensaje:
+  - `Error al guardar consulta: {'folio_consulta': ['Este campo no puede estar en blanco.', 'El folio de consulta es requerido.']}`
+- la causa raíz estaba en [core/models/clinico.py](C:\\Users\\jonil\\Desktop\\PRISLAB_SaaS-master\\PRISLAB_SaaS-master\\core\\models\\clinico.py): `ConsultaMedica.save()` llamaba `full_clean()` antes de autogenerar `folio_consulta`
+
+Corrección aplicada:
+
+- el modelo ahora genera `folio_consulta` antes de validar cuando la consulta se guarda en estado `FINALIZADA`
+- con eso el guardado completo del SOAP ya no depende de que la vista le inyecte manualmente un folio
+- esta corrección protege no solo `nueva_consulta_con_paciente`, sino cualquier otro flujo que cree `core.ConsultaMedica` finalizada sin folio explícito
+
+Auditoría funcional real en producción:
+
+- `consultorio/medico/nueva-consulta/`:
+  - creación de paciente nuevo OK
+  - redirección a consulta por UUID OK
+- `consultorio/recepcion/agendar/`:
+  - búsqueda de paciente por nombre OK
+  - médico disponible en selector OK (`Dr(a). Jonathan Prislab — Medico General`)
+  - agendado de cita de prueba OK
+- el único fallo real encontrado en ese bloque fue el guardado de la consulta por el tema de `folio_consulta`
+
+Validación:
+
+- `python -m py_compile consultorio/views.py consultorio/tests.py` -> OK usando `PYTHONPYCACHEPREFIX` temporal
+- se agregó una válvula local en [config/settings.py](C:\\Users\\jonil\\Desktop\\PRISLAB_SaaS-master\\PRISLAB_SaaS-master\\config\\settings.py): `PRISLAB_DISABLE_FILE_LOG_HANDLERS=1`
+- con esa bandera activa ya no se cargan handlers de archivo locales (`file_audit`, `file_errors`, `file_bankguard`) durante auditoría/test local
+- `python manage.py check` -> `System check identified no issues (0 silenced)`
+- `python manage.py test consultorio.tests.ConsultorioBillingAndFilesRegressionTests --keepdb` -> `OK (4 tests)`
+- `python manage.py test consultorio.tests --keepdb` -> `OK (30 tests, 4 skipped)`
+- `python manage.py test consultorio.tests.ConsultorioViewTests.test_nueva_consulta_con_paciente_guarda_consulta_finalizada_con_folio -v 2` -> `OK`
+
+Conclusión:
+
+- el bloqueo anterior sí era del entorno local de logging y ya quedó controlado para auditoría
+- el módulo médico/consultorio quedó revalidado localmente y la auditoría funcional de producción confirmó recepción + agenda operativas
+
+## Bloque agregado por Claude — 2026-06-20
+
+Trabajo realizado en paralelo al de Codex el mismo día, sobre el mismo working tree:
+
+1. **Hardening de seguridad (defensa en profundidad, 13 archivos):**
+   - Bypass crítico de 2FA vía spoofing de `X-Forwarded-For` — corregido en `nginx/conf.d/prislab.conf` (fija `$remote_addr`) y `core/views/autenticacion_2fa.py` (`_get_client_ip()` solo lee `REMOTE_ADDR`). Mismo patrón corregido en 12 archivos más que leían el header sin sanitizar.
+   - Rate limiting real agregado en `verificar_2fa()` (cache, 5 intentos, 15 min de bloqueo).
+   - `CELERY_BEAT_SCHEDULE` activado (tarea diaria 7am).
+
+2. **Segunda ronda de auditoría de tenant isolation (6 fugas reales corregidas):**
+   - `core/views/medico.py:94` y `:881` (búsqueda por cédula y verificación de QR de receta sin `empresa=`).
+   - `laboratorio/views/__init__.py:322` (alta de médico por cédula sin `empresa=`).
+   - `core/views/auditoria_campo.py:42` (forja de auditoría sobre `DetalleOrden` de otra empresa).
+   - `core/utils/lims_tokens_v75.py:426` (endpoint sin auth ni scope — código muerto, blindado preventivamente).
+   - `core/management/commands/importar_medicos_xlsx.py:60` (reasignación cruzada de médico entre empresas).
+   - Revisados y descartados como falsos positivos: `paquetes.py`, `consentimiento_digital.py`, `pdf_views_prislab.py`, `portal_views.py`, y 3 supuestos SQL injection (`sentinel_api.py`, `restaurar_backup.py`, `setup_demo_total.py` — nombres de tabla fijos, no input de usuario).
+
+3. **Módulo nuevo: Contabilidad Personal privada** (`core/views/contabilidad_personal.py`) — exige factura + foto evidencia para marcar pagada una `OrdenDeCompra`. Migración `0008_agregar_evidencia_pagos_orden_compra` generada y aplicada.
+
+4. **`GAP_ANALYSIS_ISO15189.md`** — auditoría línea por línea contra ISO 15189. Confirmado que Westgard QC está construido y probado pero apagado por defecto.
+
+5. **`VULTR_OBJECT_STORAGE_SETUP.md`** — guía completa de activación (código ya soporta `TenantS3Storage`, falta bucket + credenciales del dueño).
+
+6. **Alineación con Codex (`ALINEACION_CODEX_CLAUDE_2026-06-20.md`):** confirmado que los fixes de Claude no chocan con el trabajo de Codex. Aceptado el hallazgo de Codex sobre `_solo_director()` (permitía `ADMIN` además de `DIRECTOR` — contradecía el reporte original de Claude); fix de Codex verificado correcto.
+
+Validación combinada (cambios de Claude + Codex en el mismo working tree):
+
+- `python manage.py check` -> `System check identified no issues (0 silenced)`
+- `python manage.py test consultorio.tests.ConsultorioViewTests.test_nueva_consulta_con_paciente_guarda_consulta_finalizada_con_folio core.tests.test_contabilidad_personal --keepdb` -> `OK (4 tests)`
+- `python manage.py test core.tests --keepdb` -> `OK (145 tests, skipped=2)`
+
+Conclusión: los cambios de Claude y Codex del 2026-06-20 conviven sin conflicto sobre el mismo working tree. Nada de esto está commiteado todavía — pendiente decisión conjunta sobre cómo separar los commits antes de mezclar autoría.
+- queda pendiente únicamente desplegar este último fix del `folio_consulta` para que producción absorba el guardado SOAP corregido
