@@ -93,3 +93,47 @@ class EntregaResultadosBitacoraTest(TestCase):
         bitacora = BitacoraEntregaResultados.objects.get(orden_id=orden.id, canal="WHATSAPP")
         self.assertEqual(bitacora.destino_envio, "9211234567")
         self.assertEqual(bitacora.usuario_entrega, self.usuario)
+
+    def test_whatsapp_rechaza_orden_no_validada(self):
+        orden = self._crear_orden(estado="PENDIENTE")
+
+        response = self.client.post(reverse("api_marcar_whatsapp_enviado", args=[orden.id]))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["ok"])
+        self.assertIn("resultados validados", response.json()["error"])
+
+    def test_whatsapp_rechaza_saldo_pendiente(self):
+        orden = self._crear_orden()
+        OrdenDeServicio.objects.filter(id=orden.id).update(anticipo=Decimal("0.00"))
+        orden.refresh_from_db()
+
+        response = self.client.post(reverse("api_marcar_whatsapp_enviado", args=[orden.id]))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["ok"])
+        self.assertIn("Saldo pendiente", response.json()["error"])
+
+    def test_whatsapp_rechaza_sin_consentimiento_digital(self):
+        orden = self._crear_orden()
+        ConsentimientoInformado.objects.filter(orden=orden).delete()
+
+        response = self.client.post(reverse("api_marcar_whatsapp_enviado", args=[orden.id]))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["ok"])
+        self.assertIn("LFPDPPP", response.json()["error"])
+
+    def test_portal_publico_rechaza_token_invalido(self):
+        response = self.client.get(reverse("resultados_publicos", args=["token-invalido"]))
+        self.assertEqual(response.status_code, 400)
+
+    def test_portal_publico_rechaza_orden_sin_validar(self):
+        orden = self._crear_orden(estado="PENDIENTE")
+        token = signing.dumps({"oid": orden.id, "eid": self.empresa.id}, salt="resultados-publicos")
+        self.client.logout()
+
+        response = self.client.get(reverse("resultados_publicos", args=[token]))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("aún no ha validado", response.content.decode("utf-8"))

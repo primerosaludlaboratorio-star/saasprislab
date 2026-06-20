@@ -12,7 +12,7 @@ from django.contrib.sessions.middleware import SessionMiddleware
 from django.urls import reverse
 from django.utils import timezone
 
-from core.models import Empresa, Paciente
+from core.models import Empresa, Paciente, ConsultaMedica as CoreConsultaMedica
 from consultorio.models import ConsultaMedica, Vademecum
 
 
@@ -169,6 +169,28 @@ class ConsultorioViewTests(TestCase):
             self.assertIn(response.status_code, [302, 403])
         except Exception as e:
             self.skipTest(f"lista_trabajo view not available: {e}")
+
+    def test_nueva_consulta_con_paciente_guarda_consulta_finalizada_con_folio(self):
+        """El flujo médico debe autogenerar folio al guardar una consulta finalizada."""
+        try:
+            url = reverse('consultorio:nueva_consulta_paciente', args=[self.paciente.uuid])
+        except Exception as e:
+            self.skipTest(f"nueva_consulta_paciente view not available: {e}")
+
+        response = self.client.post(url, {
+            'motivo': 'Dolor abdominal leve',
+            'exploracion_fisica': 'Abdomen blando, sin datos de irritación.',
+            'diagnostico': 'Gastritis aguda',
+            'tratamiento': '',
+            'presion_arterial': '120/80',
+            'temperatura': '36.7',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        consulta = CoreConsultaMedica.objects.latest('id')
+        self.assertEqual(consulta.paciente_id, self.paciente.id)
+        self.assertEqual(consulta.estado, 'FINALIZADA')
+        self.assertTrue(consulta.folio_consulta.startswith(f'CONS-{self.empresa.id}-'))
 
 
 class ConsultorioApiStressTests(TestCase):
@@ -416,7 +438,7 @@ class ConsultorioAudioSecurityTests(TestCase):
         request.session.save()
         return request
 
-    @patch('consultorio.api_views.procesar_consulta_medica', return_value={'motivo': 'ok'})
+    @patch('core.services.ai_medico.procesar_consulta_medica', return_value={'motivo': 'ok'})
     def test_audio_consulta_rejects_unauthorized_role(self, _mock_procesar):
         from consultorio.api_views import procesar_audio_consulta
 
@@ -431,7 +453,7 @@ class ConsultorioAudioSecurityTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
 
-    @patch('consultorio.api_views.procesar_consulta_medica', return_value={'motivo': 'ok'})
+    @patch('core.services.ai_medico.procesar_consulta_medica', return_value={'motivo': 'ok'})
     def test_audio_consulta_requires_company(self, _mock_procesar):
         from consultorio.api_views import procesar_audio_consulta
 
@@ -448,7 +470,7 @@ class ConsultorioAudioSecurityTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
 
-    @patch('consultorio.api_views.procesar_resultados_lab', return_value=[{'nombre': 'GLU', 'valor': '90'}])
+    @patch('core.services.ai_medico.procesar_resultados_lab', return_value=[{'nombre': 'GLU', 'valor': '90'}])
     def test_audio_laboratorio_rejects_cross_company_analito(self, _mock_procesar):
         from consultorio.api_views import procesar_audio_laboratorio
         from lims.models import Analito
@@ -473,3 +495,180 @@ class ConsultorioAudioSecurityTests(TestCase):
         self.assertEqual(response.status_code, 400)
         data = json.loads(response.content.decode())
         self.assertIn('No se encontraron parámetros', data.get('error', ''))
+
+
+class ConsultorioBillingAndFilesRegressionTests(TestCase):
+    def setUp(self):
+        from core.models import Medico, CitaMedica
+        from consultorio.models import CajaConsultorio, CobroConsulta, ValeLiquidacion
+
+        self.empresa = Empresa.objects.create(nombre='Empresa Medica', rfc='MED260620TST')
+        self.user = User.objects.create_user(
+            username='doctor_regression',
+            password='test123456789',
+            email='doctor@test.com',
+            empresa=self.empresa,
+            rol='MEDICO',
+        )
+        self.paciente = Paciente.objects.create(
+            empresa=self.empresa,
+            nombres='Ana',
+            apellido_paterno='Prueba',
+            nombre_completo='Ana Prueba',
+            fecha_nacimiento='1990-01-01',
+            sexo='F',
+        )
+        self.otro_paciente = Paciente.objects.create(
+            empresa=self.empresa,
+            nombres='Luis',
+            apellido_paterno='Ajeno',
+            nombre_completo='Luis Ajeno',
+            fecha_nacimiento='1991-01-01',
+            sexo='M',
+        )
+        self.medico = Medico.objects.create(
+            empresa=self.empresa,
+            nombre_completo='Dr Regression',
+            cedula_profesional='REG-MED-001',
+            especialidad='General',
+        )
+        self.medico_ajeno = Medico.objects.create(
+            empresa=self.empresa,
+            nombre_completo='A Doctor Ajeno',
+            cedula_profesional='AJENO-001',
+            especialidad='General',
+        )
+        self.consulta = CoreConsultaMedica.objects.create(
+            empresa=self.empresa,
+            paciente=self.paciente,
+            medico=self.medico,
+            folio_consulta='CONS-TEST-0001',
+            motivo_consulta='Seguimiento',
+            exploracion_fisica='Sin hallazgos',
+            diagnostico_principal='Control',
+            plan_tratamiento='Observación',
+            estado='FINALIZADA',
+        )
+        self.consulta_ajena = CoreConsultaMedica.objects.create(
+            empresa=self.empresa,
+            paciente=self.otro_paciente,
+            medico=self.medico,
+            folio_consulta='CONS-TEST-0002',
+            motivo_consulta='Otra',
+            exploracion_fisica='Normal',
+            diagnostico_principal='Otra',
+            plan_tratamiento='Otra',
+            estado='FINALIZADA',
+        )
+        self.caja = CajaConsultorio.objects.create(
+            empresa=self.empresa,
+            medico=self.user,
+            fecha=timezone.localdate(),
+        )
+        self.cobro = CobroConsulta.objects.create(
+            empresa=self.empresa,
+            caja=self.caja,
+            consulta=self.consulta,
+            paciente=self.paciente,
+            medico=self.user,
+            concepto='CONSULTA',
+            monto_total=100,
+            monto_efectivo=100,
+            monto_tarjeta=0,
+            monto_transferencia=0,
+            cobrado_por='RECEPCION',
+            usuario_cobro=self.user,
+            estado='PAGADO',
+        )
+        self.vale = ValeLiquidacion.objects.create(
+            empresa=self.empresa,
+            cobro=self.cobro,
+            medico=self.user,
+            monto_adeudado=100,
+            estado='PENDIENTE',
+        )
+        self.client = Client()
+        self.client.login(username='doctor_regression', password='test123456789')
+
+    def test_api_liquidar_vale_rechaza_monto_cero(self):
+        response = self.client.post(
+            reverse('consultorio:api_liquidar_vale'),
+            data=json.dumps({'vale_id': self.vale.id, 'monto': 0}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('mayor a 0', response.json().get('error', ''))
+        self.vale.refresh_from_db()
+        self.assertEqual(self.vale.estado, 'PENDIENTE')
+        self.assertEqual(float(self.vale.monto_liquidado), 0.0)
+
+    def test_api_subir_archivo_rechaza_consulta_de_otro_paciente(self):
+        archivo = SimpleUploadedFile('estudio.pdf', b'pdf-demo', content_type='application/pdf')
+
+        response = self.client.post(
+            reverse('consultorio:api_subir_archivo'),
+            data={
+                'paciente_id': self.paciente.id,
+                'consulta_id': self.consulta_ajena.id,
+                'tipo': 'DOCUMENTO',
+                'titulo': 'Archivo cruzado',
+                'archivo': archivo,
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('no corresponde al paciente', response.json().get('error', ''))
+
+    def test_api_generar_certificado_inmediato_no_usa_primer_medico_de_empresa(self):
+        from core.models import CitaMedica, CertificadoMedico
+
+        cita = CitaMedica.objects.create(
+            empresa=self.empresa,
+            paciente=self.paciente,
+            medico=None,
+            fecha_cita=timezone.localdate(),
+            hora_cita=timezone.localtime().time(),
+            duracion_estimada=30,
+            motivo='Valoración general',
+            estado='EN_CURSO',
+            creado_por=self.user,
+        )
+
+        response = self.client.post(
+            reverse('consultorio:api_generar_certificado_inmediato'),
+            data=json.dumps({
+                'cita_id': cita.id,
+                'tipo': 'MEDICO',
+                'motivo': 'Paciente estable',
+                'recomendaciones': 'Reposo',
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json().get('ok'))
+        certificado = CertificadoMedico.objects.get(id=response.json()['certificado_id'])
+        self.assertNotEqual(certificado.medico_id, self.medico_ajeno.id)
+        self.assertEqual(certificado.medico.cedula_profesional, f'USR-{self.user.id}')
+
+    def test_api_crear_paciente_y_consulta_no_usa_primer_medico_de_empresa(self):
+        from core.models import CitaMedica
+
+        response = self.client.post(
+            reverse('consultorio:api_crear_paciente_y_consulta'),
+            data=json.dumps({
+                'nombre': 'Mario',
+                'apellidos': 'Temporal',
+                'fecha_nacimiento': '1992-05-20',
+                'sexo': 'M',
+                'motivo': 'Consulta inicial',
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json().get('ok'))
+        cita = CitaMedica.objects.get(id=response.json()['cita_id'])
+        self.assertNotEqual(cita.medico_id, self.medico_ajeno.id)
+        self.assertEqual(cita.medico.cedula_profesional, f'USR-{self.user.id}')

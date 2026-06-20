@@ -14,6 +14,7 @@ from core.views import motor_financiero as motor_fin_views
 from core.views.administracion_usuarios import gestionar_usuarios
 from core.views.general import CustomLoginView, service_worker_view
 from core.views import autenticacion_2fa as views_2fa
+from core.views import contabilidad_personal as contabilidad_personal_views
 from core.views import sucursal_modo_inventario_lab as sucursal_inv_lab_views
 from laboratorio.views.hl7_receptor import receptor_hl7
 from core.api_contracts.ninja_api import api as api_contracts_v3
@@ -425,6 +426,11 @@ urlpatterns = [
     path('contabilidad/poliza/<int:poliza_id>/', views.ver_poliza, name='ver_poliza'),
     path('contabilidad/poliza/<int:poliza_id>/autorizar/', views.autorizar_poliza, name='autorizar_poliza'),
     path('contabilidad/api/cuentas/', views.api_cuentas, name='api_cuentas'),
+
+    # ── Contabilidad Personal — privada, exclusiva del Director (no en menú) ──
+    path('contabilidad-personal/', contabilidad_personal_views.contabilidad_personal_dashboard, name='contabilidad_personal_dashboard'),
+    path('contabilidad-personal/orden/<int:orden_id>/pagar/', contabilidad_personal_views.marcar_orden_pagada, name='marcar_orden_pagada'),
+    path('contabilidad-personal/historial-pagos/', contabilidad_personal_views.historial_pagos_proveedores, name='historial_pagos_proveedores'),
     
     # 13. MÓDULO DE NÓMINA — rutas adicionales (cálculo y autorización)
     path('nomina/periodos/<int:periodo_id>/calcular/', lazy_view('core.views.nomina.calcular_nomina'), name='calcular_nomina'),

@@ -2,14 +2,30 @@
 Vistas para Microbiología y Antibiogramas (REGLA 3).
 Flujo: Bacteria -> Grupo de Antibióticos -> Sensibilidad (S/I/R)
 """
-from django.shortcuts import render, get_object_or_404
+import json
+
+from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.db import transaction
 
 from core.models import DetalleOrden
-from core.models.microbiologia import Bacteria, GrupoAntibiotico, Antibiotico, ResultadoAntibiograma
+
+
+def _resolver_modelos_microbiologia():
+    """
+    Importa los modelos de microbiología de forma diferida.
+
+    El módulo histórico quedó cableado a modelos que no existen en esta rama.
+    En lugar de romper import de vistas o devolver 500 críptico, respondemos
+    explícitamente que el bloque sigue pendiente de implementación real.
+    """
+    try:
+        from core.models.microbiologia import Bacteria, GrupoAntibiotico, ResultadoAntibiograma
+        return Bacteria, GrupoAntibiotico, ResultadoAntibiograma
+    except Exception:
+        return None
 
 
 @login_required
@@ -20,6 +36,13 @@ def api_inyectar_antibiogramas(request, detalle_id):
     REGLA 3: Flujo de Microbiología
     """
     empresa = getattr(request.user, 'empresa', None)
+    modelos = _resolver_modelos_microbiologia()
+    if not modelos:
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': 'El módulo de microbiología aún no está implementado completamente en esta versión.'
+        }, status=503)
+    Bacteria, GrupoAntibiotico, ResultadoAntibiograma = modelos
     
     try:
         detalle = get_object_or_404(DetalleOrden, id=detalle_id, orden__empresa=empresa)
@@ -94,6 +117,13 @@ def api_guardar_sensibilidad(request, resultado_id):
     API para guardar la sensibilidad (S/I/R) de un antibiótico.
     """
     empresa = getattr(request.user, 'empresa', None)
+    modelos = _resolver_modelos_microbiologia()
+    if not modelos:
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': 'El módulo de microbiología aún no está implementado completamente en esta versión.'
+        }, status=503)
+    _, _, ResultadoAntibiograma = modelos
     
     try:
         resultado = get_object_or_404(

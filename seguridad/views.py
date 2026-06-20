@@ -33,6 +33,50 @@ from .models import (
 # AUTENTICACIÓN DE DOS FACTORES (2FA)
 # ============================================================================
 
+def _usuario_tiene_2fa_activo(usuario) -> bool:
+    """Verdad única para saber si el usuario tiene 2FA activo por cualquier canal."""
+    return (
+        DispositivoTOTP.objects.filter(usuario=usuario, activo=True).exists()
+        or DispositivoSMS.objects.filter(usuario=usuario, activo=True).exists()
+    )
+
+
+def _verificar_codigo_2fa_usuario(usuario, codigo: str):
+    """
+    Verifica un código 2FA y devuelve (valido: bool, tipo: str).
+
+    Tipos posibles:
+      - totp
+      - backup
+      - master_recovery
+      - invalid
+    """
+    codigo = (codigo or '').strip()
+    if not codigo:
+        return False, 'invalid'
+
+    dispositivos_totp = DispositivoTOTP.objects.filter(usuario=usuario, activo=True)
+    for dispositivo in dispositivos_totp:
+        if dispositivo.verificar_codigo(codigo):
+            return True, 'totp'
+
+    codigos_backup = CodigoBackup2FA.objects.filter(usuario=usuario, usado=False)
+    for codigo_backup in codigos_backup:
+        if codigo_backup.verificar(codigo):
+            return True, 'backup'
+
+    master_code = str(getattr(settings, 'PRISLAB_MASTER_RECOVERY_CODE', '') or '').strip()
+    if master_code and codigo == master_code:
+        logger = logging.getLogger('seguridad')
+        logger.warning(
+            'Se utilizó PRISLAB_MASTER_RECOVERY_CODE para usuario=%s id=%s',
+            getattr(usuario, 'username', '?'),
+            getattr(usuario, 'id', None),
+        )
+        return True, 'master_recovery'
+
+    return False, 'invalid'
+
 @login_required
 def configuracion_2fa(request):
     """
@@ -44,8 +88,7 @@ def configuracion_2fa(request):
     codigos_backup = CodigoBackup2FA.objects.filter(usuario=request.user, usado=False)
     
     # Verificar si el usuario tiene 2FA activo
-    tiene_2fa_activo = dispositivos_totp.filter(activo=True).exists() or \
-                       dispositivos_sms.filter(activo=True).exists()
+    tiene_2fa_activo = _usuario_tiene_2fa_activo(request.user)
     
     context = {
         'dispositivos_totp': dispositivos_totp,
@@ -218,7 +261,7 @@ def verificar_2fa_login(request, usuario):
     Retorna True si el código es válido o si el usuario no tiene 2FA activo.
     """
     # Si el usuario no tiene 2FA activo, retornar True
-    if not DispositivoTOTP.objects.filter(usuario=usuario, activo=True).exists():
+    if not _usuario_tiene_2fa_activo(usuario):
         return True
     
     # Obtener código del formulario
@@ -227,19 +270,8 @@ def verificar_2fa_login(request, usuario):
     if not codigo:
         return False
     
-    # Verificar código TOTP
-    dispositivos_totp = DispositivoTOTP.objects.filter(usuario=usuario, activo=True)
-    for dispositivo in dispositivos_totp:
-        if dispositivo.verificar_codigo(codigo):
-            return True
-    
-    # Verificar código de backup
-    codigos_backup = CodigoBackup2FA.objects.filter(usuario=usuario, usado=False)
-    for codigo_backup in codigos_backup:
-        if codigo_backup.verificar(codigo):
-            return True
-    
-    return False
+    valido, _tipo = _verificar_codigo_2fa_usuario(usuario, codigo)
+    return bool(valido)
 
 
 # ============================================================================
@@ -503,17 +535,14 @@ def api_verificar_codigo_2fa(request):
     if not codigo:
         return JsonResponse({'valido': False, 'mensaje': 'Código vacío'})
     
-    # Verificar TOTP
-    dispositivos = DispositivoTOTP.objects.filter(usuario=request.user, activo=True)
-    for dispositivo in dispositivos:
-        if dispositivo.verificar_codigo(codigo):
-            return JsonResponse({'valido': True, 'mensaje': 'Código correcto', 'tipo': 'totp'})
-
-    # Verificar códigos de respaldo de un solo uso.
-    codigos_backup = CodigoBackup2FA.objects.filter(usuario=request.user, usado=False)
-    for codigo_backup in codigos_backup:
-        if codigo_backup.verificar(codigo):
-            return JsonResponse({'valido': True, 'mensaje': 'Código de respaldo correcto', 'tipo': 'backup'})
+    valido, tipo = _verificar_codigo_2fa_usuario(request.user, codigo)
+    if valido:
+        mensaje = 'Código correcto'
+        if tipo == 'backup':
+            mensaje = 'Código de respaldo correcto'
+        elif tipo == 'master_recovery':
+            mensaje = 'Código maestro de recuperación correcto'
+        return JsonResponse({'valido': True, 'mensaje': mensaje, 'tipo': tipo})
     
     return JsonResponse({'valido': False, 'mensaje': 'Código incorrecto'})
 

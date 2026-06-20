@@ -44,11 +44,24 @@ import threading
 from django.core.files.storage import FileSystemStorage, Storage
 from django.core.files.base import ContentFile
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.deconstruct import deconstructible
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
 from googleapiclient.errors import HttpError
-from storages.backends.s3 import S3Storage
+
+try:
+    from storages.backends.s3 import S3Storage
+except Exception as exc:  # pragma: no cover - depende del entorno local
+    _s3_import_error = exc
+
+    class S3Storage(Storage):
+        def __init__(self, *args, **kwargs):
+            raise ImproperlyConfigured(
+                "Vultr Object Storage / S3 está habilitado en configuración, "
+                "pero faltan dependencias S3. Instala boto3 y django-storages "
+                f"correctamente. Detalle original: {_s3_import_error}"
+            )
 
 logger = logging.getLogger('config.storage')
 DRIVE_REQUEST_TIMEOUT = 30

@@ -310,8 +310,6 @@ class ConsultaMedica(models.Model):
                 raise ValidationError(errores)
 
     def save(self, *args, **kwargs):
-        if self.estado == 'FINALIZADA':
-            self.full_clean()
         if not self.folio_consulta:
             from django.utils import timezone as _tz
             año = _tz.localtime(_tz.now()).year
@@ -322,6 +320,8 @@ class ConsultaMedica(models.Model):
                 folio_consulta__startswith=prefijo
             ).count()
             self.folio_consulta = f'{prefijo}{str(ultimas + 1).zfill(5)}'
+        if self.estado == 'FINALIZADA':
+            self.full_clean()
         if not self.historia_clinica and hasattr(self.paciente, 'historia_clinica'):
             self.historia_clinica = self.paciente.historia_clinica
         super().save(*args, **kwargs)

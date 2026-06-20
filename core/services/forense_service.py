@@ -17,7 +17,9 @@ def _client_ip(request) -> str | None:
         return None
     forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
     if forwarded:
-        return forwarded.split(',')[0].strip()[:45]
+        forwarded_ips = [ip.strip() for ip in forwarded.split(',') if ip.strip()]
+        if forwarded_ips:
+            return forwarded_ips[-1][:45]
     addr = request.META.get('REMOTE_ADDR')
     return (addr or '')[:45] or None
 

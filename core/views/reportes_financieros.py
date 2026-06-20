@@ -21,6 +21,20 @@ from core.models import (
 )
 
 
+def _sumas_por_dia(queryset, fecha_field: str, total_field: str):
+    """
+    Agrupa montos por día y retorna un dict {date: Decimal}.
+    Reduce loops N+1 en reportes diarios.
+    """
+    return {
+        item['dia'].date(): item['total'] or Decimal('0.00')
+        for item in queryset.annotate(dia=TruncDay(fecha_field))
+        .values('dia')
+        .annotate(total=Coalesce(Sum(total_field), Decimal('0.00'), output_field=DecimalField()))
+        .order_by('dia')
+    }
+
+
 @login_required
 def reporte_ingresos_egresos(request):
     """Reporte de Ingresos y Egresos (P&L simplificado)."""
@@ -79,22 +93,17 @@ def reporte_ingresos_egresos(request):
     utilidad_neta = total_ventas - total_egresos
     
     # Datos para gráfica
+    ventas_por_dia = _sumas_por_dia(ventas, 'fecha', 'total')
+    gastos_caja_por_dia = _sumas_por_dia(gastos_caja, 'fecha', 'monto')
+    gastos_operativos_por_dia = _sumas_por_dia(gastos_operativos, 'fecha', 'monto')
+
     datos_diarios = []
     fecha_actual = fecha_inicio_dt
     while fecha_actual <= fecha_fin_dt:
-        ventas_dia = Venta.objects.filter(
-            empresa=empresa,
-            fecha__date=fecha_actual,
-            estado='COMPLETADA'
-        ).aggregate(
-            total=Coalesce(Sum('total'), Decimal('0.00'), output_field=DecimalField())
-        )['total'] or Decimal('0.00')
-        
-        egresos_dia = (
-            GastoCaja.objects.filter(empresa=empresa, fecha__date=fecha_actual).aggregate(
-                total=Coalesce(Sum('monto'), Decimal('0.00'), output_field=DecimalField())
-            )['total'] or Decimal('0.00')
-        )
+        ventas_dia = ventas_por_dia.get(fecha_actual, Decimal('0.00'))
+        egresos_caja_dia = gastos_caja_por_dia.get(fecha_actual, Decimal('0.00'))
+        egresos_operativos_dia = gastos_operativos_por_dia.get(fecha_actual, Decimal('0.00'))
+        egresos_dia = egresos_caja_dia + egresos_operativos_dia
         
         datos_diarios.append({
             'fecha': fecha_actual.strftime('%Y-%m-%d'),
@@ -198,24 +207,14 @@ def reporte_flujo_caja(request):
     flujo_neto = total_entradas_efectivo - total_salidas_efectivo
     
     # Detalle diario
+    pagos_por_dia = _sumas_por_dia(pagos_efectivo, 'fecha_pago', 'monto')
+    gastos_caja_por_dia = _sumas_por_dia(gastos_caja, 'fecha', 'monto')
+
     flujo_diario = []
     fecha_actual = fecha_inicio_dt
     while fecha_actual <= fecha_fin_dt:
-        entradas_dia = Pago.objects.filter(
-            venta__empresa=empresa,
-            venta__fecha__date=fecha_actual,
-            venta__estado='COMPLETADA',
-            metodo='EFECTIVO'
-        ).aggregate(
-            total=Coalesce(Sum('monto'), Decimal('0.00'), output_field=DecimalField())
-        )['total'] or Decimal('0.00')
-        
-        salidas_dia = GastoCaja.objects.filter(
-            empresa=empresa,
-            fecha__date=fecha_actual
-        ).aggregate(
-            total=Coalesce(Sum('monto'), Decimal('0.00'), output_field=DecimalField())
-        )['total'] or Decimal('0.00')
+        entradas_dia = pagos_por_dia.get(fecha_actual, Decimal('0.00'))
+        salidas_dia = gastos_caja_por_dia.get(fecha_actual, Decimal('0.00'))
         
         flujo_diario.append({
             'fecha': fecha_actual.strftime('%Y-%m-%d'),
@@ -377,14 +376,30 @@ def exportar_excel_ingresos_egresos(request):
     ws.append(['Fecha', 'Ingresos', 'Egresos', 'Utilidad del día'])
     _estilo_encabezado(ws, ws.max_row, 4)
 
+    ventas_por_dia = _sumas_por_dia(ventas_qs, 'fecha', 'total')
+    gastos_caja_por_dia = _sumas_por_dia(
+        GastoCaja.objects.filter(
+            empresa=empresa,
+            fecha__date__range=[fecha_inicio_dt, fecha_fin_dt]
+        ),
+        'fecha',
+        'monto',
+    )
+    gastos_op_por_dia = _sumas_por_dia(
+        GastoOperativo.objects.filter(
+            empresa=empresa,
+            fecha__date__range=[fecha_inicio_dt, fecha_fin_dt]
+        ),
+        'fecha',
+        'monto',
+    )
+
     fecha_actual = fecha_inicio_dt
     while fecha_actual <= fecha_fin_dt:
-        ing = Venta.objects.filter(
-            empresa=empresa, fecha__date=fecha_actual, estado='COMPLETADA'
-        ).aggregate(t=Coalesce(Sum('total'), Decimal('0.00'), output_field=DecimalField()))['t'] or Decimal('0.00')
-        eg = GastoCaja.objects.filter(
-            empresa=empresa, fecha__date=fecha_actual
-        ).aggregate(t=Coalesce(Sum('monto'), Decimal('0.00'), output_field=DecimalField()))['t'] or Decimal('0.00')
+        ing = ventas_por_dia.get(fecha_actual, Decimal('0.00'))
+        eg_caja = gastos_caja_por_dia.get(fecha_actual, Decimal('0.00'))
+        eg_operativos = gastos_op_por_dia.get(fecha_actual, Decimal('0.00'))
+        eg = eg_caja + eg_operativos
         ws.append([fecha_actual.strftime('%d/%m/%Y'), float(ing), float(eg), float(ing - eg)])
         fecha_actual += timedelta(days=1)
 
@@ -427,18 +442,13 @@ def exportar_excel_flujo_caja(request):
     total_entradas = Decimal('0.00')
     total_salidas = Decimal('0.00')
 
+    entradas_por_dia = _sumas_por_dia(pagos_efectivo, 'fecha_pago', 'monto')
+    salidas_por_dia = _sumas_por_dia(gastos_caja, 'fecha', 'monto')
+
     fecha_actual = fecha_inicio_dt
     while fecha_actual <= fecha_fin_dt:
-        entradas = Pago.objects.filter(
-            venta__empresa=empresa,
-            venta__fecha__date=fecha_actual,
-            venta__estado='COMPLETADA',
-            metodo='EFECTIVO'
-        ).aggregate(t=Coalesce(Sum('monto'), Decimal('0.00'), output_field=DecimalField()))['t'] or Decimal('0.00')
-
-        salidas = GastoCaja.objects.filter(
-            empresa=empresa, fecha__date=fecha_actual
-        ).aggregate(t=Coalesce(Sum('monto'), Decimal('0.00'), output_field=DecimalField()))['t'] or Decimal('0.00')
+        entradas = entradas_por_dia.get(fecha_actual, Decimal('0.00'))
+        salidas = salidas_por_dia.get(fecha_actual, Decimal('0.00'))
 
         ws.append([
             fecha_actual.strftime('%d/%m/%Y'),

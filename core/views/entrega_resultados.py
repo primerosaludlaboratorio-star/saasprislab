@@ -548,16 +548,51 @@ def api_marcar_whatsapp_enviado(request, orden_id: int):
     """Marca timestamp de WhatsApp enviado (manual / click operacional)."""
     empresa = getattr(request.user, 'empresa', None)
     if not empresa:
-        messages.error(request, 'Usuario no tiene empresa asignada.')
-        return redirect('home')
+        return JsonResponse({"ok": False, "error": "Usuario sin empresa asignada"}, status=403)
+
+    if not (
+        request.user.is_staff
+        or request.user.is_superuser
+        or getattr(request.user, "rol", "") in ["RECEPCION", "QUIMICO", "ADMIN"]
+    ):
+        return JsonResponse({"ok": False, "error": "Acceso denegado"}, status=403)
+
     orden = get_object_or_404(OrdenDeServicio, id=orden_id, empresa=empresa)
+
+    if orden.estado not in ("RESULTADOS_LISTOS", "ENTREGADO"):
+        return JsonResponse(
+            {"ok": False, "error": "Solo se puede marcar WhatsApp en resultados validados/listos"},
+            status=400,
+        )
+
+    from core.utils.candado_financiero import calcular_saldo, tiene_saldo_pendiente
+
+    if tiene_saldo_pendiente(orden):
+        saldo = calcular_saldo(orden)
+        return JsonResponse(
+            {"ok": False, "error": f"Saldo pendiente ${saldo:.2f} — no debe marcarse envío por WhatsApp"},
+            status=400,
+        )
+
+    if not paciente_autorizado_canal_digital_resultados(orden.paciente):
+        return JsonResponse(
+            {"ok": False, "error": "LFPDPPP: sin consentimiento informado para comunicación digital de resultados"},
+            status=400,
+        )
+
+    telefono = (getattr(orden.paciente, "telefono", "") or "").strip()
+    if not telefono:
+        return JsonResponse(
+            {"ok": False, "error": "Paciente sin teléfono para envío por WhatsApp"},
+            status=400,
+        )
 
     _crear_bitacora_entrega(
         orden,
         canal="WHATSAPP",
         request=request,
         usuario=request.user,
-        destino=getattr(orden.paciente, "telefono", "") or "",
+        destino=telefono,
         observaciones="WhatsApp marcado como enviado desde logistica de entrega.",
     )
 

@@ -774,22 +774,29 @@ SECURE_HSTS_PRELOAD = _env_bool('SECURE_HSTS_PRELOAD', IS_PRODUCTION)
 _LOG_DIR = BASE_DIR / 'logs'
 _LOG_DIR.mkdir(parents=True, exist_ok=True)
 
+PRISLAB_DISABLE_FILE_LOG_HANDLERS = _env_bool(
+    'PRISLAB_DISABLE_FILE_LOG_HANDLERS',
+    _TESTING,
+)
+
 _LOG_HANDLERS = ['console']
 _EXTRA_HANDLERS = {}
 # Bankguard v1.14: auditoría CLI, backfill y errores de concurrencia en caja (protocolo despliegue)
-_BANKGUARD_HANDLERS = {
-    'file_bankguard': {
-        'level': 'INFO',
-        'class': 'logging.handlers.RotatingFileHandler',
-        'filename': str(_LOG_DIR / 'bankguard_audit.log'),
-        'maxBytes': 10 * 1024 * 1024,
-        'backupCount': 10,
-        'formatter': 'detailed',
-        'encoding': 'utf-8',
-    },
-}
+_BANKGUARD_HANDLERS = {}
+if not PRISLAB_DISABLE_FILE_LOG_HANDLERS:
+    _BANKGUARD_HANDLERS = {
+        'file_bankguard': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(_LOG_DIR / 'bankguard_audit.log'),
+            'maxBytes': 10 * 1024 * 1024,
+            'backupCount': 10,
+            'formatter': 'detailed',
+            'encoding': 'utf-8',
+        },
+    }
 
-if not IS_PRODUCTION:
+if not IS_PRODUCTION and not PRISLAB_DISABLE_FILE_LOG_HANDLERS:
     _EXTRA_HANDLERS = {
         'file_errors': {
             'level': 'WARNING',
@@ -895,7 +902,7 @@ LOGGING = {
             'propagate': False,
         },
         'bankguard': {
-            'handlers': ['console', 'file_bankguard'],
+            'handlers': ['console', *(['file_bankguard'] if 'file_bankguard' in _BANKGUARD_HANDLERS else [])],
             'level': 'INFO',
             'propagate': False,
         },
@@ -988,6 +995,16 @@ CELERY_TASK_EAGER_PROPAGATES = True
 # Reintentos Drive
 DRIVE_SYNC_MAX_RETRIES = 5
 DRIVE_SYNC_RETRY_COUNTDOWN = 60  # segundos entre reintentos
+
+# Celery Beat — tareas periódicas
+from celery.schedules import crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    'verificaciones-automaticas-diarias': {
+        'task': 'core.tasks.notificaciones_tasks.ejecutar_verificaciones_automaticas_todas_empresas',
+        'schedule': crontab(hour=7, minute=0),
+    },
+}
 
 # Buffer local para archivos en tránsito (antes de sincronizar con Drive)
 MEDIA_BUFFER_DIR = os.path.join(MEDIA_ROOT, 'buffer')

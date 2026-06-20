@@ -225,12 +225,10 @@ def sellar_con_pin(request, nota_id):
             # Capturamos metadatos del entorno en el momento exacto del sellado
             # ═══════════════════════════════════════════════════════════════════
             
-            # IP y red
+            # IP y red — REMOTE_ADDR (no falsificable); este valor es evidencia forense.
             ip_origen = request.META.get('REMOTE_ADDR')
-            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-            if x_forwarded_for:
-                ip_origen = x_forwarded_for.split(',')[0].strip()
-            
+
+
             user_agent = request.META.get('HTTP_USER_AGENT', '')[:500]
             
             # Intentar extraer información del dispositivo del User-Agent

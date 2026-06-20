@@ -53,7 +53,8 @@ def genera_reporte_caja(request):
     ventas = Venta.objects.filter(
         empresa=empresa,
         fecha__date__gte=fecha_inicio_dt,
-        fecha__date__lte=fecha_fin_dt
+        fecha__date__lte=fecha_fin_dt,
+        estado='COMPLETADA',
     ).select_related('usuario', 'sucursal')
     
     gastos = GastoCaja.objects.filter(
@@ -74,6 +75,7 @@ def genera_reporte_caja(request):
         'venta__empresa': empresa,
         'venta__fecha__date__gte': fecha_inicio_dt,
         'venta__fecha__date__lte': fecha_fin_dt,
+        'venta__estado': 'COMPLETADA',
     }
     pagos_efectivo = Pago.objects.filter(
         **_pago_base,

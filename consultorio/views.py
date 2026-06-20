@@ -43,6 +43,58 @@ def _empresa_explicita_usuario(request):
     return empresa_efectiva_request(request)
 
 
+def _resolver_medico_usuario(request, empresa, *, medico_preferido=None, autocrear=False):
+    """
+    Resuelve el médico operativo del usuario actual sin caer en el "primer médico"
+    de la empresa, para evitar certificados, recetas u órdenes firmadas por la
+    persona equivocada.
+    """
+    if not empresa or not getattr(request, 'user', None) or not request.user.is_authenticated:
+        return None
+
+    if medico_preferido and getattr(medico_preferido, 'empresa_id', None) == empresa.id:
+        return medico_preferido
+
+    medico_profile = getattr(request.user, 'medico_profile', None)
+    if medico_profile and getattr(medico_profile, 'empresa_id', None) == empresa.id:
+        return medico_profile
+
+    nombre_usuario = (request.user.get_full_name() or '').strip()
+    if nombre_usuario:
+        medico = Medico.objects.filter(
+            empresa=empresa,
+            activo=True,
+            nombre_completo__iexact=nombre_usuario,
+        ).first()
+        if medico:
+            return medico
+
+    cedula_usuario = getattr(request.user, 'cedula_interna', None)
+    if isinstance(cedula_usuario, str):
+        cedula_usuario = cedula_usuario.strip()
+    if cedula_usuario:
+        medico = Medico.objects.filter(
+            empresa=empresa,
+            cedula_profesional=cedula_usuario,
+        ).first()
+        if medico:
+            return medico
+
+    if not autocrear:
+        return None
+
+    medico, _ = Medico.objects.get_or_create(
+        empresa=empresa,
+        cedula_profesional=cedula_usuario or f'USR-{request.user.id}',
+        defaults={
+            'nombre_completo': nombre_usuario or request.user.username,
+            'especialidad': 'Médico General',
+            'empresa': empresa,
+        }
+    )
+    return medico
+
+
 # =====================================================================
 # HELPERS para conversión segura de POST values
 # =====================================================================
@@ -234,23 +286,13 @@ def agendar_cita(request):
                 medico_pk = _int_or_none(medico_id)
                 if medico_pk is not None:
                     medico_obj = Medico.objects.filter(id=medico_pk, empresa=empresa).first()
-            
-            if not medico_obj:
-                # Buscar por nombre del usuario actual — SIEMPRE acotado por empresa
-                nombre_user = request.user.get_full_name() or request.user.username
-                medico_obj = Medico.objects.filter(
-                    empresa=empresa,
-                    nombre_completo__icontains=nombre_user,
-                ).first()
-            
-            if not medico_obj:
-                # Crear entrada de médico automáticamente vinculada al usuario actual
-                medico_obj = Medico.objects.create(
-                    nombre_completo=request.user.get_full_name() or request.user.username,
-                    cedula_profesional=getattr(request.user, 'cedula_profesional', 'PENDIENTE'),
-                    especialidad=getattr(request.user, 'especialidad', 'Medico General'),
-                    empresa=empresa,
-                )
+
+            medico_obj = _resolver_medico_usuario(
+                request,
+                empresa,
+                medico_preferido=medico_obj,
+                autocrear=True,
+            )
             
             cita = CitaMedica.objects.create(
                 empresa=empresa,
@@ -440,17 +482,7 @@ def lista_trabajo_medico(request):
     hoy = timezone.localdate()
     
     # Obtener médico actual (lista de trabajo puede ser por médico o todas)
-    medico_actual = None
-    if hasattr(request.user, 'medico_profile') and getattr(request.user.medico_profile, 'empresa_id') == empresa.id:
-        medico_actual = request.user.medico_profile
-    if not medico_actual:
-        nombre_user = request.user.get_full_name() or request.user.username
-        medico_actual = Medico.objects.filter(
-            empresa=empresa,
-            nombre_completo__icontains=nombre_user
-        ).first()
-    if not medico_actual:
-        medico_actual = Medico.objects.filter(empresa=empresa).first()
+    medico_actual = _resolver_medico_usuario(request, empresa)
     
     # Permitir filtrar por fecha (opcional)
     fecha_filtro = request.GET.get('fecha', None)
@@ -514,18 +546,7 @@ def consulta_sin_cita(request):
             paciente = get_object_or_404(Paciente, id=paciente_id, empresa=empresa)
             
             # Obtener médico (el usuario actual si es médico, o crear uno genérico) — scope por empresa
-            if hasattr(request.user, 'medico_profile') and getattr(request.user.medico_profile, 'empresa_id') == empresa.id:
-                medico = request.user.medico_profile
-            else:
-                medico, created = Medico.objects.get_or_create(
-                    cedula_profesional='TEMP001',
-                    empresa=empresa,
-                    defaults={
-                        'nombre_completo': request.user.get_full_name() or request.user.username,
-                        'especialidad': 'Médico General',
-                        'empresa': empresa,
-                    }
-                )
+            medico = _resolver_medico_usuario(request, empresa, autocrear=True)
             
             # Crear cita express
             with transaction.atomic():
@@ -1522,20 +1543,7 @@ def api_crear_consulta_directa(request):
         paciente = get_object_or_404(Paciente, id=paciente_id, empresa=empresa)
         
         # Obtener médico (scope por empresa)
-        if hasattr(request.user, 'medico_profile') and getattr(request.user.medico_profile, 'empresa_id', None) == empresa.id:
-            medico = request.user.medico_profile
-        else:
-            medico = Medico.objects.filter(empresa=empresa).first()
-            if not medico:
-                cedula = f'MED-{empresa.id:04d}'
-                medico = Medico.objects.filter(cedula_profesional=cedula).first()
-                if not medico:
-                    medico = Medico.objects.create(
-                        cedula_profesional=cedula,
-                        nombre_completo=request.user.get_full_name() or request.user.username,
-                        especialidad='Médico General',
-                        empresa=empresa,
-                    )
+        medico = _resolver_medico_usuario(request, empresa, autocrear=True)
 
         # Crear cita en curso
         with transaction.atomic():
@@ -1638,20 +1646,7 @@ def api_crear_paciente_y_consulta(request):
         edad = hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day))
         
         # Obtener médico (scope por empresa)
-        if hasattr(request.user, 'medico_profile') and getattr(request.user.medico_profile, 'empresa_id', None) == empresa.id:
-            medico = request.user.medico_profile
-        else:
-            medico = Medico.objects.filter(empresa=empresa).first()
-            if not medico:
-                cedula = f'MED-{empresa.id:04d}'
-                medico = Medico.objects.filter(cedula_profesional=cedula).first()
-                if not medico:
-                    medico = Medico.objects.create(
-                        cedula_profesional=cedula,
-                        nombre_completo=request.user.get_full_name() or request.user.username,
-                        especialidad='Médico General',
-                        empresa=empresa,
-                    )
+        medico = _resolver_medico_usuario(request, empresa, autocrear=True)
         
         # Crear paciente + consulta en una transacción
         with transaction.atomic():
@@ -1985,22 +1980,12 @@ def api_generar_receta_inmediata(request):
         cita = get_object_or_404(CitaMedica, id=cita_id, empresa=empresa)
         
         # Obtener médico
-        medico = cita.medico
-        if not medico or getattr(medico, 'empresa_id', None) != empresa.id:
-            if hasattr(request.user, 'medico_profile') and getattr(request.user.medico_profile, 'empresa_id') == empresa.id:
-                medico = request.user.medico_profile
-            else:
-                medico = Medico.objects.filter(empresa=empresa).first()
-                if not medico:
-                    cedula = f'MED-{empresa.id:04d}'
-                    medico = Medico.objects.filter(cedula_profesional=cedula).first()
-                    if not medico:
-                        medico = Medico.objects.create(
-                            nombre_completo=request.user.get_full_name() or request.user.username,
-                            cedula_profesional=cedula,
-                            especialidad='Médico General',
-                            empresa=empresa,
-                        )
+        medico = _resolver_medico_usuario(
+            request,
+            empresa,
+            medico_preferido=cita.medico,
+            autocrear=True,
+        )
         
         # Crear o actualizar consulta
         consulta, created = ConsultaMedica.objects.get_or_create(
@@ -2132,17 +2117,12 @@ def api_generar_certificado_inmediato(request):
         cita = get_object_or_404(CitaMedica, id=cita_id, empresa=empresa)
 
         # Obtener médico (filtrado por empresa)
-        if hasattr(request.user, 'medico_profile') and getattr(request.user.medico_profile, 'empresa_id') == empresa.id:
-            medico = request.user.medico_profile
-        else:
-            medico = Medico.objects.filter(empresa=empresa).first()
-            if not medico:
-                medico = Medico.objects.create(
-                    nombre_completo=request.user.get_full_name() or request.user.username,
-                    cedula_profesional='TEMP001',
-                    especialidad='Médico General',
-                    empresa=empresa,
-                )
+        medico = _resolver_medico_usuario(
+            request,
+            empresa,
+            medico_preferido=cita.medico,
+            autocrear=True,
+        )
         
         # Crear o actualizar consulta
         consulta, created = ConsultaMedica.objects.get_or_create(
@@ -2260,22 +2240,12 @@ def api_generar_orden_laboratorio_inmediata(request):
         cita = get_object_or_404(CitaMedica, id=cita_id, empresa=empresa)
         
         # Obtener médico: de la cita (si tiene empresa) o del usuario/crear con empresa
-        medico = cita.medico
-        if not medico or getattr(medico, 'empresa_id', None) != empresa.id:
-            if hasattr(request.user, 'medico_profile') and getattr(request.user.medico_profile, 'empresa_id') == empresa.id:
-                medico = request.user.medico_profile
-            else:
-                medico = Medico.objects.filter(empresa=empresa).first()
-                if not medico:
-                    cedula = f'MED-{empresa.id:04d}'
-                    medico = Medico.objects.filter(cedula_profesional=cedula).first()
-                    if not medico:
-                        medico = Medico.objects.create(
-                            nombre_completo=request.user.get_full_name() or request.user.username,
-                            cedula_profesional=cedula,
-                            especialidad='Médico General',
-                            empresa=empresa,
-                        )
+        medico = _resolver_medico_usuario(
+            request,
+            empresa,
+            medico_preferido=cita.medico,
+            autocrear=True,
+        )
         
         from decimal import ROUND_HALF_UP
 
@@ -2418,6 +2388,11 @@ def api_subir_archivo(request):
         consulta = None
         if consulta_id:
             consulta = ConsultaMedica.objects.filter(id=consulta_id, empresa=empresa).first()
+            if consulta and consulta.paciente_id != paciente.id:
+                return JsonResponse({
+                    'ok': False,
+                    'error': 'La consulta seleccionada no corresponde al paciente indicado'
+                }, status=400)
         
         archivo = ArchivoAdjuntoConsulta.objects.create(
             empresa=empresa,
@@ -3506,15 +3481,7 @@ def videollamada_segura(request):
     from django.core import signing
 
     hoy = timezone.localdate()
-    medico_actual = None
-    if hasattr(request.user, 'medico_profile') and getattr(request.user.medico_profile, 'empresa_id') == empresa.id:
-        medico_actual = request.user.medico_profile
-    if not medico_actual:
-        nombre_user = request.user.get_full_name() or request.user.username
-        medico_actual = Medico.objects.filter(
-            empresa=empresa,
-            nombre_completo__icontains=nombre_user,
-        ).first()
+    medico_actual = _resolver_medico_usuario(request, empresa)
 
     citas_qs = CitaMedica.objects.filter(
         empresa=empresa,
@@ -3900,7 +3867,10 @@ def api_liquidar_vale(request):
         return JsonResponse({'error': 'Este vale ya fue liquidado'}, status=400)
 
     with transaction.atomic():
-        if monto <= 0 or monto >= vale.saldo_pendiente:
+        if monto <= 0:
+            return JsonResponse({'error': 'El monto debe ser mayor a 0'}, status=400)
+
+        if monto >= vale.saldo_pendiente:
             # Liquidación total
             vale.monto_liquidado = vale.monto_adeudado
             vale.estado = 'LIQUIDADO'
