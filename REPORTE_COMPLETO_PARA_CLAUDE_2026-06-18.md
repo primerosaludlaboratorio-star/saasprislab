@@ -260,6 +260,53 @@ Cambios aplicados:
 - `tool_buscar_o_crear_paciente` ya no fuerza creación automática; ahora exige confirmación humana antes de crear
 - `OMNI_BYPASS_TOKEN` queda bloqueado por defecto en producción salvo habilitación explícita y deja huella en logs cuando se usa o se bloquea
 
+### 4.7 Ajustes funcionales reales cerrados el 2026-06-19
+
+Archivos principales:
+
+- [core/views/laboratorio.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\laboratorio.py)
+- [core/views/farmacia.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\farmacia.py)
+- [core/services/ventas/venta_farmacia_service.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\services\ventas\venta_farmacia_service.py)
+- [CHECKLIST_CONTROL_PRISLAB.md](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\CHECKLIST_CONTROL_PRISLAB.md)
+
+Cambios ejecutados:
+
+- se corrigió el endpoint `POST /laboratorio/api/crear-orden/`, que estaba roto por mezclar imports y campos de contratos antiguos (`OrdenDetalle`, `Estudio`, `precio_publico`, `usuario`) con el modelo core actual
+- el endpoint ahora usa `core.DetalleOrden`, `laboratorio.models.Estudio`, `precio_base`, `responsable_ingreso`, `estado_pago='PENDIENTE'` y guarda el estudio legacy como snapshot textual en `descripcion_linea`
+- se validó por smoke directo que el endpoint vuelve a responder `200` y crea una `OrdenDeServicio` en estado `PENDIENTE_PAGO`
+- se ajustó `GET /laboratorio/api/medicos/` para soportar búsqueda incremental por `q` o `term`, manteniendo la carga completa cuando no hay filtro
+- se validó por smoke directo que al consultar con `q=Bri` la API devuelve solo `Brizia Gonzalez`
+- se corrigió un bug operativo crítico del PDV de farmacia: el frontend mostraba productos con `Producto.stock`, pero el backend de cobro exigía lotes y fallaba con `Stock insuficiente` cuando el inventario legado no tenía lotes registrados
+- el backend ahora materializa un lote operativo `AUTO-*` si encuentra stock heredado sin lotes, tanto al consultar `/farmacia/api/lotes-producto/<id>/` como al ejecutar la venta
+- la venta PDV ahora resuelve una sucursal operativa mínima (`Matriz Principal`) si la empresa todavía no tiene una configurada, evitando que `MovimientoCaja` quede omitido por falta de `sucursal_id`
+- se cerró una regresión de doble descuento: las ventas descontadas directamente por Kardex en `VentaFarmaciaService` nacen con `inventario_descontado=True`, evitando que la signal legacy vuelva a restar stock en el guardado final
+- se agregó el comando operativo `python manage.py backfill_lotes_operativos_farmacia --empresa-id 1` para convertir inventario legado basado solo en `Producto.stock` a lotes vendibles
+- se ejecutó smoke end-to-end de laboratorio con caso real mínimo: alta rápida de paciente (`Paciente Auditoria Lab`), creación de orden `LAB-202606-00002`, lectura de orden, cobro total y aparición en `ordenes-recientes`
+- se corrigió compatibilidad de lectura para órdenes legacy: `GET /laboratorio/api/orden/<id>/datos/` ahora devuelve líneas `legacy:*` usando `descripcion_linea` cuando el detalle no está vinculado a `analito/perfil/paquete`
+- se corrigió compatibilidad de edición para órdenes legacy: `POST /laboratorio/api/orden/<id>/editar-estudios/` ya puede conservar líneas `legacy:*` existentes sin exigir que todo el payload provenga del catálogo LIMS resoluble
+- se ejecutó smoke adicional del módulo de pacientes: `POST /api/pacientes/guardar/` y `GET /api/pacientes/buscar/` responden `200` y reflejan el nuevo paciente correctamente
+- se ejecutó smoke funcional de consultorio rápido: creación combinada paciente+consulta, búsqueda de pacientes del consultorio, consulta directa con paciente existente y receta inmediata
+- se corrigió un hueco funcional de consultorio: los endpoints rápidos solo creaban `CitaMedica`, por lo que la transcripción inteligente no tenía dónde guardarse; ahora crean también la `ConsultaMedica` base en estado `EN_CURSO`
+- tras ese ajuste, `POST /consultorio/api/analizar-transcripcion/` ya devuelve `transcripcion_guardada=true` y persiste `transcripcion_completa` en la consulta creada por flujo rápido
+- se corrigió el endpoint legacy `GET /medico/receta/<id>/pdf/`, que fallaba por usar campos inexistentes del modelo `Receta` (`medico_universidad`) y por formateo frágil del IMC; ahora responde `200 application/pdf`
+- se validó que `GET /consultorio/pdf/receta/<consulta_id>/` ya genera PDF correcto para la receta inmediata y que la URL devuelta por `api_generar_receta_inmediata` es coherente con la ruta real del proyecto
+- se validó impresión operativa adicional: `GET /farmacia/ticket/<venta_id>/raw/` y `GET /laboratorio/ticket/<orden_id>/` responden `200`
+- `GET /laboratorio/resultados/<orden_id>/pdf/` redirige a captura en el caso de prueba actual; se clasificó como comportamiento esperado por triple llave incompleta (orden pagada pero no validada ni firmada para entrega digital), no como bug del endpoint
+- se perfiló la latencia transversal y se confirmó que la vista de pacientes no era el problema: `api_buscar_pacientes` ejecutada directamente tarda ~`3.75 ms`, mientras que la request completa en frío tardaba ~`4.5 s`
+- la causa principal encontrada fue el costo de importación de rutas/módulos al primer request, especialmente `consultorio/api_views.py -> core.services.ai_medico -> google.genai`
+- se corrigió ese punto moviendo los imports de `procesar_consulta_medica` y `procesar_resultados_lab` a nivel función dentro de `consultorio/api_views.py`
+- mejora medida tras el ajuste: request perfilada en frío a `/api/pacientes/buscar/` bajó de ~`6.97 s` perfilados a ~`3.31 s`, y la latencia registrada del endpoint bajó a ~`2.79 s`
+- hallazgo aún abierto de performance: sigue existiendo cold-start import tax por el árbol de rutas/imports globales (`config/urls.py`, `consultorio/urls.py` y módulos top-level relacionados). La siguiente optimización estructural sería lazy-loading adicional de imports pesados en el router principal
+- se reconfirmó por smoke directo que:
+  - `tool_buscar_o_crear_paciente` pide confirmación antes de crear y sí crea al confirmar
+  - `/farmacia/devoluciones/buscar/` y `/farmacia/devoluciones/procesar/` funcionan en HTTPS y persisten auditoría granular
+  - `/consultorio/api/procesar-audio-consulta/` devuelve `403` para un usuario de `RECEPCION`
+  - una venta PDV real sobre `PARACETAMOL 500MG TAB AUDIT-04` respondió `200`, generó lote `AUTO-4-20260620`, asignó sucursal `Matriz Principal`, creó `MovimientoCaja` y bajó stock exacto `100 -> 99`
+
+Hallazgo aún abierto en esta ronda:
+
+- rendimiento transversal: varios endpoints simples siguen registrando latencias locales de ~4s a ~6s con apenas 2-8 queries (`/api/pacientes/buscar/`, `/laboratorio/api/orden/<id>/datos/`, `/laboratorio/api/orden/<id>/editar-estudios/`); la telemetría crítica de performance no parece ser la causa directa porque crea incidencias en hilo aparte
+
 ## 5. Verificaciones ejecutadas por Codex en este cierre
 
 Verificaciones estructurales:
@@ -442,3 +489,260 @@ Mi criterio profesional en este punto es:
 - ya esta listo para que Claude y Cascada entren a revisar
 - no porque "ya no haya nada mas por hacer"
 - sino porque la base ya es suficientemente estable, probada y documentada para que la siguiente fase sea auditoria seria y cierre final, no rescate
+ 
+## 11. Actualización adicional 2026-06-20
+ 
+### 11.1 Consultorio rápido validado y corregido
+ 
+Se auditó el flujo rápido de consultorio usando endpoints reales del módulo:
+ 
+- `/consultorio/api/crear-paciente-y-consulta/`
+- `/consultorio/api/buscar-pacientes/`
+- `/consultorio/api/crear-consulta-directa/`
+- `/consultorio/api/generar-receta-inmediata/`
+- `/consultorio/api/analizar-transcripcion/`
+- `/consultorio/pdf/receta/<consulta_id>/`
+ 
+Hallazgo real:
+ 
+- el flujo rápido creaba `CitaMedica`, pero no garantizaba `ConsultaMedica`
+- eso provocaba que la transcripción SOAP no se persistiera realmente
+ 
+Corrección aplicada:
+ 
+- en [consultorio/views.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\consultorio\views.py) ahora `api_crear_consulta_directa` y `api_crear_paciente_y_consulta` crean o recuperan `ConsultaMedica`
+- después del ajuste, `api_analizar_transcripcion` ya guarda `transcripcion_completa` correctamente
+ 
+### 11.2 PDFs médicos y tickets
+ 
+Se corrigió una falla real en el PDF legacy:
+ 
+- ruta: `/medico/receta/<id>/pdf/`
+- error original: acceso a atributo inexistente `receta.medico_universidad`
+ 
+Corrección:
+ 
+- [core/views/medico.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\medico.py) ahora usa `getattr(...)` seguro
+- también se corrigió el formato del IMC para evitar errores con valores nulos
+ 
+Validaciones:
+ 
+- `/medico/receta/<id>/pdf/` ya responde PDF
+- `/consultorio/pdf/receta/<consulta_id>/` responde PDF correcto
+- `/farmacia/ticket/<venta_id>/raw/` operativo
+- `/laboratorio/ticket/<orden_id>/` operativo
+- `/laboratorio/resultados/<orden_id>/pdf/` mantiene redirección esperada a captura cuando aún no se cumple el blindaje completo
+ 
+### 11.3 Rendimiento - reducción de cold start por imports
+ 
+Se identificó que el mayor castigo del primer request no estaba en la lógica de búsqueda de pacientes, sino en imports pesados durante la carga del router.
+ 
+Evidencia de auditoría:
+ 
+- llamada directa a la vista de búsqueda: milisegundos
+- request completo con `Client()`: varios segundos
+- perfilado apuntó a carga temprana de:
+  - `consultorio/api_views.py`
+  - `core/services/ai_medico.py`
+  - `core/views/pris_ia.py`
+  - módulos del router raíz
+ 
+Correcciones aplicadas:
+ 
+1. [consultorio/api_views.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\consultorio\api_views.py)
+   - imports de IA médica movidos dentro de las funciones de audio
+ 
+2. [config/urls.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\config\urls.py)
+   - se agregó `lazy_view(...)`
+   - se difirió carga de módulos pesados:
+     - `core.views.pris_ia`
+     - `core.views.prisci_webhook`
+     - `core.views.voice`
+     - `core.views.push`
+     - `core.views.notificaciones`
+     - `core.views.nomina`
+     - `core.views.crm`
+     - `core.views.comunicacion`
+ 
+Resultado:
+ 
+- la penalización del primer request quedó reducida de forma tangible en pruebas locales previas
+- falta validación final en VPS con stack real `Nginx + Gunicorn`
+ 
+### 11.4 Nota importante de validación local
+
+Al intentar correr verificaciones Django adicionales en este entorno local apareció un bloqueo ajeno al cambio:
+ 
+- `PermissionError` sobre `logs/prislab_audit.log`
+- handler afectado: `file_audit`
+ 
+Conclusión:
+ 
+- no apunta a error sintáctico del código nuevo
+- sí conviene revisar permisos de la carpeta `logs/` o endurecer el fallback de logging para auditorías locales futuras
+
+### 11.5 Corrección crítica de Recepción Laboratorio
+
+Se detectó el bug que ya se había manifestado en producción:
+
+- la interfaz de recepción mostraba estudios agregados correctamente
+- pero al confirmar podía terminar en error de validación porque el endpoint seguía usando una implementación legacy basada en `laboratorio.Estudio`
+
+Hallazgo técnico:
+
+- [core/templates/core/recepcion_lab.html](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\templates\core\recepcion_lab.html) envía tokens del catálogo LIMS como:
+  - `analito:ID`
+  - `perfil:ID`
+  - `paquete:ID`
+- [core/views/laboratorio.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\laboratorio.py) todavía tenía una `crear_orden_servicio` legacy que intentaba resolver eso contra `laboratorio.Estudio`
+
+Corrección aplicada:
+
+- `crear_orden_servicio` ahora delega directamente a [core/services/lims/orden_recepcion_service.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\services\lims\orden_recepcion_service.py)
+- con eso queda alineado al mismo flujo LIMS usado por el resto del sistema
+
+Impacto esperado:
+
+- desaparece el falso negativo de “sí hay estudios visualmente, pero backend dice que no”
+- la orden ahora conserva:
+  - líneas LIMS correctas
+  - convenio
+  - médico referidor
+  - cortesía / CxC
+  - pago inicial e idempotencia
+
+### 11.6 Blindaje adicional en Farmacia PDV
+
+Se agregó validación defensiva en backend para evitar ventas inconsistentes:
+
+- [core/services/ventas/venta_farmacia_service.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\services\ventas\venta_farmacia_service.py)
+
+Protecciones nuevas:
+
+- rechaza carrito vacío
+- rechaza cantidades no numéricas
+- rechaza cantidades menores o iguales a cero
+
+Motivo:
+
+- aunque la UI normalmente lo evita, el backend no debe crear ventas vacías ni detalles imposibles si llega una petición dañada o incompleta
+
+### 11.7 Ajuste multitenant en Consultorio + LIMS
+
+Se corrigió una fuga potencial de resolución de catálogo:
+
+- [consultorio/views.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\consultorio\views.py)
+
+Hallazgo:
+
+- en la generación de órdenes de laboratorio desde consultorio se llamaba `resolve_lims_cart_ids(...)` sin pasar `empresa`
+- eso no siempre falla visible, pero sí permite resolver por coincidencia de IDs fuera del tenant correcto
+
+Corrección aplicada:
+
+- ahora los dos flujos de consultorio que convierten estudios a líneas LIMS pasan `empresa=empresa`
+
+Impacto:
+
+- mayor consistencia multiempresa
+- menor riesgo de mezclar catálogo entre tenants cuando el sistema ya opere con más laboratorios
+
+### 11.8 Devoluciones Farmacia - cierre operativo real
+
+Se detectó un hueco funcional importante en devoluciones:
+
+- el flujo sí registraba `SalesReturn`
+- pero no estaba garantizando la devolución física de stock a inventario en esta capa
+
+Correcciones aplicadas en [core/services/ventas/venta_farmacia_service.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\services\ventas\venta_farmacia_service.py):
+
+- normalización de contrato frontend:
+  - `REINGRESAR` ahora se traduce a `RETORNO_ALMACEN`
+- validación de acción de stock permitida
+- si la devolución total no trae detalle explícito, se construyen las partidas usando todo lo vendido
+- prevención de sobredevoluciones acumuladas por partida
+- reingreso real de inventario por lote con `MovimientoInventario(tipo_movimiento='ENTRADA_DEVOLUCION')` cuando la acción es retorno a almacén
+
+Impacto:
+
+- la devolución deja de ser solo administrativa
+- el Kardex vuelve a reflejar inventario real
+- se conserva trazabilidad por lote en devoluciones parciales o totales
+
+### 11.9 Devoluciones frontend reales + corte de caja laboratorio
+
+Se cerraron dos hallazgos más de operación real:
+
+- [core/services/ventas/venta_farmacia_service.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\services\ventas\venta_farmacia_service.py)
+- [core/views/farmacia.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\farmacia.py)
+
+Hallazgo 1:
+
+- la pantalla real de devoluciones envía `productos_devueltos`
+- el backend estaba leyendo `productos`
+- eso podía dejar devoluciones parciales sin detalle operativo válido
+
+Corrección aplicada:
+
+- el servicio ahora acepta ambos nombres de payload: `productos` y `productos_devueltos`
+- además rechaza devoluciones parciales si no llega al menos una partida válida
+
+Hallazgo 2:
+
+- el corte de caja unificado estaba sumando laboratorio por `OrdenDeServicio.total`
+- eso inflaba el corte con órdenes creadas el día aunque no estuvieran realmente cobradas
+
+Corrección aplicada:
+
+- laboratorio ahora aporta al corte solo por cobranzas reales registradas en `PagoOrden`
+- `total_lab` queda alineado con efectivo y digital realmente cobrados
+
+Impacto:
+
+- devoluciones parciales ya siguen el contrato real del frontend
+- el corte de caja refleja mejor la operación de laboratorio en caja diaria
+
+### 11.10 URL rota en órdenes de laboratorio generadas desde consultorio
+
+Se cerró un bug de navegación real:
+
+- [consultorio/views.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\consultorio\views.py)
+- [core/views/paciente_detalle.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\core\views\paciente_detalle.py)
+
+Hallazgo:
+
+- el flujo de consultorio devolvía `url_detalle = /laboratorio/orden/<id>/`
+- esa ruta no existe en [config/urls.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\config\urls.py)
+- el mismo enlace muerto aparecía en el timeline/historial clínico del paciente
+
+Corrección aplicada:
+
+- ambos puntos ahora enlazan a una ruta real de laboratorio: `reverse('imprimir_ticket_lab', args=[orden.id])`
+
+Impacto:
+
+- la orden creada desde consulta ya abre una vista existente
+- el historial del paciente deja de tener botones “ver” que mandan a 404
+
+### 11.11 Soporte preparado para Vultr Object Storage (S3-compatible)
+
+Se dejó lista la integración del SaaS con almacenamiento S3-compatible de Vultr para media operativa:
+
+- [config/settings.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\config\settings.py)
+- [config/storage_backends.py](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\config\storage_backends.py)
+- [requirements.txt](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\requirements.txt)
+- [.env.example](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\.env.example)
+- [env_produccion.txt](C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\env_produccion.txt)
+
+Cambios aplicados:
+
+- nuevo backend `TenantS3Storage` basado en `django-storages` para prefijar automáticamente `{empresa_slug}/...`
+- nuevas variables `VULTR_OBJECT_STORAGE_ENABLED`, `VULTR_S3_ACCESS_KEY_ID`, `VULTR_S3_SECRET_ACCESS_KEY`, `VULTR_S3_ENDPOINT_URL`, `VULTR_S3_BUCKET_NAME`
+- prioridad explícita de Vultr Object Storage sobre Google Drive cuando ambos estén configurados
+- dependencia `boto3` agregada para soporte S3 real
+
+Impacto:
+
+- PRISLAB ya no queda atado solo a local + Drive para media
+- se puede mover media operativa del SaaS a `prislab-media` sin tocar Academia
+- Academia puede seguir yendo a una plataforma aparte de streaming protegido

@@ -147,3 +147,46 @@ class DevolucionesFarmaciaAPITest(TestCase):
         devolucion = SalesReturn.objects.filter(venta_original=self.venta).first()
         self.assertIsNotNone(devolucion)
         self.assertIn('productos_devueltos', devolucion.observaciones or '')
+
+    def test_procesar_devolucion_acepta_productos_devueltos_del_frontend_real(self):
+        """La API debe aceptar el nombre de payload que envía la pantalla real."""
+        from core.models import SalesReturn
+
+        detalle = self.venta.detalles.first()
+        payload = {
+            'venta_id': self.venta.id,
+            'tipo_devolucion': 'PARCIAL',
+            'monto_reembolsado': '80.00',
+            'motivo_error': 'Error en captura',
+            'accion_stock': 'REINGRESAR',
+            'productos_devueltos': [
+                {'detalle_id': detalle.id, 'cantidad': 1, 'motivo': 'Producto incorrecto'}
+            ],
+        }
+        response = self.client.post(
+            '/farmacia/devoluciones/procesar/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        devolucion = SalesReturn.objects.filter(venta_original=self.venta).latest('id')
+        self.assertIn('productos_devueltos', devolucion.observaciones or '')
+
+    def test_procesar_devolucion_parcial_rechaza_sin_partidas_validas(self):
+        """Una devolución parcial sin partidas reales no debe registrarse."""
+        payload = {
+            'venta_id': self.venta.id,
+            'tipo_devolucion': 'PARCIAL',
+            'monto_reembolsado': '80.00',
+            'motivo_error': 'Sin detalle',
+            'accion_stock': 'REINGRESAR',
+            'productos_devueltos': [],
+        }
+        response = self.client.post(
+            '/farmacia/devoluciones/procesar/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertEqual(data['status'], 'error')

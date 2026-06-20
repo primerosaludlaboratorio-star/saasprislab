@@ -383,11 +383,59 @@ GOOGLE_DRIVE_DIRECT_STORAGE = (
     .lower() in ('1', 'true', 'yes', 'on')
 )
 
+# Vultr Object Storage (S3-compatible) para media operativa del SaaS
+VULTR_OBJECT_STORAGE_ENABLED = _env_bool('VULTR_OBJECT_STORAGE_ENABLED', False)
+VULTR_S3_ACCESS_KEY_ID = (os.environ.get('VULTR_S3_ACCESS_KEY_ID') or '').strip()
+VULTR_S3_SECRET_ACCESS_KEY = (os.environ.get('VULTR_S3_SECRET_ACCESS_KEY') or '').strip()
+VULTR_S3_ENDPOINT_URL = (os.environ.get('VULTR_S3_ENDPOINT_URL') or '').strip().rstrip('/')
+VULTR_S3_BUCKET_NAME = (os.environ.get('VULTR_S3_BUCKET_NAME') or '').strip()
+VULTR_S3_CUSTOM_DOMAIN = (os.environ.get('VULTR_S3_CUSTOM_DOMAIN') or '').strip()
+VULTR_S3_QUERYSTRING_AUTH = _env_bool('VULTR_S3_QUERYSTRING_AUTH', True)
+VULTR_S3_FILE_OVERWRITE = _env_bool('VULTR_S3_FILE_OVERWRITE', False)
+VULTR_S3_DEFAULT_ACL = (os.environ.get('VULTR_S3_DEFAULT_ACL') or '').strip() or None
+
+if VULTR_OBJECT_STORAGE_ENABLED:
+    AWS_ACCESS_KEY_ID = VULTR_S3_ACCESS_KEY_ID
+    AWS_SECRET_ACCESS_KEY = VULTR_S3_SECRET_ACCESS_KEY
+    AWS_STORAGE_BUCKET_NAME = VULTR_S3_BUCKET_NAME
+    AWS_S3_ENDPOINT_URL = VULTR_S3_ENDPOINT_URL
+    AWS_S3_REGION_NAME = None
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    AWS_S3_ADDRESSING_STYLE = 'virtual'
+    AWS_DEFAULT_ACL = VULTR_S3_DEFAULT_ACL
+    AWS_QUERYSTRING_AUTH = VULTR_S3_QUERYSTRING_AUTH
+    AWS_S3_FILE_OVERWRITE = VULTR_S3_FILE_OVERWRITE
+    AWS_S3_CUSTOM_DOMAIN = VULTR_S3_CUSTOM_DOMAIN or None
+    AWS_S3_VERIFY = True
+
 # STORAGES base (puede ser sobreescrito por Drive abajo)
 STORAGES = {
     "default": {"BACKEND": "config.storage_backends.BufferLocalStorage"},
     "staticfiles": {"BACKEND": 'django.contrib.staticfiles.storage.StaticFilesStorage'},
 }
+
+if VULTR_OBJECT_STORAGE_ENABLED:
+    _faltantes_vultr = [
+        nombre for nombre, valor in {
+            'VULTR_S3_ACCESS_KEY_ID': VULTR_S3_ACCESS_KEY_ID,
+            'VULTR_S3_SECRET_ACCESS_KEY': VULTR_S3_SECRET_ACCESS_KEY,
+            'VULTR_S3_ENDPOINT_URL': VULTR_S3_ENDPOINT_URL,
+            'VULTR_S3_BUCKET_NAME': VULTR_S3_BUCKET_NAME,
+        }.items() if not valor
+    ]
+    if _faltantes_vultr:
+        logging.getLogger('config').warning(
+            '[STORAGE] Vultr Object Storage habilitado pero incompleto. '
+            'Faltan variables: %s. Se mantiene BufferLocalStorage.',
+            ', '.join(_faltantes_vultr),
+        )
+    else:
+        STORAGES["default"] = {"BACKEND": "config.storage_backends.TenantS3Storage"}
+        logging.getLogger('config').info(
+            '[STORAGE] Vultr Object Storage activo como backend default (%s / %s)',
+            VULTR_S3_BUCKET_NAME,
+            VULTR_S3_ENDPOINT_URL,
+        )
 
 try:
     from config.drive_credentials import get_drive_credentials
@@ -396,9 +444,14 @@ try:
         GOOGLE_DRIVE_CREDENTIALS = _drive_creds
         import logging as _log_drive
         if GOOGLE_DRIVE_DIRECT_STORAGE:
-            STORAGES["default"] = {"BACKEND": "config.storage_backends.GoogleDriveStorage"}
-            _DRIVE_STORAGE_ACTIVO = True
-            _log_drive.getLogger('config').info("[STORAGE] Google Drive directo activo para archivos media")
+            if VULTR_OBJECT_STORAGE_ENABLED:
+                _log_drive.getLogger('config').info(
+                    "[STORAGE] Google Drive directo solicitado, pero Vultr Object Storage conserva prioridad como backend default."
+                )
+            else:
+                STORAGES["default"] = {"BACKEND": "config.storage_backends.GoogleDriveStorage"}
+                _DRIVE_STORAGE_ACTIVO = True
+                _log_drive.getLogger('config').info("[STORAGE] Google Drive directo activo para archivos media")
         else:
             _log_drive.getLogger('config').info(
                 "[STORAGE] Credenciales Drive resueltas. "

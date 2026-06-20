@@ -40,6 +40,7 @@ channels-redis==4.1.0
 gunicorn==22.0.0
 django-pwa==1.1.0
 django-storages==1.14.2
+boto3>=1.34.0,<2
 
 # Datos y Análisis
 numpy>=1.26.4

@@ -48,6 +48,7 @@ from django.utils.deconstruct import deconstructible
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
 from googleapiclient.errors import HttpError
+from storages.backends.s3 import S3Storage
 
 logger = logging.getLogger('config.storage')
 DRIVE_REQUEST_TIMEOUT = 30
@@ -396,6 +397,38 @@ class TenantDriveStorage(GoogleDriveStorage):
         slug = self._tenant_slug or 'default'
         tenant_path = f'{slug}/{path}' if path and path != '.' else slug
         return super()._get_or_create_folder_path(tenant_path)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 3-B. TENANT S3 STORAGE — Vultr Object Storage (S3 compatible)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@deconstructible
+class TenantS3Storage(S3Storage):
+    """
+    Backend S3-compatible para Vultr Object Storage con prefijo automático por tenant.
+
+    Mantiene el mismo aislamiento lógico que Drive:
+      {empresa_slug}/resultados/...
+      {empresa_slug}/expedientes/...
+      {empresa_slug}/logos/...
+    """
+
+    default_acl = None
+    file_overwrite = False
+
+    def __init__(self, tenant_slug: str = '', **kwargs):
+        super().__init__(**kwargs)
+        self._tenant_slug = tenant_slug or _get_thread_tenant_slug()
+
+    def _normalizar_nombre_tenant(self, name: str) -> str:
+        return _insertar_tenant_en_ruta(name)
+
+    def _save(self, name, content):
+        return super()._save(self._normalizar_nombre_tenant(name), content)
+
+    def get_available_name(self, name, max_length=None):
+        return super().get_available_name(self._normalizar_nombre_tenant(name), max_length=max_length)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

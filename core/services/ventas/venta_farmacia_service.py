@@ -6,8 +6,9 @@ import json
 import logging
 import time as time_module
 import uuid as uuid_module
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
+from types import SimpleNamespace
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import F, Q
@@ -27,6 +28,7 @@ from core.models import (
     Producto,
     Receta,
     SalesReturn,
+    Sucursal,
     Venta,
 )
 from core.utils.trazabilidad import registrar_trazabilidad
@@ -45,6 +47,65 @@ def _int_or_none(value):
 
 class VentaFarmaciaService:
     """Cobro PDV, Kardex PEPS y búsqueda de catálogo por empresa (sin lógica en la vista)."""
+
+    @staticmethod
+    def materializar_lote_operativo_si_falta(producto, empresa):
+        """
+        Convierte stock heredado (Producto.stock sin lotes) en un lote operativo.
+
+        Esto evita que el PDV muestre un producto como vendible y luego falle al cobrar
+        por no tener trazabilidad PEPS cargada todavía.
+        """
+        if not producto or not empresa:
+            return None
+
+        if producto.lotes.exists():
+            return None
+
+        stock_actual = int(producto.stock or 0)
+        if stock_actual <= 0 or getattr(producto, 'es_servicio', False):
+            return None
+
+        hoy = timezone.now().date()
+        return Lote.objects.create(
+            empresa=empresa,
+            producto=producto,
+            numero_lote=f"AUTO-{producto.id}-{hoy.strftime('%Y%m%d')}",
+            fecha_caducidad=hoy + timedelta(days=3650),
+            cantidad=stock_actual,
+            costo_adquisicion=producto.precio_compra or Decimal('0.00'),
+            ubicacion_fisica='AUTO-MIGRADO-PDV',
+        )
+
+    @staticmethod
+    def resolver_sucursal_operativa(usuario, empresa):
+        """Obtiene una sucursal operativa o crea una matriz mínima para empresa única."""
+        sucursal = getattr(usuario, 'sucursal', None)
+        if sucursal:
+            return sucursal
+
+        sucursal = empresa.sucursales.filter(activa=True).order_by('pk').first()
+        if sucursal:
+            return sucursal
+
+        sucursal = empresa.sucursales.order_by('pk').first()
+        if sucursal:
+            return sucursal
+
+        base_codigo = f"AUTO-SUC-{empresa.pk}"
+        codigo = base_codigo
+        i = 1
+        while Sucursal.objects.filter(codigo_sucursal=codigo).exists():
+            i += 1
+            codigo = f"{base_codigo}-{i}"
+
+        return Sucursal.objects.create(
+            empresa=empresa,
+            nombre='Matriz Principal',
+            codigo_sucursal=codigo,
+            direccion='Configuracion automatica inicial',
+            activa=True,
+        )
 
     @staticmethod
     def buscar_productos_pdv(empresa, termino):
@@ -159,6 +220,7 @@ class VentaFarmaciaService:
         try:
             with transaction.atomic():
                 usuario = request.user
+                sucursal_operativa = VentaFarmaciaService.resolver_sucursal_operativa(usuario, empresa)
             
                 # 1. Obtener paciente si existe
                 paciente = None
@@ -202,6 +264,37 @@ class VentaFarmaciaService:
                     subtotal = Decimal('0.00')
                     iva_total = Decimal('0.00')
                     redondeo = Decimal('0.00')
+
+                # 2.5 Validación defensiva del carrito
+                items = data.get('items', [])
+                if not isinstance(items, list) or not items:
+                    return JsonResponse(
+                        {
+                            'status': 'error',
+                            'mensaje': 'Debe agregar al menos un producto a la venta.',
+                        },
+                        status=400,
+                    )
+
+                for idx, raw_item in enumerate(items, start=1):
+                    try:
+                        cantidad_item = int(raw_item.get('cantidad', 1))
+                    except (TypeError, ValueError, AttributeError):
+                        return JsonResponse(
+                            {
+                                'status': 'error',
+                                'mensaje': f'La cantidad del producto #{idx} no es válida.',
+                            },
+                            status=400,
+                        )
+                    if cantidad_item <= 0:
+                        return JsonResponse(
+                            {
+                                'status': 'error',
+                                'mensaje': f'La cantidad del producto #{idx} debe ser mayor a cero.',
+                            },
+                            status=400,
+                        )
             
                 # 3. Generar folio único
                 max_intentos = 10
@@ -336,6 +429,7 @@ class VentaFarmaciaService:
                 venta_kw = dict(
                     empresa=empresa,
                     usuario=usuario,
+                    sucursal=sucursal_operativa,
                     folio_operacion=folio_generado,
                     subtotal=subtotal,
                     impuestos_iva=iva_total,
@@ -353,6 +447,7 @@ class VentaFarmaciaService:
                     motivo_cortesia=motivo_cortesia or None,
                     autorizado_por_cortesia=autorizado_por_cortesia or None,
                     total_original=(total_original if es_cortesia else None),
+                    inventario_descontado=True,
                 )
                 if hasattr(Venta, 'cupon_marketing') and cupon_marketing is not None:
                     venta_kw['cupon_marketing'] = cupon_marketing
@@ -405,7 +500,6 @@ class VentaFarmaciaService:
                         pass
             
                 # 6. ALGORITMO PEPS/FIFO MEJORADO: Crear DetalleVenta y actualizar stock multi-lote
-                items = data.get('items', [])
                 lotes_afectados = []  # Para auditoría detallada
                 _hoy = date.today()  # Fecha de hoy para filtrar lotes caducados
 
@@ -430,6 +524,7 @@ class VentaFarmaciaService:
                     get_object_or_404(Producto, id=producto_id, empresa=empresa)
                     # ACAYUCAN v7.5: serializar ventas concurrentes por producto (junto con lotes bloqueados)
                     producto = Producto.objects.select_for_update().get(pk=producto_id, empresa=empresa)
+                    VentaFarmaciaService.materializar_lote_operativo_si_falta(producto, empresa)
                 
                     cantidad = int(item_data.get('cantidad', 1))
                     cantidad_restante = cantidad  # Cantidad que aún falta descontar
@@ -485,7 +580,7 @@ class VentaFarmaciaService:
                         # El método save() del MovimientoInventario actualizará automáticamente el stock
                         movimiento = MovimientoInventario(
                             empresa=empresa,
-                            sucursal=getattr(request.user, 'sucursal', None),
+                            sucursal=sucursal_operativa,
                             producto=producto,
                             lote=lote,
                             tipo_movimiento='SALIDA_VENTA',
@@ -619,6 +714,8 @@ class VentaFarmaciaService:
             
                 # 9. ACTUALIZAR META DE VENTA (Impacto en Metas)
                 sucursal_venta = getattr(request.user, 'sucursal', None)
+                if not sucursal_venta:
+                    sucursal_venta = sucursal_operativa
                 fecha_actual = timezone.now().date()
             
                 if sucursal_venta:
@@ -790,9 +887,21 @@ class VentaFarmaciaService:
             monto = Decimal('0')
         tipo = data.get('tipo_devolucion') or data.get('tipo', 'TOTAL')
         motivo = data.get('motivo_error') or data.get('motivo', '')
-        accion_stock = data.get('accion_stock') or 'RETORNO_ALMACEN'
+        accion_stock = (data.get('accion_stock') or 'RETORNO_ALMACEN').strip().upper()
+        if accion_stock == 'REINGRESAR':
+            accion_stock = 'RETORNO_ALMACEN'
+        if accion_stock not in {'RETORNO_ALMACEN', 'MERMA_DESECHO'}:
+            return {
+                'http_status': 400,
+                'body': {'status': 'error', 'mensaje': 'acción de stock no válida'},
+            }
         try:
-            venta = Venta.objects.get(id=venta_id, empresa=empresa)
+            venta = Venta.objects.prefetch_related(
+                'detalles__producto',
+                'detalles__lote_vendido',
+                'detalles__lotes_extraidos__lote',
+                'devoluciones',
+            ).get(id=venta_id, empresa=empresa)
         except Venta.DoesNotExist:
             return {'http_status': 404, 'body': {'status': 'error', 'mensaje': 'Venta no encontrada'}}
         if monto <= 0:
@@ -805,28 +914,88 @@ class VentaFarmaciaService:
                     'mensaje': f'Monto excede el total de la venta (${venta.total})',
                 },
             }
-        productos = data.get('productos') or []
+        productos = (
+            data.get('productos')
+            or data.get('productos_devueltos')
+            or []
+        )
         if isinstance(productos, str):
             try:
                 productos = json.loads(productos)
             except (json.JSONDecodeError, TypeError):
                 productos = []
-        detalle_ids_venta = set(venta.detalles.values_list('id', flat=True))
+
+        detalles_map = {d.id: d for d in venta.detalles.all()}
+        if tipo == 'TOTAL' and not productos:
+            productos = [
+                {'detalle_id': d.id, 'cantidad': d.cantidad, 'motivo': motivo}
+                for d in detalles_map.values()
+            ]
+
+        def _cantidad_ya_devuelta(venta_obj):
+            acumulado = {}
+            for devolucion_prev in venta_obj.devoluciones.all():
+                raw_obs = devolucion_prev.observaciones or ''
+                if 'productos_devueltos' not in raw_obs:
+                    continue
+                try:
+                    idx = raw_obs.index('{')
+                    blob = json.loads(raw_obs[idx:])
+                except (ValueError, json.JSONDecodeError, TypeError):
+                    continue
+                for item in blob.get('productos_devueltos', []):
+                    did = _int_or_none(item.get('detalle_id'))
+                    qty = _int_or_none(item.get('cantidad')) or 0
+                    if did:
+                        acumulado[did] = acumulado.get(did, 0) + max(qty, 0)
+            return acumulado
+
+        devuelto_previo = _cantidad_ya_devuelta(venta)
         productos_validados = []
         for p in productos:
             detalle_id = _int_or_none(p.get('detalle_id')) or _int_or_none(p.get('id'))
-            if detalle_id and detalle_id in detalle_ids_venta:
-                productos_validados.append({
-                    'detalle_id': detalle_id,
-                    'cantidad': p.get('cantidad', 1),
-                    'motivo': p.get('motivo', '') or motivo,
-                })
+            detalle = detalles_map.get(detalle_id) if detalle_id else None
+            if not detalle:
+                continue
+            cantidad = _int_or_none(p.get('cantidad')) or 0
+            if cantidad <= 0:
+                return {
+                    'http_status': 400,
+                    'body': {'status': 'error', 'mensaje': 'La cantidad devuelta debe ser mayor a cero'},
+                }
+            ya_devuelta = devuelto_previo.get(detalle_id, 0)
+            disponible = int(detalle.cantidad or 0) - ya_devuelta
+            if cantidad > disponible:
+                return {
+                    'http_status': 400,
+                    'body': {
+                        'status': 'error',
+                        'mensaje': (
+                            f'La partida {detalle_id} ya no tiene cantidad disponible suficiente para devolución '
+                            f'(disponible: {max(disponible, 0)}).'
+                        ),
+                    },
+                }
+            productos_validados.append({
+                'detalle_id': detalle_id,
+                'cantidad': cantidad,
+                'motivo': p.get('motivo', '') or motivo,
+            })
+        if tipo == 'PARCIAL' and not productos_validados:
+            return {
+                'http_status': 400,
+                'body': {
+                    'status': 'error',
+                    'mensaje': 'Debe seleccionar al menos un producto válido para devolución parcial',
+                },
+            }
         observaciones = data.get('observaciones', '')
         if productos_validados:
             observaciones_json = json.dumps({'productos_devueltos': productos_validados}, ensure_ascii=False)
             observaciones = f"{observaciones}\n\nDetalle de productos:\n{observaciones_json}".strip()
         try:
             from core.services.audit_service import registrar_auditoria
+            from farmacia.models import MovimientoInventario
             with transaction.atomic():
                 devolucion = SalesReturn.objects.create(
                     empresa=empresa,
@@ -839,6 +1008,46 @@ class VentaFarmaciaService:
                     accion_stock=accion_stock,
                     observaciones=observaciones or None,
                 )
+
+                if accion_stock == 'RETORNO_ALMACEN':
+                    for item in productos_validados:
+                        detalle = detalles_map.get(item['detalle_id'])
+                        if not detalle or not detalle.producto:
+                            continue
+                        cantidad_retorno = int(item['cantidad'])
+                        lotes_fuente = list(detalle.lotes_extraidos.all())
+                        if not lotes_fuente and detalle.lote_vendido_id:
+                            lotes_fuente = [SimpleNamespace(lote=detalle.lote_vendido, cantidad_extraida=detalle.cantidad)]
+
+                        restante = cantidad_retorno
+                        for uso in lotes_fuente:
+                            lote = getattr(uso, 'lote', None)
+                            extraida = int(getattr(uso, 'cantidad_extraida', 0) or 0)
+                            if not lote or extraida <= 0 or restante <= 0:
+                                continue
+                            cantidad_lote = min(restante, extraida)
+                            MovimientoInventario.objects.create(
+                                empresa=empresa,
+                                sucursal=getattr(request.user, 'sucursal', None),
+                                producto=detalle.producto,
+                                lote=lote,
+                                tipo_movimiento='ENTRADA_DEVOLUCION',
+                                cantidad=cantidad_lote,
+                                costo_unitario=(
+                                    detalle.costo_unitario_momento
+                                    or getattr(lote, 'costo_adquisicion', None)
+                                    or detalle.producto.precio_compra
+                                    or Decimal('0')
+                                ),
+                                venta=venta,
+                                usuario_responsable=request.user,
+                                observaciones=(
+                                    f'Devolución de cliente sobre venta #{venta.id} '
+                                    f'(detalle #{detalle.id}, devolución #{devolucion.id})'
+                                ),
+                            )
+                            restante -= cantidad_lote
+
                 registrar_auditoria(
                     accion='CREATE',
                     modelo='SalesReturn',

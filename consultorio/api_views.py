@@ -9,8 +9,6 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 import logging
 
-from core.services.ai_medico import procesar_consulta_medica, procesar_resultados_lab
-
 logger = logging.getLogger('ia')
 
 _ROLES_AUDIO_CONSULTA = {'DIRECTOR', 'ADMIN', 'ADMINISTRADOR', 'MEDICO'}
@@ -72,6 +70,7 @@ def procesar_audio_consulta(request):
         logger.info(f"Procesando audio de consulta médica (Usuario: {request.user.username})")
         
         # Procesar audio con IA
+        from core.services.ai_medico import procesar_consulta_medica
         datos = procesar_consulta_medica(audio_file)
         
         logger.info(f"Audio procesado exitosamente: {datos.keys()}")
@@ -166,6 +165,7 @@ def procesar_audio_laboratorio(request):
         logger.info(f"Procesando audio de laboratorio (Usuario: {request.user.username}, Estudio: {estudio_id})")
         
         # Procesar audio con IA
+        from core.services.ai_medico import procesar_resultados_lab
         datos = procesar_resultados_lab(audio_file, lista_parametros)
         
         logger.info(f"Audio de laboratorio procesado: {len(datos)} valores")

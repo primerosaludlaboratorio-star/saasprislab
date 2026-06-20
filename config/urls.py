@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
+from django.utils.module_loading import import_string
 from core import views
 from core.views import impresion as impresion_views
 from core.views import farmacia as farmacia_views
@@ -10,14 +11,6 @@ from core.views import laboratorio_captura as captura_views
 from core.views import laboratorio_reportes as reportes_views
 from core.views import finanzas as finanzas_views
 from core.views import motor_financiero as motor_fin_views
-from core.views import push as push_views
-from core.views import notificaciones as notif_views
-from core.views import nomina as nomina_views
-from core.views import crm as crm_views
-from core.views import voice as voice_views
-from core.views import comunicacion as chat_views
-from core.views import pris_ia as ia_views
-from core.views import prisci_webhook
 from core.views.administracion_usuarios import gestionar_usuarios
 from core.views.general import CustomLoginView, service_worker_view
 from core.views import autenticacion_2fa as views_2fa
@@ -44,6 +37,17 @@ from core.views.general import error_404, error_500, error_403  # noqa: E402
 handler404 = error_404
 handler500 = error_500
 handler403 = error_403
+
+
+def lazy_view(dotted_path):
+    """
+    Retrasa imports pesados de vistas hasta que realmente se consume la ruta.
+    Esto reduce el cold-start de requests que no usan IA, voz, CRM, nómina o chat.
+    """
+    def _wrapped_view(request, *args, **kwargs):
+        return import_string(dotted_path)(request, *args, **kwargs)
+    _wrapped_view.__name__ = dotted_path.rsplit('.', 1)[-1]
+    return _wrapped_view
 
 urlpatterns = [
     # Favicon — redirige al icono SVG para evitar 404 del browser
@@ -99,52 +103,52 @@ urlpatterns = [
     path('validar/resultado/<uuid:token>/', reportes_views.validar_resultado, name='validar_resultado'),
     
     # ========== PRIS SENTINEL V4: WEB PUSH NOTIFICATIONS ==========
-    path('api/push/vapid/', push_views.obtener_vapid_key, name='push_vapid_key'),
-    path('api/push/suscribir/', push_views.suscribir_push, name='push_suscribir'),
-    path('api/push/desuscribir/', push_views.desuscribir_push, name='push_desuscribir'),
-    path('api/push/estado/', push_views.estado_suscripciones, name='push_estado'),
-    path('api/push/test/', push_views.test_notificacion, name='push_test'),
+    path('api/push/vapid/', lazy_view('core.views.push.obtener_vapid_key'), name='push_vapid_key'),
+    path('api/push/suscribir/', lazy_view('core.views.push.suscribir_push'), name='push_suscribir'),
+    path('api/push/desuscribir/', lazy_view('core.views.push.desuscribir_push'), name='push_desuscribir'),
+    path('api/push/estado/', lazy_view('core.views.push.estado_suscripciones'), name='push_estado'),
+    path('api/push/test/', lazy_view('core.views.push.test_notificacion'), name='push_test'),
     
     # ========== PRIS VOICE COMMANDER: CONTROL POR VOZ ==========
-    path('api/voice/process/', voice_views.procesar_comando_api, name='voice_process'),
-    path('api/voice/history/', voice_views.historial_comandos, name='voice_history'),
-    path('api/voice/verify-auth/', voice_views.verificar_webauthn, name='voice_verify_auth'),
-    path('voice/logs/', voice_views.dashboard_voice_logs, name='voice_logs_dashboard'),
+    path('api/voice/process/', lazy_view('core.views.voice.procesar_comando_api'), name='voice_process'),
+    path('api/voice/history/', lazy_view('core.views.voice.historial_comandos'), name='voice_history'),
+    path('api/voice/verify-auth/', lazy_view('core.views.voice.verificar_webauthn'), name='voice_verify_auth'),
+    path('voice/logs/', lazy_view('core.views.voice.dashboard_voice_logs'), name='voice_logs_dashboard'),
     
     # ========== PRIS IA: ASISTENTE CONVERSACIONAL ==========
-    path('ia/asistente/', ia_views.asistente_page, name='pris_ia_asistente'),
-    path('ia/asistente/chat/', ia_views.asistente_chat, name='pris_ia_chat'),
-    path('ia/asistente/reset/', ia_views.asistente_reset, name='pris_ia_reset'),
-    path('api/prisci/webhook/', prisci_webhook.webhook, name='prisci_webhook'),
-    path('api/prisci/webhook/verify/', prisci_webhook.verify, name='prisci_webhook_verify'),
+    path('ia/asistente/', lazy_view('core.views.pris_ia.asistente_page'), name='pris_ia_asistente'),
+    path('ia/asistente/chat/', lazy_view('core.views.pris_ia.asistente_chat'), name='pris_ia_chat'),
+    path('ia/asistente/reset/', lazy_view('core.views.pris_ia.asistente_reset'), name='pris_ia_reset'),
+    path('api/prisci/webhook/', lazy_view('core.views.prisci_webhook.webhook'), name='prisci_webhook'),
+    path('api/prisci/webhook/verify/', lazy_view('core.views.prisci_webhook.verify'), name='prisci_webhook_verify'),
     # AccionPRIS — Auditoría ISO 15189
-    path('pris/api/acciones/pendientes/', ia_views.api_acciones_pendientes, name='pris_acciones_pendientes'),
-    path('pris/api/accion/<int:accion_id>/confirmar/', ia_views.api_confirmar_accion, name='pris_confirmar_accion'),
-    path('pris/api/accion/<int:accion_id>/rechazar/', ia_views.api_rechazar_accion, name='pris_rechazar_accion'),
+    path('pris/api/acciones/pendientes/', lazy_view('core.views.pris_ia.api_acciones_pendientes'), name='pris_acciones_pendientes'),
+    path('pris/api/accion/<int:accion_id>/confirmar/', lazy_view('core.views.pris_ia.api_confirmar_accion'), name='pris_confirmar_accion'),
+    path('pris/api/accion/<int:accion_id>/rechazar/', lazy_view('core.views.pris_ia.api_rechazar_accion'), name='pris_rechazar_accion'),
     
     # ========== SISTEMA DE NOTIFICACIONES INTERNAS ==========
-    path('notificaciones/', notif_views.lista_notificaciones, name='notificaciones_lista'),
-    path('notificaciones/badge/', notif_views.api_notificaciones_badge, name='notificaciones_badge'),
-    path('notificaciones/<int:notificacion_id>/leer/', notif_views.marcar_leida, name='notificacion_leer'),
-    path('notificaciones/marcar-todas/', notif_views.marcar_todas_leidas, name='notificaciones_marcar_todas'),
-    path('api/notificaciones/crear/', notif_views.api_crear_notificacion, name='api_crear_notificacion'),
+    path('notificaciones/', lazy_view('core.views.notificaciones.lista_notificaciones'), name='notificaciones_lista'),
+    path('notificaciones/badge/', lazy_view('core.views.notificaciones.api_notificaciones_badge'), name='notificaciones_badge'),
+    path('notificaciones/<int:notificacion_id>/leer/', lazy_view('core.views.notificaciones.marcar_leida'), name='notificacion_leer'),
+    path('notificaciones/marcar-todas/', lazy_view('core.views.notificaciones.marcar_todas_leidas'), name='notificaciones_marcar_todas'),
+    path('api/notificaciones/crear/', lazy_view('core.views.notificaciones.api_crear_notificacion'), name='api_crear_notificacion'),
 
     # ========== MÓDULO DE NÓMINA ==========
-    path('nomina/', nomina_views.dashboard_nomina, name='nomina_dashboard'),
-    path('nomina/periodos/', nomina_views.lista_periodos, name='nomina_lista_periodos'),
-    path('nomina/periodos/nuevo/', nomina_views.crear_periodo, name='nomina_crear_periodo'),
-    path('nomina/periodos/<int:pk>/', nomina_views.detalle_periodo, name='nomina_detalle_periodo'),
-    path('nomina/periodos/<int:pk>/pagar/', nomina_views.marcar_periodo_pagado, name='nomina_marcar_pagado'),
-    path('nomina/recibos/<int:pk>/editar/', nomina_views.editar_recibo, name='nomina_editar_recibo'),
-    path('nomina/api/resumen/', nomina_views.api_resumen_nomina, name='nomina_api_resumen'),
+    path('nomina/', lazy_view('core.views.nomina.dashboard_nomina'), name='nomina_dashboard'),
+    path('nomina/periodos/', lazy_view('core.views.nomina.lista_periodos'), name='nomina_lista_periodos'),
+    path('nomina/periodos/nuevo/', lazy_view('core.views.nomina.crear_periodo'), name='nomina_crear_periodo'),
+    path('nomina/periodos/<int:pk>/', lazy_view('core.views.nomina.detalle_periodo'), name='nomina_detalle_periodo'),
+    path('nomina/periodos/<int:pk>/pagar/', lazy_view('core.views.nomina.marcar_periodo_pagado'), name='nomina_marcar_pagado'),
+    path('nomina/recibos/<int:pk>/editar/', lazy_view('core.views.nomina.editar_recibo'), name='nomina_editar_recibo'),
+    path('nomina/api/resumen/', lazy_view('core.views.nomina.api_resumen_nomina'), name='nomina_api_resumen'),
 
     # ========== MÓDULO CRM ==========
-    path('crm/', crm_views.dashboard_crm, name='crm_dashboard'),
-    path('crm/prospectos/', crm_views.lista_prospectos, name='crm_lista_prospectos'),
-    path('crm/prospectos/nuevo/', crm_views.crear_prospecto, name='crm_crear_prospecto'),
-    path('crm/prospectos/<int:pk>/', crm_views.detalle_prospecto, name='crm_detalle_prospecto'),
-    path('crm/prospectos/<int:pk>/seguimiento/', crm_views.agregar_seguimiento, name='crm_agregar_seguimiento'),
-    path('crm/api/kanban/', crm_views.api_kanban_crm, name='crm_api_kanban'),
+    path('crm/', lazy_view('core.views.crm.dashboard_crm'), name='crm_dashboard'),
+    path('crm/prospectos/', lazy_view('core.views.crm.lista_prospectos'), name='crm_lista_prospectos'),
+    path('crm/prospectos/nuevo/', lazy_view('core.views.crm.crear_prospecto'), name='crm_crear_prospecto'),
+    path('crm/prospectos/<int:pk>/', lazy_view('core.views.crm.detalle_prospecto'), name='crm_detalle_prospecto'),
+    path('crm/prospectos/<int:pk>/seguimiento/', lazy_view('core.views.crm.agregar_seguimiento'), name='crm_agregar_seguimiento'),
+    path('crm/api/kanban/', lazy_view('core.views.crm.api_kanban_crm'), name='crm_api_kanban'),
 
     # ========== PRIS SENTINEL SHIELD — Telemetria Frontend (Rev 128) ==========
     path('api/sentinel/shield-telemetry/', views.api_shield_telemetry, name='sentinel_shield_telemetry'),
@@ -423,8 +427,8 @@ urlpatterns = [
     path('contabilidad/api/cuentas/', views.api_cuentas, name='api_cuentas'),
     
     # 13. MÓDULO DE NÓMINA — rutas adicionales (cálculo y autorización)
-    path('nomina/periodos/<int:periodo_id>/calcular/', nomina_views.calcular_nomina, name='calcular_nomina'),
-    path('nomina/recibos/<int:nomina_id>/autorizar/', nomina_views.autorizar_nomina, name='autorizar_nomina'),
+    path('nomina/periodos/<int:periodo_id>/calcular/', lazy_view('core.views.nomina.calcular_nomina'), name='calcular_nomina'),
+    path('nomina/recibos/<int:nomina_id>/autorizar/', lazy_view('core.views.nomina.autorizar_nomina'), name='autorizar_nomina'),
     
     # 14. MÓDULO DE ASISTENCIA
     path('asistencia/', views.dashboard_asistencia, name='dashboard_asistencia'),
@@ -541,11 +545,11 @@ urlpatterns = [
     path('dashboard-unificado/api/kpis-tiempo-real/', views.api_kpis_tiempo_real, name='api_kpis_tiempo_real'),
     
     # 17. SISTEMA DE NOTIFICACIONES — rutas adicionales
-    path('notificaciones/<int:notificacion_id>/marcar-leida/', notif_views.marcar_notificacion_leida, name='marcar_notificacion_leida'),
-    path('notificaciones/marcar-todas-leidas/', notif_views.marcar_todas_leidas, name='marcar_todas_leidas'),
-    path('notificaciones/api/no-leidas/', notif_views.api_notificaciones_no_leidas, name='api_notificaciones_no_leidas'),
-    path('notificaciones/configurar/', notif_views.configurar_notificaciones, name='configurar_notificaciones'),
-    path('notificaciones/ejecutar-verificaciones/', notif_views.ejecutar_verificaciones, name='ejecutar_verificaciones'),
+    path('notificaciones/<int:notificacion_id>/marcar-leida/', lazy_view('core.views.notificaciones.marcar_notificacion_leida'), name='marcar_notificacion_leida'),
+    path('notificaciones/marcar-todas-leidas/', lazy_view('core.views.notificaciones.marcar_todas_leidas'), name='marcar_todas_leidas'),
+    path('notificaciones/api/no-leidas/', lazy_view('core.views.notificaciones.api_notificaciones_no_leidas'), name='api_notificaciones_no_leidas'),
+    path('notificaciones/configurar/', lazy_view('core.views.notificaciones.configurar_notificaciones'), name='configurar_notificaciones'),
+    path('notificaciones/ejecutar-verificaciones/', lazy_view('core.views.notificaciones.ejecutar_verificaciones'), name='ejecutar_verificaciones'),
     
     # API PACIENTES (compartida entre módulos)
     path('api/pacientes/guardar/', views.api_guardar_paciente, name='api_guardar_paciente'),
@@ -588,12 +592,12 @@ urlpatterns = [
     path('lims/', include('lims.urls')),
     
     # 15. PRIS-CHAT: MENSAJERIA INTERNA (ESTILO WHATSAPP)
-    path('chat/', chat_views.chat_page, name='pris_chat'),
-    path('chat/api/enviar/', chat_views.api_enviar_mensaje, name='api_enviar_mensaje'),
-    path('chat/api/enviar-audio/', chat_views.api_enviar_audio, name='api_enviar_audio'),
-    path('chat/api/mensajes/', chat_views.api_obtener_mensajes, name='api_obtener_mensajes'),
-    path('chat/api/conversaciones/', chat_views.api_listar_conversaciones, name='api_listar_conversaciones'),
-    path('chat/api/usuarios/', chat_views.api_listar_usuarios, name='api_listar_usuarios'),
+    path('chat/', lazy_view('core.views.comunicacion.chat_page'), name='pris_chat'),
+    path('chat/api/enviar/', lazy_view('core.views.comunicacion.api_enviar_mensaje'), name='api_enviar_mensaje'),
+    path('chat/api/enviar-audio/', lazy_view('core.views.comunicacion.api_enviar_audio'), name='api_enviar_audio'),
+    path('chat/api/mensajes/', lazy_view('core.views.comunicacion.api_obtener_mensajes'), name='api_obtener_mensajes'),
+    path('chat/api/conversaciones/', lazy_view('core.views.comunicacion.api_listar_conversaciones'), name='api_listar_conversaciones'),
+    path('chat/api/usuarios/', lazy_view('core.views.comunicacion.api_listar_usuarios'), name='api_listar_usuarios'),
     
     # 16. API FARMACIA (LECTURA PARA MÉDICOS)
     path('farmacia/api/buscar-productos-lectura/', views.api_buscar_productos_lectura, name='api_buscar_productos_lectura'),

@@ -575,7 +575,8 @@ def generar_pdf_receta(request, receta_id):
         p.drawString(50, y, f"Temp: {receta.temperatura}°C")
         y -= 15
     if receta.peso and receta.talla:
-        p.drawString(50, y, f"Peso: {receta.peso} kg | Talla: {receta.talla} m | IMC: {receta.imc:.2f if receta.imc else 'N/A'}")
+        imc_txt = f"{receta.imc:.2f}" if receta.imc is not None else "N/A"
+        p.drawString(50, y, f"Peso: {receta.peso} kg | Talla: {receta.talla} m | IMC: {imc_txt}")
         y -= 15
     
     # Diagnóstico
@@ -747,8 +748,9 @@ def generar_pdf_receta(request, receta_id):
     y -= 18
     
     # Universidad
-    if receta.medico_universidad:
-        p.drawString(50, y, f"Universidad: {receta.medico_universidad}")
+    medico_universidad = getattr(receta, 'medico_universidad', None)
+    if medico_universidad:
+        p.drawString(50, y, f"Universidad: {medico_universidad}")
         y -= 18
     else:
         # Espacio reservado si no hay universidad
@@ -1013,4 +1015,3 @@ def descargar_pdf_ultrasonido(request, reporte_id):
         return response
     messages.error(request, 'No se pudo generar el PDF.')
     return redirect('lista_trabajo_usg')
-

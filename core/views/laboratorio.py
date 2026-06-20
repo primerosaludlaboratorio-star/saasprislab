@@ -283,7 +283,11 @@ def api_buscar_estudios(request):
 def api_listar_medicos(request):
     """API: lista médicos (maestro) para selección en recepción. Scoped by empresa."""
     empresa = getattr(request, 'empresa_actual', None) or getattr(request.user, 'empresa', None)
-    qs = Medico.objects.filter(empresa=empresa).order_by("nombre_completo")[:500] if empresa else Medico.objects.none()
+    qs = Medico.objects.filter(empresa=empresa, activo=True).order_by("nombre_completo") if empresa else Medico.objects.none()
+    termino = (request.GET.get('q') or request.GET.get('term') or '').strip()
+    if termino:
+        qs = qs.filter(nombre_completo__icontains=termino)
+    qs = qs[:500]
     data = [
         {
             "id": m.id,
@@ -351,43 +355,24 @@ def api_precios_convenio(request, convenio_id: int):
 
 
 @login_required
-
 def crear_orden_servicio(request):
-    from core.models import OrdenDeServicio, OrdenDetalle, Estudio
-    from decimal import Decimal
-    import json
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        paciente_id = data.get('paciente_id')
-        estudios_ids = data.get('estudios') or data.get('estudio_ids') or []
-        estudios_ids = [str(e).strip() for e in estudios_ids if str(e).strip()]
-        estudios_ids = list(dict.fromkeys(estudios_ids))
-        if not paciente_id or not estudios_ids:
-            return JsonResponse({'error': 'Datos incompletos'}, status=400)
-        empresa = request.user.empresa
-        total = Decimal('0')
-        estudios = Estudio.objects.filter(id__in=estudios_ids, empresa=empresa)
-        if not estudios.exists():
-            return JsonResponse({'error': 'No se encontraron estudios válidos para la empresa actual'}, status=400)
-        encontrados = {str(e.id) for e in estudios}
-        faltantes = [e for e in estudios_ids if e not in encontrados]
-        if faltantes:
-            return JsonResponse({
-                'error': 'Algunos estudios ya no están disponibles para esta empresa',
-                'faltantes': faltantes,
-            }, status=400)
-        for e in estudios:
-            total += e.precio_publico or Decimal('0')
-        orden = OrdenDeServicio.objects.create(
-            paciente_id=paciente_id,
-            empresa=empresa,
-            usuario=request.user,
-            total=total,
-            estado='PENDIENTE_PAGO'
-        )
-    for e in estudios:
-        OrdenDetalle.objects.create(orden=orden, estudio=e, precio_unitario=e.precio_publico)
-    return JsonResponse({'orden_id': orden.id, 'folio': orden.folio_orden})
+    """
+    Endpoint de recepción unificado.
+
+    La UI actual de laboratorio usa identificadores del catálogo LIMS
+    (`analito:ID`, `perfil:ID`, `paquete:ID`). La implementación legacy de esta
+    vista aún intentaba resolver contra `laboratorio.Estudio`, lo que provocaba
+    fallos falsos al confirmar órdenes aunque el carrito visual sí tuviera ítems.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'mensaje': 'Método no permitido'}, status=405)
+
+    empresa = getattr(request, 'empresa_actual', None) or getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}, status=403)
+
+    result = OrdenServicioLims.crear_desde_recepcion(request, empresa)
+    return JsonResponse(result['body'], status=result['http_status'])
 
 @login_required
 def api_ordenes_recientes(request):
@@ -2611,6 +2596,14 @@ def api_datos_orden(request, orden_id):
     for d in orden.detalles.all():
         k = _lims_line_key_detalle(d)
         if k[0] is None:
+            tid = f'legacy:{d.id}'
+            estudios.append({
+                'id': tid,
+                'nombre': (d.descripcion_linea or 'Estudio legacy')[:300],
+                'codigo': _detalle_codigo_lista(d),
+                'precio': float(d.precio_momento or 0),
+                'legacy': True,
+            })
             continue
         tid = f'{k[0]}:{k[1]}'
         estudios.append({
@@ -2713,8 +2706,21 @@ def api_editar_estudios_orden(request, orden_id):
     raw = data.get('estudio_ids') or data.get('lims_lineas') or []
     if isinstance(raw, (str, int)):
         raw = [raw]
-    lineas = resolve_lims_cart_ids(list(raw), empresa=empresa)
-    if not lineas:
+    raw = [str(x).strip() for x in raw if str(x).strip()]
+
+    legacy_detail_ids = set()
+    lims_ids = []
+    for item in raw:
+        if item.startswith('legacy:'):
+            try:
+                legacy_detail_ids.add(int(item.split(':', 1)[1]))
+            except (TypeError, ValueError):
+                continue
+        else:
+            lims_ids.append(item)
+
+    lineas = resolve_lims_cart_ids(lims_ids, empresa=empresa)
+    if not lineas and not legacy_detail_ids:
         return JsonResponse(
             {'ok': False, 'error': 'Debe incluir al menos una línea de catálogo LIMS válida'},
             status=400,
@@ -2730,9 +2736,11 @@ def api_editar_estudios_orden(request, orden_id):
 
     with _tx.atomic():
         orden = OrdenDeServicio.objects.select_for_update().get(id=orden_id, empresa=empresa)
-        DetalleOrden.objects.filter(orden=orden).filter(
-            Q(resultado__isnull=True) | Q(resultado='')
-        ).delete()
+        detalles_actuales = DetalleOrden.objects.filter(orden=orden)
+        eliminables = detalles_actuales.filter(Q(resultado__isnull=True) | Q(resultado=''))
+        if legacy_detail_ids:
+            eliminables = eliminables.exclude(id__in=legacy_detail_ids)
+        eliminables.delete()
         preserved = list(
             DetalleOrden.objects.filter(orden=orden).select_related(
                 'analito', 'perfil_lims', 'paquete_lims'

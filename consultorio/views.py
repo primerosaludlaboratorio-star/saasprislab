@@ -968,7 +968,7 @@ def nueva_consulta_soap(request, cita_id):
                                 raw_tokens.append(int(est_id))
                             else:
                                 raw_tokens.append(est_id)
-                        lineas = resolve_lims_cart_ids(raw_tokens)
+                        lineas = resolve_lims_cart_ids(raw_tokens, empresa=empresa)
                         if lineas:
                             total_orden = Decimal('0.00')
                             for row in lineas:
@@ -1550,6 +1550,22 @@ def api_crear_consulta_directa(request):
                 motivo=motivo,
                 estado='EN_CURSO'
             )
+
+            ConsultaMedica.objects.get_or_create(
+                cita=cita,
+                defaults={
+                    'empresa': empresa,
+                    'sucursal': getattr(request.user, 'sucursal', None),
+                    'paciente': paciente,
+                    'medico': medico,
+                    'tipo_consulta': 'SUBSECUENTE' if paciente.consultas.exists() else 'PRIMERA_VEZ',
+                    'estado': 'EN_CURSO',
+                    'motivo_consulta': motivo,
+                    'padecimiento_actual': motivo,
+                    'diagnostico_principal': 'En proceso',
+                    'plan_tratamiento': '',
+                }
+            )
             
             return JsonResponse({
                 'ok': True,
@@ -1664,6 +1680,22 @@ def api_crear_paciente_y_consulta(request):
                 motivo=data.get('motivo', 'Consulta general'),
                 estado='EN_CURSO'
                 # Nota: tipo_consulta no existe en CitaMedica, se eliminó
+            )
+
+            ConsultaMedica.objects.get_or_create(
+                cita=cita,
+                defaults={
+                    'empresa': empresa,
+                    'sucursal': getattr(request.user, 'sucursal', None),
+                    'paciente': paciente,
+                    'medico': medico,
+                    'tipo_consulta': 'PRIMERA_VEZ',
+                    'estado': 'EN_CURSO',
+                    'motivo_consulta': data.get('motivo', 'Consulta general'),
+                    'padecimiento_actual': data.get('motivo', 'Consulta general'),
+                    'diagnostico_principal': 'En proceso',
+                    'plan_tratamiento': '',
+                }
             )
             
             return JsonResponse({
@@ -2258,7 +2290,7 @@ def api_generar_orden_laboratorio_inmediata(request):
             else:
                 raw_ids.append(item)
 
-        lineas = resolve_lims_cart_ids(list(raw_ids))
+        lineas = resolve_lims_cart_ids(list(raw_ids), empresa=empresa)
         if not lineas:
             return JsonResponse({
                 'ok': False,
@@ -2301,7 +2333,7 @@ def api_generar_orden_laboratorio_inmediata(request):
         return JsonResponse({
             'ok': True,
             'orden_id': orden.id,
-            'url_detalle': f'/laboratorio/orden/{orden.id}/',
+            'url_detalle': reverse('imprimir_ticket_lab', args=[orden.id]),
             'mensaje': '✅ Orden de laboratorio generada exitosamente'
         })
         

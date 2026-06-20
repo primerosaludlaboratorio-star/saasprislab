@@ -322,7 +322,7 @@ class ExpedienteClinicoView(LoginRequiredMixin, DetailView):
             'icono': 'fa-microscope',
             'color_badge': 'danger' if estado == 'CRITICO' else 'warning' if estado == 'PENDIENTE' else 'success',
             'acciones': ['ver', 'descargar', 'compartir', 'imprimir'] if archivo_url else ['ver'],
-            'url_detalle': f'/laboratorio/orden/{orden.id}/' if hasattr(orden, 'id') else '#',
+            'url_detalle': reverse('imprimir_ticket_lab', args=[orden.id]) if hasattr(orden, 'id') else '#',
         }
     
     def _normalizar_imagen(self, estudio):

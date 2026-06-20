@@ -90,6 +90,9 @@ def api_lotes_producto(request, producto_id):
     except Producto.DoesNotExist:
         return JsonResponse({'error': 'Producto no encontrado'}, status=404)
 
+    VentaFarmaciaService.materializar_lote_operativo_si_falta(p, empresa)
+    p = Producto.objects.prefetch_related('lotes').get(id=producto_id, empresa=empresa)
+
     hoy_fefo = date.today()
     lotes_cache = list(p.lotes.all())
 
@@ -1669,9 +1672,6 @@ def corte_caja_dia(request):
             empresa=empresa,
             fecha_creacion__range=(inicio, fin),
         )
-        total_lab = ordenes_lab.aggregate(
-            total=Coalesce(Sum('total'), Decimal('0.00'), output_field=DecimalField())
-        )['total'] or Decimal('0.00')
 
         lab_efectivo = PagoOrden.objects.filter(
             orden__empresa=empresa,
@@ -1688,6 +1688,7 @@ def corte_caja_dia(request):
             trans=Coalesce(Sum('monto_transferencia'), Decimal('0.00'), output_field=DecimalField()),
         )
         lab_digital_total = (lab_digital['tar'] or Decimal('0.00')) + (lab_digital['trans'] or Decimal('0.00'))
+        total_lab = lab_efectivo + lab_digital_total
     except Exception:
         total_lab = Decimal('0.00')
         lab_efectivo = Decimal('0.00')

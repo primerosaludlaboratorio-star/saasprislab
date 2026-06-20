@@ -82,6 +82,32 @@ Si este checklist no se actualiza, el cambio no cuenta como cerrado.
   - [x] Regresión de devoluciones: `core.tests.test_devoluciones_farmacia_api` OK (3 tests).
   - [x] Regresión de seguridad/tenant: `core.tests.test_rate_limit_middleware`, `test_tenant_strict_mode`, `test_buscar_o_crear_paciente_confirmation` OK (6 tests).
   - [x] Regresión de consultorio: `consultorio.tests` OK (26 tests, 4 skipped) tras ajustar test frágil a mensaje actual del endpoint de audio laboratorio.
+  - [x] Smoke funcional adicional `2026-06-19`: `tool_buscar_o_crear_paciente` exige confirmación antes de crear y crea correctamente al confirmar.
+  - [x] Smoke funcional adicional `2026-06-19`: `/farmacia/devoluciones/buscar/` y `/farmacia/devoluciones/procesar/` responden `200` en HTTPS y persisten auditoría granular en `SalesReturn.observaciones`.
+  - [x] Smoke funcional adicional `2026-06-19`: `/consultorio/api/procesar-audio-consulta/` rechaza rol `RECEPCION` con `403`.
+  - [x] Hallazgo real corregido `2026-06-19`: `/laboratorio/api/crear-orden/` ya no rompe por `ImportError` ni por contrato viejo; crea orden `PENDIENTE_PAGO` usando `DetalleOrden` core con snapshot textual del estudio legacy.
+  - [x] Hallazgo real corregido `2026-06-19`: `/laboratorio/api/medicos/` ya soporta filtro por `q`/`term` además de la carga completa del catálogo activo.
+  - [x] Hallazgo real corregido `2026-06-19`: `/laboratorio/api/orden/<id>/datos/` ya serializa correctamente líneas legacy creadas como snapshot textual en `descripcion_linea`; antes devolvía `estudios: []`.
+  - [x] Hallazgo real corregido `2026-06-19`: `/laboratorio/api/orden/<id>/editar-estudios/` ya acepta conservar líneas `legacy:*` sin exigir que todo el payload sea catálogo LIMS resoluble.
+  - [x] Hallazgo real corregido `2026-06-19`: el PDV de farmacia ya no queda inconsistente entre `Producto.stock` y lotes; si existe stock heredado sin lotes, el backend materializa un lote operativo automático antes de vender o devolver detalle FEFO al frontend.
+  - [x] Hallazgo real corregido `2026-06-19`: la venta PDV ahora asigna sucursal operativa mínima (`Matriz Principal`) cuando la empresa aún no tiene una configurada, permitiendo crear `MovimientoCaja` y evitar omisiones silenciosas.
+  - [x] Hallazgo real corregido `2026-06-19`: se evitó el doble descuento de inventario marcando `inventario_descontado=True` en ventas ya descontadas por Kardex desde `VentaFarmaciaService`.
+  - [x] Smoke funcional adicional `2026-06-19`: venta PDV directa OK con producto no antibiótico, baja exacta de `1` unidad, lote `AUTO-*`, sucursal asignada y `MovimientoCaja` creado.
+  - [x] Utilidad operativa nueva `2026-06-19`: `python manage.py backfill_lotes_operativos_farmacia --empresa-id 1` deja vendible el inventario legado cargado solo en `Producto.stock`.
+  - [x] Smoke funcional adicional `2026-06-19`: alta rápida de paciente OK (`/api/pacientes/guardar/`) y búsqueda incremental OK (`/api/pacientes/buscar/`).
+  - [x] Smoke funcional adicional `2026-06-19`: flujo laboratorio end-to-end local OK con paciente nuevo + orden nueva + lectura de orden + cobro + visualización en `ordenes-recientes`.
+  - [x] Smoke funcional adicional `2026-06-20`: consultorio rápido OK (`/consultorio/api/crear-paciente-y-consulta/`, `/consultorio/api/buscar-pacientes/`, `/consultorio/api/crear-consulta-directa/`, `/consultorio/api/generar-receta-inmediata/`).
+  - [x] Hallazgo real corregido `2026-06-20`: los endpoints rápidos de consultorio ahora crean también la `ConsultaMedica` base; antes solo creaban `CitaMedica` y dejaban sin respaldo clínico ni destino de transcripción.
+  - [x] Hallazgo real corregido `2026-06-20`: `/consultorio/api/analizar-transcripcion/` ya puede dejar `transcripcion_guardada=true` en consultas creadas por el flujo rápido.
+  - [x] Hallazgo real corregido `2026-06-20`: `/medico/receta/<id>/pdf/` ya no rompe por campos inexistentes (`medico_universidad`) y vuelve a emitir PDF válido.
+  - [x] Smoke funcional adicional `2026-06-20`: `/consultorio/pdf/receta/<consulta_id>/` responde PDF correcto y `/medico/receta/<id>/pdf/` responde `200 application/pdf`.
+  - [x] Smoke funcional adicional `2026-06-20`: `/farmacia/ticket/<venta_id>/raw/` y `/laboratorio/ticket/<orden_id>/` responden `200`.
+  - [~] Comportamiento esperado confirmado `2026-06-20`: `/laboratorio/resultados/<orden_id>/pdf/` redirige a captura cuando la orden aún no está validada clínicamente o falta la triple llave documental.
+  - [~] Hallazgo transversal en auditoría `2026-06-19`: endpoints simples (`/api/pacientes/buscar/`, `/laboratorio/api/orden/<id>/datos/`, `/laboratorio/api/orden/<id>/editar-estudios/`) siguen marcando latencias de ~4-6s con bajo query count; investigar causa real fuera de lógica SQL.
+  - [x] Perfilado de performance `2026-06-20`: la vista `api_buscar_pacientes` sola tarda ~`3.75 ms`, pero la request completa tardaba ~`4569 ms`; el cuello quedó confirmado en la capa transversal y no en la lógica del módulo.
+  - [x] Hallazgo real corregido `2026-06-20`: `consultorio/api_views.py` ya no importa `core.services.ai_medico` en module import. El import de Gemini/audio pasó a nivel función (`procesar_audio_consulta`, `procesar_audio_laboratorio`).
+  - [x] Mejora medida `2026-06-20`: primer request perfilado a `/api/pacientes/buscar/` bajó de ~`6.97 s` perfilados a ~`3.31 s` tras diferir el import pesado de `google.genai`.
+  - [~] Hallazgo de performance aún abierto `2026-06-20`: persiste costo de cold-start/import tree en resolución inicial de rutas (`config/urls.py`, `consultorio/urls.py` y otros imports globales). No es SQL ni lógica de pacientes; requiere segunda pasada de lazy-loading estructural si queremos bajar más el arranque en frío.
 
 ## Documento de cierre de auditoría
 
@@ -251,6 +277,28 @@ Leyenda:
 - [ ] Operación diaria sin parches
 - [ ] Validación visual final aprobada
 - [ ] Aceptación como reemplazo total
+
+## Actualización 2026-06-20 - Auditoría Codex
+
+- [x] Consultorio rápido validado: creación de paciente, cita, receta y PDF operativo
+- [x] Fast flow de consultorio ahora garantiza `ConsultaMedica` además de `CitaMedica`
+- [x] `api_analizar_transcripcion` ya persiste transcripción clínica sobre `ConsultaMedica`
+- [x] Consultorio ahora resuelve catálogo LIMS con `empresa` explícita en generación de órdenes, evitando fugas cross-tenant por IDs coincidentes
+- [x] PDF legacy `/medico/receta/<id>/pdf/` corregido y operativo
+- [x] Ticket farmacia raw operativo
+- [x] Ticket laboratorio operativo
+- [~] `/laboratorio/resultados/<orden_id>/pdf/` redirige correctamente a captura cuando no se cumple el triple blindaje
+- [x] `/laboratorio/api/crear-orden/` ya quedó alineado al servicio LIMS real; corregido el bug donde la UI sí mostraba estudios pero el backend legacy no los resolvía
+- [x] PDV farmacia ahora bloquea backend si intentan vender con carrito vacío o cantidades inválidas
+- [x] Devoluciones farmacia ahora normalizan `REINGRESAR -> RETORNO_ALMACEN`, previenen sobredevoluciones y reingresan stock por lote cuando corresponde
+- [x] Devoluciones farmacia ya aceptan `productos_devueltos` (payload real del frontend) y rechazan devoluciones parciales sin partidas válidas
+- [x] Corte de caja unificado ya calcula laboratorio por cobranzas reales (`PagoOrden`) y no por órdenes creadas no cobradas
+- [x] Consultorio y timeline de paciente ya no enlazan a `/laboratorio/orden/<id>/` inexistente; ahora usan una ruta viva de laboratorio (`ticket` de orden)
+- [x] Soporte S3-compatible listo para Vultr Object Storage con backend multi-tenant (`TenantS3Storage`) y prioridad sobre Drive cuando `VULTR_OBJECT_STORAGE_ENABLED=True`
+- [x] `consultorio/api_views.py` ya no importa IA médica pesada en top-level
+- [x] `config/urls.py` ahora difiere módulos pesados (`PRIS IA`, `voice`, `push`, `chat`, `notificaciones`, `nomina`, `crm`) para bajar costo del primer request
+- [~] Perfilado local confirmó que el cuello de botella mayor era carga de imports del router; quedó reducido, pero falta validar en VPS la mejora exacta con Gunicorn/Nginx
+- [~] Verificación local de `manage.py check` quedó bloqueada por permisos del handler `logs/prislab_audit.log`; el problema es del entorno local de logging, no de sintaxis del cambio
 
 ## Próximo orden de trabajo recomendado
 
