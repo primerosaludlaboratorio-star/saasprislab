@@ -1,11 +1,12 @@
+import json
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase
 
 from core.lims_cart import search_lims_catalog
-from core.models import Empresa, OrdenDeServicio, Paciente
-from core.views.laboratorio import api_ordenes_recientes
+from core.models import DetalleOrden, Empresa, OrdenDeServicio, Paciente
+from core.views.laboratorio import api_ordenes_recientes, crear_orden_servicio
 from lims.models import Analito, PerfilLims
 
 
@@ -85,8 +86,39 @@ class LimsCartSearchTests(TestCase):
         request.user = self.usuario
 
         response = api_ordenes_recientes(request)
-        payload = response.json()
+        payload = json.loads(response.content)
 
         self.assertEqual(payload['status'], 'success')
         self.assertTrue(payload['ordenes'])
         self.assertIn('estado_icono', payload['ordenes'][0])
+
+    def test_crear_orden_servicio_acepta_tokens_lims_y_persiste_detalles(self):
+        """La recepción actual envía tokens LIMS del carrito, no IDs legacy."""
+        payload = {
+            'paciente_id': self.paciente.id,
+            'estudio_ids': [
+                f'perfil:{self.perfil_qs6.id}',
+                f'analito:{self.analito_glucosa.id}',
+            ],
+            'total': 0,
+            'anticipo': 0,
+        }
+        factory = RequestFactory()
+        request = factory.post(
+            '/laboratorio/api/crear-orden/',
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+        request.user = self.usuario
+        request.empresa_actual = self.empresa
+
+        response = crear_orden_servicio(request)
+        data = json.loads(response.content)
+
+        self.assertEqual(response.status_code, 200, data)
+        self.assertEqual(data['status'], 'success')
+        orden = OrdenDeServicio.objects.get(id=data['orden_id'])
+        detalles = DetalleOrden.objects.filter(orden=orden)
+        self.assertEqual(detalles.count(), 2)
+        self.assertTrue(detalles.filter(perfil_lims=self.perfil_qs6).exists())
+        self.assertTrue(detalles.filter(analito=self.analito_glucosa).exists())

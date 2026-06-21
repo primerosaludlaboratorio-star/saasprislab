@@ -349,6 +349,8 @@ Leyenda:
 - [x] Regresión revalidada `2026-06-20`: `farmacia.tests.FarmaciaViewTests.test_buscar_venta_devolucion_precarga_venta_desde_historial` -> `OK`
 - [x] Hallazgo funcional corregido `2026-06-21`: búsqueda de pacientes en recepción de laboratorio ya no puede romper la UI con `Unexpected token '<'` cuando el fetch recibe HTML por sesión expirada o respuesta no JSON; `/api/pacientes/buscar/` ahora devuelve JSON `401 AUTH_REQUIRED` sin redirigir y `recepcion_lab.html` valida `Content-Type`/estado antes de parsear JSON
 - [x] Regresión revalidada `2026-06-21`: `core.tests.test_tenant_isolation.TenantIsolationViewTest` -> `OK (6 tests)`, cubriendo aislamiento tenant y rechazo anónimo JSON en `/api/pacientes/buscar/`
+- [x] Contrato laboratorio revalidado `2026-06-21`: `core.tests.test_lims_cart_search.LimsCartSearchTests.test_crear_orden_servicio_acepta_tokens_lims_y_persiste_detalles` confirma que `/laboratorio/api/crear-orden/` acepta tokens del carrito LIMS (`analito:ID`, `perfil:ID`) y persiste `DetalleOrden`
+- [x] Regresión LIMS revalidada `2026-06-21`: `core.tests.test_lims_cart_search.LimsCartSearchTests` -> `OK (4 tests)`
 
 ## Bloque agregado por Claude — 2026-06-20
 
