@@ -9,13 +9,14 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from core.tenant import tenant_protected_get
+from core.utils.empresa_request import get_empresa_usuario
 from lims.models import Analito, ValorReferenciaAnalito
 from lims.views.tenant_lims import empresa_lims
 
 
 def _check_perm(user):
     # PATRÓN CORRECTO: Validar empresa siempre, pero permitir superuser/staff CON empresa válida
-    empresa = getattr(user, 'empresa', None)
+    empresa = get_empresa_usuario(user)
     if not empresa:
         return False
     

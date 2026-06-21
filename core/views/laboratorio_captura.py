@@ -73,11 +73,10 @@ def captura_resultados_industrial(request, orden_id):
         return redirect('home')
     
     # Superuser/staff con empresa válida pueden operar
-    if user.is_superuser or user.is_staff:
-        pass  # Permitir continuar
-    else:
-        if not ((getattr(user, 'rol', '') or '').upper().strip() in ('QUIMICO', 'LABORATORIO', 'ADMIN', 'ADMINISTRADOR')
-                or user.groups.filter(name__in=['LABORATORIO', 'GERENCIA_OPERATIVA']).exists()):
+    if not (user.is_superuser or user.is_staff):
+        rol = (getattr(user, 'rol', '') or '').upper().strip()
+        tiene_grupo = user.groups.filter(name__in=['LABORATORIO', 'GERENCIA_OPERATIVA']).exists()
+        if not (rol in ('QUIMICO', 'LABORATORIO', 'ADMIN', 'ADMINISTRADOR') or tiene_grupo):
             messages.warning(request, 'No tienes permisos para captura de resultados.')
             return redirect('home')
 

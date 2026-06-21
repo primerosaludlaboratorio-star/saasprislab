@@ -12,19 +12,20 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
 
 from core.tenant import tenant_protected_get
+from core.utils.empresa_request import get_empresa_usuario
 from lims.models import Analito, PerfilLims, PaqueteLims, PrecioItem
 from lims.views.tenant_lims import empresa_lims
 
 
 def _check_perm(user):
     # PATRÓN CORRECTO: Validar empresa siempre, pero permitir superuser/staff CON empresa válida
-    if not getattr(user, 'empresa', None):
+    if not get_empresa_usuario(user):
         return False
-    
+
     # Superuser/staff con empresa válida pueden operar
     if user.is_superuser or user.is_staff:
         return True
-    
+
     rol = (getattr(user, 'rol', '') or '').upper()
     if rol in ('ADMIN', 'ADMINISTRADOR', 'LABORATORIO', 'LIMS', 'GERENTE'):
         return True

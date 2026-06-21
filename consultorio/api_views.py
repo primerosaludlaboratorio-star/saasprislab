@@ -7,6 +7,7 @@ from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
+from core.utils.empresa_request import get_empresa_usuario
 import logging
 
 logger = logging.getLogger('ia')
@@ -35,7 +36,7 @@ def _has_audio_access(user, allowed_roles, allowed_groups):
 
 
 def _require_empresa(user):
-    return getattr(user, 'empresa', None)
+    return get_empresa_usuario(user)
 
 
 @login_required
