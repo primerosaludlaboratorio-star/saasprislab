@@ -115,23 +115,26 @@ Archivo: `core/services/ventas/venta_farmacia_service.py`
 Archivo: `core/services/ventas/venta_farmacia_service.py`
 
 - `registrar_devolucion_resultado()` usa `transaction.atomic`.
+- Bloquea `Venta` con `select_for_update` antes de crear la devolucion.
+- Calcula monto disponible restando devoluciones core (`SalesReturn`) y ERP (`farmacia.DevolucionVenta`).
 - Crea `SalesReturn`.
 - Crea `MovimientoInventario` tipo `ENTRADA_DEVOLUCION` si aplica.
-- No se encontro `select_for_update` sobre `Venta` dentro de esta funcion.
 - No se encontro idempotency key propia de devolucion.
 
-Conclusion: devolucion core requiere test de concurrencia e idempotencia antes de unificar.
+Conclusion: devolucion core ya bloquea duplicado secuencial y cruce core/ERP. Sigue pendiente idempotencia explicita por request.
 
 ### Devolucion ERP
 
 Archivo: `farmacia/views/soporte.py`
 
 - `procesar_devolucion()` usa `transaction.atomic`.
+- Bloquea `Venta` con `select_for_update` antes de crear la devolucion.
+- Calcula monto disponible restando devoluciones core (`SalesReturn`) y ERP (`farmacia.DevolucionVenta`).
 - Crea `farmacia.models.DevolucionVenta`.
 - Reingresa stock por `MovimientoInventario` o genera `MermaFarmacia`.
 - Usa helper `_es_gerente_o_admin()` protegido por empresa.
 
-Conclusion: ERP tiene trazabilidad farmacéutica, pero tambien requiere idempotencia/lock comun si va a ser canonico.
+Conclusion: ERP tiene trazabilidad farmaceutica y ya comparte guard financiero con PDV. Sigue pendiente idempotencia explicita por request.
 
 ## Contratos de endpoints duplicados
 
@@ -179,7 +182,9 @@ Conclusion: esta duplicidad debe resolverse con servicio comun y tests, no con r
 - Producto/Lote/Venta son compartidos desde core.
 - Devoluciones tienen mas de un modelo operativo.
 - Core y ERP tienen endpoints de devolucion con contratos distintos.
-- Cancelacion core tiene locks; devolucion core no muestra lock de Venta.
+- Cancelacion core tiene locks; devoluciones core y ERP tambien bloquean `Venta`.
+- Core y ERP rechazan doble devolucion total secuencial sobre la misma venta.
+- Core y ERP rechazan doble devolucion cruzada sobre la misma venta (PDV -> ERP y ERP -> PDV).
 - Corte de caja tiene constraint y servicio unificado parcial.
 
 ### RECHAZADO
@@ -190,7 +195,6 @@ Conclusion: esta duplicidad debe resolverse con servicio comun y tests, no con r
 
 ### HIPOTESIS
 
-- Doble devolucion real en produccion entre core y ERP.
 - Descuadre de caja por uso alternado de cortes.
 - Divergencia JSON de lotes core vs ERP.
 
@@ -218,6 +222,37 @@ Validacion:
 - 7 tests de Farmacia arquitectura/permisos -> OK.
 - `python manage.py check` -> OK.
 
+## Fix de devoluciones cruzadas tras Fase 0
+
+Commit: `fa9b02a` (`fix: bloquear devoluciones cruzadas farmacia core erp`)
+
+Cambios:
+
+- `core.services.ventas.venta_farmacia_service.registrar_devolucion_resultado()` suma devoluciones core + ERP antes de permitir nuevo reembolso.
+- `farmacia.views.soporte.procesar_devolucion()` suma devoluciones core + ERP antes de permitir nuevo reembolso.
+- Ambos caminos revalidan el disponible dentro de `transaction.atomic()` y con `Venta.objects.select_for_update()`.
+- La serializacion ERP de busqueda de venta muestra `total_devuelto`, `disponible_devolver` y `tiene_devoluciones` considerando ambos arboles.
+
+Pruebas agregadas/ampliadas:
+
+- `test_core_luego_erp_rechaza_devolucion_cruzada_misma_venta`
+- `test_erp_luego_core_rechaza_devolucion_cruzada_misma_venta`
+- Ajuste de `test_permiso_devolucion_requiere_empresa_para_superuser` para forzar usuario sin tenant real, evitando la autoasignacion de `Usuario.save()`.
+
+Validacion local:
+
+- `python manage.py test core.tests.test_devoluciones_farmacia_api --keepdb -v 2` -> 10/10 OK.
+- `python manage.py check` -> OK.
+
+Validacion VPS:
+
+- VPS en `fa9b02a`.
+- `python manage.py test core.tests.test_devoluciones_farmacia_api --keepdb -v 2` -> 10/10 OK.
+- `python manage.py check` -> OK.
+- Servicios `prislab-gunicorn`, `prislab-celery`, `prislab-celerybeat` -> active.
+- `https://prislab.labcorecloud.com/` -> HTTP 200.
+- Estaticos Django/admin -> HTTP 200.
+
 ## Siguiente paso aprobado
 
 Crear tests de caracterizacion para:
@@ -226,5 +261,5 @@ Crear tests de caracterizacion para:
 2. Confirmar que `farmacia.Producto` no existe y ERP usa `core.Producto`.
 3. Confirmar FKs de devoluciones hacia `Venta`.
 4. Confirmar constraint `unique_cierre_por_apertura`.
-5. Probar que core/ERP no permiten doble devolucion sobre la misma venta (pendiente; requiere datos).
+5. Probar que core/ERP no permiten doble devolucion sobre la misma venta (COMPLETADO en `fa9b02a`).
 6. Probar compatibilidad/diferencia de JSON de lotes core vs ERP (pendiente; requiere datos).
