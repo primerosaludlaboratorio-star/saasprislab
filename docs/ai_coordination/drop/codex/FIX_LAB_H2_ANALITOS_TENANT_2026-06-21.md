@@ -68,6 +68,34 @@ Tambien se agrego prueba automatizada focalizada en `core/tests/test_laboratorio
 
 Nota: en este entorno Windows el runner de test puntual quedo en timeout preparando BD de prueba, sin traceback de fallo de codigo. La validacion directa de query y `manage.py check` pasaron.
 
+## Deploy y smoke productivo
+
+Commit:
+
+```text
+97da7c7 fix: aislar departamentos lims por empresa en recepcion
+```
+
+VPS:
+
+```text
+git pull origin release/v1.0-local
+systemctl restart prislab-gunicorn
+systemctl restart prislab-celery
+systemctl restart prislab-celerybeat
+systemctl reload nginx
+```
+
+Validacion:
+
+```text
+prislab-gunicorn: active
+prislab-celery: active
+prislab-celerybeat: active
+manage.py check: 0 issues
+/laboratorio/recepcion/ autenticado como jonathan -> 200 final
+```
+
 ## Estado
 
-Listo para commit, push, deploy y smoke productivo.
+CONFIRMADO / CORREGIDO / DESPLEGADO / VALIDADO EN PRODUCCION.
