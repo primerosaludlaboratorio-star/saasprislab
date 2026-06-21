@@ -99,6 +99,10 @@ class DevolucionesFarmaciaAPITest(TestCase):
             is_superuser=True,
             is_staff=True,
         )
+        # Usuario.save() autoasigna empresa en guardado completo; forzamos el caso
+        # real de superuser sin tenant usando update_fields para probar el candado.
+        sin_empresa.empresa = None
+        sin_empresa.save(update_fields=['empresa'])
         con_empresa = User.objects.create_user(
             username='root_con_empresa',
             password='root_con_empresa_123',
@@ -201,6 +205,80 @@ class DevolucionesFarmaciaAPITest(TestCase):
         self.assertEqual(primera.status_code, 200)
         self.assertEqual(segunda.status_code, 400)
         self.assertEqual(DevolucionVenta.objects.filter(venta_original=self.venta).count(), 1)
+
+    def test_core_luego_erp_rechaza_devolucion_cruzada_misma_venta(self):
+        """Una devolución hecha en PDV debe bloquear otro reembolso total desde ERP."""
+        from core.models import SalesReturn
+        from farmacia.models import DevolucionVenta
+
+        payload_core = {
+            'venta_id': self.venta.id,
+            'tipo_devolucion': 'TOTAL',
+            'monto_reembolsado': '80.00',
+            'motivo_error': 'Producto caducado',
+            'accion_stock': 'REINGRESAR',
+        }
+        payload_erp = {
+            'venta_id': self.venta.id,
+            'tipo': 'TOTAL',
+            'monto': '80.00',
+            'motivo': 'ERROR_VENTA',
+            'motivo_detallado': 'Intento duplicado desde ERP',
+            'reingresar_stock': True,
+        }
+
+        primera = self.client.post(
+            '/farmacia/devoluciones/procesar/',
+            data=json.dumps(payload_core),
+            content_type='application/json',
+        )
+        segunda = self.client.post(
+            '/farmacia/erp/devoluciones/procesar/',
+            data=json.dumps(payload_erp),
+            content_type='application/json',
+        )
+
+        self.assertEqual(primera.status_code, 200)
+        self.assertEqual(segunda.status_code, 400)
+        self.assertEqual(SalesReturn.objects.filter(venta_original=self.venta).count(), 1)
+        self.assertEqual(DevolucionVenta.objects.filter(venta_original=self.venta).count(), 0)
+
+    def test_erp_luego_core_rechaza_devolucion_cruzada_misma_venta(self):
+        """Una devolución hecha en ERP debe bloquear otro reembolso total desde PDV."""
+        from core.models import SalesReturn
+        from farmacia.models import DevolucionVenta
+
+        payload_erp = {
+            'venta_id': self.venta.id,
+            'tipo': 'TOTAL',
+            'monto': '80.00',
+            'motivo': 'ERROR_VENTA',
+            'motivo_detallado': 'Prueba cruzada ERP primero',
+            'reingresar_stock': True,
+        }
+        payload_core = {
+            'venta_id': self.venta.id,
+            'tipo_devolucion': 'TOTAL',
+            'monto_reembolsado': '80.00',
+            'motivo_error': 'Intento duplicado desde PDV',
+            'accion_stock': 'REINGRESAR',
+        }
+
+        primera = self.client.post(
+            '/farmacia/erp/devoluciones/procesar/',
+            data=json.dumps(payload_erp),
+            content_type='application/json',
+        )
+        segunda = self.client.post(
+            '/farmacia/devoluciones/procesar/',
+            data=json.dumps(payload_core),
+            content_type='application/json',
+        )
+
+        self.assertEqual(primera.status_code, 200)
+        self.assertEqual(segunda.status_code, 400)
+        self.assertEqual(DevolucionVenta.objects.filter(venta_original=self.venta).count(), 1)
+        self.assertEqual(SalesReturn.objects.filter(venta_original=self.venta).count(), 0)
 
     def test_procesar_devolucion_con_productos_auditoria(self):
         """El backend debe persistir el detalle de productos devueltos para auditoría."""

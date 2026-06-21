@@ -11,7 +11,8 @@ from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 from types import SimpleNamespace
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import F, Q
+from django.db.models import DecimalField, F, Q, Sum
+from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -906,12 +907,25 @@ class VentaFarmaciaService:
             return {'http_status': 404, 'body': {'status': 'error', 'mensaje': 'Venta no encontrada'}}
         if monto <= 0:
             return {'http_status': 400, 'body': {'status': 'error', 'mensaje': 'El monto debe ser mayor a cero'}}
-        if monto > venta.total:
+
+        def _total_devuelto_core(venta_obj):
+            return venta_obj.devoluciones.aggregate(
+                total=Coalesce(Sum('monto_reembolsado'), Decimal('0.00'), output_field=DecimalField())
+            )['total'] or Decimal('0.00')
+
+        def _total_devuelto_erp(venta_obj):
+            return venta_obj.devoluciones_farmacia.aggregate(
+                total=Coalesce(Sum('monto_devolucion'), Decimal('0.00'), output_field=DecimalField())
+            )['total'] or Decimal('0.00')
+
+        total_devuelto_previo = _total_devuelto_core(venta) + _total_devuelto_erp(venta)
+        disponible_monto = (venta.total or Decimal('0.00')) - total_devuelto_previo
+        if monto > disponible_monto:
             return {
                 'http_status': 400,
                 'body': {
                     'status': 'error',
-                    'mensaje': f'Monto excede el total de la venta (${venta.total})',
+                    'mensaje': f'Monto excede lo disponible para devolución (${disponible_monto})',
                 },
             }
         productos = (
@@ -997,9 +1011,21 @@ class VentaFarmaciaService:
             from core.services.audit_service import registrar_auditoria
             from farmacia.models import MovimientoInventario
             with transaction.atomic():
+                venta_bloqueada = Venta.objects.select_for_update().get(pk=venta.pk, empresa=empresa)
+                total_devuelto_previo = _total_devuelto_core(venta_bloqueada) + _total_devuelto_erp(venta_bloqueada)
+                disponible_monto = (venta_bloqueada.total or Decimal('0.00')) - total_devuelto_previo
+                if monto > disponible_monto:
+                    return {
+                        'http_status': 400,
+                        'body': {
+                            'status': 'error',
+                            'mensaje': f'Monto excede lo disponible para devolución (${disponible_monto})',
+                        },
+                    }
+
                 devolucion = SalesReturn.objects.create(
                     empresa=empresa,
-                    venta_original=venta,
+                    venta_original=venta_bloqueada,
                     tipo_devolucion=tipo,
                     monto_reembolsado=monto,
                     motivo_error=motivo,

@@ -35,9 +35,22 @@ from farmacia.models import (
 logger = logging.getLogger(__name__)
 
 
+def _total_devuelto_core(venta):
+    return venta.devoluciones.aggregate(
+        total=Coalesce(Sum('monto_reembolsado'), Decimal('0.00'), output_field=DecimalField())
+    )['total'] or Decimal('0.00')
+
+
+def _total_devuelto_erp(venta):
+    return venta.devoluciones_farmacia.aggregate(
+        total=Coalesce(Sum('monto_devolucion'), Decimal('0.00'), output_field=DecimalField())
+    )['total'] or Decimal('0.00')
+
+
 def _serializar_venta_para_devolucion(venta):
-    devoluciones_previas = venta.devoluciones_farmacia.all()
-    total_devuelto = sum(d.monto_devolucion for d in devoluciones_previas)
+    total_devuelto_core = _total_devuelto_core(venta)
+    total_devuelto_erp = _total_devuelto_erp(venta)
+    total_devuelto = total_devuelto_core + total_devuelto_erp
     return {
         'venta': {
             'id': venta.id,
@@ -46,7 +59,7 @@ def _serializar_venta_para_devolucion(venta):
             'total': str(venta.total),
             'cliente': venta.paciente.nombre_completo if venta.paciente else 'Cliente General',
             'vendedor': venta.usuario.get_full_name(),
-            'tiene_devoluciones': devoluciones_previas.exists(),
+            'tiene_devoluciones': total_devuelto > Decimal('0.00'),
             'total_devuelto': str(total_devuelto),
             'disponible_devolver': str(venta.total - total_devuelto),
         },
@@ -190,12 +203,8 @@ def procesar_devolucion(request):
                 'error': 'No hay sucursal asignada a la venta ni al usuario. Configure una sucursal.'
             }, status=400)
         
-        # Verificar que no exceda el total (Coalesce evita None cuando no hay devoluciones)
-        devoluciones_previas = venta.devoluciones_farmacia.aggregate(
-            total=Coalesce(Sum('monto_devolucion'), Decimal('0.00'), output_field=DecimalField())
-        )['total'] or Decimal('0.00')
-        
-        disponible = venta.total - devoluciones_previas
+        # Verificar contra devoluciones de ambos árboles funcionales (PDV core + ERP farmacia).
+        disponible = venta.total - _total_devuelto_core(venta) - _total_devuelto_erp(venta)
         
         if monto > disponible:
             return JsonResponse({
@@ -214,6 +223,14 @@ def procesar_devolucion(request):
             }, status=400)
         
         with transaction.atomic():
+            venta = Venta.objects.select_for_update().get(id=venta_id, empresa=empresa)
+            disponible = venta.total - _total_devuelto_core(venta) - _total_devuelto_erp(venta)
+            if monto > disponible:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Monto excede lo disponible para devolución (${disponible})'
+                }, status=400)
+
             # Crear registro de devolución
             devolucion = DevolucionVenta.objects.create(
                 empresa=venta.empresa,
