@@ -100,6 +100,42 @@ Cobertura agregada:
 - `test_director_analizadores_crear_y_toggle_equipo_global`
 - `test_director_puede_ver_expediente_clinico_sin_loop_403`
 
+## Deploy y validacion en produccion
+
+Commit:
+
+```text
+650f1ef fix: corregir analizadores globales y acceso director expediente
+```
+
+VPS:
+
+```text
+git pull origin release/v1.0-local
+systemctl restart prislab-gunicorn
+systemctl restart prislab-celery
+systemctl restart prislab-celerybeat
+systemctl reload nginx
+```
+
+Servicios:
+
+```text
+prislab-gunicorn: active
+prislab-celery: active
+prislab-celerybeat: active
+manage.py check: 0 issues
+```
+
+Smoke productivo con `Django Client` autenticado como `jonathan`:
+
+```text
+/director/analizadores/ -> 200
+/medico/expediente/4/   -> 200
+```
+
+Ambas rutas pasan por una redireccion canonica HTTPS 301 antes del 200 final.
+
 ## Estado final
 
-Listo para commit, push y deploy.
+CONFIRMADO / CORREGIDO / DESPLEGADO / VALIDADO EN PRODUCCION.
