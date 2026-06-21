@@ -101,6 +101,19 @@ def api_lotes_producto(request, producto_id):
 
     # Lotes con cantidad > 0 (para stock)
     lotes_con_stock = [l for l in lotes_cache if (l.cantidad or 0) > 0]
+    lotes_data = []
+    for lote in sorted(lotes_con_stock, key=lambda l: (l.fecha_caducidad or date(9999, 12, 31))):
+        dias_lote = (lote.fecha_caducidad - hoy_fefo).days if lote.fecha_caducidad else None
+        es_vencido = bool(lote.fecha_caducidad and lote.fecha_caducidad < hoy_fefo)
+        lotes_data.append({
+            'id': lote.id,
+            'numero_lote': lote.numero_lote,
+            'fecha_caducidad': lote.fecha_caducidad.strftime('%Y-%m-%d') if lote.fecha_caducidad else None,
+            'cantidad': float(lote.cantidad or 0),
+            'costo_adquisicion': float(lote.costo_adquisicion or 0),
+            'dias_restantes': dias_lote,
+            'es_vencido': es_vencido,
+        })
 
     # Lotes vigentes: cantidad > 0 Y no caducados
     lotes_vigentes = sorted(
@@ -148,7 +161,7 @@ def api_lotes_producto(request, producto_id):
         'sin_stock_vigente': sin_stock_vigente,
         'alerta_precio_bajo': alerta_precio_bajo,
     }
-    return JsonResponse({'producto': producto_data})
+    return JsonResponse({'producto': producto_data, 'lotes': lotes_data})
 
 
 @login_required

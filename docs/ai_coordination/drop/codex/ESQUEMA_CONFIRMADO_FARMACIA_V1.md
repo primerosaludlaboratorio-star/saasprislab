@@ -174,6 +174,23 @@ Ruta: `/farmacia/erp/devoluciones/procesar/`
 
 Conclusion: esta duplicidad debe resolverse con servicio comun y tests, no con renombrado de URLs.
 
+### Lotes producto core y ERP
+
+Rutas:
+
+- Core/PDV: `/farmacia/api/lotes-producto/<producto_id>/`
+- ERP: `/farmacia/erp/api/lotes-producto/<producto_id>/`
+
+Estado tras cierre:
+
+- Ambos endpoints devuelven `producto`.
+- Ambos endpoints devuelven `lotes`.
+- El contrato minimo de lote incluye `id`, `numero_lote`, `fecha_caducidad`, `cantidad`, `costo_adquisicion`, `dias_restantes`, `es_vencido`.
+- El contrato minimo de producto incluye `stock_total`, `lote_id`, `numero_lote_proximo`, `sin_stock_vigente`.
+- ERP mantiene campos extra utiles para inventario, como `stock_total_fisico` y `lotes_vencidos_count`.
+
+Conclusion: el contrato minimo core/ERP quedo alineado sin romper campos existentes.
+
 ## Hallazgos clasificados
 
 ### CONFIRMADO
@@ -253,6 +270,19 @@ Validacion VPS:
 - `https://prislab.labcorecloud.com/` -> HTTP 200.
 - Estaticos Django/admin -> HTTP 200.
 
+## Fix de contrato de lotes core/ERP
+
+Cambios:
+
+- `core.views.farmacia.api_lotes_producto()` ahora devuelve `lotes` ademas de `producto`.
+- El contrato de lotes core se alinea con el contrato ERP sin retirar ningun campo usado por PDV.
+- Se agrego cobertura en `core.tests.test_farmacia_lotes_api`.
+
+Validacion local:
+
+- `python manage.py test core.tests.test_farmacia_lotes_api --keepdb -v 2` -> 2/2 OK.
+- `python manage.py check` -> OK.
+
 ## Siguiente paso aprobado
 
 Crear tests de caracterizacion para:
@@ -262,4 +292,4 @@ Crear tests de caracterizacion para:
 3. Confirmar FKs de devoluciones hacia `Venta`.
 4. Confirmar constraint `unique_cierre_por_apertura`.
 5. Probar que core/ERP no permiten doble devolucion sobre la misma venta (COMPLETADO en `fa9b02a`).
-6. Probar compatibilidad/diferencia de JSON de lotes core vs ERP (pendiente; requiere datos).
+6. Probar compatibilidad/diferencia de JSON de lotes core vs ERP (COMPLETADO; contrato minimo alineado).
