@@ -27,9 +27,9 @@ def _check_perm(user):
         return True
 
     rol = (getattr(user, 'rol', '') or '').upper()
-    if rol in ('ADMIN', 'ADMINISTRADOR', 'LABORATORIO', 'LIMS', 'GERENTE'):
+    if rol in ('ADMIN', 'ADMINISTRADOR', 'LABORATORIO', 'LIMS'):
         return True
-    return user.groups.filter(name__in=['LABORATORIO', 'LIMS', 'ADMIN', 'GERENCIA']).exists()
+    return user.groups.filter(name__in=['LABORATORIO', 'LIMS', 'ADMIN']).exists()
 
 
 def _get_o_crear_precio(tipo, obj):
