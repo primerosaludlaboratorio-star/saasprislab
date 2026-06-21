@@ -22,11 +22,32 @@ from user_agents import parse
 
 from core.decorators import role_required
 from core.models import ForenseAcceso, Usuario
+from core.utils.empresa_request import get_empresa_usuario
 
 from .models import (
     DispositivoTOTP, DispositivoSMS, CodigoBackup2FA,
     SesionActiva, LogAccionSensible, AlertaPanico
 )
+
+
+def _empresa_staff_o_redirect(request):
+    if not request.user.is_staff:
+        messages.error(request, "No tienes permisos para acceder a esta sección.")
+        return None, redirect('dashboard')
+    empresa = get_empresa_usuario(request.user)
+    if not empresa:
+        messages.error(request, "Usuario sin empresa asignada.")
+        return None, redirect('dashboard')
+    return empresa, None
+
+
+def _empresa_staff_o_json(request):
+    if not request.user.is_staff:
+        return None, JsonResponse({'error': 'No autorizado'}, status=403)
+    empresa = get_empresa_usuario(request.user)
+    if not empresa:
+        return None, JsonResponse({'error': 'Usuario sin empresa asignada'}, status=403)
+    return empresa, None
 
 
 # ============================================================================
@@ -412,9 +433,9 @@ def dashboard_auditoria(request):
     Dashboard de auditoría de seguridad.
     Solo accesible para administradores.
     """
-    if not request.user.is_staff:
-        messages.error(request, "No tienes permisos para acceder a esta sección.")
-        return redirect('dashboard')
+    empresa, error_response = _empresa_staff_o_redirect(request)
+    if error_response:
+        return error_response
     
     # Estadísticas generales
     hoy = timezone.now().date()
@@ -422,22 +443,25 @@ def dashboard_auditoria(request):
     hace_30_dias = hoy - timedelta(days=30)
     
     # Logs recientes
-    logs_recientes = LogAccionSensible.objects.select_related('usuario').order_by('-fecha_hora')[:50]
+    logs_base = LogAccionSensible.objects.filter(usuario__empresa=empresa)
+    sesiones_base = SesionActiva.objects.filter(usuario__empresa=empresa)
+
+    logs_recientes = logs_base.select_related('usuario').order_by('-fecha_hora')[:50]
     
     # Estadísticas por acción
-    stats_por_accion = LogAccionSensible.objects.values('accion').annotate(
+    stats_por_accion = logs_base.values('accion').annotate(
         total=Count('id')
     ).order_by('-total')[:10]
     
     # Logs críticos recientes
-    logs_criticos = LogAccionSensible.objects.filter(
+    logs_criticos = logs_base.filter(
         severidad=LogAccionSensible.SEVERIDAD_CRITICAL,
         fecha_hora__date__gte=hace_7_dias
     ).select_related('usuario').order_by('-fecha_hora')[:20]
     
     # Intentos fallidos de login (últimas 24h)
     hace_24h = timezone.now() - timedelta(hours=24)
-    intentos_fallidos = LogAccionSensible.objects.filter(
+    intentos_fallidos = logs_base.filter(
         accion=LogAccionSensible.ACCION_LOGIN_FALLIDO,
         fecha_hora__gte=hace_24h
     ).values('ip_address').annotate(
@@ -445,7 +469,7 @@ def dashboard_auditoria(request):
     ).order_by('-total')[:10]
     
     # Sesiones sospechosas
-    sesiones_sospechosas = SesionActiva.objects.filter(
+    sesiones_sospechosas = sesiones_base.filter(
         es_sospechosa=True,
         activa=True
     ).select_related('usuario')
@@ -456,8 +480,8 @@ def dashboard_auditoria(request):
         'logs_criticos': logs_criticos,
         'intentos_fallidos': intentos_fallidos,
         'sesiones_sospechosas': sesiones_sospechosas,
-        'total_logs_7dias': LogAccionSensible.objects.filter(fecha_hora__date__gte=hace_7_dias).count(),
-        'total_logs_30dias': LogAccionSensible.objects.filter(fecha_hora__date__gte=hace_30_dias).count(),
+        'total_logs_7dias': logs_base.filter(fecha_hora__date__gte=hace_7_dias).count(),
+        'total_logs_30dias': logs_base.filter(fecha_hora__date__gte=hace_30_dias).count(),
     }
     
     return render(request, 'seguridad/auditoria/dashboard.html', context)
@@ -468,11 +492,11 @@ def logs_auditoria(request):
     """
     Lista completa de logs con filtros.
     """
-    if not request.user.is_staff:
-        messages.error(request, "No tienes permisos para acceder a esta sección.")
-        return redirect('dashboard')
+    empresa, error_response = _empresa_staff_o_redirect(request)
+    if error_response:
+        return error_response
     
-    logs = LogAccionSensible.objects.select_related('usuario').order_by('-fecha_hora')
+    logs = LogAccionSensible.objects.filter(usuario__empresa=empresa).select_related('usuario').order_by('-fecha_hora')
     
     # Filtros
     accion = request.GET.get('accion')
@@ -552,21 +576,25 @@ def api_estadisticas_seguridad(request):
     """
     API que retorna estadísticas de seguridad para dashboards.
     """
-    if not request.user.is_staff:
-        return JsonResponse({'error': 'No autorizado'}, status=403)
+    empresa, error_response = _empresa_staff_o_json(request)
+    if error_response:
+        return error_response
     
     hoy = timezone.now().date()
     hace_7_dias = hoy - timedelta(days=7)
     
+    logs_base = LogAccionSensible.objects.filter(usuario__empresa=empresa)
+    sesiones_base = SesionActiva.objects.filter(usuario__empresa=empresa)
+
     data = {
-        'total_usuarios_2fa': DispositivoTOTP.objects.filter(activo=True).values('usuario').distinct().count(),
-        'sesiones_activas': SesionActiva.objects.filter(activa=True).count(),
-        'sesiones_sospechosas': SesionActiva.objects.filter(activa=True, es_sospechosa=True).count(),
-        'logs_criticos_7dias': LogAccionSensible.objects.filter(
+        'total_usuarios_2fa': DispositivoTOTP.objects.filter(usuario__empresa=empresa, activo=True).values('usuario').distinct().count(),
+        'sesiones_activas': sesiones_base.filter(activa=True).count(),
+        'sesiones_sospechosas': sesiones_base.filter(activa=True, es_sospechosa=True).count(),
+        'logs_criticos_7dias': logs_base.filter(
             severidad=LogAccionSensible.SEVERIDAD_CRITICAL,
             fecha_hora__date__gte=hace_7_dias
         ).count(),
-        'intentos_fallidos_24h': LogAccionSensible.objects.filter(
+        'intentos_fallidos_24h': logs_base.filter(
             accion=LogAccionSensible.ACCION_LOGIN_FALLIDO,
             fecha_hora__gte=timezone.now() - timedelta(hours=24)
         ).count(),

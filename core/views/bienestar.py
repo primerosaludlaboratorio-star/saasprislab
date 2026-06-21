@@ -25,6 +25,7 @@ from core.models import (
     ProgramaCapacitacion,
     Empresa,
 )
+from core.utils.empresa_request import get_empresa_usuario
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +111,7 @@ def _verificar_riesgo_burnout(empleado, empresa):
 @login_required
 def dashboard_bienestar(request):
     """Dashboard principal del módulo Bienestar Staff."""
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = get_empresa_usuario(request.user)
     usuario = request.user
 
     # Estadísticas personales (sin revelar contenido privado)
@@ -135,7 +136,9 @@ def dashboard_bienestar(request):
 
     # Para RRHH/Admin: resumen de alertas pendientes (sin contenido privado)
     alertas_rrhh = None
-    if request.user.is_superuser or getattr(request.user, 'rol', '') in ('ADMIN', 'DIRECTOR', 'GERENTE'):
+    if empresa and (
+        request.user.is_superuser or getattr(request.user, 'rol', '') in ('ADMIN', 'DIRECTOR', 'GERENTE')
+    ):
         alertas_rrhh = AlertaBurnout.objects.filter(empresa=empresa, atendida=False).count()
 
     evaluaciones = EvaluacionNOM035.objects.filter(empleado=usuario).order_by('-fecha')[:3]
@@ -163,7 +166,7 @@ def dashboard_bienestar(request):
 @login_required
 def diario_emocional(request):
     """Vista y registro del Diario Emocional privado (AES-256 activado)."""
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = get_empresa_usuario(request.user)
     usuario = request.user
 
     if request.method == 'POST':
@@ -217,7 +220,7 @@ def diario_emocional(request):
 @login_required
 def evaluacion_nom035(request):
     """Cuestionario NOM-035 (20 ítems representativos). Respuestas cifradas."""
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = get_empresa_usuario(request.user)
     usuario = request.user
     periodo = timezone.now().strftime('%Y-%m')
 
@@ -285,8 +288,12 @@ def alertas_rrhh(request):
     SOLO muestra: empleado, tipo de alerta, fecha.
     NUNCA muestra contenido del diario ni respuestas de evaluación.
     """
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = get_empresa_usuario(request.user)
     rol = getattr(request.user, 'rol', '')
+
+    if not empresa:
+        messages.error(request, 'Usuario sin empresa asignada.')
+        return redirect('dashboard_bienestar')
 
     if not (request.user.is_superuser or rol in ('ADMIN', 'DIRECTOR', 'GERENTE')):
         messages.error(request, 'Acceso restringido a RRHH/Dirección.')

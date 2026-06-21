@@ -6,7 +6,22 @@ from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.http import require_http_methods
 
+from core.utils.empresa_request import get_empresa_usuario
+
 logger = logging.getLogger('core')
+
+
+def _empresa_configuracion_o_error(request):
+    empresa = get_empresa_usuario(request.user)
+    if not empresa:
+        return None, JsonResponse({'error': 'Sin empresa'}, status=403)
+    return empresa, None
+
+
+def _puede_administrar_configuracion(user) -> bool:
+    if not get_empresa_usuario(user):
+        return False
+    return user.rol in ('ADMIN', 'DIRECTOR') or user.is_superuser
 
 
 @login_required
@@ -14,7 +29,7 @@ def configuracion_dashboard(request):
     """
     Dashboard maestro de configuración. Incluye widget de consumo de IA.
     """
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = get_empresa_usuario(request.user)
     contexto = {}
 
     if empresa:
@@ -43,7 +58,7 @@ def configuracion_dashboard(request):
 @require_http_methods(["GET"])
 def api_ia_consumo(request):
     """API JSON: datos de consumo IA del mes actual para el widget del Director."""
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = get_empresa_usuario(request.user)
     if not empresa:
         return JsonResponse({'error': 'Sin empresa asignada'}, status=400)
     try:
@@ -61,11 +76,11 @@ def api_ia_consumo(request):
 @require_http_methods(["POST"])
 def api_cambiar_modo_ia(request):
     """Cambia el modo de consumo IA de la empresa (APRENDIZAJE/PRODUCCION/AHORRO_EXTREMO)."""
-    if request.user.rol not in ('ADMIN', 'DIRECTOR') and not request.user.is_superuser:
+    if not _puede_administrar_configuracion(request.user):
         return JsonResponse({'error': 'Sin permiso'}, status=403)
-    empresa = getattr(request.user, 'empresa', None)
-    if not empresa:
-        return JsonResponse({'error': 'Sin empresa'}, status=400)
+    empresa, error = _empresa_configuracion_o_error(request)
+    if error:
+        return error
     try:
         datos = json.loads(request.body)
         modo = datos.get('modo', '')
@@ -86,11 +101,11 @@ def api_cambiar_modo_ia(request):
 @require_http_methods(["POST"])
 def api_guardar_byok(request):
     """Guarda la API Key BYOK de Gemini del laboratorio (cifrada con Fernet)."""
-    if request.user.rol not in ('ADMIN', 'DIRECTOR') and not request.user.is_superuser:
+    if not _puede_administrar_configuracion(request.user):
         return JsonResponse({'error': 'Sin permiso'}, status=403)
-    empresa = getattr(request.user, 'empresa', None)
-    if not empresa:
-        return JsonResponse({'error': 'Sin empresa'}, status=400)
+    empresa, error = _empresa_configuracion_o_error(request)
+    if error:
+        return error
     try:
         datos = json.loads(request.body)
         api_key = datos.get('api_key', '').strip()
@@ -108,4 +123,3 @@ def api_guardar_byok(request):
     except Exception as exc:
         logger.error("api_guardar_byok: %s", exc)
         return JsonResponse({'error': str(exc)}, status=500)
-
