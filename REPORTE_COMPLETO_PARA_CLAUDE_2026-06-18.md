@@ -85,6 +85,13 @@ Resultados locales ya medidos con esta nueva auditoria:
   - `OK=15 WARN=1 FAIL=0`
   - sin fallas duras en la muestra local filtrada por empresa
 
+Clasificacion inicial de esos warnings:
+
+- Farmacia: los `20` descuadres de `stock_kardex_descuadrado` pertenecen al lote demo `AUDIT-*`; son productos con `Producto.stock` cargado pero sin historial de `MovimientoInventario` equivalente
+- Laboratorio: el `detalles_sin_item_lims: 1` corresponde a una linea snapshot legacy con `descripcion_linea='Glucosa'`; no rompe por si mismo pero conviene migrarla o depurarla
+- Consultorio: las `5` consultas con cita y sin signos vitales son consistentes con registros demo/flujo rapido donde no se capturaron signos todavia
+- conclusion: estos warnings quedan clasificados como deuda de datos y trazabilidad de muestra, no como fallo nuevo de logica base
+
 Pruebas ejecutadas:
 
 - `manage.py check` OK

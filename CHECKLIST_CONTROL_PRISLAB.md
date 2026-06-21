@@ -34,6 +34,7 @@ Si este checklist no se actualiza, el cambio no cuenta como cerrado.
   - [~] Farmacia: `stock_kardex_descuadrado: 20`
   - [~] Laboratorio: `detalles_sin_item_lims: 1`
   - [~] Consultorio: `consultas_con_cita_sin_signos: 5`
+  - [x] Clasificación inicial hecha el `2026-06-21`: los `20` descuadres de farmacia corresponden al lote audit/demo `AUDIT-*` cargado con `stock` sin movimientos Kardex históricos; el detalle huérfano de laboratorio es una línea legacy snapshot (`Glucosa`) en `DetalleOrden.descripcion_linea`; las `5` consultas sin signos son registros demo/rápidos con cita asociada pero sin captura de signos todavía. No se clasifican por ahora como regresión nueva de código.
 - [x] `manage.py check` OK
 - [x] `makemigrations --check --dry-run` OK
 - [x] `manage.py test` global OK (`251 tests`, `23 skipped`, `0 failures`, `0 errors`)
