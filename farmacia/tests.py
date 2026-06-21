@@ -8,6 +8,7 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError
 from django.test import Client, TestCase
 from django.urls import reverse
 
@@ -33,8 +34,8 @@ def _store_rendered_templates_safe(store, signal, sender, template, context, **k
 
 _dj_test_client.store_rendered_templates = _store_rendered_templates_safe
 
-from core.models import ConfiguracionModulos, Empresa, Lote, Producto
-from farmacia.models import MovimientoInventario, Proveedor
+from core.models import ConfiguracionModulos, DetalleVenta, Empresa, Lote, Producto, Sucursal, Venta
+from farmacia.models import DevolucionVenta, MovimientoInventario, Proveedor
 
 User = get_user_model()
 
@@ -163,6 +164,12 @@ class FarmaciaViewTests(TestCase):
             nombre="Test Empresa",
             rfc="TES123456ABC",
         )
+        self.sucursal = Sucursal.objects.create(
+            empresa=self.empresa,
+            nombre="Matriz",
+            codigo_sucursal=f"SUC-{uuid.uuid4().hex[:8]}",
+            activa=True,
+        )
         self.usuario = User.objects.create_user(
             username="test_farmacia",
             password="test123",
@@ -189,7 +196,8 @@ class FarmaciaViewTests(TestCase):
         self.client = Client()
         self.usuario.empresa = self.empresa
         self.usuario.rol = "CAJERO"
-        self.usuario.save(update_fields=["empresa", "rol"])
+        self.usuario.sucursal = self.sucursal
+        self.usuario.save(update_fields=["empresa", "rol", "sucursal"])
         g, _ = Group.objects.get_or_create(name="FARMACIA")
         self.usuario.groups.add(g)
         self.client.force_login(self.usuario)
@@ -275,3 +283,73 @@ class FarmaciaViewTests(TestCase):
         from farmacia.services import venta_farmacia_service
 
         self.assertTrue(hasattr(venta_farmacia_service, "ejecutar_venta_pdv"))
+
+    def test_procesar_devolucion_parcial_rechaza_sin_detalle_por_producto(self):
+        self.usuario.rol = "GERENTE"
+        self.usuario.save(update_fields=["rol"])
+
+        venta = Venta.objects.create(
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            usuario=self.usuario,
+            paciente_nombre="Publico General",
+            total=Decimal("120.00"),
+            subtotal=Decimal("120.00"),
+        )
+        DetalleVenta.objects.create(
+            venta=venta,
+            producto=self.producto,
+            lote_vendido=Lote.objects.get(numero_lote="LOT001"),
+            cantidad=2,
+            precio_unitario=Decimal("60.00"),
+            subtotal=Decimal("120.00"),
+        )
+
+        response = self.client.post(
+            reverse("farmacia:procesar_devolucion"),
+            data='{"venta_id": %d, "tipo": "PARCIAL", "monto": "60.00", "motivo": "ERROR_VENTA"}' % venta.id,
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        payload = response.json()
+        self.assertEqual(payload["codigo"], "DEVOLUCION_PARCIAL_REQUIERE_DETALLE")
+        self.assertEqual(DevolucionVenta.objects.count(), 0)
+        self.assertEqual(MovimientoInventario.objects.filter(tipo_movimiento="ENTRADA_DEVOLUCION").count(), 0)
+
+    def test_modelo_devolucion_parcial_no_procesa_stock_sin_detalle(self):
+        venta = Venta.objects.create(
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            usuario=self.usuario,
+            paciente_nombre="Publico General",
+            total=Decimal("80.00"),
+            subtotal=Decimal("80.00"),
+        )
+        detalle = DetalleVenta.objects.create(
+            venta=venta,
+            producto=self.producto,
+            lote_vendido=Lote.objects.get(numero_lote="LOT001"),
+            cantidad=1,
+            precio_unitario=Decimal("80.00"),
+            subtotal=Decimal("80.00"),
+        )
+        devolucion = DevolucionVenta.objects.create(
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            venta_original=venta,
+            tipo="PARCIAL",
+            motivo="ERROR_VENTA",
+            motivo_detallado="Prueba de blindaje",
+            monto_devolucion=Decimal("40.00"),
+            reingresar_a_stock=True,
+            usuario_procesa=self.usuario,
+            autorizado=True,
+        )
+
+        with self.assertRaises(ValidationError):
+            devolucion.procesar_devolucion(usuario=self.usuario)
+
+        devolucion.refresh_from_db()
+        self.assertFalse(devolucion.procesada)
+        self.assertEqual(detalle.cantidad, 1)

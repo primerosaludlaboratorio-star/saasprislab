@@ -1265,7 +1265,12 @@ class DevolucionVenta(models.Model):
         
         if self.requiere_autorizacion and not self.autorizado:
             raise ValidationError("La devolución requiere autorización gerencial.")
-        
+
+        if self.tipo == 'PARCIAL':
+            raise ValidationError(
+                "La devolución parcial requiere detalle por producto/cantidad antes de afectar stock o mermas."
+            )
+
         with transaction.atomic():
             venta = self.venta_original
             detalles = venta.detalles.all()

@@ -176,6 +176,16 @@ def procesar_devolucion(request):
                 'success': False,
                 'error': f'Monto excede lo disponible para devolución (${disponible})'
             }, status=400)
+
+        if tipo == 'PARCIAL':
+            return JsonResponse({
+                'success': False,
+                'error': (
+                    'La devolución parcial aún requiere captura por producto/cantidad. '
+                    'Use devolución TOTAL o espere la captura detallada.'
+                ),
+                'codigo': 'DEVOLUCION_PARCIAL_REQUIERE_DETALLE',
+            }, status=400)
         
         with transaction.atomic():
             # Crear registro de devolución
