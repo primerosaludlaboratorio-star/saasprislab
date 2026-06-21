@@ -192,6 +192,25 @@ class ConsultorioViewTests(TestCase):
         self.assertEqual(consulta.estado, 'FINALIZADA')
         self.assertTrue(consulta.folio_consulta.startswith(f'CONS-{self.empresa.id}-'))
 
+    def test_api_buscar_paciente_avanzado_incluye_uuid_para_iniciar_consulta(self):
+        response = self.client.get(
+            reverse('api_buscar_paciente_avanzado'),
+            {'nombre': 'Juan'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['status'], 'success')
+        self.assertTrue(payload['pacientes'])
+        self.assertEqual(payload['pacientes'][0]['uuid'], str(self.paciente.uuid))
+
+    def test_dashboard_medico_apunta_a_flujo_canonico_por_uuid(self):
+        response = self.client.get(reverse('medico'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse('api_buscar_paciente_avanzado'))
+        self.assertContains(response, '/consultorio/medico/consulta/nueva/')
+
 
 class ConsultorioApiStressTests(TestCase):
     """

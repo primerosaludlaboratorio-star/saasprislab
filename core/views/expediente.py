@@ -49,6 +49,7 @@ def api_buscar_paciente_avanzado(request):
     for p in pacientes:
         resultados.append({
             'id': p.id,
+            'uuid': str(p.uuid) if getattr(p, 'uuid', None) else None,
             'nombre': p.nombre_completo,
             'fecha_nacimiento': p.fecha_nacimiento.strftime('%Y-%m-%d') if p.fecha_nacimiento else None,
             'edad': p.calcular_edad() if hasattr(p, 'calcular_edad') else None,

@@ -164,6 +164,7 @@ Archivos de control actualizados localmente:
 2. Farmacia sigue con doble arbol funcional (`core` vs `farmacia`).
 3. Drive no puede marcarse como cerrado al 100% mientras no haya credenciales validas reales en el entorno destino.
 4. Existian dos rutas staff para imprimir resultados de laboratorio con reglas distintas: `imprimir_resultados_pdf` si aplicaba validacion/consentimiento, pero `imprimir_resultados` solo bloqueaba por saldo. Quedo corregido para que la ruta operativa tambien exija orden validada y consentimiento digital.
+5. El `dashboard_medico` legacy seguia intentando iniciar consulta con `id` numérico en una ruta vieja (`/medico/consulta/<id>/`), mientras el flujo canónico actual usa `uuid` del paciente en `/consultorio/medico/consulta/nueva/<uuid>/`. Quedo corregido el contrato API + template.
 
 ### Medios
 
@@ -181,8 +182,11 @@ Archivos de control actualizados localmente:
 - `consultorio/tests.py`
 - `core/views/laboratorio_reportes.py`
 - `core/tests/test_lab_validation_pdf.py`
+- `core/views/expediente.py`
+- `core/templates/core/dashboard_medico.html`
 - `DEPLOY.md`
 - `ACCESO_Y_DEPLOY_OPERATIVO_VPS.md`
+- `consultorio/tests.py`
 
 ## Recomendacion de siguiente bloque
 
@@ -192,3 +196,4 @@ Archivos de control actualizados localmente:
    - unificar
    - o separar formalmente `PDV` y `ERP`
 4. Cerrar Drive o Vultr Object Storage con variables reales de produccion y prueba de subida efectiva.
+5. Seguir auditando consultorio/farmacia/laboratorio desde UI ya con los contratos backend blindados.

@@ -338,6 +338,8 @@ Leyenda:
 - [x] `manage.py check` revalidado `2026-06-20` después del cierre de auditoría estructural adicional
 - [x] Hallazgo crítico corregido `2026-06-20`: la ruta staff `imprimir_resultados` en laboratorio ya no puede saltarse la misma liberación clínica que `imprimir_resultados_pdf`; ahora bloquea impresión si la orden aún no está en `RESULTADOS_LISTOS/ENTREGADO` o si falta consentimiento digital del paciente
 - [x] Nuevas regresiones agregadas `2026-06-20`: `core.tests.test_lab_validation_pdf.LabValidationPdfTest.test_imprimir_resultados_staff_bloquea_orden_no_validada` y `test_imprimir_resultados_staff_bloquea_sin_consentimiento_digital`
+- [x] Hallazgo crítico corregido `2026-06-20`: `core/views/expediente.py` ahora expone `uuid` en `api_buscar_paciente_avanzado` y `core/templates/core/dashboard_medico.html` ya redirige al flujo canónico `/consultorio/medico/consulta/nueva/<uuid>/` en vez de la ruta legacy por `id`
+- [x] Regresiones revalidadas `2026-06-20`: `consultorio.tests.ConsultorioViewTests.test_api_buscar_paciente_avanzado_incluye_uuid_para_iniciar_consulta`, `test_dashboard_medico_apunta_a_flujo_canonico_por_uuid` y `test_nueva_consulta_con_paciente_guarda_consulta_finalizada_con_folio` -> `OK`
 
 ## Bloque agregado por Claude — 2026-06-20
 

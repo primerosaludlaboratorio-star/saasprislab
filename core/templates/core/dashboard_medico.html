@@ -305,7 +305,7 @@
         
         resultadosDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Buscando...</span></div></div>';
         
-        fetch(`/medico/api/buscar-paciente-avanzado/?nombre=${encodeURIComponent(nombre)}`)
+        fetch(`{% url "api_buscar_paciente_avanzado" %}?nombre=${encodeURIComponent(nombre)}`)
             .then(r => r.json())
             .then(data => {
                 if (data.status === 'success' && data.pacientes && data.pacientes.length > 0) {
@@ -316,7 +316,7 @@
                                     <div class="card border-primary h-100" style="cursor: pointer; transition: all 0.3s;" 
                                          onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.15)';"
                                          onmouseout="this.style.transform=''; this.style.boxShadow='';"
-                                         onclick="iniciarConsulta(${p.id})">
+                                         onclick='iniciarConsulta(${JSON.stringify(p.uuid || "")})'>
                                         <div class="card-body">
                                             <h6 class="card-title text-primary fw-bold mb-2">
                                                 <i class="bi bi-person-circle"></i> ${p.nombre}
@@ -354,13 +354,24 @@
             });
     }
     
-    function iniciarConsulta(pacienteId) {
-        window.location.href = `/medico/consulta/${pacienteId}/`;
+    function iniciarConsulta(pacienteUuid) {
+        if (!pacienteUuid) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Paciente incompleto',
+                text: 'No se pudo iniciar la consulta porque el paciente no tiene UUID válido.'
+            });
+            return;
+        }
+        window.location.href = `/consultorio/medico/consulta/nueva/${pacienteUuid}/`;
     }
     
-    function solicitarLabs(pacienteId) {
+    function solicitarLabs(pacienteUuid) {
+        if (!pacienteUuid) {
+            return;
+        }
         // Redirigir a la consulta del paciente para solicitar estudios
-        window.location.href = `/medico/consulta/${pacienteId}/?accion=solicitar_labs`;
+        window.location.href = `/consultorio/medico/consulta/nueva/${pacienteUuid}/?accion=solicitar_labs`;
     }
 
     function verResultadosLab(ordenId) {
