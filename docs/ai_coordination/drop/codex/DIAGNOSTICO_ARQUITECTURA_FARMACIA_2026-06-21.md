@@ -82,6 +82,11 @@ Archivo: `core/tests/test_devoluciones_farmacia_api.py`
 
 - `python manage.py check` -> OK.
 - `python -m py_compile core/views/farmacia.py core/tests/test_devoluciones_farmacia_api.py` -> OK.
+- Deploy VPS a commit `06eb2f7` -> OK.
+- Smoke produccion:
+  - `https://prislab.labcorecloud.com/` -> HTTP 200.
+  - `/farmacia/devoluciones/buscar/` sin sesion -> HTTP 302 a login, esperado por `@login_required`.
+- Ajuste operativo aplicado en VPS: permisos de `staticfiles` normalizados a directorios `755` y archivos `644`; `pdv_farmacia*.js` paso a HTTP 200.
 
 Nota: el runner Django focalizado de `core.tests.test_devoluciones_farmacia_api` excedio timeout local antes de producir salida. No se toma como fallo del cambio; queda pendiente repetir en entorno estable o CI.
 
@@ -107,4 +112,3 @@ No proponer "unificar farmacia" como parche inmediato. Primero deben entregar:
 - Contrato de API esperado por cada template/JS.
 - Plan de migracion de datos para devoluciones.
 - Tests que prueben el comportamiento actual antes de cambiarlo.
-
