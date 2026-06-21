@@ -163,6 +163,7 @@ Archivos de control actualizados localmente:
 1. La automatizacion de pruebas en Windows sigue friccionada por `UnicodeEncodeError` durante `manage.py test`.
 2. Farmacia sigue con doble arbol funcional (`core` vs `farmacia`).
 3. Drive no puede marcarse como cerrado al 100% mientras no haya credenciales validas reales en el entorno destino.
+4. Existian dos rutas staff para imprimir resultados de laboratorio con reglas distintas: `imprimir_resultados_pdf` si aplicaba validacion/consentimiento, pero `imprimir_resultados` solo bloqueaba por saldo. Quedo corregido para que la ruta operativa tambien exija orden validada y consentimiento digital.
 
 ### Medios
 
@@ -178,12 +179,14 @@ Archivos de control actualizados localmente:
 - `static/js/pdv_farmacia.js`
 - `farmacia/tests.py`
 - `consultorio/tests.py`
+- `core/views/laboratorio_reportes.py`
+- `core/tests/test_lab_validation_pdf.py`
 - `DEPLOY.md`
 - `ACCESO_Y_DEPLOY_OPERATIVO_VPS.md`
 
 ## Recomendacion de siguiente bloque
 
-1. Subir y desplegar los fixes de laboratorio y la documentacion operativa VPS.
+1. Subir y desplegar los fixes de laboratorio, farmacia, consultorio y la documentacion operativa VPS.
 2. Resolver la traba de ejecucion de tests en Windows (`UTF-8` / salida de migraciones).
 3. Hacer siguiente ronda sobre farmacia con decision explicita:
    - unificar

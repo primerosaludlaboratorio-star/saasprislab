@@ -8,9 +8,10 @@ integra QR de validacion, y persiste en GCS.
 import logging
 from datetime import datetime
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET
 
 from core.models import OrdenDeServicio, ForenseAcceso
@@ -20,6 +21,7 @@ from core.services.motor_reportes_lab import (
     guardar_reporte_en_storage,
 )
 from core.utils.candado_financiero import ReportePdfSaldoPendienteError
+from core.utils.lfpdppp_resultados import paciente_autorizado_canal_digital_resultados
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +46,20 @@ def imprimir_resultados(request, orden_id):
     # Verificar permisos
     if not request.user.is_superuser and getattr(request.user, 'empresa', None) != orden.empresa:
         return HttpResponse("No autorizado", status=403)
+
+    if orden.estado not in ('RESULTADOS_LISTOS', 'ENTREGADO'):
+        messages.error(
+            request,
+            'Esta orden no esta validada por el Quimico. Solo se pueden imprimir resultados listos.',
+        )
+        return redirect('captura_resultados', orden_id=orden.id)
+
+    if not paciente_autorizado_canal_digital_resultados(orden.paciente):
+        messages.error(
+            request,
+            'El paciente no tiene registrada la firma de aviso de privacidad para liberar resultados.',
+        )
+        return redirect('captura_resultados', orden_id=orden.id)
 
     # ── CANDADO FINANCIERO ────────────────────────────────────────────────────
     from core.utils.candado_financiero import tiene_saldo_pendiente, calcular_saldo, respuesta_retenida_html

@@ -336,6 +336,8 @@ Leyenda:
 - [~] Perfilado local confirmó que el cuello de botella mayor era carga de imports del router; quedó reducido, pero falta validar en VPS la mejora exacta con Gunicorn/Nginx
 - [~] Verificación local de `manage.py check` quedó bloqueada por permisos del handler `logs/prislab_audit.log`; el problema es del entorno local de logging, no de sintaxis del cambio
 - [x] `manage.py check` revalidado `2026-06-20` después del cierre de auditoría estructural adicional
+- [x] Hallazgo crítico corregido `2026-06-20`: la ruta staff `imprimir_resultados` en laboratorio ya no puede saltarse la misma liberación clínica que `imprimir_resultados_pdf`; ahora bloquea impresión si la orden aún no está en `RESULTADOS_LISTOS/ENTREGADO` o si falta consentimiento digital del paciente
+- [x] Nuevas regresiones agregadas `2026-06-20`: `core.tests.test_lab_validation_pdf.LabValidationPdfTest.test_imprimir_resultados_staff_bloquea_orden_no_validada` y `test_imprimir_resultados_staff_bloquea_sin_consentimiento_digital`
 
 ## Bloque agregado por Claude — 2026-06-20
 

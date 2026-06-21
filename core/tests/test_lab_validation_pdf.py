@@ -106,3 +106,24 @@ class LabValidationPdfTest(TestCase):
         self.assertEqual(response['Content-Type'], 'application/pdf')
         self.assertEqual(response.content, b'%PDF-1.4 mock')
         generar.assert_called_once()
+
+    def test_imprimir_resultados_staff_bloquea_orden_no_validada(self):
+        orden = self._crear_orden()
+
+        with patch('core.views.laboratorio_reportes.generar_reporte_pdf') as generar:
+            response = self.client.get(reverse('imprimir_resultados', args=[orden.id]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('captura_resultados', args=[orden.id]))
+        generar.assert_not_called()
+
+    def test_imprimir_resultados_staff_bloquea_sin_consentimiento_digital(self):
+        orden = self._crear_orden()
+        OrdenDeServicio.objects.filter(id=orden.id).update(estado='RESULTADOS_LISTOS')
+
+        with patch('core.views.laboratorio_reportes.generar_reporte_pdf') as generar:
+            response = self.client.get(reverse('imprimir_resultados', args=[orden.id]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('captura_resultados', args=[orden.id]))
+        generar.assert_not_called()
