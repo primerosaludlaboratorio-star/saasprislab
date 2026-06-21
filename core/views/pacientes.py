@@ -19,23 +19,30 @@ def _empresa_efectiva_pacientes(request):
     return empresa_efectiva_request(request)
 
 
-@login_required
 def api_buscar_pacientes(request):
     """
     API para buscar pacientes por nombre o teléfono.
     
     Entrada:
         - GET: query parameter 'q' (mínimo 2 caracteres)
-        - Requiere autenticación (@login_required)
+        - Requiere autenticación; en AJAX devuelve JSON 401 si la sesión expiró
     
     Salida:
         - JSON: {'pacientes': [{'id': int, 'nombre': str, ...}]}
         - Siempre devuelve JSON, incluso en caso de error
     
     Excepciones:
-        - Si el usuario no está autenticado, Django redirige a login (pero esto se maneja con @login_required)
+        - Si el usuario no está autenticado, devuelve JSON para evitar redirects HTML en fetch()
         - Si no hay empresa asignada, devuelve JSON con error
     """
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'status': 'error',
+            'code': 'AUTH_REQUIRED',
+            'mensaje': 'Sesión expirada. Inicia sesión nuevamente.',
+            'pacientes': []
+        }, status=401)
+
     if request.method != 'GET':
         return JsonResponse({'status': 'error', 'mensaje': 'Método no permitido'}, status=405)
     

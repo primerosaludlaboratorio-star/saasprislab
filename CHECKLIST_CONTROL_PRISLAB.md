@@ -347,6 +347,8 @@ Leyenda:
 - [x] Regresiones revalidadas `2026-06-20`: `farmacia.tests.FarmaciaViewTests.test_procesar_devolucion_parcial_rechaza_sin_detalle_por_producto`, `test_modelo_devolucion_parcial_no_procesa_stock_sin_detalle` y `test_pdv_template_exposes_active_api_urls` -> `OK`
 - [x] Hallazgo funcional corregido `2026-06-20`: desde `core/templates/core/lista_ventas_farmacia.html` el botón de devolución ya no manda a una pantalla vacía; ahora abre la búsqueda activa de devoluciones con la venta precargada por `venta_id`
 - [x] Regresión revalidada `2026-06-20`: `farmacia.tests.FarmaciaViewTests.test_buscar_venta_devolucion_precarga_venta_desde_historial` -> `OK`
+- [x] Hallazgo funcional corregido `2026-06-21`: búsqueda de pacientes en recepción de laboratorio ya no puede romper la UI con `Unexpected token '<'` cuando el fetch recibe HTML por sesión expirada o respuesta no JSON; `/api/pacientes/buscar/` ahora devuelve JSON `401 AUTH_REQUIRED` sin redirigir y `recepcion_lab.html` valida `Content-Type`/estado antes de parsear JSON
+- [x] Regresión revalidada `2026-06-21`: `core.tests.test_tenant_isolation.TenantIsolationViewTest` -> `OK (6 tests)`, cubriendo aislamiento tenant y rechazo anónimo JSON en `/api/pacientes/buscar/`
 
 ## Bloque agregado por Claude — 2026-06-20
 

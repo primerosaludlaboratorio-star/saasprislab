@@ -956,7 +956,18 @@
             fetch(`/api/pacientes/buscar/?q=${encodeURIComponent(nombre)}`, {
                 headers: {'X-Requested-With': 'XMLHttpRequest'}
             })
-            .then(r => r.json())
+            .then(async r => {
+                const contentType = r.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    const preview = (await r.text()).slice(0, 120);
+                    throw new Error(`Respuesta inesperada del servidor (${r.status}): ${preview}`);
+                }
+                const data = await r.json();
+                if (!r.ok) {
+                    throw new Error(data.mensaje || `Error ${r.status} buscando paciente.`);
+                }
+                return data;
+            })
             .then(data => {
                 const contenedor = document.getElementById('resultados-pacientes-lab');
                 contenedor.innerHTML = '';
@@ -984,7 +995,14 @@
                     contenedor.classList.remove('d-none');
                 }
             })
-            .catch(err => console.error('Error buscando paciente:', err));
+            .catch(err => {
+                console.error('Error buscando paciente:', err);
+                const contenedor = document.getElementById('resultados-pacientes-lab');
+                if (contenedor) {
+                    contenedor.innerHTML = `<div class="list-group-item text-danger small"><i class="bi bi-exclamation-triangle"></i> ${escapeHtml(err.message || 'No se pudo buscar pacientes.')}</div>`;
+                    contenedor.classList.remove('d-none');
+                }
+            });
         }, 300);
     }
 

@@ -228,6 +228,9 @@ class TenantIsolationViewTest(TestCase):
         """Un usuario anónimo no accede a datos de ninguna empresa."""
         anon = Client(SERVER_NAME='localhost')
         resp = anon.get('/api/pacientes/buscar/', {'q': 'test'})
-        # Debe redirigir a login (302) o rechazar (401/403), nunca 200 con datos
-        self.assertIn(resp.status_code, [302, 301, 401, 403],
-            "Acceso anónimo debe ser bloqueado o redirigido a login")
+        # API consumida por fetch(): debe rechazar con JSON, nunca HTML de login.
+        self.assertEqual(resp.status_code, 401)
+        self.assertEqual(resp['Content-Type'], 'application/json')
+        data = resp.json()
+        self.assertEqual(data['code'], 'AUTH_REQUIRED')
+        self.assertEqual(data['pacientes'], [])
