@@ -345,6 +345,8 @@ Leyenda:
 - [x] Hallazgo crítico corregido `2026-06-20`: el flujo activo `farmacia/views/soporte.py::procesar_devolucion` ya no permite devoluciones `PARCIAL` sin captura detallada por producto/cantidad; antes podía afectar stock/mermas de la venta completa con solo un monto parcial
 - [x] Defensa en profundidad `2026-06-20`: `farmacia.models.DevolucionVenta.procesar_devolucion()` también bloquea parciales sin detalle, aunque alguien intente saltarse la vista
 - [x] Regresiones revalidadas `2026-06-20`: `farmacia.tests.FarmaciaViewTests.test_procesar_devolucion_parcial_rechaza_sin_detalle_por_producto`, `test_modelo_devolucion_parcial_no_procesa_stock_sin_detalle` y `test_pdv_template_exposes_active_api_urls` -> `OK`
+- [x] Hallazgo funcional corregido `2026-06-20`: desde `core/templates/core/lista_ventas_farmacia.html` el botón de devolución ya no manda a una pantalla vacía; ahora abre la búsqueda activa de devoluciones con la venta precargada por `venta_id`
+- [x] Regresión revalidada `2026-06-20`: `farmacia.tests.FarmaciaViewTests.test_buscar_venta_devolucion_precarga_venta_desde_historial` -> `OK`
 
 ## Bloque agregado por Claude — 2026-06-20
 

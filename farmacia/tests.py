@@ -284,6 +284,36 @@ class FarmaciaViewTests(TestCase):
 
         self.assertTrue(hasattr(venta_farmacia_service, "ejecutar_venta_pdv"))
 
+    def test_buscar_venta_devolucion_precarga_venta_desde_historial(self):
+        venta = Venta.objects.create(
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            usuario=self.usuario,
+            paciente_nombre="Publico General",
+            total=Decimal("120.00"),
+            subtotal=Decimal("120.00"),
+        )
+        DetalleVenta.objects.create(
+            venta=venta,
+            producto=self.producto,
+            lote_vendido=Lote.objects.get(numero_lote="LOT001"),
+            cantidad=2,
+            precio_unitario=Decimal("60.00"),
+            subtotal=Decimal("120.00"),
+        )
+
+        self.usuario.rol = "GERENTE"
+        self.usuario.save(update_fields=["rol"])
+
+        response = self.client.get(
+            reverse("farmacia:buscar_venta_devolucion"),
+            {"venta_id": venta.id},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, venta.folio_operacion)
+        self.assertContains(response, "venta-prefill-data")
+
     def test_procesar_devolucion_parcial_rechaza_sin_detalle_por_producto(self):
         self.usuario.rol = "GERENTE"
         self.usuario.save(update_fields=["rol"])

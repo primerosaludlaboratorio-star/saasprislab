@@ -34,6 +34,33 @@ from farmacia.models import (
 logger = logging.getLogger(__name__)
 
 
+def _serializar_venta_para_devolucion(venta):
+    devoluciones_previas = venta.devoluciones_farmacia.all()
+    total_devuelto = sum(d.monto_devolucion for d in devoluciones_previas)
+    return {
+        'venta': {
+            'id': venta.id,
+            'folio': venta.folio_operacion or str(venta.id),
+            'fecha': venta.fecha.strftime('%Y-%m-%d %H:%M'),
+            'total': str(venta.total),
+            'cliente': venta.paciente.nombre_completo if venta.paciente else 'Cliente General',
+            'vendedor': venta.usuario.get_full_name(),
+            'tiene_devoluciones': devoluciones_previas.exists(),
+            'total_devuelto': str(total_devuelto),
+            'disponible_devolver': str(venta.total - total_devuelto),
+        },
+        'detalles': [
+            {
+                'producto': detalle.producto.nombre,
+                'cantidad': str(detalle.cantidad),
+                'precio_unitario': str(detalle.precio_unitario),
+                'subtotal': str(detalle.subtotal),
+            }
+            for detalle in venta.detalles.all()
+        ],
+    }
+
+
 def _es_gerente_o_admin(user):
     """Requerido para procesar devoluciones (solo gerente/admin)."""
     if user.is_superuser:
@@ -80,34 +107,9 @@ def buscar_venta_para_devolucion(request):
                     'error': f'No se encontró venta con folio {folio}'
                 }, status=404)
             
-            # Verificar si ya tiene devoluciones
-            devoluciones_previas = venta.devoluciones_farmacia.all()
-            total_devuelto = sum(d.monto_devolucion for d in devoluciones_previas)
-            
-            # Construir datos de respuesta
-            return JsonResponse({
-                'success': True,
-                'venta': {
-                    'id': venta.id,
-                    'folio': venta.folio_operacion or str(venta.id),
-                    'fecha': venta.fecha.strftime('%Y-%m-%d %H:%M'),
-                    'total': str(venta.total),
-                    'cliente': venta.paciente.nombre_completo if venta.paciente else 'Cliente General',
-                    'vendedor': venta.usuario.get_full_name(),
-                    'tiene_devoluciones': devoluciones_previas.exists(),
-                    'total_devuelto': str(total_devuelto),
-                    'disponible_devolver': str(venta.total - total_devuelto),
-                },
-                'detalles': [
-                    {
-                        'producto': detalle.producto.nombre,
-                        'cantidad': str(detalle.cantidad),
-                        'precio_unitario': str(detalle.precio_unitario),
-                        'subtotal': str(detalle.subtotal),
-                    }
-                    for detalle in venta.detalles.all()
-                ]
-            })
+            payload = _serializar_venta_para_devolucion(venta)
+            payload['success'] = True
+            return JsonResponse(payload)
             
         except Exception as e:
             logger.error(f"Error buscando venta: {e}", exc_info=True)
@@ -116,8 +118,29 @@ def buscar_venta_para_devolucion(request):
                 'error': f'Error al buscar venta: {str(e)}'
             }, status=500)
     
-    # GET: Renderizar formulario
-    return render(request, 'farmacia/devoluciones/buscar_venta.html')
+    # GET: Renderizar formulario, opcionalmente con venta precargada desde historial
+    empresa = getattr(request.user, 'empresa', None)
+    venta_prefill = None
+    detalles_prefill = None
+    folio_prefill = ''
+    if empresa:
+        venta_id = request.GET.get('venta_id')
+        folio = (request.GET.get('folio') or '').strip()
+        venta = None
+        if venta_id:
+            venta = Venta.objects.filter(empresa=empresa, id=venta_id).first()
+        elif folio:
+            venta = Venta.objects.filter(empresa=empresa, folio_operacion=folio).first()
+        if venta:
+            payload = _serializar_venta_para_devolucion(venta)
+            venta_prefill = payload['venta']
+            detalles_prefill = payload['detalles']
+            folio_prefill = venta_prefill['folio']
+    return render(request, 'farmacia/devoluciones/buscar_venta.html', {
+        'venta_prefill': venta_prefill,
+        'detalles_prefill': detalles_prefill,
+        'folio_prefill': folio_prefill,
+    })
 
 
 @login_required

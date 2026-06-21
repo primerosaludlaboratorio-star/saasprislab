@@ -33,6 +33,7 @@
                                     id="folio" 
                                     name="folio"
                                     placeholder="Ej: VENTA-2026-00123"
+                                    value="{{ folio_prefill|default:'' }}"
                                     required
                                     autofocus
                                 >
@@ -104,6 +105,9 @@
         </div>
     </div>
 </div>
+
+{{ venta_prefill|json_script:"venta-prefill-data" }}
+{{ detalles_prefill|json_script:"detalles-prefill-data" }}
 
 <!-- Modal: Procesar Devolución -->
 <div class="modal fade" id="modalDevolucion" tabindex="-1">
@@ -295,6 +299,24 @@ document.getElementById('form-devolucion').addEventListener('submit', async func
         }
     } catch (error) {
         Swal.fire('Error', 'Error al procesar la devolución', 'error');
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const ventaNode = document.getElementById('venta-prefill-data');
+    const detallesNode = document.getElementById('detalles-prefill-data');
+    if (!ventaNode || !detallesNode || !ventaNode.textContent || ventaNode.textContent === 'null') {
+        return;
+    }
+    try {
+        const venta = JSON.parse(ventaNode.textContent);
+        const detalles = JSON.parse(detallesNode.textContent || '[]');
+        if (venta && venta.id) {
+            document.getElementById('folio').value = venta.folio || '';
+            mostrarVenta(venta, detalles);
+        }
+    } catch (e) {
+        console.error('No se pudo precargar la venta para devolución', e);
     }
 });
 </script>

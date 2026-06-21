@@ -167,6 +167,7 @@ Archivos de control actualizados localmente:
 5. El `dashboard_medico` legacy seguia intentando iniciar consulta con `id` numérico en una ruta vieja (`/medico/consulta/<id>/`), mientras el flujo canónico actual usa `uuid` del paciente en `/consultorio/medico/consulta/nueva/<uuid>/`. Quedo corregido el contrato API + template.
 6. El timeline de paciente en `core/services/paciente_service.py` tenia dos fallas reales: importaba un modelo inexistente (`farmacia.VentaMedicamento`) y seguia generando links legacy para consulta/farmacia. Quedo alineado a `core.Venta`, detalle canónico de consulta y ticket real de farmacia.
 7. El flujo activo de devoluciones en `farmacia/views/soporte.py` permitia capturar devoluciones `PARCIAL` sin detalle por producto/cantidad, pero aun asi reingresaba o mandaba a merma toda la venta completa. Quedo blindado: las parciales ahora se rechazan hasta que exista captura detallada por ítem.
+8. Desde `lista_ventas_farmacia` el botón de devolución enviaba a una pantalla que no consumía `venta_id`, dejando al usuario en búsqueda manual aunque ya venía desde una venta concreta. Quedo corregido: ahora aterriza en `/farmacia/devoluciones/buscar/?venta_id=...` y la pantalla precarga la venta.
 
 ### Medios
 
@@ -189,6 +190,8 @@ Archivos de control actualizados localmente:
 - `core/services/paciente_service.py`
 - `farmacia/views/soporte.py`
 - `farmacia/models.py`
+- `farmacia/templates/farmacia/devoluciones/buscar_venta.html`
+- `core/templates/core/lista_ventas_farmacia.html`
 - `DEPLOY.md`
 - `ACCESO_Y_DEPLOY_OPERATIVO_VPS.md`
 - `consultorio/tests.py`
