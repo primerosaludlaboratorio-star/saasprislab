@@ -234,9 +234,12 @@ def agendar_cita(request):
                 messages.error(request, error_msg)
                 pacientes_qs = Paciente.objects.filter(empresa=empresa, activo=True).order_by('nombres', 'apellido_paterno')
                 medicos_qs = Medico.objects.filter(empresa=empresa) if empresa else Medico.objects.none()
+                hoy_form = timezone.localdate()
                 return render(request, 'consultorio/agendar_cita.html', {
                     'pacientes': pacientes_qs,
                     'medicos': medicos_qs,
+                    'fecha_min': hoy_form.isoformat(),
+                    'fecha_max': (hoy_form + timedelta(days=365)).isoformat(),
                     'form_data': {
                         'paciente_id': paciente_id or '',
                         'paciente_nombre': paciente_nombre or '',
@@ -335,10 +338,13 @@ def agendar_cita(request):
     # GET: Mostrar formulario
     pacientes = Paciente.objects.filter(empresa=empresa, activo=True).order_by('nombres', 'apellido_paterno')
     medicos = Medico.objects.filter(empresa=empresa) if empresa else Medico.objects.none()
+    hoy = timezone.localdate()
     
     return render(request, 'consultorio/agendar_cita.html', {
         'pacientes': pacientes,
         'medicos': medicos,
+        'fecha_min': hoy.isoformat(),
+        'fecha_max': (hoy + timedelta(days=365)).isoformat(),
     })
 
 

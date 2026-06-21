@@ -3072,7 +3072,9 @@ def lista_pacientes_lab(request):
         qs = qs.filter(
             Q(nombre_completo__icontains=query) |
             Q(telefono__icontains=query) |
-            Q(curp__icontains=query)
+            Q(nombres__icontains=query) |
+            Q(apellido_paterno__icontains=query) |
+            Q(apellido_materno__icontains=query)
         )
 
     from django.core.paginator import Paginator
