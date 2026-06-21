@@ -60,6 +60,8 @@ def _verificar_acceso(user, roles_permitidos, grupos_permitidos=None):
     - roles_permitidos: lista de valores del campo user.rol (ej: ['CAJERO', 'ADMIN'])
     - grupos_permitidos: lista de nombres de grupos Django (ej: ['FARMACIA', 'GERENCIA_OPERATIVA'])
     """
+    if not get_empresa_usuario(user):
+        return False
     if user.is_superuser or user.is_staff:
         return True
     rol = (getattr(user, 'rol', '') or '').upper().strip()

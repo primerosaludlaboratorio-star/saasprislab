@@ -11,6 +11,7 @@ from django.conf import settings
 from django.db.models import F, Sum
 
 from core.models import Lote, Producto
+from core.utils.empresa_request import get_empresa_usuario
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,8 @@ _DIAS_ALERTA = getattr(settings, 'FARMACIA_DIAS_CADUCIDAD_ALERTA', 90)
 
 def es_farmacia_o_director(user):
     """Verifica si el usuario tiene permisos de farmacia o es director."""
+    if not get_empresa_usuario(user):
+        return False
     return (
         user.is_superuser or 
         user.groups.filter(name__in=['FARMACIA', 'DIRECTOR']).exists()

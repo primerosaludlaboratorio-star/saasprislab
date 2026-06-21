@@ -202,6 +202,22 @@ Estas hipotesis requieren tests de caracterizacion o evidencia de produccion.
 - Quien autoriza devoluciones por rol real.
 - Si ERP sera destino estrategico o solo capa administrativa parcial.
 
+## Fix de seguridad agregado tras Fase 0
+
+Se cerraron dos bypasses de permiso en helpers de Farmacia:
+
+- `core.views.farmacia._verificar_acceso()` ahora exige empresa antes de permitir superuser/staff, rol o grupo.
+- `farmacia.views.semaforo.es_farmacia_o_director()` ahora exige empresa antes de permitir superuser o grupo `FARMACIA`/`DIRECTOR`.
+
+Pruebas agregadas:
+
+- `core.tests.test_farmacia_permission_helpers`
+
+Validacion:
+
+- 7 tests de Farmacia arquitectura/permisos -> OK.
+- `python manage.py check` -> OK.
+
 ## Siguiente paso aprobado
 
 Crear tests de caracterizacion para:
@@ -212,4 +228,3 @@ Crear tests de caracterizacion para:
 4. Confirmar constraint `unique_cierre_por_apertura`.
 5. Probar que core/ERP no permiten doble devolucion sobre la misma venta (pendiente; requiere datos).
 6. Probar compatibilidad/diferencia de JSON de lotes core vs ERP (pendiente; requiere datos).
-
