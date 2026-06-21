@@ -3,6 +3,7 @@ Unit tests for the consultorio module.
 """
 import json
 import uuid
+from decimal import Decimal
 from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -12,7 +13,8 @@ from django.contrib.sessions.middleware import SessionMiddleware
 from django.urls import reverse
 from django.utils import timezone
 
-from core.models import Empresa, Paciente, ConsultaMedica as CoreConsultaMedica
+from core.models import Empresa, Paciente, ConsultaMedica as CoreConsultaMedica, Venta
+from core.services.paciente_service import obtener_timeline_paciente
 from consultorio.models import ConsultaMedica, Vademecum
 
 
@@ -210,6 +212,40 @@ class ConsultorioViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, reverse('api_buscar_paciente_avanzado'))
         self.assertContains(response, '/consultorio/medico/consulta/nueva/')
+
+    def test_timeline_paciente_usa_ruta_canonica_de_detalle_consulta(self):
+        consulta = CoreConsultaMedica.objects.create(
+            empresa=self.empresa,
+            paciente=self.paciente,
+            medico=None,
+            folio_consulta=f'CONS-{self.empresa.id}-TL-001',
+            motivo_consulta='Seguimiento general',
+            estado='FINALIZADA',
+        )
+
+        eventos = obtener_timeline_paciente(self.paciente)
+        evento_consulta = next(e for e in eventos if e['tipo'] == 'CONSULTA' and e['objeto'].id == consulta.id)
+
+        self.assertEqual(
+            evento_consulta['url'],
+            reverse('consultorio:ver_consulta_detalle', args=[consulta.id]),
+        )
+
+    def test_timeline_paciente_usa_modelo_canonico_venta_y_ticket_farmacia(self):
+        venta = Venta.objects.create(
+            empresa=self.empresa,
+            usuario=self.usuario,
+            paciente=self.paciente,
+            total=Decimal('150.00'),
+        )
+
+        eventos = obtener_timeline_paciente(self.paciente)
+        evento_farmacia = next(e for e in eventos if e['tipo'] == 'FARMACIA' and e['objeto'].id == venta.id)
+
+        self.assertEqual(
+            evento_farmacia['url'],
+            reverse('imprimir_ticket', args=[venta.id]),
+        )
 
 
 class ConsultorioApiStressTests(TestCase):

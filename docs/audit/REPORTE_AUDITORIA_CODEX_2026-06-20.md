@@ -165,6 +165,7 @@ Archivos de control actualizados localmente:
 3. Drive no puede marcarse como cerrado al 100% mientras no haya credenciales validas reales en el entorno destino.
 4. Existian dos rutas staff para imprimir resultados de laboratorio con reglas distintas: `imprimir_resultados_pdf` si aplicaba validacion/consentimiento, pero `imprimir_resultados` solo bloqueaba por saldo. Quedo corregido para que la ruta operativa tambien exija orden validada y consentimiento digital.
 5. El `dashboard_medico` legacy seguia intentando iniciar consulta con `id` numérico en una ruta vieja (`/medico/consulta/<id>/`), mientras el flujo canónico actual usa `uuid` del paciente en `/consultorio/medico/consulta/nueva/<uuid>/`. Quedo corregido el contrato API + template.
+6. El timeline de paciente en `core/services/paciente_service.py` tenia dos fallas reales: importaba un modelo inexistente (`farmacia.VentaMedicamento`) y seguia generando links legacy para consulta/farmacia. Quedo alineado a `core.Venta`, detalle canónico de consulta y ticket real de farmacia.
 
 ### Medios
 
@@ -184,6 +185,7 @@ Archivos de control actualizados localmente:
 - `core/tests/test_lab_validation_pdf.py`
 - `core/views/expediente.py`
 - `core/templates/core/dashboard_medico.html`
+- `core/services/paciente_service.py`
 - `DEPLOY.md`
 - `ACCESO_Y_DEPLOY_OPERATIVO_VPS.md`
 - `consultorio/tests.py`

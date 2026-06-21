@@ -340,6 +340,8 @@ Leyenda:
 - [x] Nuevas regresiones agregadas `2026-06-20`: `core.tests.test_lab_validation_pdf.LabValidationPdfTest.test_imprimir_resultados_staff_bloquea_orden_no_validada` y `test_imprimir_resultados_staff_bloquea_sin_consentimiento_digital`
 - [x] Hallazgo crítico corregido `2026-06-20`: `core/views/expediente.py` ahora expone `uuid` en `api_buscar_paciente_avanzado` y `core/templates/core/dashboard_medico.html` ya redirige al flujo canónico `/consultorio/medico/consulta/nueva/<uuid>/` en vez de la ruta legacy por `id`
 - [x] Regresiones revalidadas `2026-06-20`: `consultorio.tests.ConsultorioViewTests.test_api_buscar_paciente_avanzado_incluye_uuid_para_iniciar_consulta`, `test_dashboard_medico_apunta_a_flujo_canonico_por_uuid` y `test_nueva_consulta_con_paciente_guarda_consulta_finalizada_con_folio` -> `OK`
+- [x] Hallazgo crítico corregido `2026-06-20`: `core/services/paciente_service.py` ya no importa el modelo inexistente `farmacia.VentaMedicamento`; el timeline del paciente usa `core.Venta`, abre detalle canónico de consulta (`consultorio:ver_consulta_detalle`) y ticket real de farmacia (`imprimir_ticket`)
+- [x] Regresiones revalidadas `2026-06-20`: `consultorio.tests.ConsultorioViewTests.test_timeline_paciente_usa_ruta_canonica_de_detalle_consulta`, `test_timeline_paciente_usa_modelo_canonico_venta_y_ticket_farmacia` y `test_dashboard_medico_apunta_a_flujo_canonico_por_uuid` -> `OK`
 
 ## Bloque agregado por Claude — 2026-06-20
 

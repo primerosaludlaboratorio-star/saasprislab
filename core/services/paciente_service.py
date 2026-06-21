@@ -149,8 +149,7 @@ def obtener_timeline_paciente(paciente):
     Returns:
         list: Lista de eventos ordenados cronológicamente (más reciente primero)
     """
-    from core.models import ConsultaMedica, OrdenDeServicio
-    from farmacia.models import VentaMedicamento
+    from core.models import ConsultaMedica, OrdenDeServicio, Venta
     
     eventos = []
     
@@ -166,7 +165,8 @@ def obtener_timeline_paciente(paciente):
             'fecha': consulta.fecha_consulta,
             'titulo': f'Consulta Médica - Dr. {medico_nombre}',
             'descripcion': consulta.motivo_consulta or 'Sin motivo especificado',
-            'url': f'/medico/consulta/{consulta.id}/',
+            # Ruta canónica: resuelve detalle directo o redirige a SOAP si la consulta viene de una cita.
+            'url': f'/consultorio/medico/consulta/ver/{consulta.id}/',
             'icono': 'bi-clipboard-pulse',
             'color': 'primary',
             'objeto': consulta
@@ -190,11 +190,12 @@ def obtener_timeline_paciente(paciente):
             'objeto': orden
         })
     
-    # 3. VENTAS DE FARMACIA (MEDICAMENTOS SURTIDOS)
+    # 3. VENTAS DE FARMACIA (modelo canonico core.Venta)
     try:
-        ventas = VentaMedicamento.objects.filter(
+        ventas = Venta.objects.filter(
+            empresa=paciente.empresa,
             paciente=paciente
-        ).select_related('sucursal').order_by('-fecha_venta')
+        ).select_related('sucursal').prefetch_related('detalles__producto').order_by('-fecha')
         
         for venta in ventas:
             detalles_texto = f"Total: ${venta.total:.2f}"
@@ -204,10 +205,10 @@ def obtener_timeline_paciente(paciente):
             
             eventos.append({
                 'tipo': 'FARMACIA',
-                'fecha': venta.fecha_venta,
-                'titulo': f'Surtido de Medicamentos - Folio {venta.folio}',
+                'fecha': venta.fecha,
+                'titulo': f'Surtido de Medicamentos - Folio {venta.folio_operacion or venta.id}',
                 'descripcion': detalles_texto,
-                'url': f'/farmacia/venta/{venta.id}/',
+                'url': f'/farmacia/ticket/{venta.id}/',
                 'icono': 'bi-capsule',
                 'color': 'warning',
                 'objeto': venta
