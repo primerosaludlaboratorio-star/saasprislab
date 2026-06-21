@@ -22,6 +22,7 @@ VENV_DIR="$APP_DIR/.venv"
 LOG_DIR="$ROOT_DIR/logs"
 MEDIA_DIR="$APP_DIR/media"
 STATIC_DIR="$APP_DIR/staticfiles"
+PUBLIC_STATIC_DIR="/var/www/prislab-static"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 log()  { echo -e "${GREEN}[DEPLOY]${NC} $1"; }
@@ -41,7 +42,7 @@ apt-get update -qq
 apt-get install -y --no-install-recommends \
     nginx postgresql postgresql-contrib \
     python3 python3-venv python3-dev python3-pip \
-    build-essential git curl wget unzip \
+    build-essential git curl wget unzip rsync \
     certbot python3-certbot-nginx \
     ufw redis-server \
     libpq-dev libssl-dev libffi-dev \
@@ -80,7 +81,7 @@ log "PostgreSQL listo: base=$DB_NAME usuario=$DB_USER"
 
 # ── 5. Directorio de la aplicación ────────────────────────────────────────────
 log "Preparando directorios..."
-mkdir -p "$ROOT_DIR" "$APP_DIR" "$LOG_DIR" "$MEDIA_DIR" "$STATIC_DIR"
+mkdir -p "$ROOT_DIR" "$APP_DIR" "$LOG_DIR" "$MEDIA_DIR" "$STATIC_DIR" "$PUBLIC_STATIC_DIR"
 chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 chown -R "$APP_USER:$APP_USER" "$LOG_DIR"
 
@@ -113,6 +114,12 @@ sudo -u "$APP_USER" "$VENV_DIR/bin/python" scripts/run_manage_with_env.py migrat
 
 log "Recolectando archivos estáticos..."
 sudo -u "$APP_USER" "$VENV_DIR/bin/python" scripts/run_manage_with_env.py collectstatic --noinput
+
+log "Sincronizando estáticos públicos para Nginx..."
+rsync -a --delete "$STATIC_DIR/" "$PUBLIC_STATIC_DIR/"
+chown -R root:www-data "$PUBLIC_STATIC_DIR"
+find "$PUBLIC_STATIC_DIR" -type d -exec chmod 755 {} +
+find "$PUBLIC_STATIC_DIR" -type f -exec chmod 644 {} +
 
 # ── 10. Nginx ────────────────────────────────────────────────────────────────
 log "Configurando Nginx para $DOMAIN..."
