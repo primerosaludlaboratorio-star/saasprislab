@@ -88,6 +88,29 @@ class DevolucionesFarmaciaAPITest(TestCase):
 
         self.client.login(username='admin_dev', password='admin_dev_123')
 
+    def test_permiso_devolucion_requiere_empresa_para_superuser(self):
+        """Un superuser sin empresa no debe bypassar devoluciones/cancelaciones."""
+        from core.views.farmacia import es_gerente_o_admin
+
+        sin_empresa = User.objects.create_user(
+            username='root_sin_empresa',
+            password='root_sin_empresa_123',
+            email='root-sin-empresa@dev.com',
+            is_superuser=True,
+            is_staff=True,
+        )
+        con_empresa = User.objects.create_user(
+            username='root_con_empresa',
+            password='root_con_empresa_123',
+            email='root-con-empresa@dev.com',
+            empresa=self.empresa,
+            is_superuser=True,
+            is_staff=True,
+        )
+
+        self.assertFalse(es_gerente_o_admin(sin_empresa))
+        self.assertTrue(es_gerente_o_admin(con_empresa))
+
     def test_buscar_venta_devolucion_por_busqueda(self):
         """El frontend envía ?busqueda=; la API debe responder con el contrato esperado."""
         response = self.client.get(

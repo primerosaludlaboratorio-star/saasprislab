@@ -35,6 +35,7 @@ from core.utils.farmacia_tenant import (
     respuesta_sin_empresa_fragmento,
     respuesta_sin_empresa_json,
 )
+from core.utils.empresa_request import get_empresa_usuario
 from core.utils.trazabilidad import registrar_trazabilidad, serializar_modelo
 from core.services.ventas.venta_farmacia_service import VentaFarmaciaService
 from core.services.inventario.movimiento_inventario_service import MovimientoInventarioService
@@ -1507,9 +1508,15 @@ def es_gerente_o_admin(user):
     Verifica si el usuario tiene permisos de gerente o administrador.
     Requerido para operaciones sensibles como devoluciones.
     """
-    if user.is_superuser:
+    if not get_empresa_usuario(user):
+        return False
+    if user.is_superuser or user.is_staff:
         return True
-    
+
+    rol = (getattr(user, 'rol', '') or '').upper().strip()
+    if rol in ('ADMIN', 'ADMINISTRADOR', 'GERENTE'):
+        return True
+
     # Verificar si el usuario pertenece a grupos de gerencia
     return user.groups.filter(name__in=['Gerente', 'Administrador', 'Admin']).exists()
 
