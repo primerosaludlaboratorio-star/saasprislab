@@ -40,6 +40,21 @@ class LabValidationPdfTest(TestCase):
             estado='PAGADO',
         )
 
+    @override_settings(LAB_VALIDATION_PIN='')
+    def test_validar_pin_sin_configuracion_falla_seguro(self):
+        orden = self._crear_orden()
+
+        response = self.client.post(
+            reverse('api_validar_pin', args=[orden.id]),
+            data=json.dumps({'pin': '1234'}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertFalse(response.json()['ok'])
+        orden.refresh_from_db()
+        self.assertEqual(orden.estado, 'PAGADO')
+
     @override_settings(LAB_VALIDATION_PIN='7777')
     def test_validar_pin_genera_pdf_antes_de_marcar_orden_pagada(self):
         orden = self._crear_orden()

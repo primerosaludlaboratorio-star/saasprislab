@@ -1377,7 +1377,19 @@ def api_validar_pin(request, orden_id: int):
     if not pin:
         return JsonResponse({"ok": False, "error": "PIN requerido"}, status=400)
 
-    if pin != str(getattr(settings, "LAB_VALIDATION_PIN", "1234")):
+    validation_pin = str(getattr(settings, "LAB_VALIDATION_PIN", "") or "").strip()
+    if not validation_pin:
+        logger_core.error(
+            'api_validar_pin: LAB_VALIDATION_PIN no configurado; orden=%s usuario=%s',
+            orden_id,
+            getattr(request.user, 'username', 'anon'),
+        )
+        return JsonResponse(
+            {"ok": False, "error": "PIN de validación no configurado"},
+            status=503,
+        )
+
+    if pin != validation_pin:
         return JsonResponse({"ok": False, "error": "PIN incorrecto"}, status=403)
 
     orden = OrdenDeServicio.objects.filter(id=orden_id, empresa=empresa).first()

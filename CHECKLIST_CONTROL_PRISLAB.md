@@ -351,6 +351,8 @@ Leyenda:
 - [x] Regresión revalidada `2026-06-21`: `core.tests.test_tenant_isolation.TenantIsolationViewTest` -> `OK (6 tests)`, cubriendo aislamiento tenant y rechazo anónimo JSON en `/api/pacientes/buscar/`
 - [x] Contrato laboratorio revalidado `2026-06-21`: `core.tests.test_lims_cart_search.LimsCartSearchTests.test_crear_orden_servicio_acepta_tokens_lims_y_persiste_detalles` confirma que `/laboratorio/api/crear-orden/` acepta tokens del carrito LIMS (`analito:ID`, `perfil:ID`) y persiste `DetalleOrden`
 - [x] Regresión LIMS revalidada `2026-06-21`: `core.tests.test_lims_cart_search.LimsCartSearchTests` -> `OK (4 tests)`
+- [x] Hallazgo de seguridad corregido `2026-06-21`: `api_validar_pin` ya no usa fallback `1234`; si `LAB_VALIDATION_PIN` no está configurado devuelve `503` controlado y no valida la orden
+- [x] Regresión revalidada `2026-06-21`: `core.tests.test_lab_validation_pdf.LabValidationPdfTest` -> `OK (6 tests)`, cubriendo PIN sin configuración, generación PDF previa a validación y candados staff
 
 ## Bloque agregado por Claude — 2026-06-20
 
