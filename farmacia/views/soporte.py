@@ -25,8 +25,9 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from core.models import Usuario, Producto, Lote, Empresa, Sucursal, Venta, DetalleVenta
+from core.utils.empresa_request import get_empresa_usuario
 from farmacia.models import (
-    AperturaCaja, CierreTurnoFarmacia, 
+    AperturaCaja, CierreTurnoFarmacia,
     DevolucionVenta, RegistroAntibiotico,
     MermaFarmacia, MovimientoInventario
 )
@@ -62,8 +63,10 @@ def _serializar_venta_para_devolucion(venta):
 
 
 def _es_gerente_o_admin(user):
-    """Requerido para procesar devoluciones (solo gerente/admin)."""
-    if user.is_superuser:
+    """Requerido para procesar devoluciones (solo gerente/admin con empresa válida)."""
+    if not get_empresa_usuario(user):
+        return False
+    if user.is_superuser or user.is_staff:
         return True
     rol = (getattr(user, 'rol', '') or '').upper().strip()
     if rol in ('ADMIN', 'ADMINISTRADOR', 'GERENTE'):
