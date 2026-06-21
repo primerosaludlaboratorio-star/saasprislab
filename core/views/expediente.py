@@ -67,8 +67,14 @@ def expediente_clinico(request, paciente_id):
     if not empresa:
         return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}, status=403)
     
-    # Verificar que el usuario tenga permiso de médico para ver historial completo
-    puede_ver_historial = request.user.rol == 'MEDICO' or request.user.is_superuser
+    # Expediente completo: médico operativo y dirección clínica/administrativa.
+    rol = (getattr(request.user, 'rol', '') or '').upper().strip()
+    puede_ver_historial = (
+        request.user.is_superuser
+        or request.user.is_staff
+        or rol in {'MEDICO', 'DIRECTOR', 'ADMIN', 'ADMINISTRADOR', 'GERENTE'}
+        or request.user.groups.filter(name__in=['MEDICOS', 'GERENCIA', 'GERENCIA_OPERATIVA', 'DIRECTOR']).exists()
+    )
     
     if not puede_ver_historial:
         return JsonResponse({'status': 'error', 'mensaje': 'No tiene permisos para ver el expediente clínico'}, status=403)

@@ -306,18 +306,13 @@ def director_analizadores(request):
     if not _require_director(request):
         return HttpResponseForbidden('Sin acceso.')
 
-    empresa = getattr(request.user, 'empresa', None)
-
-    if not empresa:
-        from django.http import HttpResponseForbidden
-        return HttpResponseForbidden('Usuario sin empresa asignada.')
     from laboratorio.models import Equipo, CodigoParametroEquipo
-    # Siempre filtrar por empresa — nunca Equipo.objects.all() sin scope
-    equipo_qs = Equipo.objects.filter(empresa=empresa)
+
+    # Equipo pertenece al catálogo técnico global de la instalación.
+    # El modelo laboratorio.Equipo no tiene FK empresa; el aislamiento aquí es RBAC.
+    equipo_qs = Equipo.objects.all()
     equipos = equipo_qs.prefetch_related('mapeos_codigos__parametro')
-    mapeos_qs = CodigoParametroEquipo.objects.filter(
-        equipo__empresa=empresa,
-    ).select_related('equipo', 'parametro').order_by('equipo__nombre')
+    mapeos_qs = CodigoParametroEquipo.objects.select_related('equipo', 'parametro').order_by('equipo__nombre')
     mapeos = mapeos_qs[:200]
 
     equipos_activos = equipos.filter(activo=True).count()
@@ -341,13 +336,8 @@ def director_analizadores_crear(request):
     if not _require_director(request):
         return HttpResponseForbidden('Sin acceso.')
     if request.method != 'POST':
-        from django.shortcuts import redirect
         return redirect('director_analizadores')
 
-    empresa = getattr(request.user, 'empresa', None)
-    if not empresa:
-        from django.http import HttpResponseForbidden
-        return HttpResponseForbidden('Usuario sin empresa asignada.')
     from laboratorio.models import Equipo
     nombre = request.POST.get('nombre', '').strip()
     if not nombre:
@@ -355,7 +345,6 @@ def director_analizadores_crear(request):
         return redirect('director_analizadores')
 
     Equipo.objects.create(
-        empresa=empresa,
         nombre=nombre,
         marca=request.POST.get('marca', '').strip() or None,
         ip_address=request.POST.get('ip_address', '').strip() or None,
@@ -374,10 +363,9 @@ def director_analizadores_toggle(request, equipo_id):
     from django.http import JsonResponse, HttpResponseForbidden
     if not _require_director(request):
         return HttpResponseForbidden('Sin acceso.')
-    empresa = getattr(request.user, 'empresa', None)
     from laboratorio.models import Equipo
     from django.shortcuts import get_object_or_404
-    equipo = get_object_or_404(Equipo, id=equipo_id, empresa=empresa)
+    equipo = get_object_or_404(Equipo, id=equipo_id)
     equipo.activo = not equipo.activo
     equipo.save(update_fields=['activo'])
     return JsonResponse({'ok': True, 'activo': equipo.activo})
@@ -391,9 +379,8 @@ def director_analizadores_mapeos(request, equipo_id):
     if not _require_director(request):
         return HttpResponseForbidden('Sin acceso.')
 
-    empresa = getattr(request.user, 'empresa', None)
     from laboratorio.models import Equipo, CodigoParametroEquipo, Parametro
-    equipo = get_object_or_404(Equipo, id=equipo_id, empresa=empresa)
+    equipo = get_object_or_404(Equipo, id=equipo_id)
     mapeos = CodigoParametroEquipo.objects.filter(equipo=equipo).select_related('parametro')
     parametros = Parametro.objects.order_by('estudio__nombre', 'orden_impresion', 'nombre')[:300]
 
@@ -432,8 +419,7 @@ def director_analizadores_eliminar_mapeo(request, mapeo_id):
     from django.shortcuts import get_object_or_404
     if not _require_director(request):
         return HttpResponseForbidden('Sin acceso.')
-    empresa = getattr(request.user, 'empresa', None)
     from laboratorio.models import CodigoParametroEquipo
-    mapeo = get_object_or_404(CodigoParametroEquipo, id=mapeo_id, equipo__empresa=empresa)
+    mapeo = get_object_or_404(CodigoParametroEquipo, id=mapeo_id)
     mapeo.delete()
     return JsonResponse({'ok': True})

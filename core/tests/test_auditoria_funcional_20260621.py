@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from core.models import Empresa, Paciente, Producto, Sucursal
 from core.models import Lote
+from laboratorio.models import Equipo
 
 
 Usuario = get_user_model()
@@ -162,3 +163,63 @@ class AuditoriaFuncionalJunio21Test(TestCase):
         self.assertEqual(lote.cantidad, 7)
         producto.refresh_from_db()
         self.assertEqual(producto.stock, 7)
+
+    def test_director_analizadores_carga_sin_filtrar_empresa_inexistente(self):
+        Equipo.objects.create(
+            nombre="Mindray Auditoria",
+            marca="Mindray",
+            protocolo=Equipo.PROTOCOLO_HL7,
+            activo=True,
+        )
+
+        response = self.client.get(reverse("director_analizadores"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Mindray Auditoria")
+
+    def test_director_analizadores_crear_y_toggle_equipo_global(self):
+        response = self.client.post(
+            reverse("director_analizadores_crear"),
+            {
+                "nombre": "Equipo Auditoria TCP",
+                "marca": "AuditBrand",
+                "ip_address": "192.0.2.10",
+                "puerto": "9100",
+                "protocolo": Equipo.PROTOCOLO_HL7,
+                "notas": "Prueba automatizada",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        equipo = Equipo.objects.get(nombre="Equipo Auditoria TCP")
+        self.assertTrue(equipo.activo)
+
+        response = self.client.get(reverse("director_analizadores_toggle", args=[equipo.id]))
+
+        self.assertEqual(response.status_code, 200)
+        equipo.refresh_from_db()
+        self.assertFalse(equipo.activo)
+
+    def test_director_puede_ver_expediente_clinico_sin_loop_403(self):
+        director = Usuario.objects.create_user(
+            username="director_expediente",
+            password="Test2026!PRIS",
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            rol="DIRECTOR",
+        )
+        paciente = Paciente.objects.create(
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            nombre_completo="Paciente Expediente Director",
+            nombres="Paciente",
+            apellido_paterno="Expediente",
+            apellido_materno="Director",
+            activo=True,
+        )
+        self.client.force_login(director)
+
+        response = self.client.get(reverse("expediente_clinico_medico", args=[paciente.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Paciente Expediente Director")
