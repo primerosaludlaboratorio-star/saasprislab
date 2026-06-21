@@ -147,6 +147,61 @@ class DevolucionesFarmaciaAPITest(TestCase):
         data = response.json()
         self.assertEqual(data['status'], 'success')
 
+    def test_core_rechaza_devolucion_total_duplicada_misma_venta(self):
+        """La ruta core no debe permitir devolver dos veces la misma partida."""
+        from core.models import SalesReturn
+
+        payload = {
+            'venta_id': self.venta.id,
+            'tipo_devolucion': 'TOTAL',
+            'monto_reembolsado': '80.00',
+            'motivo_error': 'Producto caducado',
+            'accion_stock': 'REINGRESAR',
+        }
+
+        primera = self.client.post(
+            '/farmacia/devoluciones/procesar/',
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+        segunda = self.client.post(
+            '/farmacia/devoluciones/procesar/',
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+
+        self.assertEqual(primera.status_code, 200)
+        self.assertEqual(segunda.status_code, 400)
+        self.assertEqual(SalesReturn.objects.filter(venta_original=self.venta).count(), 1)
+
+    def test_erp_rechaza_devolucion_total_duplicada_misma_venta(self):
+        """La ruta ERP tampoco debe permitir reembolsar dos veces el total."""
+        from farmacia.models import DevolucionVenta
+
+        payload = {
+            'venta_id': self.venta.id,
+            'tipo': 'TOTAL',
+            'monto': '80.00',
+            'motivo': 'ERROR_VENTA',
+            'motivo_detallado': 'Prueba de doble devolucion',
+            'reingresar_stock': True,
+        }
+
+        primera = self.client.post(
+            '/farmacia/erp/devoluciones/procesar/',
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+        segunda = self.client.post(
+            '/farmacia/erp/devoluciones/procesar/',
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+
+        self.assertEqual(primera.status_code, 200)
+        self.assertEqual(segunda.status_code, 400)
+        self.assertEqual(DevolucionVenta.objects.filter(venta_original=self.venta).count(), 1)
+
     def test_procesar_devolucion_con_productos_auditoria(self):
         """El backend debe persistir el detalle de productos devueltos para auditoría."""
         from core.models import SalesReturn
