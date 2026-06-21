@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
+import time
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
@@ -28,6 +29,7 @@ HUB_DIR = ROOT / "docs" / "ai_coordination"
 INBOX_DIR = HUB_DIR / "inbox"
 OUTBOX_DIR = HUB_DIR / "outbox"
 PROCESSED_DIR = HUB_DIR / "processed"
+DROP_DIR = HUB_DIR / "drop"
 STATE_PATH = HUB_DIR / "state.json"
 STATUS_MD = ROOT / "AI_COORDINATION_STATUS.md"
 
@@ -94,8 +96,10 @@ def now_stamp() -> str:
 
 
 def ensure_dirs() -> None:
-    for folder in (HUB_DIR, INBOX_DIR, OUTBOX_DIR, PROCESSED_DIR):
+    for folder in (HUB_DIR, INBOX_DIR, OUTBOX_DIR, PROCESSED_DIR, DROP_DIR):
         folder.mkdir(parents=True, exist_ok=True)
+    for agent in AGENTS:
+        (DROP_DIR / agent).mkdir(parents=True, exist_ok=True)
 
 
 def load_state() -> dict:
@@ -225,6 +229,39 @@ def command_ingest(args: argparse.Namespace) -> None:
     print(f"Clasificacion inicial: {evidence.classification}")
 
 
+def ingest_file(agent: str, file_path: Path) -> Evidence:
+    """Ingesta un archivo local y devuelve la evidencia creada."""
+    ensure_dirs()
+    agent = agent.lower()
+    text = file_path.read_text(encoding="utf-8", errors="replace")
+    if not text.strip():
+        raise ValueError(f"Archivo vacio: {file_path}")
+
+    evidence_name = f"{now_stamp()}_{agent}_{file_path.name}"
+    dest = INBOX_DIR / evidence_name
+    shutil.copyfile(file_path, dest)
+
+    state = load_state()
+    evidence = Evidence(
+        id=dest.stem,
+        timestamp=datetime.now().isoformat(timespec="seconds"),
+        agent=agent,
+        source_file=str(dest.relative_to(ROOT)),
+        classification=classify_text(text),
+        summary=summarize_text(text),
+    )
+    state.setdefault("evidence", []).append(asdict(evidence))
+    save_state(state)
+    for target in AGENTS:
+        write_brief(target, state)
+
+    processed_agent_dir = PROCESSED_DIR / agent
+    processed_agent_dir.mkdir(parents=True, exist_ok=True)
+    processed_name = f"{now_stamp()}_{file_path.name}"
+    shutil.move(str(file_path), str(processed_agent_dir / processed_name))
+    return evidence
+
+
 def write_brief(agent: str, state: dict) -> Path:
     ensure_dirs()
     path = OUTBOX_DIR / f"brief_{agent}.md"
@@ -271,6 +308,42 @@ def command_status(_: argparse.Namespace) -> None:
     print(STATUS_MD.read_text(encoding="utf-8"))
 
 
+def command_watch(args: argparse.Namespace) -> None:
+    ensure_dirs()
+    print("PRISLAB AI Coordination Hub activo.")
+    print(f"Coloca reportes en: {DROP_DIR}\\<agente>")
+    print("Agentes: " + ", ".join(AGENTS))
+    print("Ctrl+C para detener.")
+
+    poll_seconds = max(1, int(args.interval))
+    while True:
+        try:
+            processed_any = False
+            for agent in AGENTS:
+                agent_drop = DROP_DIR / agent
+                for path in sorted(agent_drop.iterdir()):
+                    if not path.is_file():
+                        continue
+                    if path.suffix.lower() not in (".txt", ".md", ".log", ".json"):
+                        continue
+                    try:
+                        evidence = ingest_file(agent, path)
+                        processed_any = True
+                        print(
+                            f"[{evidence.timestamp}] {agent}: "
+                            f"{evidence.classification} -> {evidence.summary}"
+                        )
+                    except Exception as exc:
+                        print(f"ERROR procesando {path}: {exc}")
+            if processed_any:
+                print(f"Estado actualizado: {STATUS_MD}")
+                print(f"Briefs actualizados: {OUTBOX_DIR}")
+            time.sleep(poll_seconds)
+        except KeyboardInterrupt:
+            print("\nHub detenido.")
+            return
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="PRISLAB AI coordination hub")
     sub = parser.add_subparsers(required=True)
@@ -290,6 +363,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_status = sub.add_parser("status", help="Print current shared status")
     p_status.set_defaults(func=command_status)
+
+    p_watch = sub.add_parser("watch", help="Watch local drop folders and auto-ingest reports")
+    p_watch.add_argument("--interval", type=int, default=3, help="Polling interval in seconds")
+    p_watch.set_defaults(func=command_watch)
     return parser
 
 

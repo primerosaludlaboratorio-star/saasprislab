@@ -46,6 +46,38 @@ Ver estado compartido:
 python scripts/ai_coordination_hub.py status
 ```
 
+## Modo local automatico
+
+Este modo deja un watcher corriendo en tu computadora.
+
+Iniciar:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\iniciar_ai_coordination_hub.ps1
+```
+
+Luego cada agente deja reportes en su carpeta:
+
+```text
+docs\ai_coordination\drop\claude
+docs\ai_coordination\drop\cascada
+docs\ai_coordination\drop\codex
+```
+
+Cuando aparece un archivo `.txt`, `.md`, `.log` o `.json`, el hub:
+
+- lo ingesta,
+- lo clasifica inicialmente,
+- actualiza `AI_COORDINATION_STATUS.md`,
+- regenera los briefs en `docs\ai_coordination\outbox`,
+- mueve el reporte procesado a `docs\ai_coordination\processed\<agente>`.
+
+Comando directo del watcher:
+
+```powershell
+python scripts\ai_coordination_hub.py watch --interval 3
+```
+
 ## Roles
 
 Codex:
