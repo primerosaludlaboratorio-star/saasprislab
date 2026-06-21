@@ -105,7 +105,7 @@ def recepcion_lab(request):
     from lims.models import Analito
     deps = sorted(
         set(
-            Analito.objects.filter(activo=True).exclude(departamento='').values_list(
+            Analito.objects.filter(empresa=empresa, activo=True).exclude(departamento='').values_list(
                 'departamento', flat=True
             )
         )
