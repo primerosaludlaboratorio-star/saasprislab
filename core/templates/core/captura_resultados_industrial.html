@@ -416,7 +416,7 @@
 
                         {# Fila de nombre del estudio #}
                         <tr class="fila-estudio">
-                            <td colspan="6">{{ item.estudio.nombre|upper }}</td>
+                            <td colspan="6">{% if item.estudio %}{{ item.estudio.nombre|upper }}{% else %}SIN ESTUDIO{% endif %}</td>
                         </tr>
 
                         {# Filas de parámetros #}

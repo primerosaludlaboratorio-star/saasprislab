@@ -20,8 +20,14 @@ _GRUPOS_AUDIO_LAB = {'LABORATORIO', 'GERENCIA_OPERATIVA'}
 def _has_audio_access(user, allowed_roles, allowed_groups):
     if not getattr(user, 'is_authenticated', False):
         return False
+    # PATRÓN CORRECTO: Validar empresa siempre, pero permitir superuser/staff CON empresa válida
+    if not getattr(user, 'empresa', None):
+        return False
+    
+    # Superuser/staff con empresa válida pueden operar
     if user.is_superuser or user.is_staff:
         return True
+    
     rol = (getattr(user, 'rol', '') or '').upper().strip()
     if rol in allowed_roles:
         return True

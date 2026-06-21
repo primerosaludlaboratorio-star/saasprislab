@@ -265,7 +265,8 @@ def api_actualizar_tarifa(request, estudio_id):
             'mensaje': 'Acceso denegado'
         }, status=403)
 
-    if not request.user.is_superuser and not empresa:
+    # Permitir superuser/staff CON empresa válida - consistencia con LIMS
+    if not empresa:
         return JsonResponse({
             'status': 'error',
             'mensaje': 'Usuario sin empresa asignada.',
@@ -336,7 +337,8 @@ def api_actualizar_permiso(request, perfil_id):
             'mensaje': 'Acceso denegado'
         }, status=403)
 
-    if not request.user.is_superuser and not empresa:
+    # SIN BYPASS SUPERUSER - validar empresa siempre
+    if not empresa:
         return JsonResponse({
             'status': 'error',
             'mensaje': 'Usuario sin empresa asignada.',

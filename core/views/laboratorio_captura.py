@@ -65,16 +65,21 @@ def captura_resultados_industrial(request, orden_id):
     Panel izquierdo con folios del día, panel derecho con cuadrícula de captura.
     """
     user = request.user
-    if not (user.is_superuser or user.is_staff
-            or (getattr(user, 'rol', '') or '').upper().strip() in ('QUIMICO', 'LABORATORIO', 'ADMIN', 'ADMINISTRADOR')
-            or user.groups.filter(name__in=['LABORATORIO', 'GERENCIA_OPERATIVA']).exists()):
-        messages.warning(request, 'No tienes permisos para captura de resultados.')
-        return redirect('home')
-
+    
+    # PATRÓN CORRECTO: Validar empresa siempre, pero permitir superuser/staff CON empresa válida
     empresa = getattr(request.user, 'empresa', None)
     if not empresa:
-        messages.error(request, 'Tu usuario no tiene una empresa asignada.')
+        messages.warning(request, 'Usuario sin empresa asignada.')
         return redirect('home')
+    
+    # Superuser/staff con empresa válida pueden operar
+    if user.is_superuser or user.is_staff:
+        pass  # Permitir continuar
+    else:
+        if not ((getattr(user, 'rol', '') or '').upper().strip() in ('QUIMICO', 'LABORATORIO', 'ADMIN', 'ADMINISTRADOR')
+                or user.groups.filter(name__in=['LABORATORIO', 'GERENCIA_OPERATIVA']).exists()):
+            messages.warning(request, 'No tienes permisos para captura de resultados.')
+            return redirect('home')
 
     try:
         orden = (

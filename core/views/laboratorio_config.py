@@ -17,12 +17,23 @@ from django.utils import timezone
 
 from core.decorators import role_required
 from lims.models import Analito, PerfilLims, ValorReferenciaAnalito
+from lims.views.tenant_lims import empresa_lims
 
 logger = logging.getLogger(__name__)
 
 ADMIN_ANALITOS = '/admin/lims/analito/'
 ADMIN_PERFILES = '/admin/lims/perfillims/'
 ADMIN_PAQUETES = '/admin/lims/paquetelims/'
+
+
+def _can_manage_lims_catalog(user) -> bool:
+    """Permiso de edición LIMS: empresa obligatoria, staff solo dentro de tenant."""
+    if not getattr(user, 'empresa', None):
+        return False
+    if user.is_superuser or user.is_staff:
+        return True
+    rol = (getattr(user, 'rol', '') or '').upper()
+    return rol in ('DIRECTOR_QC', 'ADMIN', 'ADMINISTRADOR', 'LABORATORIO', 'LIMS')
 
 
 @login_required
@@ -67,7 +78,11 @@ def duplicar_prueba(request, estudio_id):
 @login_required
 def api_parametros_estudio(request, estudio_id):
     """Legacy: `estudio_id` se interpreta como PerfilLims.pk o, si no existe, Analito.pk."""
-    perfil = PerfilLims.objects.filter(pk=estudio_id, activo=True).first()
+    empresa = empresa_lims(request)
+    if not empresa:
+        return JsonResponse({'error': 'Usuario sin empresa asignada'}, status=403)
+
+    perfil = PerfilLims.objects.filter(pk=estudio_id, empresa=empresa, activo=True).first()
     if perfil:
         analitos = perfil.analitos.filter(activo=True).order_by('nombre')
         data = {
@@ -86,7 +101,7 @@ def api_parametros_estudio(request, estudio_id):
         }
         return JsonResponse(data)
 
-    analito = Analito.objects.filter(pk=estudio_id).first()
+    analito = Analito.objects.filter(pk=estudio_id, empresa=empresa).first()
     if not analito:
         return JsonResponse({'error': 'No encontrado'}, status=404)
 
@@ -123,7 +138,11 @@ def editar_parametro(request, parametro_id=None, estudio_id=None):
 
 @login_required
 def api_rangos_parametro(request, parametro_id):
-    analito = get_object_or_404(Analito, pk=parametro_id)
+    empresa = empresa_lims(request)
+    if not empresa:
+        return JsonResponse({'error': 'Usuario sin empresa asignada'}, status=403)
+
+    analito = get_object_or_404(Analito, pk=parametro_id, empresa=empresa)
 
     if request.method == 'GET':
         rangos = analito.rangos.all().order_by('unidad_edad', 'edad_minima', 'sexo')
@@ -131,10 +150,8 @@ def api_rangos_parametro(request, parametro_id):
         return JsonResponse({'rangos': data})
 
     if request.method == 'POST':
-        if not (request.user.is_superuser or request.user.is_staff):
-            rol = (getattr(request.user, 'rol', '') or '').upper()
-            if rol not in ('DIRECTOR_QC', 'ADMIN'):
-                return JsonResponse({'error': 'Permiso denegado'}, status=403)
+        if not _can_manage_lims_catalog(request.user):
+            return JsonResponse({'error': 'Permiso denegado'}, status=403)
         try:
             body = json.loads(request.body)
             with transaction.atomic():
@@ -157,14 +174,16 @@ def api_rangos_parametro(request, parametro_id):
 
 @login_required
 def api_rango_detalle(request, parametro_id, rango_id):
-    analito = get_object_or_404(Analito, pk=parametro_id)
+    empresa = empresa_lims(request)
+    if not empresa:
+        return JsonResponse({'error': 'Usuario sin empresa asignada'}, status=403)
+
+    analito = get_object_or_404(Analito, pk=parametro_id, empresa=empresa)
     rango = get_object_or_404(ValorReferenciaAnalito, pk=rango_id, analito=analito)
 
     if request.method == 'DELETE':
-        if not (request.user.is_superuser or request.user.is_staff):
-            rol = (getattr(request.user, 'rol', '') or '').upper()
-            if rol not in ('DIRECTOR_QC', 'ADMIN'):
-                return JsonResponse({'error': 'Permiso denegado'}, status=403)
+        if not _can_manage_lims_catalog(request.user):
+            return JsonResponse({'error': 'Permiso denegado'}, status=403)
         rango.delete()
         return JsonResponse({'ok': True})
 
@@ -175,12 +194,15 @@ def api_rango_detalle(request, parametro_id, rango_id):
 def api_soft_delete_parametro(request, parametro_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
-    if not (request.user.is_superuser or request.user.is_staff):
-        rol = (getattr(request.user, 'rol', '') or '').upper()
-        if rol not in ('DIRECTOR_QC', 'ADMIN'):
-            return JsonResponse({'error': 'Permiso denegado'}, status=403)
 
-    analito = get_object_or_404(Analito, pk=parametro_id)
+    empresa = empresa_lims(request)
+    if not empresa:
+        return JsonResponse({'error': 'Usuario sin empresa asignada'}, status=403)
+
+    if not _can_manage_lims_catalog(request.user):
+        return JsonResponse({'error': 'Permiso denegado'}, status=403)
+
+    analito = get_object_or_404(Analito, pk=parametro_id, empresa=empresa)
     analito.activo = False
     analito.save(update_fields=['activo', 'fecha_actualiz'])
     return JsonResponse({'ok': True, 'mensaje': f'Analito "{analito.nombre}" desactivado.'})
@@ -192,8 +214,12 @@ def api_buscar_parametros(request):
     if len(q) < 2:
         return JsonResponse({'parametros': []})
 
+    empresa = empresa_lims(request)
+    if not empresa:
+        return JsonResponse({'error': 'Usuario sin empresa asignada', 'parametros': []}, status=403)
+
     qs = (
-        Analito.objects.filter(activo=True)
+        Analito.objects.filter(empresa=empresa, activo=True)
         .filter(
             Q(nombre__icontains=q) | Q(abreviatura__icontains=q) | Q(codigo__icontains=q)
         )[:25]

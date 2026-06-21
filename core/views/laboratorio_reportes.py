@@ -43,8 +43,9 @@ def imprimir_resultados(request, orden_id):
         id=orden_id
     )
     
-    # Verificar permisos
-    if not request.user.is_superuser and getattr(request.user, 'empresa', None) != orden.empresa:
+    # Verificar permisos - Permitir superuser/staff CON empresa válida
+    empresa_usuario = getattr(request.user, 'empresa', None)
+    if empresa_usuario != orden.empresa:
         return HttpResponse("No autorizado", status=403)
 
     if orden.estado not in ('RESULTADOS_LISTOS', 'ENTREGADO'):
@@ -133,7 +134,8 @@ def api_generar_y_guardar_reporte(request, orden_id):
         id=orden_id
     )
     
-    if not request.user.is_superuser and getattr(request.user, 'empresa', None) != orden.empresa:
+    # Verificar permisos - SIN BYPASS SUPERUSER
+    if getattr(request.user, 'empresa', None) != orden.empresa:
         return JsonResponse({'status': 'error', 'mensaje': 'No autorizado'}, status=403)
     
     try:
