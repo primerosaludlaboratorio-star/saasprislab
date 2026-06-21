@@ -459,10 +459,10 @@
                         {% else %}
                             {# Línea simple (analito LIMS o legado con estudio) #}
                             {% with val=item.detalle.resultado %}
-                            {% if item.detalle.estudio %}
-                                {% with ref_min=item.detalle.estudio.valor_minimo ref_max=item.detalle.estudio.valor_maximo ref_texto=item.detalle.estudio.texto_referencia %}
+                            {% if item.detalle.display_ref_min or item.detalle.display_ref_max or item.detalle.display_ref_texto %}
+                                {% with ref_min=item.detalle.display_ref_min ref_max=item.detalle.display_ref_max ref_texto=item.detalle.display_ref_texto %}
                             <tr {% if item.es_critico %}style="background:#fff0f0"{% elif item.es_anormal %}style="background:#fffbf0"{% endif %}>
-                                <td class="col-param">{{ item.detalle.estudio.nombre }}</td>
+                                <td class="col-param">{{ item.detalle.display_nombre|default:"—" }}</td>
                                 <td class="col-valor">
                                     {% if item.es_critico %}
                                         <span style="color:#8B0000;font-weight:900">&#9888; {{ val|default:"-" }}</span>
@@ -474,7 +474,7 @@
                                         <span class="valor">{{ val|default:"-" }}</span>
                                     {% endif %}
                                 </td>
-                                <td class="col-unid">{{ item.detalle.estudio.unidades|default:"-" }}</td>
+                                <td class="col-unid">{{ item.detalle.display_unidades|default:"-" }}</td>
                                 <td class="col-ref">
                                     {% if ref_min is not None or ref_max is not None %}
                                         {% if ref_min is not None %}{{ ref_min|floatformat:2 }}{% else %}-{% endif %}
@@ -488,7 +488,7 @@
                                 {% endwith %}
                             {% else %}
                             <tr {% if item.es_critico %}style="background:#fff0f0"{% elif item.es_anormal %}style="background:#fffbf0"{% endif %}>
-                                <td class="col-param">{{ item.detalle.descripcion_linea|default:item.detalle.analito.nombre|default:"—" }}</td>
+                                <td class="col-param">{{ item.detalle.display_nombre|default:"—" }}</td>
                                 <td class="col-valor">
                                     {% if item.es_critico %}
                                         <span style="color:#8B0000;font-weight:900">&#9888; {{ val|default:"-" }}</span>
@@ -500,7 +500,7 @@
                                         <span class="valor">{{ val|default:"-" }}</span>
                                     {% endif %}
                                 </td>
-                                <td class="col-unid">{% if item.detalle.analito %}{{ item.detalle.analito.unidades|default:"-" }}{% else %}-{% endif %}</td>
+                                <td class="col-unid">{{ item.detalle.display_unidades|default:"-" }}</td>
                                 <td class="col-ref">—</td>
                             </tr>
                             {% endif %}

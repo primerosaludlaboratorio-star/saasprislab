@@ -1,12 +1,17 @@
 import json
 from decimal import Decimal
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.template.loader import render_to_string
 from django.urls import reverse
 
 from core.models import DetalleOrden, Empresa, OrdenDeServicio, Paciente
+from core.services.resultados_impresion_presentacion import construir_detalles_procesados_orden
+from core.utils.detalle_orden import attach_detalle_display_attrs
+from core.utils.estandares_industriales import obtener_resultados_anteriores_paciente
 from lims.models import Analito
 
 
@@ -86,6 +91,81 @@ class MonitorProduccionWorkflowTest(TestCase):
         self.assertContains(ticket, self.analito.nombre)
         self.assertEqual(etiquetas.status_code, 200)
         self.assertContains(etiquetas, self.analito.abreviatura)
+
+    def test_templates_resultados_renderizan_detalle_lims_puro(self):
+        orden = self._crear_orden_lims()
+        OrdenDeServicio.objects.filter(id=orden.id).update(estado='RESULTADOS_LISTOS')
+        orden.refresh_from_db()
+
+        detalles, _ = construir_detalles_procesados_orden(orden)
+        contexto = {
+            'orden': orden,
+            'detalles': detalles,
+            'paciente': self.paciente,
+            'empresa': self.empresa,
+            'fecha_entrega': orden.fecha_creacion,
+            'ultimo_validador': self.usuario,
+            'fecha_impresion': orden.fecha_creacion,
+            'modo_impresion': True,
+            'qr_image': None,
+            'url_verificacion': '',
+            'solo_deuda': False,
+            'paciente_nombre_documento': self.paciente.nombre_completo,
+        }
+
+        html_print = render_to_string('core/resultados_print.html', contexto)
+        html_portal = render_to_string('core/resultados_portal_paciente.html', contexto)
+
+        self.assertIn(self.analito.nombre, html_print)
+        self.assertIn(self.analito.nombre, html_portal)
+
+    def test_captura_y_consultorio_renderizan_display_lims(self):
+        orden = self._crear_orden_lims()
+        detalle = orden.detalles.select_related('analito').first()
+        attach_detalle_display_attrs([detalle])
+        item = {
+            'detalle': detalle,
+            'estudio': SimpleNamespace(
+                nombre=detalle.display_nombre,
+                codigo=detalle.display_codigo,
+                es_perfil=False,
+            ),
+            'parametros': [],
+        }
+
+        html_captura = render_to_string('core/captura_resultados.html', {
+            'orden': orden,
+            'paciente': self.paciente,
+            'detalles': [item],
+            'triple_llave_completa': False,
+            'puede_imprimir': False,
+        })
+        orden_consultorio = OrdenDeServicio.objects.prefetch_related(
+            'detalles__analito', 'detalles__perfil_lims', 'detalles__paquete_lims'
+        ).get(id=orden.id)
+        attach_detalle_display_attrs(list(orden_consultorio.detalles.all()))
+        html_consultorio = render_to_string('consultorio/resultados_lab_consulta.html', {
+            'consulta': SimpleNamespace(
+                paciente=self.paciente,
+                fecha_creacion=orden.fecha_creacion,
+            ),
+            'ordenes_lab': [orden_consultorio],
+        })
+
+        self.assertIn(self.analito.nombre, html_captura)
+        self.assertIn(self.analito.nombre, html_consultorio)
+
+    def test_delta_check_lims_no_usa_prefetch_estudio_legacy(self):
+        orden = self._crear_orden_lims()
+        OrdenDeServicio.objects.filter(id=orden.id).update(estado='RESULTADOS_LISTOS')
+
+        resultados = obtener_resultados_anteriores_paciente(
+            self.paciente,
+            self.empresa,
+            codigo_estudio=self.analito.codigo,
+        )
+
+        self.assertIn(self.analito.codigo, resultados)
 
     def _crear_orden_lims(self, estado_clinico='PENDIENTE_TOMA'):
         orden = OrdenDeServicio.objects.create(

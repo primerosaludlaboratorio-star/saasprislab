@@ -23,14 +23,21 @@ Correcciones aplicadas:
 
 Pruebas ejecutadas:
 
-- `core.tests.test_monitor_produccion_workflow`: 3 tests OK
+- `core.tests.test_monitor_produccion_workflow`: 6 tests OK
 - `manage.py check`: OK
 
 Estado:
 
-- corregido en codigo local
-- pendiente de commit/push/deploy despues de cerrar el paquete de cambios
+- corregido en codigo local y ampliado con hallazgos Cascada H1/H2
+- push inicial realizado en `bbeddd9`
+- pendiente de commit/push incremental y deploy VPS del cierre ampliado
 - Claude y Cascada recibieron carriles de trabajo independientes para no quedar detenidos
+
+Ampliacion por auditoria Cascada:
+
+- `core/templates/core/captura_resultados.html`, `resultados_print.html`, `resultados_portal_paciente.html` y `consultorio/resultados_lab_consulta.html` ya usan display seguro LIMS/legacy
+- `pacientes/portal_views.py`, `consultorio/views_integracion_lab.py` y `core/utils/estandares_industriales.py` ya no usan `prefetch_related('detalles__estudio')`
+- delta-check usa codigo LIMS seguro mediante `core.utils.detalle_orden.get_detalle_codigo`
 
 ## Actualizacion critica 2026-06-19 - Diagnostico real del login en produccion
 

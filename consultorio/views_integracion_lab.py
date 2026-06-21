@@ -157,7 +157,13 @@ def ver_resultados_lab_en_consulta(request, consulta_id):
         empresa=empresa,
         paciente=consulta.paciente,
         fecha_creacion__date__gte=fecha_consulta
-    ).select_related('paciente').prefetch_related('detalles__estudio').order_by('-fecha_creacion')
+    ).select_related('paciente').prefetch_related(
+        'detalles__analito', 'detalles__perfil_lims', 'detalles__paquete_lims'
+    ).order_by('-fecha_creacion')
+
+    from core.utils.detalle_orden import attach_detalle_display_attrs
+    for orden in ordenes_lab:
+        attach_detalle_display_attrs(list(orden.detalles.all()))
     
     return render(request, 'consultorio/resultados_lab_consulta.html', {
         'consulta': consulta,

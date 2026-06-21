@@ -154,11 +154,11 @@
                                 {% with val=item.detalle.resultado %}
                                 <div class="param-card p-3 mb-2">
                                     <div class="fw-semibold">
-                                        {% if item.detalle.estudio %}{{ item.detalle.estudio.nombre }}{% else %}{{ item.detalle.descripcion_linea|default:item.detalle.analito.nombre|default:"Estudio" }}{% endif %}
+                                        {{ item.detalle.display_nombre|default:"Estudio" }}
                                     </div>
                                     <div class="valor-grande mt-1">{{ val|default:"—" }}</div>
                                     <div class="small text-muted">
-                                        {% if item.detalle.estudio %}{{ item.detalle.estudio.unidades|default:"" }}{% elif item.detalle.analito %}{{ item.detalle.analito.unidades }}{% endif %}
+                                        {{ item.detalle.display_unidades }}
                                     </div>
                                 </div>
                                 {% endwith %}

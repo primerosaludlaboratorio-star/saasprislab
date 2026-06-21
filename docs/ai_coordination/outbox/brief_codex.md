@@ -24,6 +24,7 @@ Foco actual: Laboratorio: validacion funcional en produccion
 - LAB_VALIDATION_PIN falla cerrado sin configuracion
 - Laboratorio LIMS/legacy: avance VALIDADO_PARCIAL a COMPLETO protegido con regresion
 - Toma de muestra, ticket raw y etiquetas raw renderizan DetalleOrden LIMS puro
+- Cascada H1/H2: templates criticos y prefetch legacy LIMS corregidos con regresion ampliada
 
 ## Pendiente
 

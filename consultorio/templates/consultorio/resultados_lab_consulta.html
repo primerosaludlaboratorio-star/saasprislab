@@ -41,11 +41,11 @@
             <tbody>
               {% for detalle in orden.detalles.all %}
               <tr>
-                <td>{{ detalle.estudio.nombre|default:"—" }}</td>
+                <td>{{ detalle.display_nombre|default:"—" }}</td>
                 <td class="fw-semibold">
                   {% if detalle.resultado %}
                     <span class="{% if detalle.fuera_rango %}text-danger{% endif %}">
-                      {{ detalle.resultado }} {{ detalle.estudio.unidad|default:'' }}
+                      {{ detalle.resultado }} {{ detalle.display_unidades|default:'' }}
                     </span>
                   {% else %}
                     <span class="text-muted">Pendiente</span>

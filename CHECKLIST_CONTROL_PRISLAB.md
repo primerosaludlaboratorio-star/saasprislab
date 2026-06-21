@@ -115,6 +115,8 @@ Si este checklist no se actualiza, el cambio no cuenta como cerrado.
   - [x] Regresión focalizada `2026-06-21`: `core.tests.test_monitor_produccion_workflow` OK (`3 tests`) cubre avance a `COMPLETO`, sala de toma y render de ticket/etiquetas con detalle LIMS puro.
   - [x] `manage.py check` OK tras cierre LIMS/legacy `2026-06-21`.
   - [x] Coordinación local reforzada `2026-06-21`: `NEXT_ACTIONS.md` y tareas activas para Claude/Cascada dejan carriles de trabajo autónomo aunque Codex siga cerrando código.
+  - [x] Auditoría Cascada H1/H2 cerrada `2026-06-21`: templates de captura/resultados/portal/consultorio y consultas de portal paciente, consultorio-lab y delta-check ya no dependen de `detalles__estudio` ni de `DetalleOrden.estudio` para LIMS puro.
+  - [x] Regresión focalizada ampliada `2026-06-21`: `core.tests.test_monitor_produccion_workflow` OK (`6 tests`) cubre avance Kanban, toma, impresión raw, resultados print/portal, consultorio y delta-check LIMS.
 
 ## Documento de cierre de auditoría
 

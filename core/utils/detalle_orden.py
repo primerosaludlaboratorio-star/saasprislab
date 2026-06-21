@@ -33,6 +33,20 @@ def get_detalle_abreviatura(detalle):
     return getattr(estudio, 'abreviatura', '') or get_detalle_nombre(detalle)
 
 
+def get_detalle_codigo(detalle):
+    if getattr(detalle, 'analito_id', None):
+        return detalle.analito.codigo or detalle.analito.abreviatura or ''
+    estudio = get_estudio_legacy(detalle)
+    return getattr(estudio, 'codigo', '') or getattr(estudio, 'abreviatura', '') or ''
+
+
+def get_detalle_unidades(detalle):
+    if getattr(detalle, 'analito_id', None):
+        return detalle.analito.unidades or ''
+    estudio = get_estudio_legacy(detalle)
+    return getattr(estudio, 'unidades', '') or getattr(estudio, 'unidad', '') or ''
+
+
 def get_detalle_muestra(detalle):
     if getattr(detalle, 'analito_id', None):
         return detalle.analito.tipo_muestra or 'S/N'
@@ -43,7 +57,13 @@ def get_detalle_muestra(detalle):
 def attach_detalle_display_attrs(detalles):
     """Agrega atributos transient para plantillas raw de impresión."""
     for detalle in detalles:
+        estudio = get_estudio_legacy(detalle)
         detalle.display_nombre = get_detalle_nombre(detalle)
         detalle.display_abreviatura = get_detalle_abreviatura(detalle)
+        detalle.display_codigo = get_detalle_codigo(detalle)
+        detalle.display_unidades = get_detalle_unidades(detalle)
         detalle.display_muestra = get_detalle_muestra(detalle)
+        detalle.display_ref_min = getattr(estudio, 'valor_minimo', None) if estudio else None
+        detalle.display_ref_max = getattr(estudio, 'valor_maximo', None) if estudio else None
+        detalle.display_ref_texto = getattr(estudio, 'texto_referencia', '') if estudio else ''
     return detalles

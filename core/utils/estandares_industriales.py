@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 # NOTA: Modelo TrazabilidadOperacion pendiente de migración. Descomentar la importación cuando exista en DB.
 # from core.models import TrazabilidadOperacion
 from core.utils.trazabilidad import registrar_trazabilidad
+from core.utils.detalle_orden import get_detalle_codigo
 import json
 
 Usuario = get_user_model()
@@ -38,13 +39,15 @@ def obtener_resultados_anteriores_paciente(paciente, empresa, codigo_estudio=Non
         empresa=empresa,
         paciente=paciente,
         estado='RESULTADOS_LISTOS'
-    ).select_related('paciente').prefetch_related('detalles__estudio').order_by('-fecha_creacion')[:limite]
+    ).select_related('paciente').prefetch_related(
+        'detalles__analito', 'detalles__perfil_lims', 'detalles__paquete_lims'
+    ).order_by('-fecha_creacion')[:limite]
     
     # Extraer resultados por código de estudio (tomar el más reciente)
     for orden_ant in ordenes_anteriores:
-        for detalle_ant in orden_ant.detalles.select_related('estudio').all():
-            if detalle_ant.resultado and detalle_ant.estudio.codigo:
-                codigo_estudio_actual = detalle_ant.estudio.codigo
+        for detalle_ant in orden_ant.detalles.select_related('analito', 'perfil_lims', 'paquete_lims').all():
+            codigo_estudio_actual = get_detalle_codigo(detalle_ant)
+            if detalle_ant.resultado and codigo_estudio_actual:
                 
                 # Filtrar por código si se especifica
                 if codigo_estudio and codigo_estudio_actual != codigo_estudio:

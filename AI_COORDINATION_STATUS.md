@@ -1,6 +1,6 @@
 # AI Coordination Status - PRISLAB
 
-Ultima actualizacion: 2026-06-21T03:47:04
+Ultima actualizacion: 2026-06-21T04:03:52
 Foco actual: Laboratorio: validacion funcional en produccion
 
 ## Commits de Produccion
@@ -15,6 +15,7 @@ Foco actual: Laboratorio: validacion funcional en produccion
 - LAB_VALIDATION_PIN falla cerrado sin configuracion
 - Laboratorio LIMS/legacy: avance VALIDADO_PARCIAL a COMPLETO protegido con regresion
 - Toma de muestra, ticket raw y etiquetas raw renderizan DetalleOrden LIMS puro
+- Cascada H1/H2: templates criticos y prefetch legacy LIMS corregidos con regresion ampliada
 
 ## Pendiente
 

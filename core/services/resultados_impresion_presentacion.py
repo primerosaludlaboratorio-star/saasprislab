@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from django.db.models import Q
 
 from core.models import ResultadoParametro
+from core.utils.detalle_orden import attach_detalle_display_attrs
 from lims.models import Analito, ValorReferenciaAnalito
 
 
@@ -85,6 +86,7 @@ def construir_detalles_procesados_orden(orden):
     detalles = orden.detalles.select_related(
         "analito", "perfil_lims", "paquete_lims", "validado_por"
     ).prefetch_related("analito__rangos").all()
+    attach_detalle_display_attrs(list(detalles))
 
     ultimo_validador = None
     if detalles.exists():
@@ -138,6 +140,9 @@ def construir_detalles_procesados_orden(orden):
                     valor_maximo=rango_detalle.get("ref_max"),
                     texto_referencia=rango_detalle.get("ref_texto", ""),
                 )
+                detalle.display_ref_min = rango_detalle.get("ref_min")
+                detalle.display_ref_max = rango_detalle.get("ref_max")
+                detalle.display_ref_texto = rango_detalle.get("ref_texto", "")
 
         detalles_procesados.append(
             {"detalle": detalle, "resultado_parseado": resultado_parseado}

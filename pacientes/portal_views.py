@@ -238,7 +238,9 @@ def portal_mis_estudios(request):
     ordenes = OrdenDeServicio.objects.filter(
         paciente=paciente,
         empresa=paciente.empresa
-    ).select_related('creado_por').prefetch_related('detalles__estudio').order_by('-fecha_creacion')[:100]
+    ).select_related('creado_por').prefetch_related(
+        'detalles__analito', 'detalles__perfil_lims', 'detalles__paquete_lims'
+    ).order_by('-fecha_creacion')[:100]
     
     return render(request, 'pacientes/portal/mis_estudios.html', {
         'paciente': paciente,

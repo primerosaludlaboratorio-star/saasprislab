@@ -322,9 +322,9 @@
                 {% for item in detalles %}
                 <div class="estudio-section mb-4">
                     <div class="estudio-header">
-                        {{ item.detalle.estudio.nombre }}
-                        <div class="estudio-codigo">{{ item.detalle.estudio.codigo }}</div>
-                        {% if item.detalle.estudio.es_perfil %}
+                        {{ item.estudio.nombre|default:item.detalle.display_nombre|default:"Estudio" }}
+                        <div class="estudio-codigo">{{ item.estudio.codigo|default:item.detalle.display_codigo }}</div>
+                        {% if item.estudio.es_perfil %}
                         <span class="badge bg-warning text-dark mt-1">PAQUETE</span>
                         {% endif %}
                     </div>
