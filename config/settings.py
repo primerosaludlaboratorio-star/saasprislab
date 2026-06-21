@@ -66,6 +66,22 @@ def _env_list(name, default=None):
         return list(default or [])
     return [item.strip() for item in raw.split(',') if item.strip()]
 
+
+def _env_int(name, default):
+    raw = os.environ.get(name)
+    if raw is None or raw == '':
+        return default
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        logging.getLogger('config').warning(
+            'Variable %s=%r no es un entero valido; usando %s.',
+            name,
+            raw,
+            default,
+        )
+        return default
+
 # Tenant por defecto (PRISLAB mononodo / rescate). Opcional: entero explícito.
 _raw_def_emp = (os.environ.get('PRISLAB_DEFAULT_EMPRESA_ID') or '').strip()
 PRISLAB_DEFAULT_EMPRESA_ID = int(_raw_def_emp) if _raw_def_emp.isdigit() else None
@@ -286,6 +302,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 if os.environ.get('DB_HOST'):
     # PostgreSQL local o remoto en Vultr
     db_host = os.environ.get('DB_HOST', '')
+    db_conn_max_age = _env_int('DB_CONN_MAX_AGE', 0 if IS_PRODUCTION else 60)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -294,7 +311,8 @@ if os.environ.get('DB_HOST'):
             'PASSWORD': os.environ.get('DB_PASSWORD', ''),
             'HOST': db_host,
             'PORT': os.environ.get('DB_PORT', '5432'),
-            'CONN_MAX_AGE': 60,
+            'CONN_MAX_AGE': db_conn_max_age,
+            'CONN_HEALTH_CHECKS': _env_bool('DB_CONN_HEALTH_CHECKS', True),
         }
     }
     # Sin print en producción
