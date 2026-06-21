@@ -360,17 +360,36 @@ def _descontar_insumos_orden(orden, usuario=None):
     CEREBRO DE INVENTARIO (R107): Al finalizar una orden, descuenta
     automáticamente los insumos/reactivos vinculados a cada estudio.
     Usa InsumoEstudio para saber qué y cuánto descontar.
+
+    NOTA: El sistema está en transición de Estudio legacy → LIMS/Analito.
+    Si DetalleOrden no tiene FK a Estudio, se salta el descuento con warning.
     """
     try:
         from laboratorio.models import InsumoEstudio
         from decimal import Decimal
 
-        detalles = orden.detalles.select_related('estudio').all()
+        # FIX: select_related('estudio') fallaba porque DetalleOrden.estudio no existe
+        # Ahora cargamos detalles sin ese join
+        detalles = orden.detalles.select_related('analito').all()
         descuentos = []
 
         for detalle in detalles:
-            estudio = detalle.estudio
+            # Intentar obtener estudio (legacy system)
+            estudio = None
+
+            # Opción 1: Si DetalleOrden tiene FK directo a Estudio (legacy)
+            if hasattr(detalle, 'estudio') and detalle.estudio:
+                estudio = detalle.estudio
+            # Opción 2: Si Analito tiene FK a Estudio (mapeo LIMS → legacy)
+            elif detalle.analito and hasattr(detalle.analito, 'estudio'):
+                estudio = detalle.analito.estudio
+
             if not estudio:
+                # Sistema LIMS puro sin mapeo legacy - log y continua
+                logger.debug(
+                    f"[INSUMOS] Detalle {detalle.id} sin Estudio vinculado. "
+                    f"Sistema LIMS puro - no hay insumos para descontar."
+                )
                 continue
 
             insumos = InsumoEstudio.objects.filter(
@@ -501,7 +520,14 @@ def api_avanzar_estado(request):
                 except Exception:
                     pass
                 # ── CEREBRO DE INVENTARIO: Descontar insumos automáticamente ──
-                _descontar_insumos_orden(orden, request.user)
+                # FIX: Envolver en try/catch para evitar bloquear la orden
+                try:
+                    _descontar_insumos_orden(orden, request.user)
+                except Exception as e_insumos:
+                    logger.warning(
+                        f"[INSUMOS] Error descontando para {orden.folio_orden}: {e_insumos}. "
+                        f"La orden avanza igual (descuento es best-effort)."
+                    )
             
             if sig_estado == 'ENTREGADO':
                 orden.estado = 'ENTREGADO'

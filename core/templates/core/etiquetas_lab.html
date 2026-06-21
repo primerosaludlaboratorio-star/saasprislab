@@ -54,8 +54,8 @@
         </div>
         <div class="paciente">{{ orden.paciente.nombre_completo|truncatechars:25|upper }}</div>
         <div class="detalle">
-            <strong>TUBO: {{ detalle.estudio.muestra_requerida|default:"S/N" }}</strong>
-            <span>{{ detalle.estudio.abreviatura|default:detalle.estudio.nombre|truncatechars:12 }}</span>
+            <strong>TUBO: {{ detalle.display_muestra|default:"S/N" }}</strong>
+            <span>{{ detalle.display_abreviatura|default:detalle.display_nombre|default:"Estudio"|truncatechars:12 }}</span>
         </div>
         <div class="barcode-box">
             <svg id="barcode-{{ forloop.counter }}"></svg>

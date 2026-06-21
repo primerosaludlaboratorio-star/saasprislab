@@ -41,6 +41,7 @@ from core.lims_cart import (
     search_lims_catalog,
 )
 from core.utils.trazabilidad import registrar_trazabilidad, serializar_modelo
+from core.utils.detalle_orden import attach_detalle_display_attrs
 from core.services.audit_service import registrar_auditoria
 from core.services.lims import OrdenServicioLims, parse_optional_client_mutation_uuid, ResultadosLimsService
 from core.services.forense_service import metadata_consentimiento_snapshot, registrar_acceso_forense
@@ -1309,9 +1310,12 @@ def toma_muestra_index(request):
         .annotate(_tiene_toma=Exists(TomaMuestra.objects.filter(orden=OuterRef('pk'))))
         .filter(_tiene_toma=False)
         .select_related("paciente")
+        .prefetch_related('detalles__analito', 'detalles__perfil_lims', 'detalles__paquete_lims')
         .order_by("-fecha_creacion")[:300]
     )
     ordenes_pendientes = list(ordenes_pagadas)
+    for orden in ordenes_pendientes:
+        attach_detalle_display_attrs(list(orden.detalles.all()))
 
     if request.method == "POST":
         orden_id = request.POST.get("orden_id")

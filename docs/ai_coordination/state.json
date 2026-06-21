@@ -1,6 +1,6 @@
 {
   "created_at": "2026-06-21T02:50:25",
-  "last_updated": "2026-06-21T03:01:27",
+  "last_updated": "2026-06-21T03:47:04",
   "current_focus": "Laboratorio: validacion funcional en produccion",
   "production_commits": {
     "confirmed": [
@@ -14,14 +14,26 @@
   "closed": [
     "Busqueda de pacientes devuelve JSON controlado",
     "Contrato LIMS crea orden con tokens analito/perfil",
-    "LAB_VALIDATION_PIN falla cerrado sin configuracion"
+    "LAB_VALIDATION_PIN falla cerrado sin configuracion",
+    "Laboratorio LIMS/legacy: avance VALIDADO_PARCIAL a COMPLETO protegido con regresion",
+    "Toma de muestra, ticket raw y etiquetas raw renderizan DetalleOrden LIMS puro"
   ],
   "pending": [
     "Auditoria funcional humana completa de Laboratorio",
+    "Deploy VPS del cierre LIMS/legacy 2026-06-21",
     "Confirmar despliegue VPS de efa5c2f y b4f210c",
     "Validar cancelacion con devolucion financiera",
     "Definir/probar storage final: Vultr Object Storage, Drive o buffer local",
     "Monitorear conexiones idle PostgreSQL"
   ],
-  "evidence": []
+  "evidence": [
+    {
+      "id": "20260621_030813_claude_HALLAZGO_3_BLOQUEADOR_LABORATORIO",
+      "timestamp": "2026-06-21T03:08:13",
+      "agent": "claude",
+      "source_file": "docs\\ai_coordination\\inbox\\20260621_030813_claude_HALLAZGO_3_BLOQUEADOR_LABORATORIO.md",
+      "classification": "CONFIRMADO",
+      "summary": "# REPORTE: Hallazgo #3 - Bloqueador Crítico Laboratorio **Agente:** Claude **Fecha:** 2026-06-21 **Clasificación:** PENDIENTE_VALIDAR (causa encontrada, fix pendiente de prueba) --- ## Síntesis **Hallazgo #3 (CRÍTICO):** Orden LAB-20260621-001 persiste en estado \"Por Validar\" (VA..."
+    }
+  ]
 }

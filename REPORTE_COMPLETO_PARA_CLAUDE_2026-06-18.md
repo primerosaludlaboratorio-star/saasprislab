@@ -4,6 +4,34 @@ Fecha de consolidacion: 2026-06-18
 Estado de corte: listo para revision externa tecnica y funcional  
 Responsable de este corte: Codex
 
+## Actualizacion critica 2026-06-21 - Cierre LIMS/legacy en Laboratorio
+
+Hallazgo confirmado:
+
+- el flujo de monitor de produccion podia intentar usar `select_related('estudio')` sobre `core.DetalleOrden`
+- `core.DetalleOrden` ya no tiene FK `estudio`; el modelo actual usa `analito`, `perfil_lims` y `paquete_lims`
+- esto podia bloquear el avance operativo de una orden de `VALIDADO_PARCIAL` a `COMPLETO` y dejarla fuera de entrega de resultados
+
+Correcciones aplicadas:
+
+- `core/views/monitor_produccion.py`: descuento de insumos compatible con LIMS puro y best-effort
+- `core/utils/detalle_orden.py`: helper comun para nombre, abreviatura, muestra y Estudio legacy opcional
+- `core/services/validador_ia.py`: validacion IA ya no depende de `select_related('estudio')`
+- `core/views/impresion.py`: tickets y etiquetas raw usan atributos display seguros
+- `core/views/laboratorio.py` + `core/templates/core/toma_muestra_index.html`: sala de toma renderiza estudios LIMS sin `detalle.estudio`
+- `core/views/cuentas_por_cobrar.py`, `core/views/expediente.py`, `core/views/excepciones_lab.py`: compatibilidad LIMS/legacy reforzada
+
+Pruebas ejecutadas:
+
+- `core.tests.test_monitor_produccion_workflow`: 3 tests OK
+- `manage.py check`: OK
+
+Estado:
+
+- corregido en codigo local
+- pendiente de commit/push/deploy despues de cerrar el paquete de cambios
+- Claude y Cascada recibieron carriles de trabajo independientes para no quedar detenidos
+
 ## Actualizacion critica 2026-06-19 - Diagnostico real del login en produccion
 
 Hallazgo confirmado:

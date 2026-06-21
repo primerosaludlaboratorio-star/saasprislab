@@ -56,7 +56,7 @@
         <tbody>
             {% for detalle in detalles %}
             <tr>
-                <td>{{ detalle.estudio.nombre|truncatechars:20 }}</td>
+                <td>{{ detalle.display_nombre|truncatechars:20 }}</td>
                 <td align="right">${{ detalle.precio_momento|floatformat:2 }}</td>
             </tr>
             {% endfor %}

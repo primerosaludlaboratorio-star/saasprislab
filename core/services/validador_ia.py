@@ -115,7 +115,8 @@ def validar_resultado_ia(detalle_orden):
                     break
 
             # ── CHECK 2: Valores fuera de referencia del estudio ──
-            estudio = detalle_orden.estudio
+            from core.utils.detalle_orden import get_estudio_legacy
+            estudio = get_estudio_legacy(detalle_orden)
             if estudio and estudio.valor_minimo and estudio.valor_maximo:
                 try:
                     v_min = float(estudio.valor_minimo)
@@ -185,7 +186,8 @@ def validar_orden_completa(orden):
     """
     todas_alertas = []
     try:
-        for detalle in orden.detalles.select_related('estudio').all():
+        detalles = orden.detalles.select_related('analito', 'perfil_lims', 'paquete_lims').all()
+        for detalle in detalles:
             alertas = validar_resultado_ia(detalle)
             todas_alertas.extend(alertas)
     except Exception as e:

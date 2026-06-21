@@ -193,7 +193,9 @@ def validar_valor_critico(request, detalle_id):
     
     try:
         detalle = get_object_or_404(DetalleOrden, id=detalle_id, orden__empresa=empresa)
-        estudio = detalle.estudio
+        from core.utils.detalle_orden import get_detalle_nombre, get_estudio_legacy
+        estudio = get_estudio_legacy(detalle)
+        nombre_estudio = get_detalle_nombre(detalle)
         
         try:
             data = json.loads(request.body) if request.body else {}
@@ -201,6 +203,13 @@ def validar_valor_critico(request, detalle_id):
             return JsonResponse({'status': 'error', 'mensaje': 'JSON inválido'}, status=400)
         valor_ingresado = Decimal(str(data.get('valor', 0)))
         confirmado = data.get('confirmado', False)
+
+        if not estudio:
+            return JsonResponse({
+                'status': 'success',
+                'es_critico': False,
+                'mensaje': f'{nombre_estudio}: sin rango crítico legacy configurado'
+            })
         
         # Verificar si hay rango de pánico definido
         es_valor_critico = False
@@ -231,7 +240,7 @@ def validar_valor_critico(request, detalle_id):
                     accion='UPDATE',
                     modelo='DetalleOrden',
                     objeto_id=str(detalle.id),
-                    datos_nuevos={'valor_critico_confirmado': valor_ingresado, 'estudio': estudio.nombre},
+                    datos_nuevos={'valor_critico_confirmado': valor_ingresado, 'estudio': nombre_estudio},
                     request=request,
                 )
         
@@ -261,6 +270,8 @@ def rechazar_muestra(request, detalle_id):
     
     try:
         detalle = get_object_or_404(DetalleOrden, id=detalle_id, orden__empresa=empresa)
+        from core.utils.detalle_orden import get_detalle_nombre
+        nombre_estudio = get_detalle_nombre(detalle)
         
         try:
             data = json.loads(request.body) if request.body else {}
@@ -282,8 +293,8 @@ def rechazar_muestra(request, detalle_id):
                 accion='UPDATE',
                 modelo='DetalleOrden',
                 objeto_id=str(detalle.id),
-                datos_anteriores={'estudio': detalle.estudio.nombre},
-                datos_nuevos={'estado_procesamiento': 'PENDIENTE_TOMA', 'motivo_rechazo': motivo_rechazo, 'estudio': detalle.estudio.nombre},
+                datos_anteriores={'estudio': nombre_estudio},
+                datos_nuevos={'estado_procesamiento': 'PENDIENTE_TOMA', 'motivo_rechazo': motivo_rechazo, 'estudio': nombre_estudio},
                 request=request,
             )
         

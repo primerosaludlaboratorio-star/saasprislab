@@ -85,7 +85,9 @@ def expediente_clinico(request, paciente_id):
     ordenes_lab = OrdenDeServicio.objects.filter(
         paciente=paciente,
         empresa=empresa
-    ).prefetch_related('detalles__estudio').order_by('-fecha_creacion')[:50]
+    ).prefetch_related(
+        'detalles__analito', 'detalles__perfil_lims', 'detalles__paquete_lims'
+    ).order_by('-fecha_creacion')[:50]
     
     # Crear timeline combinado
     timeline_items = []
@@ -101,8 +103,9 @@ def expediente_clinico(request, paciente_id):
             'consulta': consulta
         })
     
+    from core.utils.detalle_orden import get_detalle_nombre
     for orden in ordenes_lab:
-        estudios = ", ".join([d.estudio.nombre for d in orden.detalles.all()[:5]])
+        estudios = ", ".join([get_detalle_nombre(d) for d in orden.detalles.all()[:5]])
         timeline_items.append({
             'tipo': 'laboratorio',
             'id': orden.id,

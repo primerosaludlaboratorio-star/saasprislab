@@ -75,7 +75,7 @@
               <td>
                 {% for det in o.detalles.all|slice:":3" %}
                   <span class="badge bg-light text-dark border me-1" style="font-size:.7rem;">
-                    {{ det.estudio.nombre }}
+                    {{ det.display_nombre|default:"Estudio" }}
                   </span>
                 {% endfor %}
                 {% if o.detalles.count > 3 %}

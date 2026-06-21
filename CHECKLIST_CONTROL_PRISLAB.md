@@ -109,6 +109,12 @@ Si este checklist no se actualiza, el cambio no cuenta como cerrado.
   - [x] Hallazgo real corregido `2026-06-20`: `consultorio/api_views.py` ya no importa `core.services.ai_medico` en module import. El import de Gemini/audio pasó a nivel función (`procesar_audio_consulta`, `procesar_audio_laboratorio`).
   - [x] Mejora medida `2026-06-20`: primer request perfilado a `/api/pacientes/buscar/` bajó de ~`6.97 s` perfilados a ~`3.31 s` tras diferir el import pesado de `google.genai`.
   - [~] Hallazgo de performance aún abierto `2026-06-20`: persiste costo de cold-start/import tree en resolución inicial de rutas (`config/urls.py`, `consultorio/urls.py` y otros imports globales). No es SQL ni lógica de pacientes; requiere segunda pasada de lazy-loading estructural si queremos bajar más el arranque en frío.
+  - [x] Hallazgo crítico corregido `2026-06-21`: el monitor de producción ya no bloquea `VALIDADO_PARCIAL -> COMPLETO` por `select_related('estudio')` sobre `core.DetalleOrden`; el descuento de insumos queda como best-effort y compatible con LIMS puro.
+  - [x] Compatibilidad LIMS/legacy reforzada `2026-06-21`: helper `core.utils.detalle_orden` centraliza nombre, abreviatura, muestra y Estudio legacy opcional para detalles de orden.
+  - [x] Pantallas protegidas `2026-06-21`: toma de muestra, ticket raw, etiquetas raw, expediente, CxC, excepciones de laboratorio y validador IA ya no dependen de `DetalleOrden.estudio` cuando trabajan con órdenes LIMS puras.
+  - [x] Regresión focalizada `2026-06-21`: `core.tests.test_monitor_produccion_workflow` OK (`3 tests`) cubre avance a `COMPLETO`, sala de toma y render de ticket/etiquetas con detalle LIMS puro.
+  - [x] `manage.py check` OK tras cierre LIMS/legacy `2026-06-21`.
+  - [x] Coordinación local reforzada `2026-06-21`: `NEXT_ACTIONS.md` y tareas activas para Claude/Cascada dejan carriles de trabajo autónomo aunque Codex siga cerrando código.
 
 ## Documento de cierre de auditoría
 

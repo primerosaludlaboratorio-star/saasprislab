@@ -194,9 +194,10 @@ def api_crear_cxc(request):
         # Calcular vencimiento
         fecha_venc = timezone.now().date() + timedelta(days=convenio.dias_credito)
 
-        # Concepto — prefetch detalles para evitar N+1
-        detalles_qs = orden.detalles.select_related('estudio').all()[:5]
-        estudios = ', '.join(d.estudio.nombre for d in detalles_qs)
+        # Concepto — compatible con LIMS puro y legacy.
+        from core.utils.detalle_orden import get_detalle_nombre
+        detalles_qs = orden.detalles.select_related('analito', 'perfil_lims', 'paquete_lims').all()[:5]
+        estudios = ', '.join(get_detalle_nombre(d) for d in detalles_qs)
         concepto = f'Orden {orden.folio_orden} - {orden.paciente.nombre_completo} - {estudios}'
 
         from django.db import transaction as _dbt
