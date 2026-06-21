@@ -18,6 +18,22 @@ Si este checklist no se actualiza, el cambio no cuenta como cerrado.
 
 ## Estado técnico de corte
 
+- [x] Nueva capa de auditoría segura solo lectura agregada el `2026-06-21`: `auditoria_segura_farmacia`, `auditoria_segura_laboratorio`, `auditoria_segura_consultorio`, `auditoria_segura_pacientes` y `auditoria_segura_global`
+- [x] Regresión de auditorías seguras `2026-06-21` OK:
+  - [x] `core.tests.test_auditoria_segura_farmacia`
+  - [x] `core.tests.test_auditoria_segura_laboratorio`
+  - [x] `core.tests.test_auditoria_segura_consultorio`
+  - [x] `core.tests.test_auditoria_segura_pacientes`
+  - [x] `core.tests.test_auditoria_segura_global`
+- [x] Confirmado el `2026-06-21` que los scripts legacy `auditoria_*_full.py` no deben usarse como auditoría read-only productiva:
+  - [x] `auditoria_lab_full.py` aborta por `DEPRECATED`
+  - [x] `stress_test_extremo.py` permanece fuera de carril operativo
+  - [x] las nuevas `auditoria_segura_*` quedan como carril canónico de inspección sin mutación
+- [~] Hallazgos locales de auditoría segura `2026-06-21` identificados y pendientes de cierre funcional:
+  - [~] Farmacia: `ventas_sin_movimiento: 1`
+  - [~] Farmacia: `stock_kardex_descuadrado: 20`
+  - [~] Laboratorio: `detalles_sin_item_lims: 1`
+  - [~] Consultorio: `consultas_con_cita_sin_signos: 5`
 - [x] `manage.py check` OK
 - [x] `makemigrations --check --dry-run` OK
 - [x] `manage.py test` global OK (`251 tests`, `23 skipped`, `0 failures`, `0 errors`)

@@ -39,6 +39,66 @@ Ampliacion por auditoria Cascada:
 - `pacientes/portal_views.py`, `consultorio/views_integracion_lab.py` y `core/utils/estandares_industriales.py` ya no usan `prefetch_related('detalles__estudio')`
 - delta-check usa codigo LIMS seguro mediante `core.utils.detalle_orden.get_detalle_codigo`
 
+## Actualizacion critica 2026-06-21 - Nueva auditoria segura solo lectura
+
+Hallazgo operativo importante:
+
+- el repo tenia varios scripts de "auditoria" historicos, pero no todos son aptos para correr como inspeccion read-only en entorno real
+- `auditoria_lab_full.py` ya quedo confirmado como `DEPRECATED`
+- `stress_test_extremo.py` no es carril operativo para auditoria actual
+- habia riesgo real de que otras IAs tomaran scripts legacy mutantes como si fueran validacion segura
+
+Correccion estructural aplicada:
+
+- se agregaron nuevos management commands canonicos de solo lectura:
+  - `core/management/commands/auditoria_segura_farmacia.py`
+  - `core/management/commands/auditoria_segura_laboratorio.py`
+  - `core/management/commands/auditoria_segura_consultorio.py`
+  - `core/management/commands/auditoria_segura_pacientes.py`
+  - `core/management/commands/auditoria_segura_global.py`
+- se agrego cobertura automatica dedicada:
+  - `core/tests/test_auditoria_segura_farmacia.py`
+  - `core/tests/test_auditoria_segura_laboratorio.py`
+  - `core/tests/test_auditoria_segura_consultorio.py`
+  - `core/tests/test_auditoria_segura_pacientes.py`
+  - `core/tests/test_auditoria_segura_global.py`
+
+Garantias de esta nueva capa:
+
+- solo usa `GET` y snapshots de integridad
+- no crea, no modifica y no elimina datos
+- usa `Client` Django con `secure=True` para revisar rutas protegidas
+- sirve como carril canonico para inspeccion automatizada de Farmacia, Laboratorio, Consultorio y Pacientes
+
+Resultados locales ya medidos con esta nueva auditoria:
+
+- Farmacia:
+  - `OK=15 WARN=3 FAIL=0`
+  - hallazgos actuales: `ventas_sin_movimiento: 1`, `stock_kardex_descuadrado: 20`
+- Laboratorio:
+  - `OK=20 WARN=2 FAIL=0`
+  - hallazgo actual: `detalles_sin_item_lims: 1`
+- Consultorio:
+  - `OK=18 WARN=2 FAIL=0`
+  - hallazgo actual: `consultas_con_cita_sin_signos: 5`
+- Pacientes:
+  - `OK=15 WARN=1 FAIL=0`
+  - sin fallas duras en la muestra local filtrada por empresa
+
+Pruebas ejecutadas:
+
+- `manage.py check` OK
+- `manage.py test core.tests.test_auditoria_segura_farmacia` OK
+- `manage.py test core.tests.test_auditoria_segura_laboratorio` OK
+- `manage.py test core.tests.test_auditoria_segura_consultorio` OK
+- `manage.py test core.tests.test_auditoria_segura_pacientes` OK
+- `manage.py test core.tests.test_auditoria_segura_global` OK
+
+Regla nueva para Claude, Cascada y cualquier otra IA:
+
+- no usar `auditoria_*_full.py` como fuente de verdad para "solo lectura"
+- usar `auditoria_segura_global` o las `auditoria_segura_*` por modulo cuando se quiera evidencia automatizada segura
+
 ## Actualizacion critica 2026-06-19 - Diagnostico real del login en produccion
 
 Hallazgo confirmado:
