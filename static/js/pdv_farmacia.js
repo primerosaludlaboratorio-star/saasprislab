@@ -595,11 +595,13 @@ window.toggleCortesiaFarmacia = function(){var chk=document.getElementById('togg
 window.solicitarPinStaff = function(){var m=_getModal('modalPinStaff');if(m)m.show();setTimeout(function(){var inp=document.getElementById('input-pin-staff');if(inp){inp.value='';inp.focus();}},300);};
 window.confirmarPinStaff = function(){
     var pin=document.getElementById('input-pin-staff')?.value||'';
-    fetch('/api/validar-pin-staff/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':_csrf(),'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin',body:JSON.stringify({pin:pin})})
+    var pinUrl = window.PDV_VALIDAR_PIN_NETO_URL || '/farmacia/api/validar-pin-neto/';
+    fetch(pinUrl,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':_csrf(),'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin',body:JSON.stringify({pin:pin})})
     .then(function(r){return r.json();})
     .then(function(data){
         var e=document.getElementById('pin-error-msg');
-        if(data.valid||data.ok){window.precioNetoActivo=true;window.carrito.forEach(function(item){item.precio_venta=item.precio_neto||item.precio_base;});renderCarrito();var m=_getModal('modalPinStaff');if(m)m.hide();var b=document.getElementById('badge-neto-activo');if(b)b.style.display='block';var bd=document.getElementById('btn-desactivar-neto');if(bd)bd.style.display='inline-block';}
+        var autorizado = !!(data && (data.autorizado || data.valid || data.ok || data.status === 'success'));
+        if(autorizado){window.precioNetoActivo=true;window.carrito.forEach(function(item){item.precio_venta=item.precio_neto||item.precio_base;});renderCarrito();var m=_getModal('modalPinStaff');if(m)m.hide();var b=document.getElementById('badge-neto-activo');if(b)b.style.display='block';var bd=document.getElementById('btn-desactivar-neto');if(bd)bd.style.display='inline-block';if(e)e.style.display='none';}
         else{if(e)e.style.display='block';}
     }).catch(function(){var e=document.getElementById('pin-error-msg');if(e)e.style.display='block';});
 };
@@ -608,11 +610,15 @@ window.desactivarPrecioNeto = function(){window.precioNetoActivo=false;window.ca
 // CUPON
 window.aplicarCupon = function(){
     var codigo=(document.getElementById('p-cupon-codigo')?.value||'').trim();if(!codigo)return;
-    fetch('/farmacia/pdv/?accion=validar_cupon&codigo='+encodeURIComponent(codigo),{headers:{'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin'})
+    var cuponUrl = window.PDV_VALIDAR_CUPON_URL || '/farmacia/api/validar-cupon/';
+    fetch(cuponUrl+'?codigo='+encodeURIComponent(codigo),{headers:{'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin'})
     .then(function(r){return r.json();})
     .then(function(data){
         var ic=document.getElementById('info-cupon');var tc=document.getElementById('texto-cupon');
-        if(data.valido){window.cuponAplicado={codigo:codigo,porcentaje:data.porcentaje};if(ic){ic.className='alert alert-success py-1 px-2 mt-1 small';ic.style.display='block';}if(tc)tc.textContent=data.porcentaje+'% de descuento aplicado.';}
+        var cupon = data && data.cupon ? data.cupon : null;
+        var porcentaje = cupon ? (cupon.porcentaje_descuento || 0) : data?.porcentaje;
+        var valido = !!(data && (data.valido || data.status === 'success') && porcentaje);
+        if(valido){window.cuponAplicado={codigo:codigo,porcentaje:porcentaje};if(ic){ic.className='alert alert-success py-1 px-2 mt-1 small';ic.style.display='block';}if(tc)tc.textContent=porcentaje+'% de descuento aplicado.';}
         else{window.cuponAplicado=null;if(ic){ic.className='alert alert-danger py-1 px-2 mt-1 small';ic.style.display='block';}if(tc)tc.textContent='Cupon invalido o expirado.';}
         recalcularTotal();
     }).catch(function(){window.cuponAplicado=null;});
@@ -621,12 +627,13 @@ window.aplicarCupon = function(){
 // BUSQUEDA PACIENTE
 window.buscarPaciente = function(val){
     if(!val||val.length<3){var r=document.getElementById('resultados-pacientes');if(r)r.style.display='none';return;}
-    fetch('/api/buscar-paciente/?q='+encodeURIComponent(val),{headers:{'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin'})
+    var pacientesUrl = window.PDV_BUSCAR_PACIENTES_URL || '/api/pacientes/buscar/';
+    fetch(pacientesUrl+'?q='+encodeURIComponent(val),{headers:{'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin'})
     .then(function(r){return r.json();})
     .then(function(data){
         var c=document.getElementById('resultados-pacientes');if(!c)return;
         if(!data.pacientes?.length){c.style.display='none';return;}
-        c.innerHTML=data.pacientes.map(function(p){return '<a href="#" class="list-group-item list-group-item-action py-1" onclick="seleccionarPaciente('+p.id+',\''+p.nombre_completo+'\');return false;">'+p.nombre_completo+'</a>';}).join('');
+        c.innerHTML=data.pacientes.map(function(p){var nombre=(p.nombre_completo||p.nombre||'');return '<a href="#" class="list-group-item list-group-item-action py-1" onclick="seleccionarPaciente('+p.id+','+JSON.stringify(nombre)+');return false;">'+nombre+'</a>';}).join('');
         c.style.display='block';
     }).catch(function(){});
 };

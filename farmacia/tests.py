@@ -33,7 +33,7 @@ def _store_rendered_templates_safe(store, signal, sender, template, context, **k
 
 _dj_test_client.store_rendered_templates = _store_rendered_templates_safe
 
-from core.models import Empresa, Lote, Producto
+from core.models import ConfiguracionModulos, Empresa, Lote, Producto
 from farmacia.models import MovimientoInventario, Proveedor
 
 User = get_user_model()
@@ -198,6 +198,46 @@ class FarmaciaViewTests(TestCase):
         url = reverse("pdv_farmacia")
         response = self.client.get(url, follow=True)
         self.assertIn(response.status_code, [200, 301, 302])
+
+    def test_pdv_template_exposes_active_api_urls(self):
+        response = self.client.get(reverse("pdv_farmacia"), follow=True)
+        self.assertContains(response, "/farmacia/api/validar-pin-neto/")
+        self.assertContains(response, "/farmacia/api/validar-cupon/")
+        self.assertContains(response, "/api/pacientes/buscar/")
+
+    def test_validar_pin_precio_neto_ok(self):
+        self.usuario.rol = "ADMIN"
+        self.usuario.save(update_fields=["rol"])
+        ConfiguracionModulos.objects.update_or_create(
+            empresa=self.empresa,
+            defaults={"pin_precio_neto": "1234"},
+        )
+        response = self.client.post(
+            reverse("validar_pin_precio_neto"),
+            data='{"pin":"1234"}',
+            content_type="application/json",
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "success")
+        self.assertTrue(response.json()["autorizado"])
+
+    def test_validar_pin_precio_neto_rechaza_pin_incorrecto(self):
+        self.usuario.rol = "ADMIN"
+        self.usuario.save(update_fields=["rol"])
+        ConfiguracionModulos.objects.update_or_create(
+            empresa=self.empresa,
+            defaults={"pin_precio_neto": "1234"},
+        )
+        response = self.client.post(
+            reverse("validar_pin_precio_neto"),
+            data='{"pin":"9999"}',
+            content_type="application/json",
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["status"], "error")
+        self.assertFalse(response.json()["autorizado"])
 
     def test_farmacia_inventario_general_view(self):
         url = reverse("farmacia_inventario_general")

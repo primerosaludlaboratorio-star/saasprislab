@@ -292,6 +292,8 @@ Leyenda:
 - [~] `/laboratorio/resultados/<orden_id>/pdf/` redirige correctamente a captura cuando no se cumple el triple blindaje
 - [x] `/laboratorio/api/crear-orden/` ya quedó alineado al servicio LIMS real; corregido el bug donde la UI sí mostraba estudios pero el backend legacy no los resolvía
 - [x] PDV farmacia ahora bloquea backend si intentan vender con carrito vacío o cantidades inválidas
+- [x] Hallazgo real corregido `2026-06-20`: el frontend del PDV ya no apunta a rutas fantasma para `Precio Neto`, `Cupón` y `Búsqueda de Pacientes`; ahora consume URLs canónicas y contratos reales del backend.
+- [x] Regresión verificada `2026-06-20`: plantilla PDV expone `/farmacia/api/validar-pin-neto/`, `/farmacia/api/validar-cupon/` y `/api/pacientes/buscar/`; PIN correcto/incorrecto validado por pruebas.
 - [x] Devoluciones farmacia ahora normalizan `REINGRESAR -> RETORNO_ALMACEN`, previenen sobredevoluciones y reingresan stock por lote cuando corresponde
 - [x] Devoluciones farmacia ya aceptan `productos_devueltos` (payload real del frontend) y rechazan devoluciones parciales sin partidas válidas
 - [x] Corte de caja unificado ya calcula laboratorio por cobranzas reales (`PagoOrden`) y no por órdenes creadas no cobradas

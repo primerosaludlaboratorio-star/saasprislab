@@ -80,10 +80,34 @@ Estado actual de auditoria:
 - Cobertura de regresion localizada:
   - `core/tests/test_devoluciones_farmacia_api.py`
   - `core/tests/test_farmacia_carga_masiva_excel.py`
+- Regresiones nuevas verificadas localmente `2026-06-20`:
+  - `farmacia.tests.FarmaciaViewTests.test_pdv_template_exposes_active_api_urls`
+  - `farmacia.tests.FarmaciaViewTests.test_validar_pin_precio_neto_ok`
+  - `farmacia.tests.FarmaciaViewTests.test_validar_pin_precio_neto_rechaza_pin_incorrecto`
 - Riesgo arquitectonico sigue vigente:
   - existe flujo PDV en `core.views.farmacia`
   - existe flujo ERP en `farmacia/`
   - siguen coexistiendo rutas y modelos paralelos de devolucion
+
+Hallazgos confirmados y corregidos:
+
+1. El JS del PDV seguia consumiendo rutas heredadas / inexistentes:
+   - `'/api/validar-pin-staff/'`
+   - `'/farmacia/pdv/?accion=validar_cupon'`
+   - `'/api/buscar-paciente/'`
+2. El JS de busqueda de pacientes esperaba `nombre_completo`, pero la API real devuelve `nombre`.
+
+Correcciones aplicadas:
+
+- `core/templates/core/pdv_farmacia.html`
+  - ahora expone URLs canonicas para PIN de precio neto, validacion de cupon y busqueda de pacientes
+- `static/js/pdv_farmacia.js`
+  - usa las URLs activas del sistema
+  - acepta el contrato backend real de `validar_pin_precio_neto`
+  - acepta el contrato backend real de `api_validar_cupon`
+  - soporta `nombre` y `nombre_completo` al renderizar resultados de pacientes
+- `farmacia/tests.py`
+  - agrega regresion de plantilla y PIN correcto/incorrecto
 
 Conclusion:
 
@@ -147,6 +171,9 @@ Archivos de control actualizados localmente:
 - `core/lims_cart.py`
 - `core/views/laboratorio.py`
 - `core/tests/test_lims_cart_search.py`
+- `core/templates/core/pdv_farmacia.html`
+- `static/js/pdv_farmacia.js`
+- `farmacia/tests.py`
 - `DEPLOY.md`
 - `ACCESO_Y_DEPLOY_OPERATIVO_VPS.md`
 
