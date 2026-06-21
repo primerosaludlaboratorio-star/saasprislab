@@ -26,7 +26,6 @@ from core.models import (
     ProgramaCapacitacion,
     Empresa,
 )
-from core.utils.empresa_request import get_empresa_usuario
 
 logger = logging.getLogger(__name__)
 
