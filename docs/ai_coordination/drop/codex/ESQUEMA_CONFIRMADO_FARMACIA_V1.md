@@ -88,7 +88,7 @@ Evidencia:
 - Existe servicio `farmacia/services/corte_caja_unificado.py`.
 - Existe ruta `api/caja/corte-unificado/`.
 
-Conclusion: hay proteccion parcial existente. Falta validar cobertura real del flujo usado por usuarios.
+Conclusion: el cierre unificado ya crea cierre formal y cierra apertura. Falta decidir si la vista clasica HTML debe migrar a este servicio.
 
 ## Evidencia de locks/transacciones
 
@@ -281,6 +281,26 @@ Cambios:
 Validacion local:
 
 - `python manage.py test core.tests.test_farmacia_lotes_api --keepdb -v 2` -> 2/2 OK.
+- `python manage.py check` -> OK.
+
+## Fix de corte de caja unificado
+
+Cambios:
+
+- `farmacia.services.corte_caja_unificado._cerrar_farmacia()` ahora crea `CierreTurnoFarmacia`.
+- El cierre formal queda vinculado a `AperturaCaja`.
+- `AperturaCaja` queda cerrada por el flujo propio de `CierreTurnoFarmacia.save()`.
+- El corte consolidado calcula `fondo_inicial`, `efectivo_esperado` y diferencia contra efectivo declarado.
+- Una segunda ejecucion sin apertura activa no duplica cierre.
+
+Pruebas agregadas:
+
+- `core.tests.test_farmacia_corte_unificado.CorteCajaUnificadoTest.test_corte_unificado_crea_cierre_formal_y_cierra_apertura`
+- `core.tests.test_farmacia_corte_unificado.CorteCajaUnificadoTest.test_corte_unificado_no_duplica_cierre_si_no_hay_apertura_activa`
+
+Validacion local:
+
+- `python manage.py test core.tests.test_farmacia_corte_unificado --keepdb -v 2` -> 2/2 OK.
 - `python manage.py check` -> OK.
 
 ## Siguiente paso aprobado

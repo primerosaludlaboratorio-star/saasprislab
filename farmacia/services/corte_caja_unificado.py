@@ -62,7 +62,7 @@ def cerrar_turno_unificado(
 
     with transaction.atomic():
         # ── 1. Corte Farmacia ─────────────────────────────────────────────────
-        corte_farmacia = _cerrar_farmacia(cajero, empresa, sucursal, ahora)
+        corte_farmacia = _cerrar_farmacia(cajero, empresa, sucursal, ahora, efectivo_declarado)
 
         # ── 2. Corte Laboratorio ──────────────────────────────────────────────
         corte_lab = _cerrar_laboratorio(cajero, empresa, sucursal, ahora)
@@ -71,8 +71,10 @@ def cerrar_turno_unificado(
         total_farmacia = corte_farmacia.get('total', Decimal('0'))
         total_lab = corte_lab.get('total', Decimal('0'))
         total_consolidado = total_farmacia + total_lab
+        fondo_inicial = corte_farmacia.get('fondo_inicial', Decimal('0'))
+        efectivo_esperado = fondo_inicial + total_consolidado
 
-        diferencia = efectivo_declarado - total_consolidado
+        diferencia = efectivo_declarado - efectivo_esperado
 
         corte_data = {
             'fecha': ahora.isoformat(),
@@ -82,6 +84,8 @@ def cerrar_turno_unificado(
             'farmacia': corte_farmacia,
             'laboratorio': corte_lab,
             'total_consolidado': str(total_consolidado),
+            'fondo_inicial': str(fondo_inicial),
+            'efectivo_esperado': str(efectivo_esperado),
             'efectivo_declarado': str(efectivo_declarado),
             'diferencia': str(diferencia),
             'estado': 'CUADRADO' if abs(diferencia) < Decimal('1') else 'DESCUADRADO',
@@ -116,7 +120,7 @@ def cerrar_turno_unificado(
     return corte_data
 
 
-def _cerrar_farmacia(cajero, empresa, sucursal, ahora: datetime) -> dict:
+def _cerrar_farmacia(cajero, empresa, sucursal, ahora: datetime, efectivo_declarado: Decimal) -> dict:
     """Cierra el turno de farmacia y retorna el resumen."""
     try:
         from farmacia.models import CierreTurnoFarmacia, AperturaCaja
@@ -145,12 +149,28 @@ def _cerrar_farmacia(cajero, empresa, sucursal, ahora: datetime) -> dict:
         total = ventas_del_turno.aggregate(t=Sum('total'))['t'] or Decimal('0')
         num_ventas = ventas_del_turno.count()
 
-        apertura.cerrar_caja()
+        cierre = CierreTurnoFarmacia.objects.create(
+            empresa=empresa,
+            sucursal=apertura.sucursal,
+            usuario_responsable=apertura.usuario_responsable,
+            apertura_caja=apertura,
+            fecha_apertura=apertura.fecha_apertura,
+            efectivo_declarado=efectivo_declarado,
+            tarjeta_declarado=Decimal('0.00'),
+            vales_declarado=Decimal('0.00'),
+            efectivo_teorico=total,
+            tarjeta_teorico=Decimal('0.00'),
+            vales_teorico=Decimal('0.00'),
+            observaciones='Cierre generado por corte unificado.',
+        )
 
         return {
             'total': total,
             'num_ventas': num_ventas,
             'apertura_id': apertura.pk,
+            'cierre_id': cierre.pk,
+            'folio_cierre': cierre.folio,
+            'fondo_inicial': apertura.fondo_efectivo,
             'estado': 'cerrado',
         }
     except Exception as exc:
