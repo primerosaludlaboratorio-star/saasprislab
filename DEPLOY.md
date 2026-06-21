@@ -60,6 +60,23 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+Nota operativa real:
+
+- en esta VPS el codigo productivo vive en `/opt/prislab/app`
+- no asumir que `/opt/prislab` es el repo Git
+- si `git pull` falla con `not a git repository`, revisar si `/opt/prislab/app/.git` existe
+- si no existe, inicializar el repo y hacer `fetch + reset` contra `release/v1.0-local`
+
+Secuencia de recuperacion ya validada:
+
+```bash
+sudo -u prislab git -C /opt/prislab/app init
+sudo -u prislab git -C /opt/prislab/app remote add origin https://github.com/primerosaludlaboratorio-star/saasprislab.git
+sudo -u prislab git -C /opt/prislab/app fetch --depth 1 origin release/v1.0-local
+chown -R prislab:prislab /opt/prislab/app
+sudo -u prislab git -C /opt/prislab/app reset --hard FETCH_HEAD
+```
+
 ### 5. Configurar `.env`
 
 Variables mínimas:
@@ -99,6 +116,15 @@ Para aplicar fixes y reiniciar servicios después de un pull:
 
 ```bash
 sudo bash /opt/prislab/app/scripts/aplicar_fixes_produccion.sh
+```
+
+Si el arbol se actualizo via `fetch + reset` en vez de `git pull`, los reinicios siguen siendo obligatorios:
+
+```bash
+systemctl restart prislab-gunicorn
+systemctl restart prislab-celery
+systemctl restart prislab-celerybeat
+systemctl reload nginx
 ```
 
 Si necesitas sincronizar usuarios de auditoría directamente en la base real de producción:

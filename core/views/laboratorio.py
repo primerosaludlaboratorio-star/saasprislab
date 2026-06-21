@@ -433,6 +433,7 @@ def api_ordenes_recientes(request):
             'num_estudios': num_estudios,
             'estado': orden.estado,
             'estado_display': orden.get_estado_display() if hasattr(orden, 'get_estado_display') else orden.estado.replace('_', ' '),
+            'estado_icono': estado_lab_info['icono'],
             'estado_pago': estado_pago,
             'estado_pago_info': estado_pago_info,
             'estado_lab_info': estado_lab_info,

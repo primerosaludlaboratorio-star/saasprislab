@@ -9,6 +9,23 @@ from typing import Any
 from django.db.models import Q
 
 
+SEARCH_ALIASES = {
+    'BH': [
+        'BH',
+        'BIOMETRIA HEMATICA',
+        'CITOMETRIA HEMATICA',
+        'CITOMETRIA HEMATICA COMPLETA',
+    ],
+    'QS3': ['QS3', 'QUIMICA SANGUINEA 3'],
+    'QS4': ['QS4', 'QUIMICA SANGUINEA 4'],
+    'QS6': ['QS6', 'QUIMICA SANGUINEA 6'],
+    'QS12': ['QS12', 'QUIMICA SANGUINEA 12'],
+    'QS19': ['QS19', 'QUIMICA SANGUINEA 19'],
+    'QS32': ['QS32', 'QUIMICA SANGUINEA 32'],
+    'EGO': ['EGO', 'EXAMEN GENERAL DE ORINA'],
+}
+
+
 def _d(val) -> Decimal:
     if val is None:
         return Decimal('0')
@@ -210,15 +227,66 @@ def search_lims_catalog(
 
     q = (query or '').strip()
     resultados: list[dict[str, Any]] = []
+    query_upper = q.upper()
+    query_compact = ''.join(ch for ch in query_upper if ch.isalnum())
+
+    terms: list[str] = []
+    if q:
+        terms.append(q)
+    alias_terms = SEARCH_ALIASES.get(query_upper) or SEARCH_ALIASES.get(query_compact) or []
+    for alias in alias_terms:
+        if alias not in terms:
+            terms.append(alias)
+
+    def _build_filter(*fields: str):
+        if not terms:
+            return Q()
+        filt = Q()
+        for term in terms:
+            term_filter = Q()
+            for field in fields:
+                term_filter |= Q(**{f'{field}__icontains': term})
+            filt |= term_filter
+        return filt
+
+    def _score_item(*values: str) -> tuple[int, int, int]:
+        haystack = ' '.join((v or '') for v in values)
+        haystack_upper = haystack.upper()
+        haystack_compact = ''.join(ch for ch in haystack_upper if ch.isalnum())
+        score = 0
+        if query_upper and query_upper in haystack_upper:
+            score += 100
+        if query_compact and query_compact in haystack_compact:
+            score += 120
+        for alias in alias_terms:
+            alias_upper = alias.upper()
+            alias_compact = ''.join(ch for ch in alias_upper if ch.isalnum())
+            if alias_upper and alias_upper in haystack_upper:
+                score += 80
+            if alias_compact and alias_compact in haystack_compact:
+                score += 90
+        starts = 1 if any((v or '').upper().startswith(query_upper) for v in values if query_upper) else 0
+        alias_starts = 1 if any(
+            any((v or '').upper().startswith(alias.upper()) for alias in alias_terms)
+            for v in values
+        ) else 0
+        return (score, starts, alias_starts)
 
     aq = Analito.objects.filter(activo=True, es_vendible_individualmente=True)
     if empresa is not None:
         aq = aq.filter(empresa=empresa)
     if q:
-        aq = aq.filter(
-            Q(nombre__icontains=q) | Q(codigo__icontains=q) | Q(abreviatura__icontains=q)
-        )
-    for a in aq.order_by('departamento', 'nombre')[:limit_analitos]:
+        aq = aq.filter(_build_filter('nombre', 'codigo', 'abreviatura'))
+    analitos = list(aq.order_by('departamento', 'nombre')[:limit_analitos * 3 if q else limit_analitos])
+    analitos.sort(
+        key=lambda a: (
+            _score_item(a.codigo, a.abreviatura, a.nombre),
+            a.departamento or '',
+            a.nombre or '',
+        ),
+        reverse=True,
+    )
+    for a in analitos[:limit_analitos]:
         px = float(_precio_item_analito(a, empresa=empresa))
         resultados.append({
             'id': f'analito:{a.id}',
@@ -242,8 +310,16 @@ def search_lims_catalog(
     if empresa is not None:
         pq = pq.filter(empresa=empresa)
     if q:
-        pq = pq.filter(Q(nombre__icontains=q) | Q(descripcion__icontains=q))
-    for p in pq.order_by('nombre')[:limit_otros]:
+        pq = pq.filter(_build_filter('nombre', 'descripcion'))
+    perfiles = list(pq.order_by('nombre')[:limit_otros * 3 if q else limit_otros])
+    perfiles.sort(
+        key=lambda p: (
+            _score_item(p.nombre, p.descripcion),
+            p.nombre or '',
+        ),
+        reverse=True,
+    )
+    for p in perfiles[:limit_otros]:
         px = float(_precio_item_perfil(p, empresa=empresa))
         resultados.append({
             'id': f'perfil:{p.id}',
@@ -267,8 +343,16 @@ def search_lims_catalog(
     if empresa is not None:
         kq = kq.filter(empresa=empresa)
     if q:
-        kq = kq.filter(Q(nombre__icontains=q) | Q(descripcion__icontains=q))
-    for k in kq.order_by('nombre')[:limit_otros]:
+        kq = kq.filter(_build_filter('nombre', 'descripcion'))
+    paquetes = list(kq.order_by('nombre')[:limit_otros * 3 if q else limit_otros])
+    paquetes.sort(
+        key=lambda k: (
+            _score_item(k.nombre, k.descripcion),
+            k.nombre or '',
+        ),
+        reverse=True,
+    )
+    for k in paquetes[:limit_otros]:
         px = float(_precio_item_paquete(k, empresa=empresa))
         resultados.append({
             'id': f'paquete:{k.id}',
