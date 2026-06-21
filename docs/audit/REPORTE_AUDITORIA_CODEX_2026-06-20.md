@@ -61,17 +61,20 @@ Flujos ejercidos con cliente Django local:
 - `POST /consultorio/api/crear-consulta-directa/` -> 200 OK
 - `POST /consultorio/api/crear-paciente-y-consulta/` -> 200 OK
 - `POST /consultorio/api/generar-certificado-inmediato/` -> 200 OK
+- `POST /consultorio/api/generar-receta-inmediata/` -> 200 OK
 
 Datos confirmados:
 
 - Se genero `folio_consulta` real (`CONS-1-2026-00005` en prueba local).
 - La consulta quedo persistida con medico asignado.
 - El certificado inmediato se genero correctamente.
+- La receta inmediata quedo vinculada a la consulta, genera `url_pdf` y `url_farmacia`, y persiste `RecetaItem`.
 
 Conclusion:
 
 - El modulo medico NO esta roto en su flujo base por endpoint.
 - Sigue habiendo latencia alta de app incluso con pocas queries.
+- El dashboard medico legacy `/medico/` sigue vivo por diseño; no se considero modulo huérfano en esta sesion.
 
 ### 4. Farmacia
 
@@ -174,6 +177,7 @@ Archivos de control actualizados localmente:
 - `core/templates/core/pdv_farmacia.html`
 - `static/js/pdv_farmacia.js`
 - `farmacia/tests.py`
+- `consultorio/tests.py`
 - `DEPLOY.md`
 - `ACCESO_Y_DEPLOY_OPERATIVO_VPS.md`
 

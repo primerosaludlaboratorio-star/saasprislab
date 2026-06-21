@@ -350,6 +350,40 @@ class ConsultorioApiStressTests(TestCase):
         )
         self.assertEqual(r.status_code, 400)
 
+    def test_api_generar_receta_inmediata_ok_vincula_consulta_y_devuelve_urls(self):
+        """Happy path: genera receta, vincula consulta y devuelve URLs útiles para el médico."""
+        from core.models import ConsultaMedica, Receta, RecetaItem
+
+        url = reverse('consultorio:api_generar_receta_inmediata')
+        r = self.client.post(
+            url,
+            data=json.dumps({
+                'cita_id': self.cita.id,
+                'medicamentos': [
+                    {
+                        'nombre': 'Paracetamol',
+                        'dosis': '500 mg cada 8 horas',
+                        'duracion': '5 días',
+                        'cantidad': 10,
+                    }
+                ],
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertTrue(data.get('ok'))
+        self.assertIn('/consultorio/pdf/receta/', data.get('url_pdf', ''))
+        self.assertIn('/farmacia/pdv/', data.get('url_farmacia', ''))
+
+        consulta = ConsultaMedica.objects.get(cita=self.cita)
+        receta = Receta.objects.get(id=data['receta_id'])
+        self.assertEqual(consulta.receta_id, receta.id)
+        self.assertEqual(receta.paciente_id, self.cita.paciente_id)
+        self.assertTrue(
+            RecetaItem.objects.filter(receta=receta, texto_libre__icontains='Paracetamol').exists()
+        )
+
     def test_api_generar_certificado_missing_cita_id_400(self):
         """Missing cita_id returns 400."""
         url = reverse('consultorio:api_generar_certificado_inmediato')

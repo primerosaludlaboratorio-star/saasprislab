@@ -96,7 +96,8 @@ Si este checklist no se actualiza, el cambio no cuenta como cerrado.
   - [x] Utilidad operativa nueva `2026-06-19`: `python manage.py backfill_lotes_operativos_farmacia --empresa-id 1` deja vendible el inventario legado cargado solo en `Producto.stock`.
   - [x] Smoke funcional adicional `2026-06-19`: alta rápida de paciente OK (`/api/pacientes/guardar/`) y búsqueda incremental OK (`/api/pacientes/buscar/`).
   - [x] Smoke funcional adicional `2026-06-19`: flujo laboratorio end-to-end local OK con paciente nuevo + orden nueva + lectura de orden + cobro + visualización en `ordenes-recientes`.
-  - [x] Smoke funcional adicional `2026-06-20`: consultorio rápido OK (`/consultorio/api/crear-paciente-y-consulta/`, `/consultorio/api/buscar-pacientes/`, `/consultorio/api/crear-consulta-directa/`, `/consultorio/api/generar-receta-inmediata/`).
+- [x] Smoke funcional adicional `2026-06-20`: consultorio rápido OK (`/consultorio/api/crear-paciente-y-consulta/`, `/consultorio/api/buscar-pacientes/`, `/consultorio/api/crear-consulta-directa/`, `/consultorio/api/generar-receta-inmediata/`).
+- [x] Regresión reforzada `2026-06-20`: receta inmediata de consultorio valida happy path completo; crea `Receta`, vincula `ConsultaMedica`, genera `RecetaItem`, `url_pdf` y `url_farmacia`.
   - [x] Hallazgo real corregido `2026-06-20`: los endpoints rápidos de consultorio ahora crean también la `ConsultaMedica` base; antes solo creaban `CitaMedica` y dejaban sin respaldo clínico ni destino de transcripción.
   - [x] Hallazgo real corregido `2026-06-20`: `/consultorio/api/analizar-transcripcion/` ya puede dejar `transcripcion_guardada=true` en consultas creadas por el flujo rápido.
   - [x] Hallazgo real corregido `2026-06-20`: `/medico/receta/<id>/pdf/` ya no rompe por campos inexistentes (`medico_universidad`) y vuelve a emitir PDF válido.
