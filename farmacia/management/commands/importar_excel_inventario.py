@@ -380,6 +380,8 @@ class Command(BaseCommand):
                             # Actualizar usando UPDATE SQL directo (evita override de save)
                             from django.db.models import F
                             cambios = {}
+                            if lote_existe.empresa_id != producto_obj.empresa_id:
+                                cambios["empresa_id"] = producto_obj.empresa_id
                             if lote_existe.cantidad != cantidad_lote:
                                 cambios["cantidad"] = cantidad_lote
                             if lote_existe.costo_adquisicion != costo and costo > 0:
@@ -404,6 +406,7 @@ class Command(BaseCommand):
                             lote_ya_existe += 1
                         else:
                             nuevo_lote = Lote(
+                                empresa_id       = producto_obj.empresa_id,
                                 producto         = producto_obj,
                                 numero_lote      = num_lote,
                                 fecha_fabricacion= fecha_fab,

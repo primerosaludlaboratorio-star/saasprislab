@@ -1,11 +1,15 @@
 from datetime import timedelta
+import os
+import tempfile
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from core.models import Empresa, Paciente, Producto, Sucursal
+from core.models import Lote
 
 
 Usuario = get_user_model()
@@ -85,3 +89,76 @@ class AuditoriaFuncionalJunio21Test(TestCase):
         data = response.json()
         self.assertEqual(len(data["productos"]), 1)
         self.assertEqual(data["productos"][0]["nombre_comercial"], "Paracetamol 500mg")
+
+    def test_importar_excel_inventario_crea_lote_con_empresa(self):
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        ws = wb.active
+        ws.append([])
+        ws.append([])
+        ws.append([
+            "Nombre del Producto",
+            "Identificador (No Cambiar)",
+            "Es un Servicio",
+            "Categoría",
+            "Marca",
+            "Unidad de Venta",
+            "Código de Barras",
+            "Descripción",
+            "Precio Público",
+            "Costo",
+            "IVA",
+            "Stock Mínimo ",
+            "Receta Médica",
+            "Usa Lotes",
+            "Lote",
+            "Fabricación del Lote",
+            "Caducidad del Lote",
+            "Stock Total ",
+        ])
+        ws.append([
+            "Ibuprofeno Auditoria 400mg",
+            "IBU-AUD-400",
+            "No",
+            "GENERICO",
+            "GENERICO",
+            "Tableta",
+            "AUD-IBU-400",
+            "Ibuprofeno",
+            35,
+            12,
+            0,
+            1,
+            "No",
+            "Si",
+            "LOT-AUD-1",
+            "2026-01-01",
+            "2099-12-31",
+            7,
+        ])
+
+        tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)
+        tmp.close()
+        try:
+            wb.save(tmp.name)
+            wb.close()
+            call_command(
+                "importar_excel_inventario",
+                tmp.name,
+                empresa_id=self.empresa.pk,
+                reset_stock=True,
+                verbosity=0,
+            )
+        finally:
+            try:
+                os.unlink(tmp.name)
+            except PermissionError:
+                pass
+
+        producto = Producto.objects.get(codigo_barras="AUD-IBU-400", empresa=self.empresa)
+        lote = Lote.objects.get(producto=producto, numero_lote="LOT-AUD-1")
+        self.assertEqual(lote.empresa_id, self.empresa.pk)
+        self.assertEqual(lote.cantidad, 7)
+        producto.refresh_from_db()
+        self.assertEqual(producto.stock, 7)
