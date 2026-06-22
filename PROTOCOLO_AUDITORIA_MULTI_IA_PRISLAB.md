@@ -1,5 +1,7 @@
 # PROTOCOLO MAESTRO DE AUDITORIA MULTI-IA PARA PRISLAB
 
+> Ver estado canónico actual de rama y hallazgos: `docs/ai_coordination/ESTADO_CANONICO_RAMA_RELEASE_V1_0_LOCAL.md`
+
 Fecha de consolidacion: 2026-06-18  
 Autor de consolidacion: Codex  
 Uso previsto: entregar a Imperium, Claude, Cascada, Copilot u otra IA auditora  
