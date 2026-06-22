@@ -8,6 +8,7 @@ bypass de IP interna, código maestro de emergencia CISO.
 """
 import logging
 import hashlib
+import ipaddress
 
 from django.conf import settings
 from django.contrib.auth import login
@@ -35,15 +36,31 @@ def _get_client_ip(request) -> str:
 
 
 def _ip_exenta_2fa(request) -> bool:
-    """Bypass para desarrollo local y redes internas configuradas."""
+    """Bypass solo para IPs explícitamente permitidas en configuración."""
     ip = _get_client_ip(request)
     bypass_ips = {'127.0.0.1', 'localhost', '::1'}
     bypass_ips.update(getattr(settings, 'IPS_INTERNAS_2FA_BYPASS', []))
     if ip in bypass_ips:
         return True
-    # Bypass para subredes /24 internas (192.168.x.x, 10.x.x.x)
-    if ip.startswith('192.168.') or ip.startswith('10.'):
-        return True
+
+    for regla in getattr(settings, 'IPS_INTERNAS_2FA_BYPASS', []):
+        regla = (regla or '').strip()
+        if not regla:
+            continue
+        try:
+            if '/' in regla:
+                if ipaddress.ip_address(ip) in ipaddress.ip_network(regla, strict=False):
+                    return True
+                continue
+            if regla.endswith('.'):
+                if ip.startswith(regla):
+                    return True
+                continue
+            if ip == regla:
+                return True
+        except Exception:
+            # Reglas inválidas no deben romper el login; simplemente no aplican.
+            continue
     return False
 
 

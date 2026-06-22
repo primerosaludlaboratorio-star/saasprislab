@@ -523,9 +523,16 @@ PRISLAB_MASTER_RECOVERY_CODE = os.environ.get('PRISLAB_MASTER_RECOVERY_CODE', ''
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_CISO_CHAT_ID = os.environ.get('TELEGRAM_CISO_CHAT_ID', '')
 
-# IPs internas que no requieren 2FA (lista separada por comas, e.g. '192.168.1.')
+# Reglas explícitas de bypass 2FA (lista separada por comas).
+# Acepta IP exacta, prefijo que termine en "." o red CIDR (ej. 192.168.1.23, 192.168.1., 10.0.0.0/24).
 _ips_bypass_raw = os.environ.get('IPS_INTERNAS_2FA_BYPASS', '')
 IPS_INTERNAS_2FA_BYPASS = [ip.strip() for ip in _ips_bypass_raw.split(',') if ip.strip()]
+
+# Caducidad de enlaces públicos de resultados.
+# Ajustable por entorno para endurecer o relajar el acceso temporal.
+RESULTADOS_PUBLICOS_TOKEN_MAX_AGE_SECONDS = int(
+    os.environ.get('RESULTADOS_PUBLICOS_TOKEN_MAX_AGE_SECONDS', str(60 * 60 * 24 * 7))
+)
 
 # Umbral de alerta NOM-024: >N accesos a expedientes en 1 hora notifica al CISO
 NOM024_ALERTA_ACCESOS_UMBRAL = int(os.environ.get('NOM024_ALERTA_ACCESOS_UMBRAL', '10'))

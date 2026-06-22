@@ -25,6 +25,15 @@ from core.utils.lfpdppp_resultados import paciente_autorizado_canal_digital_resu
 logger = logging.getLogger(__name__)
 
 
+def _resultados_publicos_max_age() -> int:
+    """Caducidad configurable del token público de resultados."""
+    valor = getattr(settings, "RESULTADOS_PUBLICOS_TOKEN_MAX_AGE_SECONDS", 60 * 60 * 24 * 7)
+    try:
+        return max(300, int(valor))
+    except Exception:
+        return 60 * 60 * 24 * 7
+
+
 def _paciente_nombre_para_bitacora(orden):
     return (
         getattr(orden, "paciente_nombre_snapshot", None)
@@ -361,7 +370,7 @@ def resultados_publicos(request, token: str):
     PDF idéntico al interno: solo vía `resultados_publicos_pdf` → `generar_reporte_pdf`.
     """
     try:
-        payload = signing.loads(token, salt="resultados-publicos", max_age=60 * 60 * 24 * 30)
+        payload = signing.loads(token, salt="resultados-publicos", max_age=_resultados_publicos_max_age())
         oid = int(payload.get("oid"))
         eid = int(payload.get("eid"))
     except Exception:
@@ -474,7 +483,7 @@ def resultados_publicos_pdf(request, token: str):
     Usa exclusivamente `generar_reporte_pdf` (mismo motor que staff).
     """
     try:
-        payload = signing.loads(token, salt="resultados-publicos", max_age=60 * 60 * 24 * 30)
+        payload = signing.loads(token, salt="resultados-publicos", max_age=_resultados_publicos_max_age())
         oid = int(payload.get("oid"))
         eid = int(payload.get("eid"))
     except Exception:
