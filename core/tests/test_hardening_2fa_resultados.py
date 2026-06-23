@@ -23,6 +23,11 @@ class Hardening2FAResultadosTest(TestCase):
         with override_settings(IPS_INTERNAS_2FA_BYPASS=["192.168.1."]):
             self.assertTrue(_ip_exenta_2fa(request))
 
+    def test_2fa_no_bypassea_localhost_en_produccion_sin_regla_explicita(self):
+        request = self._request("127.0.0.1")
+        with override_settings(DEBUG=False, IPS_INTERNAS_2FA_BYPASS=[]):
+            self.assertFalse(_ip_exenta_2fa(request))
+
     def test_ttl_resultados_publicos_es_configurable(self):
         with override_settings(RESULTADOS_PUBLICOS_TOKEN_MAX_AGE_SECONDS=900):
             self.assertEqual(_resultados_publicos_max_age(), 900)

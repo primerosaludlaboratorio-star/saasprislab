@@ -36,7 +36,8 @@ Archivo:
 Hallazgo:
 
 - el bypass generico por `192.168.*` / `10.*` ya no existe
-- solo exenta localhost/IPs explicitas declaradas en `IPS_INTERNAS_2FA_BYPASS`
+- el bypass por `127.0.0.1` solo aplica en `DEBUG`
+- en produccion solo exenta IPs/CIDRs explicitas declaradas en `IPS_INTERNAS_2FA_BYPASS`
 - el riesgo real ahora depende de la configuracion explicita del VPS, no de un bypass hardcoded
 
 ### 2. Resultados publicos

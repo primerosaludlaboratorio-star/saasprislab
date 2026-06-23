@@ -38,9 +38,7 @@ def _get_client_ip(request) -> str:
 def _ip_exenta_2fa(request) -> bool:
     """Bypass solo para IPs explícitamente permitidas en configuración."""
     ip = _get_client_ip(request)
-    bypass_ips = {'127.0.0.1', 'localhost', '::1'}
-    bypass_ips.update(getattr(settings, 'IPS_INTERNAS_2FA_BYPASS', []))
-    if ip in bypass_ips:
+    if settings.DEBUG and ip in {'127.0.0.1', 'localhost', '::1'}:
         return True
 
     for regla in getattr(settings, 'IPS_INTERNAS_2FA_BYPASS', []):

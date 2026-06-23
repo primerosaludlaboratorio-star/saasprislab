@@ -20,6 +20,7 @@ Foco actual: Consolidacion canonica y relectura contra `release/v1.0-local`
 - `director_analizadores` ya no depende de `empresa` en `Equipo`; el bug viejo P2 no aplica a la rama actual
 - `expediente_clinico` ya acepta roles de direccion/administracion; el supuesto loop infinito debe revalidarse antes de seguir usandolo como verdad
 - 2FA dejo de bypass-ear redes privadas por defecto; solo exenciones explicitas via env
+- 2FA ya no bypass-ea 127.0.0.1 en produccion; localhost queda solo para DEBUG
 - Resultados publicos ya no usan TTL fijo de 30 dias; ahora depende de `RESULTADOS_PUBLICOS_TOKEN_MAX_AGE_SECONDS`
 - Sentinel auto-repair ya no regenera permisos para superuser sin empresa
 
@@ -33,6 +34,7 @@ Foco actual: Consolidacion canonica y relectura contra `release/v1.0-local`
 - Monitorear conexiones idle PostgreSQL
 - Revisar si se quiere acortar `SESSION_COOKIE_AGE_SECONDS` en produccion
 - Corregir cualquier documento viejo que siga diciendo "30 dias" para resultados publicos
+- Validar si el auto-repair de Sentinel puede seguir generando redirects repetidos en 403/DB bajo carga
 - Reconciliar reportes viejos de Copilot/Claude con `release/v1.0-local` para no seguir arrastrando hallazgos obsoletos
 
 ## Evidencia Reciente
