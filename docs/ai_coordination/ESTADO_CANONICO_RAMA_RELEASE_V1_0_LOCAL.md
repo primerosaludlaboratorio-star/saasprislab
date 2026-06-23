@@ -1,6 +1,6 @@
 # Estado Canonico de PRISLAB SaaS
 
-Fecha de consolidacion: 2026-06-21  
+Fecha de consolidacion: 2026-06-23  
 Rama canonica: `release/v1.0-local`
 
 ## Proposito
@@ -21,6 +21,8 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 
 - La rama `release/v1.0-local` es la linea vigente de trabajo.
 - El historial reciente incluye el fix `650f1ef` para analisis globales y acceso a expediente de director.
+- El historial reciente incluye `c802eb5` para endurecer 2FA y caducidad de resultados publicos.
+- El historial reciente incluye `a7b0d8b` para blindar el auto-repair de Sentinel por tenant.
 - No debe usarse `main` como fuente de verdad operativa.
 
 ## Hallazgos que siguen vigentes
@@ -33,8 +35,9 @@ Archivo:
 
 Hallazgo:
 
-- sigue existiendo bypass por redes genericas `192.168.*` y `10.*`
-- esto sigue siendo un riesgo real de seguridad y configuracion
+- el bypass generico por `192.168.*` / `10.*` ya no existe
+- solo exenta localhost/IPs explicitas declaradas en `IPS_INTERNAS_2FA_BYPASS`
+- el riesgo real ahora depende de la configuracion explicita del VPS, no de un bypass hardcoded
 
 ### 2. Resultados publicos
 
@@ -44,8 +47,9 @@ Archivo:
 
 Hallazgo:
 
-- los tokens publicos siguen con vigencia larga de 30 dias
-- esto sigue siendo una decision de seguridad que conviene revisar
+- los tokens publicos ahora usan una caducidad configurable
+- default actual: 7 dias via `RESULTADOS_PUBLICOS_TOKEN_MAX_AGE_SECONDS`
+- el comentario viejo de "30 dias" ya no describe el comportamiento real
 
 ### 3. Sesiones
 
@@ -56,7 +60,10 @@ Archivo:
 Hallazgo:
 
 - `SESSION_COOKIE_AGE` sigue con default de 30 dias
+- `SESSION_EXPIRE_AT_BROWSER_CLOSE = False`
+- `SESSION_SAVE_EVERY_REQUEST = True`
 - `SECURE_SSL_REDIRECT` queda forzado en produccion, pero el default base sigue siendo `False`
+- esto es una decision de negocio/operacion, no un bug; si se quiere endurecer, debe bajar por env var
 
 ### 4. Sentinel
 
@@ -64,11 +71,13 @@ Archivos:
 
 - `core/views/sentinel_api.py`
 - `core/middleware/sentinel.py`
+- `core/services/auto_repair.py`
 
 Hallazgo:
 
 - ya no depende de `SECRET_KEY` como fallback
 - el reporte viejo de `admin_token` por GET ya no describe el estado actual
+- el auto-repair de permisos ya no debe regenerar sesion para superuser sin empresa
 - sigue habiendo hardening y revisiones pendientes, pero no ese vector viejo
 
 ## Hallazgos desactualizados
@@ -97,6 +106,18 @@ Conclusion:
 - no debe seguir etiquetandose como `loop infinito` sin repro actual
 - si alguien quiere reabrirlo, debe reproducirse contra esta rama actual y con paciente real
 
+### Auto-repair Sentinel / Tenant
+
+Estado actual del codigo:
+
+- `core/services/auto_repair.py` ya bloquea la regeneracion automatica cuando `user.empresa` es `None`
+- superuser sigue pudiendo recuperarse solo dentro de su tenant valido
+
+Conclusion:
+
+- bypass real cerrado en `a7b0d8b`
+- Sentinel ya no debe usarse para saltarse la obligacion de empresa
+
 ### H1 Farmacia 301
 
 Estado actual del codigo:
@@ -124,4 +145,3 @@ Conclusion:
 - si un reporte contradice este documento, primero revisar el codigo actual
 - no reabrir bugs viejos sin reproduccion en `release/v1.0-local`
 - cuando haya hallazgo real nuevo, citar archivo, linea y evidencia tecnica
-
