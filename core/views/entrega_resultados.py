@@ -310,7 +310,7 @@ def api_enviar_email_masivo_resultados(request):
             })
             continue
 
-        # Token de lectura (30 días)
+        # Token de lectura (caducidad configurable; por defecto 7 días)
         token = signing.dumps({"oid": orden.id, "eid": empresa.id}, salt="resultados-publicos")
         link_publico = request.build_absolute_uri(reverse("resultados_publicos", args=[token]))
 

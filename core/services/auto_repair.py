@@ -26,6 +26,7 @@ import threading
 from collections import deque
 from datetime import timedelta
 from django.utils import timezone
+from core.utils.empresa_request import get_empresa_usuario
 
 logger = logging.getLogger('sentinel.repair')
 
@@ -385,7 +386,15 @@ def reparar_permisos_sesion(request, path):
         logger.debug("SENTINEL REPAIR [Permisos]: Usuario no autenticado, skip")
         return False
     
-    # Superuser siempre tiene acceso
+    empresa = get_empresa_usuario(user)
+    if not empresa:
+        logger.warning(
+            f"SENTINEL REPAIR [Permisos]: {user.username} recibió 403 en {path} sin empresa asignada. "
+            f"No se regenera sesión automática."
+        )
+        return False
+
+    # Superuser siempre tiene acceso dentro de su tenant válido
     if user.is_superuser:
         logger.info(
             f"SENTINEL REPAIR [Permisos]: Superuser {user.username} recibió 403 en {path}. "
