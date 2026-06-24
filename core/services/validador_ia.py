@@ -76,15 +76,15 @@ def validar_resultado_ia(detalle_orden):
 
         resultados = ResultadoParametro.objects.filter(
             orden=detalle_orden.orden,
-        ).select_related('parametro')
+        ).select_related('analito')
 
         for resultado in resultados:
             if not resultado.valor:
                 continue
 
             nombre_param = ''
-            if resultado.parametro:
-                nombre_param = resultado.parametro.nombre or ''
+            if resultado.analito:
+                nombre_param = resultado.analito.nombre or ''
 
             valor_str = str(resultado.valor).strip()
 

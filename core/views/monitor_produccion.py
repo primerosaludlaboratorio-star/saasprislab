@@ -13,6 +13,7 @@ import logging
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Avg, F, DurationField, ExpressionWrapper, Prefetch
 from django.http import JsonResponse
@@ -486,6 +487,7 @@ def api_avanzar_estado(request):
                 'mensaje': f'No hay transición válida desde "{_orden_check.estado_clinico}"'
             }, status=400)
 
+        pdf_url = None
         with transaction.atomic():
             orden = OrdenDeServicio.objects.select_for_update().get(
                 id=orden_id,
@@ -511,16 +513,14 @@ def api_avanzar_estado(request):
                     orden.estado = 'EN_PROCESO'
             
             if sig_estado == 'COMPLETO':
-                orden.estado = 'RESULTADOS_LISTOS'
                 # ── SENTINEL 2.0: Validacion IA pre-finalizacion ──
-                alertas_ia = []
                 try:
                     from core.services.validador_ia import validar_orden_completa
                     alertas_ia = validar_orden_completa(orden)
                 except Exception:
                     pass
                 # ── CEREBRO DE INVENTARIO: Descontar insumos automáticamente ──
-                # FIX: Envolver en try/catch para evitar bloquear la orden
+                # Best-effort: no debe bloquear la orden.
                 try:
                     _descontar_insumos_orden(orden, request.user)
                 except Exception as e_insumos:
@@ -528,35 +528,54 @@ def api_avanzar_estado(request):
                         f"[INSUMOS] Error descontando para {orden.folio_orden}: {e_insumos}. "
                         f"La orden avanza igual (descuento es best-effort)."
                     )
-            
+                # ── PDF: generar y ADJUNTAR antes de marcar RESULTADOS_LISTOS ──
+                # OrdenDeServicio.clean() exige archivo_resultado adjunto para el estado
+                # RESULTADOS_LISTOS (salvo saldo pendiente). Antes el PDF se generaba
+                # DESPUES del save final, por lo que ese save fallaba con ValidationError
+                # (HTTP 500) y la orden quedaba atascada en VALIDADO_PARCIAL. Ahora el PDF
+                # se adjunta primero, mientras el estado aun no es RESULTADOS_LISTOS.
+                from core.utils.candado_financiero import (
+                    ReportePdfSaldoPendienteError,
+                    tiene_saldo_pendiente,
+                )
+                saldo_pendiente = tiene_saldo_pendiente(orden)
+                if not saldo_pendiente:
+                    try:
+                        from core.services.motor_reportes_lab import (
+                            generar_reporte_pdf,
+                            guardar_reporte_en_storage,
+                        )
+                        pdf_bytes = generar_reporte_pdf(orden, request=request)
+                        pdf_url = guardar_reporte_en_storage(orden, pdf_bytes)
+                        logger.info(
+                            f"PDF generado automaticamente para {orden.folio_orden}: {pdf_url}"
+                        )
+                    except ReportePdfSaldoPendienteError:
+                        saldo_pendiente = True
+                        logger.warning(
+                            "PDF automático omitido: saldo pendiente en orden %s",
+                            orden.folio_orden or orden.id,
+                        )
+                    except Exception as e_pdf:
+                        logger.error(f"Error generando PDF para {orden.folio_orden}: {e_pdf}")
+                # Solo marcar lista si hay PDF adjunto o el modelo lo permite (saldo
+                # pendiente). Si el PDF fallo, abortamos la transicion con un error claro
+                # (400) en vez de un 500 opaco, y la orden queda re-aprobable.
+                tiene_pdf = bool(
+                    orden.archivo_resultado and getattr(orden.archivo_resultado, 'name', None)
+                )
+                if not tiene_pdf and not saldo_pendiente:
+                    raise ValidationError(
+                        'No se pudo generar el PDF de resultados. La orden no se marco '
+                        'como lista; intente aprobar nuevamente.'
+                    )
+                orden.estado = 'RESULTADOS_LISTOS'
+
             if sig_estado == 'ENTREGADO':
                 orden.estado = 'ENTREGADO'
-            
-            orden.save()
-        
-        # ============================================================
-        # TRIGGER: Generar PDF al marcar como COMPLETO (finalizado)
-        # ============================================================
-        pdf_url = None
-        if sig_estado == 'COMPLETO':
-            try:
-                from core.services.motor_reportes_lab import (
-                    generar_reporte_pdf,
-                    guardar_reporte_en_storage,
-                )
-                from core.utils.candado_financiero import ReportePdfSaldoPendienteError
 
-                pdf_bytes = generar_reporte_pdf(orden, request=request)
-                pdf_url = guardar_reporte_en_storage(orden, pdf_bytes)
-                logger.info(f"PDF generado automaticamente para {orden.folio_orden}: {pdf_url}")
-            except ReportePdfSaldoPendienteError:
-                logger.warning(
-                    "PDF automático omitido: saldo pendiente en orden %s",
-                    orden.folio_orden or orden.id,
-                )
-            except Exception as e_pdf:
-                logger.error(f"Error generando PDF para {orden.folio_orden}: {e_pdf}")
-        
+            orden.save()
+
         logger.info(
             f"Orden {orden.folio_orden} avanzada: {estado_actual} → {sig_estado} "
             f"por {request.user.get_full_name()}"
@@ -605,6 +624,15 @@ def api_avanzar_estado(request):
             'status': 'error',
             'mensaje': 'Orden no encontrada'
         }, status=404)
+    except ValidationError as ve:
+        # Regla de negocio incumplida (p.ej. PDF de resultados no adjunto):
+        # responder 400 con mensaje claro, no 500.
+        mensajes = getattr(ve, 'messages', None) or [str(ve)]
+        logger.warning(f"Transición rechazada por validación: {mensajes}")
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': ' '.join(mensajes),
+        }, status=400)
     except Exception as e:
         logger.error(f"Error avanzando estado: {e}")
         return JsonResponse({
