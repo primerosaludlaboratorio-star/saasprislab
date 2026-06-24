@@ -178,4 +178,40 @@ Detalle: `docs/ai_coordination/inbox/20260624_claude_MAESTRO_AUDITORIA_IA_LLM.md
 
 ---
 
+## K. MÓDULO 4 — IA / LLM  `[bien construido · 1 fix aplicado · stubs declarados]`
+**Tests:** `manage.py test ia` → **3 OK (2 skipped)**. Cobertura delgada (1 test activo). App `ia` registrada en INSTALLED_APPS (sin `apps.py`).
+
+### Alineación al canon (estado)
+- ✅ **RBAC del agente PRIS verificado funcional** (`_verificar_rbac` + `_TOOL_RBAC` gatea cada tool mutadora). Tenant scoping OK. Fail-safe OK. Proveedor real = Gemini/DeepSeek. *(Detalle en bloque F + `inbox/20260624_claude_MAESTRO_AUDITORIA_IA_LLM.md`.)*
+- 🔧 **`validador_ia` corregido** (LAB-B, `8df3782`) — FieldError que dejaba muerta la validación IA.
+
+### Clasificación de legacy / ruido / stubs
+- ✅ **0 `except:` desnudos** en `ia/` y `core/agent/` — limpio.
+- **STUBS declarados (incompletos, con fallback):** `ia/views.py:435,480,639,669` — 4 funciones "PLACEHOLDER: Se activará cuando se configuren las APIs" (Google Cloud **Vision OCR** y **Speech** para receta/audio). Degradan a `_extraer_texto_fallback`. Clasificación: **feature incompleta esperada** (depende de config GCP), no bug. → Codex/canon: marcar como "no implementado" explícito.
+- **Placeholders de UI (no es ruido):** `ia/forms.py:62,73` son `placeholder=` de formularios HTML — legítimos.
+
+### Riesgos IA (de bloque F, para cruce/Codex)
+- **IA-2 (MEDIA):** doble mecanismo RBAC inconsistente (`pris_agent.TOOL_REGISTRY`/`required_groups` — andamiaje no usado — vs `pris_ia._TOOL_RBAC`/`grupos` — el vivo). Footgun latente. → Codex: consolidar a uno, eliminar el muerto.
+- **IA-3 (BAJA):** `ia_clinical_governance.py` sobrevende (helper 17 líneas).
+- **IA-4 (BAJA):** prompt-injection informativo en `interpretacion_ia`.
+- ❎ **IA-1 descartado** (guarda real en `pris_tools_operativos.py:1223`).
+
+### Veredicto módulo IA
+✅ **Bien construido y seguro** (RBAC real). 1 fix aplicado (validador_ia). Pendiente Codex: IA-2 (consolidar RBAC), marcar stubs Vision/Speech como no-implementados, +cobertura de tests. Sin contradicciones.
+
+---
+
+# 🏁 CIERRE DE SECUENCIA (Tests · Consultorio · Farmacia · IA)
+| Módulo | Tests | Estado | Pendiente (Codex/decisión) |
+|--------|-------|--------|----------------------------|
+| 1. Tests | 315 (297 OK) | ✅ + 1 contradicción | **LIMS-TENANT** (fuga rangos + staff sin empresa) |
+| 2. Consultorio | 36/36 | ✅ alineado | K2 (modelo), refactor monolito (go) |
+| 3. Farmacia | 18/18 | ✅ el más limpio | cosmético en scripts de carga |
+| 4. IA | 3 (1 activo) | ✅ seguro | IA-2 (consolidar RBAC), stubs, +tests |
+
+**Correcciones aplicadas y verificadas (4 commits locales):** `8df3782`, `f98a84c`, `24a90ba`, `820fae4` — LAB-A/B/C, K1, L-sobrepago, C1/C2/C3, K3, SEC-SENT, SEC-2FA.
+**Prioridad #1 para Codex:** `LIMS-TENANT` (seguridad cross-tenant, confirmada por test que falla).
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*
