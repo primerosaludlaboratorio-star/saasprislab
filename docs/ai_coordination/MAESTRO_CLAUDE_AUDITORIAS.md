@@ -268,4 +268,12 @@ Detalle: `docs/ai_coordination/inbox/20260624_claude_MAESTRO_AUDITORIA_IA_LLM.md
 
 ---
 
+## O. Hallazgos de la auditoría con agente real (Gemini browser, prod) — análisis Claude
+El agente Gemini (en la máquina del usuario, sí alcanza prod) recorrió módulos. Mi rol: **root-cause + fix** de lo que reporta.
+- **🔴 SEC-CRED (CRÍTICO, CONFIRMADO):** prod usa `admin` / `Prislab@Admin2026!` = **exactamente la contraseña hardcodeada** en `core/management/commands/crear_superusuarios_iniciales.py:50-62` (fallback usado si no se setea `PRISLAB_SUPERUSER_PASSWORD`). Cualquiera con acceso al repo tiene admin de producción. → **Codex/usuario: ROTAR ya + quitar fallbacks hardcodeados (exigir env).**
+- **QZ-WS (cosmético, CORREGIDO):** el agente reportó `wss://localhost:8181 error` como HIGH en Lista-Trabajo/PDV/Consultorio/Director/War-room. Root-cause: es **QZ Tray** (impresora térmica, `qz-tray.js`); el silenciador de `base.html` cubría puertos inseguros (8182/8283/8384/8485) y omitía los seguros (**8181**/8282/8383/8484). **No es bug funcional.** Fix: regex que cubre los 8 puertos QZ (`base.html`). Reclasificado HIGH→BAJO.
+- **Nota de método:** el agente navega y reporta a nivel superficie; clasifica severidades sin contexto (marcó QZ Tray como HIGH). Claude aporta el root-cause y la severidad correcta sobre cada hallazgo.
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*
