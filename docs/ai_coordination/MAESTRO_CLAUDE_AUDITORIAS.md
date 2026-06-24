@@ -111,4 +111,35 @@ Detalle: `docs/ai_coordination/inbox/20260624_claude_MAESTRO_AUDITORIA_IA_LLM.md
 
 **Qué debe integrar Codex (canon, tras autorización):** promover `8df3782`; implementar IA-1/IA-2, C1-C4 (corte real = cobrado − devoluciones, excluir cancelado), K1 (idempotencia cobro), L-sobrepago (tope), SEC-2FA (resolver IP real + flag bypass), SEC-SENT (anti-loop en recovery).
 
+---
+
+## H. MÓDULO 1 — TESTS  `[evidencia de ejecución real]`
+**Suite completa ejecutada** (`manage.py test` 18 apps): **315 tests / 175s → 297 OK · 2 fallos · 2 errores · 14 skipped.**
+
+### Clasificación
+- **CANON (verde, ~297):** la suite unitaria/regresión está sana. Incluye mis fixes (laboratorio, corte, cobro) sin romper nada → **mis 7 correcciones NO introdujeron regresiones**.
+- **CONTRADICCIONES (2 fallos reales — alta prioridad):** `core/tests/test_lims_config_tenant_security.py`
+  - `test_rangos_parametro_no_expone_analito_de_otro_tenant`: `GET api_rangos_parametro(analito_ajeno)` → **200** (esperado **404**) ⇒ **fuga cross-tenant** de analito de otra empresa.
+  - `test_staff_sin_empresa_no_puede_usar_config_lims`: superuser **sin empresa** → **200** (esperado **403**) ⇒ viola canon "staff/superuser requieren empresa válida".
+  - **Causa raíz:** `lims/views/tenant_lims.py:empresa_lims` + resolución de `empresa_actual` por `EmpresaIdentityMiddleware` para superusers. **NO parcheado** (root-cause de tenant requiere traza completa; un fix a medias es peligroso). → **Codex/LIMS**, prioridad alta. Clase: SEGURIDAD/PERMISOS.
+- **RUIDO/ENTORNO (2 errores de import, NO lógica):** `core/tests_e2e.py` (`selenium` no instalado) y `core/tests/test_blindaje_capacitacion_push.py` (`pywebpush` no compila en este contenedor). Son **limitaciones de mi entorno**, no fallos de código. Recomendación de alineación: envolver esos imports en `skipUnless` para que la colección no ERRORee donde falte la dep opcional (no lo aplico para no enmascarar tests canónicos sin tu visto bueno).
+
+### Estado del módulo Tests
+- ✅ Suite canónica sana y verde salvo 1 contradicción tenant real (LIMS) + 2 limitaciones de entorno.
+- ⏳ Pendiente (Codex/LIMS): cerrar `LIMS-TENANT` (fuga rangos + staff sin empresa).
+
+---
+
+## ✔ Correcciones aplicadas en esta sesión (commits locales, sin push)
+| Fix | Commit | Verificado |
+|-----|--------|-----------|
+| LAB-A/B/C (aprobación resultados + validador_ia) | `8df3782` | sí (12/12) |
+| K1 doble cobro + L-sobrepago + C1/C2/C3 corte | `f98a84c` | sí (ejecución) |
+| K3 folio receta + SEC-SENT anti-loop | `24a90ba` | sí (check+AST) |
+| SEC-2FA bypass off por defecto | `820fae4` | sí (+seguridad 5/5) |
+
+**Walk-backs por verificación (NO eran bugs):** IA-1 (guarda en `pris_tools_operativos.py:1223` limita a ADMIN/DIRECTOR/superuser; creados nunca superuser) · K2 (`Medico` no tiene FK a `Usuario` → sin atribución limpia; es deuda de modelo, no fix puntual).
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*
