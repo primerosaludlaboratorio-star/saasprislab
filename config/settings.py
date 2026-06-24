@@ -523,9 +523,13 @@ PRISLAB_MASTER_RECOVERY_CODE = os.environ.get('PRISLAB_MASTER_RECOVERY_CODE', ''
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_CISO_CHAT_ID = os.environ.get('TELEGRAM_CISO_CHAT_ID', '')
 
-# IPs internas que no requieren 2FA (lista separada por comas, e.g. '192.168.1.')
+# IPs internas que no requieren 2FA (lista separada por comas, e.g. '192.168.1.10')
 _ips_bypass_raw = os.environ.get('IPS_INTERNAS_2FA_BYPASS', '')
 IPS_INTERNAS_2FA_BYPASS = [ip.strip() for ip in _ips_bypass_raw.split(',') if ip.strip()]
+# SEC-2FA: el bypass por IP esta DESACTIVADO por defecto. Activarlo solo en
+# entornos donde REMOTE_ADDR refleje la IP real del cliente (no detras de un
+# proxy que colapse todo a 127.0.0.1) y con una allowlist explicita arriba.
+IPS_INTERNAS_2FA_BYPASS_ENABLED = os.environ.get('IPS_INTERNAS_2FA_BYPASS_ENABLED', 'False') == 'True'
 
 # Umbral de alerta NOM-024: >N accesos a expedientes en 1 hora notifica al CISO
 NOM024_ALERTA_ACCESOS_UMBRAL = int(os.environ.get('NOM024_ALERTA_ACCESOS_UMBRAL', '10'))

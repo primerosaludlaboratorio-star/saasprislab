@@ -35,16 +35,25 @@ def _get_client_ip(request) -> str:
 
 
 def _ip_exenta_2fa(request) -> bool:
-    """Bypass para desarrollo local y redes internas configuradas."""
-    ip = _get_client_ip(request)
-    bypass_ips = {'127.0.0.1', 'localhost', '::1'}
-    bypass_ips.update(getattr(settings, 'IPS_INTERNAS_2FA_BYPASS', []))
-    if ip in bypass_ips:
-        return True
-    # Bypass para subredes /24 internas (192.168.x.x, 10.x.x.x)
-    if ip.startswith('192.168.') or ip.startswith('10.'):
-        return True
-    return False
+    """
+    Bypass de 2FA por IP — DESACTIVADO por defecto (SEC-2FA).
+
+    El bypass implicito anterior (127.0.0.1/localhost/::1 + subredes 192.168.x/10.x)
+    era inseguro: detras de nginx->gunicorn `REMOTE_ADDR` es SIEMPRE 127.0.0.1, por
+    lo que exentaba a TODO el trafico de produccion y dejaba el 2FA inerte. Ademas
+    192.168/10 son rangos enormes y comunes en nubes/VPN.
+
+    Ahora el bypass solo aplica si se habilita explicitamente
+    (IPS_INTERNAS_2FA_BYPASS_ENABLED=True) y la IP esta en la allowlist
+    configurada (IPS_INTERNAS_2FA_BYPASS). Sin esa configuracion, el 2FA se exige
+    siempre que sea requerido por dispositivo activo o por rol.
+    """
+    if not getattr(settings, 'IPS_INTERNAS_2FA_BYPASS_ENABLED', False):
+        return False
+    allowlist = set(getattr(settings, 'IPS_INTERNAS_2FA_BYPASS', []) or [])
+    if not allowlist:
+        return False
+    return _get_client_ip(request) in allowlist
 
 
 def _2fa_obligatorio_por_rol(usuario) -> bool:
