@@ -211,6 +211,14 @@ class SentinelTelemetryMiddleware:
         if not ns:
             return None
 
+        # LIMS-TENANT / contrato HTTP: Http404 NO debe convertirse en pagina 200.
+        # _render_error_page devuelve status=200, lo que enmascaraba TODOS los 404
+        # (incl. get_object_or_404 cruzado entre tenants) como 200 HTML, rompiendo
+        # el aislamiento por empresa y el contrato de API. Se respeta el 404 real
+        # de Django (handler404); el 404 se sigue registrando en __call__.
+        if isinstance(exception, Http404):
+            return None
+
         tb_texto = traceback.format_exc()
         tipo_exc = type(exception).__name__
         path = request.get_full_path()
