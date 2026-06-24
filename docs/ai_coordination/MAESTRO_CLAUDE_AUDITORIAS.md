@@ -142,4 +142,22 @@ Detalle: `docs/ai_coordination/inbox/20260624_claude_MAESTRO_AUDITORIA_IA_LLM.md
 
 ---
 
+## I. MÓDULO 2 — CONSULTORIO  `[verde · ya alineado tras K1/K3]`
+**Tests:** `manage.py test consultorio` → **36/36 OK** (skipped=4). Mis fixes K1/K3 no rompieron nada.
+
+### Alineación al canon (estado)
+- ✅ **Cobro de consulta** alineado: idempotencia (K1) + folio receta sin colisión (K3) ya aplicados (`f98a84c`/`24a90ba`).
+- ⚠️ **K2 (atribución a `request.user`)**: deuda de **modelo**, no de código — `Medico` carece de FK a `Usuario`, no hay a quién atribuir el vale cuando cobra recepción. Requiere decisión de modelo (Codex). NO es fix puntual.
+
+### Clasificación de legacy / ruido
+- **LEGACY (conservar, canon-explícito):** `consultorio/models.py:16-80` — bloque "MODELOS LEGACY (MANTENER POR COMPATIBILIDAD)" y `ConsultaMedica` marcada `DEPRECATED / (LEGACY)`. Intencional para compatibilidad → conservar y documentar; no promover a nuevas features.
+- **RUIDO menor:** 8 `pass` vacíos (todos en `except` de generación de PDF: `pdf_views.py`, `pdf_views_prislab.py`, `views.py:1248,1380`) — swallowing benigno; 1 placeholder en `models.py:104`. Baja prioridad.
+- **Sin contradicciones** en la suite de consultorio (a diferencia de LIMS).
+- **REFACTOR candidato (NO forzado):** `consultorio/views.py` = **4.648 LOC** (monolito). Recomendación: dividir en submódulos (cobros / consultas / recetas / certificados / pdf). Riesgo alto → requiere tu autorización antes de tocar.
+
+### Veredicto módulo Consultorio
+✅ Funcional y alineado al canon en lo accionable. Pendiente: K2 (modelo, Codex) y refactor del monolito (requiere go). Listo para el siguiente módulo.
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*
