@@ -779,16 +779,9 @@
             
             // Interceptar el constructor de WebSocket
             window.WebSocket = function(url, protocols) {
-                // Verificar si es una conexión a QZ Tray (puertos 8182-8485)
+                // Verificar si es una conexión a QZ Tray (puertos seguros 8181-8484 e inseguros 8182-8485)
                 const esQZTray = url && (
-                    url.includes('localhost:8182') ||
-                    url.includes('localhost:8283') ||
-                    url.includes('localhost:8384') ||
-                    url.includes('localhost:8485') ||
-                    url.includes('127.0.0.1:8182') ||
-                    url.includes('127.0.0.1:8283') ||
-                    url.includes('127.0.0.1:8384') ||
-                    url.includes('127.0.0.1:8485') ||
+                    /(?:localhost|127\.0\.0\.1):(?:8181|8182|8282|8283|8383|8384|8484|8485)\b/.test(url) ||
                     url.includes('qz.io')
                 );
                 
