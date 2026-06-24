@@ -160,4 +160,22 @@ Detalle: `docs/ai_coordination/inbox/20260624_claude_MAESTRO_AUDITORIA_IA_LLM.md
 
 ---
 
+## J. MÓDULO 3 — FARMACIA  `[el más limpio · verde · alineado]`
+**Tests:** `manage.py test farmacia` → **18/18 OK**. Mi fix C1 (corte descuenta devoluciones) no rompió nada.
+
+### Alineación al canon (estado)
+- ✅ **Corte de farmacia** alineado (C1, `f98a84c`). **Devolución** y **cancelación de venta** ya verificadas correctas en rondas previas (RBAC gerente/admin, anti-doble, reversión de stock Kardex).
+- ✅ **PDV/venta**: lógica PEPS multi-lote con `select_for_update`, bloqueo de caducados — correcta (revisada). *(El flujo en vivo PDV sigue ⏳ PENDIENTE_VALIDAR vía human:ui — bloque C.)*
+
+### Clasificación de legacy / ruido
+- ✅ **0 marcadores** DEPRECATED/LEGACY/FIXME en el módulo — limpio.
+- **Shim intencional (conservar, NO es ruido):** `farmacia/services/venta_farmacia_service.py` (7 líneas) = capa de compatibilidad que re-exporta de `core.services.ventas` (fuente única). Buen diseño.
+- **RUIDO baja prioridad:** **12 `except:` desnudos** — **todos** en comandos de carga (`management/commands/cargar_inventario*`, `cargar_productos_*`): parsing tolerante de Excel/CSV, **fuera** de flujos request/transaccionales → riesgo bajo. Recomendación: acotar a excepciones concretas + log, pero NO tocar sin pruebas de carga (podría romper imports). 8 `pass` vacíos similares.
+- **Sin contradicciones** en la suite de farmacia.
+
+### Veredicto módulo Farmacia
+✅ **Módulo más sano y alineado al canon.** Sin cambios pendientes en flujos productivos. Deuda cosmética acotada a scripts de carga (no forzar). Listo para el siguiente módulo.
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*
