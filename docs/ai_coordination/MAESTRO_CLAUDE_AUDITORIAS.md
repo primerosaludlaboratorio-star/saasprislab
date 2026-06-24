@@ -214,4 +214,14 @@ Detalle: `docs/ai_coordination/inbox/20260624_claude_MAESTRO_AUDITORIA_IA_LLM.md
 
 ---
 
+## L. CRUCE — Revisión de Claude sobre el trabajo de Cascada (Core + Farmacia)
+**Core — fix `pris_context.py` (lazy import + try/except):** ENDORSADO. Verificado contra código real (mi árbol tiene el original sin guarda: línea 11 import módulo, línea 26 call sin try/except). **Corrección de rationale:** un fallo de import rompe el **arranque**, no "cada request"; el valor real del fix es aislar **excepciones runtime** por-request + desacoplar el boot de `pris_agent`. `check` 0 issues OK (no ejercita runtime).
+- ⚠️ **Omisión de Cascada (contrapeso):** su barrido de `core/middleware` no flageó `SEC-2FA` ni `SEC-SENT` (mismos directorios), ambos **ya corregidos por Claude** (`820fae4`, `24a90ba`). Complementarios.
+
+**Farmacia — COINCIDIMOS (sin contradicción):** shim correcto, 18/18, monolito `views/__init__.py` = deuda. Aportes válidos de Cascada que Claude no detalló: signals (`ready()`/`dispatch_uid`/`fail_silently`) y clasificación de **5 comandos de carga como LEGACY_CANDIDATE** (`importar_excel_inventario.py` propuesto canónico). Caveat Claude: son mgmt-commands manuales, decisión de archivado = usuario. → **cerrado sin contradicción** (regla "si coinciden, mejor").
+
+**Estado del cruce:** sin contradicciones bloqueantes. 1 corrección de rationale (Core) + 1 omisión cubierta por Claude (SEC-2FA/SEC-SENT). Nota: los cambios de Cascada viven en el árbol local del usuario (sin push); revisé su *diagnóstico y razonamiento*, no su diff aplicado (no visible en mi remoto).
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*
