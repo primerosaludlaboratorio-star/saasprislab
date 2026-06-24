@@ -3775,6 +3775,15 @@ def api_registrar_cobro(request):
     hoy = timezone.localdate()
 
     with transaction.atomic():
+        # Idempotencia (K1): bloquear la consulta y rechazar doble cobro
+        # (doble clic / reenvío del POST creaba 2 CobroConsulta y duplicaba la caja).
+        consulta = ConsultaMedica.objects.select_for_update().get(id=consulta_id, empresa=empresa)
+        if getattr(consulta, 'pagada', False):
+            return JsonResponse({
+                'error': 'Esta consulta ya fue cobrada.',
+                'codigo': 'CONSULTA_YA_COBRADA',
+            }, status=409)
+
         # Obtener/crear caja del día
         caja, _ = CajaConsultorio.objects.get_or_create(
             medico=request.user,

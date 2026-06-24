@@ -1829,6 +1829,19 @@ def api_cobrar_orden(request, orden_id):
         try:
             with transaction.atomic():
                 orden = OrdenDeServicio.objects.select_for_update().get(id=orden_id, empresa=empresa)
+                # Tope anti-sobrepago: el cobro no puede exceder el saldo pendiente
+                # (antes anticipo podia superar el total y dejar saldo negativo).
+                saldo_actual = orden.total - orden.anticipo
+                if monto_pago - saldo_actual > Decimal('0.01'):
+                    return JsonResponse({
+                        'status': 'error',
+                        'mensaje': (
+                            f'El monto (${monto_pago}) excede el saldo pendiente '
+                            f'(${saldo_actual}). No se permite sobrepago.'
+                        ),
+                        'codigo': 'SOBREPAGO',
+                        'saldo_pendiente': float(saldo_actual),
+                    }, status=400)
                 nuevo_anticipo = orden.anticipo + monto_pago
 
                 # Determinar estado de pago

@@ -148,6 +148,14 @@ def _cerrar_farmacia(cajero, empresa, sucursal, ahora: datetime, efectivo_declar
         from django.db.models import Sum
         total = ventas_del_turno.aggregate(t=Sum('total'))['t'] or Decimal('0')
         num_ventas = ventas_del_turno.count()
+        # C1: restar devoluciones procesadas del turno. Antes el corte sobrestimaba
+        # el efectivo teorico porque no descontaba los reembolsos (DevolucionVenta
+        # no cambia Venta.estado ni Venta.total).
+        from farmacia.models import DevolucionVenta
+        devoluciones = DevolucionVenta.objects.filter(
+            empresa=empresa, venta_original__in=ventas_del_turno, procesada=True,
+        ).aggregate(t=Sum('monto_devolucion'))['t'] or Decimal('0')
+        total = total - devoluciones
 
         cierre = CierreTurnoFarmacia.objects.create(
             empresa=empresa,
@@ -189,9 +197,11 @@ def _cerrar_laboratorio(cajero, empresa, sucursal, ahora: datetime) -> dict:
             empresa=empresa,
             fecha_creacion__gte=inicio_turno,
             fecha_creacion__lte=ahora,
-        )
+        ).exclude(estado='CANCELADO')  # C3: no contar ordenes canceladas/reembolsadas
 
-        resultado = ordenes_qs.aggregate(t=_Sum('total'))
+        # C2: usar lo realmente cobrado (anticipo), no el total teorico de la orden.
+        # Antes el corte contaba el precio completo de CxC no cobradas.
+        resultado = ordenes_qs.aggregate(t=_Sum('anticipo'))
         total = Decimal(str(resultado['t'] or 0))
         count = ordenes_qs.count()
 
