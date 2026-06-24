@@ -668,6 +668,13 @@ for _o in _extra_csrf:
     if _o not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(_o)
 
+# Host canonico (anti "sesiones divididas" / login falla en normal, ok en incognito).
+# Opt-in: si PRISLAB_LEGACY_HOSTS esta vacio, CanonicalHostMiddleware no redirige.
+# Ej: PRISLAB_CANONICAL_HOST=prislab.labcorecloud.com
+#     PRISLAB_LEGACY_HOSTS=labcorecloud.com,www.labcorecloud.com,216.238.89.243
+PRISLAB_CANONICAL_HOST = os.environ.get('PRISLAB_CANONICAL_HOST', '').strip()
+PRISLAB_LEGACY_HOSTS = os.environ.get('PRISLAB_LEGACY_HOSTS', '').strip()
+
 # ── Umbrales de caducidad de farmacia (días) ──────────────────────────────────
 # Configurable por entorno; modifique aquí o mediante variables de entorno.
 # ROJO  (CRÍTICO): lotes que caducan en menos de FARMACIA_DIAS_CADUCIDAD_CRITICO días
