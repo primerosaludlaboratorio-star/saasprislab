@@ -1462,8 +1462,10 @@ def nueva_consulta_con_paciente(request, paciente_uuid):
                 if tratamiento_texto:
                     ano = timezone.localtime(timezone.now()).year
                     prefijo_r = f'REC-{empresa.id}-{ano}-'
+                    # K3: sufijo UUID para evitar colision de folio bajo concurrencia
+                    # (antes count()+1 sin lock podia generar folios duplicados).
                     num_r = Receta.objects.filter(empresa=empresa, folio_receta__startswith=prefijo_r).count()
-                    folio_receta = f'{prefijo_r}{str(num_r + 1).zfill(5)}'
+                    folio_receta = f'{prefijo_r}{str(num_r + 1).zfill(5)}-{_uuid.uuid4().hex[:4].upper()}'
                     receta = Receta.objects.create(
                         medico=medico,
                         paciente=paciente,

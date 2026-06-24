@@ -263,12 +263,23 @@ class SentinelTelemetryMiddleware:
                         f"SENTINEL INFRA [DB]: Recovery disparado por "
                         f"{tipo_exc}: {error_msg[:100]}"
                     )
-                    # Redirigir al usuario para que reintente con conexión limpia
-                    return self._redirect_with_message(
-                        request, path,
-                        "El sistema detecto sobrecarga temporal en la base de datos. "
-                        "Reintentando automaticamente...",
-                        'warning'
+                    # SEC-SENT: guarda anti-loop. Si la BD sigue fallando, redirigir a la
+                    # misma URL repetidamente genera un loop navegador<->servidor.
+                    # Tras _MAX_RETRIES, dejamos caer al flujo normal de error.
+                    _dbkey = f"dbrecov:{path}:{tipo_exc}"
+                    _dbretries = _error_cache.get(_dbkey, 0)
+                    if _dbretries < _MAX_RETRIES:
+                        _error_cache[_dbkey] = _dbretries + 1
+                        # Redirigir al usuario para que reintente con conexión limpia
+                        return self._redirect_with_message(
+                            request, path,
+                            "El sistema detecto sobrecarga temporal en la base de datos. "
+                            "Reintentando automaticamente...",
+                            'warning'
+                        )
+                    logger.error(
+                        "SENTINEL INFRA [DB]: max reintentos para %s; no redirijo (anti-loop)",
+                        path,
                     )
             except Exception as e:
                 logger.debug(f"SENTINEL INFRA: Error en check DB: {e}")
