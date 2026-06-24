@@ -227,4 +227,25 @@ Detalle: `docs/ai_coordination/inbox/20260624_claude_MAESTRO_AUDITORIA_IA_LLM.md
 
 ---
 
+## M. MÓDULO 5 — LABORATORIO  `[asignado a Claude · ya alineado tras LAB-A/B/C]`
+**Tests:** `manage.py test laboratorio` → **16/16 OK** (skipped=1). ⚠️ Suite de la **app es delgada** (corre en 0.002s); la cobertura real del flujo lab vive en `core/tests` (`test_monitor_produccion_workflow`, `test_lab_validation_pdf`, `test_lims_*`), toda verde tras mis fixes (incl. LIMS-tenant).
+
+### Alineación al canon (estado)
+- ✅ **Flujo de resultados** alineado: LAB-A (aprobación 500→entregable), LAB-B (validador_ia), LAB-C (400 vs 500), cobro sobrepago, cancelación+devolución — todos corregidos y verificados (`8df3782`/`f98a84c`).
+- ✅ **Canon NEXT_ACTIONS #1 — "cerrar patrón LIMS/legacy `DetalleOrden.estudio` en código productivo": CERRADO.** Verificado: `core.DetalleOrden` **no tiene** campo `estudio` (FKs: analito/perfil_lims/paquete_lims). Las únicas referencias vivas a `.estudio` en superficie productiva son mi fix **guardado** (`monitor_produccion.py:382-386`, `hasattr` + try/except → órdenes LIMS puras saltan descuento de insumos, comportamiento correcto). El resto: comando de simulación sobre modelos **legacy** `laboratorio.*` (donde `estudio` sí existe) y migraciones.
+
+### Clasificación de legacy / ruido
+- ✅ **0 marcadores** DEPRECATED/FIXME.
+- **Ruido baja prioridad:** 6 `except:` desnudos — **todos** en comandos de carga/migración (`cargar_tarifas_csv`, `importar_tarifas_lab`, `migrar_lab_master`), fuera de flujos request. 26 `pass` vacíos (mayoría en `except` de impresión/PDF). No forzar.
+- **LEGACY intencional (bridge de migración, conservar):** `services/etiquetas_zpl.py:zpl_desde_orden_legacy`, `services/unificacion.py:crear_orden_core_desde_legacy` + `_encontrar_core_medico` — convierten legacy→core (LIMS). Documentar, no borrar.
+- **REFACTOR candidato (no forzado):** `core/views/laboratorio.py` 3.146 LOC, `laboratorio/models.py` 1.813 LOC → split (requiere go).
+
+### ⚠️ Contradicción/deuda ARQUITECTÓNICA (la de fondo)
+- **Sistema dual de modelos:** `laboratorio.{Estudio,Orden,DetalleOrden}` (legacy) **coexiste** con `core.{OrdenDeServicio,DetalleOrden}` (LIMS). El flujo productivo usa LIMS/core; el legacy persiste con un bridge (`unificacion.py`). **Es la raíz de los bugs `.estudio` (LAB-A/B):** suposiciones del modelo legacy se filtraban a código LIMS. → **Codex:** planificar retiro formal del modelo `laboratorio.*` legacy o formalizar la frontera. NO es fix puntual (riesgo alto).
+
+### Veredicto módulo Laboratorio
+✅ **Flujo funcional alineado al canon** (mis fixes + patrón `.estudio` cerrado en productivo). Deuda real = **dual-model legacy↔LIMS** (arquitectónica, para Codex) + monolitos. Sin cambios productivos pendientes de mi parte.
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*
