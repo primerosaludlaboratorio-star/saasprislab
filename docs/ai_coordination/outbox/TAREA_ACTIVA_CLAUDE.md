@@ -21,10 +21,10 @@ Mientras Codex corrige y prueba deuda técnica de Laboratorio, Claude debe avanz
 
 - URL: `https://prislab.labcorecloud.com/`
 - Usuarios conocidos para probar:
-  - `admin / Prislab@Admin2026!`
-  - `jonathan / Prislab@Jonathan2026!`
-  - `olga / Prislab@Olga2026!`
-  - `admin_director / O@LhVKbnou3Xo3Rm`
+  - `admin / [redacted]`
+  - `jonathan / [redacted]`
+  - `olga / [redacted]`
+  - `admin_director / [redacted]`
 
 ## Trabajo asignado ahora
 

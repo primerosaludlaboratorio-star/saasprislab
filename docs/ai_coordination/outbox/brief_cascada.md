@@ -16,6 +16,20 @@ Reglas:
 
 Foco actual: Laboratorio: validacion funcional en produccion
 
+## Nueva prioridad
+
+Clasificar el ruido documental y el legado visible del repositorio contra `docs/ai_coordination/INVENTARIO_CANONICO_REPO.md`.
+Debe decidir archivo por archivo si queda como `CANONICO_OPERATIVO`, `LEGACY_CONSERVAR`, `LEGACY_BORRAR`, `PENDIENTE_DECISION` o `RUIDO_DESCARTADO`.
+
+## Orden obligatorio de trabajo
+
+1. Leer `docs/ai_coordination/AI_COORDINATION_STATUS.md`.
+2. Esperar la salida de `human:ui` o del reporte humano equivalente.
+3. Clasificar solo lo nuevo y reproducible.
+4. No reabrir lo que ya quedó cerrado en el estado canonico.
+5. Si el reporte no trae evidencia suficiente, marcar `PENDIENTE_VALIDAR` o `RUIDO`.
+6. Si aparece una contradiccion, cruzarla con commits, tests y el estado canonico antes de concluir.
+
 ## Cerrado
 
 - Busqueda de pacientes devuelve JSON controlado

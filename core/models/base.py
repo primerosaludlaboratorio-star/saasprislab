@@ -349,15 +349,8 @@ class Usuario(AbstractUser):
         verbose_name_plural = "Usuarios"
 
     def save(self, *args, **kwargs):
-        # Solo inyectar empresa por defecto en guardado completo. Los saves parciales
-        # (p. ej. last_login tras login) no deben reasignar tenant si empresa_id es NULL.
-        update_fields = kwargs.get('update_fields')
-        if update_fields is None and self.empresa_id is None:
-            from core.utils.default_empresa import resolve_default_empresa_sistema
-
-            de = resolve_default_empresa_sistema()
-            if de is not None:
-                self.empresa = de
+        # La empresa debe quedar explícita en la cuenta; la resolución por defecto
+        # se reserva para imports/commands y para el middleware de request.
         super().save(*args, **kwargs)
 
     def tiene_permiso_ia_master(self):

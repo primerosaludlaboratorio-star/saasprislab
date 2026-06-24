@@ -400,8 +400,7 @@ def reparar_permisos_sesion(request, path):
             f"SENTINEL REPAIR [Permisos]: Superuser {user.username} recibió 403 en {path}. "
             f"Regenerando sesión..."
         )
-        _regenerar_sesion_permisos(request, user)
-        return True
+        return _regenerar_sesion_permisos(request, user)
     
     # Verificar si el rol del usuario permite acceso a esta ruta
     deberia_tener_acceso = _usuario_deberia_acceder(user, path)
@@ -411,8 +410,7 @@ def reparar_permisos_sesion(request, path):
             f"SENTINEL REPAIR [Permisos]: {user.username} (rol={getattr(user, 'rol', 'N/A')}) "
             f"recibió 403 en {path} pero DEBERÍA tener acceso. Regenerando permisos..."
         )
-        _regenerar_sesion_permisos(request, user)
-        return True
+        return _regenerar_sesion_permisos(request, user)
     else:
         logger.debug(
             f"SENTINEL REPAIR [Permisos]: {user.username} recibió 403 en {path}. "
@@ -493,6 +491,8 @@ def _regenerar_sesion_permisos(request, user):
             f"SENTINEL REPAIR [Permisos]: Permisos regenerados para {user.username}. "
             f"Grupos: {list(user.groups.values_list('name', flat=True))}"
         )
+        return True
         
     except Exception as e:
         logger.error(f"SENTINEL REPAIR [Permisos]: Error regenerando permisos: {e}")
+        return False

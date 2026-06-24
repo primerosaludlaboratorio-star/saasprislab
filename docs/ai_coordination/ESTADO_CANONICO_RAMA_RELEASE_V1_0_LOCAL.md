@@ -16,6 +16,7 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 3. `AI_COORDINATION_STATUS.md`
 4. `docs/ai_coordination/GUIA_OPERATIVA_FINAL.md`
 5. `docs/ai_coordination/PROTOCOLO_AUDITORIA_MULTI_IA_PRISLAB.md`
+6. `docs/ai_coordination/PROCEDIMIENTO_VERIFICACION_HUMANA_UI.md`
 
 ## Estado real confirmado
 
@@ -26,6 +27,12 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 - No debe usarse `main` como fuente de verdad operativa.
 
 ## Hallazgos que siguen vigentes
+
+## Verificacion humana de interfaz
+
+- Si la extensión de Claude, Copilot u otra IA no responde, la verificación de UI no se detiene.
+- El flujo de validación humana debe seguir el documento `docs/ai_coordination/PROCEDIMIENTO_VERIFICACION_HUMANA_UI.md`.
+- Las verificaciones funcionales de navegador hechas por IA son apoyo, no sustituto del usuario humano.
 
 ### 1. 2FA
 
@@ -139,6 +146,131 @@ Estado actual del codigo:
 Conclusion:
 
 - es deuda de herramienta, no bug de producto
+
+### Sentinel loops criticos (S2, S3)
+
+Estado actual del codigo:
+
+- `core/middleware/sentinel.py` usa cache `retries < 1` para cortar el loop en el primer reintento
+- `PermissionDenied` y response 403 usan caches separados; no se solapan
+- tests en `core/tests/test_auto_repair_tenant_guard.py` verifican el corte
+
+Conclusion:
+
+- RESUELTO — no reabrir salvo evidencia nueva de loop reproducible
+
+### Devoluciones cruzadas (financiero)
+
+Estado actual del codigo:
+
+- `core/services/ventas/venta_farmacia_service.py` suma `_total_devuelto_core + _total_devuelto_erp` antes de autorizar
+- el bloqueo financiero impide doble devolucion entre ambos arboles funcionales
+- la coexistencia de dos implementaciones (`core/views/farmacia.py` y `farmacia/views/soporte.py`) sigue como decision arquitectonica pendiente
+
+Conclusion:
+
+- RESUELTO a nivel financiero — no reabrir como bug
+- la coexistencia arquitectonica es decision de negocio, no hallazgo de seguridad
+
+### H-GEN1 RECEPCION divergencia grupo vs campo rol
+
+Archivo:
+
+- `core/views/general.py` lineas 260-261 y 288
+
+Hallazgo:
+
+- grupo `RECEPCION` redirige a `consultorio:tablero_recepcion` (agenda medica)
+- campo `rol='RECEPCION'` redirige a `recepcion_lab` (laboratorio)
+- ambos destinos validan empresa; no hay bypass de seguridad
+
+Conclusion:
+
+- DECISION ARQUITECTONICA PENDIENTE — no es bug
+- corresponde a M2 del cierre 2026-06-19; requiere decision de diseno sobre sincronizacion grupo/campo rol
+- no reabrir como hallazgo de seguridad
+
+### H-SOP1a buscar_venta_para_devolucion sin user_passes_test
+
+Archivo:
+
+- `farmacia/views/soporte.py` linea 94
+
+Hallazgo:
+
+- solo `@login_required`; empresa validada internamente; query scoped por empresa
+- cualquier usuario autenticado con empresa puede buscar ventas pero no procesarlas
+
+Conclusion:
+
+- DISENO INTENCIONAL — la separacion buscar/procesar es deliberada por UX
+- no es bypass
+
+### H-SOP1b autorizar_devolucion orden de validacion inconsistente
+
+Archivo:
+
+- `farmacia/views/soporte.py` lineas 383-392
+
+Hallazgo:
+
+- valida grupo DIRECTOR antes de validar empresa
+- usuario con grupo DIRECTOR sin empresa pasa el check de rol y solo se bloquea en la linea siguiente
+- no es bypass real porque el bloqueo existe; el patron es inconsistente con `_es_gerente_o_admin`
+
+Conclusion:
+
+- INCONSISTENCIA PROBABLE de baja severidad
+- candidato a alinearse con el patron canonico en futura iteracion
+- no elevar a bypass; no requiere fix urgente
+
+### N1 administracion_usuarios superuser cross-tenant
+
+Archivo:
+
+- `core/views/administracion_usuarios.py` lineas 26-29, 136-137
+
+Hallazgo:
+
+- superuser sin empresa puede obtener y editar usuarios de cualquier tenant
+- bloqueo de reasignacion de empresa existe (linea 142-148) pero no el acceso cross-tenant a otros campos
+- mismo patron que `auto_repair.py` antes de `a7b0d8b`
+
+Conclusion:
+
+- ARQUITECTONICO de severidad media — decision de diseno actual: superuser es global
+- sin evidencia de superuser descontrolado en produccion; no es bypass activo
+- inconsistente con patron canonico post-`a7b0d8b`; candidato a alinear en futura iteracion
+- no reabrir como bypass salvo superuser sin empresa confirmado en produccion
+
+### N3 configuracion.py alias ADMINISTRADOR no contemplado
+
+Archivo:
+
+- `core/views/configuracion.py` linea 24
+
+Hallazgo:
+
+- `_puede_administrar_configuracion` acepta `ADMIN` y `DIRECTOR` pero no `ADMINISTRADOR`
+- el alias `ADMINISTRADOR` si existe en `general.py` linea 282
+
+Conclusion:
+
+- INCONSISTENCIA PROBABLE de baja severidad — misma clase que H-SOP1b
+- candidato a alinear en futura iteracion; no es bypass
+
+## Cobertura de auditoria 2026-06-23
+
+Todos los archivos ejecutables del arbol `release/v1.0-local` han sido clasificados en esta sesion.
+No quedan archivos de codigo vivo sin auditar.
+Los documentos Markdown no son tratados como hallazgos de seguridad.
+
+Pendientes arquitectonicos documentados (no bugs):
+- H-GEN1: divergencia grupo/rol RECEPCION — decision de diseno
+- N1: superuser cross-tenant en administracion_usuarios — decision de diseno
+- H-SOP1b / N3: orden de validacion y alias de rol — inconsistencias probables de baja severidad
+
+Para reabrir cualquier frente se requiere reproduccion concreta contra esta rama.
 
 ## Linea operativa para Copilot
 

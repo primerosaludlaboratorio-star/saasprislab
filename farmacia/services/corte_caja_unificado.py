@@ -63,9 +63,13 @@ def cerrar_turno_unificado(
     with transaction.atomic():
         # ── 1. Corte Farmacia ─────────────────────────────────────────────────
         corte_farmacia = _cerrar_farmacia(cajero, empresa, sucursal, ahora, efectivo_declarado)
+        if corte_farmacia.get('estado') == 'error':
+            raise RuntimeError('No fue posible completar el corte unificado.')
 
         # ── 2. Corte Laboratorio ──────────────────────────────────────────────
         corte_lab = _cerrar_laboratorio(cajero, empresa, sucursal, ahora)
+        if corte_lab.get('estado') == 'error':
+            raise RuntimeError('No fue posible completar el corte unificado.')
 
         # ── 3. Consolidado ────────────────────────────────────────────────────
         total_farmacia = corte_farmacia.get('total', Decimal('0'))

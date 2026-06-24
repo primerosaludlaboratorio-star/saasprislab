@@ -2,14 +2,14 @@
 const STATIC_CACHE_NAME = 'prislab-static-v7.1.0';
 const DYNAMIC_CACHE_NAME = 'prislab-dynamic-v7.0.1';
 const SENSITIVE_PREFIXES = ['/api/', '/admin/', '/laboratorio/api/', '/farmacia/api/', '/lims/api/', '/marketing/api/', '/seguridad/api/', '/ia/', '/contabilidad/', '/consultorio/', '/enfermeria/', '/expediente', '/bienestar/', '/caja', '/orden/', '/pago/'];
-const SENSITIVE_HTML_PREFIXES = ['/contabilidad/', '/consultorio/', '/enfermeria/', '/farmacia/pdv', '/laboratorio/', '/expediente', '/caja', '/marketing/', '/seguridad/', '/bienestar/', '/ia/', '/mantenimiento/'];
+const SENSITIVE_HTML_PREFIXES = ['/contabilidad/', '/consultorio/', '/enfermeria/', '/farmacia/pdv', '/laboratorio/', '/expediente', '/caja', '/marketing/', '/seguridad/', '/bienestar/', '/ia/', '/mantenimiento/', '/home/', '/login/', '/dashboard/'];
 function matchesPrefixList(pathname, list) { return list.some(function (p) { return pathname.indexOf(p) === 0; }); }
 function isOfflineShellPath(pathname) {
   const shells = ['/laboratorio/recepcion/', '/laboratorio/', '/finanzas/lab/caja/'];
   return shells.some(function (p) { return pathname === p; });
 }
 
-const STATIC_ASSETS = ['/', '/static/css/prislab_shared.css', '/static/js/offline_sync.js', '/static/img/icon-192.svg', '/static/img/icon-512.svg', '/laboratorio/recepcion/', '/laboratorio/', '/finanzas/lab/caja/', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css', 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css'];
+const STATIC_ASSETS = ['/static/css/prislab_shared.css', '/static/js/offline_sync.js', '/static/img/icon-192.svg', '/static/img/icon-512.svg', '/laboratorio/recepcion/', '/laboratorio/', '/finanzas/lab/caja/', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css', 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css'];
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(STATIC_CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS.map(url => { try { return new Request(url, { mode: 'no-cors' }); } catch (e) { return url; } }))).catch(() => {}));
   self.skipWaiting();
@@ -44,6 +44,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (request.headers.get('accept') && request.headers.get('accept').includes('text/html')) {
+    if (url.pathname === '/' || url.pathname === '/login/' || url.pathname === '/home/' || url.pathname === '/dashboard/') {
+      event.respondWith(fetch(request, { cache: 'no-store', credentials: 'include' }));
+      return;
+    }
     if (isOfflineShellPath(url.pathname)) {
       event.respondWith(fetch(request).then((r) => {
         if (r && r.status === 200) { var c = r.clone(); caches.open(STATIC_CACHE_NAME).then((ch) => ch.put(request, c)); }

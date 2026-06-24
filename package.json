@@ -10,7 +10,10 @@
     "test": "node --check tools/run_omni_suite.mjs",
     "omni:local": "node tools/run_omni_suite.mjs --target local",
     "omni:cloud": "node tools/run_omni_suite.mjs --target cloud",
-    "omni:both": "node tools/run_omni_suite.mjs --target both"
+    "omni:both": "node tools/run_omni_suite.mjs --target both",
+    "human:ui": "node tools/run_human_ui_audit.mjs",
+    "human:ui:local": "node tools/run_human_ui_audit.mjs --target local",
+    "human:ui:cloud": "node tools/run_human_ui_audit.mjs --target cloud"
   },
   "dependencies": {
     "playwright": "^1.45.0"

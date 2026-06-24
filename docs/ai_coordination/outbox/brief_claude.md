@@ -16,6 +16,16 @@ Reglas:
 
 Foco actual: Laboratorio: validacion funcional en produccion
 
+## Orden obligatorio de trabajo
+
+1. Revisar primero `docs/ai_coordination/AI_COORDINATION_STATUS.md`.
+2. Ejecutar la herramienta canónica de UI:
+   `npm run human:ui -- --target cloud --user <usuario> --pass <clave>`
+3. Auditar únicamente la salida generada por `auditoria_ui_<timestamp>/report.md` y `report.json`.
+4. No reauditar laboratorio ya cerrado.
+5. Si el runner falla, reportar la limitacion y pasar al siguiente flujo visible.
+6. Entregar un reporte corto con evidencia reproducible para que Cascada lo clasifique.
+
 ## Cerrado
 
 - Busqueda de pacientes devuelve JSON controlado

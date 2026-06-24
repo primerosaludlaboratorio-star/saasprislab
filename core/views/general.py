@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout, get_user_model
 from django.contrib.auth.views import LoginView
 from django.http import HttpResponse, JsonResponse
+from django.db import DatabaseError, OperationalError
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
@@ -28,7 +29,32 @@ def home_view(request):
     Previene bucles de redirección infinitos.
     """
     if request.user.is_authenticated:
-        return redirect(get_redirect_url_by_role(request.user))
+        try:
+            return redirect(get_redirect_url_by_role(request.user))
+        except (DatabaseError, OperationalError) as exc:
+            logger_core.warning(
+                "home_view: DB/OperationalError al resolver redireccion de entrada: %s",
+                exc,
+                exc_info=True,
+            )
+            from django.contrib import messages
+            messages.warning(
+                request,
+                "El sistema está resolviendo una sobrecarga temporal. Vuelve a iniciar sesión."
+            )
+            return redirect('login')
+        except Exception as exc:
+            logger_core.error(
+                "home_view: error inesperado al resolver redireccion de entrada: %s",
+                exc,
+                exc_info=True,
+            )
+            from django.contrib import messages
+            messages.warning(
+                request,
+                "No se pudo resolver tu sesión actual. Vuelve a iniciar sesión."
+            )
+            return redirect('login')
     else:
         return redirect('login')
 
@@ -321,7 +347,32 @@ class CustomLoginView(LoginView):
     
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
-            return redirect(get_redirect_url_by_role(request.user))
+            try:
+                return redirect(get_redirect_url_by_role(request.user))
+            except (DatabaseError, OperationalError) as exc:
+                logger_core.warning(
+                    "CustomLoginView.dispatch: DB/OperationalError al resolver redireccion: %s",
+                    exc,
+                    exc_info=True,
+                )
+                from django.contrib import messages
+                messages.warning(
+                    request,
+                    "Tu sesión anterior encontró una sobrecarga temporal. Inicia sesión nuevamente."
+                )
+                return redirect('login')
+            except Exception as exc:
+                logger_core.error(
+                    "CustomLoginView.dispatch: error inesperado al resolver redireccion: %s",
+                    exc,
+                    exc_info=True,
+                )
+                from django.contrib import messages
+                messages.warning(
+                    request,
+                    "No se pudo resolver tu sesión actual. Inicia sesión nuevamente."
+                )
+                return redirect('login')
         return super().dispatch(request, *args, **kwargs)
     
     def form_valid(self, form):

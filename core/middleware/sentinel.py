@@ -189,11 +189,14 @@ class SentinelTelemetryMiddleware:
                             f"{getattr(request.user, 'username', '?')}, "
                             f"reenviando a {path}"
                         )
-                        from django.contrib import messages
-                        messages.info(
-                            request,
-                            "PRIS Sentinel detecto un problema de permisos y lo corrigio automaticamente."
-                        )
+                        try:
+                            from django.contrib import messages
+                            messages.info(
+                                request,
+                                "PRIS Sentinel detecto un problema de permisos y lo corrigio automaticamente."
+                            )
+                        except Exception as message_error:
+                            logger.debug(f"SENTINEL AUTO-FIX [403]: mensajes no disponibles: {message_error}")
                         return HttpResponseRedirect(path)
                 except Exception as e:
                     logger.warning(f"SENTINEL AUTO-FIX [403]: Error en reparacion: {e}")
@@ -275,22 +278,34 @@ class SentinelTelemetryMiddleware:
 
         # 3. AUTO-FIX PERMISSIONS: 403 via PermissionDenied exception
         if isinstance(exception, PermissionDenied):
-            try:
-                from core.services.auto_repair import reparar_permisos_sesion
-                if reparar_permisos_sesion(request, path):
-                    logger.info(
-                        f"SENTINEL INFRA [Permisos]: Reparado 403 para "
-                        f"{getattr(request.user, 'username', '?')} en {path}"
-                    )
-                    from django.contrib import messages
-                    messages.info(
-                        request,
-                        "PRIS Sentinel detecto un problema de permisos y lo corrigio. "
-                        "Reintentando..."
-                    )
-                    return HttpResponseRedirect(path)
-            except Exception as e:
-                logger.debug(f"SENTINEL INFRA: Error en check permisos: {e}")
+            cache_key = f"sentinel_permdenied:{getattr(request.user, 'id', 0)}:{path}"
+            retries_perm = _error_cache.get(cache_key, 0)
+            if retries_perm < 1:
+                try:
+                    from core.services.auto_repair import reparar_permisos_sesion
+                    if reparar_permisos_sesion(request, path):
+                        _error_cache[cache_key] = retries_perm + 1
+                        logger.info(
+                            f"SENTINEL INFRA [Permisos]: Reparado 403 para "
+                            f"{getattr(request.user, 'username', '?')} en {path}"
+                        )
+                        try:
+                            from django.contrib import messages
+                            messages.info(
+                                request,
+                                "PRIS Sentinel detecto un problema de permisos y lo corrigio. "
+                                "Reintentando..."
+                            )
+                        except Exception as message_error:
+                            logger.debug(f"SENTINEL INFRA [Permisos]: mensajes no disponibles: {message_error}")
+                        return HttpResponseRedirect(path)
+                except Exception as e:
+                    logger.debug(f"SENTINEL INFRA: Error en check permisos: {e}")
+            else:
+                logger.warning(
+                    f"SENTINEL INFRA [Permisos]: Loop detectado para "
+                    f"{getattr(request.user, 'username', '?')} en {path}, skip redirect"
+                )
 
         # Registrar incidencia de forma asincrona
         self._registrar_incidencia_async(
@@ -572,9 +587,8 @@ class SentinelTelemetryMiddleware:
         - Auto-recarga de la MISMA pagina (no de una ruta diferente)
         - Opciones de navegacion
 
-        IMPORTANTE: Devuelve status=200 para que el proxy NO descarte
-        los headers Set-Cookie. La pagina ES una respuesta valida
-        (renderizada con exito), no un error del servidor.
+        IMPORTANTE: Devuelve 503 para que el monitor HTTP no lo interprete
+        como exito silencioso. La pagina preserva sesion y contexto de error.
         """
         from django.shortcuts import render
 
@@ -607,10 +621,12 @@ class SentinelTelemetryMiddleware:
         # Esto evita que el usuario se confunda al terminar en otra pantalla
         reload_url = path
 
+        status_code = 404 if tipo_exc == 'Http404' else 503
+
         try:
-            # STATUS 200: proxies mantienen Set-Cookie en 2xx
-            # La pagina de error ES una respuesta exitosa del servidor
-            return render(request, 'core/error_sentinel.html', {
+            # STATUS 404 para recursos inexistentes; 503 para el resto de
+            # degradaciones. Así conservamos la semántica HTTP y la observabilidad.
+            response = render(request, 'core/error_sentinel.html', {
                 'tipo_error': tipo_exc,
                 'severidad': severidad,
                 'namespace': ns,
@@ -620,14 +636,22 @@ class SentinelTelemetryMiddleware:
                 'reload_url': reload_url,
                 'safe_url': safe_url,
                 'path_original': path,
-            }, status=200)
+            }, status=status_code)
+            response['X-Sentinel-Degraded'] = '1'
+            response['X-Sentinel-Error-Type'] = tipo_exc
+            response['Retry-After'] = str(tiempo_estimado)
+            return response
         except Exception:
             # Si el template mejorado falla, usar el basico
             try:
-                return render(request, 'core/error_amable.html', {
+                response = render(request, 'core/error_amable.html', {
                     'tipo_error': tipo_exc,
                     'severidad': severidad,
-                }, status=200)
+                }, status=status_code)
+                response['X-Sentinel-Degraded'] = '1'
+                response['X-Sentinel-Error-Type'] = tipo_exc
+                response['Retry-After'] = str(tiempo_estimado)
+                return response
             except Exception:
                 return None
 

@@ -3,7 +3,9 @@ Test suite para aumentar cobertura de código.
 Tests para core, laboratorio, farmacia - flujos críticos.
 """
 import json
+from unittest.mock import patch
 from django.contrib.auth.models import Group
+from django.db import OperationalError
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -137,6 +139,13 @@ class CoverageBoostTests(TestCase):
         """Test que el dashboard es accesible para usuarios logueados."""
         response = self.client.get('/home/')
         self.assertIn(response.status_code, [200, 302])
+
+    def test_home_fallback_to_login_when_redirect_resolution_fails(self):
+        """Test que / no rompe si la resolución del dashboard falla por DB."""
+        with patch('core.views.general.get_redirect_url_by_role', side_effect=OperationalError('db busy')):
+            response = self.client.get('/', follow=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login', response.headers.get('Location', ''))
     
     def test_paciente_list_view(self):
         """Test vista de lista de pacientes."""

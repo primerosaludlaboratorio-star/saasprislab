@@ -8,6 +8,50 @@ Cascada debe trabajar como analista técnico de evidencia y auditor estático. N
 
 Mientras Codex corrige Laboratorio y Claude prueba UI, Cascada debe auditar riesgos transversales que no requieran navegador ni producción.
 
+## Nueva tarea prioritaria
+
+Clasificar y cerrar el ruido documental que sigue apareciendo en el working tree contra el inventario canonico nuevo.
+
+### Instrucciones
+
+1. Leer `docs/ai_coordination/INVENTARIO_CANONICO_REPO.md`.
+2. Leer `docs/ai_coordination/AI_COORDINATION_STATUS.md`.
+3. Leer `git status --short` como evidencia viva.
+4. Separar cada archivo en una sola categoria:
+   - `CANONICO_OPERATIVO`
+   - `LEGACY_CONSERVAR`
+   - `LEGACY_BORRAR`
+   - `PENDIENTE_DECISION`
+   - `RUIDO_DESCARTADO`
+5. No reabrir lo ya canonizado.
+6. Entregar una lista corta con:
+   - qué borrar ya,
+   - qué mover a legado,
+   - qué debe entrar al canon,
+   - qué sigue pendiente.
+
+### Entregable adicional esperado
+
+Guardar el resultado en:
+
+`docs/ai_coordination/drop/cascada/CLASIFICACION_RUIDO_DOCUMENTAL_Y_LEGADO.md`
+
+Formato minimo:
+
+```md
+# Clasificacion de Ruido Documental
+
+## Resumen Ejecutivo
+- Canonico operativo:
+- Legacy conservar:
+- Legacy borrar:
+- Pendiente de decision:
+
+## Archivo por archivo
+
+## Recomendacion de limpieza
+```
+
 ## Reglas obligatorias
 
 - No tocar código salvo autorización explícita.

@@ -1,9 +1,11 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from types import SimpleNamespace
 
 from core.models import Empresa
 from lims.models import Analito, ValorReferenciaAnalito
+from lims.views.tenant_lims import empresa_lims
 
 
 Usuario = get_user_model()
@@ -81,3 +83,14 @@ class LimsConfigTenantSecurityTest(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()['parametros'], [])
+
+    def test_empresa_lims_ignora_empresa_de_respaldo_del_request(self):
+        request = SimpleNamespace(
+            user=SimpleNamespace(
+                is_authenticated=True,
+                empresa=None,
+            ),
+            empresa_actual=self.empresa,
+        )
+
+        self.assertIsNone(empresa_lims(request))

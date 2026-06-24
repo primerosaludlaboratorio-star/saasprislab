@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -96,6 +97,29 @@ API_URL = (os.environ.get('API_URL') or os.environ.get('PRISLAB_SAAS_URL') or ''
 # URL pública del sitio — usada en QR de resultados de laboratorio, links en PDF, etc.
 # En producción VPS: SITE_URL=https://tu-dominio.com
 SITE_URL = (os.environ.get('SITE_URL') or API_URL or 'http://localhost:8000').strip().rstrip('/')
+
+
+def _host_from_url(value):
+    raw = (value or '').strip()
+    if not raw:
+        return ''
+    if '://' not in raw:
+        raw = f'https://{raw}'
+    parsed = urlparse(raw)
+    host = parsed.netloc or parsed.path
+    if '@' in host:
+        host = host.rsplit('@', 1)[-1]
+    return host.split(':', 1)[0].lower().strip()
+
+
+PRISLAB_CANONICAL_HOST = _host_from_url(
+    os.environ.get('PRISLAB_CANONICAL_HOST') or SITE_URL
+)
+PRISLAB_LEGACY_HOSTS = [
+    _host_from_url(item)
+    for item in (os.environ.get('PRISLAB_LEGACY_HOSTS') or '').split(',')
+    if _host_from_url(item)
+]
 
 # CORS: restrictivo por defecto. En local se permite solo localhost explicito.
 # Explícito: CORS_ALLOW_ALL_ORIGINS=true|false | Lista: CORS_ALLOWED_ORIGINS=https://a.com,https://b.com
@@ -667,9 +691,26 @@ _extra_csrf = [
     ).split(',')
     if x.strip()
 ]
+if IS_PRODUCTION and PRISLAB_CANONICAL_HOST:
+    _canonical_origin = f'https://{PRISLAB_CANONICAL_HOST}'
+    if _canonical_origin not in _extra_csrf:
+        _extra_csrf.append(_canonical_origin)
 for _o in _extra_csrf:
     if _o not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(_o)
+
+# Cookies de sesión/CSRF: si el entorno define un dominio común, úsalo.
+# En caso contrario se deja el comportamiento por-host de Django.
+SESSION_COOKIE_DOMAIN = (
+    os.environ.get('SESSION_COOKIE_DOMAIN')
+    or os.environ.get('PRISLAB_SESSION_COOKIE_DOMAIN')
+    or None
+)
+CSRF_COOKIE_DOMAIN = (
+    os.environ.get('CSRF_COOKIE_DOMAIN')
+    or os.environ.get('PRISLAB_CSRF_COOKIE_DOMAIN')
+    or None
+)
 
 # ── Umbrales de caducidad de farmacia (días) ──────────────────────────────────
 # Configurable por entorno; modifique aquí o mediante variables de entorno.
