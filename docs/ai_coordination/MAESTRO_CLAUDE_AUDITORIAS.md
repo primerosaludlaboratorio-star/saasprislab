@@ -248,4 +248,24 @@ Detalle: `docs/ai_coordination/inbox/20260624_claude_MAESTRO_AUDITORIA_IA_LLM.md
 
 ---
 
+## N. LOGIN/UI — "falla en ventana normal, funciona en incógnito"  `[root-cause + fix opt-in]`
+**Limitación:** producción NO alcanzable desde el contenedor (proxy 403) y sin acceso al estado del navegador del usuario → la repro normal-vs-incógnito sobre el browser real la hace el humano. Diagnóstico = **código + config**.
+
+**Causa raíz (clase del fallo = sesiones divididas por host):**
+1. App servida en **4 hosts** (nginx `server_name`: `prislab.labcorecloud.com`, `labcorecloud.com`, `www.labcorecloud.com`, `216.238.89.243`).
+2. `CanonicalHostMiddleware` estaba **inerte**: `LEGACY_HOSTS=set()` + `CANONICAL_HOST='prislab.local'` (hardcode) → nunca consolidaba.
+3. **Sin `SESSION_COOKIE_DOMAIN`/`CSRF_COOKIE_DOMAIN`** → cookies host-only (no compartidas entre hosts).
+4. **`CSRF_TRUSTED_ORIGINS=[]`** por defecto (solo env) → POST de login desde host no listado = **CSRF 403** (Django 4+).
+→ En ventana normal con cookie/CSRF de otro host: login da 403 / redirect-a-login (aparenta "error"/500). Incógnito (fresco, 1 host): funciona.
+
+**Fix aplicado (pequeño, seguro, opt-in):** `CanonicalHostMiddleware` ahora lee `PRISLAB_CANONICAL_HOST`/`PRISLAB_LEGACY_HOSTS` de env; sin config = no-op; con config = 302 de hosts legacy → canónico (verificado: preserva path+query, no toca el canónico, sin loop). Archivos: `core/middleware/canonical_host.py`, `config/settings.py`.
+
+**Remediación completa (config de despliegue, para Codex/infra):**
+- `PRISLAB_CANONICAL_HOST=prislab.labcorecloud.com` + `PRISLAB_LEGACY_HOSTS=labcorecloud.com,www.labcorecloud.com,216.238.89.243` (o redirección 301 en nginx).
+- `CSRF_TRUSTED_ORIGINS=https://prislab.labcorecloud.com` (+ los demás hosts si sirven login).
+- Opcional multi-subdominio: `SESSION_COOKIE_DOMAIN=.labcorecloud.com`, `CSRF_COOKIE_DOMAIN=.labcorecloud.com`.
+- Workaround inmediato usuario: limpiar cookies del dominio / usar siempre el host canónico (por eso incógnito funciona).
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*
