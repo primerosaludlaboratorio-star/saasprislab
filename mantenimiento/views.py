@@ -624,8 +624,11 @@ def crear_ticket(request, empresa, expediente_pk=None):
 
     if request.method == 'POST':
         d = request.POST
+        exp_id = d.get('expediente') or (expediente.pk if expediente else None)
+        if exp_id:
+            # Validar que el expediente pertenece a la empresa
+            get_object_or_404(ExpedienteEquipo, pk=exp_id, empresa=empresa)
         try:
-            exp_id = d.get('expediente') or (expediente.pk if expediente else None)
             ticket = TicketMantenimientoCMMS.objects.create(
                 empresa=empresa,
                 expediente_id=exp_id,
@@ -668,6 +671,7 @@ def detalle_ticket(request, empresa, pk):
                 ticket.autorizado_por_director = request.user
             ticket.nivel_escalamiento_actual = nuevo_nivel
             ticket.estado = 'ESCALADO'
+            ticket.full_clean()
             ticket.save(update_fields=['nivel_escalamiento_actual', 'estado', 'autorizado_por_director'])
             messages.warning(request, f'Ticket escalado a: {nuevo_nivel}')
             return redirect('mantenimiento:detalle_ticket', pk=pk)
@@ -759,7 +763,7 @@ def qr_equipo_publico(request, uid):
         'exp': exp,
         'protocolos': protocolos,
         'ultimo_ticket': ultimo_ticket,
-        'usuario_logueado': request.user.is_authenticated,
+        'usuario_logueado': request.user.is_authenticated and getattr(request.user, 'empresa', None) == exp.empresa,
     }
     return render(request, 'mantenimiento/qr_equipo.html', ctx)
 
@@ -824,17 +828,18 @@ def api_stock_lote_para_refaccion(request):
     if not all([empresa, silo, lote_id]):
         return JsonResponse({'error': 'Parámetros incompletos'}, status=400)
 
-    from mantenimiento.signals import _get_lote_model
-    LoteModel = _get_lote_model(silo)
-    if not LoteModel:
+    from mantenimiento.services.consumo_refacciones_service import _get_lote_model, SiloNoSoportadoError
+    try:
+        LoteModel = _get_lote_model(silo)
+    except SiloNoSoportadoError:
         return JsonResponse({'error': f'Silo inválido: {silo}'}, status=400)
 
     try:
-        lote = LoteModel.objects.get(pk=lote_id)
+        lote = LoteModel.objects.get(pk=lote_id, empresa=empresa)
         return JsonResponse({
             'lote_id': lote.pk,
             'cantidad_actual': float(lote.cantidad_actual),
-            'estado': lote.estado,
+            'estado': getattr(lote, 'estado', None),
             'content_type_id': ContentType.objects.get_for_model(LoteModel).pk,
         })
     except LoteModel.DoesNotExist:

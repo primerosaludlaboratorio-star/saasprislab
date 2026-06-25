@@ -67,7 +67,7 @@
       <div class="card border-0 shadow-sm mt-3">
         <div class="card-header bg-light fw-semibold d-flex justify-content-between">
           <span><i class="bi bi-box-seam me-2 text-primary"></i>Refacciones Utilizadas (Multi-Silo)</span>
-          {% if ticket.estado not in 'CERRADO,RESUELTO' %}
+          {% if ticket.estado != 'CERRADO' and ticket.estado != 'RESUELTO' %}
           <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse"
                   data-bs-target="#formRefaccion">
             <i class="bi bi-plus"></i> Agregar
@@ -141,7 +141,7 @@
 
     <!-- Acciones -->
     <div class="col-md-5">
-      {% if ticket.estado not in 'CERRADO,RESUELTO' %}
+      {% if ticket.estado != 'CERRADO' and ticket.estado != 'RESUELTO' %}
       <!-- Escalar -->
       <div class="card border-0 shadow-sm mb-3">
         <div class="card-header bg-warning bg-opacity-10 fw-semibold text-warning">

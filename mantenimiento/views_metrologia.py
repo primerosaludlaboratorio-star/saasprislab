@@ -246,20 +246,31 @@ def registrar_lectura_manual(request, empresa):
 # API IoT — Endpoint para sensores reales (REST)
 # =============================================================================
 
-@login_required
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
 @require_http_methods(['POST'])
 def api_iot_lectura(request):
     """
     Endpoint REST para recibir lecturas de sensores físicos.
-    Autenticación: Header X-SENSOR-TOKEN = sensor.token_api
+    Autenticación actual: Header X-SENSOR-TOKEN = código del sensor.
+    Si el código existe en más de una empresa, la solicitud se rechaza por
+    ambigüedad para evitar asociación cross-tenant incorrecta.
     """
     token = request.headers.get('X-SENSOR-TOKEN', '')
     if not token:
         return JsonResponse({'error': 'Token requerido'}, status=401)
 
-    try:
-        sensor = SensorIoT.objects.select_related('empresa').get(codigo=token, activo=True)
-    except SensorIoT.DoesNotExist:
+    sensores = list(
+        SensorIoT.objects.select_related('empresa').filter(codigo=token, activo=True)[:2]
+    )
+    if len(sensores) > 1:
+        return JsonResponse(
+            {'error': 'Código de sensor ambiguo entre empresas. Requiere identificación única.'},
+            status=409,
+        )
+    sensor = sensores[0] if sensores else None
+    if not sensor:
         return JsonResponse({'error': 'Sensor no reconocido'}, status=401)
 
     import json

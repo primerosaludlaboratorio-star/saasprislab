@@ -624,7 +624,7 @@ class TicketMantenimientoCMMS(models.Model):
     )
     expediente    = models.ForeignKey(
         ExpedienteEquipo, on_delete=models.PROTECT,
-        related_name="tickets",
+        related_name="tickets", null=True, blank=True,
     )
     tipo_origen   = models.CharField(
         max_length=15, choices=TIPO_ORIGEN_CHOICES, default='MANUAL',
@@ -658,7 +658,7 @@ class TicketMantenimientoCMMS(models.Model):
 
     creado_por    = models.ForeignKey(
         "core.Usuario", on_delete=models.PROTECT,
-        related_name="tickets_cmms_creados",
+        related_name="tickets_cmms_creados", null=True, blank=True,
     )
     asignado_a    = models.ForeignKey(
         "core.Usuario", on_delete=models.SET_NULL, null=True, blank=True,

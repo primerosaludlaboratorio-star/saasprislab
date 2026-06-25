@@ -98,8 +98,7 @@ def evaluar_lectura_iot(sender, instance, created, **kwargs):
             from mantenimiento.models import TicketMantenimientoCMMS
             ticket_existente = TicketMantenimientoCMMS.objects.filter(
                 empresa=instance.empresa,
-                equipo=sensor.expediente.equipo if sensor.expediente else None,
-                prioridad='CRITICA',
+                expediente=sensor.expediente if sensor.expediente else None,
                 estado__in=('ABIERTO', 'EN_PROCESO'),
             ).first() if sensor.expediente else None
 
@@ -115,14 +114,14 @@ def evaluar_lectura_iot(sender, instance, created, **kwargs):
                 )
                 ticket_kwargs = {
                     'empresa': instance.empresa,
-                    'tipo': 'CORRECTIVO',
-                    'prioridad': 'CRITICA',
+                    'tipo_origen': 'CORRECTIVO',
                     'estado': 'ABIERTO',
+                    'titulo': f'ALERTA IoT: {sensor.codigo} — {razon[:80]}',
                     'descripcion': descripcion,
-                    'reportado_por': None,
+                    'creado_por': None,
                 }
                 if sensor.expediente:
-                    ticket_kwargs['equipo'] = sensor.expediente.equipo
+                    ticket_kwargs['expediente'] = sensor.expediente
                 ticket = TicketMantenimientoCMMS.objects.create(**ticket_kwargs)
 
                 # Vincular ticket a la lectura
