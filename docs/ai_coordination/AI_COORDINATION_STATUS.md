@@ -304,8 +304,22 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
 
 1. Bienestar / Contabilidad / Buzón
    - esperar nuevo reporte final antes de consolidar
-2. Deploy / producción
-   - preparar artefactos y secuencia final de despliegue sobre VPS
+
+## Deploy confirmado en VPS
+
+- fecha: `2026-06-25`
+- commit desplegado: `d54a1ee`
+- servidor: `216.238.89.243`
+- ruta productiva: `/opt/prislab/app`
+- validaciones ejecutadas:
+  - `git -C /opt/prislab/app rev-parse --short HEAD` -> `d54a1ee`
+  - `systemctl is-active prislab-gunicorn` -> `active`
+  - `systemctl is-active prislab-celery` -> `active`
+  - `systemctl is-active prislab-celerybeat` -> `active`
+  - `curl -I https://prislab.labcorecloud.com` -> `HTTP/2 200`
+- alcance real del deploy:
+  - produccion ya contiene el cierre verificado de `Recepcion`, `Seguridad` y `Operaciones`
+  - no se debe asumir que el resto del arbol sucio local quedo desplegado; ese material sigue fuera de este commit hasta nueva reconciliacion explicita
 
 ## Ultima verificacion recibida de Claude
 

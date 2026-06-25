@@ -48,7 +48,7 @@ No deben volver a entrar como pendiente salvo evidencia nueva.
 - Bienestar (en proceso, no consolidar aun)
 - Contabilidad / Finanzas (en proceso, no consolidar aun)
 - Buzon / Comunicacion / Notificaciones (en proceso, no consolidar aun)
-- Preparacion de deploy en VPS
+- Reconciliar el resto del árbol sucio local antes de intentar otro deploy
 
 ### Modulos ya cerrados y que no deben reabrirse sin repro nueva
 
@@ -84,14 +84,10 @@ No deben volver a entrar como pendiente salvo evidencia nueva.
 
 ## Próximo paso: validación final y preparación de deploy
 
-1. `manage.py check`
-2. `manage.py makemigrations --check`
-3. Ejecutar suites focalizadas ya cerradas:
-   - `recepcion.tests`
-   - `seguridad.tests`
-   - `core.tests.test_operaciones_module`
-4. Preparar artefactos de deploy
-5. Ejecutar despliegue a VPS solo con árbol reconciliado
+1. Esperar reportes finales de Bienestar / Contabilidad / Buzón
+2. Reconciliar el árbol sucio restante contra código real
+3. Preparar el siguiente paquete limpio de commit
+4. Desplegar de nuevo solo ese paquete validado
 
 ## Carril Claude
 
