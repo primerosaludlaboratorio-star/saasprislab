@@ -28,6 +28,33 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 
 ## Hallazgos que siguen vigentes
 
+### Consultorio PDF / tenant efectivo
+
+Estado actual del codigo:
+
+- `consultorio/pdf_views_prislab.py` ya usa `empresa_efectiva_request(request)` en las rutas vivas `pdf_receta_paciente` y `api_receta_pdf`
+- `consultorio/pdf_views.py` ya usa `empresa_efectiva_request(request)` en `imprimir_expediente_forense`
+- existe regresion dedicada en `consultorio/test_pdf_tenant.py`
+- la suite del modulo queda verde en el arbol actual: `manage.py test consultorio --keepdb -v 1` -> `41 OK`
+
+Conclusion:
+
+- RESUELTO — no reabrir salvo evidencia nueva de fuga tenant en rutas PDF de consultorio
+
+### Director + IA/PRIS timezone UTC/local
+
+Estado actual del codigo:
+
+- `war_room.py`, `ia_dashboard.py`, `pris_ia.py`, `pris_jarvis.py`, `pris_tools_operativos.py`, `ai_brain.py`, `ranking.py` e `incidencias.py` ya usan fecha local del proyecto en el alcance Director/IA/PRIS
+- regresiones presentes:
+  - `core/tests/test_director_dashboard_tz.py`
+  - `core/tests/test_ia_pris_tz.py`
+  - `core/tests/test_finanzas_caja_tz.py`
+
+Conclusion:
+
+- RESUELTO — no reabrir el bug de KPIs/tableros nocturnos en Director/IA/PRIS sin repro nueva contra esta rama
+
 ## Verificacion humana de interfaz
 
 - Si la extensión de Claude, Copilot u otra IA no responde, la verificación de UI no se detiene.

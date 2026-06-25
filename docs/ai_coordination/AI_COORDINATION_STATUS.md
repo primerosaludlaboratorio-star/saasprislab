@@ -50,6 +50,49 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
   - `auditoria_ui_20260623_212952/report.md`
   - `auditoria_ui_20260623_212952/screenshots/`
 
+## Cierres tecnicos integrados por Codex
+
+### Consultorio - tenant efectivo en PDFs
+
+- estado: `CERRADO`
+- commit local Codex: `b9217b9`
+- archivos:
+  - `consultorio/pdf_views.py`
+  - `consultorio/pdf_views_prislab.py`
+  - `consultorio/tests.py`
+  - `consultorio/test_pdf_tenant.py`
+- resultado:
+  - las rutas PDF vivas de Consultorio ya usan `empresa_efectiva_request(request)`
+  - se corrigio la estructura rota de tests del modulo
+  - una regresion nueva detecto y permitio corregir un bug real en `imprimir_expediente_forense`
+- evidencia:
+  - `py_compile OK`
+  - `manage.py check OK`
+  - `manage.py test consultorio --keepdb -v 1` -> `41 OK`
+
+### Director + IA/PRIS - zona horaria local
+
+- estado: `CERRADO`
+- commit local Codex: `d26a09d`
+- archivos:
+  - `core/views/war_room.py`
+  - `core/views/ia_dashboard.py`
+  - `core/views/pris_ia.py`
+  - `core/views/pris_jarvis.py`
+  - `core/agent/pris_tools_operativos.py`
+  - `core/ai_brain.py`
+  - `core/views/ranking.py`
+  - `core/views/incidencias.py`
+  - `core/tests/test_director_dashboard_tz.py`
+  - `core/tests/test_ia_pris_tz.py`
+- resultado:
+  - se reemplazo el patron UTC `timezone.now().date()` por `localdate()` en el alcance Director/IA/PRIS que seguia vivo en esta rama
+  - se agregaron regresiones reales para dashboard Director y KPI IA/PRIS
+- evidencia:
+  - `py_compile OK`
+  - `manage.py check OK`
+  - `manage.py test core.tests.test_director_dashboard_tz core.tests.test_ia_pris_tz core.tests.test_finanzas_caja_tz -v 1` -> `3/3 OK`
+
 ## Ultima verificacion recibida de Claude
 
 Se recibio un cierre de evidencia adicional sobre la tanda de seguridad / tests:
@@ -60,7 +103,7 @@ Se recibio un cierre de evidencia adicional sobre la tanda de seguridad / tests:
   - `297` OK
   - `14` skipped
   - `2` errores de entorno/herramienta
-- Consultorio quedo validado con `36/36` tests OK.
+- Consultorio quedo validado inicialmente con `36/36` tests OK.
 - Farmacia quedo validada con `18/18` tests OK.
 - La superficie IA quedo con `3` tests OK y placeholders claramente marcados.
 - Pendiente real detectado por esa misma tanda:
@@ -69,6 +112,11 @@ Se recibio un cierre de evidencia adicional sobre la tanda de seguridad / tests:
   - la configuracion LIMS necesita root-cause antes de darlo por cerrado
 - Artefacto persistido:
   - [docs/ai_coordination/inbox/20260624_claude_SEC_2FA_TESTS_LIMS.md](./inbox/20260624_claude_SEC_2FA_TESTS_LIMS.md)
+
+Nota de reconciliacion:
+
+- el reporte de Claude sobre Director/IA/PRIS apuntaba a una PR separada; Codex confirmo que ese fix no estaba integrado en `release/v1.0-local` y lo reaplico/valido localmente en el arbol canonico actual
+- el reporte viejo que decia que `INDICE_CANONICO_TOTAL.md` o `INVENTARIO_MAESTRO_TOTAL.md` no existian ya no aplica al estado actual del repo
 
 ## Verificacion de contrapeso sobre Core
 

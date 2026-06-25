@@ -30,11 +30,18 @@ siguiente tarea de su carril sin esperar al usuario.
 
 ## Carril Codex
 
-1. Cerrar el patron LIMS/legacy `DetalleOrden.estudio` en codigo productivo.
+1. Integrar modulo por modulo solo lo que siga vivo y no este ya cerrado en el canon.
 2. Agregar regresiones para cada bloqueo real confirmado.
 3. Ejecutar pruebas focalizadas y `manage.py check`.
 4. Hacer commit pequeno con mensaje claro y actualizar docs de control.
 5. Preparar instrucciones de deploy solo cuando tests pasen.
+
+### Cierres ya completados por Codex en esta ronda
+
+- Consultorio PDF / tenant efectivo -> `b9217b9`
+- Director + IA/PRIS timezone local -> `d26a09d`
+
+No deben volver a entrar como pendiente salvo evidencia nueva.
 
 ## Carril Claude
 
