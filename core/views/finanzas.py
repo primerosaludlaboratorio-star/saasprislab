@@ -57,7 +57,7 @@ class LabCajaView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             context['modulo_inactivo'] = True
             context['mensaje_error'] = "Usuario sin empresa asignada."
             return context
-        hoy = timezone.now().date()
+        hoy = timezone.localdate()  # FIX TZ: fecha LOCAL (no UTC); now().date() vaciaba la caja cada noche (UTC-6)
         inicio_dia = timezone.make_aware(datetime.combine(hoy, datetime.min.time()))
         
         # Filtrar por empresa y sucursal del usuario
@@ -185,7 +185,7 @@ class FarmaciaCajaView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             context['modulo_inactivo'] = True
             context['mensaje_error'] = "Usuario sin empresa asignada."
             return context
-        hoy = timezone.now().date()
+        hoy = timezone.localdate()  # FIX TZ: fecha LOCAL (no UTC); now().date() vaciaba la caja cada noche (UTC-6)
         inicio_dia = timezone.make_aware(datetime.combine(hoy, datetime.min.time()))
         
         # Filtrar ventas del día — excluir CANCELADAS para KPIs correctos
@@ -300,7 +300,7 @@ class MasterDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
             f"IP: {self.get_client_ip()} - Timestamp: {timezone.now()}"
         )
         
-        hoy = timezone.now().date()
+        hoy = timezone.localdate()  # FIX TZ: fecha LOCAL (no UTC); now().date() vaciaba la caja cada noche (UTC-6)
         inicio_dia = timezone.make_aware(datetime.combine(hoy, datetime.min.time()))
         
         # ========================================================================
