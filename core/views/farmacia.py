@@ -271,3 +271,6 @@ __all__ = [
     "reporte_productos_mas_vendidos",
     "reporte_ventas_metodo_pago",
 ]
+
+# Alias legacy todavía consumido por config/urls.py en producción.
+procesar_devolucion = procesar_devolucion_venta
