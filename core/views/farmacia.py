@@ -89,6 +89,12 @@ def farmacia_inventario_general(request):
 
 
 @login_required
+def inventario_general(request):
+    """Alias histórico consumido por config/urls.py."""
+    return farmacia_inventario_general(request)
+
+
+@login_required
 def estadisticas_ventas(request):
     """Alias legacy al reporte principal de ventas."""
     return reporte_ventas_fecha(request)
@@ -124,11 +130,35 @@ def imprimir_ticket(request, venta_id):
 
 
 @login_required
+def imprimir_ticket_raw(request, venta_id):
+    """Compatibilidad legacy: reutiliza ticket HTML si no existe formatter raw de farmacia."""
+    return imprimir_ticket(request, venta_id)
+
+
+@login_required
 def cancelar_venta(request, venta_id):
     """Wrapper legacy para cancelación de venta con reversión de stock."""
     empresa = _empresa_desde_request(request)
     resultado = VentaFarmaciaService.cancelar_venta_resultado(request, empresa, venta_id)
     return JsonResponse(resultado["body"], status=resultado["http_status"])
+
+
+@login_required
+def api_carga_masiva_productos(request):
+    """Alias legacy al endpoint canónico de carga masiva."""
+    return carga_masiva_productos(request)
+
+
+@login_required
+def registrar_gasto(request):
+    """Alias legacy al flujo canónico de registro de gasto."""
+    return registro_gasto(request)
+
+
+@login_required
+def corte_caja_dia(request):
+    """Alias legacy al flujo actual de corte de caja."""
+    return HttpResponseRedirect(reverse("corte_caja_legacy"))
 
 
 def _resolver_periodo_kpis(periodo):
@@ -253,10 +283,14 @@ __all__ = [
     "_verificar_acceso",
     "entrada_mercancia",
     "registrar_compra",
+    "api_carga_masiva_productos",
     "api_buscar_productos_compra",
     "carga_masiva_productos",
     "carga_masiva_excel",
+    "registrar_gasto",
+    "corte_caja_dia",
     "farmacia_inventario_general",
+    "inventario_general",
     "libro_control_antibioticos",
     "dashboard_farmacia",
     "gestionar_politicas_descuento",
@@ -269,6 +303,7 @@ __all__ = [
     "ajustes_inventario",
     "estadisticas_ventas",
     "imprimir_ticket",
+    "imprimir_ticket_raw",
     "cancelar_venta",
     "api_farmacia_kpis",
     "historial_devoluciones",
