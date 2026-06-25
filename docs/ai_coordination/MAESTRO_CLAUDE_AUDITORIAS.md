@@ -306,4 +306,27 @@ Misma clase que el bug de caja-lab/finanzas. Con `USE_TZ=True` + `TIME_ZONE=Amer
 
 ---
 
+## Q. MÓDULO CONSULTORIO  `[auditado · 1 fix tenant aplicado · regresión discriminante verde · suite 36/36]`
+
+**Alcance:** `consultorio/views.py` (4.648), `views_integracion_lab.py`, `pdf_views.py`, `pdf_views_prislab.py`, `api_views.py`, `tests.py` (763), rutas (`consultorio/urls.py`) y templates. Verificado contra código real (idéntico HEAD vs `release/v1.0-local` en este módulo).
+
+### CONFIRMADO → CORREGIDO — lookups directos de empresa NO canónicos en vistas PDF vivas
+Las vistas PDF de receta/expediente resolvían la empresa con `getattr(request.user, 'empresa', None)`, saltándose `request.empresa_actual` (inyectado por `EmpresaIdentityMiddleware`, `core/middleware/empresa.py:95`). El helper canónico `empresa_efectiva_request` (`core/utils/empresa_request.py:11`) es `request.empresa_actual ∥ user.empresa`, y su docstring **prohíbe** usar solo `user.empresa` en búsquedas. Para un usuario operando en el contexto de otra empresa (`empresa_actual ≠ user.empresa`), el scope quedaba mal y la consulta legítima del tenant activo daba Http404.
+- **CORREGIDO (3 funciones vivas+cableadas):** `pdf_views_prislab.py:27,70` (`imprimir_receta_profesional`, `api_generar_receta_pdf`) y `pdf_views.py:56→` (`imprimir_expediente_forense`, cableada en `urls.py:140`, ya con `@permission_required('core.ver_historia_completa')`). Sustituido por `empresa_efectiva_request(request)`; se conservan todos los guards (403/superuser).
+- **Verificación REAL:** `manage.py check` limpio · suite `consultorio.tests` **36/36 OK (4 skip)** sin romper nada · **regresión nueva discriminante** `consultorio/test_pdf_tenant.py` (RequestFactory con `empresa_actual=B` y `user.empresa=A`): con el fix la consulta de B se resuelve (404 "no tiene receta", sin excepción); **con el código viejo lanza `Http404`** → demostrado revirtiendo y re-corriendo (ERROR). 2/2 OK con el fix.
+
+### DESCARTADO / no bug (verificado)
+- **Lookups directos en TODO consultorio salvo PDFs:** **CERO** `request.user.empresa` directos; `views.py` y la integración usan `empresa_efectiva_request`. Scoping tenant correcto (`get_object_or_404(..., empresa=empresa)` + chequeo extra `consulta.paciente.empresa_id == empresa.id`).
+- **`_resolver_medico_usuario`:** evita el anti-patrón "primer médico de la empresa" (firma correcta de recetas/certificados). Bien hecho.
+- **Permisos:** 59 `@login_required` + gating fino donde corresponde (`@permission_required('core.ver_historia_completa')` en forense, `@permission_required('core.generar_certificado')`, `@role_required('MEDICO','ADMIN')`). El suite ya cubre cross-tenant (audio analito, archivos de otro paciente).
+
+### OBSOLETO (código muerto, NO tocado — documentado)
+- **`consultorio/views_integracion_lab.py`** (171 LOC): **NO cableado** en `urls.py` y crea `DetalleOrden(estudio=...)` con un FK que **fue eliminado en `core.0073`** (verificado: `DetalleOrden.estudio` AUSENTE; ahora `analito/perfil_lims/paquete_lims`). Si se cableara, reventaría en runtime. Su cabecera ya lo declara legacy. Los 2 lookups directos ahí son inalcanzables. → **Recomendación a Codex: reescribir al flujo analito/LIMS o eliminar.**
+- **`pdf_views.py:imprimir_receta_paciente`** (línea ~49): duplicado **no cableado** — el nombre `consultorio:pdf_receta_paciente` (`urls.py:138`) apunta a `pdf_views_prislab.imprimir_receta_profesional`, no a esta. → **Recomendación: eliminar el duplicado muerto.**
+
+### Estado de integración
+Fix + regresión en `claude/audit-flow-review-ruhy0q` (PR #4). En `release/v1.0-local` los lookups directos **siguen vivos** → NO integrado; pendiente de merge por Codex.
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*

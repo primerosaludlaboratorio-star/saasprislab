@@ -12,6 +12,8 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
 
+from core.utils.empresa_request import empresa_efectiva_request
+
 from reportlab.lib.pagesizes import letter  # US Letter: 8.5" x 11" (215.9mm x 279.4mm)
 from reportlab.lib.units import cm, mm
 from reportlab.lib import colors
@@ -299,7 +301,7 @@ def imprimir_expediente_forense(request, consulta_id):
     Contiene: SOAP completo, Transcripción de audio, Tiempos, Notas privadas,
     Historial de cambios, Firma digital, Hash de integridad.
     """
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = empresa_efectiva_request(request)  # canónico: request.empresa_actual ∥ user.empresa
     if not empresa:
         from django.http import HttpResponse
         return HttpResponse('Usuario sin empresa asignada', status=403)
