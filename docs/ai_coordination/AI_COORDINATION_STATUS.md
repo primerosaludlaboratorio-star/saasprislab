@@ -1,6 +1,6 @@
 # AI Coordination Status
 
-Fecha: 2026-06-23
+Fecha: 2026-06-25
 
 ## Estado actual
 
@@ -92,6 +92,143 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
   - `py_compile OK`
   - `manage.py check OK`
   - `manage.py test core.tests.test_director_dashboard_tz core.tests.test_ia_pris_tz core.tests.test_finanzas_caja_tz -v 1` -> `3/3 OK`
+
+### Pacientes - formulario y template de alta
+
+- estado: `CERRADO`
+- archivos:
+  - `pacientes/views.py`
+  - `pacientes/templates/pacientes/crear_paciente.html`
+  - `pacientes/tests.py`
+- resultado:
+  - se corrigio `PacienteForm` para usar solo campos reales del modelo
+  - se agrego el template faltante `crear_paciente.html`
+  - el flujo de alta de pacientes dejo de caer por `FieldError` / `TemplateDoesNotExist`
+- evidencia:
+  - `manage.py check OK`
+  - `manage.py test pacientes.tests --verbosity=2 --no-input` -> `7 OK (1 skipped)`
+
+### Farmacia - endurecimiento post-refactor
+
+- estado: `CASI_CERRADO`
+- archivos:
+  - `farmacia/urls.py`
+  - `farmacia/views/soporte.py`
+  - `farmacia/views/__init__.py`
+  - `farmacia/views/pdv.py`
+  - `farmacia/tests.py`
+- resultado:
+  - se resolvio la colision de `api/lotes-producto`
+  - apertura y verificacion de caja ya filtran por `empresa`
+  - `KardexListView` devuelve `none()` si no hay empresa
+  - `pdv_farmacia` ya usa el resolvedor canonico de empresa
+- evidencia:
+  - `manage.py check OK`
+  - `manage.py test farmacia.tests --verbosity=2` -> `31 OK`
+- residual:
+  - quedan deuda menor conocida en `autorizar_devolucion` y cobertura faltante de algunos flujos especificos
+
+### Enfermeria - cierre con pruebas reales
+
+- estado: `CERRADO`
+- archivos:
+  - `enfermeria/tests.py`
+  - `docs/ai_coordination/reporte_auditoria_enfermeria.md`
+- resultado:
+  - el modulo tiene cobertura funcional y de tenant en pruebas automatizadas
+  - se valido dashboard, triage, captura de signos, historial, graficas, alertas y formularios
+- evidencia:
+  - `manage.py check OK`
+  - `manage.py test enfermeria.tests` -> `17/17 OK`
+
+### Inventario - cierre funcional con regresiones
+
+- estado: `CERRADO`
+- archivos:
+  - `inventario/views.py`
+  - `inventario/views_consultorio.py`
+  - `inventario/views_generales.py`
+  - `inventario/views_compras.py`
+  - `inventario/models.py`
+  - `inventario/templates/inventario/lista_lotes.html`
+  - `inventario/tests/test_inventario.py`
+- resultado:
+  - se corrigio el `FieldError` por mezcla `DecimalField/FloatField` en agregaciones con `Coalesce(Sum(...), Value(...))`
+  - se corrigio el `TemplateSyntaxError` por `_semaforo` en template
+  - se agrego propiedad publica `semaforo` al modelo para soporte correcto en vistas/templates
+  - se limpiaron asignaciones redundantes y imports asociados al flujo de inventario
+- evidencia:
+  - `manage.py check OK`
+  - `manage.py test inventario.tests.test_inventario` -> `31/31 OK`
+
+### Bloque operativo - recepcion / logistica / mantenimiento / bienestar / academia / marketing
+
+- estado general:
+  - `Recepcion` -> `PENDIENTE DE CIERRE DEFINITIVO`
+  - `Logistica` -> `CASI_CERRADO`
+  - `Mantenimiento` -> `CASI_CERRADO`
+  - `Bienestar` -> `CASI_CERRADO`
+  - `Academia` -> `CASI_CERRADO`
+  - `Marketing` -> `CASI_CERRADO`
+- resultado reportado:
+  - logistica: `7/7 OK`
+  - mantenimiento: `4/4 OK`
+  - bienestar: `4/4 OK`
+  - academia: `8/8 OK`
+  - marketing: `9/9 OK`
+- precision canonica:
+  - recepcion no debe marcarse como `100% cerrado` todavia porque en el corte actual no quedo sustentado con el mismo nivel de prueba explicita que los otros
+  - logistica sigue mostrando mezcla de patrones (`empresa_efectiva_request` y `getattr(request.user, 'empresa', None)`), por lo que queda mejor como `casi cerrado`
+  - mantenimiento, bienestar, academia y marketing quedan muy avanzados y funcionalmente estabilizados, pero su cierre total queda sujeto al mismo criterio canonico: evidencia reproducible + documento actualizado + contraste suficiente
+
+## Modulos cerrados al corte actual
+
+- Consultorio PDF / tenant efectivo
+- Director
+- IA/PRIS (fix TZ dentro del alcance Director/IA/PRIS)
+- Pacientes
+- Laboratorio como flujo funcional principal
+- Enfermeria
+- Inventario
+
+## Modulos casi cerrados al corte actual
+
+- Farmacia
+- Logistica
+- Mantenimiento
+- Bienestar
+- Academia
+- Marketing
+
+## Modulos abiertos al corte actual
+
+- Buzon / Comunicacion / Notificaciones
+- Seguridad
+- RH / Nomina
+- Contabilidad
+- Operaciones
+- Recepcion
+
+## Pendientes prioritarios vivos
+
+1. Buzon / Comunicacion / Notificaciones
+   - `MensajeInterno` sin FK `empresa`
+   - `buzon_kanban` duplicado y sobreescrito
+   - `tu_opinion` asigna a la primera empresa activa
+   - notificaciones con patron debil cuando `empresa` es `None`
+2. RH / Nomina
+   - `Competencia` sin FK `empresa`
+   - vistas de RH sin `@role_required`
+   - `mis_resultados` sin validacion de tenant del empleado
+3. Contabilidad / Finanzas
+   - vistas financieras sin `@role_required`
+   - `timezone.now().date()` vivo en reportes
+   - `autofactura_publica` con scoping debil
+4. Seguridad / multi-tenant transversal
+   - seguir endureciendo guards `empresa` en vistas que aun aceptan `empresa=None`
+   - mantener aisladas las decisiones arquitectonicas de los bugs reales
+5. Recepcion
+   - falta contraste final y cierre canonico con evidencia de pruebas equivalente al resto del bloque
 
 ## Ultima verificacion recibida de Claude
 

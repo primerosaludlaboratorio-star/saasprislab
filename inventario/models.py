@@ -434,6 +434,20 @@ class LoteReactivoLab(models.Model):
         self.costo_total_lote = self.cantidad_inicial * self.precio_unitario_compra
         super().save(*args, **kwargs)
 
+    @property
+    def semaforo(self):
+        """Devuelve 'rojo', 'amarillo' o 'verde' según estado y caducidad."""
+        if self.estado in ('VENCIDO', 'BAJA', 'AGOTADO') or self.estado == 'CUARENTENA':
+            return 'rojo'
+        if self.fecha_caducidad:
+            from datetime import date
+            dias = (self.fecha_caducidad - date.today()).days
+            if dias < 0:
+                return 'rojo'
+            if dias <= 30:
+                return 'amarillo'
+        return 'verde'
+
 
 class SalidaAnaliticaLab(models.Model):
     """

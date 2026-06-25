@@ -1,6 +1,6 @@
 # Estado Canonico de PRISLAB SaaS
 
-Fecha de consolidacion: 2026-06-23  
+Fecha de consolidacion: 2026-06-25  
 Rama canonica: `release/v1.0-local`
 
 ## Proposito
@@ -25,6 +25,34 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 - El historial reciente incluye `c802eb5` para endurecer 2FA y caducidad de resultados publicos.
 - El historial reciente incluye `a7b0d8b` para blindar el auto-repair de Sentinel por tenant.
 - No debe usarse `main` como fuente de verdad operativa.
+
+## Modulos cerrados en esta linea de trabajo
+
+- Consultorio PDF / tenant efectivo -> `RESUELTO`
+- Director -> `RESUELTO`
+- IA/PRIS (timezone local en el alcance Director/IA/PRIS) -> `RESUELTO`
+- Pacientes (alta de paciente / form / template faltante) -> `RESUELTO`
+- Laboratorio (flujo funcional principal) -> `RESUELTO` con deuda arquitectonica legacy/LIMS documentada
+- Enfermeria -> `RESUELTO`
+- Inventario -> `RESUELTO`
+
+## Modulos casi cerrados en esta linea de trabajo
+
+- Farmacia -> `ESTABILIZADO`, con deuda menor y cobertura faltante en algunos flujos
+- Logistica -> `ESTABILIZADO`, pendiente de cierre canonico final
+- Mantenimiento -> `ESTABILIZADO`, pendiente de cierre canonico final
+- Bienestar -> `ESTABILIZADO`, pendiente de cierre canonico final
+- Academia -> `ESTABILIZADO`, pendiente de cierre canonico final
+- Marketing -> `ESTABILIZADO`, pendiente de cierre canonico final
+
+## Modulos que siguen abiertos
+
+- Buzon / Comunicacion / Notificaciones
+- Seguridad
+- RH / Nomina
+- Contabilidad
+- Operaciones
+- Recepcion
 
 ## Hallazgos que siguen vigentes
 
@@ -54,6 +82,82 @@ Estado actual del codigo:
 Conclusion:
 
 - RESUELTO — no reabrir el bug de KPIs/tableros nocturnos en Director/IA/PRIS sin repro nueva contra esta rama
+
+### Pacientes - formulario de alta y template faltante
+
+Estado actual del codigo:
+
+- `pacientes/views.py` ya usa campos reales del modelo en `PacienteForm`
+- `pacientes/templates/pacientes/crear_paciente.html` ya existe
+- la suite del modulo valida el flujo principal de alta/listado/busqueda
+
+Conclusion:
+
+- RESUELTO — no reabrir el bug de alta de pacientes salvo repro nueva contra esta rama
+
+### Farmacia - fixes post-refactor ya integrados
+
+Estado actual del codigo:
+
+- `farmacia/urls.py` ya consolida `api/lotes-producto` sobre la implementacion de `pdv.py`
+- `farmacia/views/soporte.py` ya filtra apertura de caja por `empresa`
+- `farmacia/views/__init__.py` ya corta `KardexListView` con `objects.none()` cuando no hay empresa
+- `farmacia/views/pdv.py` ya usa `_empresa_desde_request(request)` en `pdv_farmacia`
+- la suite de modulo reportada queda verde: `31 OK`
+
+Conclusion:
+
+- ESTABILIZADO / CASI_CERRADO — no reabrir los 4 hallazgos ya corregidos
+- mantener como deuda menor la inconsistencia baja de `autorizar_devolucion` y la cobertura faltante de algunos flujos
+
+### Enfermeria - cierre con pruebas reales
+
+Estado actual del codigo:
+
+- `enfermeria/tests.py` cubre rutas, vistas, formularios y aislamiento por tenant
+- el reporte tecnico del modulo ya fue persistido en `docs/ai_coordination/reporte_auditoria_enfermeria.md`
+
+Conclusion:
+
+- RESUELTO — no reabrir Enfermeria sin evidencia nueva contra esta rama
+
+### Inventario - cierre por bugs reales y pruebas verdes
+
+Estado actual del codigo:
+
+- los `Coalesce(Sum(...), Value(...))` del modulo ya usan salida decimal consistente
+- `lista_lotes.html` ya consume `lote.semaforo` sin usar atributos privados prohibidos en templates
+- `inventario/models.py` ya expone la propiedad publica `semaforo`
+- existe suite dedicada `inventario/tests/test_inventario.py` con cobertura del flujo operativo principal
+
+Conclusion:
+
+- RESUELTO — no reabrir Inventario salvo repro nueva contra esta rama
+
+### Bloque operativo parcial - Logistica / Mantenimiento / Bienestar / Academia / Marketing
+
+Estado actual del codigo y evidencia reportada:
+
+- logistica reporta `7/7` pruebas verdes y scoping operativo estabilizado
+- mantenimiento reporta `4/4` pruebas verdes y consultas aisladas por empresa
+- bienestar reporta `4/4` pruebas verdes y guards de empresa/permisos aplicados
+- academia reporta `8/8` pruebas verdes con regresiones de aislamiento cross-tenant
+- marketing reporta `9/9` pruebas verdes con bloqueo de `empresa=None`
+
+Conclusion:
+
+- ESTABILIZADOS / CASI_CERRADOS — no tratarlos como modulos criticos abiertos, pero tampoco inflar un `100% cerrado` hasta completar el mismo nivel de contraste canonico sobre el arbol final
+
+### Recepcion - pendiente de cierre definitivo
+
+Estado actual:
+
+- el reporte operativo indica mejoras reales de validacion/redirects
+- aun no queda asentado en el canon con el mismo nivel de evidencia de pruebas explicitas que los otros modulos del bloque
+
+Conclusion:
+
+- PENDIENTE DE CIERRE DEFINITIVO — no elevarlo a abierto critico, pero tampoco marcarlo como cerrado total todavia
 
 ## Verificacion humana de interfaz
 
@@ -288,9 +392,12 @@ Conclusion:
 
 ## Cobertura de auditoria 2026-06-23
 
-Todos los archivos ejecutables del arbol `release/v1.0-local` han sido clasificados en esta sesion.
-No quedan archivos de codigo vivo sin auditar.
-Los documentos Markdown no son tratados como hallazgos de seguridad.
+Cobertura al corte actual:
+
+- hay modulos ya cerrados tecnicamente, otros casi cerrados y otros todavia abiertos
+- Inventario ya forma parte del bloque de modulos cerrados con evidencia tecnica y pruebas
+- no debe afirmarse que todo el arbol esta cerrado; el canon vigente ya reconoce pendientes reales en Buzon/Comunicacion/Notificaciones, RH/Nomina, Contabilidad, Seguridad, Operaciones y Recepcion
+- los documentos Markdown no son tratados como hallazgos de seguridad por si mismos
 
 Pendientes arquitectonicos documentados (no bugs):
 - H-GEN1: divergencia grupo/rol RECEPCION — decision de diseno

@@ -6,7 +6,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Q, Sum, Value
+from django.db.models import Q, Sum, Value, DecimalField
+from decimal import Decimal
 from django.db.models.functions import Coalesce
 from django.views.decorators.http import require_POST
 from datetime import date, timedelta
@@ -37,7 +38,7 @@ def dashboard_consultorio(request, empresa):
         .annotate(
             stock_total=Coalesce(
                 Sum('lotes__cantidad_actual', filter=Q(lotes__cantidad_actual__gt=0)),
-                Value(0.0)
+                Value(Decimal('0'), output_field=DecimalField())
             )
         )
     )
@@ -86,7 +87,7 @@ def lista_insumos_consultorio(request, empresa):
         .annotate(
             stock_total=Coalesce(
                 Sum('lotes__cantidad_actual', filter=Q(lotes__cantidad_actual__gt=0)),
-                Value(0.0)
+                Value(Decimal('0'), output_field=DecimalField())
             )
         )
         .order_by('tipo', 'nombre')
@@ -180,8 +181,8 @@ def lista_lotes_consultorio(request, empresa):
 
     for lote in qs:
         dias = (lote.fecha_caducidad - hoy).days if lote.fecha_caducidad else 9999
-        lote._semaforo = 'rojo' if dias < 0 or lote.cantidad_actual <= 0 else \
-                         'amarillo' if dias <= 30 else 'verde'
+        lote.semaforo = 'rojo' if dias < 0 or lote.cantidad_actual <= 0 else \
+                        'amarillo' if dias <= 30 else 'verde'
 
     insumos = CatalogoInsumoConsultorio.objects.filter(empresa=empresa, activo=True).order_by('nombre')
     ctx = {

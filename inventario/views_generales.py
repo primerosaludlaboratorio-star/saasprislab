@@ -6,7 +6,8 @@ Flujo: BORRADOR → PENDIENTE → APROBADO → ENTREGADO (con descuento automát
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Q, Sum, Value, Count
+from django.db.models import Q, Sum, Value, Count, DecimalField
+from decimal import Decimal
 from django.db.models.functions import Coalesce
 from django.views.decorators.http import require_POST
 from django.utils import timezone
@@ -36,7 +37,7 @@ def dashboard_generales(request, empresa):
         .annotate(
             stock_total=Coalesce(
                 Sum('lotes__cantidad_actual', filter=Q(lotes__cantidad_actual__gt=0)),
-                Value(0.0)
+                Value(Decimal('0'), output_field=DecimalField())
             )
         )
     )
@@ -80,7 +81,7 @@ def lista_insumos_generales(request, empresa):
         .annotate(
             stock_total=Coalesce(
                 Sum('lotes__cantidad_actual', filter=Q(lotes__cantidad_actual__gt=0)),
-                Value(0.0)
+                Value(Decimal('0'), output_field=DecimalField())
             )
         )
         .order_by('categoria', 'nombre')

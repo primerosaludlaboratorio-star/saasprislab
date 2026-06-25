@@ -12,6 +12,8 @@ urlpatterns = [
     # LISTADO Y BÚSQUEDA DE PACIENTES (STAFF)
     # ===========================================================================
     path('', views.lista_pacientes, name='lista_pacientes'),
+    path('nuevo/', views.crear_paciente, name='crear_paciente'),
+    path('buscar/', views.buscar_paciente, name='buscar_paciente'),
     
     # ===========================================================================
     # HISTORIAL 360° - VISTA PRINCIPAL (STAFF)

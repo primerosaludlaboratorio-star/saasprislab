@@ -173,6 +173,8 @@ class KardexListView(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         empresa = getattr(self.request.user, 'empresa', None)
+        if not empresa:
+            return MovimientoInventario.objects.none()
         queryset = MovimientoInventario.objects.filter(
             empresa=empresa
         ).select_related(

@@ -4,12 +4,16 @@ OrdenDeCompra · LineaOrdenCompra · Recepción automática de mercancía → lo
 """
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum, Value, DecimalField
+from django.db.models.functions import Coalesce
+from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from datetime import date
+from decimal import Decimal
 import logging
 
 from .models import (
@@ -357,11 +361,11 @@ def crear_proveedor(request, empresa):
             ProveedorCompras.objects.create(
                 empresa=empresa,
                 razon_social=d['razon_social'].strip(),
-                rfc=d.get('rfc', '').strip() or None,
+                rfc=d.get('rfc', '').strip() or '',
                 contacto_nombre=d.get('contacto_nombre', ''),
-                contacto_email=d.get('contacto_email', ''),
-                contacto_telefono=d.get('contacto_telefono', ''),
-                condiciones_pago=d.get('condiciones_pago', ''),
+                email=d.get('email', '') or d.get('contacto_email', ''),
+                telefono=d.get('telefono', '') or d.get('contacto_telefono', ''),
+                dias_credito=int(d.get('dias_credito', 0) or 0),
                 notas=d.get('notas', ''),
             )
             messages.success(request, 'Proveedor creado.')
@@ -376,19 +380,12 @@ def crear_proveedor(request, empresa):
 # API: artículos críticos para sugerir OC automática
 # =============================================================================
 
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-
-
 @login_required
 def api_articulos_criticos(request):
     from .views import _get_empresa
     empresa = _get_empresa(request)
     if not empresa:
         return JsonResponse({'error': 'Sin empresa'}, status=403)
-
-    from django.db.models import Sum, Value
-    from django.db.models.functions import Coalesce
 
     criticos = []
 
@@ -404,7 +401,7 @@ def api_articulos_criticos(request):
                 stock_total=Coalesce(
                     Sum(f'lotes__cantidad_actual',
                         filter=Q(lotes__cantidad_actual__gt=0)),
-                    Value(0.0)
+                    Value(Decimal('0'), output_field=DecimalField())
                 )
             )
         )

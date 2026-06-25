@@ -43,6 +43,46 @@ siguiente tarea de su carril sin esperar al usuario.
 
 No deben volver a entrar como pendiente salvo evidencia nueva.
 
+### Prioridad viva para la siguiente ronda
+
+1. Buzon / Comunicacion / Notificaciones
+   - aislar `MensajeInterno` por tenant
+   - eliminar la colision de `buzon_kanban`
+   - resolver `tu_opinion` multi-tenant
+   - endurecer guards de notificaciones
+2. RH / Nomina
+   - restringir vistas RH por rol
+   - decidir/aislar `Competencia` por empresa
+   - validar tenant de `mis_resultados`
+   - endurecer `_empresa()` en nomina
+3. Contabilidad / Finanzas
+   - agregar `@role_required` en vistas sensibles
+   - alinear reportes a `timezone.localdate()`
+   - endurecer `autofactura_publica`
+4. Farmacia
+   - cerrar cobertura faltante de corte de caja, apertura, COFEPRIS, entrada express y carga masiva
+   - mantener fuera del backlog los 4 hallazgos ya resueltos
+5. Recepcion
+   - cerrar contraste final y evidencia de pruebas para sacarla del estado pendiente
+
+### Modulos ya cerrados y que no deben reabrirse sin repro nueva
+
+- Consultorio PDF / tenant efectivo
+- Director
+- IA/PRIS (fix TZ en alcance Director/IA/PRIS)
+- Pacientes
+- Laboratorio funcional principal
+- Enfermeria
+- Inventario
+
+### Modulos estabilizados que no deben volver al carril critico sin repro nueva
+
+- Logistica
+- Mantenimiento
+- Bienestar
+- Academia
+- Marketing
+
 ## Carril Claude
 
 1. Core.

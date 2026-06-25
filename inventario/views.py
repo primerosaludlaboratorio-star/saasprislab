@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db import transaction
-from django.db.models import Sum, F, Q, Count, Value, DecimalField
+from django.db.models import Sum, F, Q, Count, Value, DecimalField, FloatField
 from decimal import Decimal
 from django.db.models.functions import Coalesce
 from django.utils import timezone
@@ -155,7 +155,7 @@ def lista_reactivos(request, empresa):
             stock_total=Coalesce(
                 Sum('lotes__cantidad_actual',
                     filter=Q(lotes__estado='ACTIVO')),
-                Value(0.0)
+                Value(Decimal('0'), output_field=DecimalField())
             )
         )
         .order_by('tipo', 'nombre')
@@ -283,16 +283,6 @@ def lista_lotes(request, empresa):
         qs = qs.filter(reactivo_id=reactivo_id)
     if estado_filtro:
         qs = qs.filter(estado=estado_filtro)
-
-    # Semáforos para template
-    for lote in qs:
-        dias = (lote.fecha_caducidad - hoy).days if lote.fecha_caducidad else 9999
-        if lote.estado in ('VENCIDO', 'AGOTADO', 'BAJA') or dias < 0:
-            lote._semaforo = 'rojo'
-        elif dias <= 30:
-            lote._semaforo = 'amarillo'
-        else:
-            lote._semaforo = 'verde'
 
     reactivos = CatalogoReactivoLab.objects.filter(empresa=empresa, activo=True).order_by('nombre')
     ctx = {
@@ -662,7 +652,7 @@ def api_stock_critico(request):
         .annotate(
             stock_total=Coalesce(
                 Sum('lotes__cantidad_actual', filter=Q(lotes__estado='ACTIVO')),
-                Value(0.0)
+                Value(Decimal('0'), output_field=DecimalField())
             )
         )
         .filter(stock_total__lte=F('stock_minimo'))

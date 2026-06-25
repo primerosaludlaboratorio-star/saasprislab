@@ -17,6 +17,7 @@ from core.models import (
     CitaMedica, OrdenDeServicio, Receta, CertificadoMedico,
     EstudioImagen, AudioConsulta, LogAccesoExpediente, AuditLog
 )
+from core.utils.empresa_request import empresa_efectiva_request
 
 
 # ==============================================================================
@@ -38,7 +39,7 @@ def historial_360_paciente(request, paciente_id):
     - Certificados médicos
     - Audio/transcripciones (forense)
     """
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = empresa_efectiva_request(request)
     if not empresa:
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
@@ -200,7 +201,7 @@ def timeline_consultas(request, paciente_id):
     Timeline completo de TODAS las consultas del paciente.
     Vista extendida con paginación.
     """
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = empresa_efectiva_request(request)
     if not empresa:
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
@@ -235,7 +236,7 @@ def graficas_signos_vitales(request, paciente_id):
     Vista dedicada a gráficas interactivas de signos vitales.
     Chart.js con zoom, filtros por fecha, exportación.
     """
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = empresa_efectiva_request(request)
     if not empresa:
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
@@ -270,7 +271,7 @@ def historia_clinica_completa(request, paciente_id):
     Vista detallada de la Historia Clínica (Antecedentes).
     NOM-004: AHF, APNP, APP, AGO.
     """
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = empresa_efectiva_request(request)
     if not empresa:
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
@@ -288,6 +289,84 @@ def historia_clinica_completa(request, paciente_id):
 
 
 # ==============================================================================
+# VISTA: CREAR NUEVO PACIENTE
+# ==============================================================================
+@login_required
+def crear_paciente(request):
+    """
+    Vista para crear un nuevo paciente.
+    """
+    empresa = empresa_efectiva_request(request)
+    if not empresa:
+        messages.error(request, 'Usuario no tiene empresa asignada.')
+        return redirect('home')
+    
+    from django.forms import ModelForm
+    from core.models import Paciente as PacienteModel
+
+    class PacienteForm(ModelForm):
+        class Meta:
+            model = PacienteModel
+            fields = ['nombre_completo', 'nombres', 'apellido_paterno', 'apellido_materno',
+                      'telefono', 'email', 'fecha_nacimiento', 'sexo', 'alergias', 'tipo']
+
+    if request.method == 'POST':
+        form = PacienteForm(request.POST)
+        if form.is_valid():
+            paciente = form.save(commit=False)
+            paciente.empresa = empresa
+            paciente.save()
+            messages.success(request, f'Paciente {paciente.nombre_completo} creado exitosamente.')
+            return redirect('pacientes:lista_pacientes')
+        else:
+            messages.error(request, 'Error al crear paciente. Verifique los datos.')
+    else:
+        form = PacienteForm()
+    
+    return render(request, 'pacientes/crear_paciente.html', {
+        'form': form,
+    })
+
+
+# ==============================================================================
+# VISTA: BUSCAR PACIENTE (API)
+# ==============================================================================
+@login_required
+def buscar_paciente(request):
+    """
+    API para buscar pacientes por nombre, teléfono o email.
+    Retorna JSON con resultados.
+    """
+    empresa = empresa_efectiva_request(request)
+    if not empresa:
+        return JsonResponse({'error': 'Usuario sin empresa asignada'}, status=403)
+    
+    query = request.GET.get('q', '').strip()
+    if len(query) < 2:
+        return JsonResponse({'pacientes': []})
+    
+    pacientes = Paciente.objects.filter(
+        empresa=empresa
+    ).filter(
+        Q(nombre_completo__icontains=query) |
+        Q(telefono__icontains=query) |
+        Q(email__icontains=query)
+    )[:20]
+    
+    resultados = []
+    for p in pacientes:
+        resultados.append({
+            'id': p.id,
+            'nombre_completo': p.nombre_completo,
+            'telefono': p.telefono or '',
+            'email': p.email or '',
+            'fecha_nacimiento': p.fecha_nacimiento.isoformat() if p.fecha_nacimiento else None,
+        })
+    
+    return JsonResponse({'pacientes': resultados})
+
+
+# ==============================================================================
 # VISTA: LISTADO DE PACIENTES
 # ==============================================================================
 @login_required
@@ -295,7 +374,7 @@ def lista_pacientes(request):
     """
     Listado de pacientes con búsqueda y filtros.
     """
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = empresa_efectiva_request(request)
     if not empresa:
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
@@ -330,7 +409,7 @@ def api_datos_graficas_signos(request, paciente_id):
     API AJAX para obtener datos de signos vitales en formato JSON.
     Usado para actualizar gráficas dinámicamente.
     """
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = empresa_efectiva_request(request)
     if not empresa:
         return JsonResponse({}, status=403)
     paciente = get_object_or_404(Paciente, id=paciente_id, empresa=empresa)

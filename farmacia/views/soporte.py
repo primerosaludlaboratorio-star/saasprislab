@@ -436,7 +436,11 @@ def verificar_apertura_caja(request):
     Verifica si hay una caja abierta para el usuario actual.
     Si no hay, redirige a apertura.
     """
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse({'success': False, 'error': 'Usuario sin empresa asignada'}, status=403)
     apertura_activa = AperturaCaja.objects.filter(
+        empresa=empresa,
         sucursal=request.user.sucursal,
         usuario_responsable=request.user,
         activa=True
@@ -467,8 +471,12 @@ def abrir_caja(request):
     Abre un nuevo turno de caja.
     Solicita el fondo inicial de efectivo.
     """
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse({'success': False, 'error': 'Usuario sin empresa asignada'}, status=403)
     # Verificar que no haya caja abierta
     apertura_activa = AperturaCaja.objects.filter(
+        empresa=empresa,
         sucursal=request.user.sucursal,
         usuario_responsable=request.user,
         activa=True
@@ -498,7 +506,7 @@ def abrir_caja(request):
             
             # Crear apertura
             apertura = AperturaCaja.objects.create(
-                empresa=getattr(request.user, 'empresa', None),
+                empresa=empresa,
                 sucursal=request.user.sucursal,
                 usuario_responsable=request.user,
                 fondo_efectivo=fondo_efectivo,

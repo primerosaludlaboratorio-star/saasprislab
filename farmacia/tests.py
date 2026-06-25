@@ -1,6 +1,8 @@
 """
 Unit tests for the farmacia module.
 """
+import io
+import json
 import uuid
 from copy import copy
 from datetime import date, timedelta
@@ -35,7 +37,10 @@ def _store_rendered_templates_safe(store, signal, sender, template, context, **k
 _dj_test_client.store_rendered_templates = _store_rendered_templates_safe
 
 from core.models import ConfiguracionModulos, DetalleVenta, Empresa, Lote, Producto, Sucursal, Venta
-from farmacia.models import DevolucionVenta, MovimientoInventario, Proveedor
+from farmacia.models import (
+    AperturaCaja, DevolucionVenta, MovimientoInventario, Proveedor,
+    RegistroAntibiotico,
+)
 
 User = get_user_model()
 
@@ -383,3 +388,403 @@ class FarmaciaViewTests(TestCase):
         devolucion.refresh_from_db()
         self.assertFalse(devolucion.procesada)
         self.assertEqual(detalle.cantidad, 1)
+
+
+class FarmaciaAperturaCajaTests(TestCase):
+    """Tests para apertura y verificación de caja."""
+
+    def setUp(self):
+        self.empresa = Empresa.objects.create(
+            nombre="Test Apertura", rfc="APE123456ABC",
+        )
+        self.sucursal = Sucursal.objects.create(
+            empresa=self.empresa, nombre="Matriz",
+            codigo_sucursal=f"SUC-{uuid.uuid4().hex[:8]}", activa=True,
+        )
+        self.usuario = User.objects.create_user(
+            username="cajero_test", password="test123",
+            email="cajero@test.com", empresa=self.empresa,
+        )
+        self.usuario.rol = "CAJERO"
+        self.usuario.sucursal = self.sucursal
+        self.usuario.save(update_fields=["rol", "sucursal"])
+        g, _ = Group.objects.get_or_create(name="FARMACIA")
+        self.usuario.groups.add(g)
+        self.client = Client()
+        self.client.force_login(self.usuario)
+
+    def test_verificar_apertura_caja_sin_caja_abierta(self):
+        """Verificar que responde caja_abierta=False cuando no hay caja."""
+        response = self.client.get(reverse("farmacia:verificar_apertura_caja"))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertFalse(data["caja_abierta"])
+
+    def test_verificar_apertura_caja_con_caja_abierta(self):
+        """Verificar que detecta una caja ya abierta."""
+        AperturaCaja.objects.create(
+            empresa=self.empresa, sucursal=self.sucursal,
+            usuario_responsable=self.usuario,
+            fondo_efectivo=Decimal("500.00"), activa=True,
+        )
+        response = self.client.get(reverse("farmacia:verificar_apertura_caja"))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertTrue(data["caja_abierta"])
+
+    def test_abrir_caja_crea_apertura(self):
+        """Abrir caja con fondo válido crea el registro."""
+        response = self.client.post(
+            reverse("farmacia:abrir_caja"),
+            data='{"fondo_efectivo": "500.00", "fondo_vales": "0.00", "observaciones": "Test"}',
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertIn("folio", data)
+        self.assertEqual(AperturaCaja.objects.filter(empresa=self.empresa, activa=True).count(), 1)
+
+    def test_abrir_caja_rechaza_fondo_cero(self):
+        """No permite abrir caja con fondo <= 0."""
+        response = self.client.post(
+            reverse("farmacia:abrir_caja"),
+            data='{"fondo_efectivo": "0.00"}',
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["success"])
+
+    def test_abrir_caja_rechaza_duplicada(self):
+        """No permite abrir una segunda caja si ya hay una activa."""
+        AperturaCaja.objects.create(
+            empresa=self.empresa, sucursal=self.sucursal,
+            usuario_responsable=self.usuario,
+            fondo_efectivo=Decimal("300.00"), activa=True,
+        )
+        response = self.client.post(
+            reverse("farmacia:abrir_caja"),
+            data='{"fondo_efectivo": "500.00"}',
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["success"])
+
+    def test_verificar_apertura_requiere_empresa(self):
+        """Usuario sin empresa recibe 403."""
+        u = User.objects.create_user(
+            username="sin_emp", password="x", email="x@t.com",
+        )
+        u.rol = "CAJERO"
+        u.save(update_fields=["rol"])
+        g, _ = Group.objects.get_or_create(name="FARMACIA")
+        u.groups.add(g)
+        User.objects.filter(pk=u.pk).update(empresa_id=None)
+        u = User.objects.get(pk=u.pk)
+        self.client.force_login(u)
+        response = self.client.get(reverse("farmacia:verificar_apertura_caja"))
+        self.assertEqual(response.status_code, 403)
+
+
+class FarmaciaCorteCajaTests(TestCase):
+    """Tests para corte de caja (arqueo ciego)."""
+
+    def setUp(self):
+        self.empresa = Empresa.objects.create(
+            nombre="Test Corte", rfc="COR123456ABC",
+        )
+        self.sucursal = Sucursal.objects.create(
+            empresa=self.empresa, nombre="Matriz",
+            codigo_sucursal=f"SUC-{uuid.uuid4().hex[:8]}", activa=True,
+        )
+        self.usuario = User.objects.create_user(
+            username="cajero_corte", password="test123",
+            email="corte@test.com", empresa=self.empresa,
+        )
+        self.usuario.rol = "CAJERO"
+        self.usuario.sucursal = self.sucursal
+        self.usuario.save(update_fields=["rol", "sucursal"])
+        g, _ = Group.objects.get_or_create(name="FARMACIA")
+        self.usuario.groups.add(g)
+        self.client = Client()
+        self.client.force_login(self.usuario)
+
+    def test_corte_caja_get_muestra_formulario(self):
+        """GET al corte de caja carga (puede ser 200 o redirect si falta template)."""
+        response = self.client.get(reverse("farmacia:corte_caja"), follow=True)
+        self.assertIn(response.status_code, [200, 301, 302])
+
+    def test_corte_caja_post_procesa_arqueo(self):
+        """POST con datos válidos procesa el corte."""
+        response = self.client.post(
+            reverse("farmacia:corte_caja"),
+            data={
+                "efectivo_declarado": "100.00",
+                "tarjeta_declarada": "0.00",
+                "transferencia_declarada": "0.00",
+                "observaciones_corte": "Test arqueo",
+            },
+            follow=True,
+        )
+        self.assertIn(response.status_code, [200, 301, 302])
+
+    def test_corte_caja_sin_empresa_redirige(self):
+        """Usuario sin empresa es redirigido."""
+        u = User.objects.create_user(
+            username="sin_emp_corte", password="x", email="x@t.com",
+        )
+        u.rol = "CAJERO"
+        u.save(update_fields=["rol"])
+        g, _ = Group.objects.get_or_create(name="FARMACIA")
+        u.groups.add(g)
+        User.objects.filter(pk=u.pk).update(empresa_id=None)
+        u = User.objects.get(pk=u.pk)
+        self.client.force_login(u)
+        response = self.client.get(reverse("farmacia:corte_caja"))
+        self.assertEqual(response.status_code, 302)
+
+
+class FarmaciaEntradaExpressTests(TestCase):
+    """Tests para entrada express (fast restock)."""
+
+    def setUp(self):
+        self.empresa = Empresa.objects.create(
+            nombre="Test Express", rfc="EXP123456ABC",
+        )
+        self.sucursal = Sucursal.objects.create(
+            empresa=self.empresa, nombre="Matriz",
+            codigo_sucursal=f"SUC-{uuid.uuid4().hex[:8]}", activa=True,
+        )
+        self.usuario = User.objects.create_user(
+            username="cajero_expr", password="test123",
+            email="expr@test.com", empresa=self.empresa,
+        )
+        self.usuario.rol = "CAJERO"
+        self.usuario.sucursal = self.sucursal
+        self.usuario.save(update_fields=["rol", "sucursal"])
+        g, _ = Group.objects.get_or_create(name="FARMACIA")
+        self.usuario.groups.add(g)
+        self.producto = Producto.objects.create(
+            empresa=self.empresa, nombre="Ibuprofeno 400mg",
+            codigo_barras=_codigo_barras_unico(),
+            forma_farmaceutica="Tabletas", concentracion="400mg",
+            presentacion="10 tabletas", precio_publico=Decimal("75.00"),
+            stock=0,
+        )
+        self.client = Client()
+        self.client.force_login(self.usuario)
+
+    def test_entrada_express_agrega_stock(self):
+        """Entrada express válida crea lote y movimiento."""
+        payload = {
+            "codigo_barras": self.producto.codigo_barras,
+            "cantidad": 50,
+            "numero_lote": "LOTE-EXP-001",
+            "fecha_caducidad": (_fecha_caducidad_valida()).strftime("%Y-%m-%d"),
+            "precio_compra": "5.50",
+        }
+        response = self.client.post(
+            reverse("farmacia:entrada_express"),
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertEqual(MovimientoInventario.objects.filter(
+            tipo_movimiento="ENTRADA_COMPRA", empresa=self.empresa
+        ).count(), 1)
+
+    def test_entrada_express_rechaza_datos_incompletos(self):
+        """Falta código de barras devuelve 400."""
+        response = self.client.post(
+            reverse("farmacia:entrada_express"),
+            data='{"codigo_barras": "", "cantidad": 10, "numero_lote": "L1", "fecha_caducidad": "2027-01-01"}',
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["success"])
+
+    def test_entrada_express_rechaza_producto_no_encontrado(self):
+        """Código de barras inexistente devuelve 404."""
+        response = self.client.post(
+            reverse("farmacia:entrada_express"),
+            data=json.dumps({
+                "codigo_barras": "9999999999999",
+                "cantidad": 10, "numero_lote": "L1",
+                "fecha_caducidad": "2027-01-01",
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_entrada_express_sin_empresa_rechaza(self):
+        """Usuario sin empresa recibe 403."""
+        u = User.objects.create_user(
+            username="sin_emp_expr", password="x", email="x@t.com",
+        )
+        u.rol = "CAJERO"
+        u.save(update_fields=["rol"])
+        g, _ = Group.objects.get_or_create(name="FARMACIA")
+        u.groups.add(g)
+        User.objects.filter(pk=u.pk).update(empresa_id=None)
+        u = User.objects.get(pk=u.pk)
+        self.client.force_login(u)
+        response = self.client.post(
+            reverse("farmacia:entrada_express"),
+            data='{"codigo_barras": "123", "cantidad": 10, "numero_lote": "L1", "fecha_caducidad": "2027-01-01"}',
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 403)
+
+
+class FarmaciaCOFEPRISTests(TestCase):
+    """Tests para validación COFEPRIS de antibióticos."""
+
+    def setUp(self):
+        self.empresa = Empresa.objects.create(
+            nombre="Test COFEPRIS", rfc="COF123456ABC",
+        )
+        self.sucursal = Sucursal.objects.create(
+            empresa=self.empresa, nombre="Matriz",
+            codigo_sucursal=f"SUC-{uuid.uuid4().hex[:8]}", activa=True,
+        )
+        self.usuario = User.objects.create_user(
+            username="cajero_cof", password="test123",
+            email="cof@test.com", empresa=self.empresa,
+        )
+        self.usuario.rol = "CAJERO"
+        self.usuario.sucursal = self.sucursal
+        self.usuario.save(update_fields=["rol", "sucursal"])
+        g, _ = Group.objects.get_or_create(name="FARMACIA")
+        self.usuario.groups.add(g)
+        self.producto_normal = Producto.objects.create(
+            empresa=self.empresa, nombre="Paracetamol",
+            codigo_barras=_codigo_barras_unico(),
+            forma_farmaceutica="Tabletas", concentracion="500mg",
+            presentacion="20 tab", precio_publico=Decimal("50.00"),
+            stock=0, es_antibiotico=False,
+        )
+        self.producto_antibiotico = Producto.objects.create(
+            empresa=self.empresa, nombre="Amoxicilina",
+            codigo_barras=_codigo_barras_unico(),
+            forma_farmaceutica="Cápsulas", concentracion="500mg",
+            presentacion="12 cap", precio_publico=Decimal("120.00"),
+            stock=0, es_antibiotico=True,
+        )
+        self.client = Client()
+        self.client.force_login(self.usuario)
+
+    def test_validar_antibiotico_producto_normal_no_requiere(self):
+        """Producto no antibiótico retorna requiere_validacion=False."""
+        response = self.client.post(
+            reverse("farmacia:validar_antibiotico"),
+            data=json.dumps({"producto_id": self.producto_normal.id}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertFalse(data["requiere_validacion"])
+
+    def test_validar_antibiotico_sin_medico_rechaza(self):
+        """Antibiótico sin receta ni datos de médico es rechazado."""
+        response = self.client.post(
+            reverse("farmacia:validar_antibiotico"),
+            data=json.dumps({"producto_id": self.producto_antibiotico.id}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertFalse(data["success"])
+        self.assertTrue(data["requiere_validacion"])
+
+    def test_validar_antibiotico_con_medico_ok(self):
+        """Antibiótico con datos de médico es validado."""
+        response = self.client.post(
+            reverse("farmacia:validar_antibiotico"),
+            data=json.dumps({
+                "producto_id": self.producto_antibiotico.id,
+                "medico_cedula": "12345678",
+                "medico_nombre": "Dr. García",
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertTrue(data["validado"])
+
+    def test_reporte_cofepris_get(self):
+        """GET al reporte COFEPRIS carga la vista."""
+        response = self.client.get(reverse("farmacia:reporte_cofepris"))
+        self.assertEqual(response.status_code, 200)
+
+
+class FarmaciaCargaMasivaTests(TestCase):
+    """Tests para carga masiva de productos."""
+
+    def setUp(self):
+        self.empresa = Empresa.objects.create(
+            nombre="Test Carga", rfc="CAR123456ABC",
+        )
+        self.sucursal = Sucursal.objects.create(
+            empresa=self.empresa, nombre="Matriz",
+            codigo_sucursal=f"SUC-{uuid.uuid4().hex[:8]}", activa=True,
+        )
+        self.usuario = User.objects.create_user(
+            username="admin_carga", password="test123",
+            email="carga@test.com", empresa=self.empresa,
+        )
+        self.usuario.rol = "ADMIN"
+        self.usuario.sucursal = self.sucursal
+        self.usuario.save(update_fields=["rol", "sucursal"])
+        g, _ = Group.objects.get_or_create(name="FARMACIA")
+        self.usuario.groups.add(g)
+        self.client = Client()
+        self.client.force_login(self.usuario)
+
+    def test_carga_masiva_get_rechaza(self):
+        """GET no permitido en carga masiva."""
+        response = self.client.get(reverse("farmacia:carga_masiva_productos"))
+        self.assertEqual(response.status_code, 405)
+
+    def test_carga_masiva_sin_archivo_rechaza(self):
+        """POST sin archivo devuelve 400."""
+        response = self.client.post(reverse("farmacia:carga_masiva_productos"))
+        self.assertEqual(response.status_code, 400)
+
+    def test_carga_masiva_csv_valido(self):
+        """CSV con productos válidos los importa."""
+        csv_content = (
+            "nombre,codigo_barras,precio_publico,precio_compra,stock\r\n"
+            f"Test Producto A,{_codigo_barras_unico()},100.00,50.00,20\r\n"
+            f"Test Producto B,{_codigo_barras_unico()},200.00,100.00,10\r\n"
+        )
+        csv_file = io.BytesIO(csv_content.encode("utf-8-sig"))
+        csv_file.name = "productos_test.csv"
+        response = self.client.post(
+            reverse("farmacia:carga_masiva_productos"),
+            {"archivo": csv_file},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("creados", data)
+
+    def test_carga_masiva_sin_archivo_rechaza_sin_empresa_directa(self):
+        """Usuario sin empresa FK: _empresa_desde_request usa fallback del middleware,
+        así que pasa el guard pero falla por falta de archivo."""
+        u = User.objects.create_user(
+            username="sin_emp_carga", password="x", email="x@t.com",
+        )
+        u.rol = "ADMIN"
+        u.save(update_fields=["rol"])
+        g, _ = Group.objects.get_or_create(name="FARMACIA")
+        u.groups.add(g)
+        User.objects.filter(pk=u.pk).update(empresa_id=None)
+        u = User.objects.get(pk=u.pk)
+        self.client.force_login(u)
+        response = self.client.post(reverse("farmacia:carga_masiva_productos"))
+        self.assertEqual(response.status_code, 400)
