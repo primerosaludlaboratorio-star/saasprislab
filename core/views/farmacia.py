@@ -263,6 +263,7 @@ __all__ = [
     "api_farmacia_kpis",
     "historial_devoluciones",
     "buscar_venta_devolucion",
+    "procesar_devolucion",
     "procesar_devolucion_venta",
     "detalle_devolucion",
     "lista_ventas_farmacia",
