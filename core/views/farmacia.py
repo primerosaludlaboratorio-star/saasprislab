@@ -18,6 +18,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import DetalleVenta, Venta
+from core.services.ventas.venta_farmacia_service import VentaFarmaciaService
 
 warnings.warn(
     "core.views.farmacia está deprecado. Use farmacia.views.pdv, farmacia.views.inventario, "
@@ -120,6 +121,14 @@ def imprimir_ticket(request, venta_id):
             "facturas_cfdi": facturas_cfdi,
         },
     )
+
+
+@login_required
+def cancelar_venta(request, venta_id):
+    """Wrapper legacy para cancelación de venta con reversión de stock."""
+    empresa = _empresa_desde_request(request)
+    resultado = VentaFarmaciaService.cancelar_venta_resultado(request, empresa, venta_id)
+    return JsonResponse(resultado["body"], status=resultado["http_status"])
 
 
 def _resolver_periodo_kpis(periodo):
@@ -260,6 +269,7 @@ __all__ = [
     "ajustes_inventario",
     "estadisticas_ventas",
     "imprimir_ticket",
+    "cancelar_venta",
     "api_farmacia_kpis",
     "historial_devoluciones",
     "buscar_venta_devolucion",
