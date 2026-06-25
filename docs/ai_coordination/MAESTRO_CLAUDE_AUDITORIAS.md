@@ -284,11 +284,16 @@ El agente Gemini (en la máquina del usuario, sí alcanza prod) recorrió módul
 
 ### 🔴 P-TZ (CONFIRMADO · CORREGIDO) — bug de zona horaria recurrente, ahora también en Director e IA
 Misma clase que el bug de caja-lab/finanzas. Con `USE_TZ=True` + `TIME_ZONE=America/Mexico_City` (UTC-6), `timezone.now().date()` devuelve la fecha **UTC**: entre 18:00–23:59 hora local la fecha UTC ya es "mañana", así que toda ventana "del día" se va al futuro y los tableros muestran **0 ventas / 0 órdenes / 0 KPIs** cada noche pese a la actividad real.
-- **18 ocurrencias corregidas** → `timezone.localdate()` (fix canónico, idéntico al ya aprobado en `finanzas.py`):
+- **21 ocurrencias corregidas en 9 archivos** → `timezone.localdate()` (fix canónico, idéntico al ya aprobado en `finanzas.py`):
   - `core/views/director.py:40` (dashboard ejecutivo: ventas/órdenes/quejas/incidencias del día).
   - `core/views/war_room.py:220,283,381,408` (anomalías, escalamiento mantenimiento, ingresos/gastos y métricas del día).
   - `core/views/ia_dashboard.py:30,309` · `core/views/pris_ia.py:512,514,548,751,863,865` · `core/views/pris_jarvis.py:434,506,512` · `core/agent/pris_tools_operativos.py:1113` (KPI agente periodo HOY) · `core/ai_brain.py:193`.
-- **Verificación:** `manage.py check` limpio · `py_compile` OK los 7 archivos · **regresión nueva** `core/tests/test_director_dashboard_tz.py` (mockea 03:30 UTC = 21:30 MX, crea Venta COMPLETADA, exige `cantidad_ventas==1`/`total==750`) — **verde**; falla con el código viejo. Junto con `test_caja_laboratorio_tz.py`: **2/2 OK**.
+  - **(2ª ronda, también Director):** `core/views/ranking.py:28,100` (`/director/ranking/` — `hoy.month/year`, bug en frontera de mes) · `core/views/incidencias.py:103` (`/director/auditoria/incidencias/` — filtro `fecha_hora__date=hoy`).
+- **Verificación REAL (no solo lectura):** `manage.py check` limpio · **2 regresiones nuevas** que **FALLAN con el código viejo y pasan con el nuevo** (demostrado revirtiendo las líneas y re-corriendo):
+  - `core/tests/test_director_dashboard_tz.py` — vía HTTP `/dashboard/`, exige `cantidad_ventas==1`/`total==750`. Con código viejo: `0 != 1`.
+  - `core/tests/test_ia_pris_tz.py` — unit del agente `tool_consultar_indicadores_kpi(periodo=HOY)`, exige `hasta=='2026-06-24'`. Con código viejo: `'2026-06-25' != '2026-06-24'`.
+  - Suite TZ completa (Director + IA/PRIS + caja-lab): **3/3 OK**.
+- **Estado de integración:** el fix vive en la rama `claude/audit-flow-review-ruhy0q` (PR #4). En `release/v1.0-local` **todavía existen las 21 ocurrencias** → NO integrado aún; pendiente de que Codex mergee.
 
 ### ✅ Falsos positivos / sin bug (verificado)
 - **`gemini_client.py`**: bien construido — key por env (`GOOGLE_API_KEY`/`GEMINI_API_KEY`), **0 claves hardcodeadas**, fallback de proveedor (gemini↔deepseek), timeout 15s, normalización 403→`PermissionError`. Sin deuda.

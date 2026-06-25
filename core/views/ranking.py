@@ -25,7 +25,7 @@ def ranking_desempeno(request):
         from django.contrib import messages
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     
     # Periodo actual
     mes_actual = hoy.month
@@ -97,7 +97,7 @@ def detalle_empleado_ranking(request, empleado_id):
     empleado = get_object_or_404(Usuario, id=empleado_id, empresa=empresa)
     
     # Calcular score actual
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     score_actual = calcular_score_empleado(empleado.id, hoy.month, hoy.year)
     
     # Obtener historial de incidencias

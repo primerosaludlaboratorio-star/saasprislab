@@ -100,7 +100,7 @@ def panel_auditoria_incidencias(request):
         }, status=403)
     
     empresa = getattr(request.user, 'empresa', None)
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     
     # Filtros
     filtro_estado = request.GET.get('estado', 'PENDIENTE')

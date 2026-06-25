@@ -36,7 +36,7 @@ def dashboard_director(request):
         from django.contrib import messages
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
-    # Fecha actual — LOCAL (no UTC). now().date() vaciaba el dashboard cada noche (UTC-6).
+    # Fecha actual — LOCAL (no UTC). Con now() en UTC el dashboard se vaciaba cada noche (UTC-6).
     hoy = timezone.localdate()
     inicio_dia = timezone.make_aware(datetime.combine(hoy, datetime.min.time()))
     fin_dia = timezone.make_aware(datetime.combine(hoy, datetime.max.time()))
