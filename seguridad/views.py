@@ -438,7 +438,7 @@ def dashboard_auditoria(request):
         return error_response
     
     # Estadísticas generales
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     hace_7_dias = hoy - timedelta(days=7)
     hace_30_dias = hoy - timedelta(days=30)
     
@@ -580,7 +580,7 @@ def api_estadisticas_seguridad(request):
     if error_response:
         return error_response
     
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     hace_7_dias = hoy - timedelta(days=7)
     
     logs_base = LogAccionSensible.objects.filter(usuario__empresa=empresa)

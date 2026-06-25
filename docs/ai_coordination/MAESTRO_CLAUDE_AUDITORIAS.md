@@ -329,4 +329,35 @@ Fix + regresión en `claude/audit-flow-review-ruhy0q` (PR #4). En `release/v1.0-
 
 ---
 
+## R. MÓDULO SEGURIDAD  `[auditado · 1 fix TZ + 12 tests de autorización nuevos · suite 17/17]`
+
+**Alcance:** `seguridad/views.py` (806), `urls.py`, `models.py` (696), `tests.py`. Idéntico HEAD vs `release/v1.0-local` → código real. (Los fixes de 2FA/sentinel de los 9 commits nuevos de release NO viven en `seguridad/`.)
+
+### CONFIRMADO → CORREGIDO — bug TZ en estadísticas de seguridad
+`dashboard_auditoria:441` y `api_estadisticas_seguridad:583` usaban `timezone.now().date()` para las ventanas de 7/30 días → desfase nocturno (UTC-6): de noche los conteos "últimos 7/30 días" y "críticos 7 días" se corrían un día. **CORREGIDO** → `timezone.localdate()` (misma clase ya probada en Director/IA/caja; `rastro_paciente:715` ya estaba bien). 2 ocurrencias.
+
+### CONFIRMADO (causa raíz) → DECISIÓN ARQUITECTÓNICA — auto-binding de empresa
+`auto_assign_empresa_nuevo_usuario` (`core/signals.py:942`, post_save, created): todo usuario nuevo **no-superuser** sin empresa se vincula a la empresa del hilo activo (`get_current_empresa()`) vía `.update()`. Es un **control de tenant intencional** (impide que un admin-cliente cree usuarios sin/otra empresa). Por eso "usuario sin empresa" casi no ocurre en práctica y los guards `if not empresa` son **defensa en profundidad**. NO es bug; documentado. (Lo descubrí porque los tests "sin empresa" daban 200; root-cause confirmado, no fingí verde — fuerzo el estado real con `.update(empresa=None)`.)
+
+### DESCARTADO / sin bug (verificado, no inflo)
+- **2FA y sesiones IDOR-safe:** `confirmar_totp`/`desactivar_totp` → `get_object_or_404(DispositivoTOTP, id=…, usuario=request.user)`; `cerrar_sesion_remota` → `get_object_or_404(SesionActiva, id=…, usuario=request.user)`; `sesiones_activas`/`cerrar_todas` filtran por `usuario=request.user`. No se puede tocar 2FA/sesión de otro usuario.
+- **Guards de empresa homogéneos:** dashboards de auditoría/logs/estadísticas usan `_empresa_staff_o_redirect`/`_o_json` (is_staff + empresa) y filtran por `usuario__empresa`. `rastro_paciente` añade `@role_required('DIRECTOR','ADMIN','GERENTE')` + empresa + rango ≤90d. `panic_button` exige empresa (cualquier rol, correcto: cualquier empleado puede activarlo) y es POST-only. Todos **cortan en empresa=None**.
+- **`role_required`** (`core/decorators.py`): superuser/staff siempre pasan, luego `rol` (upper) o `groups` — consistente; responde JSON 403 a XHR y `HttpResponseForbidden` si no. Sin alias de rol inconsistentes en este módulo.
+
+### RIESGO RESIDUAL (documentado, no bug)
+- **`PRISLAB_MASTER_RECOVERY_CODE`** (`views.py:89-97`): código maestro por settings que **bypassa 2FA para cualquier usuario** si coincide. Vacío por defecto (deshabilitado) y su uso se loguea con `warning`. Mecanismo de recuperación intencional → si se setea en prod, es un bypass de 2FA global. **Codex/infra: mantener vacío salvo emergencia y rotar tras uso.**
+
+### Tests nuevos (la matriz que faltaba) — `seguridad/test_endpoints_sensibles.py`
+12 tests verdes que cubren exactamente lo pedido: usuario **sin empresa**, **rol insuficiente**, **staff/superuser sin empresa**, y **JSON 403 vs redirect 302** por endpoint:
+- `dashboard_auditoria`/`logs_auditoria`: no-staff → 302; staff sin empresa → 302; staff+empresa → 200.
+- `api_estadisticas`: no-staff → JSON 403; staff sin empresa → JSON 403; staff+empresa → 200.
+- `panic_button`: sin empresa → JSON 403; GET → 405; con empresa → 200.
+- `rastro_paciente`: rol CAJERO → 403; DIRECTOR → 200.
+- **Verificación:** `manage.py check` limpio · suite `seguridad` **17/17 OK** (5 previos + 12 nuevos).
+
+### Estado de integración
+Fix TZ + tests en `claude/audit-flow-review-ruhy0q` (PR #4). En `release/v1.0-local` las 2 ocurrencias TZ **siguen vivas** → pendiente de merge por Codex.
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*
