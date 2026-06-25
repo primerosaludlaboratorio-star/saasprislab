@@ -360,4 +360,35 @@ Fix TZ + tests en `claude/audit-flow-review-ruhy0q` (PR #4). En `release/v1.0-lo
 
 ---
 
+## S. MÓDULO RECEPCIÓN  `[contraste final · app CASI CERRADA · 1 fix TZ + 4 regresiones canónicas · 1 residual cross-tree]`
+
+**Alcance:** app `recepcion/` (views 278 LOC, urls, forms) + redirecciones de `core/views/general.py`. `recepcion/` es **idéntico** HEAD vs `release/v1.0-local` → app canónica. (`general.py` divergió en release; mi rama está 19 commits detrás → lo audito read-only sobre release, no toco mi copia stale.)
+
+### CONFIRMADO → CORREGIDO — bug TZ en tablero de recepción
+`dashboard_recepcion:32` y `lista_espera:220` usaban `timezone.now().date()` para `CitaMedica.objects.filter(empresa=…, fecha_cita=hoy)`. De noche (UTC-6) `hoy`=mañana UTC → el tablero y la sala de espera mostraban **0 citas del día**. **CORREGIDO** → `timezone.localdate()` (2 ocurrencias).
+
+### DESCARTADO / sin bug (verificado, no inflo)
+- **Aislamiento tenant: SÓLIDO.** Todas las vistas usan el helper canónico `empresa_efectiva_request` (vía `_empresa_recepcion`), cortan en empresa=None (redirect home), y scopean por empresa: `get_object_or_404(CitaMedica, id=…, empresa=empresa)` (IDOR-safe) con `select_for_update()` en check-in/cobro. `agendar_cita` añade chequeo `paciente.empresa_id == empresa.id` y valida el `?paciente=` del mismo tenant. `buscar_paciente`/`registrar_paciente` filtran/asignan por empresa.
+- **Sin lookups directos de empresa** (usa `empresa_efectiva_request`, no `request.user.empresa` crudo).
+
+### CONFIRMADO → DECISIÓN ARQUITECTÓNICA (residual que impide cierre 100%) — ambigüedad rol/grupo RECEPCION
+En `core/views/general.py` (versión `release/v1.0-local`), `get_redirect_url_by_role`:
+- **grupo** Django `RECEPCION` → `reverse('consultorio:tablero_recepcion')` (línea ~286-287).
+- **rol** `RECEPCION` → `reverse('recepcion_lab')` (línea ~314) — ¡destino distinto (recepción de laboratorio)!
+
+→ Un usuario "RECEPCION" aterriza en **páginas distintas** según sea grupo o campo `rol`. No lo corrijo porque (1) vive en la `general.py` de release (19 commits adelante de mi rama; tocarlo aquí crea conflicto) y (2) **cuál destino es el canónico es decisión de producto** (recepción de consultorio vs de laboratorio). **Recomendación a Codex:** homologar ambos caminos al mismo destino sobre el árbol actual.
+
+### Tests canónicos nuevos — `recepcion/tests.py` (antes era stub vacío)
+4 regresiones equivalentes al resto de módulos:
+- `RecepcionTenantTest`: check-in y cobro de cita de **otra empresa** → **404** (IDOR).
+- `RecepcionEmpresaNoneTest`: dashboard sin empresa → **302** (forzando `empresa=NULL` real vía `.update()` por el signal de auto-binding).
+- `RecepcionDashboardTZTest`: cuenta las citas del día **local** en ventana nocturna; **discriminante** — con el código viejo `0 != 1` (demostrado revirtiendo y re-corriendo).
+- **Verificación:** `manage.py check` limpio · `recepcion` **4/4 OK**.
+
+### Estado / veredicto
+- **App `recepcion/`: CASI CERRADA** — código limpio + endurecido + ahora con evidencia canónica (4 tests). El fix TZ vive en `claude/audit-flow-review-ruhy0q` (PR #4); en `release` las 2 ocurrencias siguen vivas → pendiente de merge.
+- **NO 100%** por **1 residual**: la ambigüedad rol/grupo RECEPCION en `general.py` (cross-tree + decisión de producto).
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*

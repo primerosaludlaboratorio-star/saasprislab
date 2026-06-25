@@ -29,7 +29,7 @@ def dashboard_recepcion(request):
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
 
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     citas_hoy = CitaMedica.objects.filter(empresa=empresa, fecha_cita=hoy)
     if sucursal:
         citas_hoy = citas_hoy.filter(sucursal=sucursal)
@@ -217,7 +217,7 @@ def lista_espera(request):
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
 
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     qs = CitaMedica.objects.filter(empresa=empresa, fecha_cita=hoy)
     if sucursal:
         qs = qs.filter(sucursal=sucursal)
