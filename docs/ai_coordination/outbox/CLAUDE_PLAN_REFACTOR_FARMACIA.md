@@ -101,5 +101,42 @@ El dominio está partido en **cada capa**:
 
 ---
 
+---
+
+## 11. Ronda con TERCER AUDITOR (Copilot) — verificación cruzada y plan v2
+
+Copilot revisó el plan acordado Claude+Cascada y aportó 2 bloqueadores + 5 brechas. **Verifiqué cada uno contra el código real de `claude/audit-flow-review-ruhy0q`** (no contra el árbol de Copilot, que es un checkout distinto `PRISLAB_SaaS-master`). Veredicto:
+
+| Hallazgo | Verificación contra el código real | Veredicto |
+|---|---|---|
+| **A — Import circular ya en prod** (`core/signals.py:693 from farmacia.models import MovimientoInventario`) | ✅ Confirmado literal: signal `procesar_devolucion_venta_automatico` (`@receiver post_save sender='core.DevolucionVenta'`, línea 665). | **ACEPTADO** → nueva subtarea **F5a**. |
+| **B — Rutas huérfanas solo en `/farmacia/erp/`** | ✅ Confirmado: `alertas`, `kardex` (+crear/autorizar), `corte-caja` (erp), `reporte/valorizacion`, `caja/verificar`, `caja/abrir`, `antibioticos/reporte-cofepris`, `entrada-express`, `generar-etiquetas`, `semaforo-caducidad`, `stock-critico` **no tienen equivalente en `/farmacia/`**. Un `RedirectView` ciego daría 404. | **ACEPTADO** → dividir **F3 en F3a + F3b**. |
+| **C — Dos `venta_farmacia_service.py` de 1.168 LOC "divergidos"** | ❌ **FALSO POSITIVO en nuestra rama.** `farmacia/services/venta_farmacia_service.py` es un **shim de 7 líneas** que re-exporta de `core` (no un gemelo de 1.168). Copilot midió un árbol viejo. | **CORREGIDO** — la migración solo invierte el shim; no hay divergencia que reconciliar. |
+| **D — Servicios de farmacia atrapados en `core/services/inventario/`** | ✅ Confirmado: `catalogo_farmacia_service.py` (298) + `movimiento_inventario_service.py` (367). | **ACEPTADO** → mover en **F4**. |
+| **E — Colisión de nombres de URL** (`registrar_compra`, `buscar_venta_devolucion`) | ⚠️ Parcial: el namespace `farmacia:` desambigua en resolución, PERO el nombre **global** `registrar_compra` (config:193 → vista de `core`) es el que usan los templates (`core/templates/core/farmacia/compra_form.html:56,402`). Al migrar hay que mantener ese nombre apuntando a la vista correcta. | **ACEPTADO como check de F0 + cuidado en F3.** |
+| **F — Tests de farmacia en `core/tests/`** | ✅ Confirmado (6 archivos, incl. `test_farmacia_architecture_characterization.py` y `test_farmacia_corte_unificado.py`). | **ACEPTADO** → leer caracterización en **F0**, migrar en **F6**. |
+| **G — `core/utils/farmacia_tenant.py`** | ✅ Confirmado (50 LOC). | **ACEPTADO** → mover en **F4**. |
+| **NUEVO (Claude) — `DevolucionVenta` definido DOS veces** | `core/models/ventas.py:337` (verbose "Devolución de Venta (**Forense**)") **y** `farmacia/models.py:1101` (operacional: folio `DEV-`, reingreso a stock). El signal escucha `core.DevolucionVenta`. Riesgo de ambigüedad de modelo activo. | **AÑADIDO** → verificación obligatoria en **F0** antes de tocar devoluciones. |
+
+### Plan v2 — cambios sobre el plan acordado
+
+- **F0 (ampliada):** + medir cobertura base; + leer `test_farmacia_architecture_characterization.py`; + grep de templates para nombres en colisión; + **aclarar la doble `DevolucionVenta`** (cuál es la operativa, cuál la forense, cuál dispara el signal).
+- **F1:** sin cambios (corte 4→1, `cerrar_turno_unificado` canónico).
+- **F2:** sin cambios (vistas → `farmacia/views/` por subdominio con re-exports).
+- **F3a (NUEVA):** registrar en `/farmacia/` las rutas hoy exclusivas de `/farmacia/erp/` (con sus vistas ya migradas), preservando los nombres globales que usan templates.
+- **F3b:** recién entonces, `RedirectView` de `/farmacia/erp/` → `/farmacia/` (destino ya existe, sin 404).
+- **F4 (ampliada):** mover `core/services/inventario/catalogo_farmacia_service.py`, `…/movimiento_inventario_service.py` y `core/utils/farmacia_tenant.py` → app `farmacia`; invertir el shim de `venta_farmacia_service`.
+- **F5a (NUEVA):** romper el ciclo del signal: definir `Signal()` de dominio que **`core` emite** y **`farmacia` escucha** (handler de `MovimientoInventario` se muda a `farmacia/signals.py`). Así `core/signals.py` deja de importar `farmacia.models`.
+- **F5b:** validar 0 imports `core → farmacia`.
+- **F6:** + migrar `core/tests/test_farmacia_*.py` → `farmacia/tests/`.
+
+### Métricas de éxito (refinadas)
++ `core/services/inventario/catalogo_farmacia_service.py` y `…/movimiento_inventario_service.py` → fuera de `core`.
++ `core/signals.py` → **0 imports de `farmacia`** (solo emite señales).
++ **0** rutas activas en `/farmacia/erp/`; todas viven bajo `/farmacia/`.
++ Una sola `DevolucionVenta` operativa (o frontera clara forense/operativa documentada).
+
+---
+
 ### Estado
-Este es **mi reporte inicial** para cruzar con el de Cascada. Cuando ambos resolvamos las 5 decisiones de la sección 10 y coincidamos en el plan, **ambos firmaremos `Anitta Lava Latina` al inicio** y el usuario aprueba/rechaza. **Cero código aplicado.**
+Plan acordado Claude+Cascada, **revisado y ampliado con la auditoría independiente de Copilot** (plan v2). Verifiqué los 7 hallazgos contra el código real: 6 aceptados, 1 corregido como falso positivo (Brecha C, árbol viejo), + 1 hallazgo nuevo (doble `DevolucionVenta`). Cuando **los tres** confirmemos el plan v2 firmaremos `Anitta Lava Latina` al inicio y el usuario aprueba/rechaza. **Cero código aplicado.**
