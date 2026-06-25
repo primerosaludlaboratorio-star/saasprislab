@@ -27,6 +27,7 @@ import qrcode
 from PIL import Image as PILImage
 
 from core.models import ConsultaMedica, Empresa, FirmaDigital
+from core.utils.empresa_request import empresa_efectiva_request
 
 
 # ==============================================================================
@@ -51,10 +52,9 @@ def imprimir_receta_paciente(request, consulta_id):
     PDF PROFESIONAL estilo PRISLAB (formato receta Monserrat).
     Formato limpio y profesional para el paciente.
     """
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = empresa_efectiva_request(request)
     if not empresa:
-        from django.http import HttpResponseForbidden
-        return HttpResponseForbidden("Empresa no disponible.")
+        return HttpResponse("Empresa no disponible.", status=403)
     consulta = get_object_or_404(ConsultaMedica, id=consulta_id, empresa=empresa)
     
     # Crear respuesta HTTP
@@ -299,9 +299,8 @@ def imprimir_expediente_forense(request, consulta_id):
     Contiene: SOAP completo, Transcripción de audio, Tiempos, Notas privadas,
     Historial de cambios, Firma digital, Hash de integridad.
     """
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = empresa_efectiva_request(request)
     if not empresa:
-        from django.http import HttpResponse
         return HttpResponse('Usuario sin empresa asignada', status=403)
     consulta = get_object_or_404(ConsultaMedica, id=consulta_id, empresa=empresa)
     

@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404
 
 from core.models import ConsultaMedica
 from core.services.motor_recetas import generar_receta_pdf
+from core.utils.empresa_request import empresa_efectiva_request
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +24,8 @@ def imprimir_receta_profesional(request, consulta_id):
     Query params:
         descargar=1 -> Content-Disposition: attachment
     """
-    empresa = getattr(request.user, 'empresa', None)
-    if not empresa and not request.user.is_superuser:
+    empresa = empresa_efectiva_request(request)
+    if not empresa:
         return HttpResponse("No autorizado", status=403)
     qs = ConsultaMedica.objects.select_related(
         'paciente', 'medico', 'signos_vitales', 'receta', 'empresa'
@@ -66,8 +67,8 @@ def api_generar_receta_pdf(request, consulta_id):
     API: Genera receta PDF y retorna URL.
     Usado desde el frontend para impresion rapida.
     """
-    empresa = getattr(request.user, 'empresa', None)
-    if not empresa and not request.user.is_superuser:
+    empresa = empresa_efectiva_request(request)
+    if not empresa:
         return JsonResponse({'status': 'error', 'mensaje': 'No autorizado'}, status=403)
     qs = ConsultaMedica.objects.select_related(
         'paciente', 'medico', 'signos_vitales', 'receta', 'empresa'

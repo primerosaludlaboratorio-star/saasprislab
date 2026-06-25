@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import Empresa, Paciente, ConsultaMedica as CoreConsultaMedica, Venta
+from core.models import Medico
 from core.services.paciente_service import obtener_timeline_paciente
 from consultorio.models import ConsultaMedica, Vademecum
 
@@ -761,3 +762,67 @@ class ConsultorioBillingAndFilesRegressionTests(TestCase):
         cita = CitaMedica.objects.get(id=response.json()['cita_id'])
         self.assertNotEqual(cita.medico_id, self.medico_ajeno.id)
         self.assertEqual(cita.medico.cedula_profesional, f'USR-{self.user.id}')
+
+
+class ConsultorioPdfTenantTest(TestCase):
+    def setUp(self):
+        self.empresa = Empresa.objects.create(
+            nombre='Empresa PDF Consultorio',
+            rfc='PDF123456ABC'
+        )
+        self.user = User.objects.create_user(
+            username='doctor_pdf',
+            password='test123456789',
+            email='doctor_pdf@test.com',
+            empresa=self.empresa,
+            rol='DIRECTOR',
+        )
+        self.medico = Medico.objects.create(
+            empresa=self.empresa,
+            nombre_completo='Dr PDF Tenant',
+            cedula_profesional='PDF-MED-001',
+            especialidad='General',
+        )
+        self.paciente = Paciente.objects.create(
+            empresa=self.empresa,
+            nombres='Paula',
+            apellido_paterno='Pdf',
+            nombre_completo='Paula Pdf',
+            fecha_nacimiento='1990-01-01',
+            sexo='F',
+        )
+        self.consulta = CoreConsultaMedica.objects.create(
+            empresa=self.empresa,
+            paciente=self.paciente,
+            medico=self.medico,
+            folio_consulta='CONS-PDF-0001',
+            motivo_consulta='Seguimiento',
+            exploracion_fisica='Sin hallazgos',
+            diagnostico_principal='Control',
+            plan_tratamiento='Observacion',
+            estado='FINALIZADA',
+        )
+        self.client = Client()
+        self.client.login(username='doctor_pdf', password='test123456789')
+
+    def _clear_user_empresa(self):
+        User.objects.filter(pk=self.user.pk).update(empresa_id=None)
+        self.user.refresh_from_db()
+
+    def test_pdf_receta_paciente_sin_empresa_retorna_403(self):
+        self._clear_user_empresa()
+        with patch('core.utils.default_empresa.resolve_default_empresa_sistema', return_value=None):
+            response = self.client.get(
+                reverse('consultorio:pdf_receta_paciente', args=[self.consulta.id])
+            )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_api_receta_pdf_sin_empresa_retorna_403(self):
+        self._clear_user_empresa()
+        with patch('core.utils.default_empresa.resolve_default_empresa_sistema', return_value=None):
+            response = self.client.get(
+                reverse('consultorio:api_receta_pdf', args=[self.consulta.id])
+            )
+
+        self.assertEqual(response.status_code, 403)
