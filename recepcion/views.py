@@ -17,7 +17,15 @@ logger = logging.getLogger(__name__)
 
 
 def _empresa_recepcion(request):
-    return empresa_efectiva_request(request)
+    user_empresa = getattr(getattr(request, 'user', None), 'empresa', None)
+    if user_empresa is None:
+        return None
+    empresa = empresa_efectiva_request(request)
+    if empresa is None:
+        return None
+    if not getattr(request.user, 'is_superuser', False) and empresa.id != user_empresa.id:
+        return None
+    return empresa
 
 
 @login_required
@@ -29,7 +37,7 @@ def dashboard_recepcion(request):
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
 
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     citas_hoy = CitaMedica.objects.filter(empresa=empresa, fecha_cita=hoy)
     if sucursal:
         citas_hoy = citas_hoy.filter(sucursal=sucursal)
@@ -217,7 +225,7 @@ def lista_espera(request):
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
 
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     qs = CitaMedica.objects.filter(empresa=empresa, fecha_cita=hoy)
     if sucursal:
         qs = qs.filter(sucursal=sucursal)

@@ -4,9 +4,11 @@ MVP: Dashboard de rutas y recolección (geolocalización) basado en OrdenDeServi
 """
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.contrib import messages
+from django.shortcuts import render, redirect
 
 from core.models import OrdenDeServicio
+from core.utils.empresa_request import empresa_efectiva_request
 
 
 @login_required
@@ -15,7 +17,10 @@ def rutas_recoleccion(request):
     Dashboard operativo para ver órdenes con geolocalización y preparar recolección/entrega.
     MVP: listado y métricas básicas (sin mapas todavía).
     """
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = empresa_efectiva_request(request)
+    if not empresa:
+        messages.error(request, 'Usuario no tiene empresa asignada.')
+        return redirect('home')
 
     ordenes = (
         OrdenDeServicio.objects.filter(empresa=empresa)

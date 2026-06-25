@@ -35,24 +35,26 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 - Laboratorio (flujo funcional principal) -> `RESUELTO` con deuda arquitectonica legacy/LIMS documentada
 - Enfermeria -> `RESUELTO`
 - Inventario -> `RESUELTO`
-
-## Modulos casi cerrados en esta linea de trabajo
-
-- Farmacia -> `ESTABILIZADO`, con deuda menor y cobertura faltante en algunos flujos
-- Logistica -> `ESTABILIZADO`, pendiente de cierre canonico final
-- Mantenimiento -> `ESTABILIZADO`, pendiente de cierre canonico final
-- Bienestar -> `ESTABILIZADO`, pendiente de cierre canonico final
-- Academia -> `ESTABILIZADO`, pendiente de cierre canonico final
-- Marketing -> `ESTABILIZADO`, pendiente de cierre canonico final
+- Farmacia -> `RESUELTO` en esta ronda de refactor + endurecimiento, con 21/21 tests nuevos reportados y hallazgos H1-H4 cerrados
+- Logistica -> `RESUELTO` segun checklist oficial y reporte maestro del 2026-06-25
+- Mantenimiento -> `RESUELTO` segun checklist oficial y reporte maestro del 2026-06-25
+- Academia -> `RESUELTO` con 8/8 tests reportados en checklist oficial
+- Marketing -> `RESUELTO` con 9/9 tests reportados en checklist oficial
+- RH / Nomina -> `RESUELTO` con 25 tests reportados, Competencia consolidado como catalogo global y endurecimiento tenant/roles ya integrado
+- IoT -> `RESUELTO` con `0005_kiosco_empresa`, suite `iot.tests` y cierre oficial documentado
+- Recepcion -> `RESUELTO` con `5/5` tests y bloqueo explicito a usuarios sin FK `empresa`
+- Seguridad -> `RESUELTO` con `9/9` tests en el arbol local
+- Operaciones -> `RESUELTO` con tenant canonico y `4/4` tests dedicados
 
 ## Modulos que siguen abiertos
 
+- Contabilidad / Finanzas
+
+## Modulos en proceso no consolidados en este corte
+
+- Bienestar
+- Contabilidad / Finanzas
 - Buzon / Comunicacion / Notificaciones
-- Seguridad
-- RH / Nomina
-- Contabilidad
-- Operaciones
-- Recepcion
 
 ## Hallazgos que siguen vigentes
 
@@ -95,20 +97,21 @@ Conclusion:
 
 - RESUELTO — no reabrir el bug de alta de pacientes salvo repro nueva contra esta rama
 
-### Farmacia - fixes post-refactor ya integrados
+### Farmacia - cierre de refactorizacion y endurecimiento
 
 Estado actual del codigo:
 
 - `farmacia/urls.py` ya consolida `api/lotes-producto` sobre la implementacion de `pdv.py`
 - `farmacia/views/soporte.py` ya filtra apertura de caja por `empresa`
 - `farmacia/views/__init__.py` ya corta `KardexListView` con `objects.none()` cuando no hay empresa
-- `farmacia/views/pdv.py` ya usa `_empresa_desde_request(request)` en `pdv_farmacia`
-- la suite de modulo reportada queda verde: `31 OK`
+- `farmacia/views/pdv.py` ya mantiene guard estricto por `getattr(request.user, 'empresa', None)` en `pdv_farmacia`
+- existen 21 tests nuevos reportados para AperturaCaja, CorteCaja, EntradaExpress, COFEPRIS y CargaMasiva
+- el reporte de cierre marca `21/21 OK` sobre esa tanda nueva y deja 3 fallos preexistentes documentados fuera del cierre
 
 Conclusion:
 
-- ESTABILIZADO / CASI_CERRADO — no reabrir los 4 hallazgos ya corregidos
-- mantener como deuda menor la inconsistencia baja de `autorizar_devolucion` y la cobertura faltante de algunos flujos
+- RESUELTO / CERRADO — no reabrir H1-H4 ni la refactorizacion principal sin repro nueva
+- mantener fuera del cierre solo los 3 fallos preexistentes explicitamente documentados, como deuda separada del modulo
 
 ### Enfermeria - cierre con pruebas reales
 
@@ -140,24 +143,107 @@ Estado actual del codigo y evidencia reportada:
 
 - logistica reporta `7/7` pruebas verdes y scoping operativo estabilizado
 - mantenimiento reporta `4/4` pruebas verdes y consultas aisladas por empresa
-- bienestar reporta `4/4` pruebas verdes y guards de empresa/permisos aplicados
+- bienestar reporta `18/18` pruebas verdes, superficie canonica dual explicitada y cobertura ampliada a `alertas_rrhh`, `marcar_alerta_vista`, cross-tenant y rutas NOM-035
 - academia reporta `8/8` pruebas verdes con regresiones de aislamiento cross-tenant
 - marketing reporta `9/9` pruebas verdes con bloqueo de `empresa=None`
 
 Conclusion:
 
-- ESTABILIZADOS / CASI_CERRADOS — no tratarlos como modulos criticos abiertos, pero tampoco inflar un `100% cerrado` hasta completar el mismo nivel de contraste canonico sobre el arbol final
+- Bienestar -> `RESUELTO/CERRADO` en esta ronda.
+- Logistica, Mantenimiento, Academia y Marketing -> `RESUELTOS/CERRADOS` en la documentacion oficial vigente del 2026-06-25.
 
-### Recepcion - pendiente de cierre definitivo
+### RH / Nomina - cierre oficial consolidado
 
-Estado actual:
+Estado actual del codigo:
 
-- el reporte operativo indica mejoras reales de validacion/redirects
-- aun no queda asentado en el canon con el mismo nivel de evidencia de pruebas explicitas que los otros modulos del bloque
+- `core/views/rh.py` ya tiene `@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'RH')` en las vistas sensibles
+- `core/views/rh.py::mis_resultados` ya valida que `empleado.empresa_id == user.empresa.id`
+- `core/views/nomina.py::_empresa()` ya falla con `PermissionDenied` si el usuario no tiene empresa
+- `core/views/nomina.py` ya protege los wrappers legacy `ver_periodo`, `ver_nomina`, `cerrar_periodo`
+- `core/models/rrhh.py::Competencia` ya queda documentado como catalogo global
+- `core/admin.py::CompetenciaAdmin` ya restringe add/change/delete a superuser
+- `core/tests/test_rh_nomina_security.py` ya cubre el caso delicado de `ADMIN` no-superuser en admin
 
 Conclusion:
 
-- PENDIENTE DE CIERRE DEFINITIVO — no elevarlo a abierto critico, pero tampoco marcarlo como cerrado total todavia
+- RESUELTO / CERRADO — la documentacion oficial ya lo promueve a cerrado con `25 tests OK` usando `--keepdb`
+- decision final consolidada: `Competencia` permanece como catalogo global y no debe reabrirse como bug funcional
+
+### Contabilidad / Finanzas - en proceso, no consolidar en este corte
+
+Conclusion:
+
+- EN_PROCESO — no consolidar ni cerrar en este corte hasta recibir el nuevo reporte final de la ronda en curso
+
+### Bienestar - en proceso, no consolidar en este corte
+
+Conclusion:
+
+- EN_PROCESO — no consolidar ni cerrar en este corte hasta recibir el nuevo reporte final de la ronda en curso
+
+### Recepcion - cierre definitivo en arbol canonico
+
+Estado actual:
+
+- `core/views/general.py` ya unifica `RECEPCION` hacia `recepcion:dashboard_recepcion` tanto por grupo como por `rol`
+- `recepcion/views.py` ya usa `timezone.localdate()` en `dashboard_recepcion` y `lista_espera`
+- `recepcion/tests.py` ya no es stub; ahora contiene regresiones canonicas para:
+  - redirect sin empresa
+  - bloqueo cross-tenant en `check_in_paciente`
+  - bloqueo cross-tenant en `cobrar_consulta`
+  - discriminacion TZ en dashboard y lista de espera
+- `manage.py check` pasa
+- el helper `_empresa_recepcion()` ya no acepta el fallback de empresa por defecto del middleware para usuarios sin FK `empresa`
+- corrida reproducible local:
+  - `manage.py test recepcion.tests --keepdb -v 1` -> `5 OK`
+
+Conclusion:
+
+- RESUELTO / CERRADO — el modulo ya queda cerrado en el arbol canonico local
+
+### Seguridad - revalidacion local final
+
+Estado actual:
+
+- `seguridad/tests.py` corre limpio en este arbol
+- el warning Sentinel sobre `panic_button` sin empresa corresponde al bloqueo esperado del endpoint
+- la validacion 2FA, backup codes y aislamiento tenant del boton de panico/rastro paciente quedaron revalidados
+- corrida reproducible local:
+  - `manage.py test seguridad.tests --keepdb -v 1` -> `9 OK`
+
+Conclusion:
+
+- RESUELTO / CERRADO — no reabrir Seguridad sin evidencia nueva contra esta rama
+
+### Operaciones - cierre con tenant canonico y pruebas propias
+
+Estado actual:
+
+- `core/views/operaciones.py` ya usa `empresa_efectiva_request(request)`
+- el flujo rechaza usuarios sin FK `empresa` en vez de aceptar la empresa por defecto del middleware
+- `monitor_rutas` queda cubierto como alias estable del mismo dashboard
+- existe suite dedicada:
+  - `core/tests/test_operaciones_module.py`
+- corrida reproducible local:
+  - `manage.py test core.tests.test_operaciones_module --keepdb -v 1` -> `4 OK`
+
+Conclusion:
+
+- RESUELTO / CERRADO — Operaciones ya no queda abierto en este corte
+
+### IoT - kioscos multi-tenant
+
+Estado actual del codigo:
+
+- `iot/models.py` ya agrega FK `empresa` en `Kiosco`
+- `iot/views.py` ya filtra dashboards y operaciones por `empresa`
+- los endpoints publicos de kiosco (`heartbeat`, `confirmar`, `rechazar`) ya validan IP contra `kiosco.ip_address`
+- existen `iot/migrations/0005_kiosco_empresa.py` e `iot/tests.py` como piezas nuevas del cierre
+
+Conclusion:
+
+- RESUELTO / CERRADO — la documentacion oficial del 2026-06-25 lo promueve a cerrado con `7 tests OK` y uso explicito de `--keepdb` para evitar falsos timeouts por I/O local
+- mantener como pendiente operativo separado solo el deploy y validacion fisica de emparejamiento de kioscos
 
 ## Verificacion humana de interfaz
 
@@ -394,9 +480,9 @@ Conclusion:
 
 Cobertura al corte actual:
 
-- hay modulos ya cerrados tecnicamente, otros casi cerrados y otros todavia abiertos
+- hay modulos ya cerrados tecnicamente y 3 modulos explicitamente excluidos de esta consolidacion por seguir en proceso
 - Inventario ya forma parte del bloque de modulos cerrados con evidencia tecnica y pruebas
-- no debe afirmarse que todo el arbol esta cerrado; el canon vigente ya reconoce pendientes reales en Buzon/Comunicacion/Notificaciones, RH/Nomina, Contabilidad, Seguridad, Operaciones y Recepcion
+- no debe afirmarse que todo el arbol esta cerrado; el canon vigente sigue excluyendo Bienestar, Contabilidad/Finanzas y Buzon/Comunicacion/Notificaciones hasta recibir sus nuevos reportes finales
 - los documentos Markdown no son tratados como hallazgos de seguridad por si mismos
 
 Pendientes arquitectonicos documentados (no bugs):

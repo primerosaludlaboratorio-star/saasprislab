@@ -45,25 +45,10 @@ No deben volver a entrar como pendiente salvo evidencia nueva.
 
 ### Prioridad viva para la siguiente ronda
 
-1. Buzon / Comunicacion / Notificaciones
-   - aislar `MensajeInterno` por tenant
-   - eliminar la colision de `buzon_kanban`
-   - resolver `tu_opinion` multi-tenant
-   - endurecer guards de notificaciones
-2. RH / Nomina
-   - restringir vistas RH por rol
-   - decidir/aislar `Competencia` por empresa
-   - validar tenant de `mis_resultados`
-   - endurecer `_empresa()` en nomina
-3. Contabilidad / Finanzas
-   - agregar `@role_required` en vistas sensibles
-   - alinear reportes a `timezone.localdate()`
-   - endurecer `autofactura_publica`
-4. Farmacia
-   - cerrar cobertura faltante de corte de caja, apertura, COFEPRIS, entrada express y carga masiva
-   - mantener fuera del backlog los 4 hallazgos ya resueltos
-5. Recepcion
-   - cerrar contraste final y evidencia de pruebas para sacarla del estado pendiente
+- Bienestar (en proceso, no consolidar aun)
+- Contabilidad / Finanzas (en proceso, no consolidar aun)
+- Buzon / Comunicacion / Notificaciones (en proceso, no consolidar aun)
+- Preparacion de deploy en VPS
 
 ### Modulos ya cerrados y que no deben reabrirse sin repro nueva
 
@@ -74,14 +59,39 @@ No deben volver a entrar como pendiente salvo evidencia nueva.
 - Laboratorio funcional principal
 - Enfermeria
 - Inventario
+- Farmacia
+- Logistica
+- Mantenimiento
+- Academia
+- Marketing
+- IoT
+- RH / Nomina
 
 ### Modulos estabilizados que no deben volver al carril critico sin repro nueva
 
-- Logistica
-- Mantenimiento
+- Ninguno
+
+### Modulos en proceso no consolidados
+
 - Bienestar
-- Academia
-- Marketing
+- Contabilidad / Finanzas
+- Buzon / Comunicacion / Notificaciones
+
+## Pendientes exactos por modulo
+
+- Bienestar / Contabilidad / Buzón
+  - esperar nuevos reportes finales antes de consolidar
+
+## Próximo paso: validación final y preparación de deploy
+
+1. `manage.py check`
+2. `manage.py makemigrations --check`
+3. Ejecutar suites focalizadas ya cerradas:
+   - `recepcion.tests`
+   - `seguridad.tests`
+   - `core.tests.test_operaciones_module`
+4. Preparar artefactos de deploy
+5. Ejecutar despliegue a VPS solo con árbol reconciliado
 
 ## Carril Claude
 

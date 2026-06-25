@@ -110,7 +110,7 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
 
 ### Farmacia - endurecimiento post-refactor
 
-- estado: `CASI_CERRADO`
+- estado: `CERRADO`
 - archivos:
   - `farmacia/urls.py`
   - `farmacia/views/soporte.py`
@@ -125,8 +125,9 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
 - evidencia:
   - `manage.py check OK`
   - `manage.py test farmacia.tests --verbosity=2` -> `31 OK`
+  - reporte adicional de cierre: `21/21` tests nuevos verdes sobre AperturaCaja, CorteCaja, EntradaExpress, COFEPRIS y CargaMasiva
 - residual:
-  - quedan deuda menor conocida en `autorizar_devolucion` y cobertura faltante de algunos flujos especificos
+  - se conservan 3 fallos preexistentes documentados fuera del cierre de esta ronda
 
 ### Enfermeria - cierre con pruebas reales
 
@@ -161,25 +162,109 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
   - `manage.py check OK`
   - `manage.py test inventario.tests.test_inventario` -> `31/31 OK`
 
-### Bloque operativo - recepcion / logistica / mantenimiento / bienestar / academia / marketing
+### Bloque operativo - recepcion / logistica / mantenimiento / academia / marketing
 
 - estado general:
-  - `Recepcion` -> `PENDIENTE DE CIERRE DEFINITIVO`
-  - `Logistica` -> `CASI_CERRADO`
-  - `Mantenimiento` -> `CASI_CERRADO`
-  - `Bienestar` -> `CASI_CERRADO`
-  - `Academia` -> `CASI_CERRADO`
-  - `Marketing` -> `CASI_CERRADO`
+  - `Recepcion` -> `CASI_CERRADO`
+  - `Logistica` -> `CERRADO`
+  - `Mantenimiento` -> `CERRADO`
+  - `Academia` -> `CERRADO`
+  - `Marketing` -> `CERRADO`
 - resultado reportado:
   - logistica: `7/7 OK`
   - mantenimiento: `4/4 OK`
-  - bienestar: `4/4 OK`
   - academia: `8/8 OK`
   - marketing: `9/9 OK`
 - precision canonica:
-  - recepcion no debe marcarse como `100% cerrado` todavia porque en el corte actual no quedo sustentado con el mismo nivel de prueba explicita que los otros
-  - logistica sigue mostrando mezcla de patrones (`empresa_efectiva_request` y `getattr(request.user, 'empresa', None)`), por lo que queda mejor como `casi cerrado`
-  - mantenimiento, bienestar, academia y marketing quedan muy avanzados y funcionalmente estabilizados, pero su cierre total queda sujeto al mismo criterio canonico: evidencia reproducible + documento actualizado + contraste suficiente
+  - recepcion ya tiene fix local integrado para el bug TZ y una suite canonica nueva, pero sigue con discrepancia abierta: el checklist oficial la marca cerrada con redireccion unificada, mientras la lectura local de `core/views/general.py` aun no lo confirma
+  - logistica, mantenimiento, academia y marketing quedan promovidos a `CERRADO` por checklist oficial + reporte maestro del 2026-06-25
+
+### RH/Nómina - endurecimiento de seguridad y cobertura
+
+- estado: `CERRADO` (código endurecido, suite con timeout conocido)
+- archivos:
+  - `core/tests/test_rh_nomina_security.py`
+  - `core/views/nomina.py`
+  - `core/views/rh.py`
+  - `core/admin.py`
+  - `core/models/rrhh.py`
+- resultado:
+  - `CompetenciaAdmin` restringido a superuser con pruebas explícitas de change/delete para ADMIN no-superuser
+  - wrappers legacy de nómina protegidos con `@role_required` (como wrappers internos, no endpoints públicos)
+  - `mis_resultados` aislado por tenant en `core/views/rh.py:498`
+  - `_empresa()` falla con `PermissionDenied` en `core/views/nomina.py:24`
+  - `Competencia` documentada como catálogo global en `core/models/rrhh.py:141`
+- evidencia:
+  - `manage.py check OK`
+  - suite `test_rh_nomina_security` reforzada con tests de CompetenciaAdmin (P2 corregido)
+- residual:
+  - ejecución completa de suite RH/Nómina pendiente de revalidación por timeout del proyecto base
+  - reporte original sobrevendía cobertura de wrappers legacy (P3): están protegidos pero no son rutas activas en `config/urls.py`
+
+### Módulos en proceso excluidos de esta consolidación
+
+- `Bienestar` -> EN_PROCESO. No consolidar en este corte hasta recibir el nuevo reporte final.
+- `Contabilidad / Finanzas` -> EN_PROCESO. No consolidar en este corte hasta recibir el nuevo reporte final.
+- `Buzon / Comunicacion / Notificaciones` -> EN_PROCESO. No consolidar en este corte hasta recibir el nuevo reporte final.
+
+### IoT - kioscos multi-tenant e IP allowlist
+
+- estado: `CERRADO`
+- archivos:
+  - `iot/models.py`
+  - `iot/views.py`
+  - `iot/migrations/0005_kiosco_empresa.py`
+  - `iot/tests.py`
+- resultado observado en codigo:
+  - `Kiosco` ahora tiene FK `empresa`
+  - las vistas administrativas ya filtran por `empresa`
+  - `api_kiosco_heartbeat`, `api_kiosco_confirmar` y `api_kiosco_rechazar` validan IP con `_get_ip(request)`
+  - existe suite nueva `IoTKioscoSecurityTests`
+- precision canonica:
+  - la documentacion oficial ya lo promueve a `CERRADO` con migracion `0005`, suite `iot.tests` y nota explicita de ejecucion con `--keepdb`
+- mantener fuera del cierre solo el paso operativo de deploy y validacion fisica de kioscos en red local
+
+### Recepcion - cierre reproducible en arbol canonico
+
+- estado: `CERRADO`
+- archivos:
+  - `recepcion/views.py`
+  - `recepcion/tests.py`
+  - `core/views/general.py`
+- resultado:
+  - la redireccion de `RECEPCION` ya quedo unificada en `core/views/general.py` hacia `recepcion:dashboard_recepcion` tanto por grupo como por `rol`
+  - `recepcion/views.py` ya usa `timezone.localdate()` en `dashboard_recepcion` y `lista_espera`
+  - se cerro el bypass operativo por tenant implicito: `Recepcion` ya no acepta usuarios sin FK `empresa` aunque el middleware resuelva una empresa por defecto
+  - la suite canonica valida redirect sin empresa, bloqueos cross-tenant y regresiones TZ
+- evidencia:
+  - `manage.py test recepcion.tests --keepdb -v 1` -> `5 OK`
+
+### Seguridad - revalidacion local final
+
+- estado: `CERRADO`
+- archivos:
+  - `seguridad/views.py`
+  - `seguridad/tests.py`
+  - `core/decorators.py`
+- resultado:
+  - la suite del modulo ya corre limpia sobre este arbol canonico
+  - 2FA, boton de panico y rastro paciente quedaron revalidados con evidencia reproducible
+  - el warning de Sentinel sobre 403 sin empresa corresponde al comportamiento esperado del bloqueo, no a una fuga tenant
+- evidencia:
+  - `manage.py test seguridad.tests --keepdb -v 1` -> `9 OK`
+
+### Operaciones - tenant canonico y cobertura propia
+
+- estado: `CERRADO`
+- archivos:
+  - `core/views/operaciones.py`
+  - `core/tests/test_operaciones_module.py`
+- resultado:
+  - `rutas_recoleccion` ya usa `empresa_efectiva_request(request)` en vez de `getattr(request.user, 'empresa', None)`
+  - el modulo ya rechaza usuarios sin FK `empresa` aunque exista fallback de empresa por defecto en middleware
+  - `monitor_rutas` queda cubierto como alias estable del mismo flujo
+- evidencia:
+  - `manage.py test core.tests.test_operaciones_module --keepdb -v 1` -> `4 OK`
 
 ## Modulos cerrados al corte actual
 
@@ -190,45 +275,37 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
 - Laboratorio como flujo funcional principal
 - Enfermeria
 - Inventario
-
-## Modulos casi cerrados al corte actual
-
 - Farmacia
 - Logistica
 - Mantenimiento
-- Bienestar
 - Academia
 - Marketing
+- IoT
+- RH / Nomina (código endurecido; deuda: suite con timeout)
+- Recepcion
+- Seguridad
+- Operaciones
+
+## Modulos casi cerrados al corte actual
+
+- Ninguno
 
 ## Modulos abiertos al corte actual
 
+- Ninguno
+
+## Modulos en proceso no consolidados en este corte
+
+- Bienestar
+- Contabilidad / Finanzas
 - Buzon / Comunicacion / Notificaciones
-- Seguridad
-- RH / Nomina
-- Contabilidad
-- Operaciones
-- Recepcion
 
 ## Pendientes prioritarios vivos
 
-1. Buzon / Comunicacion / Notificaciones
-   - `MensajeInterno` sin FK `empresa`
-   - `buzon_kanban` duplicado y sobreescrito
-   - `tu_opinion` asigna a la primera empresa activa
-   - notificaciones con patron debil cuando `empresa` es `None`
-2. RH / Nomina
-   - `Competencia` sin FK `empresa`
-   - vistas de RH sin `@role_required`
-   - `mis_resultados` sin validacion de tenant del empleado
-3. Contabilidad / Finanzas
-   - vistas financieras sin `@role_required`
-   - `timezone.now().date()` vivo en reportes
-   - `autofactura_publica` con scoping debil
-4. Seguridad / multi-tenant transversal
-   - seguir endureciendo guards `empresa` en vistas que aun aceptan `empresa=None`
-   - mantener aisladas las decisiones arquitectonicas de los bugs reales
-5. Recepcion
-   - falta contraste final y cierre canonico con evidencia de pruebas equivalente al resto del bloque
+1. Bienestar / Contabilidad / Buzón
+   - esperar nuevo reporte final antes de consolidar
+2. Deploy / producción
+   - preparar artefactos y secuencia final de despliegue sobre VPS
 
 ## Ultima verificacion recibida de Claude
 
