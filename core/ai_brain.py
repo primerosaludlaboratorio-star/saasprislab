@@ -190,7 +190,7 @@ def consultar_ventas(usuario, fecha: str) -> Dict[str, Any]:
     try:
         d = datetime.strptime((fecha or "").strip(), "%Y-%m-%d").date()
     except Exception:
-        d = timezone.now().date()
+        d = timezone.localdate()
 
     inicio = timezone.make_aware(datetime.combine(d, datetime.min.time()))
     fin = timezone.make_aware(datetime.combine(d, datetime.max.time()))

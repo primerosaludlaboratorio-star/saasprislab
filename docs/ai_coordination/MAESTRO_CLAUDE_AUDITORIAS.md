@@ -278,4 +278,27 @@ El agente Gemini (en la máquina del usuario, sí alcanza prod) recorrió módul
 
 ---
 
+## P. MÓDULOS DIRECTOR + IA/PRIS  `[auditados · 1 bug real CONFIRMADO y CORREGIDO · regresión verde]`
+
+**Alcance:** Director (`core/views/director.py` 425 LOC, war_room, coach, pris_checklist, analizadores) + IA/PRIS (~10.2k LOC: `pris_ia.py` 1.655, `pris_tools_operativos.py` 1.387, `pris_jarvis.py` 873, `ia/views.py` 680, `ai_brain.py`, `ia_dashboard.py`, `gemini_client.py`).
+
+### 🔴 P-TZ (CONFIRMADO · CORREGIDO) — bug de zona horaria recurrente, ahora también en Director e IA
+Misma clase que el bug de caja-lab/finanzas. Con `USE_TZ=True` + `TIME_ZONE=America/Mexico_City` (UTC-6), `timezone.now().date()` devuelve la fecha **UTC**: entre 18:00–23:59 hora local la fecha UTC ya es "mañana", así que toda ventana "del día" se va al futuro y los tableros muestran **0 ventas / 0 órdenes / 0 KPIs** cada noche pese a la actividad real.
+- **18 ocurrencias corregidas** → `timezone.localdate()` (fix canónico, idéntico al ya aprobado en `finanzas.py`):
+  - `core/views/director.py:40` (dashboard ejecutivo: ventas/órdenes/quejas/incidencias del día).
+  - `core/views/war_room.py:220,283,381,408` (anomalías, escalamiento mantenimiento, ingresos/gastos y métricas del día).
+  - `core/views/ia_dashboard.py:30,309` · `core/views/pris_ia.py:512,514,548,751,863,865` · `core/views/pris_jarvis.py:434,506,512` · `core/agent/pris_tools_operativos.py:1113` (KPI agente periodo HOY) · `core/ai_brain.py:193`.
+- **Verificación:** `manage.py check` limpio · `py_compile` OK los 7 archivos · **regresión nueva** `core/tests/test_director_dashboard_tz.py` (mockea 03:30 UTC = 21:30 MX, crea Venta COMPLETADA, exige `cantidad_ventas==1`/`total==750`) — **verde**; falla con el código viejo. Junto con `test_caja_laboratorio_tz.py`: **2/2 OK**.
+
+### ✅ Falsos positivos / sin bug (verificado)
+- **`gemini_client.py`**: bien construido — key por env (`GOOGLE_API_KEY`/`GEMINI_API_KEY`), **0 claves hardcodeadas**, fallback de proveedor (gemini↔deepseek), timeout 15s, normalización 403→`PermissionError`. Sin deuda.
+- **Gating de auth**: entrypoints IA (`pris_ia`, `pris_jarvis`, `ia_dashboard`, `ia/views`) están protegidos (`login_required`/helpers de rol). Webhook `prisci_webhook.py` usa `csrf_exempt` **compensado** con `_webhook_token_ok` + `hub.verify_token`. OK.
+- **Scoping multi-tenant** en `pris_tools_operativos.py`: las queries del agente filtran por `empresa` (paciente/orden/venta/cotización). OK.
+
+### 🟡 Riesgo residual (decisión de producto, NO bug)
+- **DIR-ANALIZADORES cross-tenant:** `director_analizadores*` opera sobre `laboratorio.models.Equipo`, que **no tiene FK empresa** (catálogo técnico global); el aislamiento es solo RBAC (comentado en `director.py:311-312`). En despliegue multi-empresa real, un director de empresa A ve/edita/borra analizadores de B. Si el despliegue es 1-instalación-por-lab, es aceptable. → Definir con Codex/producto.
+- **DIR-PROBAR-CONEXION (SSRF leve):** `director_analizadores_probar_conexion` hace `socket.connect_ex((ip,puerto))` con IP/puerto del POST (gateado a rol director). Permite sondear puertos internos. Bajo, intencional (probar analizador). Flag, no fix.
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*

@@ -217,7 +217,7 @@ def _detectar_stock_critico(empresa) -> list[dict]:
 def _detectar_anomalias_silos(empresa) -> list[dict]:
     """Detecta lotes próximos a vencer (≤7 días) y quiebres de stock en los 3 silos."""
     anomalias = []
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     limite = hoy + timedelta(days=7)
     try:
         from inventario.models import (
@@ -280,7 +280,7 @@ def _detectar_cmms_criticos(empresa) -> list[dict]:
     anomalias = []
     try:
         from mantenimiento.models import TicketMantenimientoCMMS, CertificadoMetrologia
-        hoy = timezone.now().date()
+        hoy = timezone.localdate()
 
         # Equipos con tickets en niveles de escalamiento que requieren intervención
         niveles_criticos = ('DIRECTOR', 'PROVEEDOR')
@@ -378,7 +378,7 @@ def _detectar_burnout_nom035(empresa) -> list[dict]:
 def _obtener_flujo_caja(empresa) -> dict:
     """Calcula ingresos vs gastos de hoy para el War Room."""
     from django.db.models import Sum
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     resultado = {'ingresos': 0.0, 'gastos_compras': 0.0, 'saldo_neto': 0.0}
     try:
         from core.models import Venta
@@ -405,7 +405,7 @@ def _obtener_flujo_caja(empresa) -> dict:
 def _obtener_metricas_rapidas(empresa) -> dict:
     """KPIs del día para el header del War Room."""
     from django.db.models import Sum, Count
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     metricas = {}
     try:
         from core.models import OrdenDeServicio

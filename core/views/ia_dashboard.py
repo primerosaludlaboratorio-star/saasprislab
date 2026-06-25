@@ -27,7 +27,7 @@ def ia_dashboard(request):
     empresa = getattr(request.user, 'empresa', None)
     empresa_nombre = empresa.nombre if empresa and hasattr(empresa, 'nombre') else ""
     
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     hoy_inicio = timezone.make_aware(
         datetime.combine(hoy, datetime.min.time())
     )
@@ -306,7 +306,7 @@ def api_ia_diagnostico(request):
         ]
 
         # 5. Metricas del dia
-        hoy = timezone.now().date()
+        hoy = timezone.localdate()
         diagnostico['metricas'] = {
             'ordenes_hoy': OrdenDeServicio.objects.filter(
                 empresa=empresa, fecha_creacion__date=hoy
