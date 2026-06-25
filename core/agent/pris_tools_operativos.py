@@ -14,6 +14,7 @@ CONVENCIÓN DE CONFIRMACIÓN:
 """
 import logging
 from django.utils import timezone
+from django.utils.timezone import localdate
 from django.db import transaction
 
 logger = logging.getLogger('core')
@@ -1110,7 +1111,7 @@ def tool_consultar_indicadores_kpi(args: dict, empresa, user) -> dict:
 
     periodo = (args.get("periodo") or "HOY").upper()
     categoria = (args.get("categoria") or "GENERAL").upper()
-    hoy = timezone.now().date()
+    hoy = localdate()
 
     if periodo == "HOY":
         fecha_desde = hoy

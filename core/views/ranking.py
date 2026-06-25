@@ -4,6 +4,7 @@ Vistas para el Sistema de Ranking de Desempeño.
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.utils.timezone import localdate
 from datetime import datetime, timedelta
 from core.models import Usuario, IncidenciaOperativa
 from core.utils.ranking import calcular_score_empleado, calcular_tendencia
@@ -25,7 +26,7 @@ def ranking_desempeno(request):
         from django.contrib import messages
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
-    hoy = timezone.now().date()
+    hoy = localdate()
     
     # Periodo actual
     mes_actual = hoy.month
@@ -97,7 +98,7 @@ def detalle_empleado_ranking(request, empleado_id):
     empleado = get_object_or_404(Usuario, id=empleado_id, empresa=empresa)
     
     # Calcular score actual
-    hoy = timezone.now().date()
+    hoy = localdate()
     score_actual = calcular_score_empleado(empleado.id, hoy.month, hoy.year)
     
     # Obtener historial de incidencias

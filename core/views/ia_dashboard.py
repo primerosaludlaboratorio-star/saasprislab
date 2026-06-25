@@ -11,6 +11,7 @@ from django.db.models import Count, Sum, Q
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
+from django.utils.timezone import localdate
 from django.views.decorators.http import require_http_methods
 
 from core.ai_brain import responder
@@ -27,7 +28,7 @@ def ia_dashboard(request):
     empresa = getattr(request.user, 'empresa', None)
     empresa_nombre = empresa.nombre if empresa and hasattr(empresa, 'nombre') else ""
     
-    hoy = timezone.now().date()
+    hoy = localdate()
     hoy_inicio = timezone.make_aware(
         datetime.combine(hoy, datetime.min.time())
     )
@@ -306,7 +307,7 @@ def api_ia_diagnostico(request):
         ]
 
         # 5. Metricas del dia
-        hoy = timezone.now().date()
+        hoy = localdate()
         diagnostico['metricas'] = {
             'ordenes_hoy': OrdenDeServicio.objects.filter(
                 empresa=empresa, fecha_creacion__date=hoy

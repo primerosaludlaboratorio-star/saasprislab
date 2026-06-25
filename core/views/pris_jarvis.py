@@ -25,6 +25,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.utils.timezone import localdate
 from django.db.models import Q
 from django.conf import settings
 
@@ -431,7 +432,7 @@ def api_consulta_voz(request):
 
     respuesta = ''
     datos = {}
-    hoy = timezone.now().date()
+    hoy = localdate()
 
     if any(kw in consulta for kw in ('culti', 'orden', 'folio')):
         count = OrdenDeServicio.objects.filter(
@@ -503,13 +504,13 @@ def api_generar_hoja_trabajo(request):
     """
     empresa = getattr(request.user, 'empresa', None)
     area = (request.POST.get('area') or '').strip()
-    fecha_str = request.POST.get('fecha', timezone.now().date().isoformat())
+    fecha_str = request.POST.get('fecha', localdate().isoformat())
 
     try:
         from datetime import date
         fecha = date.fromisoformat(fecha_str)
     except ValueError:
-        fecha = timezone.now().date()
+        fecha = localdate()
 
     qs = OrdenDeServicio.objects.filter(
         empresa=empresa,

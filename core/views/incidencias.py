@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.utils.timezone import localdate
 from django.db.models import Count, Q
 from datetime import datetime, timedelta
 from core.models import IncidenciaOperativa, Usuario, Empresa
@@ -100,7 +101,7 @@ def panel_auditoria_incidencias(request):
         }, status=403)
     
     empresa = getattr(request.user, 'empresa', None)
-    hoy = timezone.now().date()
+    hoy = localdate()
     
     # Filtros
     filtro_estado = request.GET.get('estado', 'PENDIENTE')

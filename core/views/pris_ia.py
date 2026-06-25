@@ -26,6 +26,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
+from django.utils.timezone import localdate
 from django.db.models import Q, Sum
 
 from core.models import AccionPRIS
@@ -509,9 +510,9 @@ def _tool_estadisticas_dia(args, empresa):
     from core.models import OrdenDeServicio, Venta
     fecha_str = args.get("fecha", "")
     try:
-        fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date() if fecha_str else timezone.now().date()
+        fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date() if fecha_str else localdate()
     except ValueError:
-        fecha = timezone.now().date()
+        fecha = localdate()
     ordenes = OrdenDeServicio.objects.filter(empresa=empresa, fecha_creacion__date=fecha)
     ventas = 0
     try:
@@ -545,7 +546,7 @@ def _tool_buscar_ordenes(args, empresa):
     if estado:
         qs = qs.filter(estado=estado.upper())
     if hoy:
-        qs = qs.filter(fecha_creacion__date=timezone.now().date())
+        qs = qs.filter(fecha_creacion__date=localdate())
     qs = qs.order_by('-fecha_creacion')[:10]
     return {
         "total": qs.count(),
@@ -748,7 +749,7 @@ def _tool_buscar_estudio(args, empresa):
 
 def _tool_saldo_caja(args, empresa, user):
     from core.models import Venta
-    hoy = timezone.now().date()
+    hoy = localdate()
     # Venta usa campo 'fecha' (DateTimeField) y estado 'COMPLETADA'
     ventas = Venta.objects.filter(empresa=empresa, fecha__date=hoy, estado='COMPLETADA')
     total = ventas.aggregate(t=Sum('total'))['t'] or 0
@@ -860,9 +861,9 @@ def _tool_generar_corte_caja(args, empresa, user):
     fecha_str = args.get("fecha", "")
     try:
         from datetime import datetime as _dt
-        fecha = _dt.strptime(fecha_str, "%Y-%m-%d").date() if fecha_str else timezone.now().date()
+        fecha = _dt.strptime(fecha_str, "%Y-%m-%d").date() if fecha_str else localdate()
     except ValueError:
-        fecha = timezone.now().date()
+        fecha = localdate()
 
     qs = Venta.objects.filter(empresa=empresa, fecha__date=fecha, estado="COMPLETADA")
     total_ventas = qs.aggregate(t=Sum('total'))['t'] or 0

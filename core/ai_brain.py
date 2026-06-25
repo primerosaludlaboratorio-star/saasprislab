@@ -17,6 +17,7 @@ from datetime import datetime, date
 from typing import Any, Dict, List, Optional
 
 from django.utils import timezone
+from django.utils.timezone import localdate
 
 from django.conf import settings
 
@@ -190,7 +191,7 @@ def consultar_ventas(usuario, fecha: str) -> Dict[str, Any]:
     try:
         d = datetime.strptime((fecha or "").strip(), "%Y-%m-%d").date()
     except Exception:
-        d = timezone.now().date()
+        d = localdate()
 
     inicio = timezone.make_aware(datetime.combine(d, datetime.min.time()))
     fin = timezone.make_aware(datetime.combine(d, datetime.max.time()))
