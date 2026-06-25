@@ -150,6 +150,12 @@ def api_carga_masiva_productos(request):
 
 
 @login_required
+def api_buscar_productos_lectura(request):
+    """Alias legacy para lectura de catálogo desde módulos médicos."""
+    return api_buscar_productos_compra(request)
+
+
+@login_required
 def registrar_gasto(request):
     """Alias legacy al flujo canónico de registro de gasto."""
     return registro_gasto(request)
@@ -285,6 +291,7 @@ __all__ = [
     "registrar_compra",
     "api_carga_masiva_productos",
     "api_buscar_productos_compra",
+    "api_buscar_productos_lectura",
     "carga_masiva_productos",
     "carga_masiva_excel",
     "registrar_gasto",
