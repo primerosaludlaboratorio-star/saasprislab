@@ -11,6 +11,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 
 from core.models import BuzonQuejas, Empresa
+from core.utils.empresa_request import empresa_efectiva_request
+from core.utils.default_empresa import resolve_default_empresa_sistema
 
 logger = logging.getLogger('core')
 
@@ -20,9 +22,11 @@ def tu_opinion(request):
     Vista pública para que pacientes y empleados dejen quejas/sugerencias.
     URL: /tu-opinion/
     """
-    # Detectar empresa desde el dominio o usar default
-    # Por ahora, permitir selección manual o usar la primera empresa activa
-    empresa = Empresa.objects.filter(activa=True).first()
+    # Resolución de empresa canónica: si el visitante está autenticado (empleado),
+    # su tenant activo; si es anónimo (paciente), la empresa por defecto del sistema
+    # (respeta PRISLAB_DEFAULT_EMPRESA_ID / única activa / pk=1). Antes asignaba
+    # arbitrariamente la "primera empresa activa", mal en multi-tenant.
+    empresa = empresa_efectiva_request(request) or resolve_default_empresa_sistema()
     
     if request.method == 'POST':
         tipo = request.POST.get('tipo', 'QUEJA')
@@ -145,7 +149,9 @@ def api_cambiar_estado_queja(request, queja_id):
         return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}, status=403)
     
     try:
-        queja = get_object_or_404(BuzonQuejas, id=queja_id, empresa=empresa)
+        # .get() (no get_object_or_404): así el `except DoesNotExist` devuelve 404
+        # limpio. Con get_object_or_404, el Http404 caía en `except Exception` -> 500.
+        queja = BuzonQuejas.objects.get(id=queja_id, empresa=empresa)
         data = json.loads(request.body)
         nuevo_estado = data.get('estado', queja.estado)
         notas = data.get('notas_resolucion', '')

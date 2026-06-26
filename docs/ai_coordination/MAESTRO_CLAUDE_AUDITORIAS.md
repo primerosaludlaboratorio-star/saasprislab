@@ -418,4 +418,30 @@ En `core/views/general.py` (versión `release/v1.0-local`), `get_redirect_url_by
 
 ---
 
+## U. MÓDULO BUZÓN / COMUNICACIÓN (Imperium)  `[auditoría profunda · 3 bugs reales CORREGIDOS · 5 regresiones verdes]`
+
+**Alcance:** `core/views/buzon.py` (tu_opinion público + buzon_kanban + APIs de quejas), `core/views/reporte_friccion.py`, modelo `BuzonQuejas`, template público `core/tu_opinion.html`. Idénticos HEAD vs `release/v1.0-local` → código canónico.
+
+### CONFIRMADO → CORREGIDO (1) — colisión de `buzon_kanban` con efecto funcional
+`buzon_kanban` estaba **definido dos veces** (`core/views/buzon.py:67` y `core/views/reporte_friccion.py:230`). Por orden de `import *` en `core/views/__init__.py` (buzon→línea 30, reporte_friccion→línea 50) **ganaba la copia de reporte_friccion**, que agrupaba `por_categoria` por categorías de fricción **inexistentes** (`OPTIMIZACION/ERROR_TECNICO/BIENESTAR`) mientras `BuzonQuejas.categoria_ia` usa `TIEMPOS/TRATO/PRECIOS/INSTALACIONES/LIMPIEZA/PROCESO/OTRO` → el **desglose por categoría del Buzón de la Verdad quedaba casi siempre en 0**. La copia de reporte_friccion era **huérfana** (esa app tiene su propia ruta `reporte-friccion/`→`reporte_friccion`). **CORREGIDO:** eliminada la copia huérfana; `views.buzon_kanban` resuelve ahora a `core.views.buzon` (categorías reales). Verificado: `views.buzon_kanban.__module__ == 'core.views.buzon'`.
+
+### CONFIRMADO → CORREGIDO (2) — `api_cambiar_estado_queja` devolvía 500 en vez de 404
+`get_object_or_404(BuzonQuejas, …)` (lanza `Http404`) estaba dentro de un `try/except Exception → 500`; el `except BuzonQuejas.DoesNotExist` era **código muerto** (get_object_or_404 no lanza DoesNotExist). Resultado: cambiar el estado de una queja **de otra empresa o inexistente → 500** (y el `except Exception` filtraba el texto del error). **CORREGIDO** → `BuzonQuejas.objects.get(id=…, empresa=empresa)` para que `except DoesNotExist` devuelva **404** limpio. (Lo detectó la regresión de tenant, que daba `500 != 404`.)
+
+### CONFIRMADO → CORREGIDO (3) — `tu_opinion` asignaba a la "primera empresa activa"
+La vista pública usaba `Empresa.objects.filter(activa=True).first()` → en multi-tenant, el feedback se atribuía a una empresa **arbitraria**. **CORREGIDO** → `empresa_efectiva_request(request) or resolve_default_empresa_sistema()`: empleado autenticado → su tenant activo; anónimo → empresa por defecto canónica (respeta `PRISLAB_DEFAULT_EMPRESA_ID` / única activa / pk=1).
+
+### DESCARTADO / sin bug (verificado, intenté romper)
+- **CSRF real:** `tu_opinion.html` tiene `{% csrf_token %}` y la vista **NO** es `csrf_exempt` → `Client(enforce_csrf_checks=True)` sin token = **403** (probado). Sin bypass GET/POST.
+- **Tenant en quejas:** `buzon_kanban`, `api_obtener_quejas`, `api_cambiar_estado_queja` filtran por `empresa` y cortan en empresa=None (403/redirect). Reapertura (RESUELTO→otro) limpia `fecha_resolucion/resuelto_por` correctamente.
+- **Notificaciones:** `panic_button` ya cubierto en seguridad (sección R); `NotificacionSistema` es por-empresa.
+
+### Tests nuevos — `core/tests/test_buzon.py` (5, verdes)
+`tu_opinion` público crea la queja en la empresa canónica · `tu_opinion` exige CSRF (403 sin token) · `buzon_kanban` agrupa por categorías reales (`por_categoria['TIEMPOS']==1`) · cambiar estado de queja de otra empresa → **404** · sin empresa → **403**. **5/5 OK**, `manage.py check` limpio.
+
+### Estado de integración
+3 fixes + 5 tests en `claude/audit-flow-review-ruhy0q` (PR #4). En `release` siguen vivos → pendiente merge.
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*
