@@ -41,9 +41,12 @@ def dashboard_contabilidad(request):
     ventas_count = 0
     try:
         from core.models import Venta
+        # FIX conteo falso: solo ventas COMPLETADAS cuentan como ingreso del mes.
+        # Las CANCELADA conservan su total tras cancelar_venta y antes inflaban ingresos.
         agg = Venta.objects.filter(
             empresa=empresa,
             fecha__date__gte=mes_inicio,
+            estado='COMPLETADA',
         ).aggregate(total=Sum('total'), count=Count('id'))
         ingresos_mes = agg['total'] or Decimal('0')
         ventas_count = agg['count'] or 0

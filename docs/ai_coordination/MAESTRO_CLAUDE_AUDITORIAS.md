@@ -391,4 +391,31 @@ En `core/views/general.py` (versión `release/v1.0-local`), `get_redirect_url_by
 
 ---
 
+## T. MÓDULO CONTABILIDAD / FINANZAS  `[auditoría profunda · 2 bugs reales CORREGIDOS · CFDI cierre fuerte · stubs documentados]`
+
+**Alcance:** app `contabilidad/` (CFDI/facturación), `core/views/contabilidad.py` (dashboard/pólizas/catálogo), `core/views/cuentas_por_cobrar.py` (CxC/convenios), `core/views/reportes_financieros.py` (balance/flujo), `contabilidad/services/timbrado_cfdi.py`. Todos **idénticos** HEAD vs `release/v1.0-local` → código canónico.
+
+### CONFIRMADO → CORREGIDO (1) — conteo falso en dashboard de contabilidad
+`dashboard_contabilidad` sumaba `Venta.total` del mes **sin filtrar `estado`**. `cancelar_venta` (`core/views/farmacia.py:1559`) deja la venta con `estado='CANCELADA'` conservando su `total` → los **ingresos del mes quedaban inflados** por ventas canceladas (inconsistente con el corte de caja y el dashboard de dirección, que filtran `COMPLETADA`). **CORREGIDO** → `estado='COMPLETADA'`. Regresión `core/tests/test_contabilidad_dashboard_conteo.py` (1 venta COMPLETADA 1000 + 1 CANCELADA 5000 → exige `ingresos_mes==1000`); **discriminante**: con el código viejo `6000 != 1000` (demostrado).
+
+### CONFIRMADO → CORREGIDO (2) — TZ en CxC / convenios
+`core/views/cuentas_por_cobrar.py` líneas **50, 137, 195, 304** usaban `now().date()`: afectaba el cálculo de **vencidas** (`fecha_vencimiento__lt=hoy`), la **fecha de cobro** registrada, la **fecha de vencimiento** de nuevas CxC (`hoy + dias_credito`) y la ventana del reporte fiscal mensual. **CORREGIDO** → `timezone.localdate()` (4 ocurrencias).
+
+### DESCARTADO / cierre fuerte (verificado, intenté romper y NO cedió)
+- **CFDI / facturación (app `contabilidad`):** tenant-safe + IDOR-safe. `_empresa_fiscal = request.empresa_actual ∥ user.empresa`; todas las vistas cortan en empresa=None y scopean por empresa (`cliente__empresa=empresa`). Descargas **PDF/XML** y `detalle_factura` con `get_object_or_404(FacturaCFDI, id=…, cliente__empresa=empresa)`. **Timbrado** (`ejecutar_timbrado`) con `transaction.atomic` + `select_for_update(nowait=True)` + Idempotency-Key + filtro `cliente__empresa=empresa`; responde JSON 403/404/409 o redirect según `Accept`. `api_buscar_cliente` exige q≥3 y empresa. → **No hallé fuga ni conteo falso aquí.**
+- **CxC:** `_empresa` lanza `PermissionDenied` sin empresa (corte duro) + `@role_required('DIRECTOR','ADMIN','GERENTE','FINANZAS')`; `get_object_or_404(..., empresa=empresa)` en cuenta/orden/convenio (IDOR-safe).
+- **dashboard_contabilidad** usa `localtime(now()).date()` (fecha local, correcto) — solo el filtro de estado era el problema (ya corregido).
+
+### PENDIENTE / OBSOLETO (NO implementado — documentado, no es "cerrable como feature")
+- **Pólizas, catálogo de cuentas, crear_cuenta, autorizar_poliza, api_cuentas** (`core/views/contabilidad.py`): **stubs/redirects** ("en desarrollo"; modelos `PolizaContable`/`CatalogoCuenta`/`MovimientoContable` no migrados). No hay flujo de datos que romper ni cerrar.
+- **Balance general** (`reportes_financieros.py:reporte_balance_general`): **stub** (activos/pasivos/capital en 0, modelos contables no migrados). Tenant-safe pero sin datos.
+
+### DECISIÓN ARQUITECTÓNICA (documentada, no bug funcional)
+- **Rutas `/contabilidad/` superpuestas:** `config/urls.py:163` monta la app `contabilidad` (namespaced) en `/contabilidad/` y `:421-428` define rutas directas a `core.views` (sin namespace) en el mismo prefijo. Funcionalmente Django cae a la siguiente al no matchear dentro del include (resuelve bien hoy), pero es **frágil/confuso**: si la app añadiera `path('', …)` sombrearía el dashboard core. → Codex: consolidar bajo un solo urlconf/namespace.
+
+### Verificación
+`manage.py check` limpio · `py_compile` OK · regresión de conteo falso **discrimina** viejo/nuevo. Fixes en `claude/audit-flow-review-ruhy0q` (PR #4); en `release` siguen vivos → pendiente merge.
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*

@@ -47,7 +47,7 @@ def _empresa(request):
 def cuentas_por_cobrar_dashboard(request):
     """Dashboard principal de cuentas por cobrar."""
     empresa = _empresa(request)
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
 
     cuentas = CuentaPorCobrar.objects.filter(empresa=empresa)
 
@@ -134,7 +134,7 @@ def api_registrar_pago_cxc(request):
             cuenta.saldo_pendiente -= monto
             if cuenta.saldo_pendiente <= 0:
                 cuenta.estado = 'COBRADO'
-                cuenta.fecha_cobro = timezone.now().date()
+                cuenta.fecha_cobro = timezone.localdate()
             else:
                 cuenta.estado = 'PARCIAL'
             cuenta.save()
@@ -192,7 +192,7 @@ def api_crear_cxc(request):
         folio = f'CXC-{timezone.now().year}-{count:05d}'
 
         # Calcular vencimiento
-        fecha_venc = timezone.now().date() + timedelta(days=convenio.dias_credito)
+        fecha_venc = timezone.localdate() + timedelta(days=convenio.dias_credito)
 
         # Concepto — compatible con LIMS puro y legacy.
         from core.utils.detalle_orden import get_detalle_nombre
@@ -301,7 +301,7 @@ def reporte_fiscal_mensual(request):
         from django.contrib import messages
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     mes = int(request.GET.get('mes', hoy.month))
     anio = int(request.GET.get('anio', hoy.year))
 
