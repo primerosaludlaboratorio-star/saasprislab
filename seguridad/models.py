@@ -6,7 +6,6 @@ Cumplimiento: ISO 27001, GDPR, LFPDPPP (Ley Federal de Protección de Datos Pers
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
-from django.contrib.auth.models import User
 import pyotp
 import qrcode
 from io import BytesIO

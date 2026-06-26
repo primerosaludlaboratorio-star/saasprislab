@@ -16,6 +16,7 @@ from core.models import (
     GastoCaja, PagoOrden,
 )
 from core.lims_cart import resolve_lims_cart_ids, aplicar_precio_convenio, detalle_orden_etiqueta
+import logging
 
 
 def _detalle_lims_key(detail):
@@ -105,6 +106,7 @@ def cancelar_orden(request, orden_id):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en cancelar_orden (excepciones_lab.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -174,6 +176,7 @@ def editar_paciente_orden(request, orden_id):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en editar_paciente_orden (excepciones_lab.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -251,6 +254,7 @@ def validar_valor_critico(request, detalle_id):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en validar_valor_critico (excepciones_lab.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -305,6 +309,7 @@ def rechazar_muestra(request, detalle_id):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en rechazar_muestra (excepciones_lab.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -405,6 +410,7 @@ def registrar_merma(request):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en registrar_merma (excepciones_lab.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -469,6 +475,7 @@ def agregar_estudio_orden(request, orden_id):
             try:
                 anticipo = sum(p.monto_total for p in PagoOrden.objects.filter(orden=orden))
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en agregar_estudio_orden (excepciones_lab.py)")
                 pass
             saldo = total_nuevo - anticipo
             orden.total = total_nuevo
@@ -494,6 +501,7 @@ def agregar_estudio_orden(request, orden_id):
             'detalle_id': detalle.id, 'total': float(total_nuevo), 'saldo': float(saldo),
         })
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en agregar_estudio_orden (excepciones_lab.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 
@@ -538,6 +546,7 @@ def eliminar_estudio_orden(request, orden_id, detalle_id):
             try:
                 anticipo = sum(p.monto_total for p in PagoOrden.objects.filter(orden=orden))
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en eliminar_estudio_orden (excepciones_lab.py)")
                 pass
             saldo = total_nuevo - anticipo
             orden.total = total_nuevo
@@ -557,6 +566,7 @@ def eliminar_estudio_orden(request, orden_id, detalle_id):
             'total': float(total_nuevo), 'saldo': float(saldo),
         })
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en eliminar_estudio_orden (excepciones_lab.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 
@@ -588,6 +598,7 @@ def api_detalle_orden(request, orden_id):
     try:
         anticipo = sum(p.monto_total for p in PagoOrden.objects.filter(orden=orden))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_detalle_orden (excepciones_lab.py)")
         pass
 
     return JsonResponse({

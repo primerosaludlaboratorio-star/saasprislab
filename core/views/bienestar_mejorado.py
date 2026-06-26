@@ -21,6 +21,9 @@ from core.models import (
 def chat_bienestar(request):
     """Chat confidencial con PRIS en el módulo de bienestar."""
     empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        messages.error(request, 'Usuario sin empresa asignada.')
+        return redirect('home')
 
     # Solo los propios mensajes del usuario (privacidad total)
     conversaciones = ConversacionBienestar.objects.filter(
@@ -41,6 +44,8 @@ def enviar_mensaje_bienestar(request):
     Detecta patrones de riesgo y genera AlertaBienestar silenciosa si procede.
     """
     empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse({'status': 'error', 'mensaje': 'Sin empresa'}, status=403)
     try:
         data = json.loads(request.body)
     except (json.JSONDecodeError, AttributeError):
@@ -140,11 +145,15 @@ def enviar_mensaje_bienestar(request):
 @login_required
 def alertas_bienestar_director(request):
     """Vista para que el Director vea alertas silenciosas (sin datos de identidad)."""
-    if not request.user.is_superuser:
-        messages.error(request, 'Acceso restringido. Solo disponible para directores.')
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        messages.error(request, 'Usuario sin empresa asignada.')
         return redirect('home')
 
-    empresa = getattr(request.user, 'empresa', None)
+    rol = getattr(request.user, 'rol', '')
+    if not (request.user.is_superuser or rol in ('ADMIN', 'DIRECTOR', 'GERENTE')):
+        messages.error(request, 'Acceso restringido. Solo disponible para directores.')
+        return redirect('home')
 
     alertas = AlertaBienestar.objects.filter(
         empresa=empresa,
@@ -160,10 +169,14 @@ def alertas_bienestar_director(request):
 @require_http_methods(["POST"])
 def marcar_alerta_vista(request, alerta_id):
     """Marca una alerta de bienestar como vista por el director."""
-    if not request.user.is_superuser:
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse({'status': 'error', 'mensaje': 'Sin empresa'}, status=403)
+
+    rol = getattr(request.user, 'rol', '')
+    if not (request.user.is_superuser or rol in ('ADMIN', 'DIRECTOR', 'GERENTE')):
         return JsonResponse({'status': 'error', 'mensaje': 'Acceso restringido'}, status=403)
 
-    empresa = getattr(request.user, 'empresa', None)
     alerta = get_object_or_404(AlertaBienestar, id=alerta_id, empresa=empresa)
     alerta.estado   = AlertaBienestar.ESTADO_VISTA
     alerta.fecha_vista = timezone.now()

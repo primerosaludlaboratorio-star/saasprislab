@@ -74,6 +74,7 @@ def _raise_from_farmacia_venta_json(resp: JsonResponse) -> dict:
     try:
         body = json.loads(resp.content.decode("utf-8"))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _raise_from_farmacia_venta_json (ninja_api.py)")
         raise BusinessApiError(
             "FARMACIA_INVALID_RESPONSE",
             "Respuesta inválida del servicio de venta.",

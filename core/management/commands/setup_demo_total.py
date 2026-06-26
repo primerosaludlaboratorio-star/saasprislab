@@ -22,6 +22,7 @@ from core.models import (
     DetalleEvaluacion, Competencia, PlanDesarrollo
 )
 from consultorio.models import ConsultaMedica
+import logging
 
 # CursoAcademy puede no existir aún, lo manejamos opcionalmente
 try:
@@ -135,6 +136,7 @@ class Command(BaseCommand):
                 try:
                     cursor.execute(f'DELETE FROM {table};')
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en _limpiar_datos (setup_demo_total.py)")
                     pass  # Ignorar si la tabla no existe
             
             # Eliminar usuarios no superuser usando ORM (necesita signals para otros objetos relacionados)
@@ -146,6 +148,7 @@ class Command(BaseCommand):
             
             self.stdout.write('   [OK] Datos limpiados')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _limpiar_datos (setup_demo_total.py)")
             self.stdout.write(self.style.WARNING(f'   [ADVERTENCIA] Error parcial al limpiar: {str(e)}'))
             self.stdout.write('   Continuando con la creacion de datos...')
     

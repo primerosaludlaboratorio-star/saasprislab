@@ -107,6 +107,7 @@ def _check_existing_issue(fingerprint):
             data = json.loads(resp.read().decode())
             return data.get('total_count', 0) > 0
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en _check_existing_issue (github_reporter.py)")
         logger.debug(f'SENTINEL-GITHUB: Error buscando issue existente: {e}')
         return False
 
@@ -401,4 +402,5 @@ def test_github_connection():
     except HTTPError as e:
         return False, f'HTTP {e.code}: Token invalido o repo no accesible'
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_github_connection (github_reporter.py)")
         return False, str(e)

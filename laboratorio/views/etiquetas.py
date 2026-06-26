@@ -8,6 +8,8 @@ Objetivo: Endpoints para imprimir etiquetas térmicas de laboratorio
 import logging
 from django.http import FileResponse, JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
+from django.db.utils import DatabaseError
+from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 
@@ -77,7 +79,7 @@ def imprimir_etiqueta_tubo(request, orden_id):
         logger.error(f"Orden no encontrada: {orden_id}")
         return HttpResponse("Orden no encontrada", status=404)
         
-    except Exception as e:
+    except (RuntimeError, ValueError, TypeError, ImportError) as e:
         logger.error(f"Error al generar etiqueta: {e}", exc_info=True)
         return HttpResponse(f"Error al generar etiqueta: {str(e)}", status=500)
 
@@ -146,7 +148,7 @@ def imprimir_etiquetas_lote(request):
         logger.info(f"✓ {len(ordenes)} etiquetas generadas en lote")
         return response
         
-    except Exception as e:
+    except (RuntimeError, ValueError, TypeError, ImportError, DatabaseError, ValidationError) as e:
         logger.error(f"Error al generar etiquetas en lote: {e}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -197,7 +199,7 @@ def imprimir_etiqueta_qr(request, orden_id):
         logger.info(f"✓ Etiqueta QR generada para orden {folio}")
         return response
         
-    except Exception as e:
+    except (RuntimeError, ValueError, TypeError, ImportError) as e:
         logger.error(f"Error al generar etiqueta QR: {e}", exc_info=True)
         return HttpResponse(f"Error al generar etiqueta: {str(e)}", status=500)
 
@@ -230,6 +232,6 @@ def vista_previa_etiqueta(request, orden_id):
         from django.shortcuts import render
         return render(request, 'laboratorio/etiqueta_preview.html', context)
         
-    except Exception as e:
+    except (RuntimeError, ValueError, TypeError, ImportError, DatabaseError, ValidationError) as e:
         logger.error(f"Error en vista previa: {e}", exc_info=True)
         return HttpResponse(f"Error: {str(e)}", status=500)

@@ -65,6 +65,7 @@ def api_corte_caja_unificado(request):
             )
         return JsonResponse({'ok': True, 'corte': corte})
     except Exception as exc:
+        # Justificación: Boundary top-level de API para corte unificado.
         logger.exception('Error en corte de caja unificado')
         return JsonResponse(
             {'ok': False, 'error': 'No fue posible completar el corte unificado.'},

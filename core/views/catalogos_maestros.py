@@ -13,6 +13,7 @@ from django.db.models import Count
 from core.models import Empresa
 from laboratorio.models import Estudio as EstudioLab
 from core.utils.estandares_industriales import auditar_cambio_campo
+import logging
 
 
 @login_required
@@ -134,6 +135,7 @@ def api_actualizar_metodo(request):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_actualizar_metodo (catalogos_maestros.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': f'Error al actualizar método: {str(e)}'
@@ -215,6 +217,7 @@ def api_actualizar_muestra(request):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_actualizar_muestra (catalogos_maestros.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': f'Error al actualizar muestra: {str(e)}'

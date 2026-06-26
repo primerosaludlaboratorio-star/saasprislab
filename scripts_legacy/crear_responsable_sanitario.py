@@ -4,6 +4,7 @@ Ejecutar DESPUÉS del reset nuclear y las migraciones.
 """
 import os
 import django
+import logging
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
@@ -77,6 +78,7 @@ try:
     print("\n[OK] SISTEMA LISTO PARA GENERAR REPORTES CON CUMPLIMIENTO NOM-007")
 
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (crear_responsable_sanitario.py)")
     print(f"[ERROR] Error: {e}")
     import traceback
     traceback.print_exc()

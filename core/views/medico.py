@@ -26,6 +26,7 @@ from core.utils.auditoria_helper import crear_log_auditoria, calcular_hash_audit
 from core.models import AuditLog
 from core.utils.trazabilidad import registrar_trazabilidad, serializar_modelo
 from core.utils.empresa_request import empresa_efectiva_request
+import logging
 
 
 @login_required
@@ -114,6 +115,7 @@ def consulta_medica(request, paciente_id=None):
                 nombre_medico = f"{request.user.titulo_profesional} {nombre_medico}"
                 
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en consulta_medica (medico.py)")
         pass
     
     if request.method == 'POST':
@@ -399,6 +401,7 @@ def consulta_medica(request, paciente_id=None):
             return redirect('consulta_medica', paciente_id=paciente.id if paciente else None)
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en consulta_medica (medico.py)")
             return render(request, 'core/consulta_medica.html', {
                 'empresa': empresa,
                 'paciente': paciente,
@@ -485,6 +488,7 @@ def verificar_existencia_farmacia(request):
         })
     
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en verificar_existencia_farmacia (medico.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -520,6 +524,7 @@ def generar_pdf_receta(request, receta_id):
     try:
         receta.validar_items_antes_de_emitir()
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en generar_pdf_receta (medico.py)")
         from django.contrib import messages
         from django.shortcuts import redirect
         messages.error(request, str(e))
@@ -796,6 +801,7 @@ def generar_pdf_receta(request, receta_id):
                 # Ajustar tamaño manteniendo proporción
                 p.drawImage(firma_image, firma_x + 5, firma_y + 5, width=firma_width - 10, height=firma_height - 10, preserveAspectRatio=True)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en generar_pdf_receta (medico.py)")
             # Si falla, dejar espacio en blanco
             p.setFont("Helvetica-Oblique", 8)
             p.setFillColor("gray")
@@ -831,6 +837,7 @@ def generar_pdf_receta(request, receta_id):
             p.setFont("Helvetica", 7)
             p.drawString(qr_x, qr_y - 15, "Validar QR")
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en generar_pdf_receta (medico.py)")
             pass
     
     p.showPage()
@@ -914,6 +921,7 @@ def verificar_qr_receta(request):
             })
         
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en verificar_qr_receta (medico.py)")
             return JsonResponse({
                 'status': 'error',
                 'mensaje': str(e)
@@ -990,6 +998,7 @@ def captura_reporte_usg(request, paciente_id=None):
             messages.success(request, f'Reporte USG creado: {reporte.id}')
             return redirect('lista_trabajo_usg')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en captura_reporte_usg (medico.py)")
             messages.error(request, f'Error al crear reporte: {e}')
 
     from core.models import Paciente as PacienteModel

@@ -24,6 +24,7 @@ def validar_temperatura(temperatura: float | str | Decimal) -> dict[str, Any]:
     try:
         temp = Decimal(str(temperatura))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en validar_temperatura (cadena_frio.py)")
         return {
             'valida': False,
             'temperatura': None,

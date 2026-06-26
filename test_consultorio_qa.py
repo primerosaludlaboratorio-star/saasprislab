@@ -7,6 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 from datetime import datetime
+import logging
 
 # Configuración
 BASE_URL = "http://127.0.0.1:8000"
@@ -94,6 +95,7 @@ def test_login():
             return False
             
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_login (test_consultorio_qa.py)")
         log_error(f"Excepción durante el login: {str(e)}")
         return False
 
@@ -140,6 +142,7 @@ def test_dashboard_consultorio():
             return False
             
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_dashboard_consultorio (test_consultorio_qa.py)")
         log_error(f"Excepción al navegar al dashboard: {str(e)}")
         return False
 
@@ -183,6 +186,7 @@ def test_buscar_nuevo_paciente():
                     log_paso(3, "No se encontró formulario en la página", "⚠")
                     
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_buscar_nuevo_paciente (test_consultorio_qa.py)")
             log_error(f"Error al probar URL {url}: {str(e)}")
     
     log_error("No se encontró la página de nuevo paciente en ninguna URL probada")
@@ -272,6 +276,7 @@ def test_crear_paciente(url_formulario):
             return None
             
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_crear_paciente (test_consultorio_qa.py)")
         log_error(f"Excepción al crear paciente: {str(e)}")
         return None
 
@@ -315,6 +320,7 @@ def test_buscar_nueva_consulta():
                     log_paso(5, "No se encontró formulario en la página", "⚠")
                     
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_buscar_nueva_consulta (test_consultorio_qa.py)")
             log_error(f"Error al probar URL {url}: {str(e)}")
     
     log_error("No se encontró la página de nueva consulta en ninguna URL probada")
@@ -406,6 +412,7 @@ def test_crear_consulta(url_formulario, paciente_id=None):
             return None
             
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_crear_consulta (test_consultorio_qa.py)")
         log_error(f"Excepción al crear consulta: {str(e)}")
         return None
 
@@ -440,6 +447,7 @@ def test_descargar_receta_pdf(consulta_id=None):
                     log_paso(7, f"La URL retorna contenido no-PDF: {content_type}", "⚠")
                     
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_descargar_receta_pdf (test_consultorio_qa.py)")
             log_error(f"Error al probar URL {url}: {str(e)}")
     
     log_error("No se pudo descargar el PDF de la receta")

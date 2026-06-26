@@ -53,14 +53,14 @@ def _safe_decimal(val, default=None):
         if val is None or str(val).strip() in ('', '-', 'N/A'):
             return default
         return decimal.Decimal(str(val).replace(',', '').strip())
-    except Exception:
+    except (ValueError, decimal.InvalidOperation, TypeError):
         return default
 
 
 def _safe_int(val, default=0):
     try:
         return int(val) if val is not None else default
-    except Exception:
+    except (ValueError, TypeError):
         return default
 
 
@@ -170,8 +170,15 @@ class Command(BaseCommand):
 
         except DryRunInterrupt:
             self.stdout.write(self.style.WARNING('\n🔍 DRY-RUN completado. Revertiendo...'))
+        except (FileNotFoundError, PermissionError) as exc:
+            raise CommandError(f'Error de archivo: {exc}') from exc
+        except DatabaseError as exc:
+            raise CommandError(f'Error de base de datos: {exc}') from exc
+        except ValueError as exc:
+            raise CommandError(f'Error de datos: {exc}') from exc
         except Exception as exc:
-            raise CommandError(f'Error durante la importación: {exc}') from exc
+            logging.getLogger(__name__).exception("Error inesperado en handle (importar_catalogo_maestro.py)")
+            raise CommandError(f'Error inesperado durante la importación: {exc}') from exc
 
         self._imprimir_resumen(stats)
 

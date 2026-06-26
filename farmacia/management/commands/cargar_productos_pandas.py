@@ -10,6 +10,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from core.models import Producto, Empresa, Sucursal
 import pandas as pd
+import logging
 
 
 class Command(BaseCommand):
@@ -48,7 +49,8 @@ class Command(BaseCommand):
             df = pd.read_excel(archivo, engine='openpyxl')
             self.stdout.write(f'[OK] {len(df)} filas leídas')
             self.stdout.write(f'[OK] Columnas detectadas: {len(df.columns)}')
-        except Exception as e:
+        except Exception as e:  # Integración externa: archivo Excel provisto por usuario (pandas/openpyxl, cualquier formato inválido).
+            logging.getLogger(__name__).exception("Error inesperado en handle (cargar_productos_pandas.py)")
             self.stdout.write(self.style.ERROR(f'[ERROR] No se pudo leer: {e}'))
             return
 
@@ -113,7 +115,7 @@ class Command(BaseCommand):
                             val = row[col_map['precio']]
                             if pd.notna(val):
                                 precio = Decimal(str(val).replace(',', '').replace('$', '').strip())
-                        except:
+                        except (ValueError, TypeError, ArithmeticError):
                             pass
 
                     costo = Decimal('0.00')
@@ -122,7 +124,7 @@ class Command(BaseCommand):
                             val = row[col_map['costo']]
                             if pd.notna(val):
                                 costo = Decimal(str(val).replace(',', '').replace('$', '').strip())
-                        except:
+                        except (ValueError, TypeError, ArithmeticError):
                             pass
 
                     stock = 0
@@ -131,7 +133,7 @@ class Command(BaseCommand):
                             val = row[col_map['stock']]
                             if pd.notna(val):
                                 stock = int(float(val))
-                        except:
+                        except (ValueError, TypeError):
                             pass
 
                     iva = Decimal('16.00')
@@ -140,7 +142,7 @@ class Command(BaseCommand):
                             val = str(row[col_map['iva']])
                             if pd.notna(val) and val != 'nan':
                                 iva = Decimal(val.replace('%', '').strip())
-                        except:
+                        except (ValueError, TypeError, ArithmeticError):
                             pass
 
                     es_antibiotico = False
@@ -177,7 +179,8 @@ class Command(BaseCommand):
                     else:
                         actualizados += 1
 
-                except Exception as e:
+                except Exception as e:  # Aislamiento fila-por-fila: error en una fila no debe abortar toda la carga.
+                    logging.getLogger(__name__).exception("Error inesperado en handle (cargar_productos_pandas.py)")
                     errores.append(f'Fila {idx}: {e}')
                     if len(errores) <= 5:
                         self.stdout.write(self.style.WARNING(f'  [!] Error fila {idx}: {e}'))

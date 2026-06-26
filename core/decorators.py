@@ -142,12 +142,22 @@ def check_payment_status(view_func):
     @wraps(view_func)
     def wrapper(request, orden_id, *args, **kwargs):
         from core.models import OrdenDeServicio
+
+        empresa = getattr(request.user, 'empresa', None)
+        if not empresa:
+            logger.warning(f"check_payment_status: usuario {request.user.username} sin empresa asignada")
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}, status=403)
+            return render(request, 'core/error.html', {
+                'titulo': 'Error',
+                'mensaje': 'Usuario sin empresa asignada.',
+            }, status=403)
         
         try:
             # Intentar obtener la orden
             orden = OrdenDeServicio.objects.select_related('paciente', 'empresa').get(
                 id=orden_id,
-                empresa=getattr(request.user, 'empresa', None)
+                empresa=empresa
             )
             
             # VALIDACIÓN CRÍTICA: ¿Está pagada?
@@ -249,13 +259,23 @@ def check_results_validated(view_func):
     @wraps(view_func)
     def wrapper(request, orden_id, *args, **kwargs):
         from core.models import OrdenDeServicio
+
+        empresa = getattr(request.user, 'empresa', None)
+        if not empresa:
+            logger.warning(f"check_results_validated: usuario {request.user.username} sin empresa asignada")
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}, status=403)
+            return render(request, 'core/error.html', {
+                'titulo': 'Error',
+                'mensaje': 'Usuario sin empresa asignada.',
+            }, status=403)
         
         try:
             # Si el decorador anterior ya cargó la orden, usarla
             if hasattr(request, 'orden_validada'):
                 orden = request.orden_validada
             else:
-                orden = OrdenDeServicio.objects.get(id=orden_id, empresa=getattr(request.user, 'empresa', None))
+                orden = OrdenDeServicio.objects.get(id=orden_id, empresa=empresa)
             
             # VALIDACIÓN CRÍTICA: ¿Están validados los resultados?
             if orden.estado != 'VALIDADO':

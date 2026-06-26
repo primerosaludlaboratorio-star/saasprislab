@@ -62,6 +62,7 @@ from core.models import (
 from core.models.base import get_google_drive_storage
 from core.services.motor_recetas import generar_receta_pdf
 from core.services.motor_reportes_lab import generar_reporte_pdf, guardar_reporte_en_storage
+import logging
 
 # Datos clínicos reales (NO Lorem Ipsum) para PDFs con peso y estructura real
 NOMBRES_PACIENTES = [
@@ -177,6 +178,7 @@ class Command(BaseCommand):
                     subprocess.run(['pkill', '-f', 'stress_test_extremo'], capture_output=True, timeout=5)
             time.sleep(5)
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _detener_procesos_huerfanos (stress_test_extremo.py)")
             time.sleep(5)
 
     def handle(self, *args, **options):
@@ -196,6 +198,7 @@ class Command(BaseCommand):
             try:
                 return self._handle_interno(args, options)
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (stress_test_extremo.py)")
                 err_str = str(e).lower()
                 if 'database is locked' in err_str and intento < max_reintentos - 1:
                     self.stdout.write(self.style.WARNING(f'Database locked (intento {intento + 1}/{max_reintentos}). Reintentando...'))
@@ -340,9 +343,11 @@ class Command(BaseCommand):
             try:
                 c2 = Producto.objects.filter(empresa=empresa).aggregate( s=Sum('stock'))
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en _ejecutar_concurrencia (stress_test_extremo.py)")
                 c2 = {'s': 0}
             return c1, c2.get('s') or 0
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _ejecutar_concurrencia (stress_test_extremo.py)")
             return -1, -1
 
     def _obtener_o_crear_producto(self, empresa):
@@ -451,6 +456,7 @@ class Command(BaseCommand):
                     if (i + 1) % 200 == 0:
                         self.stdout.write(f'   Ventas: {i + 1}/{n}')
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en _cargar_ventas (stress_test_extremo.py)")
                 metricas['errores_500_504'].append(('venta', i + 1, str(e)))
                 if len(metricas['errores_500_504']) <= 5:
                     self.stdout.write(self.style.ERROR(f'   Error venta {i + 1}: {e}'))
@@ -558,6 +564,7 @@ class Command(BaseCommand):
                     if (i + 1) % 100 == 0:
                         self.stdout.write(f'   Consultas: {i + 1}/{n}')
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en _cargar_consultas_recetas_pdf (stress_test_extremo.py)")
                 metricas['errores_500_504'].append(('consulta', i + 1, str(e)))
                 if len(metricas['errores_500_504']) <= 5:
                     self.stdout.write(self.style.ERROR(f'   Error consulta {i + 1}: {e}'))
@@ -643,6 +650,7 @@ class Command(BaseCommand):
                     if (i + 1) % 200 == 0:
                         self.stdout.write(f'   Lab: {i + 1}/{n}')
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en _cargar_laboratorio (stress_test_extremo.py)")
                 metricas['errores_500_504'].append(('laboratorio', i + 1, str(e)))
                 if len(metricas['errores_500_504']) <= 5:
                     self.stdout.write(self.style.ERROR(f'   Error lab {i + 1}: {e}'))
@@ -724,6 +732,7 @@ class Command(BaseCommand):
                     if (i + 1) % 10 == 0:
                         self._ejecutar_concurrencia(d['empresa'])
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en _cargar_multimedia (stress_test_extremo.py)")
                 metricas['errores_500_504'].append(('audio', i + 1, str(e)))
 
         for i in range(n_imagen):
@@ -787,6 +796,7 @@ class Command(BaseCommand):
                     if (i + 1) % 10 == 0:
                         self._ejecutar_concurrencia(d['empresa'])
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en _cargar_multimedia (stress_test_extremo.py)")
                 metricas['errores_500_504'].append(('imagen', i + 1, str(e)))
 
         self.stdout.write(f'   Multimedia: {n_audio} audios + {n_imagen} imágenes')

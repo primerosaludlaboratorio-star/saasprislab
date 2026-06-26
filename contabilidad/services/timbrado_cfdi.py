@@ -7,7 +7,7 @@ import logging
 from typing import Any, Callable
 
 from django.contrib import messages
-from django.db import OperationalError, transaction
+from django.db import IntegrityError, OperationalError, transaction
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.utils import timezone
@@ -121,7 +121,7 @@ def ejecutar_timbrado(request, factura_id: int):
                 factura = (
                     FacturaCFDI.objects.select_for_update(nowait=True)
                     .select_related('cliente', 'usuario_creo')
-                    .get(id=factura_id, cliente__empresa=empresa)
+                    .get(id=factura_id, empresa=empresa)
                 )
             except FacturaCFDI.DoesNotExist:
                 if wants_json:
@@ -274,7 +274,7 @@ def ejecutar_timbrado(request, factura_id: int):
             messages.error(request, f'✗ {msg_err}')
             return _safe_next_redirect(request, factura.id)
 
-    except Exception as exc:
+    except (OperationalError, ValueError, IntegrityError, ConnectionError, TimeoutError) as exc:
         logger.exception('Error al timbrar factura %s', factura_id)
         friendly = str(exc).strip() if str(exc).strip() else (
             'No se pudo completar el timbrado. Si el problema persiste, contacte a soporte.'
@@ -285,7 +285,7 @@ def ejecutar_timbrado(request, factura_id: int):
             with transaction.atomic():
                 f_rec = (
                     FacturaCFDI.objects.select_for_update(nowait=True)
-                    .filter(id=factura_id, cliente__empresa=empresa)
+                    .filter(id=factura_id, empresa=empresa)
                     .first()
                 )
                 if f_rec and f_rec.estado == 'FACTURANDO':
@@ -301,7 +301,7 @@ def ejecutar_timbrado(request, factura_id: int):
                             'ultimo_error_pac',
                         ]
                     )
-        except Exception:
+        except (OperationalError, ValueError, IntegrityError):
             logger.exception('No se pudo recuperar factura tras error de timbrado %s', factura_id)
 
         if wants_json:

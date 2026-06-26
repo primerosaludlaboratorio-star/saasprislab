@@ -7,6 +7,7 @@ import logging
 from decimal import Decimal, InvalidOperation
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Sum, Count
 from django.http import JsonResponse
@@ -21,7 +22,11 @@ logger = logging.getLogger('core')
 
 
 def _empresa(request):
-    return getattr(request.user, 'empresa', None)
+    """Retorna la empresa del usuario. Lanza PermissionDenied si no tiene empresa asignada."""
+    empresa = getattr(request.user, 'empresa', None)
+    if empresa is None:
+        raise PermissionDenied('Usuario no tiene empresa asignada.')
+    return empresa
 
 
 @login_required
@@ -186,14 +191,20 @@ def marcar_periodo_pagado(request, pk):
 
 
 # ── Alias para rutas legacy ────────────────────────────────────────────────────
+@login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE')
 def ver_periodo(request, periodo_id):
     return detalle_periodo(request, pk=periodo_id)
 
 
+@login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE')
 def ver_nomina(request, nomina_id):
     return editar_recibo(request, pk=nomina_id)
 
 
+@login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE')
 def cerrar_periodo(request, periodo_id):
     return marcar_periodo_pagado(request, pk=periodo_id)
 

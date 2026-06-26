@@ -12,6 +12,7 @@ import traceback
 import time
 from colorama import init, Fore, Style
 from decimal import Decimal
+import logging
 
 init(autoreset=True)
 
@@ -99,6 +100,7 @@ class Command(BaseCommand):
                 return status < 400, response
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_url (auditoria_medico_full.py)")
             tiempo_respuesta = time.time() - inicio
             self.log_result('ERROR', f"{nombre} - Excepción: {str(e)}", traceback.format_exc())
             return False, None
@@ -169,6 +171,7 @@ class Command(BaseCommand):
             
             self.log_result('OK', "Usuarios de prueba creados: test_medico_audit, test_director_audit")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_medico_full.py)")
             self.log_result('ERROR', f"No se pudo crear usuarios: {str(e)}")
             return
 
@@ -200,6 +203,7 @@ class Command(BaseCommand):
                 self.log_result('OK', f"Médico de prueba creado: {self.medico_prueba.nombre_completo}")
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_medico_full.py)")
             self.log_result('WARNING', f"Error al crear datos de prueba: {str(e)}")
 
         # PASO 1: Dashboard Médico

@@ -74,3 +74,6 @@ class CitaMedicaForm(forms.ModelForm):
         if self.empresa:
             self.fields['paciente'].queryset = Paciente.objects.filter(empresa=self.empresa).order_by('nombres', 'apellido_paterno')
             self.fields['medico'].queryset = Medico.objects.filter(empresa=self.empresa).order_by('nombre_completo')
+        else:
+            self.fields['paciente'].queryset = Paciente.objects.none()
+            self.fields['medico'].queryset = Medico.objects.none()

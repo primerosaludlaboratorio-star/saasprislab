@@ -55,6 +55,53 @@ def configuracion_dashboard(request):
 
 
 @login_required
+def configuracion_empresa(request):
+    """
+    Vista para configurar datos de la empresa.
+    """
+    empresa = get_empresa_usuario(request.user)
+    if not empresa:
+        from django.contrib import messages
+        messages.error(request, 'Usuario no tiene empresa asignada.')
+        return redirect('home')
+    
+    if request.method == 'POST':
+        from django.forms import ModelForm
+        from core.models import Empresa
+        
+        class EmpresaForm(ModelForm):
+            class Meta:
+                model = Empresa
+                fields = ['nombre', 'razon_social', 'rfc', 'direccion', 'telefono', 
+                         'email', 'logo', 'sitio_web']
+        
+        form = EmpresaForm(request.POST, request.FILES, instance=empresa)
+        if form.is_valid():
+            form.save()
+            from django.contrib import messages
+            messages.success(request, 'Datos de empresa actualizados exitosamente.')
+            return redirect('configuracion_dashboard')
+        else:
+            from django.contrib import messages
+            messages.error(request, 'Error al actualizar datos. Verifique los campos.')
+    else:
+        from django.forms import ModelForm
+        from core.models import Empresa
+        
+        class EmpresaForm(ModelForm):
+            class Meta:
+                model = Empresa
+                fields = ['nombre', 'razon_social', 'rfc', 'direccion', 'telefono', 
+                         'email', 'logo', 'sitio_web']
+        form = EmpresaForm(instance=empresa)
+    
+    return render(request, 'core/configuracion_empresa.html', {
+        'form': form,
+        'empresa': empresa,
+    })
+
+
+@login_required
 @require_http_methods(["GET"])
 def api_ia_consumo(request):
     """API JSON: datos de consumo IA del mes actual para el widget del Director."""

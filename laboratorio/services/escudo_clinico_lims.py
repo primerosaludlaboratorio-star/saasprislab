@@ -108,7 +108,13 @@ def notificar_panico_escudo_lims(rp, orden, validacion_dict: dict, request_user=
                 paciente_nombre=paciente_nombre,
                 parametro_nombre=nombre_param,
             )
+        except (ValidationError, IntegrityError) as exc:
+            logger.error('Escudo LIMS - Error de datos en alerta crítica: %s', exc, exc_info=True)
+        except OperationalError as exc:
+            logger.error('Escudo LIMS - Error de base de datos en alerta crítica: %s', exc, exc_info=True)
+        except ImportError as exc:
+            logger.warning('Escudo LIMS - Modelo de notificación no disponible: %s', exc)
         except Exception as exc:
-            logger.warning('Escudo LIMS: disparar_alerta_critica falló: %s', exc)
+            logger.error('Escudo LIMS - Error inesperado en alerta crítica: %s', exc, exc_info=True)
 
     return notif

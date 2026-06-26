@@ -47,6 +47,7 @@ class Command(BaseCommand):
                 if model_name == 'Usuario' and count == 0:
                     errors.append('No hay ningun Usuario.')
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (verificar_integridad.py)")
                 self.stdout.write(self.style.ERROR('   %s.%s: ERROR %s' % (app_label, model_name, e)))
                 errors.append('%s.%s: %s' % (app_label, model_name, e))
 
@@ -64,6 +65,7 @@ class Command(BaseCommand):
                     for seq_name, last_val in cursor.fetchall():
                         self.stdout.write('   %s: last_value=%s' % (seq_name, last_val))
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (verificar_integridad.py)")
                 warnings.append('Secuencias: %s' % e)
 
         if not quick:
@@ -101,6 +103,7 @@ class Command(BaseCommand):
                     else:
                         self.stdout.write('   %s.%s (%s): OK' % (app, model_name, fk_attr))
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en handle (verificar_integridad.py)")
                     self.stdout.write(self.style.WARNING('   %s.%s: skip (%s)' % (app, model_name, e)))
 
         self.stdout.write('\n=== RESUMEN ===')

@@ -21,7 +21,7 @@ class LaboratorioConfig(AppConfig):
             import logging
             logger = logging.getLogger(__name__)
             logger.info("Signals de laboratorio cargados correctamente")
-        except Exception as e:
+        except (ImportError, ModuleNotFoundError) as e:
             import logging
             logger = logging.getLogger(__name__)
             logger.warning(f"Error cargando signals de laboratorio: {str(e)}")

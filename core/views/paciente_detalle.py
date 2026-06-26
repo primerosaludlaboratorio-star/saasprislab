@@ -96,6 +96,7 @@ class ExpedienteClinicoView(LoginRequiredMixin, DetailView):
                         empresa=em,
                     )
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en dispatch (paciente_detalle.py)")
                 logger.debug('Forense EXPEDIENTE_VIEW omitido', exc_info=True)
         return response
 
@@ -290,6 +291,7 @@ class ExpedienteClinicoView(LoginRequiredMixin, DetailView):
             try:
                 archivo_url = orden.archivo_resultado.url
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en _normalizar_laboratorio (paciente_detalle.py)")
                 archivo_url = None
         
         return {

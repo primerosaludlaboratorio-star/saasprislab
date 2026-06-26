@@ -113,6 +113,7 @@ class Command(BaseCommand):
                 if connection.connection:
                     out["conexion_id"] = id(connection.connection)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _metricas_bd (generar_auditoria_gemini.py)")
             out["conexion"] = "ERROR"
             out["error"] = str(e)[:200]
 
@@ -144,6 +145,7 @@ class Command(BaseCommand):
                 })
             return items
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _errores_sentinel (generar_auditoria_gemini.py)")
             return [{"error_import": str(e)[:200]}]
 
     def _estado_drive(self) -> dict:
@@ -166,8 +168,10 @@ class Command(BaseCommand):
                 storage.delete(name)
                 out["test_escritura"] = "OK"
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en _estado_drive (generar_auditoria_gemini.py)")
                 out["test_escritura"] = str(e)[:150]
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _estado_drive (generar_auditoria_gemini.py)")
             out["error"] = str(e)[:200]
         return out
 

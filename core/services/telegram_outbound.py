@@ -51,5 +51,6 @@ def send_telegram_message(
         )
         return bool(r.ok)
     except Exception as exc:
+        logging.getLogger(__name__).exception("Error inesperado en send_telegram_message (telegram_outbound.py)")
         logger.debug('Telegram sendMessage falló: %s', exc)
         return False

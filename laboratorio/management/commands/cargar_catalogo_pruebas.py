@@ -176,8 +176,20 @@ class Command(BaseCommand):
                                     if force:
                                         self.stdout.write(self.style.WARNING(f'  [ACTUALIZADO] Estudio: {codigo_unico} - {nombre}'))
                             
-                        except Exception as e:
-                            self.stdout.write(self.style.ERROR(f'  [ERROR] Fila {idx}: {str(e)}'))
+                        except csv.Error as e:
+                            self.stdout.write(self.style.ERROR(f'  [ERROR] Fila {idx}: Error CSV - {str(e)}'))
+                            errores += 1
+                            continue
+                        except ValueError as e:
+                            self.stdout.write(self.style.ERROR(f'  [ERROR] Fila {idx}: Error de valor - {str(e)}'))
+                            errores += 1
+                            continue
+                        except django.core.exceptions.ValidationError as e:
+                            self.stdout.write(self.style.ERROR(f'  [ERROR] Fila {idx}: Error de validación - {str(e)}'))
+                            errores += 1
+                            continue
+                        except DatabaseError as e:
+                            self.stdout.write(self.style.ERROR(f'  [ERROR] Fila {idx}: Error de base de datos - {str(e)}'))
                             errores += 1
                             continue
                 
@@ -197,7 +209,21 @@ class Command(BaseCommand):
                 self.stdout.write(f'   - Total de estudios en catálogo: {total_estudios}')
                 self.stdout.write(self.style.SUCCESS(f'\n[EXITO] Catálogo Maestro de Pruebas cargado exitosamente!\n'))
                 
-        except Exception as e:
+        except csv.Error as e:
+    logger.error(f"CSV Error: {e}")
+except ValueError as e:
+    logger.error(f"ValueError: {e}")
+except ValidationError as e:
+    logger.error(f"ValidationError: {e}")
+except csv.Error as e:
+    logger.error(f"CSV Error: {e}")
+except ValueError as e:
+    logger.error(f"ValueError: {e}")
+except ValidationError as e:
+    logger.error(f"ValidationError: {e}")
+except Exception as e:
+    logger.error(f"Error desconocido: {e}", exc_info=True)
+    logger.error(f"Error desconocido: {e}", exc_info=True)
             self.stdout.write(self.style.ERROR(f'\n[ERROR] Error durante la carga: {str(e)}'))
             self.stdout.write(self.style.ERROR('   La transaccion ha sido revertida.'))
             raise

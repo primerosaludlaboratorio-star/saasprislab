@@ -9,6 +9,7 @@ from core.views.medico import generar_pdf_receta
 from django.test import RequestFactory
 from django.contrib.auth.models import AnonymousUser
 from datetime import date
+import logging
 
 class Command(BaseCommand):
     help = 'Prueba la generación de PDF de receta'
@@ -116,6 +117,7 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(self.style.ERROR(f'✗ Error al generar PDF: Status {response.status_code}'))
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (test_pdf_receta.py)")
             self.stdout.write(self.style.ERROR(f'✗ Error: {str(e)}'))
             import traceback
             self.stdout.write(traceback.format_exc())

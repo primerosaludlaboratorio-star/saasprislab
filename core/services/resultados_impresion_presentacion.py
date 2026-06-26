@@ -10,6 +10,7 @@ from django.db.models import Q
 from core.models import ResultadoParametro
 from core.utils.detalle_orden import attach_detalle_display_attrs
 from lims.models import Analito, ValorReferenciaAnalito
+import logging
 
 
 def _categoria_grupo_detalle(detalle) -> str:
@@ -39,6 +40,7 @@ def _rango_referencia_para_analito(analito, paciente):
         try:
             dias_vida = max((date.today() - fecha_nacimiento).days, 0)
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _rango_referencia_para_analito (resultados_impresion_presentacion.py)")
             dias_vida = None
 
     rangos = list(ValorReferenciaAnalito.objects.filter(analito=analito).order_by("edad_minima", "sexo"))
@@ -197,6 +199,7 @@ def construir_detalles_procesados_orden(orden):
                                 for h in hist_qs
                             ]
                     except Exception:
+                        logging.getLogger(__name__).exception("Error inesperado en construir_detalles_procesados_orden (resultados_impresion_presentacion.py)")
                         param["historial"] = []
                 except (ValueError, TypeError):
                     param.setdefault("es_anormal", False)

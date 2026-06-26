@@ -16,29 +16,20 @@ from core.validators import (
     validate_backup_upload,
     validate_fecha_nacimiento_razonable,
 )
+import logging
 
 
 # ==============================================================================
-# FUNCIÓN HELPER PARA STORAGE BACKEND (Drive / Local)
+# FUNCIÓN HELPER PARA STORAGE BACKEND (Local / Vultr S3)
 # ==============================================================================
 def get_google_drive_storage():
     """
-    Retorna el storage backend apropiado (Drive → local).
-    Prioridad: Google Drive → FileSystem (dev).
+    Retorna el storage backend activo del sistema.
+    Google Drive fue retirado del flujo activo; este helper queda como
+    shim de compatibilidad para migraciones y campos ya serializados.
     """
-    from django.conf import settings
-
-    # Prioridad 1: Drive activo
-    if getattr(settings, '_DRIVE_STORAGE_ACTIVO', False):
-        try:
-            from config.storage_backends import TenantDriveStorage
-            return TenantDriveStorage()
-        except Exception:
-            pass
-
-    # Prioridad 2: Local (desarrollo o VPS sin Drive)
-    from django.core.files.storage import default_storage
-    return default_storage
+    from config.storage_backends import get_tenant_storage
+    return get_tenant_storage()
 
 
 # ==============================================================================
@@ -164,6 +155,7 @@ class Empresa(models.Model):
         try:
             return self._fernet().decrypt(self.byok_gemini_api_key_enc.encode()).decode()
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en get_byok_gemini_key (base.py)")
             return None
 
     def set_drive_config(self, json_str: str):
@@ -178,6 +170,7 @@ class Empresa(models.Model):
         try:
             return self._fernet().decrypt(self.drive_client_config_enc.encode()).decode()
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en get_drive_config (base.py)")
             return None
 
     def tiene_byok_gemini(self) -> bool:
@@ -268,9 +261,11 @@ class ConfiguracionModulos(models.Model):
     )
 
     pin_precio_neto = models.CharField(
-        max_length=10, default='1234',
+        max_length=10,
+        blank=True,
+        default='',
         verbose_name="PIN Precio Neto (Staff)",
-        help_text="PIN numérico para autorizar descuento a precio de costo. Default: 1234"
+        help_text="PIN numérico para autorizar descuento a precio de costo. Debe configurarse manualmente."
     )
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Fecha de Actualización")
 

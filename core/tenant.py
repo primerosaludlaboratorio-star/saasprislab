@@ -77,6 +77,7 @@ def _shadow_settings():
             getattr(settings, 'DEBUG', False),
         )
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _shadow_settings (tenant.py)")
         return True, False, False, False
 
 
@@ -85,6 +86,7 @@ def _get_http_request():
         from core.middleware import empresa as empresa_mw
         return empresa_mw.get_current_request()
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _get_http_request (tenant.py)")
         return None
 
 

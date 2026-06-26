@@ -13,6 +13,7 @@ from django.db.models import Q
 from core.models import Empresa, Paciente
 from laboratorio.models import Estudio as LabEstudio, PerfilLaboratorio
 from core.utils.whatsapp_sender import generar_enlace_whatsapp, generar_mensaje_cotizacion
+import logging
 
 
 @login_required
@@ -67,6 +68,7 @@ def api_buscar_paciente_cotizacion(request):
         })
     
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_buscar_paciente_cotizacion (cotizacion.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -105,6 +107,7 @@ def api_crear_paciente_rapido(request):
         })
     
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_crear_paciente_rapido (cotizacion.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -133,6 +136,7 @@ def api_buscar_estudios_cotizacion(request):
                 Q(nombre__icontains=query) | Q(codigo__icontains=query) | Q(keywords__icontains=query)
             ).order_by('nombre')[:20]
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en api_buscar_estudios_cotizacion (cotizacion.py)")
             estudios = []
 
         # PerfilLaboratorio no tiene FK a empresa en el modelo actual.
@@ -175,6 +179,7 @@ def api_buscar_estudios_cotizacion(request):
         })
     
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_buscar_estudios_cotizacion (cotizacion.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -203,6 +208,7 @@ def api_calcular_total_cotizacion(request):
         })
     
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_calcular_total_cotizacion (cotizacion.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -240,6 +246,7 @@ def api_enviar_whatsapp_cotizacion(request):
         })
     
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_enviar_whatsapp_cotizacion (cotizacion.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -276,6 +283,7 @@ def convertir_cotizacion_orden(request):
         })
     
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en convertir_cotizacion_orden (cotizacion.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)

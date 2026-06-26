@@ -10,6 +10,7 @@ from django.core.management.base import BaseCommand
 from django.test import Client
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+import logging
 
 Usuario = get_user_model()
 
@@ -116,6 +117,7 @@ class Command(BaseCommand):
                     errores.append(f'{label}: HTTP {resp.status_code}')
                     self.stdout.write(self.style.ERROR(f'  [FAIL] {label}: HTTP {resp.status_code}'))
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (verificar_modulos_usuario.py)")
                 errores.append(f'{label}: {e}')
                 self.stdout.write(self.style.ERROR(f'  [FAIL] {label}: {e}'))
 
@@ -139,6 +141,7 @@ class Command(BaseCommand):
                 errores.append(f'PDV buscar: HTTP {resp.status_code}')
                 self.stdout.write(self.style.ERROR(f'  [FAIL] Búsqueda PDV: HTTP {resp.status_code}'))
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (verificar_modulos_usuario.py)")
             errores.append(f'PDV buscar: {e}')
             self.stdout.write(self.style.ERROR(f'  [FAIL] Búsqueda PDV: {e}'))
 

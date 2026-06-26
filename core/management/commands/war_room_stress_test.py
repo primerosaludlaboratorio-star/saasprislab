@@ -32,6 +32,7 @@ from core.models import (
     AuditLog, BackupRegistro, DetalleOrden as CoreDetalleOrden,
 )
 from lims.models import PerfilLims
+import logging
 
 
 class Command(BaseCommand):
@@ -96,6 +97,7 @@ class Command(BaseCommand):
                     resultado = future.result(timeout=options.get('timeout', 120))
                     resultados[fase] = resultado
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en handle (war_room_stress_test.py)")
                     self.stdout.write(self.style.ERROR(f'❌ Error en {fase}: {str(e)}'))
                     resultados[fase]['exito'] = False
                     resultados[fase]['error'] = str(e)
@@ -158,6 +160,7 @@ class Command(BaseCommand):
                         self.stdout.write(f'   ✅ {ordenes_creadas} órdenes creadas...')
             
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en crear_orden_completa (war_room_stress_test.py)")
                 errores += 1
                 if errores <= 3:
                     self.stdout.write(self.style.ERROR(f'   ❌ Error: {str(e)}'))
@@ -169,6 +172,7 @@ class Command(BaseCommand):
                 try:
                     future.result()
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en crear_orden_completa (war_room_stress_test.py)")
                     errores += 1
         
         tiempo = time.time() - inicio
@@ -269,6 +273,7 @@ class Command(BaseCommand):
                 # Por ahora verificamos manualmente
                 intentos_bloqueados += 1
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en _fase_2_violacion_triple_llave (war_room_stress_test.py)")
                 intentos_bloqueados += 1
         
         # Verificar que todos fueron bloqueados
@@ -340,6 +345,7 @@ class Command(BaseCommand):
                 venta_bloqueada = True
                 self.stdout.write('   ✅ Venta bloqueada correctamente (stock insuficiente)')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _fase_3_conflicto_fefo (war_room_stress_test.py)")
             venta_bloqueada = True
         
         # Intentar recetar en Receta 4.0
@@ -348,6 +354,7 @@ class Command(BaseCommand):
             if producto_disponible < 1:
                 receta_bloqueada = True
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _fase_3_conflicto_fefo (war_room_stress_test.py)")
             receta_bloqueada = True
         
         # Verificar que se disparó alerta FEFO (lote vence en 15 días < 30)
@@ -397,6 +404,7 @@ class Command(BaseCommand):
                 if (i + 1) % 10 == 0:
                     self.stdout.write(f'   ✅ {i + 1} ediciones realizadas...')
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en _fase_4_estres_forense (war_room_stress_test.py)")
                 self.stdout.write(self.style.ERROR(f'   ❌ Error en edición: {str(e)}'))
         
         # 10 soft deletes de órdenes
@@ -408,6 +416,7 @@ class Command(BaseCommand):
                 orden.delete()  # Soft delete a través de signal
                 deletes_registrados += 1
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en _fase_4_estres_forense (war_room_stress_test.py)")
                 self.stdout.write(self.style.ERROR(f'   ❌ Error en soft delete: {str(e)}'))
         
         # Verificar logs de auditoría
@@ -485,6 +494,7 @@ class Command(BaseCommand):
                     self.stdout.write(f'   ✅ Hash SHA-256: {backup_registro.hash_verificacion[:32]}...')
         
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _fase_5_backup_bajo_fuego (war_room_stress_test.py)")
             self.stdout.write(self.style.ERROR(f'   ❌ Error en backup: {str(e)}'))
         
         # Verificar que las órdenes no se interrumpieron

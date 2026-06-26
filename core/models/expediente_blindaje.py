@@ -31,6 +31,7 @@ from decimal import Decimal
 from django.db import models, transaction
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+import logging
 
 
 # =============================================================================
@@ -1093,4 +1094,5 @@ try:
     if apps.ready:
         conectar_seniales()
 except Exception:
-    pass  # Las señales se conectarán cuando Django esté listo
+    logging.getLogger(__name__).exception("Error inesperado en crear_snapshot_al_guardar (expediente_blindaje.py)")
+    pass  # Defensa de importación temprana: si Django aún no está listo, la conexión real ocurre desde AppConfig.ready().

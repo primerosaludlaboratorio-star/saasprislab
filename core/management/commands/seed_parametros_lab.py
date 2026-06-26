@@ -15,6 +15,7 @@ Uso:
 """
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+import logging
 
 # ---------------------------------------------------------------------------
 # Catálogo base de parámetros de CBC (22 parámetros standard OMS/CLSI)
@@ -333,6 +334,7 @@ class Command(BaseCommand):
                         )
                 migrados += 1
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en _migrar_desde_legacy (seed_parametros_lab.py)")
             self.stdout.write(self.style.WARNING(
                 f"  ⚠  Migración legacy saltada: {exc}"
             ))

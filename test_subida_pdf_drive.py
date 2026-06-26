@@ -20,6 +20,7 @@ import sys
 import django
 from datetime import datetime
 from io import BytesIO
+import logging
 
 # Colores para terminal
 GREEN = '\033[92m'
@@ -96,6 +97,7 @@ def generar_pdf_dummy():
         return pdf_bytes
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en generar_pdf_dummy (test_subida_pdf_drive.py)")
         print_error(f"Error al generar PDF: {e}")
         import traceback
         traceback.print_exc()
@@ -189,6 +191,7 @@ def guardar_en_modelo_laboratorio(pdf_bytes):
             return orden
             
         except Exception as save_error:
+            logging.getLogger(__name__).exception("Error inesperado en guardar_en_modelo_laboratorio (test_subida_pdf_drive.py)")
             # Si falla (ej. Google Drive sin credenciales), intentar con FileSystemStorage
             print_error(f"Error al guardar con storage configurado: {save_error}")
             print_info("Intentando con FileSystemStorage local como fallback...")
@@ -208,6 +211,7 @@ def guardar_en_modelo_laboratorio(pdf_bytes):
             return orden
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en guardar_en_modelo_laboratorio (test_subida_pdf_drive.py)")
         print_error(f"Error al guardar en modelo: {e}")
         import traceback
         traceback.print_exc()
@@ -249,6 +253,7 @@ def verificar_url_google_drive(orden):
                 return False, url
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en verificar_url_google_drive (test_subida_pdf_drive.py)")
             # Si falla al generar URL (Google Drive sin credenciales), tratar como local
             print_error(f"Error al generar URL: {e}")
             print_info("El archivo se guardo pero no se puede generar URL publica")
@@ -261,6 +266,7 @@ def verificar_url_google_drive(orden):
             return False, url_local
             
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en verificar_url_google_drive (test_subida_pdf_drive.py)")
         print_error(f"Error al verificar URL: {e}")
         import traceback
         traceback.print_exc()
@@ -390,6 +396,7 @@ if __name__ == '__main__':
         print(f"\n{YELLOW}Prueba interrumpida por el usuario{END}")
         sys.exit(1)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en main (test_subida_pdf_drive.py)")
         print(f"\n{RED}{BOLD}ERROR FATAL:{END}")
         print(f"{RED}{e}{END}")
         import traceback

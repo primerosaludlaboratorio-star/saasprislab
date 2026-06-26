@@ -87,11 +87,29 @@ def procesar_audio_consulta(request):
             'datos': datos
         })
         
-    except Exception as e:
-        logger.error(f"Error al procesar audio de consulta: {e}", exc_info=True)
+    except ValidationError as e:
+        logger.error(f"Error de validación en audio de consulta: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'Datos de audio inválidos o incompletos'
+        }, status=400)
+    except PermissionError as e:
+        logger.error(f"Error de permisos en audio de consulta: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'No tiene permisos para procesar audio'
+        }, status=403)
+    except (IOError, OSError) as e:
+        logger.error(f"Error de archivo en audio de consulta: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'Error procesando el archivo de audio'
+        }, status=422)
+    except Exception as e:
+        logger.error(f"Error inesperado al procesar audio de consulta: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'Error interno del servidor'
         }, status=500)
 
 
@@ -182,11 +200,29 @@ def procesar_audio_laboratorio(request):
             'valores': datos
         })
         
-    except Exception as e:
-        logger.error(f"Error al procesar audio de laboratorio: {e}", exc_info=True)
+    except ValidationError as e:
+        logger.error(f"Error de validación en audio de laboratorio: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'Datos de audio o estudio inválidos'
+        }, status=400)
+    except PermissionError as e:
+        logger.error(f"Error de permisos en audio de laboratorio: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'No tiene permisos para procesar audio de laboratorio'
+        }, status=403)
+    except (IOError, OSError) as e:
+        logger.error(f"Error de archivo en audio de laboratorio: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'Error procesando el archivo de audio'
+        }, status=422)
+    except Exception as e:
+        logger.error(f"Error inesperado al procesar audio de laboratorio: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'Error interno del servidor'
         }, status=500)
 
 
@@ -211,9 +247,21 @@ def verificar_api_gemini(request):
             'conectado': resultado
         })
         
-    except Exception as e:
-        logger.error(f"Error al verificar API de Gemini: {e}", exc_info=True)
+    except ImportError as e:
+        logger.error(f"Error importando servicio Gemini: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'Servicio de IA no disponible'
+        }, status=503)
+    except ConnectionError as e:
+        logger.error(f"Error de conexión a API Gemini: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'No se puede conectar al servicio de IA'
+        }, status=503)
+    except Exception as e:
+        logger.error(f"Error inesperado al verificar API de Gemini: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'Error interno del servidor'
         }, status=500)

@@ -16,6 +16,7 @@ from datetime import datetime
 from core.models import Empresa, Sucursal, Producto, Lote, Usuario
 from logistica.models import TransferenciaInventario, DetalleTransferencia
 from core.utils.trazabilidad import registrar_trazabilidad, serializar_modelo
+import logging
 @login_required
 def lista_transferencias(request):
     """Lista de transferencias de inventario."""
@@ -131,6 +132,7 @@ def crear_transferencia(request):
                 messages.success(request, f'Transferencia {transferencia.folio} creada exitosamente')
                 return redirect('ver_transferencia', transferencia_id=transferencia.id)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en crear_transferencia (transferencias.py)")
             messages.error(request, f'Error al crear transferencia: {str(e)}')
     
     # GET: Mostrar formulario
@@ -222,6 +224,7 @@ def enviar_transferencia(request, transferencia_id):
             
             messages.success(request, f'Transferencia {transferencia.folio} enviada exitosamente')
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en enviar_transferencia (transferencias.py)")
         messages.error(request, f'Error al enviar transferencia: {str(e)}')
     
     return redirect('ver_transferencia', transferencia_id=transferencia.id)
@@ -293,6 +296,7 @@ def recibir_transferencia(request, transferencia_id):
             
             messages.success(request, f'Transferencia {transferencia.folio} recibida exitosamente')
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en recibir_transferencia (transferencias.py)")
         messages.error(request, f'Error al recibir transferencia: {str(e)}')
     
     return redirect('ver_transferencia', transferencia_id=transferencia.id)

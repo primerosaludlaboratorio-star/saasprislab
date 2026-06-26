@@ -16,6 +16,8 @@ Cada lote tiene los campos `cantidad_actual` y `estado` que se actualizan.
 from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.db.utils import DatabaseError
+from django.core.exceptions import ValidationError
 import logging
 
 logger = logging.getLogger(__name__)
@@ -146,8 +148,8 @@ def evaluar_lectura_iot(sender, instance, created, **kwargs):
                         + (f'Ticket generado: #{ticket.pk}' if ticket else 'Ticket pre-existente')
                     ),
                 )
-            except Exception as exc:
+            except (DatabaseError, ValidationError) as exc:
                 logger.error('IoT: Error creando NotificacionDiscrepancia: %s', exc)
 
-    except Exception as exc:
+    except (DatabaseError, ValidationError) as exc:
         logger.error('IoT: Error procesando alerta fuera de rango: %s', exc, exc_info=True)

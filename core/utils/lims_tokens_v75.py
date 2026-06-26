@@ -201,6 +201,7 @@ class MotorOrdenesLIMS:
                         errores.append(f"No se encontró '{token['codigo']}' en el catálogo LIMS")
                         
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en generar_orden_desde_tokens (lims_tokens_v75.py)")
                     token['resuelto'] = False
                     errores.append(f"Error resolviendo {token['tipo']}:{token['codigo']}: {str(e)}")
             

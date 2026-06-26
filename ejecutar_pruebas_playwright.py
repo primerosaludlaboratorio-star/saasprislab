@@ -10,6 +10,7 @@ import os
 import sys
 import subprocess
 import django
+import logging
 
 # Configurar Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -33,6 +34,7 @@ def instalar_playwright():
         print('✅ Playwright instalado correctamente')
         return True
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en instalar_playwright (ejecutar_pruebas_playwright.py)")
         print(f'❌ Error al instalar Playwright: {str(e)}')
         return False
 
@@ -49,6 +51,7 @@ def ejecutar_pruebas():
         call_command('test', 'core.tests_e2e_playwright', verbosity=2)
         print('\n✅ Pruebas completadas')
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en ejecutar_pruebas (ejecutar_pruebas_playwright.py)")
         print(f'\n❌ Error al ejecutar pruebas: {str(e)}')
         sys.exit(1)
 

@@ -1,4 +1,16 @@
 """
+DEPRECATED: Este archivo sera eliminado en version 2.0
+Usar modelos de core en su lugar.
+"""
+
+import warnings
+warnings.warn(
+    f"{__name__} is deprecated. Use core models instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
+
+"""
 laboratorio/services/etiquetas_zpl.py
 ════════════════════════════════════════════════════════════════════════════════
 FASE 7 — Generación Nativa ZPL para Impresoras Zebra

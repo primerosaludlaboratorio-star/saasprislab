@@ -113,6 +113,7 @@ def verificar_integridad(registro_id: int) -> dict:
             'timestamp': ts,
         }
     except Exception as exc:
+        logging.getLogger(__name__).exception("Error inesperado en verificar_integridad (pris_audio_vision.py)")
         return {'valido': False, 'error': str(exc)}
 
 
@@ -285,6 +286,7 @@ def _cargar_checklist(empresa=None) -> list[dict]:
             if items:
                 return items
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _cargar_checklist (pris_audio_vision.py)")
         pass
     return _CHECKLIST_DEFAULT
 

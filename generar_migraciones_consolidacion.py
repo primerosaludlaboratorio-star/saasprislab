@@ -7,6 +7,7 @@ Responde automáticamente "1" a la pregunta de Django sobre UUID field.
 import os
 import sys
 import subprocess
+import logging
 
 def main():
     print("=" * 70)
@@ -53,6 +54,7 @@ def main():
             print(f"⏱️ Timeout al generar migraciones de {app}")
             process.kill()
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en main (generar_migraciones_consolidacion.py)")
             print(f"❌ Error inesperado: {e}")
         
         print()

@@ -133,6 +133,7 @@ class TenantStorageMiddleware:
             from config.storage_backends import set_tenant_context
             set_tenant_context(empresa_slug or 'default')
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en __call__ (seguridad.py)")
             pass
 
         return self.get_response(request)

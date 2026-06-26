@@ -192,9 +192,18 @@ class Command(BaseCommand):
                 if (i + 1) % 20 == 0:
                     self.stdout.write(f"[PROGRESO] {i+1}/{ordenes_objetivo} ordenes creadas")
 
-            except Exception as e:
-                errores.append(f"Orden {i+1}: {str(e)}")
-                continue
+            except SimulationError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {i+1}: Error de simulación - {str(e)}'))
+                        errores += 1
+                        continue
+                    except ValueError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {i+1}: Error de valor - {str(e)}'))
+                        errores += 1
+                        continue
+                    except DatabaseError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {i+1}: Error de base de datos - {str(e)}'))
+                        errores += 1
+                        continue
 
         # FASE 2: Capturar resultados y cambiar estados
         self.stdout.write(self.style.SUCCESS("\n[FASE 2] Capturando resultados y validando..."))
@@ -282,9 +291,18 @@ class Command(BaseCommand):
                     orden.save()
                     ordenes_con_resultados += 1
 
-            except Exception as e:
-                errores.append(f"Captura orden {orden.id}: {str(e)}")
-                continue
+            except SimulationError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {orden.id}: Error de simulación - {str(e)}'))
+                        errores += 1
+                        continue
+                    except ValueError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {orden.id}: Error de valor - {str(e)}'))
+                        errores += 1
+                        continue
+                    except DatabaseError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {orden.id}: Error de base de datos - {str(e)}'))
+                        errores += 1
+                        continue
 
         # FASE 3: Generar QRs para órdenes validadas
         self.stdout.write(self.style.SUCCESS("\n[FASE 3] Generando QRs para ordenes validadas..."))
@@ -296,8 +314,18 @@ class Command(BaseCommand):
                 qr_image = generar_qr_orden(orden.id, orden.folio_operacion if hasattr(orden, 'folio_operacion') else None)
                 if qr_image:
                     qrs_generados += 1
-            except Exception as e:
-                errores.append(f"QR orden {orden.id}: {str(e)}")
+            except SimulationError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] QR orden {orden.id}: Error de simulación - {str(e)}'))
+                        errores += 1
+                        continue
+                    except ValueError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] QR orden {orden.id}: Error de valor - {str(e)}'))
+                        errores += 1
+                        continue
+                    except DatabaseError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] QR orden {orden.id}: Error de base de datos - {str(e)}'))
+                        errores += 1
+                        continue
 
         # Calcular tiempo
         tiempo_total = time.time() - t0

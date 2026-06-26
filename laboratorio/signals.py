@@ -122,7 +122,7 @@ def registrar_historial_resultado(sender, instance, created, **kwargs):
         
         logger.info(f"Historial registrado para ResultadoParametro #{instance.id}")
 
-    except Exception as e:
+    except (ValueError, TypeError, DatabaseError) as e:
         logger.error(f"Error al registrar historial para ResultadoParametro #{instance.id}: {e}")
     
     # Limpiar atributos temporales
@@ -231,7 +231,7 @@ def asignar_permisos_grupos(permiso_sensibles, permiso_historial, permiso_diagno
             
             print(f"✅ Permisos asignados a grupo '{nombre_grupo}': {len(permisos)} permisos")
         
-        except Exception as e:
+        except (ValueError, PermissionError, Group.DoesNotExist) as e:
             print(f"❌ Error asignando permisos a '{nombre_grupo}': {str(e)}")
 
 
@@ -314,5 +314,5 @@ def inicializar_sistema_privacidad():
     try:
         crear_permisos_privacidad()
         print("✅ Sistema de privacidad inicializado correctamente")
-    except Exception as e:
+    except (ValueError, PermissionError, ImportError) as e:
         print(f"⚠️ Error inicializando sistema de privacidad: {str(e)}")

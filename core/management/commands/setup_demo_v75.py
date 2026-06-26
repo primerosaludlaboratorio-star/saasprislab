@@ -36,6 +36,7 @@ from core.models import (
     DetalleOrden,
     ResultadoParametro,
 )
+import logging
 
 User = get_user_model()
 
@@ -91,6 +92,7 @@ class Command(BaseCommand):
             try:
                 call_command("ensamblar_lims_v75", stdout=self.stdout, stderr=self.stderr)
             except Exception as exc:
+                logging.getLogger(__name__).exception("Error inesperado en handle (setup_demo_v75.py)")
                 raise CommandError(f"Falló ensamblar_lims_v75: {exc}") from exc
         else:
             self.stdout.write(self.style.WARNING(">>> Ensamblaje omitido (--saltar-ensamblaje).\n"))

@@ -8,6 +8,8 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db import transaction
+from django.db.utils import DatabaseError
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from laboratorio.models import CategoriaExamen, Estudio
@@ -91,7 +93,7 @@ def cargar_tarifas_desde_csv(request):
                     else:
                         estudios_actualizados += 1
 
-                except Exception as e:
+                except (DatabaseError, ValidationError, ValueError, TypeError, KeyError, AttributeError) as e:
                     logger.warning(f'[CSV Tarifas] Error fila {idx + 2}: {e}')
                     errores.append(f"Linea {idx + 2}: {str(e)}")
         
@@ -113,7 +115,7 @@ def cargar_tarifas_desde_csv(request):
             'errores_detalle': errores[:10]  # Solo mostrar primeros 10 errores
         })
         
-    except Exception as e:
+    except (DatabaseError, ValidationError, UnicodeDecodeError, csv.Error) as e:
         return JsonResponse({
             'ok': False,
             'mensaje': f'Error al procesar el archivo: {str(e)}'

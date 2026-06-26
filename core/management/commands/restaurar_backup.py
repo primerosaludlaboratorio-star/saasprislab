@@ -19,6 +19,7 @@ import tempfile
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.db import connection
+import logging
 
 
 class Command(BaseCommand):
@@ -84,6 +85,7 @@ class Command(BaseCommand):
                 try:
                     os.remove(local_path)
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en handle (restaurar_backup.py)")
                     pass
 
         if success:
@@ -204,8 +206,10 @@ class Command(BaseCommand):
                         n = cursor.fetchone()[0]
                         self.stdout.write('  %s: %s registros' % (label, n))
                     except Exception as e:
+                        logging.getLogger(__name__).exception("Error inesperado en _verify_restore (restaurar_backup.py)")
                         self.stdout.write(self.style.WARNING('  %s: no disponible (%s)' % (label, e)))
             return True
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _verify_restore (restaurar_backup.py)")
             self.stdout.write(self.style.ERROR('Verificacion post-restore fallo: %s' % e))
             return False

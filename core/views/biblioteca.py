@@ -9,6 +9,7 @@ from django.utils import timezone
 import json
 
 from core.models import LibroLiderazgo
+import logging
 
 
 @login_required
@@ -86,6 +87,7 @@ def api_cambiar_estado_libro(request, libro_id):
     except LibroLiderazgo.DoesNotExist:
         return JsonResponse({'status': 'error', 'mensaje': 'Libro no encontrado'}, status=404)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_cambiar_estado_libro (biblioteca.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 

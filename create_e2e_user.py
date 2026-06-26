@@ -3,6 +3,7 @@
 import os
 import sys
 import django
+import logging
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -60,6 +61,7 @@ try:
     print(f"   Sucursal: {sucursal.nombre} (ID: {sucursal.id})")
     
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (create_e2e_user.py)")
     print(f"❌ Error: {e}")
     import traceback
     traceback.print_exc()

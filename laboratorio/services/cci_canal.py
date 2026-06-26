@@ -98,8 +98,20 @@ def actualizar_canal_por_westgard(
                 titulo=f'CCI Westgard rechazo — {getattr(analito, "codigo", "")} / equipo {equipo.pk}',
                 detalle=(motivo + f' | analito_id={analito.pk} equipo_id={equipo.pk}')[:4000],
             )
+        except ValidationError as exc:
+            logger.error(f"CCI Westgard - Error de validación: {exc}", exc_info=True)
+            send_alert(f"CCI Fallo validación: {type(exc).__name__}")
+        except IntegrityError as exc:
+            logger.error(f"CCI Westgard - Error de integridad: {exc}", exc_info=True)
+            send_alert(f"CCI Fallo integridad: {type(exc).__name__}")
+        except OperationalError as exc:
+            logger.error(f"CCI Westgard - Error operacional BD: {exc}", exc_info=True)
+            send_alert(f"CCI Fallo BD: {type(exc).__name__}")
+        except ImportError as exc:
+            logger.warning(f"CCI Westgard - Modelo NotificacionDiscrepancia no disponible: {exc}")
         except Exception as exc:
-            logger.warning('War Room CCI Westgard: %s', exc)
+            logger.error(f"CCI Westgard - Error inesperado: {exc}", exc_info=True)
+            send_alert(f"CCI Fallo crítico: {type(exc).__name__}")
 
 
 def resolver_lote_control(empresa_id: int, analito_id: int):

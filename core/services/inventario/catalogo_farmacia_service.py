@@ -133,6 +133,7 @@ class CatalogoFarmaciaService:
                         norm_rows.append((cb, p, idx))
                         all_cbs.append(cb)
                     except Exception as e:
+                        logging.getLogger(__name__).exception("Error inesperado en carga_masiva_productos (catalogo_farmacia_service.py)")
                         errores.append(f'#{idx + 1}: {e}')
                         if len(errores) > 50:
                             break
@@ -188,6 +189,7 @@ class CatalogoFarmaciaService:
                             by_cb[cb] = obj
                             creados += 1
                     except Exception as e:
+                        logging.getLogger(__name__).exception("Error inesperado en carga_masiva_productos (catalogo_farmacia_service.py)")
                         errores.append(f'#{idx + 1}: {e}')
                         if len(errores) > 50:
                             break
@@ -261,6 +263,7 @@ class CatalogoFarmaciaService:
                                     ubicacion_fisica=(lote_data.get('ubicacion') or '')[:150] or None,
                                 )
                         except Exception as e:
+                            logging.getLogger(__name__).exception("Error inesperado en carga_masiva_productos (catalogo_farmacia_service.py)")
                             errores.append(f'#{idx + 1} lote: {e}')
                             if len(errores) > 50:
                                 break

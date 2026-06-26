@@ -5,6 +5,7 @@ Script para asignar empresa y sucursal al usuario admin.
 import os
 import sys
 import django
+import logging
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
@@ -55,7 +56,7 @@ try:
     print("[OK] USUARIO ADMIN CONFIGURADO CORRECTAMENTE")
     print("="*60)
     print(f"Usuario: admin")
-    print(f"Contraseña: admin123")
+    print("Contraseña: [definida por DEV_ADMIN_PASSWORD]")
     print(f"Rol: {admin_user.rol}")
     print(f"Empresa: {admin_user.empresa.nombre if admin_user.empresa else 'Sin asignar'}")
     print(f"Sucursal: {admin_user.sucursal.nombre if admin_user.sucursal else 'Sin asignar'}")
@@ -65,6 +66,7 @@ try:
 except User.DoesNotExist:
     print("[ERROR] El usuario 'admin' no existe.")
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (configurar_admin_completo.py)")
     print(f"[ERROR] Ocurrio un error: {e}")
     import traceback
     traceback.print_exc()

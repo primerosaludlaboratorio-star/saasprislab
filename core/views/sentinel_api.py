@@ -69,6 +69,7 @@ def api_shield_telemetry(request):
         return JsonResponse({'status': 'ok', 'logged': True})
 
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_shield_telemetry (sentinel_api.py)")
         logger.debug(f'SENTINEL-SHIELD: Error procesando telemetria: {e}')
         return JsonResponse({'status': 'ok', 'logged': False})  # 200 best-effort beacon
 
@@ -131,6 +132,7 @@ def api_sentinel_reset(request):
         })
 
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_sentinel_reset (sentinel_api.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 
@@ -180,8 +182,10 @@ def api_sentinel_diagnostico(request):
                         for r in cursor.fetchall()
                     ]
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en api_sentinel_diagnostico (sentinel_api.py)")
                 info[f'error_{table}'] = str(e)
 
         return JsonResponse({'status': 'success', 'diagnostico': info})
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_sentinel_diagnostico (sentinel_api.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)

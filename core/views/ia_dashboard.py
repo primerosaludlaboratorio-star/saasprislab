@@ -60,6 +60,7 @@ def ia_dashboard(request):
                     fecha__date=hoy
                 ).count()
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en ia_dashboard (ia_dashboard.py)")
                 pass
             
             try:
@@ -68,6 +69,7 @@ def ia_dashboard(request):
                     fecha_consulta__date=hoy
                 ).count()
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en ia_dashboard (ia_dashboard.py)")
                 pass
                 
     except Exception as e:
@@ -219,6 +221,7 @@ def api_ia_chat(request):
     try:
         data = json.loads(request.body or "{}")
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_ia_chat (ia_dashboard.py)")
         data = {}
 
     mensaje = (data.get("mensaje") or "").strip()
@@ -346,6 +349,7 @@ def api_ia_consultar_negocios(request):
     try:
         data = json.loads(request.body or "{}")
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_ia_consultar_negocios (ia_dashboard.py)")
         data = {}
 
     empresa = getattr(request.user, 'empresa', None)

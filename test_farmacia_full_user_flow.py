@@ -16,6 +16,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, ElementClickInterceptedException
+import logging
 
 BASE_URL = os.environ.get("PRISLAB_TEST_BASE_URL", "https://prislab-v5-811785477499.us-central1.run.app")
 USERNAME = os.environ.get("PRISLAB_TEST_USERNAME", "admin")
@@ -52,6 +53,7 @@ def console_errors(driver):
     try:
         return [e for e in driver.get_log("browser") if e.get("level") == "SEVERE"]
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en console_errors (test_farmacia_full_user_flow.py)")
         return []
 
 def run():
@@ -84,6 +86,7 @@ def run():
                 driver.find_element(By.CSS_SELECTOR, "button[type='submit'], input[type='submit']").click()
                 time.sleep(3)
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_full_user_flow.py)")
                 log_button("Login submit", False, str(e)[:200])
                 break
 
@@ -122,6 +125,7 @@ def run():
             pdv_link.click()
             time.sleep(3)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_full_user_flow.py)")
             # Fallback: direct navigate
             driver.get(BASE_URL.rstrip("/") + "/farmacia/pdv/")
             time.sleep(3)
@@ -149,6 +153,7 @@ def run():
             cards = container.find_elements(By.CSS_SELECTOR, ".card-producto, .card .card-body")
             log_button("Search box (type 'para')", True, f"Results area updated, cards: {len(cards)}")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_full_user_flow.py)")
             log_button("Search box (type 'para')", False, str(e)[:200])
             ss(driver, "04_search_error")
 
@@ -167,8 +172,10 @@ def run():
                 driver.find_element(By.CSS_SELECTOR, ".modal .btn-close, .modal [data-bs-dismiss='modal']").click()
                 time.sleep(0.8)
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_full_user_flow.py)")
                 pass
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_full_user_flow.py)")
             log_button("COBRAR", False, str(e)[:200])
 
         # Atajos
@@ -183,8 +190,10 @@ def run():
                 driver.find_element(By.CSS_SELECTOR, ".modal .btn-close, [data-bs-dismiss='modal']").click()
                 time.sleep(0.5)
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_full_user_flow.py)")
                 pass
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_full_user_flow.py)")
             log_button("Atajos", False, str(e)[:200])
 
         # Retiro
@@ -198,8 +207,10 @@ def run():
                 driver.find_element(By.CSS_SELECTOR, ".modal .btn-close, [data-bs-dismiss='modal'], .swal2-close").click()
                 time.sleep(0.5)
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_full_user_flow.py)")
                 pass
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_full_user_flow.py)")
             log_button("Retiro", False, str(e)[:200])
 
         # Corte
@@ -214,8 +225,10 @@ def run():
                 driver.find_element(By.CSS_SELECTOR, ".modal .btn-close, [data-bs-dismiss='modal']").click()
                 time.sleep(0.5)
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_full_user_flow.py)")
                 pass
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_full_user_flow.py)")
             log_button("Corte", False, str(e)[:200])
 
         # Limpiar
@@ -226,6 +239,7 @@ def run():
             ss(driver, "09_limpiar_after")
             log_button("Limpiar", True, "Clicked")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_full_user_flow.py)")
             log_button("Limpiar", False, str(e)[:200])
 
         # --- STEP 4: Console errors ---
@@ -233,10 +247,12 @@ def run():
         ss(driver, "10_final_state")
 
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_full_user_flow.py)")
         report["js_errors"].append(f"Fatal: {str(e)}")
         try:
             ss(driver, "99_fatal")
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_full_user_flow.py)")
             pass
     finally:
         driver.quit()

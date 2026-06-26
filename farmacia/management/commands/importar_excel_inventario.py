@@ -43,6 +43,7 @@ from django.db.models import Model as DjangoModel, Value
 from django.utils import timezone
 
 from core.models import Producto, Lote, Empresa, Sucursal
+import logging
 
 
 # ---------------------------------------------------------------------------
@@ -331,7 +332,8 @@ class Command(BaseCommand):
                         prod_creados += 1
                     else:
                         prod_actualizados += 1
-            except Exception as e:
+            except Exception as e:  # Aislamiento producto-por-producto: error en un producto no debe abortar toda la carga.
+                logging.getLogger(__name__).exception("Error inesperado en col (importar_excel_inventario.py)")
                 errores.append(f"[PROD] {nombre}: {e}")
                 continue
 
@@ -417,7 +419,8 @@ class Command(BaseCommand):
                             _guardar_lote_sin_validar(nuevo_lote)
                             lote_creados += 1
 
-                except Exception as e:
+                except Exception as e:  # Aislamiento lote-por-lote: error en un lote no debe abortar toda la carga.
+                    logging.getLogger(__name__).exception("Error inesperado en col (importar_excel_inventario.py)")
                     errores.append(f"[LOTE] {nombre} / {num_lote}: {e}")
 
         wb.close()

@@ -28,6 +28,7 @@ from PIL import Image as PILImage
 
 from core.models import ConsultaMedica, Empresa, FirmaDigital
 from core.utils.empresa_request import empresa_efectiva_request
+import logging
 
 
 # ==============================================================================
@@ -116,6 +117,7 @@ def imprimir_receta_paciente(request, consulta_id):
     try:
         sexo_str = paciente.get_sexo_display() if (paciente and hasattr(paciente, 'get_sexo_display')) else '—'
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en imprimir_receta_paciente (pdf_views.py)")
         sexo_str = '—'
     fecha_consulta_str = consulta.fecha_consulta.strftime('%d/%m/%Y %H:%M') if consulta.fecha_consulta else '—'
     datos_paciente = [
@@ -244,9 +246,9 @@ def imprimir_receta_paciente(request, consulta_id):
                     ]))
                     elements.append(tabla_img)
                     firma_imagen_ok = True
-            except Exception:
+            except (AttributeError, TypeError, ValueError, OSError):
                 pass
-    except Exception:
+    except (AttributeError, TypeError, ValueError, OSError):
         pass
     
     if not firma_imagen_ok:
@@ -446,7 +448,7 @@ def imprimir_expediente_forense(request, consulta_id):
         elements.append(Paragraph(f"<b>Estudios:</b> {consulta.estudios_solicitados}", style_normal))
     try:
         pronostico_display = consulta.get_pronostico_display() if getattr(consulta, 'pronostico', None) else '—'
-    except Exception:
+    except (AttributeError, TypeError):
         pronostico_display = '—'
     elements.append(Paragraph(f"<b>Pronóstico:</b> {pronostico_display}", style_normal))
     elements.append(Spacer(1, 0.4*cm))
@@ -524,9 +526,9 @@ def imprimir_expediente_forense(request, consulta_id):
                 ]))
                 elements.append(tabla_firma_f)
                 elements.append(Spacer(1, 0.3*cm))
-            except Exception:
+            except (AttributeError, TypeError, ValueError, OSError):
                 pass
-    except Exception:
+    except (AttributeError, TypeError, ValueError, OSError):
         pass
     
     elements.append(Paragraph(f"<b>Documento generado:</b> {timezone.localtime(timezone.now()).strftime('%d/%m/%Y %H:%M:%S')}", style_normal))

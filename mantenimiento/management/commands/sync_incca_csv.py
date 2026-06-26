@@ -26,6 +26,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
+import logging
 
 
 @dataclass
@@ -205,6 +206,7 @@ class Command(BaseCommand):
                     self.stdout.write(f"  OK {p.name}: rows={rows_created}")
 
                 except Exception as exc:
+                    logging.getLogger(__name__).exception("Error inesperado en handle (sync_incca_csv.py)")
                     total_errors += 1
                     self.stderr.write(f"  ERROR {p.name}: {exc}")
                     if not dry_run:
@@ -222,6 +224,7 @@ class Command(BaseCommand):
                                 error=str(exc),
                             )
                         except Exception:
+                            logging.getLogger(__name__).exception("Error inesperado en handle (sync_incca_csv.py)")
                             pass
 
         msg = f"sync_incca_csv: files={total_files} rows={total_rows} errors={total_errors}"

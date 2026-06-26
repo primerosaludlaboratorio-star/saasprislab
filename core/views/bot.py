@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 
 from laboratorio.models import Estudio, PerfilLaboratorio
+import logging
 
 
 @login_required
@@ -127,6 +128,7 @@ def api_bot_pregunta(request):
             })
     
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_bot_pregunta (bot.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)

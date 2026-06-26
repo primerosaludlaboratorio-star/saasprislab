@@ -11,6 +11,7 @@ Uso:
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
+import logging
 
 
 class Command(BaseCommand):
@@ -151,6 +152,7 @@ class Command(BaseCommand):
                         self.style.WARNING(f'    [!] Permiso no encontrado: {permiso_codename}')
                     )
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en handle (crear_grupos_roles.py)")
                     self.stdout.write(
                         self.style.ERROR(f'    [X] Error con permiso {permiso_codename}: {e}')
                     )

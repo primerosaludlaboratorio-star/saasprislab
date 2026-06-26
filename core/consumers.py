@@ -85,7 +85,15 @@ class VoiceCommandConsumer(AsyncWebsocketConsumer):
                 'type': 'error',
                 'message': 'JSON inválido'
             }))
+        except (KeyError, TypeError, AttributeError) as e:
+            logger.warning(f"Datos malformados en VoiceCommandConsumer: {e}")
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': f'Datos inválidos: {type(e).__name__}'
+            }))
         except Exception as e:
+            # Safety net del consumer async — evita que un error no anticipado
+            # rompa la conexión WebSocket completa.
             logger.error(f"Error en receive de VoiceCommandConsumer: {e}", exc_info=True)
             await self.send(text_data=json.dumps({
                 'type': 'error',

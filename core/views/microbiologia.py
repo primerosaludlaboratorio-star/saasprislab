@@ -11,6 +11,7 @@ from django.views.decorators.http import require_http_methods
 from django.db import transaction
 
 from core.models import DetalleOrden
+import logging
 
 
 def _resolver_modelos_microbiologia():
@@ -25,6 +26,7 @@ def _resolver_modelos_microbiologia():
         from core.models.microbiologia import Bacteria, GrupoAntibiotico, ResultadoAntibiograma
         return Bacteria, GrupoAntibiotico, ResultadoAntibiograma
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _resolver_modelos_microbiologia (microbiologia.py)")
         return None
 
 
@@ -104,6 +106,7 @@ def api_inyectar_antibiogramas(request, detalle_id):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_inyectar_antibiogramas (microbiologia.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': f'Error al inyectar antibióticos: {str(e)}'
@@ -156,6 +159,7 @@ def api_guardar_sensibilidad(request, resultado_id):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_guardar_sensibilidad (microbiologia.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': f'Error al guardar: {str(e)}'

@@ -2,6 +2,7 @@
 Utilidades para generar saludos personalizados según el usuario.
 """
 from django.contrib.auth import get_user_model
+import logging
 
 Usuario = get_user_model()
 
@@ -39,6 +40,7 @@ def obtener_saludo_personalizado(usuario):
             }
             titulo = titulos.get(rol, '')
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en obtener_saludo_personalizado (saludos.py)")
         # Si hay cualquier error, usar valores por defecto
         nombre = getattr(usuario, 'username', 'Usuario')
         nombre_completo = nombre
@@ -72,6 +74,7 @@ def obtener_saludo_personalizado(usuario):
         else:
             mensaje = "Te deseamos un día de éxito. PRIS está aquí para facilitar tu trabajo."
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en obtener_saludo_personalizado (saludos.py)")
         mensaje = "Te deseamos un día de éxito. PRIS está aquí para facilitar tu trabajo."
     
     mensaje_bienestar = "Recuerda: si en algún momento el día se vuelve pesado y requieres un momento de paz, tu Módulo de Bienestar está siempre disponible para ti."
@@ -84,6 +87,7 @@ def obtener_saludo_personalizado(usuario):
             'nombre_completo': nombre_completo
         }
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en obtener_saludo_personalizado (saludos.py)")
         # Fallback en caso de cualquier error
         return {
             'saludo': f'¡Hola {nombre}!',

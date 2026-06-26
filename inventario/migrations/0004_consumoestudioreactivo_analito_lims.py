@@ -7,6 +7,7 @@ import django.db.models.deletion
 from django.db import connection
 from django.db.models import Q
 from django.db import migrations, models
+import logging
 
 
 def _estudio_meta_from_db(estudio_ids):
@@ -26,6 +27,8 @@ def _estudio_meta_from_db(estudio_ids):
                 eid, codigo, nombre = row[0], row[1] or '', row[2] or ''
                 out[int(eid)] = {'codigo': str(codigo).strip(), 'nombre': str(nombre).strip()}
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _estudio_meta_from_db (0004_consumoestudioreactivo_analito_lims.py)")
+            logging.getLogger(__name__).exception("Error inesperado en _estudio_meta_from_db (0004_consumoestudioreactivo_analito_lims.py)")
             return {}
     return out
 
@@ -85,6 +88,8 @@ def _asignar_analito_desde_estudio(apps, schema_editor):
                 codigo = (getattr(est, 'codigo', None) or '').strip()
                 nombre = (getattr(est, 'nombre', None) or '').strip()
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en _asignar_analito_desde_estudio (0004_consumoestudioreactivo_analito_lims.py)")
+                logging.getLogger(__name__).exception("Error inesperado en _asignar_analito_desde_estudio (0004_consumoestudioreactivo_analito_lims.py)")
                 blob = meta_sql.get(int(estudio_id)) if estudio_id else None
                 if blob:
                     codigo, nombre = blob['codigo'], blob['nombre']
@@ -167,4 +172,3 @@ class Migration(migrations.Migration):
             ),
         ),
     ]
-

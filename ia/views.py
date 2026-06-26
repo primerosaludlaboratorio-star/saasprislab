@@ -354,6 +354,7 @@ def api_consultar_asistente(request):
             'respuesta': respuesta
         })
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_consultar_asistente (views.py)")
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -389,6 +390,7 @@ def analizar_sintomas(request):
             'analisis': analisis
         })
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en analizar_sintomas (views.py)")
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -419,6 +421,7 @@ def verificar_interacciones(request):
             'interacciones': interacciones
         })
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en verificar_interacciones (views.py)")
         return JsonResponse({
             'success': False,
             'error': str(e)

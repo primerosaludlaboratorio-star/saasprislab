@@ -11,6 +11,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.db import transaction
+from django.db.utils import DatabaseError
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from decimal import Decimal
 import json
@@ -21,6 +23,7 @@ from core.models import (
 )
 from consultorio.models import AgendaCita
 from core.utils.trazabilidad import registrar_trazabilidad, serializar_modelo
+from core.utils.empresa_request import get_empresa_usuario
 
 
 @login_required
@@ -30,7 +33,7 @@ def crear_orden_lab_desde_consulta(request, consulta_id):
     Crea una orden de laboratorio directamente desde una consulta médica.
     Integración fluida Consultorio-Laboratorio.
     """
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = get_empresa_usuario(request.user)
     if not empresa:
         return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}, status=403)
     consulta = get_object_or_404(ConsultaMedica, id=consulta_id, empresa=empresa)
@@ -124,7 +127,7 @@ def crear_orden_lab_desde_consulta(request, consulta_id):
             'total': float(total),
         })
     
-    except Exception as e:
+    except (DatabaseError, ValidationError) as e:
         return JsonResponse({
             'status': 'error',
             'mensaje': f'Error al crear orden: {str(e)}'
@@ -137,7 +140,7 @@ def ver_resultados_lab_en_consulta(request, consulta_id):
     Muestra los resultados de laboratorio relacionados con una consulta.
     Integración Consultorio-Laboratorio.
     """
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = get_empresa_usuario(request.user)
     if not empresa:
         from django.contrib import messages
         from django.shortcuts import redirect

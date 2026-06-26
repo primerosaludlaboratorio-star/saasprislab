@@ -47,7 +47,7 @@ def _empresa(request):
 def cuentas_por_cobrar_dashboard(request):
     """Dashboard principal de cuentas por cobrar."""
     empresa = _empresa(request)
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
 
     cuentas = CuentaPorCobrar.objects.filter(empresa=empresa)
 
@@ -94,6 +94,7 @@ def cuentas_por_cobrar_dashboard(request):
 # ======================================================================
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 @require_POST
 def api_registrar_pago_cxc(request):
     """Registra un pago (parcial o total) a una cuenta por cobrar."""
@@ -150,6 +151,7 @@ def api_registrar_pago_cxc(request):
                 request=request,
             )
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en api_registrar_pago_cxc (cuentas_por_cobrar.py)")
             pass
 
         return JsonResponse({
@@ -162,6 +164,7 @@ def api_registrar_pago_cxc(request):
     except CuentaPorCobrar.DoesNotExist:
         return JsonResponse({'status': 'error', 'mensaje': 'Cuenta no encontrada'}, status=404)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_registrar_pago_cxc (cuentas_por_cobrar.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 
@@ -170,6 +173,7 @@ def api_registrar_pago_cxc(request):
 # ======================================================================
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 @require_POST
 def api_crear_cxc(request):
     """Crea una cuenta por cobrar para una orden con pago a credito."""
@@ -231,6 +235,7 @@ def api_crear_cxc(request):
     except Convenio.DoesNotExist:
         return JsonResponse({'status': 'error', 'mensaje': 'Convenio no encontrado o inactivo'}, status=404)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_crear_cxc (cuentas_por_cobrar.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 
@@ -239,6 +244,7 @@ def api_crear_cxc(request):
 # ======================================================================
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def convenios_lista(request):
     """Lista de convenios activos con metricas."""
     empresa = getattr(request.user, 'empresa', None)
@@ -257,6 +263,7 @@ def convenios_lista(request):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 @require_POST
 def api_crear_convenio(request):
     """Crea un nuevo convenio."""
@@ -286,6 +293,7 @@ def api_crear_convenio(request):
             'convenio_id': convenio.id,
         })
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_crear_convenio (cuentas_por_cobrar.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 
@@ -294,6 +302,7 @@ def api_crear_convenio(request):
 # ======================================================================
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def reporte_fiscal_mensual(request):
     """Reporte fiscal mensual: ingresos, egresos, CxC, notas de credito."""
     empresa = getattr(request.user, 'empresa', None)
@@ -301,7 +310,7 @@ def reporte_fiscal_mensual(request):
         from django.contrib import messages
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     mes = int(request.GET.get('mes', hoy.month))
     anio = int(request.GET.get('anio', hoy.year))
 

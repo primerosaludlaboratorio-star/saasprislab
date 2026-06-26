@@ -12,6 +12,14 @@ class Kiosco(models.Model):
     """
     Representa un dispositivo Kiosco (tablet) conectado al sistema.
     """
+    empresa = models.ForeignKey(
+        'core.Empresa',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='kioscos',
+        help_text='Empresa a la que pertenece el kiosco'
+    )
     nombre = models.CharField(
         max_length=100,
         help_text='Nombre identificador del kiosco (ej: "Kiosco Recepción 1")'

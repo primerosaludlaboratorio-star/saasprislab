@@ -184,6 +184,7 @@ def _encontrar_gunicorn_master():
                 # Asumir que el padre es Gunicorn si ppid > 1
                 return ppid
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _encontrar_gunicorn_master (auto_repair.py)")
         pass
     
     # Estrategia 3: Buscar en /proc

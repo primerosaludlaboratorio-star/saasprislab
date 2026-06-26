@@ -119,5 +119,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('Backfill finalizado.'))
             _bankguard_log.info('bankguard_backfill fin OK')
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en handle (bankguard_backfill.py)")
             _bankguard_log.exception('bankguard_backfill ERROR: %s', exc)
             raise

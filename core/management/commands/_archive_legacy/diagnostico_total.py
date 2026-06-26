@@ -15,6 +15,7 @@ from decimal import Decimal, InvalidOperation
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Q
+import logging
 
 
 def _c(val):
@@ -96,6 +97,7 @@ class Command(BaseCommand):
                 if e.nombre:
                     lab_by_name[e.nombre.strip().upper()] = e
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _parte1_precios (diagnostico_total.py)")
             LabEstudio = None
 
         core_ok = 0
@@ -149,6 +151,7 @@ class Command(BaseCommand):
                         self.style.SUCCESS(f'  [CORE] {core_est.codigo} | ${old} -> ${precio}')
                     )
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en _parte1_precios (diagnostico_total.py)")
                     self.stderr.write(f'  Error core {codigo}: {e}')
 
             # ── Buscar en laboratorio.Estudio ──
@@ -172,6 +175,7 @@ class Command(BaseCommand):
                             self.style.SUCCESS(f'  [LAB]  {lab_est.codigo} | ${old_lab} -> ${precio}')
                         )
                     except Exception as e:
+                        logging.getLogger(__name__).exception("Error inesperado en _parte1_precios (diagnostico_total.py)")
                         self.stderr.write(f'  Error lab {codigo}: {e}')
 
             if not core_est and not lab_est:

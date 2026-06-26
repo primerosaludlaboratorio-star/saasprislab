@@ -8,6 +8,7 @@ import logging
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.conf import settings
+from django.db import IntegrityError, OperationalError
 from contabilidad.models import ClienteFacturacion, ConceptoFactura, FacturaCFDI, ImpuestoConcepto
 
 logger = logging.getLogger(__name__)
@@ -222,7 +223,7 @@ def crear_borrador_cfdi_desde_pago_orden(pago, usuario):
             pago_orden=pago,
             venta_farmacia=None,
         )
-    except Exception:
+    except (IntegrityError, ValueError, OperationalError):
         logger.exception('cfdi_borrador_auto: fallo al crear borrador desde PagoOrden id=%s', pago.pk)
         raise
 
@@ -294,6 +295,6 @@ def crear_borrador_cfdi_desde_venta_farmacia(venta, usuario):
             pago_orden=None,
             venta_farmacia=venta,
         )
-    except Exception:
+    except (IntegrityError, ValueError, OperationalError):
         logger.exception('cfdi_borrador_auto: fallo al crear borrador desde Venta id=%s', venta.pk)
         raise

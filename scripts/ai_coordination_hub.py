@@ -22,6 +22,7 @@ import time
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
+import logging
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -393,6 +394,7 @@ def command_watch(args: argparse.Namespace) -> None:
                             f"{evidence.classification} -> {evidence.summary}"
                         )
                     except Exception as exc:
+                        logging.getLogger(__name__).exception("Error inesperado en command_watch (ai_coordination_hub.py)")
                         print(f"ERROR procesando {path}: {exc}")
             if processed_any:
                 print(f"Estado actualizado: {STATUS_MD}")

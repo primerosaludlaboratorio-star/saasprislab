@@ -12,6 +12,7 @@ from django.db import transaction
 from django.db.models import ForeignKey, OneToOneField
 
 from core.models import Empresa, Sucursal, ConfiguracionModulos
+import logging
 
 
 def _resolve_target_empresa():
@@ -71,6 +72,7 @@ class Command(BaseCommand):
             try:
                 from farmacia.models import MotivoAjuste
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en do_merge (unificar_empresa_prislab.py)")
                 MotivoAjuste = None
             if MotivoAjuste:
                 for src in sources:

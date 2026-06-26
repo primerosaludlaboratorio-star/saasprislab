@@ -116,6 +116,7 @@ class Command(BaseCommand):
                 },
             )
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en handle (audit_system.py)")
             pass
 
     def _print_check(self, name, status, detail=''):
@@ -152,6 +153,7 @@ class Command(BaseCommand):
                 return self._print_check('Conexion DB', 'WARN', detail + ' (lenta)')
             return self._print_check('Conexion DB', 'OK', detail)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _check_database (audit_system.py)")
             return self._print_check('Conexion DB', 'FAIL', str(e))
 
     def _check_migrations(self, verbose):
@@ -168,6 +170,7 @@ class Command(BaseCommand):
                 )
             return self._print_check('Migraciones', 'OK', 'Todas aplicadas')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _check_migrations (audit_system.py)")
             return self._print_check('Migraciones', 'WARN', str(e))
 
     def _check_gcs(self, verbose):
@@ -188,6 +191,7 @@ class Command(BaseCommand):
         except ImportError:
             return self._print_check('GCS Bucket', 'WARN', 'google-cloud-storage no instalado')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _check_gcs (audit_system.py)")
             return self._print_check('GCS Bucket', 'FAIL', str(e)[:100])
 
     def _check_gemini(self, verbose):
@@ -203,6 +207,7 @@ class Command(BaseCommand):
                 return self._print_check('Gemini API', 'OK', result.get('message', ''))
             return self._print_check('Gemini API', 'FAIL', result.get('message', ''))
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _check_gemini (audit_system.py)")
             return self._print_check('Gemini API', 'FAIL', str(e)[:100])
 
     def _check_email(self, verbose):
@@ -215,6 +220,7 @@ class Command(BaseCommand):
                 return self._print_check('Email', 'WARN', 'DIRECTOR_EMAIL no configurado')
             return self._print_check('Email', 'OK', f'SMTP → {director}')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _check_email (audit_system.py)")
             return self._print_check('Email', 'FAIL', str(e)[:100])
 
     def _check_models_integrity(self, verbose):
@@ -229,6 +235,7 @@ class Command(BaseCommand):
             detail = f'Empresas:{emp_count} Pacientes:{pac_count} Ordenes:{ord_count} Productos:{prod_count}'
             checks.append(self._print_check('Modelos Core', 'OK', detail))
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _check_models_integrity (audit_system.py)")
             checks.append(self._print_check('Modelos Core', 'FAIL', str(e)[:100]))
 
         try:
@@ -238,6 +245,7 @@ class Command(BaseCommand):
             detail = f'Estudios:{est_count} Insumos vinculados:{ins_count}'
             checks.append(self._print_check('Modelos Lab', 'OK', detail))
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _check_models_integrity (audit_system.py)")
             checks.append(self._print_check('Modelos Lab', 'WARN', str(e)[:100]))
 
         try:
@@ -248,6 +256,7 @@ class Command(BaseCommand):
             detail = f'AuditLogs:{al_count} Incidencias Sentinel:{is_count}'
             checks.append(self._print_check('Sentinel Data', 'OK', detail))
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _check_models_integrity (audit_system.py)")
             checks.append(self._print_check('Sentinel Data', 'WARN', str(e)[:100]))
 
         return checks[-1] if checks else self._print_check('Integridad', 'WARN', 'Sin datos')
@@ -301,6 +310,7 @@ class Command(BaseCommand):
                 return self._print_check('Query Ordenes', 'WARN', f'{lat:.1f}ms (lenta)')
             return self._print_check('Query Ordenes', 'OK', f'{lat:.1f}ms')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _check_query_latency (audit_system.py)")
             return self._print_check('Query Ordenes', 'FAIL', str(e)[:100])
 
     def _check_internal_services(self, verbose):
@@ -366,4 +376,5 @@ class Command(BaseCommand):
                 return self._print_check('Paridad Legacy/SaaS', 'WARN', detail)
             return self._print_check('Paridad Legacy/SaaS', 'OK', detail)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _check_migration_readiness (audit_system.py)")
             return self._print_check('Paridad Legacy/SaaS', 'FAIL', str(e)[:100])

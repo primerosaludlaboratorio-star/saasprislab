@@ -1,6 +1,7 @@
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+import logging
 
 Usuario = get_user_model()
 
@@ -41,6 +42,7 @@ class IAViewsTest(TestCase):
             # Accept various valid responses (200, 302 redirect, 405 method not allowed, etc.)
             self.assertIn(response.status_code, [200, 302, 405, 400])
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_ocr_receta_view_exists (tests.py)")
             # View might not exist or have different URL name
             self.skipTest(f"ocr_receta view not available: {e}")
     
@@ -54,6 +56,7 @@ class IAViewsTest(TestCase):
             # Accept various valid responses
             self.assertIn(response.status_code, [200, 302, 405, 400])
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_transcripcion_voz_view_exists (tests.py)")
             # View might not exist or have different URL name
             self.skipTest(f"transcripcion_voz view not available: {e}")
     

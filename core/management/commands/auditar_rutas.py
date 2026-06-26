@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand
 from django.urls import get_resolver, NoReverseMatch
 from django.conf import settings
 import django
+import logging
 django.setup()
 
 
@@ -26,6 +27,7 @@ class Command(BaseCommand):
                     try:
                         extraer_urls(pattern.url_patterns, prefix + str(pattern.pattern))
                     except Exception as e:
+                        logging.getLogger(__name__).exception("Error inesperado en extraer_urls (auditar_rutas.py)")
                         errores.append(f"Error en include {pattern.pattern}: {e}")
                 else:
                     # Es un path
@@ -41,11 +43,13 @@ class Command(BaseCommand):
                             'modulo': callback.__module__ if callback else 'N/A'
                         })
                     except Exception as e:
+                        logging.getLogger(__name__).exception("Error inesperado en extraer_urls (auditar_rutas.py)")
                         errores.append(f"Error en pattern {pattern}: {e}")
         
         try:
             extraer_urls(resolver.url_patterns)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en extraer_urls (auditar_rutas.py)")
             self.stdout.write(self.style.ERROR(f'Error al extraer URLs: {e}'))
         
         # Agrupar por módulo

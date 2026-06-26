@@ -19,6 +19,9 @@ from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass, field
 from typing import Optional
 
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.db.utils import DatabaseError
+
 logger = logging.getLogger('laboratorio.iso15189')
 
 
@@ -208,7 +211,7 @@ def _buscar_rango_dinamico(
             .first()
         )
         return rango
-    except Exception:
+    except (ImportError, ObjectDoesNotExist, DatabaseError, ValidationError):
         return None  # Modelo no existe aún (pre-migración)
 
 
@@ -219,7 +222,7 @@ def _cargar_rango_estatico(parametro_id: int, resultado: ValidacionResultado):
         param = Parametro.objects.get(pk=parametro_id)
         resultado.rango_min = param.valor_ref_min
         resultado.rango_max = param.valor_ref_max
-    except Exception:
+    except (ObjectDoesNotExist, DatabaseError, ValidationError):
         pass
 
 
@@ -312,7 +315,7 @@ def _enviar_alerta_critica_bg(mensaje: str, resultado_id: int, orden_id):
             send_telegram_message(
                 token, chat_id, mensaje, parse_mode='Markdown'
             )
-    except Exception as exc:
+    except (ImportError, DatabaseError, ValidationError) as exc:
         logger.debug(f'[ISO 15189] Alerta crítica no enviada: {exc}')
 
 
@@ -343,6 +346,6 @@ def obtener_rangos_para_pris(
                     'valor_critico_alto': None,
                     'fuente': 'ESTATICO',
                 }
-            except Exception:
+            except (ObjectDoesNotExist, DatabaseError, ValidationError):
                 rangos[pid] = {}
     return rangos

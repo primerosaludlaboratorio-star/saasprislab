@@ -6,6 +6,7 @@ from typing import Iterable
 
 from django.conf import settings
 from django.urls import get_resolver
+import logging
 
 
 @dataclass
@@ -33,6 +34,7 @@ def _importable(path: str, attr_names: Iterable[str]) -> tuple[bool, list[str]]:
     try:
         module = __import__(path, fromlist=["*"])
     except Exception as exc:  # pragma: no cover - defensive
+        logging.getLogger(__name__).exception("Error inesperado en _importable (migration_readiness.py)")
         return False, [f"import-error:{exc}"]
 
     ok = True
@@ -62,6 +64,7 @@ def _safe_count(model_path: str, attr: str) -> tuple[bool, str]:
         model = getattr(module, model_name)
         return True, f"{attr}:{model.objects.count()}"
     except Exception as exc:  # pragma: no cover - defensive
+        logging.getLogger(__name__).exception("Error inesperado en _safe_count (migration_readiness.py)")
         return False, f"{attr}_error:{exc}"
 
 

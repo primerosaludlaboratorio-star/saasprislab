@@ -5,6 +5,7 @@ Evita que errores 404/500 devuelvan HTML cuando se espera JSON.
 import json
 from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
+import logging
 
 
 class JSONResponseMiddleware(MiddlewareMixin):
@@ -68,6 +69,7 @@ class JSONResponseMiddleware(MiddlewareMixin):
                         'codigo': response.status_code
                     }, status=response.status_code)
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en process_response (json_response.py)")
                 # Si falla la conversión, devolver JSON genérico
                 return JsonResponse({
                     'status': 'error',

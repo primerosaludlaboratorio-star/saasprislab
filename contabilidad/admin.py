@@ -19,16 +19,17 @@ class ConceptoFacturaInline(admin.TabularInline):
 
 @admin.register(FacturaCFDI)
 class FacturaCFDIAdmin(admin.ModelAdmin):
-    list_display = ('folio_interno', 'cliente', 'fecha_emision', 'total', 'estado')
-    list_filter = ('estado', 'tipo_comprobante', 'metodo_pago', 'fecha_emision')
-    search_fields = ('folio_interno', 'uuid_sat', 'cliente__rfc', 'cliente__razon_social')
+    list_display = ('folio_interno', 'empresa', 'cliente', 'fecha_emision', 'total', 'estado')
+    list_filter = ('estado', 'tipo_comprobante', 'metodo_pago', 'fecha_emision', 'empresa')
+    search_fields = ('folio_interno', 'uuid_sat', 'cliente__rfc', 'cliente__razon_social', 'empresa__nombre')
     readonly_fields = ('uuid', 'folio_interno', 'fecha_timbrado', 'uuid_sat', 'fecha_creacion')
     inlines = [ConceptoFacturaInline]
     date_hierarchy = 'fecha_emision'
-    
+
     fieldsets = (
         ('Información General', {
             'fields': (
+                'empresa',
                 'cliente',
                 'tipo_comprobante',
                 'serie',

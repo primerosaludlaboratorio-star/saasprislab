@@ -18,6 +18,7 @@ from django.views.decorators.http import require_http_methods
 
 from core.utils.empresa_request import empresa_efectiva_request
 from inventario.models import OrdenDeCompra
+import logging
 
 
 def _solo_director(user):
@@ -112,6 +113,7 @@ def marcar_orden_pagada(request, orden_id):
             request=request,
         )
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en marcar_orden_pagada (contabilidad_personal.py)")
         pass
 
     messages.success(request, f'Orden {orden.folio} marcada como pagada con evidencia completa.')

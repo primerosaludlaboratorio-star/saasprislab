@@ -16,6 +16,7 @@ Uso:
 """
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+import logging
 
 NOTA = 'Cierre masivo automático pre-producción (Hito v1.55)'
 
@@ -57,6 +58,7 @@ class Command(BaseCommand):
             if n and dry:
                 self.stdout.write('  (dry-run: no actualizado)')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (sentinel_amnistia_pre_produccion.py)")
             self.stdout.write(self.style.ERROR(f'  [skip] IncidenciaSentinel: {e}'))
 
         # 2) BuzonQuejas
@@ -77,6 +79,7 @@ class Command(BaseCommand):
             if n and dry:
                 self.stdout.write('  (dry-run: no actualizado)')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (sentinel_amnistia_pre_produccion.py)")
             self.stdout.write(self.style.ERROR(f'  [skip] BuzonQuejas: {e}'))
 
         # 3) NotificacionDiscrepancia (inventario)
@@ -96,6 +99,7 @@ class Command(BaseCommand):
             if n and dry:
                 self.stdout.write('  (dry-run: no actualizado)')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (sentinel_amnistia_pre_produccion.py)")
             self.stdout.write(self.style.ERROR(f'  [skip] NotificacionDiscrepancia: {e}'))
 
         # 4) NotificacionSistema (centro de alertas internas)
@@ -111,6 +115,7 @@ class Command(BaseCommand):
             if n and dry:
                 self.stdout.write('  (dry-run: no actualizado)')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (sentinel_amnistia_pre_produccion.py)")
             self.stdout.write(self.style.ERROR(f'  [skip] NotificacionSistema: {e}'))
 
         self.stdout.write('\n' + '=' * 60)

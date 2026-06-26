@@ -1,4 +1,16 @@
 """
+DEPRECATED: Este archivo sera eliminado en version 2.0
+Usar modelos de core en su lugar.
+"""
+
+import warnings
+warnings.warn(
+    f"{__name__} is deprecated. Use core models instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
+
+"""
 Metrología / calibración de equipos de laboratorio (Bastión 3).
 Usado por el receptor HL7 cuando el equipo se identifica por IP.
 """

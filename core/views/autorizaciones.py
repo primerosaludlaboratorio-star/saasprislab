@@ -9,6 +9,7 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.db import transaction
 from core.models import SolicitudAutorizacion, Usuario, MensajeInterno
+import logging
 
 
 @login_required
@@ -64,6 +65,7 @@ def crear_solicitud_autorizacion(request):
             'mensaje': 'Error al procesar los datos JSON.'
         }, status=400)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en crear_solicitud_autorizacion (autorizaciones.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -98,6 +100,7 @@ def verificar_estado_solicitud(request, solicitud_id):
             'mensaje': 'Solicitud no encontrada.'
         }, status=404)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en verificar_estado_solicitud (autorizaciones.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -213,6 +216,7 @@ def api_aprobar_solicitud(request, solicitud_id):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_aprobar_solicitud (autorizaciones.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -274,6 +278,7 @@ def api_rechazar_solicitud(request, solicitud_id):
             'mensaje': 'Error al procesar los datos JSON.'
         }, status=400)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_rechazar_solicitud (autorizaciones.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)

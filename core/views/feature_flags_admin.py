@@ -64,6 +64,7 @@ def api_toggle_flag(request, codigo: str):
         body = _json.loads(request.body)
         valor = bool(body.get('activo', False))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_toggle_flag (feature_flags_admin.py)")
         return JsonResponse({'error': 'JSON inválido'}, status=400)
 
     from core.services.feature_flags import activar, desactivar, FLAG_CATALOG

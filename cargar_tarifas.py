@@ -5,6 +5,7 @@ Ejecutar: python manage.py shell < cargar_tarifas.py
 import os
 import django
 import csv
+import logging
 
 # Configurar Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -93,6 +94,7 @@ def cargar_tarifas():
                     print(f"[UPDATE] [{idx:03d}] Actualizado: {codigo[:15]:15s} | {descripcion[:50]:50s} | ${importe:>8.2f}")
                 
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en cargar_tarifas (cargar_tarifas.py)")
                 errores += 1
                 print(f"[ERROR] Linea {idx + 2}: Error al procesar - {str(e)}")
                 continue

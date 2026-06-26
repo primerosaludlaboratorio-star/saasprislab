@@ -13,6 +13,7 @@ Uso:
 import os
 import sys
 import django
+import logging
 
 # Setup Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -66,6 +67,7 @@ def main():
         print("=" * 70)
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en main (generar_vapid_keys.py)")
         print(f"ERROR al generar llaves: {e}")
         sys.exit(1)
 

@@ -40,6 +40,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+import logging
 
 
 COLUMNAS_REQUERIDAS = {'nombre', 'precio_compra', 'precio_venta', 'stock', 'unidad'}
@@ -97,6 +98,7 @@ class Command(BaseCommand):
         try:
             filas = self._leer_csv(archivo, separador, encoding)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (carga_inventario_csv.py)")
             raise CommandError(f'Error al leer el CSV: {e}')
 
         self.stdout.write(f'  Archivo: {archivo}')
@@ -238,6 +240,7 @@ class Command(BaseCommand):
                         creados += 1
 
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en _cargar_productos (carga_inventario_csv.py)")
                     errores += 1
                     self.stdout.write(self.style.ERROR(f'  [ERROR] {fila.get("nombre", "?")} — {e}'))
 
@@ -259,4 +262,5 @@ class Command(BaseCommand):
             obj, _ = CategoriaProducto.objects.get_or_create(nombre=nombre)
             return obj
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _get_categoria (carga_inventario_csv.py)")
             return None

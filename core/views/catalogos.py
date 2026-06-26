@@ -107,6 +107,7 @@ def catalogo_convenios(request):
             try:
                 descuento_dec = Decimal(str(descuento))
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en catalogo_convenios (catalogos.py)")
                 descuento_dec = 0
 
             Convenio.objects.create(
@@ -166,6 +167,7 @@ def convenio_precios(request, convenio_id: int):
                 try:
                     precio = Decimal(str(val))
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en convenio_precios (catalogos.py)")
                     continue
                 obj, created = ConvenioPrecioLims.objects.get_or_create(
                     convenio=convenio,

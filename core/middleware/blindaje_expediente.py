@@ -204,6 +204,7 @@ def crear_snapshot_automatico(sender, instance, created, **kwargs):
                 ip_origen = _get_ip_from_request(request)
                 user_agent = request.META.get('HTTP_USER_AGENT', '')[:500]
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en crear_snapshot_automatico (blindaje_expediente.py)")
             pass
         
         # Determinar estado

@@ -16,6 +16,7 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 import os
+import logging
 
 
 class Command(BaseCommand):
@@ -103,6 +104,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('\n>> Sistema LIMS V5 listo para operacion\n'))
         
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (cargar_legacy.py)")
             self.stdout.write(self.style.ERROR(f'\n[ERROR] CRITICO: {e}'))
             import traceback
             traceback.print_exc()
@@ -200,6 +202,7 @@ class Command(BaseCommand):
                                 dict_estudios[codigo] = estudio
                         
                         except Exception as e:
+                            logging.getLogger(__name__).exception("Error inesperado en cargar_estudios (cargar_legacy.py)")
                             self.stdout.write(f'   [ERROR] Fila {i}: {e}')
                             stats['errores'] += 1
                 
@@ -278,6 +281,7 @@ class Command(BaseCommand):
                                     self.stdout.write(f'      [+] {estudio.codigo} > {def_parametro["nombre"]}')
                         
                         except Exception as e:
+                            logging.getLogger(__name__).exception("Error inesperado en ensamblar_perfil (cargar_legacy.py)")
                             stats['errores'] += 1
                 
                 break
@@ -351,6 +355,7 @@ class Command(BaseCommand):
                                 stats['rangos'] += 1
                         
                         except Exception as e:
+                            logging.getLogger(__name__).exception("Error inesperado en cargar_rangos (cargar_legacy.py)")
                             stats['errores'] += 1
                 
                 break

@@ -8,6 +8,7 @@ import os
 import sys
 import django
 from datetime import datetime
+import logging
 
 # Configurar Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -63,6 +64,7 @@ Pruebas ejecutadas:
             return 1
             
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en main (ejecutar_pruebas_e2e.py)")
         print(f"\n[ERROR] ERROR CRITICO: {e}")
         import traceback
         traceback.print_exc()

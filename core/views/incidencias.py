@@ -11,6 +11,7 @@ from django.utils.timezone import localdate
 from django.db.models import Count, Q
 from datetime import datetime, timedelta
 from core.models import IncidenciaOperativa, Usuario, Empresa
+import logging
 
 
 @login_required
@@ -84,6 +85,7 @@ def registrar_incidencia(request):
             'mensaje': 'Error al procesar los datos JSON.'
         }, status=400)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en registrar_incidencia (incidencias.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)
@@ -194,6 +196,7 @@ def marcar_incidencia_revisada(request, incidencia_id):
             'mensaje': 'Error al procesar los datos JSON.'
         }, status=400)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en marcar_incidencia_revisada (incidencias.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': str(e)

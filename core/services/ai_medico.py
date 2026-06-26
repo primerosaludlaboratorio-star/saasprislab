@@ -137,6 +137,7 @@ def procesar_consulta_medica(audio_file) -> Dict[str, Any]:
                     config={'mime_type': 'audio/webm'},
                 )
         except Exception as upload_exc:
+            logging.getLogger(__name__).exception("Error inesperado en procesar_consulta_medica (ai_medico.py)")
             if _es_error_403(upload_exc):
                 raise PermissionError(_mensaje_403_gemini(upload_exc)) from upload_exc
             raise
@@ -189,6 +190,7 @@ DEVUELVE SOLO EL JSON, SIN TEXTO ADICIONAL.
                 ),
             )
         except Exception as gen_exc:
+            logging.getLogger(__name__).exception("Error inesperado en procesar_consulta_medica (ai_medico.py)")
             if _es_error_403(gen_exc):
                 raise PermissionError(_mensaje_403_gemini(gen_exc)) from gen_exc
             raise
@@ -266,6 +268,7 @@ def procesar_resultados_lab(audio_file, lista_parametros: List[Dict[str, str]]) 
                     config={'mime_type': 'audio/webm'},
                 )
         except Exception as upload_exc:
+            logging.getLogger(__name__).exception("Error inesperado en procesar_resultados_lab (ai_medico.py)")
             if _es_error_403(upload_exc):
                 raise PermissionError(_mensaje_403_gemini(upload_exc)) from upload_exc
             raise
@@ -307,6 +310,7 @@ DEVUELVE SOLO EL JSON, SIN TEXTO ADICIONAL.
                 ),
             )
         except Exception as gen_exc:
+            logging.getLogger(__name__).exception("Error inesperado en procesar_resultados_lab (ai_medico.py)")
             if _es_error_403(gen_exc):
                 raise PermissionError(_mensaje_403_gemini(gen_exc)) from gen_exc
             raise
@@ -530,6 +534,7 @@ def test_gemini_connection():
         return True
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_gemini_connection (ai_medico.py)")
         print(f"❌ Error: {e}")
         return False
 

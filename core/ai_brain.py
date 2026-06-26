@@ -106,7 +106,7 @@ def generar_campaña(usuario, segmento: str) -> Dict[str, Any]:
         canvas.save(out_path, format="PNG")
 
         cupon_rel = os.path.join("cupones", filename).replace("\\", "/")
-    except Exception as e:
+    except (OSError, ValueError, KeyError) as e:
         codigo = None
         cupon_rel = None
         return {
@@ -127,7 +127,7 @@ def generar_campaña(usuario, segmento: str) -> Dict[str, Any]:
 def _empresa_nombre(usuario) -> str:
     try:
         return (usuario.empresa.nombre or "").strip()
-    except Exception:
+    except AttributeError:
         return ""
 
 
@@ -190,7 +190,7 @@ def consultar_ventas(usuario, fecha: str) -> Dict[str, Any]:
     empresa = getattr(usuario, "empresa", None)
     try:
         d = datetime.strptime((fecha or "").strip(), "%Y-%m-%d").date()
-    except Exception:
+    except (ValueError, TypeError):
         d = localdate()
 
     inicio = timezone.make_aware(datetime.combine(d, datetime.min.time()))
@@ -317,7 +317,13 @@ def responder(usuario, pregunta: str) -> Dict[str, Any]:
     try:
         from core.utils.gemini_client import get_gemini_client
         _gemini_client = get_gemini_client()
+    except ImportError as e:
+        return {
+            "ok": False,
+            "mensaje": f"Módulo de IA no disponible: {str(e)}"
+        }
     except Exception as e:
+        logger.exception("Error al inicializar cliente Gemini")
         return {
             "ok": False,
             "mensaje": f"Error de conexión con IA: {str(e)}"
@@ -381,10 +387,9 @@ Responde como asistente experto. Si necesitas usar una herramienta, indícalo cl
             "tools": tool_outputs if tool_outputs else None
         }
         
-    except Exception as e:
-        import traceback
+    except (OSError, RuntimeError, ValueError, KeyError, TypeError) as e:
+        logger.exception("Error al procesar respuesta IA en ai_brain.responder")
         return {
             "ok": False,
             "mensaje": f"Error al procesar respuesta IA: {str(e)}",
-            "debug": traceback.format_exc()
         }

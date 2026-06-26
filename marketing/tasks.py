@@ -46,7 +46,5 @@ def persist_marketing_tracking_hit(
             user_agent_hash=(user_agent_hash or "")[:64],
             ip_hash=(ip_hash or "")[:64],
         )
-    except Exception:
-        logger.exception("persist_marketing_tracking_hit falló")
     finally:
         close_old_connections()

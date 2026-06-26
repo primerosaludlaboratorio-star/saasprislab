@@ -17,6 +17,7 @@ import random
 import traceback
 from datetime import datetime, date, timedelta
 from decimal import Decimal
+import logging
 
 BASE_URL = "https://prislab-v5-oswjakz55a-uc.a.run.app"
 ADMIN_USER = "admin"
@@ -117,6 +118,7 @@ def log_error(modulo, accion, error, response=None):
             body = response.text[:300]
             detail += f" Body: {body}"
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en log_error (stress_e2e_prod.py)")
             pass
     STATS["errores_detalle"].append(detail)
     print(f"  ERROR: {detail[:200]}")
@@ -213,6 +215,7 @@ def fase1_clinico_lab(client):
                 STATS["pacientes_fallidos"] += 1
                 log_error("CLINICO", f"Registrar paciente #{i+1}", f"HTTP {r.status_code}", r)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en fase1_clinico_lab (stress_e2e_prod.py)")
             STATS["pacientes_fallidos"] += 1
             log_error("CLINICO", f"Registrar paciente #{i+1}", str(e))
 
@@ -241,6 +244,7 @@ def fase1_clinico_lab(client):
                 STATS["consultas_fallidas"] += 1
                 log_error("CLINICO", f"Crear consulta #{i+1}", f"HTTP {r.status_code}", r)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en fase1_clinico_lab (stress_e2e_prod.py)")
             STATS["consultas_fallidas"] += 1
             log_error("CLINICO", f"Crear consulta #{i+1}", str(e))
 
@@ -276,6 +280,7 @@ def fase1_clinico_lab(client):
                 STATS["soap_fallidos"] += 1
                 log_error("CLINICO", f"SOAP #{i+1}", f"HTTP {r.status_code}", r)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en fase1_clinico_lab (stress_e2e_prod.py)")
             STATS["soap_fallidos"] += 1
             log_error("CLINICO", f"SOAP #{i+1}", str(e))
 
@@ -296,6 +301,7 @@ def fase1_clinico_lab(client):
                     if e.get("id") not in [x.get("id") for x in estudios]:
                         estudios.append(e)
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en fase1_clinico_lab (stress_e2e_prod.py)")
             pass
     print(f"  OK: {len(estudios)} estudios encontrados")
     for e in estudios[:8]:
@@ -337,6 +343,7 @@ def fase1_clinico_lab(client):
                 STATS["ordenes_lab_fallidas"] += 1
                 log_error("LAB", f"Crear orden #{i+1}", f"HTTP {r.status_code}", r)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en fase1_clinico_lab (stress_e2e_prod.py)")
             STATS["ordenes_lab_fallidas"] += 1
             log_error("LAB", f"Crear orden #{i+1}", str(e))
 
@@ -359,6 +366,7 @@ def fase1_clinico_lab(client):
                 STATS["ordenes_cobro_fallido"] += 1
                 log_error("LAB", f"Cobrar orden {oid}", f"HTTP {r.status_code}", r)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en fase1_clinico_lab (stress_e2e_prod.py)")
             STATS["ordenes_cobro_fallido"] += 1
             log_error("LAB", f"Cobrar orden {oid}", str(e))
 
@@ -372,6 +380,7 @@ def fase1_clinico_lab(client):
             else:
                 print(f"  WARN Muestra orden {oid}: HTTP {r.status_code}")
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en fase1_clinico_lab (stress_e2e_prod.py)")
             pass
 
     # --- 1.8 Capturar resultados ---
@@ -414,6 +423,7 @@ def fase1_clinico_lab(client):
                 STATS["resultados_fallidos"] += 1
                 log_error("LAB", f"Detalle orden {oid}", f"HTTP {r_det.status_code}", r_det)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en fase1_clinico_lab (stress_e2e_prod.py)")
             STATS["resultados_fallidos"] += 1
             log_error("LAB", f"Captura resultados orden {oid}", str(e))
 
@@ -429,6 +439,7 @@ def fase1_clinico_lab(client):
                 STATS["validaciones_pin_fallidas"] += 1
                 log_error("LAB", f"Validar PIN orden {oid}", f"HTTP {r.status_code}", r)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en fase1_clinico_lab (stress_e2e_prod.py)")
             STATS["validaciones_pin_fallidas"] += 1
             log_error("LAB", f"Validar PIN orden {oid}", str(e))
 
@@ -444,6 +455,7 @@ def fase1_clinico_lab(client):
             else:
                 print(f"  WARN PDF: Orden {oid} -> HTTP {r.status_code}, {len(r.content)} bytes")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en fase1_clinico_lab (stress_e2e_prod.py)")
             print(f"  WARN PDF: Orden {oid} -> {e}")
     print(f"  PDFs verificados: {pdfs_ok}/5")
 
@@ -470,6 +482,7 @@ def fase2_farmacia(client):
             for p in productos[:5]:
                 print(f"    - [{p['id']}] {p['nombre_comercial']} ${p.get('precio_base', '?')} Stock:{p.get('stock', '?')}")
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en fase2_farmacia (stress_e2e_prod.py)")
         print(f"  ERROR: {e}")
 
     if not productos:
@@ -484,6 +497,7 @@ def fase2_farmacia(client):
                         if p["id"] not in [x["id"] for x in productos]:
                             productos.append(p)
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en fase2_farmacia (stress_e2e_prod.py)")
                 pass
         print(f"  Total productos encontrados: {len(productos)}")
 
@@ -551,6 +565,7 @@ def fase2_farmacia(client):
                 STATS["ventas_fallidas"] += 1
                 log_error("FARMACIA", f"Venta #{i+1}", f"HTTP {r.status_code}", r)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en fase2_farmacia (stress_e2e_prod.py)")
             STATS["ventas_fallidas"] += 1
             log_error("FARMACIA", f"Venta #{i+1}", str(e))
 
@@ -579,6 +594,7 @@ def fase2_farmacia(client):
                 STATS["devoluciones_fallidas"] += 1
                 log_error("FARMACIA", f"Devolución venta {vid}", f"HTTP {r.status_code}", r)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en fase2_farmacia (stress_e2e_prod.py)")
             STATS["devoluciones_fallidas"] += 1
             log_error("FARMACIA", f"Devolución venta {vid}", str(e))
 
@@ -595,6 +611,7 @@ def fase2_farmacia(client):
                 STATS["cancelaciones_fallidas"] += 1
                 log_error("FARMACIA", f"Cancelar venta {vid}", f"HTTP {r.status_code}", r)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en fase2_farmacia (stress_e2e_prod.py)")
             STATS["cancelaciones_fallidas"] += 1
             log_error("FARMACIA", f"Cancelar venta {vid}", str(e))
 
@@ -622,6 +639,7 @@ def fase3_rrhh_nomina(client):
             empleados = [int(x) for x in ids]
             print(f"  Empleados encontrados: {len(empleados)} IDs: {empleados}")
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en fase3_rrhh_nomina (stress_e2e_prod.py)")
         print(f"  WARN: {e}")
 
     if not empleados:
@@ -635,6 +653,7 @@ def fase3_rrhh_nomina(client):
                 empleados = [int(x) for x in all_ids]
                 print(f"  Empleados desde RH: {len(empleados)} IDs: {empleados}")
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en fase3_rrhh_nomina (stress_e2e_prod.py)")
             pass
 
     if not empleados:
@@ -658,6 +677,7 @@ def fase3_rrhh_nomina(client):
                     STATS["asistencias_fallidas"] += 1
                     log_error("RRHH", f"Asistencia {tipo} emp {eid}", f"HTTP {r.status_code}", r)
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en fase3_rrhh_nomina (stress_e2e_prod.py)")
                 STATS["asistencias_fallidas"] += 1
                 log_error("RRHH", f"Asistencia {tipo} emp {eid}", str(e))
 
@@ -682,6 +702,7 @@ def fase3_rrhh_nomina(client):
                 STATS["incidencias_fallidas"] += 1
                 log_error("RRHH", f"Incidencia emp {eid}", f"HTTP {r.status_code}", r)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en fase3_rrhh_nomina (stress_e2e_prod.py)")
             STATS["incidencias_fallidas"] += 1
             log_error("RRHH", f"Incidencia emp {eid}", str(e))
 
@@ -712,6 +733,7 @@ def fase3_rrhh_nomina(client):
             STATS["nomina_fallida"] += 1
             log_error("NOMINA", "Crear periodo", f"HTTP {r.status_code}", r)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en fase3_rrhh_nomina (stress_e2e_prod.py)")
         STATS["nomina_fallida"] += 1
         log_error("NOMINA", "Crear periodo", str(e))
 
@@ -725,6 +747,7 @@ def fase3_rrhh_nomina(client):
             else:
                 print(f"  WARN Cálculo: HTTP {r.status_code}")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en fase3_rrhh_nomina (stress_e2e_prod.py)")
             print(f"  WARN Cálculo: {e}")
 
         print(f"\n--- 3.6 Marcando periodo como pagado ---")
@@ -737,6 +760,7 @@ def fase3_rrhh_nomina(client):
             else:
                 print(f"  WARN Pago nómina: HTTP {r.status_code}")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en fase3_rrhh_nomina (stress_e2e_prod.py)")
             print(f"  WARN Pago nómina: {e}")
 
     return empleados, periodo_id
@@ -782,6 +806,7 @@ def fase4_cierre_caja(client):
         else:
             log_error("FINANZAS", "Corte de caja", f"HTTP {r.status_code}", r)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en fase4_cierre_caja (stress_e2e_prod.py)")
         log_error("FINANZAS", "Corte de caja", str(e))
 
     return corte_data
@@ -890,6 +915,7 @@ if __name__ == "__main__":
     try:
         pacientes, ordenes = fase1_clinico_lab(client)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en generar_reporte (stress_e2e_prod.py)")
         print(f"\n  ERROR FATAL FASE 1: {e}")
         traceback.print_exc()
         pacientes, ordenes = [], []
@@ -897,6 +923,7 @@ if __name__ == "__main__":
     try:
         ventas, devoluciones = fase2_farmacia(client)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en generar_reporte (stress_e2e_prod.py)")
         print(f"\n  ERROR FATAL FASE 2: {e}")
         traceback.print_exc()
         ventas, devoluciones = [], []
@@ -904,6 +931,7 @@ if __name__ == "__main__":
     try:
         empleados, periodo = fase3_rrhh_nomina(client)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en generar_reporte (stress_e2e_prod.py)")
         print(f"\n  ERROR FATAL FASE 3: {e}")
         traceback.print_exc()
         empleados, periodo = [], None
@@ -911,6 +939,7 @@ if __name__ == "__main__":
     try:
         corte = fase4_cierre_caja(client)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en generar_reporte (stress_e2e_prod.py)")
         print(f"\n  ERROR FATAL FASE 4: {e}")
         traceback.print_exc()
         corte = None

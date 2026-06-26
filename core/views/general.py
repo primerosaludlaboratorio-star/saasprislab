@@ -44,6 +44,7 @@ def home_view(request):
             )
             return redirect('login')
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en home_view (general.py)")
             logger_core.error(
                 "home_view: error inesperado al resolver redireccion de entrada: %s",
                 exc,
@@ -227,6 +228,7 @@ def log_frontend_error(request):
         try:
             logger_frontend.error(log_message)
         except Exception as log_error:
+            logging.getLogger(__name__).exception("Error inesperado en log_frontend_error (general.py)")
             logging.getLogger('prislab.frontend').error(
                 'Fallback tras fallo de logger_frontend.error: %s',
                 log_error,
@@ -236,10 +238,12 @@ def log_frontend_error(request):
         return JsonResponse({'status': 'success', 'mensaje': 'Error registrado'})
     
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en log_frontend_error (general.py)")
         # Si TODO falla, devolver respuesta exitosa para no bloquear el frontend
         try:
             logger_frontend.error(f"Error al procesar log_frontend_error: {str(e)}")
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en log_frontend_error (general.py)")
             pass  # Silencioso incluso en el fallback
         return JsonResponse({'status': 'error', 'mensaje': 'Error al procesar'}, status=500)
 
@@ -282,9 +286,9 @@ def get_redirect_url_by_role(user):
         if user.groups.filter(name='FARMACIA').exists():
             return reverse('pdv_farmacia')
         
-        # Recepcion -> Recepcion de Consultorio (agenda y check-in)
+        # Recepcion -> Dashboard del modulo de recepcion (PWA unificado)
         if user.groups.filter(name='RECEPCION').exists():
-            return reverse('consultorio:tablero_recepcion')
+            return reverse('recepcion:dashboard_recepcion')
         
         # Enfermeria -> Recepcion
         if user.groups.filter(name='ENFERMERIA').exists():
@@ -311,7 +315,7 @@ def get_redirect_url_by_role(user):
                 'DIRECTOR': reverse('dashboard_director'),
                 'QUIMICO': reverse('lista_trabajo_lab'),
                 'LABORATORIO': reverse('lista_trabajo_lab'),  # variante: gabriela
-                'RECEPCION': reverse('recepcion_lab'),
+                'RECEPCION': reverse('recepcion:dashboard_recepcion'),
                 'CAJERO': reverse('pdv_farmacia'),
                 'FARMACIA': reverse('pdv_farmacia'),     # variante: nancy
                 'GERENTE': reverse('dashboard'),
@@ -334,6 +338,7 @@ def get_redirect_url_by_role(user):
         return reverse('dashboard')
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en get_redirect_url_by_role (general.py)")
         logger_core.error(f"Error en get_redirect_url_by_role: {str(e)}")
         # Fallback seguro: dashboard siempre existe
         return reverse('dashboard') if user.is_authenticated else '/login/'
@@ -362,6 +367,7 @@ class CustomLoginView(LoginView):
                 )
                 return redirect('login')
             except Exception as exc:
+                logging.getLogger(__name__).exception("Error inesperado en dispatch (general.py)")
                 logger_core.error(
                     "CustomLoginView.dispatch: error inesperado al resolver redireccion: %s",
                     exc,
@@ -408,6 +414,7 @@ class CustomLoginView(LoginView):
                 request=self.request,
             )
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en form_valid (general.py)")
             pass
         return response
 
@@ -424,6 +431,7 @@ class CustomLoginView(LoginView):
                 ip_address=ip,
             )
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en form_invalid (general.py)")
             pass
         return super().form_invalid(form)
 
@@ -450,6 +458,7 @@ def logout_view(request):
             request=request,
         )
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en logout_view (general.py)")
         pass
     logout(request)
     response = redirect('login')

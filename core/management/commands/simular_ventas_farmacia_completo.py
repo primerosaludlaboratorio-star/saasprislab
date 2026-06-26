@@ -30,6 +30,7 @@ from core.models import (
     Medico, Receta, SalesReturn, DiscountPolicy, Pago
 )
 from core.views.farmacia import procesar_venta
+import logging
 
 User = get_user_model()
 
@@ -293,6 +294,7 @@ class Command(BaseCommand):
                         continue
                     errores.append(f"Venta {i+1}: IntegrityError - {str(e)}")
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en handle (simular_ventas_farmacia_completo.py)")
                     errores.append(f"Venta {i+1}: {str(e)}")
 
                 # Refrescar productos cada 20 ventas
@@ -306,6 +308,7 @@ class Command(BaseCommand):
                     self.stdout.write(f"[PROGRESO] {i+1}/{ventas_objetivo} ventas intentadas | creadas={ventas_creadas} | errores={len(errores)}")
 
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (simular_ventas_farmacia_completo.py)")
                 errores.append(f"Venta {i+1}: Excepción inesperada - {str(e)}")
                 continue
 
@@ -381,6 +384,7 @@ class Command(BaseCommand):
                     self.stdout.write(f"[PROGRESO] {i+1}/{devoluciones_objetivo} devoluciones procesadas")
 
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (simular_ventas_farmacia_completo.py)")
                 errores.append(f"Devolución {i+1}: {str(e)}")
                 continue
 

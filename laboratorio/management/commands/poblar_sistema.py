@@ -8,6 +8,7 @@ import io
 import time
 from datetime import datetime, timedelta
 from decimal import Decimal
+import logging
 
 # Configurar encoding UTF-8 para Windows
 if sys.platform == 'win32':
@@ -20,8 +21,8 @@ from django.db.utils import IntegrityError
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 
-from laboratorio.models import Estudio, Medico, CategoriaExamen
-from core.models import Paciente, OrdenDeServicio, DetalleOrden as CoreDetalleOrden
+from laboratorio.models import Estudio, CategoriaExamen
+from core.models import Paciente, OrdenDeServicio, DetalleOrden as CoreDetalleOrden, Medico
 
 User = get_user_model()
 
@@ -218,13 +219,39 @@ class Command(BaseCommand):
                         errores.append(error_msg)
                         self.stdout.write(self.style.WARNING(f'   [AVISO] {error_msg}'))
                         continue
+                    except django.core.exceptions.ValidationError as e:
+                        error_msg = f"Error de validación en paciente {i+1}: {str(e)}"
+                        errores.append(error_msg)
+                        self.stdout.write(self.style.WARNING(f'   [AVISO] {error_msg}'))
+                        continue
+                    except DatabaseError as e:
+                        error_msg = f"Error de base de datos en paciente {i+1}: {str(e)}"
+                        errores.append(error_msg)
+                        self.stdout.write(self.style.WARNING(f'   [AVISO] {error_msg}'))
+                        continue
+                    except ValueError as e:
+                        error_msg = f"Error de valor en paciente {i+1}: {str(e)}"
+                        errores.append(error_msg)
+                        self.stdout.write(self.style.WARNING(f'   [AVISO] {error_msg}'))
+                        continue
                     except Exception as e:
+                        logging.getLogger(__name__).exception("Error inesperado en handle (poblar_sistema.py)")
                         error_msg = f"Error inesperado en paciente {i+1}: {str(e)}"
                         errores.append(error_msg)
                         self.stdout.write(self.style.ERROR(f'   [ERROR] {error_msg}'))
                         continue
 
+        except ValueError as e:
+            self.stdout.write(self.style.ERROR(f'Error de valor: {str(e)}'))
+            raise
+        except django.core.exceptions.ValidationError as e:
+            self.stdout.write(self.style.ERROR(f'Error de validación: {str(e)}'))
+            raise
+        except DatabaseError as e:
+            self.stdout.write(self.style.ERROR(f'Error de base de datos: {str(e)}'))
+            raise
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (poblar_sistema.py)")
             self.stdout.write(self.style.ERROR(f'\n[ERROR CRITICO] {str(e)}'))
             return
 

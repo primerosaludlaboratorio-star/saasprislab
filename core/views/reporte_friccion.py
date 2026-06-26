@@ -164,18 +164,19 @@ def reporte_friccion(request):
 def determinar_categoria_automatica(datos):
     """
     Determina la categoría automática basándose en las respuestas.
+    Usa categorías válidas de BuzonQuejas.CATEGORIA_CHOICES.
     """
     es_tecnico = datos.get('es_tecnico_o_proceso', '')
     impacto = datos.get('impacto_tiempo', '')
     
     if es_tecnico == 'TECNICO':
-        return 'ERROR_TECNICO'
+        return 'PROCESO'
     elif es_tecnico == 'PROCESO':
         return 'PROCESO'
     elif impacto == 'AFECTA_PACIENTE':
-        return 'BIENESTAR'
+        return 'TRATO'
     else:
-        return 'OPTIMIZACION'
+        return 'OTRO'
 
 
 def generar_punto_critico(datos):
@@ -226,62 +227,4 @@ def api_pris_ayuda(request):
     })
 
 
-@login_required
-def buzon_kanban(request):
-    """
-    Panel Kanban mejorado para gestión de reportes de fricción.
-    Destaca el punto crítico en cada tarjeta.
-    """
-    empresa = getattr(request.user, 'empresa', None)
-    if not empresa:
-        from django.contrib import messages
-        from django.shortcuts import redirect
-        messages.error(request, 'Usuario no tiene empresa asignada.')
-        return redirect('home')
-    
-    # Obtener quejas agrupadas por estado
-    quejas_nuevas = BuzonQuejas.objects.filter(
-        empresa=empresa,
-        estado='PENDIENTE'
-    ).order_by('-fecha_creacion')
-    
-    quejas_investigando = BuzonQuejas.objects.filter(
-        empresa=empresa,
-        estado='EN_REVISION'
-    ).order_by('-fecha_creacion')
-    
-    quejas_resueltas = BuzonQuejas.objects.filter(
-        empresa=empresa,
-        estado='RESUELTO'
-    ).order_by('-fecha_resolucion')[:20]
-    
-    quejas_descartadas = BuzonQuejas.objects.filter(
-        empresa=empresa,
-        estado='DESCARTADO'
-    ).order_by('-fecha_creacion')[:10]
-    
-    # Estadísticas
-    total_quejas = BuzonQuejas.objects.filter(empresa=empresa).count()
-    quejas_criticas = BuzonQuejas.objects.filter(empresa=empresa, sentimiento_ia='CRITICO').count()
-    quejas_sin_analizar = BuzonQuejas.objects.filter(empresa=empresa, analizado_ia=False).count()
-    
-    # Agrupar por categoría automática
-    por_categoria = {}
-    for categoria in ['OPTIMIZACION', 'ERROR_TECNICO', 'BIENESTAR', 'PROCESO']:
-        por_categoria[categoria] = BuzonQuejas.objects.filter(
-            empresa=empresa,
-            categoria_ia=categoria,
-            estado='PENDIENTE'
-        ).count()
-    
-    return render(request, 'core/buzon_kanban.html', {
-        'empresa': empresa,
-        'quejas_nuevas': quejas_nuevas,
-        'quejas_investigando': quejas_investigando,
-        'quejas_resueltas': quejas_resueltas,
-        'quejas_descartadas': quejas_descartadas,
-        'total_quejas': total_quejas,
-        'quejas_criticas': quejas_criticas,
-        'quejas_sin_analizar': quejas_sin_analizar,
-        'por_categoria': por_categoria,
-    })
+# buzon_kanban eliminado de aquí — la implementación canónica está en core/views/buzon.py

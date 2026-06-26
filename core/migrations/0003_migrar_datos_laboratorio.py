@@ -3,6 +3,7 @@
 
 from django.db import migrations
 import uuid
+import logging
 
 
 def migrar_datos_laboratorio_a_core(apps, schema_editor):
@@ -105,6 +106,7 @@ def migrar_datos_laboratorio_a_core(apps, schema_editor):
             ordenes_migradas += 1
         
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en migrar_datos_laboratorio_a_core (0003_migrar_datos_laboratorio.py)")
             print(f"ERROR procesando orden Lab #{orden_lab.id}: {str(e)}")
     
     # Resumen final

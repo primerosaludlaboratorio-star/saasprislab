@@ -286,5 +286,6 @@ def registrar_uso_precio_staff(usuario, producto, precio_neto, precio_publico, v
         return True
         
     except Exception as e:
+        # Justificación: Auditoría secundaria no bloqueante (registro de Sentinel y push).
         logger.error(f"Error al registrar uso de Precio Staff: {e}", exc_info=True)
         return False

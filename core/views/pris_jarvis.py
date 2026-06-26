@@ -245,6 +245,7 @@ def api_dictado_busqueda(request):
         resultado = procesar_dictado_inventario(transcripcion, empresa, request.user)
         nombre_detectado = resultado.get('producto_nombre', '') or transcripcion
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_dictado_busqueda (pris_jarvis.py)")
         nombre_detectado = transcripcion
 
     tipo_modulo = 'farmacia.buscar_stock' if modulo == 'farmacia' else 'laboratorio.buscar_reactivo'
@@ -834,6 +835,7 @@ def validar_accion_pris(request, accion_id):
                 accion.confirmar(usuario=request.user, resultado=resultado)
                 messages.success(request, '✅ Acción confirmada y ejecutada.')
             except Exception as exc:
+                logging.getLogger(__name__).exception("Error inesperado en validar_accion_pris (pris_jarvis.py)")
                 accion.rechazar(usuario=request.user, motivo=str(exc))
                 messages.error(request, f'❌ Error al ejecutar: {exc}')
         elif decision == 'rechazar':

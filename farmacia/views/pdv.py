@@ -127,6 +127,9 @@ def api_lotes_producto(request, producto_id):
     precio_venta = float(p.precio_publico or 0)
     alerta_precio_bajo = precio_venta > 0 and costo_lote > 0 and precio_venta < costo_lote
 
+    # stock_total_fisico: suma de TODOS los lotes (incluidos caducados) — para conteo físico ERP
+    stock_total_fisico = sum(l.cantidad for l in lotes_con_stock) if lotes_con_stock else float(p.stock or 0)
+
     producto_data = {
         'id': p.id,
         'nombre_comercial': p.nombre,
@@ -138,6 +141,7 @@ def api_lotes_producto(request, producto_id):
         'costo_lote': costo_lote,
         'stock': stock_total,
         'stock_total': stock_total,
+        'stock_total_fisico': float(stock_total_fisico),
         'iva_pct': float(p.iva_porcentaje or 0),
         'es_antibiotico': bool(p.es_antibiotico),
         'es_controlado': bool(p.es_antibiotico),

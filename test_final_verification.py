@@ -17,6 +17,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import ElementClickInterceptedException
+import logging
 
 BASE_URL = os.environ.get("PRISLAB_TEST_BASE_URL", "https://prislab-v5-811785477499.us-central1.run.app")
 USERNAME = os.environ.get("PRISLAB_TEST_USERNAME", "admin")
@@ -40,6 +41,7 @@ def console_errors(driver):
     try:
         return [e.get("message", str(e)) for e in driver.get_log("browser") if e.get("level") == "SEVERE"]
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en console_errors (test_final_verification.py)")
         return []
 
 def is_500_or_blank(driver):
@@ -51,6 +53,7 @@ def is_500_or_blank(driver):
         if len(driver.page_source.strip()) < 500:
             return True
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en is_500_or_blank (test_final_verification.py)")
         pass
     return False
 
@@ -63,6 +66,7 @@ def login(driver):
         driver.find_element(By.CSS_SELECTOR, "button[type='submit'], input[type='submit']").click()
         time.sleep(3)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en login (test_final_verification.py)")
         report["results"].append({"test": "Login", "status": "FAIL", "detail": str(e)})
         report["fail_count"] += 1
         return False
@@ -110,8 +114,10 @@ def run():
                     driver.execute_script("arguments[0].click();", corte)
                     corte_ok = True
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en run (test_final_verification.py)")
                     pass
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_final_verification.py)")
             report["errors"].append(f"Corte button: {e}")
         ss(driver, "t1_after_corte")
         if corte_ok:
@@ -135,8 +141,10 @@ def run():
                     driver.execute_script("arguments[0].click();", limpiar)
                     limpiar_ok = True
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en run (test_final_verification.py)")
                     pass
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_final_verification.py)")
             report["errors"].append(f"Limpiar button: {e}")
         ss(driver, "t1_after_limpiar")
         if limpiar_ok:
@@ -232,11 +240,13 @@ def run():
         ss(driver, "t5_done")
 
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en run (test_final_verification.py)")
         report["errors"].append(f"Fatal: {e}")
         report["fail_count"] += 1
         try:
             ss(driver, "99_fatal")
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_final_verification.py)")
             pass
     finally:
         driver.quit()

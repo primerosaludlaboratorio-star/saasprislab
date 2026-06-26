@@ -179,9 +179,9 @@ def generar_etiqueta_tubo(
         logger.info(f"✓ Etiqueta generada: {len(pdf_bytes)} bytes")
         return pdf_bytes
         
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, ImportError) as e:
         logger.error(f"Error al generar etiqueta: {e}", exc_info=True)
-        raise Exception(f"Error al generar etiqueta: {str(e)}")
+        raise RuntimeError(f"Error al generar etiqueta: {str(e)}") from e
 
 
 # ==============================================================================
@@ -215,7 +215,7 @@ def generar_codigo_barras(texto: str, ancho: float = 40, alto: float = 10) -> Dr
         
         return drawing
         
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError) as e:
         logger.error(f"Error al generar código de barras: {e}")
         # Retornar dibujo vacío en caso de error
         return Drawing(ancho * mm_unit, alto * mm_unit)
@@ -299,9 +299,9 @@ def generar_etiquetas_multiples(ordenes: list) -> bytes:
         logger.info(f"✓ {len(ordenes)} etiquetas generadas: {len(pdf_bytes)} bytes")
         return pdf_bytes
         
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, ImportError) as e:
         logger.error(f"Error al generar etiquetas múltiples: {e}", exc_info=True)
-        raise
+        raise RuntimeError(f"Error al generar etiquetas múltiples: {str(e)}") from e
 
 
 # ==============================================================================
@@ -373,7 +373,7 @@ def generar_etiqueta_con_qr(
         logger.info(f"✓ Etiqueta con QR generada")
         return pdf_bytes
         
-    except Exception as e:
+    except (ImportError, ValueError, TypeError, AttributeError) as e:
         logger.error(f"Error al generar etiqueta con QR: {e}", exc_info=True)
         # Fallback a etiqueta normal
         return generar_etiqueta_tubo(folio_orden, nombre_paciente, tipo_muestra, fecha)
@@ -448,7 +448,7 @@ def test_generar_etiqueta():
             print("   Guardado temporalmente en: %s" % f.name)
         return True
         
-    except Exception as e:
+    except (RuntimeError, ValueError, TypeError, ImportError) as e:
         print(f"❌ Error: {e}")
         return False
 

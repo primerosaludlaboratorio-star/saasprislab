@@ -211,6 +211,7 @@ def _test_gemini_connection_impl() -> dict:
             'model': 'gemini-2.0-flash',
         }
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en _test_gemini_connection_impl (gemini_client.py)")
         return {
             'success': False,
             'message': str(e),

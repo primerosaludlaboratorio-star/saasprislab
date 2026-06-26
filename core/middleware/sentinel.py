@@ -196,6 +196,7 @@ class SentinelTelemetryMiddleware:
                                 "PRIS Sentinel detecto un problema de permisos y lo corrigio automaticamente."
                             )
                         except Exception as message_error:
+                            logging.getLogger(__name__).exception("Error inesperado en __call__ (sentinel.py)")
                             logger.debug(f"SENTINEL AUTO-FIX [403]: mensajes no disponibles: {message_error}")
                         return HttpResponseRedirect(path)
                 except Exception as e:
@@ -254,6 +255,7 @@ class SentinelTelemetryMiddleware:
                     f"{tipo_exc} en {path}"
                 )
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en process_exception (sentinel.py)")
             logger.debug(f"SENTINEL INFRA: Error en check Gunicorn: {e}")
 
         # 2. DB CONNECTION RECOVERY: Too many connections
@@ -274,6 +276,7 @@ class SentinelTelemetryMiddleware:
                         'warning'
                     )
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en process_exception (sentinel.py)")
                 logger.debug(f"SENTINEL INFRA: Error en check DB: {e}")
 
         # 3. AUTO-FIX PERMISSIONS: 403 via PermissionDenied exception
@@ -297,9 +300,11 @@ class SentinelTelemetryMiddleware:
                                 "Reintentando..."
                             )
                         except Exception as message_error:
+                            logging.getLogger(__name__).exception("Error inesperado en process_exception (sentinel.py)")
                             logger.debug(f"SENTINEL INFRA [Permisos]: mensajes no disponibles: {message_error}")
                         return HttpResponseRedirect(path)
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en process_exception (sentinel.py)")
                     logger.debug(f"SENTINEL INFRA: Error en check permisos: {e}")
             else:
                 logger.warning(
@@ -482,6 +487,7 @@ class SentinelTelemetryMiddleware:
             from django.db import connection
             connection.close()
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _repair_database_error (sentinel.py)")
             pass
 
         # Redirigir al usuario a la misma ruta para reintentar
@@ -507,6 +513,7 @@ class SentinelTelemetryMiddleware:
             }
             messages.add_message(request, level_map.get(level, messages.INFO), message)
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _redirect_with_message (sentinel.py)")
             pass
 
         # Forzar guardado de sesion para evitar perdida en respuestas fallidas
@@ -526,6 +533,7 @@ class SentinelTelemetryMiddleware:
                 request.session.modified = True
                 request.session.save()
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _preservar_sesion (sentinel.py)")
             pass
 
     # ===================================================================
@@ -551,6 +559,7 @@ class SentinelTelemetryMiddleware:
                     expired.delete()
                     logger.info(f"SENTINEL AUTO-CLEANUP: {count} sesiones expiradas purgadas")
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en _disparar_auto_cleanup (sentinel.py)")
                 logger.debug(f"SENTINEL AUTO-CLEANUP: Error purgando sesiones: {e}")
 
             # 2. Cerrar conexiones de DB viejas
@@ -559,6 +568,7 @@ class SentinelTelemetryMiddleware:
                 close_old_connections()
                 logger.info("SENTINEL AUTO-CLEANUP: Conexiones DB viejas cerradas")
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en _disparar_auto_cleanup (sentinel.py)")
                 logger.debug(f"SENTINEL AUTO-CLEANUP: Error cerrando conexiones: {e}")
 
             # 3. Limpiar cache de errores del middleware
@@ -642,6 +652,7 @@ class SentinelTelemetryMiddleware:
             response['Retry-After'] = str(tiempo_estimado)
             return response
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _render_error_page (sentinel.py)")
             # Si el template mejorado falla, usar el basico
             try:
                 response = render(request, 'core/error_amable.html', {
@@ -653,6 +664,7 @@ class SentinelTelemetryMiddleware:
                 response['Retry-After'] = str(tiempo_estimado)
                 return response
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en _render_error_page (sentinel.py)")
                 return None
 
     # ===================================================================
@@ -819,6 +831,7 @@ class SentinelTelemetryMiddleware:
                     usuario=usuario,
                 )
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en _crear_incidencia (sentinel.py)")
                 pass
 
             # PASO 2: Intentar enriquecer con IA
@@ -891,4 +904,5 @@ class SentinelTelemetryMiddleware:
                 from django.db import connection
                 connection.close()
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en _crear_incidencia (sentinel.py)")
                 pass

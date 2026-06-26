@@ -203,6 +203,7 @@ class URLProber:
                 return AuditResult('HTTP', name, 'ADVERTENCIA',
                                    f'HTTP {resp.status_code}', url, ms=ms)
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en probe (omni_audit.py)")
             ms = (time.perf_counter() - t0) * 1000
             return AuditResult('HTTP', name, 'FALLANDO', str(exc), url, ms=ms)
 
@@ -259,6 +260,7 @@ class StaticAssetsChecker:
                     elif full.stat().st_size == 0:
                         phantom_refs.setdefault(f'{asset} (0 bytes)', []).append(tpl.name)
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en check (omni_audit.py)")
                 pass
 
         for ref, tpls in phantom_refs.items():
@@ -300,6 +302,7 @@ class TemplateScanner:
                             str(tpl.relative_to(PROJECT_ROOT)), line
                         ))
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en scan_for_forbidden (omni_audit.py)")
                 pass
 
         if orb_found_in:
@@ -478,6 +481,7 @@ class CodeQualityAnalyst:
                 results.append(AuditResult('CÓDIGO', f'except:pass en {fpath.name}',
                                            'ADVERTENCIA', 'Silenciador de errores detectado', rel, line))
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en scan_file (omni_audit.py)")
             results.append(AuditResult('CÓDIGO', f'No se pudo analizar {fpath.name}',
                                        'ADVERTENCIA', str(exc)))
         return results
@@ -536,6 +540,7 @@ class DatabaseInspector:
                 results.append(AuditResult('BD', name, 'NO_DESPLEGADA',
                                            f'Modelo {label} no encontrado'))
             except Exception as exc:
+                logging.getLogger(__name__).exception("Error inesperado en inspect (omni_audit.py)")
                 results.append(AuditResult('BD', name, 'FALLANDO', str(exc)))
 
         # ── Órdenes huérfanas (sin pago ni resultado) ────────────────────
@@ -560,9 +565,11 @@ class DatabaseInspector:
                     results.append(AuditResult('BD', 'Órdenes huérfanas (sin pago)',
                                                'FALLANDO', f'{huerfanas} ({pct:.1f}%) sin pago registrado'))
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en inspect (omni_audit.py)")
                 results.append(AuditResult('BD', 'Órdenes huérfanas (sin pago)',
                                            'ADVERTENCIA', f'No se pudo filtrar relación pagos'))
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en inspect (omni_audit.py)")
             results.append(AuditResult('BD', 'OrdenDeServicio', 'ADVERTENCIA', str(exc)))
 
         # ── Perfil BHC (LIMS v7.5: analitos en PerfilLims) ────────────────
@@ -602,6 +609,7 @@ class DatabaseInspector:
                     'NO_DESPLEGADA', 'No se encontró perfil tipo Biometría Hemática',
                 ))
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en inspect (omni_audit.py)")
             results.append(AuditResult('BD', 'Perfil BHC LIMS', 'ADVERTENCIA', str(exc)))
 
         # ── Farmacia: productos y lotes ──────────────────────────────────
@@ -621,6 +629,7 @@ class DatabaseInspector:
             except LookupError:
                 continue
             except Exception as exc:
+                logging.getLogger(__name__).exception("Error inesperado en inspect (omni_audit.py)")
                 results.append(AuditResult('BD', f'Farmacia {model_name}', 'ADVERTENCIA', str(exc)))
                 farmacia_found = True
                 break
@@ -679,6 +688,7 @@ class ClinicalLogicValidator:
                 results.append(AuditResult('CLÍNICO', 'Rangos de referencia LIMS',
                                            'FALLANDO', '0 valores en BD'))
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en validate (omni_audit.py)")
             results.append(AuditResult('CLÍNICO', 'Rangos de referencia LIMS', 'ADVERTENCIA', str(exc)))
 
         # ── VCM / HCM / CHCM coherencia (índices eritrocitarios) ─────────
@@ -736,6 +746,7 @@ class ClinicalLogicValidator:
                     'ADVERTENCIA', 'No se encontró perfil BHC para conteo',
                 ))
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en validate (omni_audit.py)")
             results.append(AuditResult('CLÍNICO', 'Analitos BHC (LIMS)', 'ADVERTENCIA', str(exc)))
 
         # ── VALIDACIÓN UNIVERSAL DE CONGRUENCIA BIOLÓGICA (Friedewald/Bili/AG) ──
@@ -842,6 +853,7 @@ class ClinicalLogicValidator:
                     'CLÍNICO', 'Validación Universal — archivo captura',
                     'ADVERTENCIA', 'captura_resultados_industrial.html no encontrado'))
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en validate (omni_audit.py)")
             results.append(AuditResult('CLÍNICO', 'Validación Universal QC', 'ADVERTENCIA', str(exc)))
 
         return results
@@ -877,6 +889,7 @@ class LegalComplianceChecker:
                 if 'Fernet' in content or 'AES' in content or 'encrypt' in content.lower():
                     fernet_found = True
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en check (omni_audit.py)")
                 pass
 
         # También buscar en toda la base de código
@@ -890,6 +903,7 @@ class LegalComplianceChecker:
                 if 'Fernet' in content or 'AES-256' in content:
                     fernet_found = True
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en check (omni_audit.py)")
                 pass
 
         results.append(AuditResult(
@@ -929,6 +943,7 @@ class LegalComplianceChecker:
                 results.append(AuditResult('LEGAL', 'Campos RAG en DocumentoCapacitacion',
                                            'ADVERTENCIA', f'Faltan: {", ".join(missing)}'))
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en check (omni_audit.py)")
             results.append(AuditResult('LEGAL', 'DocumentoCapacitacion RAG', 'ADVERTENCIA', str(exc)))
 
         return results
@@ -974,6 +989,7 @@ class RAGStatusChecker:
             results.append(AuditResult('RAG', 'Campos RAG en DocumentoCapacitacion',
                                        'NO_DESPLEGADA', 'Migración pendiente — ejecutar makemigrations'))
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en check (omni_audit.py)")
             results.append(AuditResult('RAG', 'Sistema RAG', 'ADVERTENCIA', str(exc)))
 
         # Verificar que el motor RAG exista
@@ -1013,6 +1029,7 @@ class BaselineManager:
         try:
             return json.loads(BASELINE_FILE.read_text())
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en load_baseline (omni_audit.py)")
             return None
 
     def compare(self, current: dict, previous: dict) -> list[AuditResult]:
@@ -1136,6 +1153,7 @@ class ReportGenerator:
             LOG_FILE.write_text('\n'.join(self.log_lines), encoding='utf-8')
             self.stdout.write(f'\n  Log guardado en: {LOG_FILE}')
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en write_log (omni_audit.py)")
             self.stdout.write(f'  [WARN] No se pudo escribir log: {exc}')
 
 
@@ -1377,5 +1395,6 @@ class Command(BaseCommand):
             user.save()
             return URLProber(user)
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en _get_prober (omni_audit.py)")
             self.stdout.write(f'  [WARN] URLProber: {exc}')
             return None

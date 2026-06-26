@@ -133,6 +133,7 @@ class MovimientoInventarioService:
                         usuario_responsable=request.user,
                     )
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en entrada_mercancia_directa (movimiento_inventario_service.py)")
                     producto.stock = (producto.stock or 0) + cantidad
                     producto.save()
 
@@ -144,6 +145,7 @@ class MovimientoInventarioService:
                         detalles=f'Ingreso: {cantidad} pz, Lote: {lote_num or "N/A"}, Factura: {factura or "N/A"}',
                     )
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en entrada_mercancia_directa (movimiento_inventario_service.py)")
                     pass
 
                 producto.refresh_from_db()
@@ -163,6 +165,7 @@ class MovimientoInventarioService:
                     'stock_actual': producto.stock,
                 })
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en entrada_mercancia_directa (movimiento_inventario_service.py)")
             logger_core.error('Error al registrar entrada de mercancía: %s', str(e), exc_info=True)
             return cls._json_result(500, {
                 'status': 'error',
@@ -265,6 +268,7 @@ class MovimientoInventarioService:
                     'total': str(total_compra),
                 })
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en registrar_compra_a_proveedor (movimiento_inventario_service.py)")
             logger_core.error('Error al registrar compra: %s', str(e), exc_info=True)
             return cls._json_result(500, {
                 'status': 'error',
@@ -360,8 +364,10 @@ class MovimientoInventarioService:
                     request=request,
                 )
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en aplicar_ajuste_por_lote (movimiento_inventario_service.py)")
                 pass
 
             return cls._json_result(200, {'status': 'success'})
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en aplicar_ajuste_por_lote (movimiento_inventario_service.py)")
             return cls._json_result(500, {'status': 'error', 'mensaje': str(e)})

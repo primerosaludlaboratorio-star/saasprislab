@@ -18,6 +18,7 @@ from core.models import (
     Empresa, Empleado, RegistroAsistencia, Sucursal, Usuario,
     HorarioTrabajo, IncidenciaAsistencia,
 )
+import logging
 
 @login_required
 def dashboard_asistencia(request):
@@ -123,6 +124,7 @@ def registrar_entrada_salida(request):
             messages.success(request, f'{tipo_registro} registrada para {str(empleado.usuario)}')
             return redirect('registro_asistencia')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en registrar_entrada_salida (asistencia.py)")
             messages.error(request, f'Error al registrar asistencia: {str(e)}')
     
     # GET: Mostrar formulario
@@ -192,6 +194,7 @@ def crear_horario(request):
             messages.success(request, 'Horario guardado exitosamente')
             return redirect('horarios_trabajo')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en crear_horario (asistencia.py)")
             messages.error(request, f'Error al guardar horario: {str(e)}')
     
     # GET: Mostrar formulario
@@ -279,6 +282,7 @@ def crear_incidencia(request):
             messages.success(request, 'Incidencia registrada exitosamente')
             return redirect('incidencias_asistencia')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en crear_incidencia (asistencia.py)")
             messages.error(request, f'Error al guardar incidencia: {str(e)}')
     
     # GET: Mostrar formulario

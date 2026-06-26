@@ -3,6 +3,8 @@ Modelos del Módulo de Contabilidad y Facturación Electrónica
 PRISLAB V5.0 - Cumplimiento SAT México CFDI 4.0
 """
 
+from decimal import Decimal
+
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -31,7 +33,6 @@ class ClienteFacturacion(models.Model):
     empresa = models.ForeignKey(
         'core.Empresa',
         on_delete=models.CASCADE,
-        null=True, blank=True,
         related_name='clientes_facturacion',
     )
 
@@ -108,6 +109,14 @@ class FacturaCFDI(models.Model):
     folio_interno = models.CharField(max_length=50, unique=True)
     serie = models.CharField(max_length=10, default='A')
     folio = models.IntegerField()
+
+    # Empresa — FK directa para multi-tenancy y scoping de folios
+    empresa = models.ForeignKey(
+        'core.Empresa',
+        on_delete=models.CASCADE,
+        related_name='facturas_cfdi',
+        help_text='Empresa emisora del CFDI (denormalizada de cliente.empresa para integridad y performance)',
+    )
     
     # Cliente
     cliente = models.ForeignKey(ClienteFacturacion, on_delete=models.PROTECT, related_name='facturas')
@@ -202,6 +211,7 @@ class FacturaCFDI(models.Model):
         verbose_name_plural = 'Facturas CFDI 4.0'
         ordering = ['-fecha_emision']
         indexes = [
+            models.Index(fields=['empresa', 'serie', 'folio']),
             models.Index(fields=['cliente', 'estado']),
             models.Index(fields=['fecha_emision']),
         ]
@@ -210,16 +220,23 @@ class FacturaCFDI(models.Model):
         return f"{self.folio_interno} - {self.cliente.rfc} - ${self.total}"
 
     def cfdi_empresa_scope_id(self) -> int | None:
-        """ID empresa para Idempotency-Key (cliente.empresa o usuario_creo.empresa). Sin PHI."""
-        if self.cliente_id and getattr(self.cliente, 'empresa_id', None):
-            return self.cliente.empresa_id
-        return getattr(self.usuario_creo, 'empresa_id', None)
+        """ID empresa para Idempotency-Key (empresa directa o usuario_creo.empresa). Sin PHI."""
+        return self.empresa_id or getattr(self.usuario_creo, 'empresa_id', None)
 
     def save(self, *args, **kwargs):
+        if not self.empresa_id and self.cliente_id:
+            self.empresa = self.cliente.empresa
         if not self.folio_interno:
-            ultimo = FacturaCFDI.objects.filter(serie=self.serie).order_by('-folio').first()
+            empresa_id = self.empresa_id or (self.cliente.empresa_id if self.cliente_id else None)
+            qs = FacturaCFDI.objects.filter(serie=self.serie)
+            if empresa_id:
+                qs = qs.filter(empresa_id=empresa_id)
+            ultimo = qs.order_by('-folio').first()
             self.folio = (ultimo.folio + 1) if ultimo else 1
-            self.folio_interno = f"FAC-{self.serie}-{timezone.now().year}-{self.folio:05d}"
+            scope = f"E{empresa_id}" if empresa_id else "EGLOBAL"
+            self.folio_interno = (
+                f"FAC-{scope}-{self.serie}-{timezone.localdate().year}-{self.folio:05d}"
+            )
         super().save(*args, **kwargs)
 
 
@@ -295,3 +312,114 @@ class ImpuestoConcepto(models.Model):
         else:
             self.importe = 0
         super().save(*args, **kwargs)
+
+
+# =============================================================================
+# CONTABILIDAD GENERAL (Catálogo de cuentas, pólizas y asientos)
+# =============================================================================
+
+class CuentaContable(models.Model):
+    """Catálogo de cuentas contables por empresa."""
+    TIPO_CHOICES = [
+        ('ACTIVO', 'Activo'),
+        ('PASIVO', 'Pasivo'),
+        ('CAPITAL', 'Capital'),
+        ('INGRESO', 'Ingreso'),
+        ('COSTO', 'Costo'),
+        ('GASTO', 'Gasto'),
+    ]
+    NATURALEZA_CHOICES = [
+        ('DEUDOR', 'Deudor'),
+        ('ACREEDOR', 'Acreedor'),
+    ]
+
+    empresa = models.ForeignKey('core.Empresa', on_delete=models.CASCADE, related_name='cuentas_contables')
+    codigo = models.CharField(max_length=20, db_index=True)
+    nombre = models.CharField(max_length=200)
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
+    naturaleza = models.CharField(max_length=10, choices=NATURALEZA_CHOICES, default='DEUDOR')
+    descripcion = models.TextField(blank=True)
+    activa = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Cuenta contable'
+        verbose_name_plural = 'Cuentas contables'
+        ordering = ['codigo']
+        constraints = [
+            models.UniqueConstraint(fields=['empresa', 'codigo'], name='unique_cuenta_por_empresa'),
+        ]
+
+    def __str__(self):
+        return f'{self.codigo} - {self.nombre}'
+
+
+class Poliza(models.Model):
+    """Póliza contable: agrupa asientos de un período / concepto."""
+    TIPO_CHOICES = [
+        ('INGRESOS', 'Ingresos'),
+        ('EGRESOS', 'Egresos'),
+        ('DIARIO', 'Diario'),
+        ('AJUSTE', 'Ajuste'),
+        ('CIERRE', 'Cierre'),
+    ]
+    ESTADO_CHOICES = [
+        ('BORRADOR', 'Borrador'),
+        ('AUTORIZADA', 'Autorizada'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+
+    empresa = models.ForeignKey('core.Empresa', on_delete=models.CASCADE, related_name='polizas')
+    folio = models.CharField(max_length=30, db_index=True)
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='DIARIO')
+    concepto = models.TextField()
+    fecha = models.DateField(default=timezone.localdate)
+    estado = models.CharField(max_length=12, choices=ESTADO_CHOICES, default='BORRADOR')
+    creado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='polizas_creadas')
+    autorizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='polizas_autorizadas'
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_autorizacion = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Póliza contable'
+        verbose_name_plural = 'Pólizas contables'
+        ordering = ['-fecha', '-fecha_creacion']
+        constraints = [
+            models.UniqueConstraint(fields=['empresa', 'folio'], name='unique_folio_poliza_empresa'),
+        ]
+
+    def __str__(self):
+        return f'{self.folio} - {self.concepto[:50]}'
+
+    def save(self, *args, **kwargs):
+        if not self.folio:
+            prefix = self.tipo[:3]
+            count = Poliza.objects.filter(empresa=self.empresa, tipo=self.tipo).count() + 1
+            self.folio = f'POL-{prefix}-{timezone.localdate().year}-{count:05d}'
+        super().save(*args, **kwargs)
+
+
+class AsientoContable(models.Model):
+    """Asiento individual dentro de una póliza."""
+    poliza = models.ForeignKey(Poliza, on_delete=models.CASCADE, related_name='asientos')
+    cuenta = models.ForeignKey(CuentaContable, on_delete=models.PROTECT, related_name='asientos')
+    concepto = models.CharField(max_length=255, blank=True)
+    cargo = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    abono = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+
+    class Meta:
+        verbose_name = 'Asiento contable'
+        verbose_name_plural = 'Asientos contables'
+
+    def __str__(self):
+        return f'{self.cuenta.codigo} C:{self.cargo} A:{self.abono}'
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.cargo < 0 or self.abono < 0:
+            raise ValidationError('Cargo y abono deben ser positivos.')
+        if self.cargo == 0 and self.abono == 0:
+            raise ValidationError('Debe tener cargo o abono.')

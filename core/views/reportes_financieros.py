@@ -4,6 +4,7 @@ Reportes financieros avanzados: P&L, Balance, Flujo de Caja, etc.
 """
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from core.decorators import role_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseForbidden
 from django.db.models import Sum, Count, Q, F
@@ -36,6 +37,7 @@ def _sumas_por_dia(queryset, fecha_field: str, total_field: str):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def reporte_ingresos_egresos(request):
     """Reporte de Ingresos y Egresos (P&L simplificado)."""
     empresa = getattr(request.user, 'empresa', None)
@@ -48,10 +50,11 @@ def reporte_ingresos_egresos(request):
     fecha_fin = request.GET.get('fecha_fin', '')
     
     # Por defecto, último mes
+    hoy = timezone.localdate()
     if not fecha_inicio:
-        fecha_inicio = (timezone.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        fecha_inicio = (hoy - timedelta(days=30)).strftime('%Y-%m-%d')
     if not fecha_fin:
-        fecha_fin = timezone.now().strftime('%Y-%m-%d')
+        fecha_fin = hoy.strftime('%Y-%m-%d')
     
     fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
     fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
@@ -130,6 +133,7 @@ def reporte_ingresos_egresos(request):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def reporte_balance_general(request):
     """Reporte de Balance General (Activos, Pasivos, Capital)."""
     empresa = getattr(request.user, 'empresa', None)
@@ -138,19 +142,62 @@ def reporte_balance_general(request):
         return redirect('home')
 
     # Fecha de corte
-    fecha_corte = request.GET.get('fecha_corte', timezone.now().strftime('%Y-%m-%d'))
+    fecha_corte = request.GET.get('fecha_corte', timezone.localdate().strftime('%Y-%m-%d'))
     fecha_corte_dt = datetime.strptime(fecha_corte, '%Y-%m-%d').date()
-    
-    # Obtener cuentas contables (CatalogoCuenta/MovimientoContable no migrados aún)
-    activos = []
-    total_activos = Decimal('0.00')
-    pasivos = []
-    total_pasivos = Decimal('0.00')
-    capital = []
-    total_capital = Decimal('0.00')
 
-    # CatalogoCuenta y MovimientoContable no migrados aún (pendiente)
-    
+    from contabilidad.models import CuentaContable, AsientoContable
+
+    saldos = {}
+    for asiento in AsientoContable.objects.filter(
+        poliza__empresa=empresa,
+        poliza__fecha__lte=fecha_corte_dt,
+        poliza__estado='AUTORIZADA',
+    ).select_related('cuenta'):
+        saldos.setdefault(asiento.cuenta_id, {'cuenta': asiento.cuenta, 'cargo': Decimal('0'), 'abono': Decimal('0')})
+        saldos[asiento.cuenta_id]['cargo'] += asiento.cargo
+        saldos[asiento.cuenta_id]['abono'] += asiento.abono
+
+    def _saldo(cuenta, cargo, abono):
+        return (cargo - abono) if cuenta.naturaleza == 'DEUDOR' else (abono - cargo)
+
+    activos, pasivos, capital = [], [], []
+    total_activos = Decimal('0')
+    total_pasivos = Decimal('0')
+    total_capital = Decimal('0')
+    total_ingresos = Decimal('0')
+    total_gastos = Decimal('0')
+    total_costos = Decimal('0')
+
+    for cuenta in CuentaContable.objects.filter(empresa=empresa, activa=True):
+        s = saldos.get(cuenta.id, {'cargo': Decimal('0'), 'abono': Decimal('0')})
+        saldo = _saldo(cuenta, s['cargo'], s['abono'])
+        if saldo == 0:
+            continue
+        item = {'codigo': cuenta.codigo, 'nombre': cuenta.nombre, 'saldo': saldo}
+        if cuenta.tipo == 'ACTIVO':
+            activos.append(item); total_activos += saldo
+        elif cuenta.tipo == 'PASIVO':
+            pasivos.append(item); total_pasivos += saldo
+        elif cuenta.tipo == 'CAPITAL':
+            capital.append(item); total_capital += saldo
+        elif cuenta.tipo == 'INGRESO':
+            total_ingresos += saldo
+        elif cuenta.tipo == 'GASTO':
+            total_gastos += saldo
+        elif cuenta.tipo == 'COSTO':
+            total_costos += saldo
+
+    hay_asientos = bool(saldos)
+    if not hay_asientos:
+        messages.info(
+            request,
+            'No existen asientos contables autorizados para este período. '
+            'Capture y autorice pólizas para obtener un balance real.'
+        )
+
+    utilidad = total_ingresos - total_gastos - total_costos
+    total_capital += utilidad
+
     return render(request, 'core/reportes_financieros/balance_general.html', {
         'empresa': empresa,
         'fecha_corte': fecha_corte,
@@ -160,10 +207,16 @@ def reporte_balance_general(request):
         'total_pasivos': total_pasivos,
         'capital': capital,
         'total_capital': total_capital,
+        'total_ingresos': total_ingresos,
+        'total_gastos': total_gastos,
+        'total_costos': total_costos,
+        'utilidad': utilidad,
+        'hay_asientos': hay_asientos,
     })
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def reporte_flujo_caja(request):
     """Reporte de Flujo de Caja."""
     empresa = getattr(request.user, 'empresa', None)
@@ -175,10 +228,11 @@ def reporte_flujo_caja(request):
     fecha_inicio = request.GET.get('fecha_inicio', '')
     fecha_fin = request.GET.get('fecha_fin', '')
     
+    hoy = timezone.localdate()
     if not fecha_inicio:
-        fecha_inicio = (timezone.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        fecha_inicio = (hoy - timedelta(days=30)).strftime('%Y-%m-%d')
     if not fecha_fin:
-        fecha_fin = timezone.now().strftime('%Y-%m-%d')
+        fecha_fin = hoy.strftime('%Y-%m-%d')
     
     fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
     fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
@@ -236,6 +290,7 @@ def reporte_flujo_caja(request):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def api_ventas_por_mes(request):
     """API para obtener ventas agrupadas por mes."""
     empresa = getattr(request.user, 'empresa', None)
@@ -245,9 +300,9 @@ def api_ventas_por_mes(request):
             status=403,
         )
     try:
-        anio = int(request.GET.get('anio', timezone.now().year))
+        anio = int(request.GET.get('anio', timezone.localdate().year))
     except (TypeError, ValueError):
-        anio = timezone.now().year
+        anio = timezone.localdate().year
 
     ventas = Venta.objects.filter(
         empresa=empresa,
@@ -303,6 +358,7 @@ def _estilo_encabezado(ws, row, cols, fill_hex='1F4E79'):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def exportar_excel_ingresos_egresos(request):
     """Exporta el reporte de Ingresos y Egresos a Excel."""
     import openpyxl
@@ -313,8 +369,9 @@ def exportar_excel_ingresos_egresos(request):
     if not empresa:
         return HttpResponseForbidden('Usuario sin empresa asignada.')
 
-    fecha_inicio = request.GET.get('fecha_inicio', (timezone.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
-    fecha_fin = request.GET.get('fecha_fin', timezone.now().strftime('%Y-%m-%d'))
+    hoy = timezone.localdate()
+    fecha_inicio = request.GET.get('fecha_inicio', (hoy - timedelta(days=30)).strftime('%Y-%m-%d'))
+    fecha_fin = request.GET.get('fecha_fin', hoy.strftime('%Y-%m-%d'))
     fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
     fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
 
@@ -413,6 +470,7 @@ def exportar_excel_ingresos_egresos(request):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def exportar_excel_flujo_caja(request):
     """Exporta el reporte de Flujo de Caja a Excel."""
     import openpyxl
@@ -422,8 +480,9 @@ def exportar_excel_flujo_caja(request):
     if not empresa:
         return HttpResponseForbidden('Usuario sin empresa asignada.')
 
-    fecha_inicio = request.GET.get('fecha_inicio', (timezone.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
-    fecha_fin = request.GET.get('fecha_fin', timezone.now().strftime('%Y-%m-%d'))
+    hoy = timezone.localdate()
+    fecha_inicio = request.GET.get('fecha_inicio', (hoy - timedelta(days=30)).strftime('%Y-%m-%d'))
+    fecha_fin = request.GET.get('fecha_fin', hoy.strftime('%Y-%m-%d'))
     fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
     fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
 
@@ -441,6 +500,17 @@ def exportar_excel_flujo_caja(request):
 
     total_entradas = Decimal('0.00')
     total_salidas = Decimal('0.00')
+
+    pagos_efectivo = Pago.objects.filter(
+        venta__empresa=empresa,
+        venta__fecha__date__range=[fecha_inicio_dt, fecha_fin_dt],
+        venta__estado='COMPLETADA',
+        metodo='EFECTIVO'
+    )
+    gastos_caja = GastoCaja.objects.filter(
+        empresa=empresa,
+        fecha__date__range=[fecha_inicio_dt, fecha_fin_dt]
+    )
 
     entradas_por_dia = _sumas_por_dia(pagos_efectivo, 'fecha_pago', 'monto')
     salidas_por_dia = _sumas_por_dia(gastos_caja, 'fecha', 'monto')
@@ -470,6 +540,7 @@ def exportar_excel_flujo_caja(request):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def exportar_excel_balance(request):
     """Exporta el Balance General a Excel."""
     import openpyxl
@@ -479,7 +550,7 @@ def exportar_excel_balance(request):
     if not empresa:
         return HttpResponseForbidden('Usuario sin empresa asignada.')
 
-    fecha_corte = request.GET.get('fecha_corte', timezone.now().strftime('%Y-%m-%d'))
+    fecha_corte = request.GET.get('fecha_corte', timezone.localdate().strftime('%Y-%m-%d'))
 
     wb = openpyxl.Workbook()
     ws = wb.active

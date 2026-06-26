@@ -4,6 +4,7 @@ Script para crear o recrear el usuario admin completamente.
 """
 import os
 import django
+import logging
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
@@ -78,6 +79,7 @@ try:
     print("\n[OK] Puedes iniciar sesion ahora!")
     
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (crear_admin_limpio.py)")
     print(f"\n[ERROR] Ocurrio un error: {e}")
     import traceback
     traceback.print_exc()

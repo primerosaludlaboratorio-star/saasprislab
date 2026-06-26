@@ -14,6 +14,7 @@ import sys
 
 from django.core.management.base import BaseCommand
 from django.db import connection, transaction
+import logging
 
 
 class Command(BaseCommand):
@@ -58,6 +59,7 @@ class Command(BaseCommand):
                     cur.execute(f'SELECT COUNT(*) FROM "{table}"')
                     conteos[label] = cur.fetchone()[0]
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en _contar (purgar_lims.py)")
                     conteos[label] = 'n/a'
         return conteos
 
@@ -151,6 +153,7 @@ class Command(BaseCommand):
             cur.execute(f'TRUNCATE TABLE "{tabla}" RESTART IDENTITY CASCADE;')
             self.stdout.write(f'  [OK] {tabla}')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _truncar (purgar_lims.py)")
             self.stdout.write(self.style.WARNING(f'  [SKIP] {tabla}: {e}'))
 
     def _truncar_m2m(self, cur, tabla):
@@ -159,4 +162,5 @@ class Command(BaseCommand):
             cur.execute(f'DELETE FROM "{tabla}";')
             self.stdout.write(f'  [OK] {tabla} (M2M)')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _truncar_m2m (purgar_lims.py)")
             self.stdout.write(self.style.WARNING(f'  [SKIP] {tabla}: {e}'))

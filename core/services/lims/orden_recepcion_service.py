@@ -245,6 +245,7 @@ class OrdenServicioLims:
                         id=int(medico_referidor_id),
                     ).first()
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en crear_desde_recepcion (orden_recepcion_service.py)")
                     medico_referidor = None
 
             if convenio_id:
@@ -253,6 +254,7 @@ class OrdenServicioLims:
                         empresa=empresa, activo=True, id=int(convenio_id)
                     ).first()
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en crear_desde_recepcion (orden_recepcion_service.py)")
                     convenio = None
 
             precios_especiales = convenio_precio_map(convenio) if convenio else {}
@@ -450,6 +452,7 @@ class OrdenServicioLims:
                 },
             }
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en crear_desde_recepcion (orden_recepcion_service.py)")
             import traceback
 
             error_details = traceback.format_exc()

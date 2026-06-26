@@ -107,7 +107,7 @@ urlpatterns = [
     # DEVOLUCIONES (NUEVAS RUTAS)
     # ======================================================================
     path('historial-devoluciones/', devoluciones.historial_devoluciones, name='historial_devoluciones'),
-    path('buscar-venta-devolucion/', devoluciones.buscar_venta_devolucion, name='buscar_venta_devolucion'),
+    path('buscar-venta-devolucion/', devoluciones.buscar_venta_devolucion, name='buscar_venta_devolucion_api'),
     path('procesar-devolucion-venta/', devoluciones.procesar_devolucion_venta, name='procesar_devolucion_venta'),
     path('detalle-devolucion/<int:devolucion_id>/', devoluciones.detalle_devolucion, name='detalle_devolucion'),
     

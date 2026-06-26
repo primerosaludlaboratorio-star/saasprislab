@@ -5,9 +5,9 @@ Sistema LIMS (Laboratory Information Management System) completo.
 from django.urls import path
 from core import views
 from core.views import impresion as impresion_views
-from core.views import laboratorio_config as lims_views
-from core.views import laboratorio_captura as captura_views
-from core.views import laboratorio_reportes as reportes_views
+from core.views.laboratorio import config_lims as lims_views
+from core.views.laboratorio import captura as captura_views
+from core.views.laboratorio import reportes as reportes_views
 from laboratorio import views_admin as admin_views
 from laboratorio import views as lab_views
 from laboratorio.views import cci_api as cci_api_views

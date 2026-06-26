@@ -112,6 +112,7 @@ Este correo fue generado automáticamente por PRISLAB.
         )
 
     except Exception as e:
+        # Justificación: Integración externa no confiable (envío de email). No debe bloquear el cierre de caja.
         logger.error(
             f"❌ [SIGNAL] Error enviando email de cierre {instance.folio}: {e}",
             exc_info=True

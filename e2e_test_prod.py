@@ -1,4 +1,5 @@
 import subprocess, sys, json, re
+import logging
 
 BASE = "https://prislab.labcorecloud.com"
 COOKIES = "/tmp/e2e_cookies.txt"
@@ -18,6 +19,7 @@ def curl(*args, follow=True, out_file="/dev/null"):
             with open(out_file, "r", errors="replace") as fp:
                 out_body = fp.read()
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en curl (e2e_test_prod.py)")
             out_body = ""
     code_m = re.search(r"__HTTP_CODE__(\d+)__", r.stdout)
     code = int(code_m.group(1)) if code_m else 0
@@ -77,6 +79,7 @@ try:
     results["4_buscar_producto"] = {"http": code, "count": len(prods),
                                      "primer": prods[0].get("nombre_comercial", "?") if prods else "sin_resultados"}
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en extract_csrf (e2e_test_prod.py)")
     results["4_buscar_producto"] = {"http": code, "error": str(e)[:80]}
 print(f"[4] Buscar Producto API: HTTP {code} | {results['4_buscar_producto']}")
 
@@ -92,6 +95,7 @@ try:
     results["5_listas_precio"] = {"http": code, "count": len(listas),
                                    "nombres": [l["nombre"] for l in listas]}
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en extract_csrf (e2e_test_prod.py)")
     results["5_listas_precio"] = {"http": code, "error": str(e)[:80]}
 print(f"[5] Listas Precio API: HTTP {code} | {results['5_listas_precio']}")
 
@@ -111,6 +115,7 @@ for periodo in ["7d", "30d", "mes_actual"]:
             "margen": data.get("pct_margen", 0)
         }
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en extract_csrf (e2e_test_prod.py)")
         results["6_kpis_" + periodo] = {"http": code, "error": str(e)[:80]}
     print(f"[6] KPIs {periodo}: {results['6_kpis_' + periodo]}")
 

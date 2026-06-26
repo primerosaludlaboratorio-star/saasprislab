@@ -16,6 +16,7 @@ import csv
 import io
 
 from core.models import Venta, Pago, GastoCaja, Empresa
+from core.decorators import role_required
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -24,6 +25,7 @@ from reportlab.lib.units import inch
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def genera_reporte_caja(request):
     """
     Genera reporte de caja con filtrado dinámico.
@@ -37,8 +39,9 @@ def genera_reporte_caja(request):
         return redirect('home')
     
     # Parámetros de filtrado
-    fecha_inicio = request.GET.get('fecha_inicio', (timezone.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
-    fecha_fin = request.GET.get('fecha_fin', timezone.now().strftime('%Y-%m-%d'))
+    hoy = timezone.localdate()
+    fecha_inicio = request.GET.get('fecha_inicio', (hoy - timedelta(days=30)).strftime('%Y-%m-%d'))
+    fecha_fin = request.GET.get('fecha_fin', hoy.strftime('%Y-%m-%d'))
     tipo_reporte = request.GET.get('tipo', 'completo')  # completo, ventas, gastos, resumen
     formato = request.GET.get('formato', 'html')  # html, excel, pdf
     
@@ -46,8 +49,8 @@ def genera_reporte_caja(request):
         fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
         fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
     except ValueError:
-        fecha_inicio_dt = (timezone.now() - timedelta(days=30)).date()
-        fecha_fin_dt = timezone.now().date()
+        fecha_inicio_dt = hoy - timedelta(days=30)
+        fecha_fin_dt = hoy
     
     # Consultas base
     ventas = Venta.objects.filter(
@@ -239,6 +242,7 @@ def exportar_reporte_pdf(datos_reporte, empresa):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 @require_http_methods(["GET"])
 def api_resumen_ejecutivo_pris(request):
     """
@@ -252,16 +256,9 @@ def api_resumen_ejecutivo_pris(request):
             'mensaje': 'Usuario sin empresa asignada.'
         }, status=403)
     
-    # Verificar que sea Dirección
-    if not (request.user.is_superuser or request.user.rol == 'ADMIN' or request.user.is_staff):
-        return JsonResponse({
-            'status': 'error',
-            'mensaje': 'Acceso denegado. Solo Dirección puede acceder a resúmenes ejecutivos.'
-        }, status=403)
-    
     # Parámetros
     dias = int(request.GET.get('dias', 7))
-    fecha_fin = timezone.now().date()
+    fecha_fin = timezone.localdate()
     fecha_inicio = fecha_fin - timedelta(days=dias)
     
     # Consultas optimizadas

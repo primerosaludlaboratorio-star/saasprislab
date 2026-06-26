@@ -10,7 +10,7 @@ tras una migración mal resuelta), útil pre–Día D y post–inventario.0004.
 from collections import Counter
 
 from django.core.management.base import BaseCommand
-from django.db import connection
+from django.db import connection, OperationalError, ProgrammingError
 from django.db.models import Count
 
 from inventario.models import ConsumoEstudioReactivo
@@ -21,7 +21,8 @@ def _columna_analito_disponible():
     with connection.cursor() as cursor:
         try:
             cols = connection.introspection.get_table_description(cursor, table)
-        except Exception:
+        except (OperationalError, ProgrammingError):
+            # Tabla no existe aún (pre-migración) — DB introspection falla.
             return False
     return any(getattr(c, 'name', c[0]) == 'analito_id' for c in cols)
 

@@ -35,6 +35,7 @@ def calcular_consumo_diario(empresa, producto, dias_historico: int = 30) -> floa
         consumo_ventas = sum(float(d.cantidad or 0) for d in ventas)
         consumo_total += consumo_ventas
     except Exception as exc:
+        logging.getLogger(__name__).exception("Error inesperado en calcular_consumo_diario (prediccion_stock.py)")
         logger.debug(f'prediccion_stock - DetalleVenta: {exc}')
 
     try:
@@ -48,6 +49,7 @@ def calcular_consumo_diario(empresa, producto, dias_historico: int = 30) -> floa
         consumo_ajustes = sum(abs(float(a.cantidad or 0)) for a in ajustes)
         consumo_total += consumo_ajustes
     except Exception as exc:
+        logging.getLogger(__name__).exception("Error inesperado en calcular_consumo_diario (prediccion_stock.py)")
         logger.debug(f'prediccion_stock - AjusteInventario: {exc}')
 
     return consumo_total / max(dias_historico, 1)
@@ -65,6 +67,7 @@ def obtener_stock_actual(empresa, producto) -> float:
         ).aggregate(total=Sum('cantidad'))['total']
         return float(stock or 0)
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en obtener_stock_actual (prediccion_stock.py)")
         return float(producto.stock or 0)
 
 
@@ -149,6 +152,7 @@ def predecir_agotamiento_critico(
             if pred['consumo_diario'] > 0 and pred['dias_restantes'] <= dias_umbral:
                 criticos.append(pred)
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en predecir_agotamiento_critico (prediccion_stock.py)")
             logger.debug(f'prediccion_stock - producto {prod.id}: {exc}')
 
     criticos.sort(key=lambda x: x['dias_restantes'])

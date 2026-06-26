@@ -13,6 +13,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import ElementClickInterceptedException, NoSuchElementException
+import logging
 
 BASE_URL = "https://prislab-v5-811785477499.us-central1.run.app"
 USERNAME = "admin"
@@ -35,6 +36,7 @@ def console_errors(driver):
     try:
         return [e.get("message", str(e)) for e in driver.get_log("browser") if e.get("level") == "SEVERE"]
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en console_errors (test_farmacia_step_by_step.py)")
         return []
 
 def run():
@@ -78,6 +80,7 @@ def run():
             time.sleep(2)
             log(3, 'Type "para" in search box', "OK", "")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_step_by_step.py)")
             log(3, 'Type "para" in search', "FAIL", str(e))
         # 4. Snapshot search results
         p4 = ss(driver, "04_search_results")
@@ -93,6 +96,7 @@ def run():
             modal = driver.find_elements(By.CSS_SELECTOR, ".modal.show, [id*='modalPago'].show")
             log(5, "Click COBRAR button", "OK - modal opened" if modal else "Clicked, modal not visible", "")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_step_by_step.py)")
             log(5, "Click COBRAR", "FAIL", str(e))
         # 6. Snapshot payment modal
         p6 = ss(driver, "06_payment_modal")
@@ -106,6 +110,7 @@ def run():
                 time.sleep(1)
             log(7, "Close payment modal", "OK", "")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_step_by_step.py)")
             log(7, "Close modal", "FAIL", str(e))
 
         # 8. Click Corte
@@ -123,6 +128,7 @@ def run():
             else:
                 log(8, "Click Corte", "FAIL - button not found", "")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_step_by_step.py)")
             log(8, "Click Corte", "FAIL", str(e))
         # 9. Snapshot after Corte
         p9 = ss(driver, "09_after_corte")
@@ -141,6 +147,7 @@ def run():
             else:
                 log(10, "Click Limpiar", "FAIL - button not found", "")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_step_by_step.py)")
             log(10, "Click Limpiar", "FAIL", str(e))
         # 11. Snapshot
         p11 = ss(driver, "11_after_limpiar")
@@ -168,15 +175,18 @@ def run():
         log(16, "Check browser console for JS errors", "OK" if not errs else "Found %d error(s)" % len(errs), "; ".join(e[:200] for e in errs[:10]))
 
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_step_by_step.py)")
         steps_log.append({"step": 99, "action": "Fatal", "result": "FAIL", "errors": str(e)[:500]})
         try:
             ss(driver, "99_fatal")
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_step_by_step.py)")
             pass
     finally:
         try:
             driver.quit()
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_farmacia_step_by_step.py)")
             pass
 
     # Write report

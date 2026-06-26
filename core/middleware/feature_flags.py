@@ -170,6 +170,7 @@ class FeatureFlagMiddleware:
                 'empresa': getattr(request, 'empresa_actual', None),
             }, status=403)
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _bloquear (feature_flags.py)")
             from django.http import HttpResponseForbidden
             return HttpResponseForbidden(
                 f'Módulo {nombre_modulo} no disponible en tu plan.'
@@ -222,6 +223,7 @@ class ModuloRequeridoMixin:
                             'nombre_modulo': nombre,
                         }, status=403)
                     except Exception:
+                        logging.getLogger(__name__).exception("Error inesperado en dispatch (feature_flags.py)")
                         from django.http import HttpResponseForbidden
                         return HttpResponseForbidden(f'Módulo {nombre} inactivo.')
         return super().dispatch(request, *args, **kwargs)
@@ -251,6 +253,7 @@ def modulo_requerido(modulo: str):
                             'nombre_modulo': nombre,
                         }, status=403)
                     except Exception:
+                        logging.getLogger(__name__).exception("Error inesperado en wrapper (feature_flags.py)")
                         from django.http import HttpResponseForbidden
                         return HttpResponseForbidden(f'Módulo {nombre} inactivo.')
             return view_func(request, *args, **kwargs)

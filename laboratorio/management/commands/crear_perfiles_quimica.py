@@ -128,8 +128,20 @@ class Command(BaseCommand):
                             else:
                                 self.stdout.write(self.style.WARNING(f'  [EXISTE] Perfil: {nombre_perfil} (usa --force para actualizar)'))
                         
-                    except Exception as e:
-                        self.stdout.write(self.style.ERROR(f'  [ERROR] {nombre_perfil}: {str(e)}'))
+                    except django.core.exceptions.ValidationError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] {nombre_perfil}: Error de validación - {str(e)}'))
+                        errores += 1
+                        continue
+                    except IntegrityError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] {nombre_perfil}: Error de integridad - {str(e)}'))
+                        errores += 1
+                        continue
+                    except ValueError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] {nombre_perfil}: Error de valor - {str(e)}'))
+                        errores += 1
+                        continue
+                    except DatabaseError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] {nombre_perfil}: Error de base de datos - {str(e)}'))
                         errores += 1
                         continue
                 
@@ -146,7 +158,21 @@ class Command(BaseCommand):
                 self.stdout.write(f'   - Total de perfiles en {categoria_quimica.nombre}: {total_perfiles}')
                 self.stdout.write(self.style.SUCCESS(f'\n[EXITO] Perfiles de Química Clínica creados exitosamente!\n'))
                 
-        except Exception as e:
+        except ValidationError as e:
+    logger.error(f"Validacion fallida: {e}")
+except IntegrityError as e:
+    logger.error(f"Error BD integridad: {e}", exc_info=True)
+except ValueError as e:
+    logger.error(f"ValueError: {e}")
+except ValidationError as e:
+    logger.error(f"Validacion fallida: {e}")
+except IntegrityError as e:
+    logger.error(f"Error BD integridad: {e}", exc_info=True)
+except ValueError as e:
+    logger.error(f"ValueError: {e}")
+except Exception as e:
+    logger.critical(f"Error desconocido: {e}", exc_info=True)
+    logger.critical(f"Error desconocido: {e}", exc_info=True)
             self.stdout.write(self.style.ERROR(f'\n[ERROR] Error durante la creación: {str(e)}'))
             self.stdout.write(self.style.ERROR('   La transacción ha sido revertida.'))
             raise

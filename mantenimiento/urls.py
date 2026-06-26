@@ -1,7 +1,7 @@
 """CMMS V8.2/8.3 — URLs. Namespace: mantenimiento"""
 from django.urls import path
 from . import views
-from . import views_metrologia as vm
+from .views import metrologia as vm
 
 app_name = "mantenimiento"
 

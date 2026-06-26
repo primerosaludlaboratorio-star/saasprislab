@@ -185,5 +185,5 @@ class ImpressoraTermicaTCP:
             with socket.create_connection((self.host, self.port), timeout=3):
                 pass
             return {'ok': True, 'mensaje': f'Impresora {self.host}:{self.port} disponible.'}
-        except Exception as exc:
+        except OSError as exc:
             return {'ok': False, 'mensaje': str(exc)}

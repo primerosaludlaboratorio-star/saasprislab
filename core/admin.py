@@ -781,6 +781,15 @@ class CompetenciaAdmin(admin.ModelAdmin):
     list_filter = ('tipo', 'activa')
     search_fields = ('nombre',)
 
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
 
 class DetalleEvaluacionInline(admin.TabularInline):
     model = DetalleEvaluacion

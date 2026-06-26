@@ -2,6 +2,7 @@ import os
 import sys
 import json
 from datetime import datetime
+import logging
 
 
 def _iso():
@@ -20,6 +21,7 @@ def main():
 
         django.setup()
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en main (audit_data_integrity.py)")
         print(
             json.dumps(
                 {

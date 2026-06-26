@@ -61,7 +61,7 @@ DEEPSEEK_API_KEY=
 
     # 4. Crear superusuario si no existe
     print("\n[3] Creando superusuario admin...")
-    run_cmd('echo from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username="admin").exists() or User.objects.create_superuser("admin", "admin@prislab.com", "admin123") | .venv\\Scripts\\python manage.py shell', check=False)
+    run_cmd('echo from django.contrib.auth import get_user_model; import os; User = get_user_model(); pwd = os.environ.get("DEV_ADMIN_PASSWORD"); pwd or (_ for _ in ()).throw(SystemExit("Falta DEV_ADMIN_PASSWORD")); User.objects.filter(username="admin").exists() or User.objects.create_superuser("admin", "admin@prislab.com", pwd) | .venv\\Scripts\\python manage.py shell', check=False)
 
     # 5. Crear datos demo básicos (empresa, productos, analitos)
     print("\n[4] Creando datos de demostracion...")
@@ -250,7 +250,7 @@ def asistente_chat(request):
     print("\n" + "="*60)
     print("TODO EL CODIGO CRITICO ESTA COMPLETADO Y FUNCIONAL.")
     print("Ahora puedes probar el sistema con tus datos reales.")
-    print("   - Accede con usuario admin / admin123")
+    print("   - Accede con usuario admin / [definida por DEV_ADMIN_PASSWORD]")
     print("   - Laboratorio: crear orden, capturar resultados, validar PIN, descargar PDF")
     print("   - Farmacia: buscar productos, vender, corte de caja")
     print("   - Prisci /asistente/chat/ (con o sin API key)")

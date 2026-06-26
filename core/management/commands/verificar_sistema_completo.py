@@ -17,6 +17,7 @@ Uso:
 from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
+import logging
 
 
 class Command(BaseCommand):
@@ -47,6 +48,7 @@ class Command(BaseCommand):
                 ))
             self.stdout.write(self.style.SUCCESS('[OK] Conexión a base de datos.'))
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en handle (verificar_sistema_completo.py)")
             raise CommandError(f'Base de datos no accesible: {exc}') from exc
 
         integrity_kwargs = {} if options['full_integrity'] else {'quick': True}

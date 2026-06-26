@@ -18,6 +18,7 @@ Uso:
 """
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+import logging
 
 
 class Command(BaseCommand):
@@ -176,6 +177,7 @@ class Command(BaseCommand):
                     raise Exception('DRY-RUN: rollback intencional — nada se guardó en la BD')
 
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en handle (seed_catalogos.py)")
             if dry_run:
                 self.stdout.write(self.style.WARNING(f'\n🔁 {exc}'))
             else:

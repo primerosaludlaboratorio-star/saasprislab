@@ -25,6 +25,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models import FileField, ImageField
 from django.apps import apps
+import logging
 
 
 class Command(BaseCommand):
@@ -171,6 +172,7 @@ class Command(BaseCommand):
                             if name:
                                 referenced.add(os.path.normpath(name).replace('\\', '/'))
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en _get_referenced_media_paths (limpiar_temporales.py)")
                     continue
         return referenced
 

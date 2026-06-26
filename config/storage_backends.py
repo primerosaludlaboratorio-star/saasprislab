@@ -1,7 +1,7 @@
 """
 config/storage_backends.py
 ═══════════════════════════════════════════════════════════════════════════════
-PRISLAB — Sistema de Almacenamiento Híbrido Asíncrono (FASE 3 ÉLITE)
+PRISLAB — Sistema de Almacenamiento Híbrido Asíncrono
 
 Arquitectura:
   ┌─────────────────────────────────────────────────────────────────────┐
@@ -10,18 +10,12 @@ Arquitectura:
   │  BufferLocalStorage._save()  →  /media/buffer/{tenant}/{ruta}      │
   │       ↓  (instantáneo, <5ms)                                        │
   │  ✅ Respuesta de éxito al usuario                                   │
-  │       ↓  (en background)                                            │
-  │  Celery Task: sincronizar_archivo_drive.delay(nombre, tenant_slug)  │
   │       ↓                                                             │
-  │  GoogleDriveStorage → PRISLAB_Media/{tenant}/{ruta}                 │
-  │       ↓  si OK                                                      │
-  │  Eliminar buffer local + marcar sync en cache                       │
-  │       ↓  si FALLA (hasta 5 reintentos)                              │
-  │  Archivo queda en buffer local. Reintento en 60s.                   │
+  │  Archivo permanece en buffer local o se publica vía storage activo  │
   └─────────────────────────────────────────────────────────────────────┘
 
 Estructura de carpetas en Drive:
-  PRISLAB_Media/
+  PRISLAB_Media/  [histórico; Google Drive ya no es ruta activa]
   ├── {empresa_slug}/          ← Aislamiento por tenant (multi-tenant SaaS)
   │   ├── resultados/          ← PDFs de resultados de laboratorio
   │   ├── expedientes/         ← Archivos clínicos (NOM-004)
@@ -46,13 +40,27 @@ from django.core.files.base import ContentFile
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.deconstruct import deconstructible
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
-from googleapiclient.errors import HttpError
+
+try:
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
+    from googleapiclient.errors import HttpError
+except Exception:  # pragma: no cover - dependencia legacy opcional
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (storage_backends.py)")
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (storage_backends.py)")
+    build = None
+    MediaIoBaseUpload = None
+    MediaIoBaseDownload = None
+
+    class HttpError(Exception):
+        """Shim legacy cuando googleapiclient no está instalado."""
+
 
 try:
     from storages.backends.s3 import S3Storage
 except Exception as exc:  # pragma: no cover - depende del entorno local
+    logging.getLogger(__name__).exception("Error inesperado en HttpError (storage_backends.py)")
+    logging.getLogger(__name__).exception("Error inesperado en HttpError (storage_backends.py)")
     _s3_import_error = exc
 
     class S3Storage(Storage):
@@ -73,6 +81,8 @@ def _drive_http_error_message(exc: HttpError, contexto: str) -> str:
     try:
         raw = exc.content.decode() if getattr(exc, 'content', None) else str(exc)
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _drive_http_error_message (storage_backends.py)")
+        logging.getLogger(__name__).exception("Error inesperado en _drive_http_error_message (storage_backends.py)")
         raw = str(exc)
     raw_lower = raw.lower()
     if status == 403 or 'forbidden' in raw_lower or 'insufficient permissions' in raw_lower:
@@ -118,30 +128,19 @@ class BufferLocalStorage(FileSystemStorage):
         """
         1. Inserta el tenant slug en la ruta del archivo.
         2. Guarda localmente (instantáneo).
-        3. Encola tarea Celery para subir a Drive (background).
+        3. No encola sincronización a Google Drive: Drive fue retirado del flujo activo.
         """
         nombre_con_tenant = _insertar_tenant_en_ruta(name)
         saved_name = super()._save(nombre_con_tenant, content)
-
-        # Encolar sincronización a Drive en background
-        _encolar_sync_drive(saved_name)
         return saved_name
 
     def url(self, name):
-        """
-        Retorna URL de servicio:
-        - Si el archivo ya está en Drive → URL directa de Drive
-        - Si aún está en buffer → URL local (siempre disponible como fallback)
-        """
-        if _esta_sincronizado_en_drive(name):
-            drive_url = _obtener_url_drive(name)
-            if drive_url:
-                return drive_url
+        """Retorna URL local del buffer."""
         return super().url(name)
 
     def exists(self, name):
-        """Verifica si el archivo existe (buffer local O ya en Drive)."""
-        return super().exists(name) or _esta_sincronizado_en_drive(name)
+        """Verifica si el archivo existe en el buffer local."""
+        return super().exists(name)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -151,16 +150,15 @@ class BufferLocalStorage(FileSystemStorage):
 @deconstructible
 class GoogleDriveStorage(Storage):
     """
-    Backend directo a Google Drive API v3.
-    Usado principalmente por las Celery tasks de sincronización.
-    También puede usarse como storage directo cuando se requiere (backups).
+    Compatibilidad histórica.
 
-    Documentación Drive API: https://developers.google.com/drive/api/v3
+    Google Drive fue retirado del flujo activo del sistema. Esta clase se
+    conserva únicamente para no romper imports legados o migraciones viejas.
     """
 
     def __init__(self, credentials=None, folder_id=None):
-        self.credentials = credentials or settings.GOOGLE_DRIVE_CREDENTIALS
-        self.folder_id = folder_id or settings.GOOGLE_DRIVE_FOLDER_ID
+        self.credentials = credentials or getattr(settings, 'GOOGLE_DRIVE_CREDENTIALS', None)
+        self.folder_id = folder_id or getattr(settings, 'GOOGLE_DRIVE_FOLDER_ID', '')
         self._service = None
         self._folder_cache = {}
 
@@ -398,8 +396,8 @@ class GoogleDriveStorage(Storage):
 @deconstructible
 class TenantDriveStorage(GoogleDriveStorage):
     """
-    Versión multi-tenant: cada empresa tiene su subcarpeta en Drive.
-    Usada por las Celery tasks que ya conocen el tenant slug.
+    Compatibilidad histórica del storage por tenant en Drive.
+    Ya no se usa en el flujo activo.
     """
 
     def __init__(self, tenant_slug: str = '', **kwargs):
@@ -476,86 +474,35 @@ def _insertar_tenant_en_ruta(name: str) -> str:
 
 def _encolar_sync_drive(nombre: str):
     """
-    Encola la tarea Celery de sincronización a Drive.
-    Fallback a hilo daemon si Celery no está disponible.
+    Compatibilidad histórica. Drive fue retirado del flujo activo.
     """
-    tenant_slug = _get_thread_tenant_slug()
-    try:
-        from core.tasks.storage_tasks import sincronizar_archivo_drive
-        sincronizar_archivo_drive.delay(nombre, tenant_slug)
-        logger.debug(f'[Buffer] Tarea Drive encolada: {nombre} (tenant: {tenant_slug})')
-    except Exception as exc:
-        # Fallback: subir en hilo daemon (sin Celery disponible)
-        logger.warning(f'[Buffer] Celery no disponible, usando hilo daemon: {exc}')
-        t = threading.Thread(
-            target=_sync_drive_threaded,
-            args=(nombre, tenant_slug),
-            daemon=True,
-        )
-        t.start()
+    logger.debug('[Buffer] Sincronización Drive deshabilitada para %s', nombre)
 
 
 def _sync_drive_threaded(nombre: str, tenant_slug: str):
-    """Fallback: sube a Drive en hilo daemon cuando Celery no está disponible."""
-    try:
-        import django
-        from config.drive_credentials import get_drive_credentials
-        creds = get_drive_credentials()
-        if not creds:
-            return
-
-        storage = TenantDriveStorage(tenant_slug=tenant_slug, credentials=creds)
-        buffer_dir = getattr(settings, 'MEDIA_BUFFER_DIR',
-                             os.path.join(settings.MEDIA_ROOT, 'buffer'))
-        archivo_local = os.path.join(buffer_dir, nombre.replace('/', os.sep))
-
-        if os.path.isfile(archivo_local):
-            with open(archivo_local, 'rb') as f:
-                storage._save(nombre, f)
-            os.remove(archivo_local)
-            _marcar_sincronizado(nombre, success=True)
-            logger.info(f'[Buffer/Thread] Sincronizado a Drive: {nombre}')
-    except Exception as exc:
-        logger.warning(f'[Buffer/Thread] Fallo sync Drive para {nombre}: {exc}')
+    """Compatibilidad histórica. No realiza acción."""
+    logger.debug('[Buffer/Thread] Sync Drive deshabilitado para %s (%s)', nombre, tenant_slug)
 
 
 def _marcar_sincronizado(nombre: str, success: bool = True,
                          drive_url: str = ''):
-    """Registra en cache el estado de sincronización de un archivo."""
-    try:
-        from django.core.cache import cache
-        cache.set(
-            f'{SYNC_CACHE_PREFIX}{nombre}',
-            {'ok': success, 'url': drive_url},
-            timeout=SYNC_CACHE_TTL,
-        )
-    except Exception:
-        pass
+    """Compatibilidad histórica. Drive ya no usa cache de sincronización."""
+    return None
 
 
 def _esta_sincronizado_en_drive(nombre: str) -> bool:
-    """Verifica si el archivo ya fue sincronizado a Drive."""
-    try:
-        from django.core.cache import cache
-        estado = cache.get(f'{SYNC_CACHE_PREFIX}{nombre}')
-        return bool(estado and estado.get('ok'))
-    except Exception:
-        return False
+    """Compatibilidad histórica. Siempre False porque Drive está desactivado."""
+    return False
 
 
 def _obtener_url_drive(nombre: str) -> str:
-    """Retorna la URL de Drive si el archivo está sincronizado."""
-    try:
-        from django.core.cache import cache
-        estado = cache.get(f'{SYNC_CACHE_PREFIX}{nombre}')
-        return estado.get('url', '') if estado else ''
-    except Exception:
-        return ''
+    """Compatibilidad histórica. Google Drive ya no entrega URL."""
+    return ''
 
 
 def get_tenant_storage():
     """Callable para usar como `storage=` en modelos de forma lazy."""
-    if getattr(settings, '_DRIVE_STORAGE_ACTIVO', False):
-        return TenantDriveStorage(tenant_slug=_get_thread_tenant_slug())
     from django.core.files.storage import default_storage
+    if getattr(settings, 'VULTR_OBJECT_STORAGE_ENABLED', False):
+        return TenantS3Storage(tenant_slug=_get_thread_tenant_slug())
     return default_storage

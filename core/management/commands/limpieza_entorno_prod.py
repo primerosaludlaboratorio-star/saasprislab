@@ -13,6 +13,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.contrib.sessions.models import Session
 from django.core.management import call_command
+import logging
 
 
 class Command(BaseCommand):
@@ -38,6 +39,7 @@ class Command(BaseCommand):
                 qs.delete()
             self.stdout.write(self.style.SUCCESS(f"  [OK] Sesiones expiradas: {count} eliminadas"))
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (limpieza_entorno_prod.py)")
             self.stdout.write(self.style.ERROR(f"  [X] Sesiones: {e}"))
 
         # 2. clearsessions (redundante pero seguro)
@@ -46,6 +48,7 @@ class Command(BaseCommand):
                 call_command('clearsessions', verbosity=0)
                 self.stdout.write(self.style.SUCCESS("  [OK] clearsessions ejecutado"))
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (limpieza_entorno_prod.py)")
                 self.stdout.write(self.style.WARNING(f"  [i] clearsessions: {e}"))
 
         # 3. Caché
@@ -55,6 +58,7 @@ class Command(BaseCommand):
                 cache.clear()
             self.stdout.write(self.style.SUCCESS("  [OK] Caché Django: limpiado"))
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (limpieza_entorno_prod.py)")
             self.stdout.write(self.style.WARNING(f"  [i] Caché: {e}"))
 
         # 4. PDFs temporales huérfanos
@@ -76,9 +80,11 @@ class Command(BaseCommand):
                                         os.remove(path)
                                     eliminados += 1
                             except Exception:
+                                logging.getLogger(__name__).exception("Error inesperado en handle (limpieza_entorno_prod.py)")
                                 pass
             self.stdout.write(self.style.SUCCESS(f"  [OK] PDFs temp: {eliminados} huérfanos"))
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (limpieza_entorno_prod.py)")
             self.stdout.write(self.style.ERROR(f"  [X] PDFs temp: {e}"))
 
         self.stdout.write(self.style.SUCCESS("\nLimpieza completada. Entorno listo para stress test."))

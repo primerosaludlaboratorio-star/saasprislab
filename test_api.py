@@ -3,6 +3,7 @@ import os
 import django
 import sys
 import traceback
+import logging
 
 # Setup Django environment
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -31,6 +32,7 @@ def test_gemini_pro_connection():
             print("Conexion establecida pero sin respuesta de texto.")
             
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_gemini_pro_connection (test_api.py)")
         print(f"Error en la prueba: {str(e)}")
         if "GOOGLE_API_KEY" in str(e):
             print("\nATENCION: La variable de entorno GOOGLE_API_KEY no esta configurada.")

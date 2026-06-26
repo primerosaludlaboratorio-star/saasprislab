@@ -14,6 +14,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+import logging
 
 
 def _clean(val):
@@ -112,6 +113,7 @@ class Command(BaseCommand):
                         estudio.save(update_fields=['precio'])
                         actualizados += 1
                     except Exception as e:
+                        logging.getLogger(__name__).exception("Error inesperado en handle (importar_precios.py)")
                         self.stderr.write(f'  Error guardando {codigo}: {e}')
             else:
                 sin_match.append(f'{tipo} | {codigo} | {abreviatura} | {descripcion} | ${importe_raw}')

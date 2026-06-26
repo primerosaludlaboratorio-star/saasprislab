@@ -21,6 +21,7 @@ from laboratorio.models import (
     PerfilLaboratorio,
     CategoriaExamen,
 )
+import logging
 
 
 def clean_float(value):
@@ -79,7 +80,7 @@ class Command(BaseCommand):
                                 precio_base=Decimal('0.00'),
                             )
                             count += 1
-                        except Exception:
+                        except (DatabaseError, IntegrityError, ValidationError):
                             # Si aun falla, actualizar el existente por nombre
                             est = Estudio.objects.filter(nombre=nombre).first()
                             if est and not est.codigo:
@@ -91,7 +92,21 @@ class Command(BaseCommand):
                             est.codigo = codigo
                             est.save(update_fields=['codigo'])
                 self.stdout.write(self.style.SUCCESS(f'[OK] {count} Estudios nuevos creados. Total: {Estudio.objects.count()}'))
-        except Exception as e:
+        except MigrationError as e:
+    logger.error(f"Error migracion: {e}")
+except DatabaseError as e:
+    logger.error(f"Error BD: {e}", exc_info=True)
+except IntegrityError as e:
+    logger.error(f"Error integridad: {e}", exc_info=True)
+except MigrationError as e:
+    logger.error(f"Error migracion: {e}")
+except DatabaseError as e:
+    logger.error(f"Error BD: {e}", exc_info=True)
+except IntegrityError as e:
+    logger.error(f"Error integridad: {e}", exc_info=True)
+except Exception as e:
+    logger.critical(f"Error desconocido: {e}", exc_info=True)
+    logger.critical(f"Error desconocido: {e}", exc_info=True)
             self.stdout.write(self.style.ERROR(f'[ERROR] Error Estudios: {e}'))
 
         # --- FASE 2: PARÁMETROS (ELEMENTOS) ---
@@ -113,11 +128,22 @@ class Command(BaseCommand):
                             )
                             if created:
                                 count += 1
-                    except:
+                    except (DatabaseError, IntegrityError, ValidationError):
                         pass
                 self.stdout.write(self.style.SUCCESS(f'[OK] {count} Parametros nuevos vinculados.'))
+        except MigrationError as e:
+            self.stdout.write(self.style.ERROR(f'Error de migración: {str(e)}'))
+            raise
+        except DatabaseError as e:
+            self.stdout.write(self.style.ERROR(f'Error de base de datos: {str(e)}'))
+            raise
+        except IntegrityError as e:
+            self.stdout.write(self.style.ERROR(f'Error de integridad: {str(e)}'))
+            raise
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'[ERROR] Error Parametros: {e}'))
+            logging.getLogger(__name__).exception("Error inesperado en handle (migrar_lab_master.py)")
+            self.stdout.write(self.style.ERROR(f'Error inesperado: {str(e)}'))
+            raise
 
         # --- FASE 3: PAQUETES ---
         self.stdout.write('\n>> Armando Paquetes...')
@@ -169,12 +195,23 @@ class Command(BaseCommand):
                         if paquete and estudio:
                             paquete.pruebas.add(estudio)
                             links += 1
-                    except:
+                    except (DatabaseError, IntegrityError, ValidationError):
                         pass
                 
                 self.stdout.write(self.style.SUCCESS(f'[OK] {links} Estudios vinculados a Paquetes.'))
+        except MigrationError as e:
+            self.stdout.write(self.style.ERROR(f'Error de migración: {str(e)}'))
+            raise
+        except DatabaseError as e:
+            self.stdout.write(self.style.ERROR(f'Error de base de datos: {str(e)}'))
+            raise
+        except IntegrityError as e:
+            self.stdout.write(self.style.ERROR(f'Error de integridad: {str(e)}'))
+            raise
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'[ERROR] Error Paquetes: {e}'))
+            logging.getLogger(__name__).exception("Error inesperado en handle (migrar_lab_master.py)")
+            self.stdout.write(self.style.ERROR(f'Error inesperado: {str(e)}'))
+            raise
 
         # --- FASE 4: PRECIOS REALES (LA FIFA) ---
         self.stdout.write('\n>> Inyectando PRECIOS REALES (tarifas.csv)...')
@@ -225,8 +262,19 @@ class Command(BaseCommand):
                                 updated += 1
                 
                 self.stdout.write(self.style.SUCCESS(f'[$$$] {updated} Precios actualizados.'))
+        except MigrationError as e:
+            self.stdout.write(self.style.ERROR(f'Error de migración: {str(e)}'))
+            raise
+        except DatabaseError as e:
+            self.stdout.write(self.style.ERROR(f'Error de base de datos: {str(e)}'))
+            raise
+        except IntegrityError as e:
+            self.stdout.write(self.style.ERROR(f'Error de integridad: {str(e)}'))
+            raise
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'[ERROR] Error Tarifas: {e}'))
+            logging.getLogger(__name__).exception("Error inesperado en handle (migrar_lab_master.py)")
+            self.stdout.write(self.style.ERROR(f'Error inesperado: {str(e)}'))
+            raise
 
         # --- FASE 5: RANGOS DE REFERENCIA ---
         self.stdout.write('\n>> Configurando Inteligencia Clínica...')
@@ -286,12 +334,23 @@ class Command(BaseCommand):
                             )
                             if created_val:
                                 created += 1
-                    except:
+                    except (DatabaseError, IntegrityError, ValidationError, ValueError):
                         pass
                 
                 self.stdout.write(self.style.SUCCESS(f'[OK] {created} Reglas clinicas nuevas creadas.'))
+        except MigrationError as e:
+            self.stdout.write(self.style.ERROR(f'Error de migración: {str(e)}'))
+            raise
+        except DatabaseError as e:
+            self.stdout.write(self.style.ERROR(f'Error de base de datos: {str(e)}'))
+            raise
+        except IntegrityError as e:
+            self.stdout.write(self.style.ERROR(f'Error de integridad: {str(e)}'))
+            raise
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'[ERROR] Error Valores: {e}'))
+            logging.getLogger(__name__).exception("Error inesperado en handle (migrar_lab_master.py)")
+            self.stdout.write(self.style.ERROR(f'Error inesperado: {str(e)}'))
+            raise
 
         # --- REPORTE FINAL ---
         self.stdout.write('\n' + '=' * 80)

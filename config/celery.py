@@ -5,7 +5,7 @@ Configuración de Celery para PRISLAB SaaS.
 Usa el mismo Redis configurado para Django Channels y Cache.
 
 Worker de producción (VPS / systemd / supervisor):
-  celery -A config worker --loglevel=info --concurrency=2 -Q drive_sync,default
+  celery -A config worker --loglevel=info --concurrency=2
 
 Scheduler de tareas periódicas (backup diario, etc.):
   celery -A config beat --loglevel=info

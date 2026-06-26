@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
+import logging
 
 # Prompt del sistema para el Coach Ejecutivo
 PROMPT_SISTEMA_COACH = """Eres un consultor experto en liderazgo clínico (estilo Harvard Business Review). 
@@ -97,6 +98,7 @@ Responde como consultor experto:"""
         })
 
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_coach_preguntar (coach.py)")
         return JsonResponse({
             "status": "error",
             "mensaje": f"Error al consultar al Coach: {str(e)}"

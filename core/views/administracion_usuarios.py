@@ -14,6 +14,7 @@ from decimal import Decimal
 
 from core.utils.trazabilidad import registrar_trazabilidad
 from core.utils.estandares_industriales import auditar_cambio_campo
+import logging
 
 Usuario = get_user_model()
 
@@ -104,6 +105,7 @@ def api_obtener_usuario(request, usuario_id):
             }
         })
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_obtener_usuario (administracion_usuarios.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': f'Error al obtener usuario: {str(e)}'
@@ -243,6 +245,7 @@ def api_actualizar_usuario(request, usuario_id):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_actualizar_usuario (administracion_usuarios.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': f'Error al actualizar usuario: {str(e)}'
@@ -315,6 +318,7 @@ def api_actualizar_tarifa(request, estudio_id):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_actualizar_tarifa (administracion_usuarios.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': f'Error al actualizar tarifa: {str(e)}'
@@ -389,6 +393,7 @@ def api_actualizar_permiso(request, perfil_id):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_actualizar_permiso (administracion_usuarios.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': f'Error al actualizar permiso: {str(e)}'

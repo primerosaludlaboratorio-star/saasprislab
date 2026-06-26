@@ -31,6 +31,7 @@ def _resultados_publicos_max_age() -> int:
     try:
         return max(300, int(valor))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _resultados_publicos_max_age (entrega_resultados.py)")
         return 60 * 60 * 24 * 7
 
 
@@ -256,6 +257,7 @@ def api_enviar_email_masivo_resultados(request):
     try:
         data = json.loads(request.body or "{}")
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_enviar_email_masivo_resultados (entrega_resultados.py)")
         data = {}
 
     orden_ids = data.get("ordenes", []) or []
@@ -276,6 +278,7 @@ def api_enviar_email_masivo_resultados(request):
         try:
             oid_int = int(oid)
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en api_enviar_email_masivo_resultados (entrega_resultados.py)")
             continue
 
         orden = OrdenDeServicio.objects.filter(id=oid_int, empresa=empresa).select_related("paciente").first()
@@ -345,6 +348,7 @@ def api_enviar_email_masivo_resultados(request):
             else:
                 errores.append({"orden_id": orden.id, "error": "Email no enviado (sent_count=0)"})
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en api_enviar_email_masivo_resultados (entrega_resultados.py)")
             errores.append({"orden_id": orden.id, "error": str(e)})
 
     return JsonResponse(
@@ -374,6 +378,7 @@ def resultados_publicos(request, token: str):
         oid = int(payload.get("oid"))
         eid = int(payload.get("eid"))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en resultados_publicos (entrega_resultados.py)")
         return HttpResponse("Enlace inválido o expirado.", status=400)
 
     orden = OrdenDeServicio.objects.select_related("paciente", "empresa", "responsable_ingreso").filter(
@@ -487,6 +492,7 @@ def resultados_publicos_pdf(request, token: str):
         oid = int(payload.get("oid"))
         eid = int(payload.get("eid"))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en resultados_publicos_pdf (entrega_resultados.py)")
         return HttpResponse("Enlace inválido o expirado.", status=400)
 
     orden = OrdenDeServicio.objects.select_related("paciente", "empresa").filter(

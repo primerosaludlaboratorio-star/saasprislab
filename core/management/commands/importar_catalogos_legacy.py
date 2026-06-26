@@ -22,11 +22,13 @@ from pathlib import Path
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+import logging
 
 
 try:
     import pandas as pd
 except Exception:  # pragma: no cover
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (importar_catalogos_legacy.py)")
     pd = None
 
 
@@ -51,6 +53,7 @@ def as_int(val, default=None):
     try:
         return int(float(s))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en as_int (importar_catalogos_legacy.py)")
         return default
 
 

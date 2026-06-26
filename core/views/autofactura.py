@@ -8,8 +8,11 @@ El equipo de facturación timbra desde el módulo interno.
 
 URL pública: /facturacion/autofactura/?folio=VTA-0001
 """
+import json
 import logging
+import time
 
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect
@@ -17,6 +20,7 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
 from django.contrib.auth.decorators import login_required
+from core.decorators import role_required
 
 logger = logging.getLogger('core.autofactura')
 
@@ -85,6 +89,26 @@ def autofactura_publica(request):
     exito = False
     factura_existente = None
 
+    # ── Rate limiting por IP ────────────────────────────────────────────────
+    client_ip = request.META.get('REMOTE_ADDR', '0.0.0.0')
+    rate_key = f'autofactura_rate:{client_ip}'
+    attempts = cache.get(rate_key, 0)
+    if attempts > 20:
+        logger.warning('autofactura_publica: rate limit exceeded for IP %s', client_ip)
+        return render(request, 'core/autofactura_publica.html', {
+            'folio': folio,
+            'venta': None,
+            'empresa': None,
+            'error_folio': 'Demasiadas solicitudes. Intenta de nuevo en unos minutos.',
+            'exito': False,
+            'factura_existente': None,
+            'errores_form': [],
+            'regimenes': REGIMENES_FISCALES,
+            'usos_cfdi': USOS_CFDI,
+            'form_data': {},
+        })
+    cache.set(rate_key, attempts + 1, timeout=300)
+
     # ── Buscar la venta por folio ──────────────────────────────────────────────
     if folio:
         try:
@@ -97,6 +121,7 @@ def autofactura_publica(request):
             )
             if not venta:
                 error_folio = f'No encontramos ninguna venta con el folio "{folio}". Verifica el ticket.'
+                logger.info('autofactura_publica: folio no encontrado — folio=%s ip=%s', folio, client_ip)
             else:
                 empresa = venta.empresa
                 # Verificar si ya tiene una factura registrada
@@ -143,7 +168,6 @@ def autofactura_publica(request):
                 )
                 # Guardar datos fiscales como JSON en el campo uuid (reutilizamos como metadata
                 # hasta integrar PAC — no afecta el timbrado real)
-                import json
                 datos_fiscales = {
                     'rfc': rfc,
                     'razon_social': razon_social,
@@ -158,8 +182,8 @@ def autofactura_publica(request):
                 factura.save()
 
                 logger.info(
-                    'autofactura_publica: solicitud registrada — venta=%s rfc=%s',
-                    venta.id, rfc
+                    'autofactura_publica: solicitud registrada — venta=%s rfc=%s empresa=%s ip=%s',
+                    venta.id, rfc, empresa.id if empresa else 'N/A', client_ip
                 )
                 exito = True
                 factura_existente = factura
@@ -196,6 +220,7 @@ def autofactura_publica(request):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def bandeja_cfdi(request):
     """
     Bandeja interna (staff/director) para ver solicitudes de autofacturación
@@ -227,6 +252,7 @@ def bandeja_cfdi(request):
             if f.uuid:
                 datos = json.loads(f.uuid)
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en bandeja_cfdi (autofactura.py)")
             pass
         facturas_data.append({'factura': f, 'datos': datos})
 
@@ -243,6 +269,7 @@ def bandeja_cfdi(request):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 @require_http_methods(['POST'])
 def api_marcar_cfdi_timbrada(request, factura_id: int):
     """Marca una FacturaSAT como TIMBRADA (manual, hasta integrar PAC)."""

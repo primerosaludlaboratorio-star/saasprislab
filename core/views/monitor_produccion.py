@@ -419,6 +419,7 @@ def _descontar_insumos_orden(orden, usuario=None):
                             usuario_responsable=usuario or orden.responsable_ingreso,
                         )
                     except Exception:
+                        logging.getLogger(__name__).exception("Error inesperado en _descontar_insumos_orden (monitor_produccion.py)")
                         # Fallback: actualizar stock directamente
                         producto.stock = max(0, (producto.stock or 0) - cant_real)
                         producto.save(update_fields=['stock'])
@@ -518,6 +519,7 @@ def api_avanzar_estado(request):
                     from core.services.validador_ia import validar_orden_completa
                     alertas_ia = validar_orden_completa(orden)
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en api_avanzar_estado (monitor_produccion.py)")
                     pass
                 # ── CEREBRO DE INVENTARIO: Descontar insumos automáticamente ──
                 # FIX: Envolver en try/catch para evitar bloquear la orden
@@ -574,6 +576,7 @@ def api_avanzar_estado(request):
                 request=request,
             )
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en api_avanzar_estado (monitor_produccion.py)")
             pass
         
         response_data = {

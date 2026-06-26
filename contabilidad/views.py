@@ -5,11 +5,13 @@ PRISLAB V5.0 - CFDI 4.0
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import role_required
 from django.contrib import messages
 from django.utils.html import escape as html_escape
 from django.http import HttpResponse, JsonResponse
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.models import Sum
+from django.core.exceptions import ValidationError
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -30,6 +32,7 @@ def _empresa_fiscal(request):
 # ============================================================================
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def lista_clientes(request):
     """
     Lista de clientes de facturación
@@ -58,6 +61,7 @@ def lista_clientes(request):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def crear_cliente(request):
     """
     Crear nuevo cliente de facturación
@@ -87,7 +91,7 @@ def crear_cliente(request):
             messages.success(request, f'Cliente {cliente.razon_social} creado exitosamente.')
             return redirect('contabilidad:lista_clientes')
             
-        except Exception as e:
+        except (IntegrityError, ValidationError, ValueError) as e:
             messages.error(request, f'Error al crear cliente: {str(e)}')
     
     # GET
@@ -109,6 +113,7 @@ def crear_cliente(request):
 # ============================================================================
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def lista_facturas(request):
     """
     Lista de facturas emitidas — filtrada por empresa del usuario (multi-tenant)
@@ -118,7 +123,7 @@ def lista_facturas(request):
     # FIX V8.2 SAT TENANT: criterio fiscal = cliente del CFDI (emisor/receptor por tenant)
     if empresa:
         facturas = FacturaCFDI.objects.filter(
-            cliente__empresa=empresa,
+            empresa=empresa,
         ).select_related('cliente', 'usuario_creo').order_by('-fecha_emision')
     else:
         messages.error(request, 'No hay empresa activa para listar facturas.')
@@ -133,7 +138,7 @@ def lista_facturas(request):
     if cliente_id:
         facturas = facturas.filter(
             cliente_id=cliente_id,
-            cliente__empresa=empresa,
+            empresa=empresa,
         )
 
     # Estadísticas — calculadas sobre el mismo QS ya acotado
@@ -154,6 +159,7 @@ def lista_facturas(request):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def crear_factura(request):
     """
     Crear nueva factura (borrador)
@@ -227,7 +233,7 @@ def crear_factura(request):
                 messages.success(request, f'Factura {factura.folio_interno} creada como borrador.')
                 return redirect('contabilidad:detalle_factura', factura_id=factura.id)
                 
-        except Exception as e:
+        except (IntegrityError, ValidationError, ValueError) as e:
             messages.error(request, f'Error al crear factura: {str(e)}')
     
     # GET
@@ -245,6 +251,7 @@ def crear_factura(request):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def detalle_factura(request, factura_id):
     """
     Detalle de una factura
@@ -256,7 +263,7 @@ def detalle_factura(request, factura_id):
     factura = get_object_or_404(
         FacturaCFDI.objects.select_related('cliente', 'usuario_creo'),
         id=factura_id,
-        cliente__empresa=empresa,
+        empresa=empresa,
     )
     
     conceptos = factura.conceptos.prefetch_related('impuestos').all()
@@ -270,6 +277,7 @@ def detalle_factura(request, factura_id):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def timbrar_factura(request, factura_id):
     """
     Timbrar una factura con Facturama (Punto 16: lock + Idempotency-Key determinista).
@@ -282,6 +290,7 @@ def timbrar_factura(request, factura_id):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def descargar_xml(request, factura_id):
     """Descarga el XML timbrado almacenado (PAC)."""
     empresa = _empresa_fiscal(request)
@@ -291,7 +300,7 @@ def descargar_xml(request, factura_id):
     factura = get_object_or_404(
         FacturaCFDI,
         id=factura_id,
-        cliente__empresa=empresa,
+        empresa=empresa,
     )
     if factura.estado != 'TIMBRADO' or not (factura.xml_timbrado or '').strip():
         messages.error(request, 'No hay XML timbrado disponible para esta factura.')
@@ -303,6 +312,7 @@ def descargar_xml(request, factura_id):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def descargar_pdf(request, factura_id):
     """
     Descargar PDF de factura
@@ -320,7 +330,7 @@ def descargar_pdf(request, factura_id):
     factura = get_object_or_404(
         FacturaCFDI,
         id=factura_id,
-        cliente__empresa=empresa,
+        empresa=empresa,
     )
     
     # Crear PDF
@@ -399,6 +409,7 @@ def descargar_pdf(request, factura_id):
 # ============================================================================
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
 def api_buscar_cliente(request):
     """
     API para buscar clientes (AJAX)

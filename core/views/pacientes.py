@@ -257,6 +257,7 @@ def api_guardar_paciente(request):
                 }
             })
         except Exception as db_error:
+            logging.getLogger(__name__).exception("Error inesperado en api_guardar_paciente (pacientes.py)")
             return JsonResponse({'status': 'error', 'mensaje': f'Error al guardar el paciente en la base de datos: {str(db_error)}'}, status=500)
         
     except Exception as e:

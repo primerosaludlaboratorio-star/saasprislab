@@ -4,6 +4,7 @@ Configura títulos profesionales y enfoques para que los saludos funcionen desde
 """
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
+import logging
 
 Usuario = get_user_model()
 
@@ -79,6 +80,7 @@ class Command(BaseCommand):
                         )
                     )
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (configurar_equipo_elite.py)")
                 self.stdout.write(
                     self.style.ERROR(
                         f"[ERROR] Error al actualizar '{miembro['username']}': {str(e)}"

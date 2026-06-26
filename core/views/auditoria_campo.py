@@ -10,6 +10,7 @@ import json
 from core.utils.estandares_industriales import auditar_cambio_campo
 from core.models import DetalleOrden, OrdenDeServicio
 from core.utils.empresa_request import empresa_efectiva_request
+import logging
 
 
 @login_required
@@ -84,6 +85,7 @@ def api_auditoria_campo(request):
             'mensaje': 'Error al procesar JSON'
         }, status=400)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_auditoria_campo (auditoria_campo.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': f'Error inesperado: {str(e)}'

@@ -9,7 +9,6 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_http_methods, require_POST
-from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.utils import timezone
@@ -31,6 +30,14 @@ def _json_no_store(payload, status=200):
 def lista_notificaciones(request):
     """Página principal del centro de notificaciones."""
     empresa = getattr(request.user, 'empresa', None)
+    if empresa is None:
+        return render(request, 'core/notificaciones/lista.html', {
+            'notificaciones': [],
+            'total_no_leidas': 0,
+            'tipos': NotificacionSistema.TIPO_CHOICES,
+            'modulos': NotificacionSistema.MODULO_CHOICES,
+            'error_empresa': True,
+        })
     qs = NotificacionSistema.objects.filter(
         empresa=empresa
     ).filter(
@@ -72,6 +79,8 @@ def api_notificaciones_badge(request):
     Llamado periódicamente por JS (polling simple).
     """
     empresa = getattr(request.user, 'empresa', None)
+    if empresa is None:
+        return _json_no_store({'no_leidas': 0, 'recientes': []})
     count = NotificacionSistema.objects.filter(
         empresa=empresa,
         leida=False,
@@ -107,6 +116,8 @@ def api_notificaciones_badge(request):
 def marcar_leida(request, notificacion_id):
     """Marca una notificación como leída."""
     empresa = getattr(request.user, 'empresa', None)
+    if empresa is None:
+        return _json_no_store({'ok': False, 'error': 'Usuario sin empresa asignada'}, status=403)
     notif = get_object_or_404(
         NotificacionSistema,
         pk=notificacion_id,
@@ -125,6 +136,8 @@ def marcar_leida(request, notificacion_id):
 def marcar_todas_leidas(request):
     """Marca todas las notificaciones del usuario como leídas."""
     empresa = getattr(request.user, 'empresa', None)
+    if empresa is None:
+        return _json_no_store({'ok': False, 'error': 'Usuario sin empresa asignada'}, status=403)
     ahora = timezone.now()
     count = NotificacionSistema.objects.filter(
         empresa=empresa,
@@ -145,6 +158,9 @@ api_notificaciones_no_leidas = api_notificaciones_badge
 def configurar_notificaciones(request):
     """Página de preferencias de notificaciones del usuario."""
     empresa = getattr(request.user, 'empresa', None)
+    if empresa is None:
+        messages.error(request, 'Usuario sin empresa asignada.')
+        return redirect('home')
     if request.method == 'POST':
         # Por ahora guardamos preferencias simples via sesión
         prefs = {
@@ -170,6 +186,7 @@ def configurar_notificaciones(request):
 
 
 @login_required
+@require_POST
 def ejecutar_verificaciones(request):
     """
     Dispara verificaciones manuales del sistema y genera notificaciones
@@ -180,6 +197,8 @@ def ejecutar_verificaciones(request):
         return _json_no_store({'ok': False, 'error': 'Sin permisos'}, status=403)
 
     empresa = getattr(request.user, 'empresa', None)
+    if empresa is None:
+        return _json_no_store({'ok': False, 'error': 'Usuario sin empresa asignada'}, status=403)
     generadas = 0
 
     try:
@@ -190,7 +209,7 @@ def ejecutar_verificaciones(request):
         ordenes_tardias = OrdenDeServicio.objects.filter(
             empresa=empresa,
             estado__in=['PAGADA', 'EN_PROCESO'],
-            creado__lte=hace_48h,
+            fecha_creacion__lte=hace_48h,
         ).count()
 
         if ordenes_tardias > 0:
@@ -212,6 +231,7 @@ def ejecutar_verificaciones(request):
 
 
 @login_required
+@require_POST
 def api_crear_notificacion(request):
     """
     Crea una notificación vía POST (uso interno / integraciones).
@@ -220,12 +240,15 @@ def api_crear_notificacion(request):
     if not (request.user.is_staff or getattr(request.user, 'rol', '') in ('DIRECTOR', 'ADMIN')):
         return _json_no_store({'ok': False, 'error': 'Sin permisos'}, status=403)
 
+    empresa = getattr(request.user, 'empresa', None)
+    if empresa is None:
+        return _json_no_store({'ok': False, 'error': 'Usuario sin empresa asignada'}, status=403)
+
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
         return _json_no_store({'ok': False, 'error': 'JSON inválido'}, status=400)
 
-    empresa = getattr(request.user, 'empresa', None)
     notif = NotificacionSistema.crear(
         empresa=empresa,
         titulo=data.get('titulo', 'Sin título')[:200],

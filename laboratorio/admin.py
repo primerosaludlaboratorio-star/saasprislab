@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import (
-    CategoriaExamen, Equipo, Estudio, InsumoEstudio, Medico, Orden, DetalleOrden,
+    CategoriaExamen, Equipo, Estudio, InsumoEstudio,
     Resultado, Parametro, RangoReferenciaParametro,
     # Modelos rescatados V5.4
     ValorReferencia, PerfilLaboratorio, NotificacionPanico, ControlCalidad,
@@ -69,48 +69,6 @@ class EstudioAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-
-
-@admin.register(Medico)
-class MedicoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'especialidad', 'activo')
-    list_filter = ('activo', 'especialidad')
-    search_fields = ('nombre', 'especialidad')
-
-
-class DetalleOrdenInline(admin.TabularInline):
-    model = DetalleOrden
-    extra = 0
-    readonly_fields = ('precio_unitario', 'subtotal')
-
-
-@admin.register(Orden)
-class OrdenAdmin(admin.ModelAdmin):
-    list_display = ('id', 'paciente', 'usuario_creador', 'fecha_creacion', 'estado_pago', 'estado_analisis', 'ia_status')
-    list_filter = ('estado_pago', 'fecha_creacion', 'estado_analisis', 'ia_status', 'origen')
-    search_fields = ('paciente__nombres', 'paciente__apellidos', 'medico__nombre')
-    inlines = [DetalleOrdenInline]
-    readonly_fields = ('fecha_validacion', 'usuario_valido')
-    fieldsets = (
-        ('Información Básica', {
-            'fields': ('paciente', 'usuario_creador', 'medico', 'medico_texto', 'origen', 'fecha_creacion', 'estado_pago')
-        }),
-        ('Control de Calidad', {
-            'fields': ('estado_analisis', 'fecha_validacion', 'usuario_valido'),
-            'description': 'Estado de validación de la orden. Solo órdenes VALIDADAS pueden imprimirse.',
-        }),
-        ('Inteligencia Artificial', {
-            'fields': ('ia_status', 'interpretacion_ia'),
-            'description': 'Análisis y resumen clínico generado por algoritmos de IA.',
-            'classes': ('collapse',)
-        }),
-    )
-
-    # Opcional: para ver quién creó la orden automáticamente al guardar
-    def save_model(self, request, obj, form, change):
-        if not obj.pk:
-            obj.usuario_creador = request.user
-        super().save_model(request, obj, form, change)
 
 
 @admin.register(Resultado)

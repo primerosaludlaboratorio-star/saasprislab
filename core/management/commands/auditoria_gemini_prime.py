@@ -16,6 +16,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connection
 from django.db.utils import OperationalError
+import logging
 
 
 class Command(BaseCommand):
@@ -195,4 +196,5 @@ class Command(BaseCommand):
         except LookupError:
             self.report_lines.append("- *Modulo de Ordenes no encontrado para auditar Drive.*")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _auditar_sincronizacion_drive (auditoria_gemini_prime.py)")
             self.report_lines.append(f"- *[ERROR] Error al validar la conexion con Drive: {str(e)}*")

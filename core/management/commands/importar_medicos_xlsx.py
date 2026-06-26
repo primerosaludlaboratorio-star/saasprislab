@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand, CommandError
 from openpyxl import load_workbook
 
 from core.models import Empresa, Medico
+import logging
 
 
 class Command(BaseCommand):
@@ -101,6 +102,7 @@ class Command(BaseCommand):
         try:
             legacy_text = str(int(float(legacy_id)))
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _build_cedula (importar_medicos_xlsx.py)")
             legacy_text = str(legacy_id).strip().upper().replace(" ", "-")
         return f"LEGACY-{legacy_text}"
 

@@ -27,6 +27,7 @@ from django.db import transaction
 from django.conf import settings
 
 from core.models import Producto, Lote, Sucursal
+import logging
 
 
 class Command(BaseCommand):
@@ -62,7 +63,8 @@ class Command(BaseCommand):
 
         try:
             empresa = empresa_desde_management(options)
-        except Exception as e:
+        except Exception as e:  # empresa_desde_management puede lanzar CommandError u otro error de config.
+            logging.getLogger(__name__).exception("Error inesperado en handle (cargar_productos_farmacia.py)")
             self.stdout.write(self.style.ERROR(str(e)))
             return
 
@@ -153,7 +155,8 @@ class Command(BaseCommand):
                     break
             except UnicodeDecodeError:
                 continue
-            except Exception as e:
+            except Exception as e:  # Integración externa: archivo con encoding desconocido; se prueban todos los encodings posibles.
+                logging.getLogger(__name__).exception("Error inesperado en _leer_csv (cargar_productos_farmacia.py)")
                 self.stdout.write(f'  [DEBUG] Error con encoding {encoding}: {e}')
                 continue
         return filas
@@ -291,7 +294,8 @@ class Command(BaseCommand):
                     if creados % 100 == 0 and creados > 0:
                         self.stdout.write(f'  [{creados} productos creados...]')
 
-                except Exception as e:
+                except Exception as e:  # Aislamiento producto-por-producto: error en un producto no debe abortar toda la carga.
+                    logging.getLogger(__name__).exception("Error inesperado en _cargar_en_bd (cargar_productos_farmacia.py)")
                     errores.append(f'{clave}: {e}')
 
         return creados, actualizados, lotes_creados, errores

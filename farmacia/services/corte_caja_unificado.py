@@ -22,7 +22,7 @@ import logging
 from decimal import Decimal
 from datetime import datetime, timedelta
 
-from django.db import transaction
+from django.db import transaction, DatabaseError
 from django.utils import timezone
 from django.dispatch import Signal
 
@@ -109,6 +109,7 @@ def cerrar_turno_unificado(
             empresa=empresa,
         )
     except Exception as exc:
+        # Justificación: Auditoría secundaria no bloqueante (Signal contable).
         logger.warning(f'[CorteUnificado] Signal contable no enviado: {exc}')
 
     # ── 5. Imprimir ticket ────────────────────────────────────────────────────
@@ -116,6 +117,7 @@ def cerrar_turno_unificado(
         try:
             _imprimir_corte(corte_data, host_impresora)
         except Exception as exc:
+            # Justificación: Integración externa no confiable (Impresión térmica en red local).
             logger.warning(f'[CorteUnificado] Error imprimiendo ticket: {exc}')
             corte_data['ticket_impreso'] = False
     else:
@@ -177,7 +179,7 @@ def _cerrar_farmacia(cajero, empresa, sucursal, ahora: datetime, efectivo_declar
             'fondo_inicial': apertura.fondo_efectivo,
             'estado': 'cerrado',
         }
-    except Exception as exc:
+    except (DatabaseError, ValueError, TypeError, AttributeError) as exc:
         logger.warning(f'[CorteUnificado] Error cierre farmacia: {exc}')
         return {'total': Decimal('0'), 'estado': 'error', 'error': str(exc)[:200]}
 
@@ -204,7 +206,7 @@ def _cerrar_laboratorio(cajero, empresa, sucursal, ahora: datetime) -> dict:
             'ordenes': count,
             'estado': 'calculado',
         }
-    except Exception as exc:
+    except (DatabaseError, ValueError, TypeError, AttributeError) as exc:
         logger.warning(f'[CorteUnificado] Error cierre lab: {exc}')
         return {'total': Decimal('0'), 'estado': 'error', 'error': str(exc)[:200]}
 

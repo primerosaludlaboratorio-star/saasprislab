@@ -1,15 +1,18 @@
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
-from django.urls import reverse
+from django.urls import reverse, NoReverseMatch
+import json
 import unittest
 import pyotp
+from django.utils import timezone
 
 Usuario = get_user_model()
 
 try:
-    from core.models import Empresa
+    from core.models import Empresa, ForenseAcceso
 except ImportError:
     Empresa = None
+    ForenseAcceso = None
 
 try:
     from seguridad import models as seguridad_models
@@ -64,7 +67,7 @@ class SeguridadModuleTest(TestCase):
             try:
                 url = reverse(pattern)
                 resolved_urls.append(pattern)
-            except Exception:
+            except NoReverseMatch:
                 pass
         
         # At least one URL should resolve, or skip if none exist
@@ -78,7 +81,7 @@ class SeguridadModuleTest(TestCase):
                 response = self.client.get(url)
                 self.assertIn(response.status_code, [200, 302, 405, 400, 403])
                 break
-            except Exception:
+            except NoReverseMatch:
                 pass
     
     def test_seguridad_module_structure(self):
@@ -147,3 +150,92 @@ class TwoFactorTest(TestCase):
         self.assertEqual(data['tipo'], 'backup')
         backup.refresh_from_db()
         self.assertTrue(backup.usado)
+
+    def test_api_verificar_codigo_2fa_json_invalido_retorna_400(self):
+        response = self.client.post(
+            reverse('seguridad:api_verificar_2fa'),
+            data='{json-invalido',
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertFalse(data['valido'])
+        self.assertEqual(data['mensaje'], 'JSON inválido')
+
+
+class SeguridadTenantAlignmentTest(TestCase):
+    def setUp(self):
+        if Empresa is None or seguridad_models is None or ForenseAcceso is None:
+            self.skipTest("Required seguridad models not available")
+
+        self.empresa_a = Empresa.objects.create(
+            nombre="Empresa Seguridad A",
+            rfc="SEG010101AA1",
+        )
+        self.empresa_b = Empresa.objects.create(
+            nombre="Empresa Seguridad B",
+            rfc="SEG010101BB2",
+        )
+        self.usuario_director = Usuario.objects.create_user(
+            username='director_seguridad',
+            password='test123',
+            empresa=self.empresa_a,
+            rol='DIRECTOR',
+        )
+        self.client = Client()
+        self.client.login(username='director_seguridad', password='test123')
+
+    def test_panic_button_crea_alerta_en_empresa_del_usuario(self):
+        response = self.client.post(
+            reverse('seguridad:panic_button'),
+            {'ubicacion': 'Recepcion principal'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['ok'])
+
+        alerta = seguridad_models.AlertaPanico.objects.get(id=data['alerta_id'])
+        self.assertEqual(alerta.empresa, self.empresa_a)
+        self.assertEqual(alerta.usuario, self.usuario_director)
+
+    def test_rastro_paciente_filtra_por_empresa_del_usuario(self):
+        hoy = timezone.now()
+        ForenseAcceso.objects.create(
+            empresa=self.empresa_a,
+            paciente_id=123,
+            usuario_id=self.usuario_director.id,
+            accion=ForenseAcceso.ACCION_EXPEDIENTE_VIEW,
+            created_at=hoy,
+        )
+        ForenseAcceso.objects.create(
+            empresa=self.empresa_b,
+            paciente_id=123,
+            usuario_id=self.usuario_director.id,
+            accion=ForenseAcceso.ACCION_EXPEDIENTE_VIEW,
+            created_at=hoy,
+        )
+
+        response = self.client.get(
+            reverse('seguridad:rastro_paciente'),
+            {'paciente_id': '123'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        rows = list(response.context['rows'])
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].empresa, self.empresa_a)
+
+    def test_panic_button_sin_empresa_retorna_403(self):
+        self.usuario_director.empresa = None
+        self.usuario_director.save(update_fields=['empresa'])
+
+        response = self.client.post(
+            reverse('seguridad:panic_button'),
+            {'ubicacion': 'Recepcion principal'},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        data = response.json()
+        self.assertFalse(data['ok'])

@@ -14,6 +14,7 @@ from core.models import (
     TomaMuestra, EnvioMaquila
 )
 from core.models import Paciente
+import logging
 
 Usuario = get_user_model()
 
@@ -142,6 +143,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS('Los Usuarios, Pacientes, Estudios y Productos se conservaron intactos.'))
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (limpiar_pruebas.py)")
             self.stdout.write(self.style.ERROR(f'\n[ERROR] Error durante la limpieza: {str(e)}'))
             raise
     
@@ -151,6 +153,7 @@ class Command(BaseCommand):
             from laboratorio.models import Estudio
             return Estudio.objects.count()
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _contar_estudios (limpiar_pruebas.py)")
             return 0
     
     def _contar_productos(self):

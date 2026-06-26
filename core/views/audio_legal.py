@@ -60,4 +60,5 @@ def api_verificar_integridad_audio(request, registro_id: int):
         resultado = verificar_integridad(registro_id)
         return JsonResponse(resultado)
     except Exception as exc:
+        logging.getLogger(__name__).exception("Error inesperado en api_verificar_integridad_audio (audio_legal.py)")
         return JsonResponse({'error': str(exc)}, status=500)

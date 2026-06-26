@@ -6,6 +6,11 @@ from core import views
 from core.views import impresion as impresion_views
 from core.views import farmacia as farmacia_views
 from core.views import medico as medico_views
+# Importar nuevas vistas de farmacia (refactorización)
+from farmacia.views import pdv as farmacia_pdv
+from farmacia.views import inventario as farmacia_inventario
+from farmacia.views import devoluciones as farmacia_devoluciones
+from farmacia.views import reportes as farmacia_reportes
 from core.views import laboratorio_config as lims_views
 from core.views import laboratorio_captura as captura_views
 from core.views import laboratorio_reportes as reportes_views
@@ -51,16 +56,19 @@ def lazy_view(dotted_path):
     return _wrapped_view
 
 urlpatterns = [
-    # Favicon — redirige al icono SVG para evitar 404 del browser
-    path('favicon.ico', RedirectView.as_view(url='/static/img/icon-192.svg', permanent=True)),
+    # Favicon — data URI para evitar 404 del browser
+    path('favicon.ico', RedirectView.as_view(url='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>❤️</text></svg>', permanent=True)),
 
-    # Legacy logo path — evita 404 en producción cuando el logo histórico ya no existe en MEDIA.
-    path('media/logos/LOGO_PRISLAB.png', RedirectView.as_view(url='/static/img/icon-192.svg', permanent=True)),
+    # Legacy logo path — redirige al data URI
+    path('media/logos/LOGO_PRISLAB.png', RedirectView.as_view(url='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>❤️</text></svg>', permanent=False)),
 
     # Panel Administrativo de Django — Site personalizado con departamentos PRISLAB V5.4
     path('admin/', admin.site.urls),
     # Alias con reorganización departamental (mismo site, URLs registradas en ambos)
     # path('admin/', prislab_admin_site.urls),   # ← descomenta para migrar completamente
+
+    # PWA — Service Worker con scope completo del dominio (debe estar en la raíz)
+    path('sw.js', service_worker_view, name='service_worker'),
 
     # RUTA PRINCIPAL - Login personalizado (single name='login' for reverse/redirect)
     path('', CustomLoginView.as_view(), name='login_root'),
@@ -89,10 +97,11 @@ urlpatterns = [
     path('api/caja/corte-unificado/', __import__('farmacia.views.corte_caja_api', fromlist=['api_corte_caja_unificado']).api_corte_caja_unificado, name='corte_caja_unificado'),
 
     # FASE 9: Bienestar Staff NOM-035 (Caja Fuerte Interna)
-    path('bienestar/', __import__('core.views.bienestar', fromlist=['dashboard_bienestar']).dashboard_bienestar, name='bienestar_dashboard'),
-    path('bienestar/diario/', __import__('core.views.bienestar', fromlist=['diario_emocional']).diario_emocional, name='diario_emocional'),
-    path('bienestar/nom035/', __import__('core.views.bienestar', fromlist=['evaluacion_nom035']).evaluacion_nom035, name='evaluacion_nom035'),
-    path('bienestar/alertas-rrhh/', __import__('core.views.bienestar', fromlist=['alertas_rrhh']).alertas_rrhh, name='bienestar_alertas_rrhh'),
+    # Prefijo /bienestar-staff/ para no colisionar con el módulo Espacio Seguro en /bienestar/
+    path('bienestar-staff/', __import__('core.views.bienestar', fromlist=['dashboard_bienestar']).dashboard_bienestar, name='bienestar_dashboard'),
+    path('bienestar-staff/diario/', __import__('core.views.bienestar', fromlist=['diario_emocional']).diario_emocional, name='diario_emocional'),
+    path('bienestar-staff/nom035/', __import__('core.views.bienestar', fromlist=['evaluacion_nom035']).evaluacion_nom035, name='evaluacion_nom035'),
+    path('bienestar-staff/alertas-rrhh/', __import__('core.views.bienestar', fromlist=['alertas_rrhh']).alertas_rrhh, name='bienestar_alertas_rrhh'),
 
     # Home (redirige según rol después del login - SIN @login_required para evitar bucles)
     path('home/', views.home_view, name='home'),
@@ -171,38 +180,38 @@ urlpatterns = [
     # /laboratorio/captura/ sin ID → redirige al worklist con mensaje amigable
     path('laboratorio/captura/', views.registro_resultados_entrada, name='captura_sin_id'),
 
-    # 1. MÓDULO FARMACIA (Punto de Venta)
-    path('farmacia/', views.dashboard_farmacia, name='dashboard_farmacia'),  # Dashboard principal
-    path('farmacia/pdv/', views.pdv_farmacia, name='pdv_farmacia'),
-    path('farmacia/pdv/buscar-fragmento/', views.pdv_buscar_fragmento, name='pdv_buscar_fragmento'),
-    path('farmacia/historial-ventas/', views.lista_ventas_farmacia, name='lista_ventas_farmacia'),
-    path('farmacia/dashboard/', views.dashboard_farmacia, name='dashboard_farmacia_v2'),
-    path('farmacia/libro-control/', views.libro_control_antibioticos, name='libro_control'),
+    # 1. MÓDULO FARMACIA (Punto de Venta) - REFACTORIZADO: Apunta a farmacia.views
+    path('farmacia/', farmacia_inventario.dashboard_farmacia, name='dashboard_farmacia'),  # Dashboard principal
+    path('farmacia/pdv/', farmacia_pdv.pdv_farmacia, name='pdv_farmacia'),
+    path('farmacia/pdv/buscar-fragmento/', farmacia_pdv.pdv_buscar_fragmento, name='pdv_buscar_fragmento'),
+    path('farmacia/historial-ventas/', farmacia_reportes.lista_ventas_farmacia, name='lista_ventas_farmacia'),
+    path('farmacia/dashboard/', farmacia_inventario.dashboard_farmacia, name='dashboard_farmacia_v2'),
+    path('farmacia/libro-control/', farmacia_inventario.libro_control_antibioticos, name='libro_control'),
+    path('farmacia/inventario/', views.farmacia_inventario_general, name='farmacia_inventario_general'),
     path('farmacia/devoluciones/', views.historial_devoluciones, name='historial_devoluciones'),
     path('farmacia/devoluciones/buscar/', views.buscar_venta_devolucion, name='buscar_venta_devolucion'),
     path('farmacia/devoluciones/procesar/', views.procesar_devolucion, name='procesar_devolucion'),
-    path('farmacia/ventas/cancelar/<int:venta_id>/', views.cancelar_venta, name='cancelar_venta'),
-    path('farmacia/politicas-descuento/', views.gestionar_politicas_descuento, name='politicas_descuento'),
+    # Aliases legacy aún consumidos por templates/tests/comandos
     path('farmacia/ticket/<int:venta_id>/', views.imprimir_ticket, name='imprimir_ticket'),
-    path('farmacia/ticket/<int:venta_id>/raw/', farmacia_views.imprimir_ticket_raw, name='imprimir_ticket_venta_raw'),
+    path('farmacia/carga-masiva-excel/', views.carga_masiva_excel, name='carga_masiva_excel'),
+    path('farmacia/ajustes-inventario/', views.ajustes_inventario, name='ajustes_inventario'),
+    path('farmacia/estadisticas-ventas/', views.estadisticas_ventas, name='estadisticas_ventas'),
+    path('farmacia/api/kpis/', views.api_farmacia_kpis, name='api_farmacia_kpis'),
+    path('farmacia/politicas-descuento/', farmacia_inventario.gestionar_politicas_descuento, name='politicas_descuento'),
+    path('farmacia/ticket/<int:venta_id>/raw/', views.imprimir_ticket_raw, name='imprimir_ticket_venta_raw'),
     
-    # 2. MÓDULO ALMACÉN (Entradas de Mercancía)
-    path('farmacia/almacen/entradas/', views.entrada_mercancia, name='entrada_mercancia'),
-    path('farmacia/api/carga-masiva/', views.api_carga_masiva_productos, name='api_carga_masiva_productos'),
-    path('farmacia/api/carga-masiva/excel/', views.carga_masiva_excel, name='carga_masiva_excel'),
-    path('farmacia/compras/registrar/', views.registrar_compra, name='registrar_compra'),
-    path('farmacia/almacen/ajustes/', views.ajustes_inventario, name='ajustes_inventario'),
-    path('farmacia/inventario/', farmacia_views.inventario_general, name='farmacia_inventario_general'),
-    path('farmacia/estadisticas/', views.estadisticas_ventas, name='estadisticas_ventas'),
-    path('farmacia/api/kpis/', farmacia_views.api_farmacia_kpis, name='api_farmacia_kpis'),
-    path('farmacia/api/listas-precio/', farmacia_views.api_listas_precio_pdv, name='api_listas_precio_pdv'),
-    path('farmacia/api/buscar-productos-compra/', views.api_buscar_productos_compra, name='api_buscar_productos_compra'),
-    path('farmacia/api/buscar-producto-pdv/', views.api_buscar_producto_pdv, name='api_buscar_producto_pdv'),
-    path('farmacia/api/lotes-producto/<int:producto_id>/', views.api_lotes_producto, name='api_lotes_producto'),
-    path('farmacia/api/validar-cupon/', views.api_validar_cupon, name='api_validar_cupon'),
-    path('farmacia/api/saldo-caja/', views.api_saldo_caja, name='api_saldo_caja'),
-    path('farmacia/api/validar-pin-neto/', farmacia_views.validar_pin_precio_neto, name='validar_pin_precio_neto'),
-    path('farmacia/etiquetas/imprimir/', views.imprimir_etiquetas, name='imprimir_etiquetas'),
+    # 2. MÓDULO ALMACÉN (Entradas de Mercancía) - REFACTORIZADO: Apunta a farmacia.views
+    path('farmacia/almacen/entradas/', farmacia_inventario.entrada_mercancia, name='entrada_mercancia'),
+    path('farmacia/api/carga-masiva/', farmacia_inventario.carga_masiva_productos, name='api_carga_masiva_productos'),
+    path('farmacia/compras/registrar/', farmacia_inventario.registrar_compra, name='registrar_compra'),
+    path('farmacia/api/listas-precio/', farmacia_inventario.api_listas_precio_pdv, name='api_listas_precio_pdv'),
+    path('farmacia/api/buscar-productos-compra/', farmacia_inventario.api_buscar_productos_compra, name='api_buscar_productos_compra'),
+    path('farmacia/api/buscar-producto-pdv/', farmacia_pdv.api_buscar_producto_pdv, name='api_buscar_producto_pdv'),
+    path('farmacia/api/lotes-producto/<int:producto_id>/', farmacia_pdv.api_lotes_producto, name='api_lotes_producto'),
+    path('farmacia/api/validar-cupon/', farmacia_inventario.api_validar_cupon, name='api_validar_cupon'),
+    path('farmacia/api/saldo-caja/', farmacia_inventario.api_saldo_caja, name='api_saldo_caja'),
+    path('farmacia/api/validar-pin-neto/', farmacia_inventario.validar_pin_precio_neto, name='validar_pin_precio_neto'),
+    path('farmacia/etiquetas/imprimir/', farmacia_inventario.imprimir_etiquetas, name='imprimir_etiquetas'),
 
     # 3. MÓDULO MÉDICO (Consultorio)
     path('medico/', views.dashboard_medico, name='medico'),
@@ -314,9 +323,9 @@ urlpatterns = [
     
     # 6. MÓDULO FINANZAS
     path('finanzas/facturacion/', views.facturacion_40, name='facturacion_40'),
-    path('finanzas/registro-gasto/', views.registrar_gasto, name='registro_gasto'),
-    path('finanzas/api/registro-gasto/', views.registrar_gasto, name='api_registro_gasto'),
-    path('finanzas/corte/', views.corte_caja_dia, name='corte_dia'),
+    path('finanzas/registro-gasto/', farmacia_inventario.registro_gasto, name='registro_gasto'),
+    path('finanzas/api/registro-gasto/', farmacia_inventario.registro_gasto, name='api_registro_gasto'),
+    path('finanzas/corte/', RedirectView.as_view(pattern_name='corte_caja_legacy', permanent=False), name='corte_dia'),
     
     # 6B. CUENTAS POR COBRAR Y CONVENIOS
     path('finanzas/cuentas-por-cobrar/', views.cuentas_por_cobrar_dashboard, name='cuentas_por_cobrar'),
@@ -328,6 +337,7 @@ urlpatterns = [
     
     # 7. MÓDULO CONFIGURACIÓN Y ADMINISTRACIÓN
     path('configuracion/', views.configuracion_dashboard, name='configuracion_dashboard'),
+    path('configuracion/empresa/', __import__('core.views.configuracion', fromlist=['configuracion_empresa']).configuracion_empresa, name='configuracion_empresa'),
     path('configuracion/usuarios/', gestionar_usuarios, name='gestionar_usuarios'),
     # Feature Flags — Interruptores del Director
     path('configuracion/flags/', __import__('core.views.feature_flags_admin', fromlist=['panel_feature_flags']).panel_feature_flags, name='panel_feature_flags'),
@@ -530,6 +540,7 @@ urlpatterns = [
     path('reportes/flujo-caja/excel/', views.exportar_excel_flujo_caja, name='exportar_excel_flujo_caja'),
     path('reportes/balance-general/excel/', views.exportar_excel_balance, name='exportar_excel_balance'),
     path('reportes/reporte-caja/', motor_fin_views.genera_reporte_caja, name='genera_reporte_caja'),
+    path('reportes/api/resumen-ejecutivo/', motor_fin_views.api_resumen_ejecutivo_pris, name='api_resumen_ejecutivo_pris'),
 
     # 14. MÓDULO: CRM INTEGRADO — clientes (convertidos) y oportunidades
     path('crm/clientes/', views.lista_clientes_crm, name='lista_clientes_crm'),
@@ -550,10 +561,7 @@ urlpatterns = [
     path('dashboard-unificado/', views.dashboard_unificado, name='dashboard_unificado'),
     path('dashboard-unificado/api/kpis-tiempo-real/', views.api_kpis_tiempo_real, name='api_kpis_tiempo_real'),
     
-    # 17. SISTEMA DE NOTIFICACIONES — rutas adicionales
-    path('notificaciones/<int:notificacion_id>/marcar-leida/', lazy_view('core.views.notificaciones.marcar_notificacion_leida'), name='marcar_notificacion_leida'),
-    path('notificaciones/marcar-todas-leidas/', lazy_view('core.views.notificaciones.marcar_todas_leidas'), name='marcar_todas_leidas'),
-    path('notificaciones/api/no-leidas/', lazy_view('core.views.notificaciones.api_notificaciones_no_leidas'), name='api_notificaciones_no_leidas'),
+    # 17. SISTEMA DE NOTIFICACIONES — rutas adicionales (no duplicadas)
     path('notificaciones/configurar/', lazy_view('core.views.notificaciones.configurar_notificaciones'), name='configurar_notificaciones'),
     path('notificaciones/ejecutar-verificaciones/', lazy_view('core.views.notificaciones.ejecutar_verificaciones'), name='ejecutar_verificaciones'),
     
@@ -606,7 +614,7 @@ urlpatterns = [
     path('chat/api/usuarios/', lazy_view('core.views.comunicacion.api_listar_usuarios'), name='api_listar_usuarios'),
     
     # 16. API FARMACIA (LECTURA PARA MÉDICOS)
-    path('farmacia/api/buscar-productos-lectura/', views.api_buscar_productos_lectura, name='api_buscar_productos_lectura'),
+    path('farmacia/api/buscar-productos-lectura/', views.api_buscar_productos_compra, name='api_buscar_productos_lectura'),
     
     # 17. EXPEDIENTE CLÍNICO UNIVERSAL
     path('medico/api/buscar-paciente-avanzado/', views.api_buscar_paciente_avanzado, name='api_buscar_paciente_avanzado'),
@@ -637,8 +645,8 @@ urlpatterns = [
     # 21. FEATURE FLAGS y AUDIO LEGAL — definiciones canónicas en sección 7 (líneas ~273-278)
     # Rutas duplicadas eliminadas para evitar conflicto en reverse()
 
-    # 23. BIENESTAR STAFF — Capacitaciones
-    path('bienestar/capacitaciones/', __import__('core.views.bienestar', fromlist=['capacitaciones']).capacitaciones, name='capacitaciones_bienestar'),
+    # 23. BIENESTAR STAFF — Capacitaciones (prefijo /bienestar-staff/ para no colisionar con Espacio Seguro)
+    path('bienestar-staff/capacitaciones/', __import__('core.views.bienestar', fromlist=['capacitaciones']).capacitaciones, name='capacitaciones_bienestar'),
 
     # ══════════════════════════════════════════════════════════════════════════
     # BRECHAS DE ORO v5.1 — 5 Módulos de Élite

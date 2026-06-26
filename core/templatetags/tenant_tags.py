@@ -28,6 +28,7 @@ CONTEXT PROCESSOR:
 ═══════════════════════════════════════════════════════════════════════════════
 """
 from django import template
+import logging
 
 register = template.Library()
 
@@ -194,6 +195,7 @@ def empresa_logo_url(context) -> str:
         try:
             return logo.url
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en empresa_logo_url (tenant_tags.py)")
             pass
     return ''
 

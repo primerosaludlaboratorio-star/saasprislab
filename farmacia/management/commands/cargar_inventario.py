@@ -10,6 +10,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from core.models import Producto
 from core.utils.tenant_strict import add_argument_empresa_id, empresa_desde_management
+import logging
 
 
 class Command(BaseCommand):
@@ -38,7 +39,8 @@ class Command(BaseCommand):
         
         try:
             empresa = empresa_desde_management(options)
-        except Exception as e:
+        except Exception as e:  # empresa_desde_management puede lanzar CommandError u otro error de config.
+            logging.getLogger(__name__).exception("Error inesperado en handle (cargar_inventario.py)")
             self.stdout.write(self.style.ERROR(str(e)))
             return
         
@@ -59,13 +61,13 @@ class Command(BaseCommand):
                 try:
                     next(reader)
                     next(reader)
-                except:
+                except StopIteration:
                     pass
                 
                 # Leer el encabezado
                 try:
                     encabezado = next(reader)
-                except:
+                except StopIteration:
                     self.stdout.write(self.style.ERROR('Archivo CSV vacío o mal formado'))
                     return
                 
@@ -93,7 +95,7 @@ class Command(BaseCommand):
                         try:
                             stock_str = fila[19].strip() if len(fila) > 19 and fila[19] else '0'
                             stock = int(float(stock_str.replace(',', '').replace('$', '').strip()))
-                        except:
+                        except (ValueError, IndexError, AttributeError):
                             stock = 0
                         
                         # Saltar productos con stock 0 (lotes vencidos/agotados)
@@ -105,20 +107,20 @@ class Command(BaseCommand):
                         try:
                             precio_publico_str = fila[23].strip() if len(fila) > 23 and fila[23] else '0'
                             precio_publico = Decimal(precio_publico_str.replace(',', '').replace('$', '').strip())
-                        except:
+                        except (ValueError, IndexError, AttributeError):
                             precio_publico = Decimal('0')
                         
                         try:
                             costo_str = fila[26].strip() if len(fila) > 26 and fila[26] else '0'
                             costo = Decimal(costo_str.replace(',', '').replace('$', '').strip())
-                        except:
+                        except (ValueError, IndexError, AttributeError):
                             costo = Decimal('0')
                         
                         # Receta médica
                         try:
                             requiere_receta_str = fila[31].strip() if len(fila) > 31 and fila[31] else 'No'
                             requiere_receta = requiere_receta_str.upper() == 'SI'
-                        except:
+                        except (IndexError, AttributeError):
                             requiere_receta = False
                         
                         # Mapeo de categoría a CATEGORIAS de Producto
@@ -168,13 +170,15 @@ class Command(BaseCommand):
                                 msg = f"  [~] {nombre[:45]:<45} | Stock: {stock:>4} | ${precio_publico:>7.2f}"
                                 self.stdout.write(msg)
                     
-                    except Exception as e:
+                    except Exception as e:  # Aislamiento fila-por-fila: error en una fila no debe abortar toda la carga.
+                        logging.getLogger(__name__).exception("Error inesperado en handle (cargar_inventario.py)")
                         errores += 1
                         self.stdout.write(self.style.WARNING(
                             f"  [!] Error en linea {numero_linea}: {str(e)}"
                         ))
         
-        except Exception as e:
+        except Exception as e:  # Integración externa: archivo CSV/texto provisto por usuario (cualquier encoding, formato inválido).
+            logging.getLogger(__name__).exception("Error inesperado en handle (cargar_inventario.py)")
             self.stdout.write(self.style.ERROR(f'Error al leer archivo: {str(e)}'))
             import traceback
             self.stdout.write(traceback.format_exc())

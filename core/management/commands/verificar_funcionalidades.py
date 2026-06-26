@@ -12,6 +12,7 @@ from datetime import timedelta
 
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
+import logging
 
 
 class Command(BaseCommand):
@@ -61,6 +62,7 @@ class Command(BaseCommand):
                     if resultado.get('detalle'):
                         self.stdout.write(f'       → {resultado["detalle"]}')
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (verificar_funcionalidades.py)")
                 warnings_count += 1
                 resultados[nombre] = {'ok': False, 'error': str(e)}
                 self.stdout.write(self.style.ERROR(f'[ERROR] {nombre}: {e}'))

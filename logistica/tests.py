@@ -2,6 +2,7 @@ from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
+import logging
 
 Usuario = get_user_model()
 
@@ -69,6 +70,7 @@ class LogisticaModelsTest(TestCase):
             self.assertIsNotNone(transferencia)
             self.assertEqual(transferencia.empresa, self.empresa)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_transferencia_sucursal_creation (tests.py)")
             # Model might require additional fields
             self.skipTest(f"TransferenciaSucursal creation failed: {e}")
     
@@ -86,6 +88,7 @@ class LogisticaModelsTest(TestCase):
             self.assertIsNotNone(ruta)
             self.assertEqual(ruta.empresa, self.empresa)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_ruta_recoleccion_creation (tests.py)")
             # Model might require additional fields
             self.skipTest(f"RutaRecoleccion creation failed: {e}")
     
@@ -102,6 +105,7 @@ class LogisticaModelsTest(TestCase):
             self.assertIsNotNone(visita)
             self.assertEqual(visita.empresa, self.empresa)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_visita_domiciliaria_creation (tests.py)")
             # Model might require additional fields
             self.skipTest(f"VisitaDomiciliaria creation failed: {e}")
     
@@ -127,6 +131,7 @@ class LogisticaModelsTest(TestCase):
                 if response.status_code in [200, 302, 405]:
                     accessible_views.append(pattern)
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en test_logistica_views_accessible (tests.py)")
                 pass
         
         # If no views found, that's okay - just skip
@@ -155,3 +160,89 @@ class LogisticaModelsTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('ordenes', response.context)
         self.assertIn('ordenes_con_geo', response.context)
+
+    def test_recibir_transferencia_kardex_integration(self):
+        """Test receiving a transfer creates two Kardex movements and updates stock correctly."""
+        from django.contrib.contenttypes.models import ContentType
+        from core.models import Producto, Lote
+        from logistica.models import DetalleTransferencia, LogTransferencia
+        from farmacia.models import MovimientoInventario, MotivoAjuste
+
+        # 1. Create a product with stock and a lote
+        producto = Producto.objects.create(
+            empresa=self.empresa,
+            codigo_barras="PROD-TEST-TRANS",
+            nombre="Test Transfer Product",
+            categoria="GENERICO",
+            precio_compra=10.0,
+            precio_publico=15.0,
+            stock=100,
+        )
+        lote = Lote.objects.create(
+            producto=producto,
+            numero_lote="LOTE-TEST-TRANS",
+            fecha_caducidad=timezone.now().date() + timezone.timedelta(days=365),
+            cantidad=100,
+            costo_adquisicion=10.0,
+        )
+
+        # 2. Create the transfer in ENVIADA state
+        transferencia = TransferenciaInventario.objects.create(
+            empresa=self.empresa,
+            sucursal_origen=self.sucursal_origen,
+            sucursal_destino=self.sucursal_destino,
+            solicitado_por=self.usuario,
+            enviado_por=self.usuario,
+            estado='ENVIADA',
+            fecha_envio=timezone.now(),
+        )
+
+        # 3. Create transfer detail
+        detalle = DetalleTransferencia.objects.create(
+            transferencia=transferencia,
+            producto=producto,
+            lote=lote,
+            cantidad_solicitada=10,
+            cantidad_enviada=10,
+            costo_unitario=10.0,
+        )
+
+        # Log in the client
+        self.client.login(username='testuser', password='test123')
+
+        # 4. Perform receive transfer POST request
+        url = reverse('logistica:recibir_transferencia', args=[transferencia.id])
+        post_data = {
+            f'cantidad_recibida_{detalle.id}': '10',
+            f'danos_{detalle.id}': '',
+            'observaciones': 'Todo en orden',
+        }
+        response = self.client.post(url, post_data)
+
+        # 5. Assertions
+        # Should redirect to detail view
+        self.assertEqual(response.status_code, 302)
+        
+        # Verify transfer is completed
+        transferencia.refresh_from_db()
+        self.assertEqual(transferencia.estado, 'COMPLETADA')
+
+        # Verify Kardex movements are created
+        movimientos = MovimientoInventario.objects.filter(empresa=self.empresa, producto=producto)
+        self.assertEqual(movimientos.count(), 2)
+
+        salida = movimientos.filter(tipo_movimiento='SALIDA_AJUSTE').first()
+        self.assertIsNotNone(salida)
+        self.assertEqual(salida.sucursal, self.sucursal_origen)
+        self.assertEqual(salida.cantidad, 10)
+        self.assertEqual(salida.costo_unitario, 10.0)
+
+        entrada = movimientos.filter(tipo_movimiento='ENTRADA_AJUSTE').first()
+        self.assertIsNotNone(entrada)
+        self.assertEqual(entrada.sucursal, self.sucursal_destino)
+        self.assertEqual(entrada.cantidad, 10)
+        self.assertEqual(entrada.costo_unitario, 10.0)
+
+        # Verify stock calculations
+        lote.refresh_from_db()
+        self.assertEqual(lote.cantidad, 100)

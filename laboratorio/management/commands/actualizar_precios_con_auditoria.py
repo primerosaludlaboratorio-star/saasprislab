@@ -25,6 +25,7 @@ from django.db import transaction
 from django.utils import timezone
 from laboratorio.models import Estudio, PerfilLaboratorio
 from core.models import Empresa, AuditLog, Usuario
+import logging
 
 
 class Command(BaseCommand):
@@ -298,12 +299,14 @@ class Command(BaseCommand):
                                     perfiles_no_encontrados.append(nombre_perfil)
                                     self.stdout.write(self.style.WARNING(f'  [NO ENCONTRADO] Perfil: {nombre_perfil}'))
                             
-                        except Exception as e:
-                            errores.append(f"Fila {idx}: {str(e)}")
+                        except ValueError as e:
+                            errores.append(f"Fila {idx}: Error de formato - {str(e)}")
                             continue
-                                
-                        except Exception as e:
-                            errores.append(f"Fila {idx}: {str(e)}")
+                        except django.core.exceptions.ValidationError as e:
+                            errores.append(f"Fila {idx}: Error de validación - {str(e)}")
+                            continue
+                        except DatabaseError as e:
+                            errores.append(f"Fila {idx}: Error de base de datos - {str(e)}")
                             continue
                 
                 # Si es dry-run, hacer rollback manual
@@ -336,6 +339,7 @@ class Command(BaseCommand):
             # Dry-run: transacción revertida intencionalmente
             self.stdout.write(self.style.WARNING('\n[DRY-RUN] Transacción revertida. No se guardaron cambios.\n'))
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (actualizar_precios_con_auditoria.py)")
             self.stdout.write(self.style.ERROR(f'\n[ERROR] Error durante la actualización: {str(e)}'))
             self.stdout.write(self.style.ERROR('   La transacción ha sido revertida.'))
             raise

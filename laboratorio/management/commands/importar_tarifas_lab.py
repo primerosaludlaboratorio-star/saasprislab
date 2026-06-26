@@ -63,7 +63,7 @@ class Command(BaseCommand):
                                 val = float(precio_raw.replace('$', '').replace(',', '').strip())
                                 # Redondeo al múltiplo de 5 más cercano
                                 precio_final = 5 * round(val / 5)
-                            except:
+                            except (ValueError, TypeError):
                                 precio_final = 0
 
                         # Categoría
@@ -89,11 +89,30 @@ class Command(BaseCommand):
                         if count % 50 == 0:
                             self.stdout.write(f'  [PROGRESO] Procesados: {count} estudios...')
                         
-                    except Exception as e:
-                        self.stdout.write(self.style.WARNING(f'[ADVERTENCIA] Error en fila {row}: {e}'))
+                    except ValueError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] Fila {row}: Error de valor - {str(e)}'))
+                        continue
+                    except django.core.exceptions.ValidationError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] Fila {row}: Error de validación - {str(e)}'))
+                        continue
+                    except IntegrityError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] Fila {row}: Error de integridad - {str(e)}'))
+                        continue
+                    except DatabaseError as e:
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] Fila {row}: Error de base de datos - {str(e)}'))
                         continue
 
             self.stdout.write(self.style.SUCCESS(f'[EXITO] LISTO! {count} estudios importados/actualizados.'))
 
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f'[ERROR] Error abriendo archivo: {e}'))
+        except FileNotFoundError as e:
+            self.stdout.write(self.style.ERROR(f'[ERROR] Archivo no encontrado: {e}'))
+            raise
+        except PermissionError as e:
+            self.stdout.write(self.style.ERROR(f'[ERROR] Permiso denegado: {e}'))
+            raise
+        except ValueError as e:
+            self.stdout.write(self.style.ERROR(f'[ERROR] Error de datos: {e}'))
+            raise
+        except DatabaseError as e:
+            self.stdout.write(self.style.ERROR(f'[ERROR] Error de base de datos: {e}'))
+            raise

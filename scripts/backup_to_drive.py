@@ -18,6 +18,7 @@ import subprocess
 import gzip
 from datetime import datetime
 from pathlib import Path
+import logging
 
 # Agregar el proyecto al path para importar settings
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -102,6 +103,7 @@ def backup_database():
         return True
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en backup_database (backup_to_drive.py)")
         print(f"[ERROR] Error durante el backup: {e}")
         # Limpiar archivo local si existe
         if local_path.exists():
@@ -144,6 +146,7 @@ def upload_to_drive(local_path: Path, filename: str):
         # No eliminar el archivo local si no se pudo subir
         return False
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en upload_to_drive (backup_to_drive.py)")
         print(f"[DRIVE] ❌ Error al subir a Drive: {e}")
         return False
 
@@ -180,6 +183,7 @@ def cleanup_old_backups(folder_id: str, keep_days: int = 30):
         print(f"[CLEANUP] ✅ {deleted_count} backups antiguos eliminados")
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en cleanup_old_backups (backup_to_drive.py)")
         print(f"[CLEANUP] ⚠️  Error al limpiar backups antiguos: {e}")
 
 

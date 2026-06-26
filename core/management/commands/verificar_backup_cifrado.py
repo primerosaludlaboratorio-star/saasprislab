@@ -17,6 +17,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.backends import default_backend
 import base64
+import logging
 
 
 def _clave_fernet():
@@ -49,6 +50,7 @@ class Command(BaseCommand):
         try:
             plano = fernet.decrypt(cifrado)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (verificar_backup_cifrado.py)")
             self.stdout.write(self.style.ERROR(f'Descifrado fallido (¿SECRET_KEY distinta?): {e}'))
             sys.exit(2)
         bio = io.BytesIO(plano)
@@ -56,6 +58,7 @@ class Command(BaseCommand):
             with tarfile.open(fileobj=bio, mode='r:gz') as tar:
                 nombres = tar.getnames()
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (verificar_backup_cifrado.py)")
             self.stdout.write(self.style.ERROR(f'TAR inválido tras descifrar: {e}'))
             sys.exit(3)
         tiene_sql = any('database.sql' in n or n.endswith('database.sql') for n in nombres)

@@ -139,7 +139,14 @@ class Bitacora39A(models.Model):
 # BLOQUE 3B: EVALUACIÓN DE DESEMPEÑO Y DESARROLLO DE TALENTO
 # ==============================================================================
 class Competencia(models.Model):
-    """Competencias evaluables (Soft Skills y Hard Skills)."""
+    """
+    Competencias evaluables (Soft Skills y Hard Skills).
+
+    DISEÑO: Catálogo global compartido entre todas las empresas.
+    No tiene FK a Empresa por diseño — las competencias son transversales
+    y se comparten para mantener consistencia en evaluaciones de desempeño.
+    Solo superusuarios pueden crear/editar/eliminar competencias desde el admin.
+    """
     TIPO_CHOICES = [
         ('BLANDA', 'Soft Skill (Competencia Blanda)'),
         ('TECNICA', 'Hard Skill (Competencia Técnica)'),

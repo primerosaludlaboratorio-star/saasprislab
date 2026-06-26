@@ -231,6 +231,7 @@ def pagina_consentimiento(request, orden_id: int):
         )
         estudios = [str(s) for s in orden.estudios.all()[:5]] if hasattr(orden, 'estudios') else []
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en pagina_consentimiento (consentimiento_digital.py)")
         paciente_nombre = 'Paciente'
         estudios = []
         orden = None
@@ -327,6 +328,7 @@ def api_guardar_consentimiento(request, orden_id: int):
                 logger.warning(f'consentimiento - PDF no guardado en disco (continúa OK): {pdf_exc}')
 
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en api_guardar_consentimiento (consentimiento_digital.py)")
             logger.info(f'consentimiento - no se guardó en DB (continúa OK): {exc}')
 
         logger.info(f'Consentimiento firmado: {folio} | Paciente: {paciente_nombre} | Hash: {hash_firma[:16]}...')

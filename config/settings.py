@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from importlib.util import find_spec
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -38,8 +39,8 @@ GITHUB_REPO = os.environ.get("GITHUB_REPO", "")  # formato: owner/repo
 # En local, si no se especifica nada, usamos desarrollo para no bloquear herramientas.
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# Detectar si estamos corriendo tests (manage.py test)
-_TESTING = 'test' in sys.argv
+# Detectar si estamos corriendo tests (manage.py test o call_command / CI)
+_TESTING = 'test' in sys.argv or os.environ.get('DJANGO_TESTING', '') == 'True'
 DEPLOYMENT_ENV = (
     os.environ.get('PRISLAB_ENV')
     or os.environ.get('DJANGO_ENV')
@@ -202,15 +203,6 @@ if IS_PRODUCTION:
             'Los endpoints protegidos por estos tokens retornarán 503.'
         )
 
-# BLINDAJE R104: Hosts restringidos por entorno
-_allowed_hosts_env = [x.strip() for x in os.environ.get('ALLOWED_HOSTS', '').split(',') if x.strip()]
-if _allowed_hosts_env:
-    ALLOWED_HOSTS = _allowed_hosts_env
-elif IS_PRODUCTION:
-    _server_name = (os.environ.get('SERVER_NAME') or os.environ.get('DOMAIN_NAME') or '').strip()
-    ALLOWED_HOSTS = [x for x in [_server_name, 'localhost', '127.0.0.1'] if x]
-else:
-    ALLOWED_HOSTS = ['*']  # Solo en desarrollo local
 
 INSTALLED_APPS = [
     'corsheaders',
@@ -228,7 +220,7 @@ INSTALLED_APPS = [
     'pacientes',    # Núcleo de pacientes compartido
     'laboratorio',  # Módulo de laboratorio clínico
     'lims',         # LIMS 4 Niveles: Analito → Perfil → Paquete → Precio
-    
+
     # Apps V 5.0 - Núcleo Pris-Valle
     'seguridad',    # Seguridad física y botón de pánico
     'iot',          # IoT y Kiosco de auto-verificación
@@ -248,10 +240,13 @@ INSTALLED_APPS = [
     # Storage local/Drive + PWA
     'storages',
     'pwa',
-    
+
     # Real-Time Communication (Voice Commander)
     'channels',
 ]
+
+if find_spec('django_extensions') is not None:
+    INSTALLED_APPS.insert(8, 'django_extensions')  # Para runserver_plus con HTTPS cuando exista
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -507,7 +502,7 @@ try:
             "Configure GOOGLE_DRIVE_TOKEN_PATH/GOOGLE_DRIVE_CREDENTIALS_PATH "
             "o, transitoriamente, GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON/GOOGLE_APPLICATION_CREDENTIALS."
         )
-except Exception as e:
+except (ImportError, OSError, ValueError) as e:
     import logging as _log_drive
     _log_drive.getLogger('config').warning(f"Error configurando Google Drive: {e}. Usando almacenamiento local.")
 
@@ -801,7 +796,9 @@ PRISLAB_TENANT_SHADOW_LOG_CLI = os.environ.get('PRISLAB_TENANT_SHADOW_LOG_CLI', 
 )
 
 # Configuración para que Django entienda el HTTPS detrás de Nginx / reverse proxy
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# Solo activo en producción para evitar forzar HTTPS en desarrollo local
+if IS_PRODUCTION:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Configuración de cookies seguras (solo en PROD para no bloquear DEV en http)
 SESSION_COOKIE_SECURE = _env_bool('SESSION_COOKIE_SECURE', IS_PRODUCTION)
@@ -1114,3 +1111,27 @@ elif IS_PRODUCTION:
     ALLOWED_HOSTS = [x for x in [_server_name, 'localhost', '127.0.0.1'] if x]
 else:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
+
+# ==============================================================================
+# 🚨 HEALTH-CHECKS DE ARRANQUE — Configuración de seguridad crítica
+# ==============================================================================
+import logging as _log_startup
+_log_sec = _log_startup.getLogger('core.seguridad.startup')
+
+# HC-1: PRISLAB_EMERGENCY_TENANT_BYPASS no debe estar activo en producción.
+# Si está encendido al arrancar, emitir crítico para que aparezca en Sentry/logs.
+if os.environ.get('PRISLAB_EMERGENCY_TENANT_BYPASS', '').strip().lower() in ('1', 'true', 'yes', 'on'):
+    _log_sec.critical(
+        '🚨 PRISLAB_EMERGENCY_TENANT_BYPASS=1 está activo en este proceso. '
+        'El filtro multi-tenant ORM está DESACTIVADO. '
+        'Desactivar esta variable en cuanto sea seguro.'
+    )
+
+# HC-2: PRISLAB_DEFAULT_EMPRESA_ID debe estar configurado en entornos con más de una empresa.
+# Sin este valor, usuarios sin FK empresa asignada quedarán sin tenant (strict mode los bloqueará).
+if IS_PRODUCTION and not os.environ.get('PRISLAB_DEFAULT_EMPRESA_ID', '').strip():
+    _log_sec.warning(
+        'PRISLAB_DEFAULT_EMPRESA_ID no está configurado. '
+        'En entornos con múltiples empresas, usuarios sin empresa asignada serán bloqueados '
+        'si PRISLAB_TENANT_STRICT_MODE está activo.'
+    )

@@ -4,6 +4,7 @@
 import os
 import sys
 import django
+import logging
 
 # Configurar Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -61,6 +62,7 @@ try:
     sys.exit(0 if all_ok else 1)
     
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (validate_security_fixes.py)")
     print(f'❌ Error durante validación: {e}')
     import traceback
     traceback.print_exc()

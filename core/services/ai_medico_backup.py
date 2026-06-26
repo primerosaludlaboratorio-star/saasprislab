@@ -506,6 +506,7 @@ def test_gemini_connection():
         return True
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_gemini_connection (ai_medico_backup.py)")
         print(f"❌ Error: {e}")
         return False
 

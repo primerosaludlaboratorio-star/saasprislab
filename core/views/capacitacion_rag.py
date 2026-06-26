@@ -79,6 +79,7 @@ def _procesar_pdf_background(documento_id: int, empresa_id: int) -> None:
                 error_rag=str(exc)[:500],
             )
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _procesar_pdf_background (capacitacion_rag.py)")
             pass
 
 
@@ -283,6 +284,7 @@ def consultar_pris_rag(request):
     try:
         data = json.loads(request.body)
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en consultar_pris_rag (capacitacion_rag.py)")
         data = request.POST.dict()
 
     consulta = (data.get('consulta') or data.get('query') or '').strip()
@@ -374,6 +376,7 @@ def consultar_pris_worklist(request):
     try:
         data = json.loads(request.body)
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en consultar_pris_worklist (capacitacion_rag.py)")
         return JsonResponse({'status': 'error', 'mensaje': 'JSON inválido'}, status=400)
 
     estudio     = data.get('estudio', 'Estudio no especificado')

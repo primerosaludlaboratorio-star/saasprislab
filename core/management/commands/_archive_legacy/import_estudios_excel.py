@@ -30,6 +30,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+import logging
 
 
 # ── Normalización de nombres de columna ───────────────────────────────────────
@@ -264,6 +265,7 @@ class Command(BaseCommand):
                     try:
                         seccion = get_seccion(nombre_seccion)
                     except Exception as e:
+                        logging.getLogger(__name__).exception("Error inesperado en get_cell (import_estudios_excel.py)")
                         errores.append(f'Fila {i} - sección "{nombre_seccion}": {e}')
 
                 defaults = {
@@ -310,6 +312,7 @@ class Command(BaseCommand):
                         estudio.save()
                         actualizados += 1
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en get_cell (import_estudios_excel.py)")
                     errores.append(f'Fila {i} ({nombre}): {e}')
                     omitidos += 1
 

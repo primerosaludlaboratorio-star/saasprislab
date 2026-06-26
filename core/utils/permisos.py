@@ -2,6 +2,7 @@
 Utilidades para verificación de permisos granulares (REGLA 5).
 """
 from core.models.seguridad_perfiles import PerfilUsuario, PermisoModulo, PermisoRecurso
+import logging
 
 
 def tiene_permiso(usuario, modulo, accion, recurso=None):
@@ -25,6 +26,7 @@ def tiene_permiso(usuario, modulo, accion, recurso=None):
     try:
         perfil = usuario.perfil_usuario
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en tiene_permiso (permisos.py)")
         # Si no tiene perfil asignado, verificar permisos por defecto
         return verificar_permisos_por_defecto(usuario, modulo, accion)
     

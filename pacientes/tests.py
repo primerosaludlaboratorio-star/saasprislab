@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 import uuid
 from datetime import date
+import logging
 
 Usuario = get_user_model()
 
@@ -84,6 +85,7 @@ class PacienteModelTest(TestCase):
             response = self.client.get(url)
             self.assertIn(response.status_code, [200, 302, 404])  # Accept various valid responses
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_portal_paciente_view_get (tests.py)")
             # View might not exist or have different requirements
             self.skipTest(f"portal_paciente view not available: {e}")
     

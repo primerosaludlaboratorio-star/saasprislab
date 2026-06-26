@@ -15,13 +15,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+import logging
 
 BASE_URL = os.environ.get("PRISLAB_TEST_BASE_URL", "https://prislab-v5-811785477499.us-central1.run.app")
 # Try nancy first; fallback to admin if login fails
 USERNAME = os.environ.get("PRISLAB_TEST_USERNAME", "nancy")
 PASSWORD = os.environ.get("PRISLAB_TEST_PASSWORD")
-if not PASSWORD:
-    raise RuntimeError("Debe configurar la variable de entorno PRISLAB_TEST_PASSWORD antes de ejecutar este test.")
 FALLBACK_USER = os.environ.get("PRISLAB_TEST_FALLBACK_USERNAME", "admin")
 FALLBACK_PASS = os.environ.get("PRISLAB_TEST_FALLBACK_PASSWORD") or PASSWORD
 SCREENSHOT_DIR = "test_screenshots_farmacia"
@@ -52,12 +51,14 @@ def get_console_errors(driver):
         errs = [l for l in logs if l.get("level") == "SEVERE"]
         return errs
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en get_console_errors (test_farmacia_pdv_e2e.py)")
         return []
 
 def get_console_all(driver):
     try:
         return driver.get_log("browser")
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en get_console_all (test_farmacia_pdv_e2e.py)")
         return []
 
 def log_page(url, status="ok", note=""):
@@ -131,6 +132,7 @@ def run_test():
                     err_el = driver.find_elements(By.CSS_SELECTOR, ".alert-danger, .error, .text-danger")
                     msg = " ".join([e.text for e in err_el if e.text])[:200] if err_el else "No dashboard redirect"
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en run_test (test_farmacia_pdv_e2e.py)")
                     msg = "No dashboard redirect"
                 log_action("Login submit (" + u + ")", False, msg)
                 log_error("login", f"Credentials {u}: {msg}")
@@ -200,9 +202,11 @@ def run_test():
                         cart_rows = driver.find_elements(By.CSS_SELECTOR, "#tabla-carrito-body tr")
                         has_items = len(cart_rows) > 0
                     except Exception:
+                        logging.getLogger(__name__).exception("Error inesperado en run_test (test_farmacia_pdv_e2e.py)")
                         has_items = False
                     log_action("Add product to cart", has_items, "Cart updated" if has_items else "No cart rows found")
                 except Exception as ex:
+                    logging.getLogger(__name__).exception("Error inesperado en run_test (test_farmacia_pdv_e2e.py)")
                     log_action("Add product to cart", False, str(ex))
                     log_error("add_to_cart", str(ex))
             else:
@@ -220,11 +224,13 @@ def run_test():
                         screenshot(driver, "07_after_add_to_cart")
                         log_action("Add product to cart", True, "Clicked first result")
                     except Exception as ex:
+                        logging.getLogger(__name__).exception("Error inesperado en run_test (test_farmacia_pdv_e2e.py)")
                         log_action("Add product to cart", False, str(ex))
                 else:
                     log_action("Search product", True, "No products in DB or API issue")
                     log_action("Add product to cart", False, "No results to click")
         except Exception as ex:
+            logging.getLogger(__name__).exception("Error inesperado en run_test (test_farmacia_pdv_e2e.py)")
             err_msg = str(ex).split("\n")[0][:300]  # avoid huge stack traces in report
             log_action("Search product", False, err_msg)
             log_error("search", err_msg)
@@ -247,6 +253,7 @@ def run_test():
                 log_action("Click COBRAR button", False, "Button not found")
                 log_error("cobrar", "COBRAR button not found")
         except Exception as ex:
+            logging.getLogger(__name__).exception("Error inesperado en run_test (test_farmacia_pdv_e2e.py)")
             log_action("Click COBRAR button", False, str(ex))
             log_error("cobrar", str(ex))
 
@@ -258,6 +265,7 @@ def run_test():
             else:
                 log_action("Limpiar carrito button present", False, "Not found")
         except Exception as ex:
+            logging.getLogger(__name__).exception("Error inesperado en run_test (test_farmacia_pdv_e2e.py)")
             log_action("Limpiar carrito button", False, str(ex))
 
         # Final console capture
@@ -266,6 +274,7 @@ def run_test():
 
         print("\n=== Test run complete ===")
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en run_test (test_farmacia_pdv_e2e.py)")
         log_error("test_run", str(e))
         if driver:
             screenshot(driver, "99_fatal_error")
@@ -307,4 +316,6 @@ def write_report():
     print(f"JSON report: {json_path}")
 
 if __name__ == "__main__":
+    if not PASSWORD:
+        raise RuntimeError("Debe configurar la variable de entorno PRISLAB_TEST_PASSWORD antes de ejecutar este test.")
     run_test()

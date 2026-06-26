@@ -161,6 +161,7 @@ def cron_check_stock_critico(request):
                                     resuelta=False,
                                 )
                         except Exception as e_notif:
+                            logging.getLogger(__name__).exception("Error inesperado en cron_check_stock_critico (cron_tasks.py)")
                             logger.debug(
                                 'cron_check_stock: no se pudo crear NotificacionDiscrepancia: %s', e_notif
                             )

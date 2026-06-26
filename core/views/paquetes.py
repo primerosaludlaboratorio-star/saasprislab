@@ -11,6 +11,7 @@ from django.views.decorators.http import require_http_methods
 from django.db import transaction
 
 from laboratorio.models import Estudio
+import logging
 
 
 @login_required
@@ -64,6 +65,7 @@ def api_actualizar_orden_paquete(request, paquete_id):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_actualizar_orden_paquete (paquetes.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': f'Error al actualizar orden: {str(e)}'

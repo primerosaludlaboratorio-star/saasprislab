@@ -1,6 +1,7 @@
 """Script de smoke tests — ejecutar con: python smoke_test.py"""
 import django
 import os
+import logging
 os.environ['DJANGO_SETTINGS_MODULE'] = 'config.settings'
 django.setup()
 
@@ -14,6 +15,7 @@ try:
     assert len(todos) == len(FLAG_CATALOG)
     ok.append('FeatureFlags: {} flags cargados OK'.format(len(todos)))
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('FeatureFlags FALLO: {}'.format(e))
 
 # TEST 2: OCR Documental
@@ -23,6 +25,7 @@ try:
     assert len(sug) > 0
     ok.append('OCR Motor: {} sugerencias contextuales OK'.format(len(sug)))
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('OCR FALLO: {}'.format(e))
 
 # TEST 3: Audio Legal hash
@@ -32,6 +35,7 @@ try:
     assert len(h) == 64
     ok.append('AudioLegal: hash SHA-256 OK ({})...'.format(h[:16]))
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('AudioLegal hash FALLO: {}'.format(e))
 
 # TEST 4: Coach Toma Muestra
@@ -45,6 +49,7 @@ try:
     score = reporte['score_porcentaje']
     ok.append('Coach Toma Muestra: score {}% OK'.format(score))
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('Coach FALLO: {}'.format(e))
 
 # TEST 5: 2FA views
@@ -53,6 +58,7 @@ try:
     from core.views.autenticacion_2fa import _ip_exenta_2fa, _2fa_activo_para_usuario
     ok.append('2FA Views: imports OK')
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('2FA FALLO: {}'.format(e))
 
 # TEST 6: Audio Legal views
@@ -60,6 +66,7 @@ try:
     from core.views.audio_legal import api_sellar_audio, api_verificar_integridad_audio
     ok.append('AudioLegal Views: imports OK')
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('AudioLegal Views FALLO: {}'.format(e))
 
 # TEST 7: Feature Flags Admin
@@ -67,6 +74,7 @@ try:
     from core.views.feature_flags_admin import panel_feature_flags, api_toggle_flag
     ok.append('FeatureFlags Admin Views: imports OK')
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('FeatureFlags Admin FALLO: {}'.format(e))
 
 # TEST 8: VoiceAuditLog en DB
@@ -75,6 +83,7 @@ try:
     count = VoiceAuditLog.objects.count()
     ok.append('VoiceAuditLog: {} registros en DB OK'.format(count))
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('VoiceAuditLog FALLO: {}'.format(e))
 
 # TEST 9: seguridad DispositivoTOTP
@@ -83,6 +92,7 @@ try:
     count = DispositivoTOTP.objects.count()
     ok.append('Seguridad 2FA: modelos OK ({} dispositivos)'.format(count))
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('Seguridad 2FA FALLO: {}'.format(e))
 
 # TEST 10: PRIS nueva tool OCR
@@ -91,6 +101,7 @@ try:
     assert 'analizar_imagen_documento' in TOOLS_DESCRIPCION
     ok.append('PRIS tool analizar_imagen_documento: registrada OK')
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('PRIS tool FALLO: {}'.format(e))
 
 # TEST 11: URLs críticas
@@ -109,8 +120,10 @@ try:
             url = reverse(name)
             ok.append('URL {}: {} OK'.format(name, url))
         except Exception as ue:
+            logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
             errores.append('URL {} FALLO: {}'.format(name, ue))
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('URL tests FALLO: {}'.format(e))
 
 # TEST 12: ISO 15189 service
@@ -118,6 +131,7 @@ try:
     from laboratorio.services.iso15189 import validar_resultado
     ok.append('ISO15189 service: import OK')
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('ISO15189 FALLO: {}'.format(e))
 
 # TEST 13: ZPL service
@@ -127,6 +141,7 @@ try:
     assert '^XA' in zpl
     ok.append('ZPL Etiquetas: generación OK')
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('ZPL FALLO: {}'.format(e))
 
 # TEST 14: Corte Caja Unificado
@@ -134,6 +149,7 @@ try:
     from farmacia.services.corte_caja_unificado import cerrar_turno_unificado
     ok.append('Corte Caja Unificado: import OK')
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('Corte Caja FALLO: {}'.format(e))
 
 # TEST 15: War Room views
@@ -141,6 +157,7 @@ try:
     from core.views.war_room import war_room, api_war_room_anomalias
     ok.append('War Room views: imports OK')
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('War Room FALLO: {}'.format(e))
 
 # TEST 16: Cadena de Frío service
@@ -154,6 +171,7 @@ try:
     assert r3['valida'] == False
     ok.append('Cadena Frio: validacion 2-8C OK')
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('Cadena Frio FALLO: {}'.format(e))
 
 # TEST 17: Prediccion de Stock service
@@ -161,6 +179,7 @@ try:
     from core.services.prediccion_stock import predecir_dias_hasta_agotamiento, reporte_inventario_predictivo
     ok.append('Prediccion Stock: imports OK')
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('Prediccion Stock FALLO: {}'.format(e))
 
 # TEST 18: Consentimiento Digital views
@@ -168,6 +187,7 @@ try:
     from core.views.consentimiento_digital import pagina_consentimiento, api_guardar_consentimiento
     ok.append('Consentimiento Digital: imports OK')
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('Consentimiento Digital FALLO: {}'.format(e))
 
 # TEST 19: Inventario Predictivo views
@@ -175,6 +195,7 @@ try:
     from core.views.inventario_predictivo import reporte_prediccion_stock, api_prediccion_stock
     ok.append('Inventario Predictivo views: imports OK')
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('Inventario Predictivo FALLO: {}'.format(e))
 
 # TEST 19b: buscar_estudio sin venta_individual (bug fix crítico)
@@ -188,6 +209,7 @@ try:
     count = qs.count()
     ok.append('buscar_estudio fix venta_individual: OK ({} estudios con glucosa)'.format(count))
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('buscar_estudio FALLO (venta_individual): {}'.format(e))
 
 # TEST 20: Production env check
@@ -197,6 +219,7 @@ try:
     assert len(fernet) > 30
     ok.append('Production Env Check: FERNET_KEY generada OK ({})...'.format(fernet[:16]))
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('Production Env Check FALLO: {}'.format(e))
 
 # TEST 21: ISO_STRICT_MODE flag OFF por defecto
@@ -206,6 +229,7 @@ try:
     assert FLAG_CATALOG['ISO_STRICT_MODE']['default'] == False
     ok.append('ISO_STRICT_MODE: OFF por defecto OK')
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('ISO_STRICT_MODE FALLO: {}'.format(e))
 
 # TEST 22: URLs nuevas de Brechas de Oro
@@ -220,8 +244,10 @@ try:
             url = reverse(name)
             ok.append('URL {}: {} OK'.format(name, url))
         except Exception as ue:
+            logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
             errores.append('URL {} FALLO: {}'.format(name, ue))
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (smoke_test.py)")
     errores.append('URLs Brechas de Oro FALLO: {}'.format(e))
 
 print()

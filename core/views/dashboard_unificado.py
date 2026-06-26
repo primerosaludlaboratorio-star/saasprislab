@@ -25,6 +25,7 @@ from core.models import (
     ReciboNomina,
     Venta,
 )
+import logging
 
 try:
     from marketing.models import CuponUso, ProspectoCRM
@@ -349,6 +350,7 @@ def api_kpis_tiempo_real(request):
                 fecha_creacion__date=hoy,
             ).count()
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en api_kpis_tiempo_real (dashboard_unificado.py)")
             ordenes_hoy = 0
     else:
         ordenes_hoy = 0

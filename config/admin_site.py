@@ -265,7 +265,7 @@ def mark_safe_header(text):
     try:
         from django.utils.safestring import mark_safe
         return mark_safe(text)
-    except Exception:
+    except ImportError:
         return text
 
 

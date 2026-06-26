@@ -12,6 +12,7 @@ from core.tenant import tenant_protected_get
 from core.utils.empresa_request import get_empresa_usuario
 from lims.models import Analito, ValorReferenciaAnalito
 from lims.views.tenant_lims import empresa_lims
+import logging
 
 
 def _check_perm(user):
@@ -141,6 +142,7 @@ def api_rangos(request, pk):
         try:
             body = json.loads(request.body)
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en api_rangos (analitos.py)")
             body = request.POST.dict()
 
         def _dec(v):
@@ -209,6 +211,7 @@ def api_rango_item(request, pk, rango_pk):
     try:
         body = json.loads(request.body)
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_rango_item (analitos.py)")
         body = request.POST.dict()
 
     def _dec(v):

@@ -11,6 +11,7 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from core.models import RecetaItem, DemandaInsatisfecha, Empresa
 from django.db import transaction
+import logging
 
 
 class Command(BaseCommand):
@@ -110,6 +111,7 @@ class Command(BaseCommand):
                             items_eliminados += 1
                             
                         except Exception as e:
+                            logging.getLogger(__name__).exception("Error inesperado en handle (cierre_dia.py)")
                             self.stdout.write(
                                 self.style.ERROR(f'   ❌  Error procesando item {item.id}: {str(e)}')
                             )
@@ -126,6 +128,7 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.SUCCESS(f'   ✅  Cierre completado para {empresa.nombre}'))
                     
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (cierre_dia.py)")
                 self.stdout.write(
                     self.style.ERROR(f'   ❌  Error crítico procesando empresa {empresa.nombre}: {str(e)}')
                 )

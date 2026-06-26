@@ -5,6 +5,8 @@ Servicios de paciente y orden: fuente canónica `core.Paciente` / `core.OrdenDeS
 import logging
 from decimal import Decimal
 from django.db import transaction
+from django.db.utils import DatabaseError
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 logger = logging.getLogger('laboratorio.unificacion')
@@ -97,7 +99,7 @@ def buscar_pacientes_unificado(empresa, query: str, limit: int = 20) -> list[dic
 
         return resultados
 
-    except Exception as exc:
+    except (DatabaseError, ValidationError) as exc:
         logger.error(f"buscar_pacientes_unificado error: {exc}")
         return []
 
@@ -164,7 +166,7 @@ def _encontrar_core_medico(empresa, medico_legacy=None, medico_texto: str = ''):
                 cedula_profesional=f'PEND-{_u.uuid4().hex[:8].upper()}',
                 especialidad='Médico General',
             )
-    except Exception as exc:
+    except (DatabaseError, ValidationError) as exc:
         logger.warning(f"_encontrar_core_medico error: {exc}")
     return None
 
@@ -184,7 +186,7 @@ def crear_orden_core_desde_legacy(orden_legacy, empresa, sucursal, usuario) -> '
         try:
             for det in orden_legacy.detalles.all():
                 total += det.subtotal
-        except Exception:
+        except (AttributeError, TypeError):
             total = Decimal('0')
 
         # 3. Mapear origen
@@ -228,7 +230,7 @@ def crear_orden_core_desde_legacy(orden_legacy, empresa, sucursal, usuario) -> '
         )
         return core_orden
 
-    except Exception as exc:
+    except (DatabaseError, ValidationError) as exc:
         logger.error(
             f"crear_orden_core_desde_legacy FALLÓ para legacy.Orden #{orden_legacy.id}: {exc}",
             exc_info=True,

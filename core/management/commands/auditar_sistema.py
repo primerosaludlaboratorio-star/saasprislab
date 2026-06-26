@@ -14,6 +14,7 @@ from django.utils import timezone
 from datetime import timedelta
 import os
 import sys
+import logging
 
 
 class Command(BaseCommand):
@@ -64,6 +65,7 @@ class Command(BaseCommand):
                         
                         self.stdout.write(f'   [OK] {app_name}.{nombre} - {campos} campos, {registros} registros')
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en _auditar_modelos (auditar_sistema.py)")
                     self.stdout.write(self.style.ERROR(f'   [ERROR] Error en {app_name}: {str(e)}'))
         
         return modelos
@@ -96,8 +98,10 @@ class Command(BaseCommand):
                             vistas[modulo].append(nombre)
                             self.stdout.write(f'   [OK] {modulo}.{nombre}')
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en _auditar_vistas (auditar_sistema.py)")
                     self.stdout.write(self.style.ERROR(f'   [ERROR] Error en {modulo}: {str(e)}'))
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _auditar_vistas (auditar_sistema.py)")
             self.stdout.write(self.style.ERROR(f'   [ERROR] Error al cargar vistas: {str(e)}'))
         
         return vistas
@@ -125,6 +129,7 @@ class Command(BaseCommand):
             
             extraer_urls(resolver.url_patterns)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en extraer_urls (auditar_sistema.py)")
             self.stdout.write(self.style.ERROR(f'   [ERROR] Error al auditar URLs: {str(e)}'))
         
         return urls
@@ -147,6 +152,7 @@ class Command(BaseCommand):
                         migraciones[app_name] = len(archivos_migracion)
                         self.stdout.write(f'   [OK] {app_name}: {len(archivos_migracion)} migraciones')
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en _auditar_migraciones (auditar_sistema.py)")
                     self.stdout.write(self.style.ERROR(f'   [ERROR] Error en {app_name}: {str(e)}'))
         
         return migraciones
@@ -242,6 +248,7 @@ class Command(BaseCommand):
             }
             self.stdout.write(f'   [OK] Multi-Tenant: {empresas_count} empresas, {sucursales_count} sucursales')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _auditar_funcionalidades (auditar_sistema.py)")
             funcionalidades['multi_tenant'] = {'implementado': False, 'error': str(e)}
             self.stdout.write(self.style.ERROR(f'   [ERROR] Multi-Tenant: {str(e)}'))
         
@@ -259,6 +266,7 @@ class Command(BaseCommand):
             }
             self.stdout.write(f'   [OK] FEFO: {lotes_count} lotes, {lotes_proximos} proximos a vencer')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _auditar_funcionalidades (auditar_sistema.py)")
             funcionalidades['fefo'] = {'implementado': False, 'error': str(e)}
             self.stdout.write(self.style.ERROR(f'   [ERROR] FEFO: {str(e)}'))
         
@@ -276,6 +284,7 @@ class Command(BaseCommand):
             }
             self.stdout.write(f'   [OK] Auditoria Forense: {logs_count} logs totales, {logs_recientes} ultimos 7 dias')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _auditar_funcionalidades (auditar_sistema.py)")
             funcionalidades['auditoria_forense'] = {'implementado': False, 'error': str(e)}
             self.stdout.write(self.style.ERROR(f'   [ERROR] Auditoria Forense: {str(e)}'))
         
@@ -293,6 +302,7 @@ class Command(BaseCommand):
             }
             self.stdout.write(f'   [OK] Triple Llave (ODS): {ordenes_count} ordenes, {ordenes_validadas} con resultados listos/entregado')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _auditar_funcionalidades (auditar_sistema.py)")
             funcionalidades['triple_llave'] = {'implementado': False, 'error': str(e)}
             self.stdout.write(self.style.ERROR(f'   [ERROR] Triple Llave: {str(e)}'))
         
@@ -306,6 +316,7 @@ class Command(BaseCommand):
             }
             self.stdout.write(f'   [OK] Perfiles Laboratorio: {perfiles_count} perfiles')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _auditar_funcionalidades (auditar_sistema.py)")
             funcionalidades['perfiles_laboratorio'] = {'implementado': False, 'error': str(e)}
             self.stdout.write(self.style.ERROR(f'   [ERROR] Perfiles Laboratorio: {str(e)}'))
         
@@ -321,6 +332,7 @@ class Command(BaseCommand):
             }
             self.stdout.write(f'   [OK] Backup Nocturno: {backups_count} backups, {backups_exitosos} exitosos')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _auditar_funcionalidades (auditar_sistema.py)")
             funcionalidades['backup_nocturno'] = {'implementado': False, 'error': str(e)}
             self.stdout.write(self.style.ERROR(f'   [ERROR] Backup Nocturno: {str(e)}'))
         
@@ -336,6 +348,7 @@ class Command(BaseCommand):
             }
             self.stdout.write(f'   [OK] Receta Digital 4.0: {recetas_count} recetas, {recetas_con_qr} con QR')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _auditar_funcionalidades (auditar_sistema.py)")
             funcionalidades['receta_digital'] = {'implementado': False, 'error': str(e)}
             self.stdout.write(self.style.ERROR(f'   [ERROR] Receta Digital 4.0: {str(e)}'))
         
@@ -349,6 +362,7 @@ class Command(BaseCommand):
             }
             self.stdout.write(f'   [OK] RH - Bitacora 39-A: {evaluaciones_count} evaluaciones')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _auditar_funcionalidades (auditar_sistema.py)")
             funcionalidades['rh_39a'] = {'implementado': False, 'error': str(e)}
             self.stdout.write(self.style.ERROR(f'   [ERROR] RH - Bitacora 39-A: {str(e)}'))
         

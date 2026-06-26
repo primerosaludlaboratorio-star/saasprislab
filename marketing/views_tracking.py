@@ -82,7 +82,7 @@ def _compact_meta(request) -> dict:
         if len(raw) > _MAX_META_JSON:
             raw = raw[:_MAX_META_JSON]
         return json.loads(raw) if raw else {}
-    except Exception:
+    except (json.JSONDecodeError, TypeError, ValueError):
         return {}
 
 
@@ -93,6 +93,7 @@ def _schedule_persist(**kwargs) -> None:
         persist_marketing_tracking_hit.delay(**kwargs)
         return
     except Exception as exc:
+        logging.getLogger(__name__).exception("Error inesperado en _schedule_persist (views_tracking.py)")
         logger.debug("Celery no disponible o fallo al encolar: %s", exc)
 
     def _run():

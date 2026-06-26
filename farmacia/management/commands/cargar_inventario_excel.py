@@ -10,6 +10,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from core.models import Producto, Empresa, Sucursal
 import openpyxl
+import logging
 
 
 class Command(BaseCommand):
@@ -65,7 +66,8 @@ class Command(BaseCommand):
             workbook = openpyxl.load_workbook(archivo, data_only=True)
             sheet = workbook.active
             self.stdout.write(f'[OK] Excel cargado: {sheet.title}')
-        except Exception as e:
+        except Exception as e:  # Integración externa: archivo Excel provisto por usuario (openpyxl, cualquier formato inválido).
+            logging.getLogger(__name__).exception("Error inesperado en handle (cargar_inventario_excel.py)")
             self.stdout.write(self.style.ERROR(f'[ERROR] No se pudo abrir el Excel: {e}'))
             return
 
@@ -156,7 +158,8 @@ class Command(BaseCommand):
                     else:
                         actualizados += 1
 
-                except Exception as e:
+                except Exception as e:  # Aislamiento fila-por-fila: error en una fila no debe abortar toda la carga.
+                    logging.getLogger(__name__).exception("Error inesperado en handle (cargar_inventario_excel.py)")
                     error_msg = f'Fila {row_num}: {e}'
                     errores.append(error_msg)
                     if len(errores) <= 10:  # Solo mostrar primeros 10 errores
@@ -230,5 +233,5 @@ class Command(BaseCommand):
             if isinstance(value, str):
                 value = value.replace(',', '').replace('$', '').strip()
             return Decimal(str(value))
-        except:
+        except (ValueError, TypeError, ArithmeticError):
             return Decimal('0.00')

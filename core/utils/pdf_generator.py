@@ -59,6 +59,7 @@ def _empresa_logo_uri_para_weasyprint(empresa) -> Optional[str]:
         if storage_path and os.path.isfile(storage_path):
             return Path(storage_path).as_uri()
     except Exception as exc:
+        logging.getLogger(__name__).exception("Error inesperado en _empresa_logo_uri_para_weasyprint (pdf_generator.py)")
         logger.debug('Logo empresa no resuelto para PDF: %s', exc)
     return None
 
@@ -488,6 +489,7 @@ def test_pdf_generation():
         return True
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_pdf_generation (pdf_generator.py)")
         print(f"❌ Error: {e}")
         return False
 

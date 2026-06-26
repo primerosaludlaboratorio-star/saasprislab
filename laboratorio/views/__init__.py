@@ -11,11 +11,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import models, transaction
 from django.db.models import Q
+from django.db.utils import DatabaseError
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
 
-from laboratorio.models import Estudio, Medico, PerfilLaboratorio
+from core.models import Medico
+from laboratorio.models import Estudio, PerfilLaboratorio
 
 # Origen de recepción (mismos valores que laboratorio.Orden; evita depender del modelo legacy)
 _ORIGEN_PUBLICO_GENERAL = 'PUBLICO_GENERAL'
@@ -148,7 +151,7 @@ def recepcion_lab(request):
                     msg += f" | Perfiles: {', '.join(estudios_agregados_por_perfil.keys())}"
                 messages.success(request, msg)
                 return redirect('recepcion_lab')
-        except Exception as e:
+        except (DatabaseError, ValidationError) as e:
             messages.error(request, f"Error al crear la orden: {str(e)}")
 
     cotizacion_flash = request.session.get('cotizacion_flash', None)
@@ -170,7 +173,7 @@ def recepcion_lab(request):
             if perfiles_ids:
                 perfiles_precargados = list(PerfilLaboratorio.objects.filter(id__in=perfiles_ids).values_list('id', flat=True))
             del request.session['cotizacion_flash']
-        except Exception:
+        except (KeyError, TypeError):
             pass
 
     context = {
@@ -254,7 +257,7 @@ def crear_paciente_ajax(request):
                 }
             )
             paciente = resultado['core']
-        except Exception as e:
+        except (DatabaseError, ValidationError) as e:
             return JsonResponse({
                 'success': False,
                 'error': f'Error al crear el paciente: {str(e)}'
@@ -281,7 +284,7 @@ def crear_paciente_ajax(request):
             'success': False,
             'error': 'Error al procesar los datos JSON.'
         }, status=400)
-    except Exception as e:
+    except (DatabaseError, ValidationError) as e:
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -352,7 +355,7 @@ def crear_medico_ajax(request):
             'success': False,
             'error': 'Error al procesar los datos JSON.'
         }, status=400)
-    except Exception as e:
+    except (DatabaseError, ValidationError) as e:
         return JsonResponse({
             'success': False,
             'error': str(e)

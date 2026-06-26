@@ -478,6 +478,7 @@ def _buscar_analito_por_codigo_equipo(codigo: str, empresa):
         if p and (p.abreviatura or '').strip():
             return base.filter(abreviatura__iexact=p.abreviatura.strip()).first()
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _buscar_analito_por_codigo_equipo (interfaces_lims_service.py)")
         pass
     return None
 
@@ -490,6 +491,7 @@ def _resolver_equipo_por_ip(ip: str):
 
         return Equipo.objects.filter(ip_address=ip.strip(), activo=True).first()
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _resolver_equipo_por_ip (interfaces_lims_service.py)")
         return None
 
 

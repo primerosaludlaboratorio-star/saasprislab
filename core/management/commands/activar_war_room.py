@@ -6,6 +6,7 @@ Se ejecuta en cada deploy para garantizar que ninguna empresa quede sin el War R
 Idempotente: se puede correr N veces sin efectos secundarios.
 """
 from django.core.management.base import BaseCommand
+import logging
 
 
 class Command(BaseCommand):
@@ -22,6 +23,7 @@ class Command(BaseCommand):
                 activar('WAR_ROOM_ACTIVO', empresa)
                 activadas += 1
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (activar_war_room.py)")
                 self.stderr.write(f'[WARN] Empresa {empresa.id}: {e}')
 
         self.stdout.write(

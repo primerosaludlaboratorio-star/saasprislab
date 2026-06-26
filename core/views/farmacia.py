@@ -52,11 +52,16 @@ from farmacia.views.inventario import (  # noqa: E402
     validar_pin_precio_neto,
 )
 from farmacia.views.devoluciones import (  # noqa: E402
+    _es_gerente_o_admin,
     buscar_venta_devolucion,
     detalle_devolucion,
     historial_devoluciones,
+    procesar_devolucion,
     procesar_devolucion_venta,
 )
+
+# Alias legacy exportado por tests y vistas antiguas de core.views.farmacia
+es_gerente_o_admin = _es_gerente_o_admin
 from farmacia.views.reportes import (  # noqa: E402
     facturacion_40,
     lista_ventas_farmacia,
@@ -325,5 +330,6 @@ __all__ = [
     "reporte_ventas_metodo_pago",
 ]
 
-# Alias legacy todavía consumido por config/urls.py en producción.
-procesar_devolucion = procesar_devolucion_venta
+# Alias legacy todavía consumido por config/urls.py en producción: procesar_devolucion
+# se importa directamente desde farmacia.views.devoluciones.
+

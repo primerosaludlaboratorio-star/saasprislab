@@ -17,6 +17,7 @@ from core.models import Empresa, Paciente, ConsultaMedica as CoreConsultaMedica,
 from core.models import Medico
 from core.services.paciente_service import obtener_timeline_paciente
 from consultorio.models import ConsultaMedica, Vademecum
+import logging
 
 
 User = get_user_model()
@@ -136,29 +137,32 @@ class ConsultorioViewTests(TestCase):
     def test_lista_trabajo_view(self):
         """Test lista_trabajo view returns 200."""
         try:
-            url = reverse('consultorio:lista_trabajo')
+            url = reverse('consultorio:lista_trabajo_medico')
             response = self.client.get(url, follow=True)
             self.assertIn(response.status_code, [200, 301, 302])
         except Exception as e:
-            self.skipTest(f"lista_trabajo view not available: {e}")
+            logging.getLogger(__name__).exception("Error inesperado en test_lista_trabajo_view (tests.py)")
+            self.skipTest(f"lista_trabajo_medico view not available: {e}")
     
     def test_dashboard_medico_consultorio_view(self):
         """Test dashboard_medico_consultorio view returns 200."""
         try:
-            url = reverse('consultorio:dashboard_medico_consultorio')
+            url = reverse('consultorio:dashboard_consultorio')
             response = self.client.get(url, follow=True)
             self.assertIn(response.status_code, [200, 301, 302])
         except Exception as e:
-            self.skipTest(f"dashboard_medico_consultorio view not available: {e}")
+            logging.getLogger(__name__).exception("Error inesperado en test_dashboard_medico_consultorio_view (tests.py)")
+            self.skipTest(f"dashboard_consultorio view not available: {e}")
     
     def test_agenda_medica_view(self):
         """Test agenda_medica view returns 200."""
         try:
-            url = reverse('consultorio:agenda_medica')
+            url = reverse('consultorio:agenda_medico')
             response = self.client.get(url, follow=True)
             self.assertIn(response.status_code, [200, 301, 302])
         except Exception as e:
-            self.skipTest(f"agenda_medica view not available: {e}")
+            logging.getLogger(__name__).exception("Error inesperado en test_agenda_medica_view (tests.py)")
+            self.skipTest(f"agenda_medico view not available: {e}")
     
     def test_views_require_authentication(self):
         """Test that views require authentication."""
@@ -166,18 +170,20 @@ class ConsultorioViewTests(TestCase):
         self.client.logout()
         
         try:
-            url = reverse('consultorio:lista_trabajo')
+            url = reverse('consultorio:lista_trabajo_medico')
             response = self.client.get(url)
             # Should redirect to login (302) or return 403
             self.assertIn(response.status_code, [302, 403])
         except Exception as e:
-            self.skipTest(f"lista_trabajo view not available: {e}")
+            logging.getLogger(__name__).exception("Error inesperado en test_views_require_authentication (tests.py)")
+            self.skipTest(f"lista_trabajo_medico view not available: {e}")
 
     def test_nueva_consulta_con_paciente_guarda_consulta_finalizada_con_folio(self):
         """El flujo médico debe autogenerar folio al guardar una consulta finalizada."""
         try:
             url = reverse('consultorio:nueva_consulta_paciente', args=[self.paciente.uuid])
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_nueva_consulta_con_paciente_guarda_consulta_finalizada_con_folio (tests.py)")
             self.skipTest(f"nueva_consulta_paciente view not available: {e}")
 
         response = self.client.post(url, {

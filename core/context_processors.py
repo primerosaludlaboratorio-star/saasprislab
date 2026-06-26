@@ -13,6 +13,7 @@ Inyecta en TODOS los templates:
 ═══════════════════════════════════════════════════════════════════════════════
 """
 from django.conf import settings
+import logging
 
 
 def empresa_actual(request):
@@ -39,6 +40,7 @@ def empresa_actual(request):
             try:
                 logo_url = logo.url
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en empresa_actual (context_processors.py)")
                 pass
 
     return {

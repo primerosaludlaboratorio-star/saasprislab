@@ -521,6 +521,7 @@ def _tool_estadisticas_dia(args, empresa):
             empresa=empresa, fecha__date=fecha, estado='COMPLETADA'
         ).aggregate(t=Sum('total'))['t'] or 0
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _tool_estadisticas_dia (pris_ia.py)")
         pass
     return {
         "fecha": fecha.isoformat(),
@@ -598,6 +599,7 @@ def _tool_resultados_orden(args, empresa):
                 "paciente": orden.paciente.nombre_completo if orden.paciente else "",
                 "estado": orden.estado, "estudios": estudios}
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en _tool_resultados_orden (pris_ia.py)")
         return {"error": str(e)}
 
 
@@ -669,6 +671,7 @@ def _tool_guardar_resultado(args, empresa, user):
             ),
         }
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en _tool_guardar_resultado (pris_ia.py)")
         return {"error": str(e)}
 
 
@@ -727,6 +730,7 @@ def _tool_buscar_estudio(args, empresa):
                             "unidad": rango.unidad or param.unidades or "",
                         })
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _tool_buscar_estudio (pris_ia.py)")
             pass
 
         _dias = (e.dias_entrega or e.tiempo_proceso or "") or "1"
@@ -801,6 +805,7 @@ def _tool_consultar_inventario(args, empresa):
             stock_lotes = Lote.objects.filter(producto=p, cantidad__gt=0).aggregate(
                 total=DjSum('cantidad'))['total'] or 0
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _tool_consultar_inventario (pris_ia.py)")
             stock_lotes = p.stock or 0
         items.append({
             "id": p.id,
@@ -852,6 +857,7 @@ def _tool_auditar_errores_recientes(args, empresa):
             ),
         }
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en _tool_auditar_errores_recientes (pris_ia.py)")
         return {"error": str(e)}
 
 
@@ -878,6 +884,7 @@ def _tool_generar_corte_caja(args, empresa, user):
                 mp = getattr(pago, 'metodo_pago', 'OTRO')
                 metodos[mp] = metodos.get(mp, 0) + float(getattr(pago, 'monto', 0))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _tool_generar_corte_caja (pris_ia.py)")
         metodos = {}
 
     # Devoluciones del día
@@ -913,6 +920,7 @@ def _tool_auditoria_sistema_completa(args, empresa, user):
             c.execute("SELECT 1")
         reporte["checks"]["base_datos"] = {"ok": True, "msg": "Conexión activa"}
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en _tool_auditoria_sistema_completa (pris_ia.py)")
         reporte["checks"]["base_datos"] = {"ok": False, "msg": str(e)[:100]}
 
     # 2. Modelos críticos
@@ -929,6 +937,7 @@ def _tool_auditoria_sistema_completa(args, empresa, user):
             m = django_apps.get_model(app, model)
             counts[label] = m.objects.count()
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _tool_auditoria_sistema_completa (pris_ia.py)")
             counts[label] = f"ERROR: {e}"
     reporte["checks"]["modelos"] = counts
 
@@ -946,6 +955,7 @@ def _tool_auditoria_sistema_completa(args, empresa, user):
             "criticos": qs_pend.filter(severidad="CRITICA").count(),
         }
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en _tool_auditoria_sistema_completa (pris_ia.py)")
         reporte["checks"]["sentinel"] = {"ok": False, "error": str(e)[:100]}
 
     # 4. Google Drive
@@ -1062,12 +1072,14 @@ def _tool_analizar_imagen_documento(args, empresa, request):
                 body = json.loads(request.body)
                 imagen_b64 = body.get('imagen_b64', '')
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en _tool_analizar_imagen_documento (pris_ia.py)")
                 pass
         if not imagen_b64:
             return {'error': 'No se adjuntó imagen para analizar.'}
         resultado = analizar_documento(imagen_b64, empresa=empresa, usuario=request.user)
         return resultado
     except Exception as exc:
+        logging.getLogger(__name__).exception("Error inesperado en _tool_analizar_imagen_documento (pris_ia.py)")
         return {'error': f'Error en análisis de documento: {exc}'}
 
 
@@ -1300,6 +1312,7 @@ def procesar_pregunta_con_ia(
     try:
         return json.loads(response.content.decode("utf-8"))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en procesar_pregunta_con_ia (pris_ia.py)")
         return {
             "status": "error",
             "respuesta": "Prisci no pudo procesar la respuesta del canal.",
@@ -1611,6 +1624,7 @@ def api_rechazar_accion(request, accion_id):
         body = json.loads(request.body)
         motivo = body.get('motivo', '')
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_rechazar_accion (pris_ia.py)")
         motivo = ''
     accion.rechazar(request.user, motivo)
     logger.info(f"AccionPRIS #{accion_id} RECHAZADA por {request.user.username}")
@@ -1651,6 +1665,6 @@ def _detectar_tool_call(texto):
         tool_args = obj.get("args", {})
         if tool_name and isinstance(tool_name, str):
             return tool_name, tool_args if isinstance(tool_args, dict) else {}
-    except Exception:
+    except (json.JSONDecodeError, ValueError, KeyError):
         pass
     return None

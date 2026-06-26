@@ -23,6 +23,7 @@ def _retry_after_seconds(response):
     try:
         header = response.headers.get('Retry-After')
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _retry_after_seconds (push_service.py)")
         header = None
     if not header:
         return 60

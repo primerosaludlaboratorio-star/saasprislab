@@ -16,6 +16,7 @@ import json
 from core.models import (
     Empresa, Venta, Pago, GastoCaja, GastoOperativo, Producto, Lote, DetalleVenta
 )
+import logging
 # Modelos opcionales (no migrados en todos los entornos)
 try:
     from core.models import Compra
@@ -137,6 +138,7 @@ def dashboard_analytics(request):
             total_ordenes_lab = ordenes_lab_core.count()
             ordenes_validadas = ordenes_lab_core.filter(estado='ENTREGADO').count()
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en dashboard_analytics (analytics.py)")
             total_ordenes_lab = 0
             ordenes_validadas = 0
     else:

@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 
 from core.utils.auditoria_nativa import registrar_cambio_campo
+import logging
 
 
 @login_required
@@ -81,6 +82,7 @@ def api_auditar_campo(request):
             'mensaje': 'Error al procesar JSON'
         }, status=400)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_auditar_campo (auditoria_api.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': f'Error inesperado: {str(e)}'

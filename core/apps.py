@@ -20,12 +20,12 @@ class CoreConfig(AppConfig):
             from django.contrib import admin
             from config.admin_site import PrislabAdminSite
             admin.site.__class__ = PrislabAdminSite
-        except Exception:
+        except (ImportError, AttributeError):
             pass  # Nunca bloquear el arranque
 
         # Verificación de entorno al arranque (solo en producción)
         try:
             from production_env_check import verificar_y_loguear
             verificar_y_loguear()
-        except Exception:
-            pass  # Nunca bloquear el arranque por el verificador
+        except ImportError:
+            pass  # Módulo de verificación no disponible en este entorno

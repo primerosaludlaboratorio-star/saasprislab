@@ -110,8 +110,11 @@ class FacturamaAPI:
                 'success': False,
                 'error': 'No se pudo conectar con el servicio de facturación. Verifique su conexión o intente más tarde.'
             }
-        except Exception as e:
-            logger.exception("Facturama: error al timbrar")
+        except (ValueError, KeyError, TypeError, OSError) as e:
+            # Justificación: Integración externa no confiable — respuesta malformada del PAC
+            # (JSON inválido, campos faltantes, error de serialización lxml/pytz).
+            # No debe propagarse: el caller espera siempre un dict con success/error.
+            logger.exception("Facturama: error inesperado al timbrar — %s", e)
             return {
                 'success': False,
                 'error': 'Error al timbrar la factura. Por favor intente más tarde o contacte a soporte.'

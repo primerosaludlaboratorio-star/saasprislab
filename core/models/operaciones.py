@@ -183,6 +183,7 @@ class MensajeInterno(models.Model):
         ('texto', 'Texto'),
         ('audio', 'Nota de Voz'),
     ]
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='mensajes_internos', verbose_name="Empresa")
     remitente = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='mensajes_enviados', verbose_name="Remitente")
     destinatario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='mensajes_recibidos', verbose_name="Destinatario")
     mensaje = models.TextField(blank=True, default='', verbose_name="Mensaje")
@@ -196,6 +197,10 @@ class MensajeInterno(models.Model):
         verbose_name = "Mensaje Interno"
         verbose_name_plural = "Mensajes Internos"
         ordering = ['fecha']
+        indexes = [
+            models.Index(fields=['empresa', 'remitente', 'destinatario']),
+            models.Index(fields=['empresa', '-fecha']),
+        ]
 
 
 # ==============================================================================

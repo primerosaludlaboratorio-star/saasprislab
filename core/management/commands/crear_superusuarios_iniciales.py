@@ -49,17 +49,14 @@ class Command(BaseCommand):
             {
                 'username': 'olga',
                 'email': 'olga@labcorecloud.com',
-                'password': 'Prislab@Olga2026!',
             },
             {
                 'username': 'jonathan',
                 'email': 'jonathan@labcorecloud.com',
-                'password': 'Prislab@Jonathan2026!',
             },
             {
                 'username': 'admin',
                 'email': 'admin@labcorecloud.com',
-                'password': 'Prislab@Admin2026!',
             },
         ]
 

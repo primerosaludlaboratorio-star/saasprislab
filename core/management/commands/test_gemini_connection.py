@@ -5,6 +5,7 @@ Usa el cliente centralizado google.genai (SDK unificado v1.60+).
 from django.core.management.base import BaseCommand
 from django.conf import settings
 import sys
+import logging
 
 
 class Command(BaseCommand):
@@ -42,6 +43,7 @@ class Command(BaseCommand):
             client = get_gemini_client()
             self.stdout.write(self.style.SUCCESS('   [OK] Cliente creado correctamente'))
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (test_gemini_connection.py)")
             self.stdout.write(self.style.ERROR(f'   [ERROR] {e}'))
             sys.exit(1)
 
@@ -58,6 +60,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('   Estado: OPERATIVO'))
             self.stdout.write(self.style.SUCCESS('   Modelo: gemini-2.0-flash'))
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (test_gemini_connection.py)")
             self.stdout.write(self.style.ERROR(f'   [ERROR] Ping fallido: {e}'))
             sys.exit(1)
 

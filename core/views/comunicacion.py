@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.shortcuts import render
 
 from core.models import MensajeInterno, Usuario
+import logging
 
 
 @login_required
@@ -44,6 +45,7 @@ def api_enviar_mensaje(request):
             return JsonResponse({'status': 'error', 'mensaje': 'Destinatario no encontrado'}, status=404)
         
         msg = MensajeInterno.objects.create(
+            empresa=empresa,
             remitente=request.user,
             destinatario=destinatario,
             mensaje=mensaje,
@@ -59,6 +61,7 @@ def api_enviar_mensaje(request):
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'mensaje': 'JSON invalido'}, status=400)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_enviar_mensaje (comunicacion.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 
@@ -84,6 +87,7 @@ def api_enviar_audio(request):
             return JsonResponse({'status': 'error', 'mensaje': 'Destinatario no encontrado'}, status=404)
         
         msg = MensajeInterno.objects.create(
+            empresa=empresa,
             remitente=request.user,
             destinatario=destinatario,
             mensaje='',
@@ -99,6 +103,7 @@ def api_enviar_audio(request):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_enviar_audio (comunicacion.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 
@@ -122,8 +127,10 @@ def api_obtener_mensajes(request):
     except Usuario.DoesNotExist:
         return JsonResponse({'status': 'error', 'mensaje': 'Destinatario no encontrado'}, status=404)
     
-    # Obtener mensajes bidireccionales
+    # Obtener mensajes bidireccionales (con filtro de empresa explícito)
     queryset = MensajeInterno.objects.filter(
+        empresa=empresa
+    ).filter(
         Q(remitente=request.user, destinatario=destinatario) |
         Q(remitente=destinatario, destinatario=request.user)
     )
@@ -140,6 +147,7 @@ def api_obtener_mensajes(request):
     
     # Marcar como leidos los mensajes recibidos
     MensajeInterno.objects.filter(
+        empresa=empresa,
         remitente=destinatario,
         destinatario=request.user,
         leido=False
@@ -180,12 +188,12 @@ def api_listar_conversaciones(request):
     if not empresa:
         return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}, status=400)
 
-    # 1) IDs de usuarios con conversacion (2 queries → 1 con union)
+    # 1) IDs de usuarios con conversacion (2 queries → 1 con union, filtro empresa)
     enviados = MensajeInterno.objects.filter(
-        remitente=user
+        empresa=empresa, remitente=user
     ).values_list('destinatario_id', flat=True).distinct()
     recibidos = MensajeInterno.objects.filter(
-        destinatario=user
+        empresa=empresa, destinatario=user
     ).values_list('remitente_id', flat=True).distinct()
     user_ids = set(enviados) | set(recibidos)
 
@@ -204,19 +212,21 @@ def api_listar_conversaciones(request):
         )
     }
 
-    # 3) Contar no leidos por remitente de una sola vez (1 query)
+    # 3) Contar no leidos por remitente de una sola vez (1 query, filtro empresa)
     no_leidos_qs = (
         MensajeInterno.objects
-        .filter(destinatario=user, leido=False, remitente_id__in=user_ids)
+        .filter(empresa=empresa, destinatario=user, leido=False, remitente_id__in=user_ids)
         .values('remitente_id')
         .annotate(cnt=Count('id'))
     )
     no_leidos_map = {row['remitente_id']: row['cnt'] for row in no_leidos_qs}
 
-    # 4) Ultimo mensaje por conversacion (1 query con subquery)
+    # 4) Ultimo mensaje por conversacion (1 query con subquery, filtro empresa)
     ultimo_fecha_sub = (
         MensajeInterno.objects
         .filter(
+            empresa=empresa
+        ).filter(
             Q(remitente=user, destinatario_id=OuterRef('pk')) |
             Q(destinatario=user, remitente_id=OuterRef('pk'))
         )
@@ -227,9 +237,11 @@ def api_listar_conversaciones(request):
     resultados = []
     total_no_leidos = 0
 
-    # Obtener todos los ultimos mensajes de UNA SOLA VEZ (1 query, no N)
+    # Obtener todos los ultimos mensajes de UNA SOLA VEZ (1 query, no N, filtro empresa)
     ultimos_mensajes = {}
     all_msgs = MensajeInterno.objects.filter(
+        empresa=empresa
+    ).filter(
         Q(remitente=user, destinatario_id__in=user_ids) |
         Q(remitente_id__in=user_ids, destinatario=user)
     ).order_by('-fecha').values(

@@ -24,6 +24,7 @@ import sys
 import json
 from pathlib import Path
 from datetime import datetime
+import logging
 
 BASE_URL = "http://localhost:8765"
 SCREENSHOTS_DIR = Path("screenshots_e2e")
@@ -61,6 +62,7 @@ async def check_visible(page, selector, mensaje, timeout=5000):
         log_ok(mensaje)
         return True
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en log_info (test_ui_playwright.py)")
         log_fail(mensaje, str(e)[:80])
         return False
 
@@ -80,6 +82,7 @@ async def check_text_visible(page, text, mensaje):
         log_ok(mensaje)
         return True
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en log_info (test_ui_playwright.py)")
         # try contains
         try:
             content = await page.content()
@@ -87,6 +90,7 @@ async def check_text_visible(page, text, mensaje):
                 log_ok(f"{mensaje} (texto en HTML)")
                 return True
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en log_info (test_ui_playwright.py)")
             pass
         log_fail(mensaje, f"Texto '{text}' no visible")
         return False
@@ -177,6 +181,7 @@ async def main():
                 await screenshot(page, "05_dashboard_director")
                 await check_no_error(page, "Dashboard director sin errores")
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en log_info (test_ui_playwright.py)")
                 log_fail("Dashboard director", str(e)[:80])
 
             # ─── BLOQUE 3: FARMACIA — Flujo PDV completo ─────────────────────
@@ -206,6 +211,7 @@ async def main():
                 else:
                     log_fail("Producto no aparece en búsqueda PDV")
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en log_info (test_ui_playwright.py)")
                 log_fail("Búsqueda en PDV", str(e)[:100])
 
             # Inventario farmacia
@@ -368,6 +374,7 @@ async def main():
                 results_div = page.locator('#omnisearchResults')
                 log_ok("Omnisearch visible y acepta input")
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en log_info (test_ui_playwright.py)")
                 log_fail("Omnisearch", str(e)[:120])
 
             # ─── BLOQUE 14: FLUJO COTIZACIÓN ─────────────────────────────────
@@ -419,6 +426,7 @@ async def main():
                 await logout_btn.click()
                 await page.wait_for_load_state('networkidle', timeout=5000)
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en log_info (test_ui_playwright.py)")
                 # Hacer logout directo
                 await page.goto(f"{BASE_URL}/logout/", wait_until='networkidle')
 
@@ -430,6 +438,7 @@ async def main():
                 log_fail("Logout", f"URL: {current}")
 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en log_info (test_ui_playwright.py)")
             print(f"\n{FAIL} Error inesperado: {e}")
             await screenshot(page, "ERROR_inesperado")
         finally:

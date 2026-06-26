@@ -32,6 +32,7 @@ from core.models import Empresa
 from core.tenant import clear_current_empresa, set_current_empresa, tenant_bypass
 from core.utils.default_empresa import resolve_default_empresa_sistema
 from lims.models import Analito, ValorReferenciaAnalito
+import logging
 
 
 BASE_DIR = getattr(settings, 'BASE_DIR', os.path.dirname(
@@ -227,6 +228,7 @@ class Command(BaseCommand):
                                     else:
                                         actualizados += 1
                             except Exception as e:
+                                logging.getLogger(__name__).exception("Error inesperado en handle (importar_catalogo_lims.py)")
                                 errores += 1
                                 self.stdout.write(
                                     self.style.ERROR(
@@ -298,6 +300,7 @@ class Command(BaseCommand):
                                     )
                                     v_creados += 1
                             except Exception as e:
+                                logging.getLogger(__name__).exception("Error inesperado en handle (importar_catalogo_lims.py)")
                                 v_errores += 1
                                 self.stdout.write(
                                     self.style.ERROR(

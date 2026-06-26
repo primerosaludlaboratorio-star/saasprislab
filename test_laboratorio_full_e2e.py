@@ -16,12 +16,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+import logging
 
 BASE_URL = os.environ.get("PRISLAB_TEST_BASE_URL", "https://prislab-v5-811785477499.us-central1.run.app")
 USERNAME = os.environ.get("PRISLAB_TEST_USERNAME", "admin")
 PASSWORD = os.environ.get("PRISLAB_TEST_PASSWORD")
-if not PASSWORD:
-    raise RuntimeError("Debe configurar la variable de entorno PRISLAB_TEST_PASSWORD antes de ejecutar este test.")
 SCREENSHOT_DIR = "test_screenshots_laboratorio"
 TIMEOUT = 15
 WAIT = 1.5
@@ -45,6 +44,7 @@ def console_errors(driver):
     try:
         return [e.get("message", str(e)) for e in driver.get_log("browser") if e.get("level") == "SEVERE"]
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en console_errors (test_laboratorio_full_e2e.py)")
         return []
 
 def login(driver):
@@ -58,6 +58,7 @@ def login(driver):
         driver.find_element(By.CSS_SELECTOR, "button[type='submit'], input[type='submit']").click()
         time.sleep(3)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en login (test_laboratorio_full_e2e.py)")
         act(driver, "Login", False, str(e))
         return False
     if "/dashboard/" in driver.current_url or "/farmacia" in driver.current_url or "/home" in driver.current_url:
@@ -92,6 +93,7 @@ def run():
             driver.find_element(By.XPATH, "//a[contains(@href,'/laboratorio/recepcion/') or contains(.,'Registro de Orden')]").click()
             time.sleep(3)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
             driver.get(BASE_URL.rstrip("/") + "/laboratorio/recepcion/")
             time.sleep(3)
             act(driver, "Sidebar Lab -> Registro Orden", False, str(e)[:150])
@@ -113,6 +115,7 @@ def run():
             res = driver.find_elements(By.CSS_SELECTOR, "#resultados-pacientes-lab .list-group-item, #resultados-pacientes-lab li")
             act(driver, "Patient search (sofia)", True, f"Results area: {len(res)} items")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
             act(driver, "Patient search (sofia)", False, str(e)[:150])
             err(f"Patient search: {e}")
         # Study search "bio"
@@ -125,6 +128,7 @@ def run():
             res = driver.find_elements(By.CSS_SELECTOR, "#resultados-estudios .list-group-item-action, #resultados-estudios .list-group-item")
             act(driver, "Study search (bio)", True, f"Results: {len(res)} items")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
             act(driver, "Study search (bio)", False, str(e)[:150])
             err(f"Study search: {e}")
         # Generar Orden (CONFIRMAR ORDEN)
@@ -138,6 +142,7 @@ def run():
             err_visible = any("error" in (a.text or "").lower() or "debe" in (a.text or "").lower() for a in alerts)
             act(driver, "Generar Orden (click)", True, "Expected validation if no patient/studies" if err_visible else "Clicked")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
             act(driver, "Generar Orden", False, str(e)[:150])
             err(f"Generar Orden: {e}")
         report["errors"].extend(console_errors(driver))
@@ -150,6 +155,7 @@ def run():
             driver.find_element(By.XPATH, "//a[contains(@href,'/laboratorio/consulta-ordenes/') or contains(.,'Consulta de Órdenes')]").click()
             time.sleep(3)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
             driver.get(BASE_URL.rstrip("/") + "/laboratorio/consulta-ordenes/")
             time.sleep(3)
         report["pages_visited"].append({"url": driver.current_url, "note": "Consulta Ordenes"})
@@ -166,6 +172,7 @@ def run():
                     link = row[0].find_element(By.CSS_SELECTOR, "a[href*='detalle']")
                     link.click()
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
                     row[0].click()
                 time.sleep(2)
                 ss(driver, "07_detalle_orden")
@@ -174,6 +181,7 @@ def run():
             else:
                 act(driver, "Click order row", False, "No rows found")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
             act(driver, "Click order row", False, str(e)[:150])
 
         # --- STEP 4: Detalle - study search, Agregar Pago, print buttons ---
@@ -191,6 +199,7 @@ def run():
                 else:
                     act(driver, "Detalle study search bar", False, "Input not found")
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
                 act(driver, "Detalle study search", False, str(e)[:100])
             try:
                 agregar_pago = driver.find_elements(By.XPATH, "//button[contains(.,'Agregar Pago') or contains(.,'Pago')]")
@@ -202,6 +211,7 @@ def run():
                 else:
                     act(driver, "Agregar Pago button", False, "Not found")
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
                 act(driver, "Agregar Pago", False, str(e)[:100])
             try:
                 reimprimir = driver.find_elements(By.XPATH, "//a[contains(@href,'ticket') or contains(.,'Recibo') or contains(.,'Reimprimir')]")
@@ -213,6 +223,7 @@ def run():
                         act(driver, f"Print button {lbl}", False, "Not found")
                 ss(driver, "10_detalle_print_buttons")
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
                 act(driver, "Print buttons check", False, str(e)[:100])
         report["errors"].extend(console_errors(driver))
 
@@ -224,6 +235,7 @@ def run():
             driver.find_element(By.XPATH, "//a[contains(@href,'/laboratorio/lista-trabajo/') or contains(.,'Registro de Resultados') or contains(.,'Lista de Trabajo')]").click()
             time.sleep(3)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
             driver.get(BASE_URL.rstrip("/") + "/laboratorio/lista-trabajo/")
             time.sleep(3)
         report["pages_visited"].append({"url": driver.current_url, "note": "Lista trabajo"})
@@ -251,6 +263,7 @@ def run():
             else:
                 act(driver, "Click order in Lista Trabajo", False, "No rows")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
             act(driver, "Lista Trabajo -> Captura", False, str(e)[:150])
         report["errors"].extend(console_errors(driver))
 
@@ -262,6 +275,7 @@ def run():
             driver.find_element(By.XPATH, "//a[contains(@href,'/laboratorio/entrega-resultados/') or contains(.,'Entrega de Resultados')]").click()
             time.sleep(3)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
             driver.get(BASE_URL.rstrip("/") + "/laboratorio/entrega-resultados/")
             time.sleep(3)
         report["pages_visited"].append({"url": driver.current_url, "note": "Entrega resultados"})
@@ -273,15 +287,18 @@ def run():
             else:
                 act(driver, "Entrega Resultados page", True, "Page loaded")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
             act(driver, "Entrega Resultados", False, str(e)[:100])
         report["errors"].extend(console_errors(driver))
         ss(driver, "15_final")
 
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
         err(f"Fatal: {e}")
         try:
             ss(driver, "99_fatal")
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_laboratorio_full_e2e.py)")
             pass
     finally:
         driver.quit()
@@ -312,4 +329,6 @@ def write_report():
         json.dump(report, j, indent=2)
 
 if __name__ == "__main__":
+    if not PASSWORD:
+        raise RuntimeError("Debe configurar la variable de entorno PRISLAB_TEST_PASSWORD antes de ejecutar este test.")
     run()

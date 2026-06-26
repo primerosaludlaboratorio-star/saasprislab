@@ -167,6 +167,7 @@ def api_rangos_parametro(request, parametro_id):
                 )
             return JsonResponse({'ok': True}, status=201)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en api_rangos_parametro (laboratorio_config.py)")
             return JsonResponse({'error': str(e)}, status=400)
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)

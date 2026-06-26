@@ -22,6 +22,7 @@ REGLA DE ORO:
 """
 from django.core.management.base import BaseCommand
 from django.db import transaction
+import logging
 
 
 class Command(BaseCommand):
@@ -253,6 +254,7 @@ class Command(BaseCommand):
                     action = 'Creado' if created else 'Actualizado'
                     self.stdout.write(self.style.SUCCESS(f'    [{action}] {clave} = {valor}'))
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en _configurar_folios (arranque_frio.py)")
                     self.stdout.write(self.style.WARNING(
                         f'    ConfiguracionSistema no disponible ({e}).\n'
                         f'    Agrega manualmente: {clave}={valor} en el panel de administración.'
@@ -269,6 +271,7 @@ class Command(BaseCommand):
                 model_class.objects.all().delete()
                 self.stdout.write(self.style.SUCCESS(f'  [OK] {nombre}: {n:,} eliminados'))
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _borrar (arranque_frio.py)")
             self.stdout.write(self.style.ERROR(f'  [ERROR] {nombre}: {e}'))
 
     def _contar(self, model_path):
@@ -278,4 +281,5 @@ class Command(BaseCommand):
             klass = getattr(module, model)
             return klass.objects.count()
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _contar (arranque_frio.py)")
             return 0

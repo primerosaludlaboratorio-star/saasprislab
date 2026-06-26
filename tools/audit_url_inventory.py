@@ -3,6 +3,7 @@ import sys
 import json
 import argparse
 from datetime import datetime, timezone
+import logging
 
 
 def _iso():
@@ -14,6 +15,7 @@ def _pattern_to_str(p):
         # Django 2/3/4: RoutePattern/RegexPattern
         return str(getattr(p, "pattern", p))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _pattern_to_str (audit_url_inventory.py)")
         return str(p)
 
 
@@ -22,6 +24,7 @@ def _iter_urlpatterns(urlpatterns, prefix=""):
         try:
             pattern = _pattern_to_str(p.pattern)
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _iter_urlpatterns (audit_url_inventory.py)")
             pattern = ""
 
         full = (prefix + pattern).replace("//", "/")
@@ -39,6 +42,7 @@ def _iter_urlpatterns(urlpatterns, prefix=""):
         try:
             view_name = f"{cb.__module__}.{getattr(cb, '__name__', cb.__class__.__name__)}"
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _iter_urlpatterns (audit_url_inventory.py)")
             view_name = str(cb)
 
         url_name = getattr(p, "name", None)
@@ -71,6 +75,7 @@ def main():
 
         django.setup()
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en main (audit_url_inventory.py)")
         print(
             json.dumps(
                 {

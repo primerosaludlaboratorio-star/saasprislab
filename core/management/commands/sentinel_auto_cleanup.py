@@ -112,6 +112,7 @@ class Command(BaseCommand):
 
             return {'deleted': count if not dry_run else 0, 'found': count}
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _purge_sessions (sentinel_auto_cleanup.py)")
             self.stdout.write(self.style.ERROR(f'  ✗ Error: {e}'))
             return {'deleted': 0, 'found': 0, 'error': str(e)}
 
@@ -158,6 +159,7 @@ class Command(BaseCommand):
             return {'archived': count, 'found': count}
 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _archive_audit_logs (sentinel_auto_cleanup.py)")
             self.stdout.write(self.style.ERROR(f'  ✗ Error: {e}'))
             return {'archived': 0, 'found': 0, 'error': str(e)}
 
@@ -187,6 +189,7 @@ class Command(BaseCommand):
                             ADD COLUMN IF NOT EXISTS archivado_en TIMESTAMP DEFAULT NOW()
                         """)
                     except Exception:
+                        logging.getLogger(__name__).exception("Error inesperado en _move_to_archive (sentinel_auto_cleanup.py)")
                         pass
 
                 # Mover datos
@@ -234,6 +237,7 @@ class Command(BaseCommand):
             return {'deleted': count if not dry_run else 0, 'found': count}
 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _cleanup_sentinel_incidents (sentinel_auto_cleanup.py)")
             self.stdout.write(self.style.ERROR(f'  ✗ Error: {e}'))
             return {'deleted': 0, 'found': 0, 'error': str(e)}
 
@@ -273,6 +277,7 @@ class Command(BaseCommand):
                         optimized_count += 1
                         self.stdout.write(f'  ✓ VACUUM ANALYZE {table}')
                     except Exception as e:
+                        logging.getLogger(__name__).exception("Error inesperado en _vacuum_analyze (sentinel_auto_cleanup.py)")
                         # Tabla puede no existir
                         self.stdout.write(f'  - {table}: {str(e)[:60]}')
 
@@ -286,6 +291,7 @@ class Command(BaseCommand):
             return {'optimized': True, 'tables': optimized_count}
 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _vacuum_analyze (sentinel_auto_cleanup.py)")
             self.stdout.write(self.style.ERROR(f'  ✗ Error en VACUUM: {e}'))
             return {'optimized': False, 'error': str(e)}
 

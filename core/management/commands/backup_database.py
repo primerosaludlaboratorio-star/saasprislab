@@ -23,6 +23,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from core.models import BackupInmutableLog
+import logging
 
 
 class Command(BaseCommand):
@@ -57,6 +58,7 @@ class Command(BaseCommand):
         try:
             fernet = Fernet(fernet_raw.encode() if isinstance(fernet_raw, str) else fernet_raw)
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en handle (backup_database.py)")
             raise CommandError(f'FERNET_KEY inválida: {exc}') from exc
 
         bucket = getattr(settings, 'GCS_BACKUP_BUCKET', '') or os.environ.get('GCS_BACKUP_BUCKET', '')
@@ -147,6 +149,7 @@ class Command(BaseCommand):
                 blob = b.blob(object_name)
                 blob.upload_from_filename(enc_path, content_type='application/octet-stream')
             except Exception as exc:
+                logging.getLogger(__name__).exception("Error inesperado en handle (backup_database.py)")
                 raise CommandError(f'Error subiendo a GCS gs://{bucket}/{object_name}: {exc}') from exc
 
             gcs_uri = f'gs://{bucket}/{object_name}'

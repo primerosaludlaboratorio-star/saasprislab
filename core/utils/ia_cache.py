@@ -116,6 +116,7 @@ def responder_desde_cache(
             referencia=f'cache:{regla.pk}',
         )
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en responder_desde_cache (ia_cache.py)")
         pass
 
     return {

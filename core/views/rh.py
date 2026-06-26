@@ -27,10 +27,13 @@ from core.models import (
     Empresa, Usuario, Empleado, Bitacora39A, FirmaDigital,
     EvaluacionDesempeno, PlanDesarrollo, DetalleEvaluacion, Competencia
 )
+from core.decorators import role_required
 from core.utils.rh_utils import generar_pdi_automatico
+import logging
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'RH')
 def lista_evaluaciones_39a(request):
     """Lista todas las evaluaciones 39-A."""
     empresa = getattr(request.user, 'empresa', None)
@@ -60,6 +63,7 @@ def lista_evaluaciones_39a(request):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'RH')
 def crear_evaluacion_39a(request, empleado_id=None):
     """Formulario para crear una nueva evaluación 39-A."""
     empresa = getattr(request.user, 'empresa', None)
@@ -137,6 +141,7 @@ def crear_evaluacion_39a(request, empleado_id=None):
             return redirect('ver_evaluacion_39a', evaluacion_id=evaluacion.id)
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en crear_evaluacion_39a (rh.py)")
             return render(request, 'core/crear_evaluacion_39a.html', {
                 'empleado': empleado,
                 'empleados': empleados,
@@ -158,6 +163,7 @@ def crear_evaluacion_39a(request, empleado_id=None):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'RH')
 def ver_evaluacion_39a(request, evaluacion_id):
     """Ver detalles de una evaluación 39-A."""
     empresa = getattr(request.user, 'empresa', None)
@@ -178,6 +184,7 @@ def ver_evaluacion_39a(request, evaluacion_id):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'RH')
 def descargar_pdf_evaluacion_39a(request, evaluacion_id):
     """Descargar PDF firmado de evaluación 39-A."""
     empresa = getattr(request.user, 'empresa', None)
@@ -323,6 +330,7 @@ def generar_pdf_evaluacion_39a(evaluacion, empresa):
             firma_img = Image(firma_digital.imagen_firma.path, width=2*inch, height=0.5*inch)
             story.append(firma_img)
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en generar_pdf_evaluacion_39a (rh.py)")
         pass
     
     tabla_firma = Table(datos_firma, colWidths=[2*inch, 4*inch])
@@ -366,6 +374,7 @@ def generar_pdf_evaluacion_39a(evaluacion, empresa):
 # ==============================================================================
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'RH')
 def nueva_evaluacion_desempeno(request, empleado_id=None):
     """Formulario para crear una nueva evaluación de desempeño."""
     empresa = getattr(request.user, 'empresa', None)
@@ -446,6 +455,7 @@ def nueva_evaluacion_desempeno(request, empleado_id=None):
                 return JsonResponse({'status': 'error', 'mensaje': 'No hay competencias activas'}, status=400)
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en nueva_evaluacion_desempeno (rh.py)")
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=400)
             # Para formularios normales, mostrar error en la página
@@ -466,6 +476,7 @@ def nueva_evaluacion_desempeno(request, empleado_id=None):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'RH')
 def ver_evaluacion_desempeno(request, evaluacion_id):
     """Ver detalle de una evaluación de desempeño."""
     empresa = getattr(request.user, 'empresa', None)
@@ -491,21 +502,30 @@ def ver_evaluacion_desempeno(request, evaluacion_id):
 def mis_resultados(request):
     """Vista para que el empleado vea sus resultados de evaluación."""
     usuario = request.user
-    
+    user_empresa = getattr(usuario, 'empresa', None)
+
     # Obtener ficha de empleado si existe
     try:
         empleado = usuario.ficha_empleado
+    except Empleado.DoesNotExist:
+        empleado = None
+
+    if empleado is None:
+        evaluaciones = EvaluacionDesempeno.objects.none()
+        planes = PlanDesarrollo.objects.none()
+    else:
+        # Tenant isolation: el empleado debe pertenecer a la empresa del usuario
+        if user_empresa is None or empleado.empresa_id != user_empresa.id:
+            from django.contrib import messages
+            messages.error(request, 'No tienes acceso a estos resultados.')
+            return redirect('home')
+
         evaluaciones = EvaluacionDesempeno.objects.filter(
             empleado=empleado
         ).select_related('evaluador').prefetch_related('detalles__competencia').order_by('-fecha')
-        
+
         planes = PlanDesarrollo.objects.filter(empleado=empleado).select_related('evaluacion_origen').order_by('-fecha_creacion')
-        
-    except Empleado.DoesNotExist:
-        evaluaciones = EvaluacionDesempeno.objects.none()
-        planes = PlanDesarrollo.objects.none()
-        empleado = None
-    
+
     return render(request, 'core/mis_resultados.html', {
         'evaluaciones': evaluaciones,
         'planes': planes,
@@ -514,6 +534,7 @@ def mis_resultados(request):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'RH')
 def matriz_talento(request):
     """Vista gráfica de la matriz 9-Box para el director."""
     empresa = getattr(request.user, 'empresa', None)

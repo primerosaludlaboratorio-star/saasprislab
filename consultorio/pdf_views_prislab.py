@@ -40,7 +40,7 @@ def imprimir_receta_profesional(request, consulta_id):
 
     try:
         pdf_bytes = generar_receta_pdf(consulta, request=request)
-    except Exception as e:
+    except (RuntimeError, ValueError, TypeError, ImportError, OSError) as e:
         logger.error(f"Error generando receta para consulta {consulta_id}: {e}", exc_info=True)
         return HttpResponse(
             f"Error al generar la receta: {e}",
@@ -94,7 +94,7 @@ def api_generar_receta_pdf(request, consulta_id):
                 if hasattr(consulta.receta, 'url_drive_backup'):
                     # No guardar en drive_backup, solo retornar inline
                     pass
-            except Exception:
+            except (AttributeError, TypeError, OSError):
                 pass
 
         return JsonResponse({
@@ -105,7 +105,7 @@ def api_generar_receta_pdf(request, consulta_id):
             'mensaje': 'Receta generada correctamente',
         })
 
-    except Exception as e:
+    except (RuntimeError, ValueError, TypeError, ImportError, OSError) as e:
         logger.error(f"Error API receta {consulta_id}: {e}", exc_info=True)
         return JsonResponse({
             'status': 'error',

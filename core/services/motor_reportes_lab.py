@@ -438,6 +438,7 @@ def _build_results_section(detalle, orden, styles):
                 if _r.analito_id not in _prev_results:
                     _prev_results[_r.analito_id] = _r
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _build_results_section (motor_reportes_lab.py)")
         pass
 
     metodo_info = None
@@ -514,6 +515,7 @@ def _build_results_section(detalle, orden, styles):
                         Paragraph('', styles['cell']),
                     ])
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en _build_results_section (motor_reportes_lab.py)")
                     pass
 
     t = Table(table_data, colWidths=col_widths)
@@ -707,6 +709,7 @@ def _obtener_responsable_sanitaria(orden=None) -> dict:
                     "cofepris": "",
                 }
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _obtener_responsable_sanitaria (motor_reportes_lab.py)")
         pass
 
     # Fuente 3: variable de entorno (configurable en producción / .env)
@@ -862,9 +865,11 @@ def generar_reporte_pdf(orden, request=None):
                     img_path = firma_obj.imagen_firma.path
                     firma_img = RLImage(img_path, width=4 * cm, height=1.5 * cm)
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en generar_reporte_pdf (motor_reportes_lab.py)")
                     try:
                         firma_img = RLImage(firma_obj.imagen_firma.url, width=4 * cm, height=1.5 * cm)
                     except Exception:
+                        logging.getLogger(__name__).exception("Error inesperado en generar_reporte_pdf (motor_reportes_lab.py)")
                         firma_img = None
 
             if firma_img:
@@ -994,11 +999,14 @@ def generar_reporte_pdf(orden, request=None):
                 try:
                     _empresa_logo_path = empresa.logo.path
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en generar_reporte_pdf (motor_reportes_lab.py)")
                     try:
                         _empresa_logo_path = empresa.logo.url
                     except Exception:
+                        logging.getLogger(__name__).exception("Error inesperado en generar_reporte_pdf (motor_reportes_lab.py)")
                         pass
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en generar_reporte_pdf (motor_reportes_lab.py)")
             pass
 
     def draw_footer(canvas, doc):
@@ -1013,6 +1021,7 @@ def generar_reporte_pdf(orden, request=None):
                     width=3 * cm, height=2 * cm, preserveAspectRatio=True, mask='auto'
                 )
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en draw_footer (motor_reportes_lab.py)")
                 pass
         if not portada_path:
             try:
@@ -1024,6 +1033,7 @@ def generar_reporte_pdf(orden, request=None):
                 canvas.setFillColor(colors.HexColor('#666666'))
                 canvas.drawString(MARGIN_LEFT + 3.5 * cm, PAGE_H - 2 * cm, 'Laboratorio Clínico')
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en draw_footer (motor_reportes_lab.py)")
                 pass
 
         canvas.setFont('Helvetica', 7)

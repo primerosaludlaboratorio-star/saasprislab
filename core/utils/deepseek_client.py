@@ -128,6 +128,7 @@ def test_deepseek_connection() -> dict:
             "response": text,
         }
     except Exception as exc:
+        logging.getLogger(__name__).exception("Error inesperado en test_deepseek_connection (deepseek_client.py)")
         return {
             "success": False,
             "message": str(exc),

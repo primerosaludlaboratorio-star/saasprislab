@@ -15,7 +15,11 @@ from core.models import Usuario
 def crear_o_resetear_admin():
     """Crea o resetea el usuario admin. Use DEV_ADMIN_PASSWORD en .env para producción."""
     username = 'admin'
-    password = os.environ.get('DEV_ADMIN_PASSWORD', 'admin123')
+    password = os.environ.get('DEV_ADMIN_PASSWORD')
+    if not password:
+        raise RuntimeError(
+            'Falta DEV_ADMIN_PASSWORD. Defina una contraseña segura antes de ejecutar este script.'
+        )
     
     try:
         # Intentar obtener el usuario existente
@@ -40,10 +44,10 @@ def crear_o_resetear_admin():
         )
         print(f"[OK] Usuario '{username}' creado exitosamente")
     
-    print(f"\n=== CREDENCIALES DE ACCESO ===")
+    print("\n=== CREDENCIALES DE ACCESO ===")
     print(f"   Usuario: {username}")
-    print(f"   Contrasena: {password}")
-    print(f"\n[IMPORTANTE] Cambia esta contrasena despues del primer login por seguridad.")
+    print("   Contrasena: [definida por DEV_ADMIN_PASSWORD]")
+    print("\n[IMPORTANTE] Cambia esta contrasena despues del primer login por seguridad.")
 
 if __name__ == '__main__':
     crear_o_resetear_admin()

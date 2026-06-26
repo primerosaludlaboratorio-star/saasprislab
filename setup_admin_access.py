@@ -14,6 +14,15 @@ from core.models import Empresa, Sucursal
 
 Usuario = get_user_model()
 
+
+def _password_env() -> str:
+    password = os.environ.get('PRISLAB_SUPERUSER_PASSWORD') or os.environ.get('DEV_ADMIN_PASSWORD')
+    if not password:
+        raise RuntimeError(
+            'Falta PRISLAB_SUPERUSER_PASSWORD (o DEV_ADMIN_PASSWORD). Defina una contraseña segura antes de ejecutar este script.'
+        )
+    return password
+
 print("=" * 60)
 print("CONFIGURANDO ACCESOS SUPER ADMINISTRADOR")
 print("=" * 60)
@@ -71,7 +80,7 @@ admin_prislab, created = Usuario.objects.get_or_create(
     }
 )
 if created:
-    admin_prislab.set_password('SuperAdmin123!')
+    admin_prislab.set_password(_password_env())
     admin_prislab.save()
     print(f"[OK] Usuario admin_prislab CREADO")
 else:
@@ -92,7 +101,7 @@ admin_demo, created = Usuario.objects.get_or_create(
     }
 )
 if created:
-    admin_demo.set_password('SuperAdmin123!')
+    admin_demo.set_password(_password_env())
     admin_demo.save()
     print(f"[OK] Usuario admin_demo CREADO")
 else:
@@ -114,7 +123,7 @@ EMPRESA: PRISLAB
 ----------------
 URL:      http://127.0.0.1:8000/
 Usuario:  admin_prislab
-Password: SuperAdmin123!
+Password: [definida por PRISLAB_SUPERUSER_PRISLAB_PASSWORD o PRISLAB_SUPERUSER_PASSWORD]
 Empresa:  {empresa_prislab.nombre}
 Sucursal: {sucursal_prislab.nombre}
 Rol:      SUPER ADMINISTRADOR
@@ -123,7 +132,7 @@ EMPRESA: CLINICA DEMO
 ---------------------
 URL:      http://127.0.0.1:8000/
 Usuario:  admin_demo
-Password: SuperAdmin123!
+Password: [definida por PRISLAB_SUPERUSER_DEMO_PASSWORD o PRISLAB_SUPERUSER_PASSWORD]
 Empresa:  {empresa_demo.nombre}
 Sucursal: {sucursal_demo.nombre}
 Rol:      SUPER ADMINISTRADOR
@@ -131,7 +140,7 @@ Rol:      SUPER ADMINISTRADOR
 ADMIN GENERAL (legacy)
 ----------------------
 Usuario:  admin
-Password: admin123
+Password: [definida por DEV_ADMIN_PASSWORD]
 Empresa:  {empresa_prislab.nombre if admin_general else 'N/A'}
 """)
 print("=" * 60)

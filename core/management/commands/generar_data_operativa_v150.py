@@ -55,6 +55,7 @@ from core.services.ia_clinical_governance import METODO_IA_BORRADOR
 from core.services.paciente_service import obtener_o_crear_paciente
 from core.utils.referencia_lims_edad import contexto_edad_sexo_para_lims
 from core.views.laboratorio import api_guardar_resultados, crear_orden_servicio
+import logging
 
 MIG_0058_CODIGO = '__PRISLAB_MIG_0058__'
 V150_MARK = 'V150_SEED_DATA_OPERATIVA'
@@ -77,6 +78,7 @@ def _storage_kind() -> str:
         st = OrdenDeServicio._meta.get_field('archivo_resultado').storage
         name = st.__class__.__name__
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _storage_kind (generar_data_operativa_v150.py)")
         name = default_storage.__class__.__name__
     if 'Google' in name or 'GCS' in name or 'S3' in name or 'Drive' in name:
         return 'GCS/Drive/S3'

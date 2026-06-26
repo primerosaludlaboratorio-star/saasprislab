@@ -9,6 +9,7 @@ import os
 import re
 from pathlib import Path
 from colorama import init, Fore, Style
+import logging
 
 init(autoreset=True)
 
@@ -142,6 +143,7 @@ class Command(BaseCommand):
                 if re.search(r'import\s+google\.generativeai|from\s+google\s+import\s+generativeai', content):
                     archivos_con_google.append(str(py_file.relative_to(base_dir)))
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_ia.py)")
                 pass
         
         if archivos_con_openai:
@@ -244,6 +246,7 @@ class Command(BaseCommand):
                             encontrado = True
                             break
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_ia.py)")
                     pass
             
             if encontrado:

@@ -56,6 +56,7 @@ from django.db import transaction
 
 from core.models import Producto, Lote, Sucursal
 from core.utils.tenant_strict import add_argument_empresa_id, empresa_desde_management
+import logging
 
 
 class Command(BaseCommand):
@@ -91,6 +92,7 @@ class Command(BaseCommand):
         try:
             empresa = empresa_desde_management(options)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (cargar_inventario_xlsx.py)")
             self.stdout.write(self.style.ERROR(str(e)))
             return
 
@@ -367,6 +369,7 @@ class Command(BaseCommand):
                         self.stdout.write(f'  Procesados: {idx}/{len(productos_ordenados)}...')
 
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en _cargar_en_bd (cargar_inventario_xlsx.py)")
                     errores.append(f'Fila {idx} ({clave}): {e}')
 
         return creados, actualizados, lotes_creados, errores

@@ -22,6 +22,7 @@ import sys
 import django
 from datetime import datetime
 from io import BytesIO
+import logging
 
 # Colores para terminal
 class Colors:
@@ -90,6 +91,7 @@ def test_database():
                 return False
                 
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_database (test_conexion_storage.py)")
         print_error(f"Error al conectar a la base de datos: {e}")
         return False
 
@@ -123,6 +125,7 @@ def test_models():
         return True
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_models (test_conexion_storage.py)")
         print_error(f"Error al verificar modelos: {e}")
         return False
 
@@ -158,6 +161,7 @@ def test_google_drive_storage():
             return True
             
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_google_drive_storage (test_conexion_storage.py)")
         print_error(f"Error al verificar Google Drive Storage: {e}")
         return False
 
@@ -231,10 +235,12 @@ def test_upload_file():
             return orden.id
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_upload_file (test_conexion_storage.py)")
             print_warning(f"No se pudo generar URL pública: {e}")
             return orden.id
             
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_upload_file (test_conexion_storage.py)")
         print_error(f"Error al subir archivo: {e}")
         import traceback
         traceback.print_exc()
@@ -273,6 +279,7 @@ def test_cleanup(orden_id):
             return True
             
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_cleanup (test_conexion_storage.py)")
         print_error(f"Error al limpiar archivo: {e}")
         return False
 
@@ -308,6 +315,7 @@ def test_static_files():
         return True
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_static_files (test_conexion_storage.py)")
         print_error(f"Error al verificar archivos estáticos: {e}")
         return False
 

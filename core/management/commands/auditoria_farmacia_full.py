@@ -13,6 +13,7 @@ import time
 import json
 from colorama import init, Fore, Style
 from decimal import Decimal
+import logging
 
 init(autoreset=True)
 
@@ -101,6 +102,7 @@ class Command(BaseCommand):
                 return status < 400, response
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_url (auditoria_farmacia_full.py)")
             tiempo_respuesta = time.time() - inicio
             self.log_result('ERROR', f"{nombre} - Excepción: {str(e)}", traceback.format_exc())
             return False, None
@@ -161,6 +163,7 @@ class Command(BaseCommand):
                 return status < 400, response, None
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_api (auditoria_farmacia_full.py)")
             tiempo_respuesta = time.time() - inicio
             self.log_result('ERROR', f"{nombre} - Excepción: {str(e)}", traceback.format_exc())
             return False, None, None
@@ -194,6 +197,7 @@ class Command(BaseCommand):
             
             self.log_result('OK', "Usuario Cajero creado: test_cajero_farmacia / test123")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_farmacia_full.py)")
             self.log_result('ERROR', f"No se pudo crear usuario: {str(e)}")
             return
 
@@ -267,6 +271,7 @@ class Command(BaseCommand):
             self.log_result('INFO', f"Inventario inicial del lote: {self.inventario_inicial} unidades")
 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_farmacia_full.py)")
             self.log_result('ERROR', f"Error al crear datos de prueba: {str(e)}", traceback.format_exc())
             return
 
@@ -285,6 +290,7 @@ class Command(BaseCommand):
             try:
                 _json_data = _json.loads(_resp.content.decode('utf-8'))
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_farmacia_full.py)")
                 pass
             if _resp.status_code == 200 and _json_data is not None:
                 self.log_result('OK', f"API Buscar Productos - {len(_json_data) if isinstance(_json_data, list) else 'OK'}")
@@ -293,6 +299,7 @@ class Command(BaseCommand):
                 self.log_result('WARNING', f"API Buscar Productos - Status {_resp.status_code}")
                 ok, response, json_data = False, _resp, None
         except Exception as _e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_farmacia_full.py)")
             self.log_result('ERROR', f"API Buscar Productos - Excepcion: {_e}")
             ok, response, json_data = False, None, None
         ok_fake = ok  # para saltar el bloque original
@@ -393,6 +400,7 @@ class Command(BaseCommand):
                 self.log_result('WARNING', "No se pudo crear venta mediante API ni directamente")
 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_farmacia_full.py)")
             error_msg = str(e)
             if 'es_cortesia' in error_msg:
                 self.log_result('WARNING', f"Modelo Venta requiere campo 'es_cortesia' que no está en el código. Verificar migraciones pendientes.")
@@ -415,6 +423,7 @@ class Command(BaseCommand):
                 else:
                     self.log_result('WARNING', "El inventario no se descontó automáticamente")
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_farmacia_full.py)")
                 self.log_result('ERROR', f"Error al verificar inventario: {str(e)}")
         else:
             self.log_result('WARNING', "No se puede verificar inventario (venta no creada)")

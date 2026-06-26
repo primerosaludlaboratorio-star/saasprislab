@@ -29,6 +29,7 @@ from core.models import (
     PreOrdenLaboratorio, DetallePreOrden, Producto, Venta, DetalleVenta,
     Pago, DetalleEvaluacion, PlanDesarrollo, EvaluacionDesempeno
 )
+import logging
 
 User = get_user_model()
 
@@ -86,6 +87,7 @@ class Command(BaseCommand):
             self._acto_4_rh()
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (simular_flujo_completo.py)")
             self._capturar_error("ERROR CRÍTICO", str(e), traceback.format_exc())
             self._intentar_corregir_error("ERROR CRÍTICO", str(e), traceback.format_exc())
         
@@ -116,6 +118,7 @@ class Command(BaseCommand):
             self.success_steps.append("SETUP INICIAL: Ambiente configurado correctamente")
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _setup_ambiente (simular_flujo_completo.py)")
             self._capturar_error("SETUP", str(e), traceback.format_exc())
     
     def _crear_usuarios_prueba(self):
@@ -213,6 +216,7 @@ class Command(BaseCommand):
             self.stdout.write(f"✓ Enfermera: {enfermera.username}")
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _crear_usuarios_prueba (simular_flujo_completo.py)")
             self._capturar_error("CREAR_USUARIOS", str(e), traceback.format_exc())
     
     def _crear_estudios_prueba(self):
@@ -262,6 +266,7 @@ class Command(BaseCommand):
             self.estudios_prueba = {'GLU': glu, 'HB': hb}
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _crear_estudios_prueba (simular_flujo_completo.py)")
             self._capturar_error("CREAR_ESTUDIOS", str(e), traceback.format_exc())
     
     def _crear_productos_prueba(self):
@@ -300,6 +305,7 @@ class Command(BaseCommand):
             self.productos_prueba['ALCOHOL'] = alcohol
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _crear_productos_prueba (simular_flujo_completo.py)")
             self._capturar_error("CREAR_PRODUCTOS", str(e), traceback.format_exc())
     
     def _acto_1_paciente_complejo(self):
@@ -420,6 +426,7 @@ class Command(BaseCommand):
                         'esperado': '403 o 401'
                     })
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en _acto_1_paciente_complejo (simular_flujo_completo.py)")
                 # Si la vista no existe, lo registramos como error pero no fallamos
                 if 'cancelar-orden' in str(e) or '404' in str(e):
                     self.stdout.write(self.style.ERROR(f"✗ Vista de cancelación no implementada"))
@@ -452,6 +459,7 @@ class Command(BaseCommand):
                         'esperado': '200 o 201'
                     })
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en _acto_1_paciente_complejo (simular_flujo_completo.py)")
                 if 'cancelar-orden' in str(e) or '404' in str(e):
                     self.stdout.write(self.style.ERROR(f"✗ Vista de cancelación no implementada"))
                     self.errors.append({
@@ -464,6 +472,7 @@ class Command(BaseCommand):
                     self._capturar_error("ACTO_1_6", str(e), traceback.format_exc())
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _acto_1_paciente_complejo (simular_flujo_completo.py)")
             self._capturar_error("ACTO_1", str(e), traceback.format_exc())
     
     def _acto_2_laboratorio_caotico(self):
@@ -563,6 +572,7 @@ class Command(BaseCommand):
             self.success_steps.append("ACTO 2.5: Resultados validados")
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _acto_2_laboratorio_caotico (simular_flujo_completo.py)")
             self._capturar_error("ACTO_2", str(e), traceback.format_exc())
     
     def _acto_3_farmacia(self):
@@ -649,6 +659,7 @@ class Command(BaseCommand):
                     })
                 
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en _acto_3_farmacia (simular_flujo_completo.py)")
                 self._capturar_error("ACTO_3_2", str(e), traceback.format_exc())
             
             # 3.3. Solicitar factura (simulado)
@@ -657,6 +668,7 @@ class Command(BaseCommand):
             self.success_steps.append("ACTO 3.3: Factura solicitada (simulado)")
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _acto_3_farmacia (simular_flujo_completo.py)")
             self._capturar_error("ACTO_3", str(e), traceback.format_exc())
     
     def _acto_4_rh(self):
@@ -709,6 +721,7 @@ class Command(BaseCommand):
                     self.stdout.write("⚠ No hay evaluación de desempeño reciente (simulado)")
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _acto_4_rh (simular_flujo_completo.py)")
             # Si falla, solo registramos pero no paramos la simulación
             self.stdout.write(self.style.WARNING(f"⚠ Error en ACTO 4 (no crítico): {str(e)}"))
             self.errors.append({

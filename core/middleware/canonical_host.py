@@ -55,6 +55,9 @@ class CanonicalHostMiddleware:
     def __call__(self, request):
         host = _normalize_host(request.get_host())
         if self._should_redirect(host):
-            target = f"https://{self.canonical_host}{request.get_full_path()}"
+            # Usar HTTP en localhost/127.0.0.1, HTTPS en producción
+            is_localhost = host in {'localhost', '127.0.0.1', '::1'}
+            scheme = 'http' if is_localhost else 'https'
+            target = f"{scheme}://{self.canonical_host}{request.get_full_path()}"
             return HttpResponseRedirect(target)
         return self.get_response(request)

@@ -16,6 +16,7 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from laboratorio.models import CategoriaExamen, Estudio
+import logging
 
 class Command(BaseCommand):
     help = 'Carga catálogo de estudios de laboratorio de forma idempotente (actualiza si existe, crea si no)'
@@ -140,6 +141,7 @@ class Command(BaseCommand):
                                 ))
                     
                     except Exception as e:
+                        logging.getLogger(__name__).exception("Error inesperado en handle (seed_estudios.py)")
                         errores += 1
                         self.stdout.write(self.style.ERROR(
                             f'❌ Error en línea {i}: {str(e)}'
@@ -150,6 +152,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f'❌ Archivo no encontrado: {archivo_csv}'))
             return
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (seed_estudios.py)")
             self.stdout.write(self.style.ERROR(f'❌ Error al procesar archivo: {str(e)}'))
             return
         

@@ -279,6 +279,7 @@ def _build_diagnostico_alergias(consulta, styles):
             if hc and hasattr(hc, 'alergias') and hc.alergias:
                 alergias = hc.alergias
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _build_diagnostico_alergias (motor_recetas.py)")
             pass
 
     elements.append(Paragraph(
@@ -414,6 +415,7 @@ def _build_cita_y_firma(consulta, styles):
                 logger.warning(f"Error cargando firma: {e}")
 
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _build_cita_y_firma (motor_recetas.py)")
         pass
 
     # Tambien intentar firma desde Receta.medico_firma_digital
@@ -443,8 +445,10 @@ def _build_cita_y_firma(consulta, styles):
                         elements.append(t)
                         firma_insertada = True
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en _build_cita_y_firma (motor_recetas.py)")
                     pass
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _build_cita_y_firma (motor_recetas.py)")
             pass
 
     if not firma_insertada:

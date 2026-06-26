@@ -135,11 +135,15 @@ def crear_transferencia(request):
                     messages.error(request, 'La sucursal de origen y destino deben ser diferentes')
                     return redirect('logistica:crear_transferencia')
                 
+                # Validar sucursales de la empresa
+                sucursal_origen = get_object_or_404(Sucursal, id=sucursal_origen_id, empresa=empresa, activa=True)
+                sucursal_destino = get_object_or_404(Sucursal, id=sucursal_destino_id, empresa=empresa, activa=True)
+                
                 # Crear transferencia
                 transferencia = TransferenciaInventario.objects.create(
                     empresa=empresa,
-                    sucursal_origen_id=sucursal_origen_id,
-                    sucursal_destino_id=sucursal_destino_id,
+                    sucursal_origen=sucursal_origen,
+                    sucursal_destino=sucursal_destino,
                     solicitado_por=request.user,
                     motivo=motivo,
                     estado='BORRADOR'
@@ -158,6 +162,7 @@ def crear_transferencia(request):
                 return redirect('logistica:detalle_transferencia', transferencia.id)
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en crear_transferencia (views.py)")
             messages.error(request, f'Error al crear transferencia: {str(e)}')
             return redirect('logistica:crear_transferencia')
     
@@ -223,6 +228,7 @@ def agregar_producto_transferencia(request, transferencia_id):
         try:
             cantidad = Decimal(request.POST.get('cantidad', '0'))
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en agregar_producto_transferencia (views.py)")
             return JsonResponse({'error': 'Cantidad inválida'}, status=400)
         lote_id = request.POST.get('lote_id')
 
@@ -252,6 +258,7 @@ def agregar_producto_transferencia(request, transferencia_id):
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en agregar_producto_transferencia (views.py)")
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -306,6 +313,7 @@ def enviar_transferencia(request, transferencia_id):
                 return redirect('logistica:detalle_transferencia', transferencia.id)
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en enviar_transferencia (views.py)")
             messages.error(request, f'Error al enviar transferencia: {str(e)}')
     
     return render(request, 'logistica/enviar_transferencia.html', {
@@ -346,32 +354,47 @@ def recibir_transferencia(request, transferencia_id):
                     
                     # Actualizar inventarios (descontar origen, sumar destino)
                     try:
-                        from farmacia.models import MovimientoInventario
-                        from core.models import Producto
+                        from farmacia.models import MovimientoInventario, MotivoAjuste
+                        
+                        motivo_transf, _ = MotivoAjuste.objects.get_or_create(
+                            empresa=empresa,
+                            codigo='TRANSFERENCIA',
+                            defaults={
+                                'descripcion': 'Traspaso entre sucursales',
+                                'activo': True
+                            }
+                        )
                         
                         # Obtener el producto
                         producto = detalle.producto
+                        costo = detalle.costo_unitario or producto.precio_compra or Decimal('0')
                         
                         # Movimiento de salida en sucursal origen
                         MovimientoInventario.objects.create(
+                            empresa=empresa,
                             producto=producto,
+                            lote=detalle.lote,
                             sucursal=transferencia.sucursal_origen,
-                            tipo_movimiento='SALIDA',
+                            tipo_movimiento='SALIDA_AJUSTE',
                             cantidad=cantidad_recibida,
-                            motivo='TRANSFERENCIA',
-                            referencia=f'Transferencia #{transferencia.folio} a {transferencia.sucursal_destino.nombre}',
-                            usuario=request.user
+                            costo_unitario=costo,
+                            motivo_ajuste=motivo_transf,
+                            observaciones=f'Transferencia #{transferencia.folio} a {transferencia.sucursal_destino.nombre}',
+                            usuario_responsable=request.user
                         )
                         
                         # Movimiento de entrada en sucursal destino
                         MovimientoInventario.objects.create(
+                            empresa=empresa,
                             producto=producto,
+                            lote=detalle.lote,
                             sucursal=transferencia.sucursal_destino,
-                            tipo_movimiento='ENTRADA',
+                            tipo_movimiento='ENTRADA_AJUSTE',
                             cantidad=cantidad_recibida,
-                            motivo='TRANSFERENCIA',
-                            referencia=f'Transferencia #{transferencia.folio} desde {transferencia.sucursal_origen.nombre}',
-                            usuario=request.user
+                            costo_unitario=costo,
+                            motivo_ajuste=motivo_transf,
+                            observaciones=f'Transferencia #{transferencia.folio} desde {transferencia.sucursal_origen.nombre}',
+                            usuario_responsable=request.user
                         )
                     except Exception as e:
                         logger = logging.getLogger('logistica')
@@ -399,6 +422,7 @@ def recibir_transferencia(request, transferencia_id):
                 return redirect('logistica:detalle_transferencia', transferencia.id)
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en recibir_transferencia (views.py)")
             messages.error(request, f'Error al recibir transferencia: {str(e)}')
     
     detalles = transferencia.detalles.select_related('producto', 'lote').all()
@@ -455,6 +479,7 @@ def api_cadena_frio_temperatura(request, transferencia_id: int):
         }, status=status_code)
 
     except Exception as exc:
+        logging.getLogger(__name__).exception("Error inesperado en api_cadena_frio_temperatura (views.py)")
         return JsonResponse({'error': str(exc)}, status=500)
 
 

@@ -21,6 +21,8 @@ from django.db import transaction
 from django.db.models import Sum
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+from django.db.utils import DatabaseError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 import logging
 
 from .concurrency import retry_on_db_contention
@@ -109,7 +111,7 @@ def descontar_reactivos_fefo(sender, instance, created, **kwargs):
             lambda: _ejecutar_descuento_fefo(instance),
             label='INVENTARIO-FEFO',
         )
-    except Exception as exc:
+    except (DatabaseError, ValidationError, ObjectDoesNotExist) as exc:
         logger.error(
             "INVENTARIO FEFO: Error en ResultadoParametro id=%s orden=%s: %s",
             instance.pk, getattr(instance, 'orden_id', '?'), exc, exc_info=True
@@ -241,7 +243,7 @@ def revertir_descuento_al_eliminar(sender, instance, **kwargs):
         return
     try:
         _revertir_descuento(instance)
-    except Exception as exc:
+    except (DatabaseError, ValidationError, ObjectDoesNotExist) as exc:
         logger.error(
             "FEFO-LAB REVERSA: Error id=%s: %s", instance.pk, exc, exc_info=True,
         )
@@ -317,7 +319,7 @@ def descontar_insumos_consultorio_por_cita(sender, instance, created, **kwargs):
         # El stock ya fue descontado al registrar la SalidaConsumoConsultorio;
         # este signal sirve de auditoría y log, sin doble descuento.
 
-    except Exception as exc:
+    except (DatabaseError, ValidationError, ObjectDoesNotExist) as exc:
         logger.error(
             "SILO-CONSULTORIO: Error al procesar cita %s: %s",
             instance.pk, exc, exc_info=True
@@ -383,7 +385,7 @@ def descontar_generales_por_vale(sender, instance, created, **kwargs):
                         linea.insumo.nombre, instance.folio, pendiente
                     )
 
-    except Exception as exc:
+    except (DatabaseError, ValidationError, ObjectDoesNotExist) as exc:
         logger.error(
             "SILO-GENERALES: Error al procesar vale %s: %s",
             instance.folio, exc, exc_info=True
@@ -424,7 +426,7 @@ def descontar_refacciones_por_ticket_cerrado(sender, instance, created, **kwargs
                 "CMMS: Ticket #%s cerrado sin refacciones de inventario.", instance.pk
             )
 
-    except Exception as exc:
+    except (DatabaseError, ValidationError, ObjectDoesNotExist) as exc:
         logger.error(
             "CMMS: Error al auditar cierre de ticket %s: %s",
             instance.pk, exc, exc_info=True

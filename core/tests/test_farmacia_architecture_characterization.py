@@ -9,9 +9,9 @@ class FarmaciaArchitectureCharacterizationTest(SimpleTestCase):
         core_match = resolve('/farmacia/devoluciones/procesar/')
         erp_match = resolve('/farmacia/erp/devoluciones/procesar/')
 
-        self.assertEqual(core_match.func.__module__, 'core.views.farmacia')
+        self.assertEqual(core_match.func.__module__, 'farmacia.views.devoluciones')
         self.assertEqual(core_match.func.__name__, 'procesar_devolucion')
-        self.assertEqual(erp_match.func.__module__, 'farmacia.views.soporte')
+        self.assertEqual(erp_match.func.__module__, 'farmacia.views.devoluciones')
         self.assertEqual(erp_match.func.__name__, 'procesar_devolucion')
 
     def test_no_existe_modelo_producto_en_app_farmacia(self):

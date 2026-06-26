@@ -11,6 +11,7 @@ from django.db import connection
 from django.conf import settings
 from django.apps import apps
 import sys
+import logging
 
 
 class Command(BaseCommand):
@@ -101,6 +102,7 @@ class Command(BaseCommand):
                 self.ok_count += 1
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en check_base_datos (diagnostico_pris.py)")
             self.stdout.write(self.style.ERROR(f"  [X] Error de BD: {str(e)}"))
             self.errores_criticos.append(f"Error de base de datos: {str(e)}")
 
@@ -135,6 +137,7 @@ class Command(BaseCommand):
                 )
                 self.errores_criticos.append(f"Modelo {model_name} no encontrado")
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en check_modelos_criticos (diagnostico_pris.py)")
                 self.stdout.write(
                     self.style.ERROR(f"  [X] Error en {model_name}: {str(e)}")
                 )
@@ -169,6 +172,7 @@ class Command(BaseCommand):
                     errores_urls.append(f"{url_pattern} -> ERROR 500")
                     
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en check_urls (diagnostico_pris.py)")
                 errores_urls.append(f"{url_pattern} -> {str(e)[:50]}")
         
         if errores_urls:

@@ -74,6 +74,7 @@ def _get_config_modulos(empresa: 'Empresa'):
     try:
         return empresa.configuracion_modulos
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _get_config_modulos (ia_resources.py)")
         return None
 
 

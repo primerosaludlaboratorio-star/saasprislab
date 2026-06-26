@@ -201,6 +201,7 @@ def dashboard_laboratorio(request):
             ).exclude(resultado='').count() if total else 0
             porcentaje = round(100 * completados / total, 0) if total else 0
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en dashboard_laboratorio (laboratorio.py)")
             porcentaje = 0
         lista_trabajo.append({
             'id': orden.id,
@@ -480,6 +481,7 @@ def imprimir_ticket_lab(request, orden_id):
     try:
         pago_info = PagoOrden.objects.filter(orden=orden).order_by('-fecha_pago').first()
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en imprimir_ticket_lab (laboratorio.py)")
         pass
 
     return render(request, 'core/ticket_lab.html', {
@@ -714,6 +716,7 @@ def lista_trabajo_lab(request):
     try:
         page_obj = paginator.page(page_num)
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en lista_trabajo_lab (laboratorio.py)")
         page_obj = paginator.page(1)
 
     # Lista de sucursales para el selector de filtro
@@ -923,6 +926,7 @@ def abrir_worklist_qr(request, token: str):
         primer_id = ids_limpios[0]
         return redirect(f"{reverse('captura_resultados', args=[primer_id])}?worklist={token}")
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en abrir_worklist_qr (laboratorio.py)")
         return redirect("lista_trabajo_lab")
 
 @login_required
@@ -1119,6 +1123,7 @@ def imprimir_resultados_pdf(request, orden_id):
                 with orden.archivo_resultado.open('rb') as archivo_pdf:
                     pdf_bytes = archivo_pdf.read()
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en imprimir_resultados_pdf (laboratorio.py)")
                 logger_core.warning(
                     'imprimir_resultados_pdf: no se pudo leer PDF almacenado, se regenerara orden=%s',
                     orden.id,
@@ -1134,6 +1139,7 @@ def imprimir_resultados_pdf(request, orden_id):
             try:
                 pdf_bytes = generar_reporte_pdf(orden, request=request)
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en imprimir_resultados_pdf (laboratorio.py)")
                 logger_core.warning(
                     'imprimir_resultados_pdf: motor principal fallo, usando contingencia orden=%s',
                     orden.id,
@@ -1194,6 +1200,7 @@ def control_calidad(request):
                         eq = EquipoLab.objects.filter(id=int(equipo_id)).first()
                         equipo_nombre = str(eq) if eq else ''
                     except Exception:
+                        logging.getLogger(__name__).exception("Error inesperado en control_calidad (laboratorio.py)")
                         pass
                 nivel = request.POST.get('observaciones', 'Normal').strip() or 'Normal'
 
@@ -1218,6 +1225,7 @@ def control_calidad(request):
                 from django.contrib import messages
                 messages.success(request, f'Control registrado: {parametro_nombre} = {valor_str}')
         except Exception as _e:
+            logging.getLogger(__name__).exception("Error inesperado en control_calidad (laboratorio.py)")
             from django.contrib import messages
             messages.error(request, f'Error al registrar: {_e}')
         return redirect('control_calidad')
@@ -1257,6 +1265,7 @@ def control_calidad(request):
                     'promedio': round(promedio, 3),
                 }
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en control_calidad (laboratorio.py)")
         pass
 
     # Equipos disponibles
@@ -1265,6 +1274,7 @@ def control_calidad(request):
         from laboratorio.models import Equipo
         equipos = list(Equipo.objects.filter(activo=True).values('id', 'nombre', 'marca'))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en control_calidad (laboratorio.py)")
         pass
 
     parametros_lista = list(
@@ -1413,6 +1423,7 @@ def api_validar_pin(request, orden_id: int):
             try:
                 pdf_bytes = generar_reporte_pdf(orden, request=request)
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en api_validar_pin (laboratorio.py)")
                 logger_core.warning(
                     'api_validar_pin: motor PDF principal fallo, usando contingencia orden=%s',
                     orden.id,
@@ -1430,6 +1441,7 @@ def api_validar_pin(request, orden_id: int):
                     status=500,
                 )
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_validar_pin (laboratorio.py)")
         logger_core.exception(
             'api_validar_pin: no se pudo preparar PDF antes de validar orden=%s',
             orden.id,
@@ -1443,6 +1455,7 @@ def api_validar_pin(request, orden_id: int):
     try:
         OrdenDeServicio.objects.filter(id=orden.id, empresa=empresa).update(estado='RESULTADOS_LISTOS')
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_validar_pin (laboratorio.py)")
         logger_core.exception('api_validar_pin: no se pudo marcar orden validada orden=%s', orden.id)
         return JsonResponse(
             {"ok": False, "error": "No se pudo validar la orden"},
@@ -1458,6 +1471,7 @@ def api_validar_pin(request, orden_id: int):
             request=request,
         )
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_validar_pin (laboratorio.py)")
         pass
 
     # WhatsApp trigger — generar enlace listo para enviar al paciente (LFPDPPP)
@@ -1489,6 +1503,7 @@ def api_validar_pin(request, orden_id: int):
                 if orden.token_acceso:
                     pdf_link = f'\n\n🔗 Descarga tu reporte aquí:\n{site_url}/validar/resultado/{orden.token_acceso}/'
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en api_validar_pin (laboratorio.py)")
                 pass
             mensaje_wa = (
                 f"Hola {nombre_pac} 👋\n\n"
@@ -1509,6 +1524,7 @@ def api_validar_pin(request, orden_id: int):
                     orden.paciente.telefono, mensaje_wa
                 )
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_validar_pin (laboratorio.py)")
         pass
 
     wmeta = metadata_consentimiento_snapshot(orden.paciente) if orden.paciente_id else {}
@@ -1604,6 +1620,7 @@ def api_preordenes_pendientes(request):
         return JsonResponse({'status': 'success', 'preordenes': data})
     
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_preordenes_pendientes (laboratorio.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 
@@ -1680,6 +1697,7 @@ def api_cargar_preorden(request):
     except PreOrdenLaboratorio.DoesNotExist:
         return JsonResponse({'status': 'error', 'mensaje': 'Pre-orden no encontrada o ya fue procesada'}, status=404)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_cargar_preorden (laboratorio.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 
@@ -1801,6 +1819,7 @@ def api_cobrar_orden(request, orden_id):
                 f"Empresa: {empresa.nombre}"
             )
         except Exception as log_error:
+            logging.getLogger(__name__).exception("Error inesperado en _moneto (laboratorio.py)")
             pass
         
         # Si no hay monto total pero sí hay montos multimodales, calcular el total
@@ -1903,6 +1922,7 @@ def api_cobrar_orden(request, orden_id):
                 f"Empresa: {empresa.nombre}"
             )
         except Exception as log_error:
+            logging.getLogger(__name__).exception("Error inesperado en _moneto (laboratorio.py)")
             pass
         return JsonResponse({'status': 'error', 'mensaje': f'Error al procesar los datos JSON: {str(e)}'}, status=400)
     except ValueError as e:
@@ -1916,9 +1936,11 @@ def api_cobrar_orden(request, orden_id):
                 f"Empresa: {empresa.nombre}"
             )
         except Exception as log_error:
+            logging.getLogger(__name__).exception("Error inesperado en _moneto (laboratorio.py)")
             pass
         return JsonResponse({'status': 'error', 'mensaje': f'Error de validación: {str(e)}'}, status=400)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en _moneto (laboratorio.py)")
         import traceback
         error_details = traceback.format_exc()
         
@@ -1934,6 +1956,7 @@ def api_cobrar_orden(request, orden_id):
                 f"Empresa: {empresa.nombre}"
             )
         except Exception as log_error:
+            logging.getLogger(__name__).exception("Error inesperado en _moneto (laboratorio.py)")
             # Silencioso: Si el logging falla, no debe detener la operación
             pass
         
@@ -2100,6 +2123,7 @@ Para estudios_detectados, lista todos los nombres de estudios, análisis o prueb
         })
         
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en escanear_receta_ia (laboratorio.py)")
         import traceback
         return JsonResponse({
             'error': f'Error al procesar la receta: {str(e)}',
@@ -2132,6 +2156,7 @@ def escanear_identidad_ia(request):
             client = get_gemini_client()
             model_name = get_gemini_model('gemini-2.0-flash')
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en escanear_identidad_ia (laboratorio.py)")
             return JsonResponse(
                 {"error": f"Error al inicializar Gemini: {str(e)}"},
                 status=500,
@@ -2168,6 +2193,7 @@ Reglas:
 
             Image.open(io.BytesIO(imagen_bytes)).verify()
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en escanear_identidad_ia (laboratorio.py)")
             return JsonResponse({"error": f"Error al procesar la imagen: {str(e)}"}, status=400)
 
         from google.genai import types as genai_types
@@ -2210,6 +2236,7 @@ Reglas:
         return JsonResponse({"exito": True, "datos": resultado})
 
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en escanear_identidad_ia (laboratorio.py)")
         import traceback
 
         return JsonResponse(
@@ -2551,6 +2578,7 @@ def api_cancelar_pago(request, pago_id):
     try:
         data = json.loads(request.body or '{}')
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_cancelar_pago (laboratorio.py)")
         data = {}
     motivo = data.get('motivo', '').strip() or 'Sin motivo especificado'
 
@@ -2664,6 +2692,7 @@ def api_editar_datos_orden(request, orden_id):
     try:
         data = json.loads(request.body or '{}')
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_editar_datos_orden (laboratorio.py)")
         return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
 
     # Solo campos no financieros
@@ -2687,6 +2716,7 @@ def api_editar_datos_orden(request, orden_id):
             orden.medico_referente = medico
             campos_actualizados.append('medico_referente')
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en api_editar_datos_orden (laboratorio.py)")
             pass
 
     if campos_actualizados:
@@ -2718,6 +2748,7 @@ def api_editar_estudios_orden(request, orden_id):
     try:
         data = json.loads(request.body or '{}')
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_editar_estudios_orden (laboratorio.py)")
         return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
 
     raw = data.get('estudio_ids') or data.get('lims_lineas') or []
@@ -2890,6 +2921,7 @@ def preparacion_toma(request, orden_id):
             orden=orden, firmado=True
         ).exists()
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en preparacion_toma (laboratorio.py)")
         pass
 
     return render(request, 'core/preparacion_toma.html', {

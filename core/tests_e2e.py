@@ -36,8 +36,9 @@ from selenium.common.exceptions import (
 )
 from webdriver_manager.chrome import ChromeDriverManager
 
-from core.models import Empresa, Producto, Lote, Venta, OrdenDeServicio, DetalleOrden, Paciente
-from laboratorio.models import Estudio, Medico, CategoriaExamen
+from core.models import Empresa, Producto, Lote, Venta, OrdenDeServicio, DetalleOrden, Paciente, Medico
+from laboratorio.models import Estudio, CategoriaExamen
+import logging
 
 User = get_user_model()
 
@@ -79,12 +80,14 @@ class E2ETestBase(StaticLiveServerTestCase):
             cls.driver = webdriver.Chrome(service=service, options=chrome_options)
             cls.driver.implicitly_wait(10)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en setup_driver (tests_e2e.py)")
             print(f"[ERROR] No se pudo inicializar ChromeDriver: {e}")
             print("[INFO] Intentando sin webdriver-manager...")
             try:
                 cls.driver = webdriver.Chrome(options=chrome_options)
                 cls.driver.implicitly_wait(10)
             except Exception as e2:
+                logging.getLogger(__name__).exception("Error inesperado en setup_driver (tests_e2e.py)")
                 raise Exception(f"No se pudo inicializar el navegador: {e2}")
     
     def setUp(self):
@@ -385,6 +388,7 @@ class LaboratorioE2ETest(E2ETestBase):
                 # Seleccionar primera opción
                 self.driver.find_element(By.CSS_SELECTOR, '.select2-results__option').click()
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_02_crear_orden_laboratorio (tests_e2e.py)")
             print(f"[AVISO] No se pudo seleccionar paciente automáticamente: {e}")
             # Continuar de todas formas
         
@@ -416,6 +420,7 @@ class LaboratorioE2ETest(E2ETestBase):
                     time.sleep(1)
                     self.driver.find_element(By.CSS_SELECTOR, '.select2-results__option').click()
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_02_crear_orden_laboratorio (tests_e2e.py)")
             print(f"[AVISO] No se pudieron seleccionar estudios automáticamente: {e}")
         
         time.sleep(1)
@@ -532,6 +537,7 @@ class LaboratorioE2ETest(E2ETestBase):
                 except:
                     print("[AVISO] No se pudieron llenar resultados automáticamente")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_03_capturar_y_validar_resultados (tests_e2e.py)")
             print(f"[AVISO] Error al llenar resultados: {e}")
         
         time.sleep(1)
@@ -634,6 +640,7 @@ class LaboratorioE2ETest(E2ETestBase):
             print("[OK] PDF descargado sin errores")
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_04_descargar_pdf (tests_e2e.py)")
             # Intentar acceso directo a la URL
             try:
                 self.driver.get(f"{self.live_server_url}/laboratorio/imprimir-resultados/{orden.id}/?modo=digital")
@@ -646,6 +653,7 @@ class LaboratorioE2ETest(E2ETestBase):
                 
                 print("[OK] PDF accesible vía URL directa")
             except Exception as e2:
+                logging.getLogger(__name__).exception("Error inesperado en test_04_descargar_pdf (tests_e2e.py)")
                 print(f"[AVISO] No se pudo verificar PDF: {e2}")
 
 
@@ -780,6 +788,7 @@ class FarmaciaE2ETest(E2ETestBase):
                 search_input.send_keys(Keys.RETURN)
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_01_buscar_y_agregar_productos (tests_e2e.py)")
             print(f"[AVISO] Búsqueda automática falló: {e}")
             # Intentar agregar productos directamente vía JavaScript
             self.driver.execute_script(f"""
@@ -856,10 +865,12 @@ class FarmaciaE2ETest(E2ETestBase):
                     
                     print(f"[OK] Cálculos actualizados - Subtotal: {subtotal_text}, Total: {total_text}")
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en test_02_modificar_cantidades_y_verificar_calculos (tests_e2e.py)")
                     print(f"[AVISO] No se pudieron verificar los totales: {e}")
             else:
                 print("[AVISO] No se encontraron inputs de cantidad")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_02_modificar_cantidades_y_verificar_calculos (tests_e2e.py)")
             print(f"[AVISO] Error al modificar cantidades: {e}")
     
     def test_03_procesar_pago_y_verificar_venta(self):
@@ -966,6 +977,7 @@ def run_e2e_tests():
     try:
         failures = test_runner.run_tests(['core.tests_e2e'])
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en run_e2e_tests (tests_e2e.py)")
         failures = True
         print(f"Error ejecutando tests: {e}")
         traceback.print_exc()

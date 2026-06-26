@@ -100,7 +100,7 @@ class Command(BaseCommand):
                     if changed:
                         try:
                             estudio_existente.save(update_fields=['precio_base'])
-                        except Exception as save_err:
+                        except (DatabaseError, IntegrityError) as save_err:
                             self.stderr.write(f'  Warn: No se pudo actualizar {codigo}: {save_err}')
                 else:
                     try:
@@ -110,7 +110,7 @@ class Command(BaseCommand):
                             nombre=descripcion or codigo,
                             precio_base=precio,
                         )
-                    except Exception as create_err:
+                    except (DatabaseError, IntegrityError, ValidationError) as create_err:
                         # Si ya existe con esa combinación categoria+nombre, actualizar precio
                         try:
                             existing = Estudio.objects.filter(
@@ -120,7 +120,7 @@ class Command(BaseCommand):
                                 existing.precio_base = precio
                                 existing.save(update_fields=['precio_base'])
                                 actualizados_precio += 1
-                        except Exception:
+                        except (DatabaseError, IntegrityError, ValidationError):
                             self.stderr.write(f'  Warn: No se pudo crear/actualizar {codigo}: {create_err}')
 
                 importados += 1

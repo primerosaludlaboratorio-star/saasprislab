@@ -57,6 +57,7 @@ def _ip_exenta_2fa(request) -> bool:
             if ip == regla:
                 return True
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _ip_exenta_2fa (autenticacion_2fa.py)")
             # Reglas inválidas no deben romper el login; simplemente no aplican.
             continue
     return False
@@ -75,6 +76,7 @@ def _2fa_activo_para_usuario(usuario) -> bool:
     try:
         return usuario.dispositivos_totp.filter(activo=True, confirmado=True).exists()
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _2fa_activo_para_usuario (autenticacion_2fa.py)")
         return False
 
 
@@ -136,6 +138,7 @@ def notificar_alerta_ciso_expedientes(usuario_id: int, count: int, ventana_minut
                     fail_silently=True,
                 )
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en notificar_alerta_ciso_expedientes (autenticacion_2fa.py)")
                 pass
     except Exception as exc:
         logger.error(f'[2FA] notificar_alerta_ciso_expedientes error: {exc}')
@@ -228,6 +231,7 @@ def verificar_2fa(request):
                         metodo_http=request.method,
                     )
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en verificar_2fa (autenticacion_2fa.py)")
                     pass
                 login(request, usuario, backend=backend)
                 request.session.pop('_2fa_user_id', None)

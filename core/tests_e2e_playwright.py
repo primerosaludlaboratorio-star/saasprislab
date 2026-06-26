@@ -19,6 +19,7 @@ from django.contrib.auth import get_user_model
 from django.core.management import call_command
 import time
 import re
+import logging
 
 try:
     from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
@@ -189,6 +190,7 @@ class UsuarioFantasmaTest(LiveServerTestCase):
                                 'activado': False
                             })
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en test_1_captura_clinica_neon (tests_e2e_playwright.py)")
                     print(f'   ❌ Error en input {i+1}: {str(e)}')
             
             print(f'\n   📊 RESUMEN:')
@@ -211,6 +213,7 @@ class UsuarioFantasmaTest(LiveServerTestCase):
             assert activaciones_neon > 0 or count == 0, "No se activó ninguna alerta neón"
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_1_captura_clinica_neon (tests_e2e_playwright.py)")
             print(f'   ❌ ERROR EN PRUEBA 1: {str(e)}')
             raise
 
@@ -281,6 +284,7 @@ class UsuarioFantasmaTest(LiveServerTestCase):
             print('   ✅ Prueba 2 completada')
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_2_pdv_fefo_alerta (tests_e2e_playwright.py)")
             print(f'   ❌ ERROR EN PRUEBA 2: {str(e)}')
             # No fallar si no encuentra elementos (puede ser que no haya productos)
 
@@ -397,6 +401,7 @@ class UsuarioFantasmaTest(LiveServerTestCase):
             print('   ✅ Prueba 3 completada')
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_3_header_liquido_270px (tests_e2e_playwright.py)")
             print(f'   ❌ ERROR EN PRUEBA 3: {str(e)}')
             raise
 
@@ -483,6 +488,7 @@ class UsuarioFantasmaTest(LiveServerTestCase):
             print('   ✅ Prueba 4 completada')
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_4_flujo_medico_receta_4_0 (tests_e2e_playwright.py)")
             print(f'   ❌ ERROR EN PRUEBA 4: {str(e)}')
             # No fallar si no encuentra elementos
 
@@ -549,6 +555,7 @@ class UsuarioFantasmaTest(LiveServerTestCase):
             print('   ✅ Prueba 5 completada')
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_5_break_system_debouncing (tests_e2e_playwright.py)")
             print(f'   ❌ ERROR EN PRUEBA 5: {str(e)}')
 
     def test_todas_las_pruebas(self):

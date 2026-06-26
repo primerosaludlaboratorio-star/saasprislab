@@ -5,6 +5,7 @@ Ejecutar: PRISLAB_EMPRESA_ID=<pk> python crear_usuarios.py
 import os
 import sys
 import django
+import logging
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
@@ -131,6 +132,7 @@ def crear_usuarios():
             creados += 1
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en crear_usuarios (crear_usuarios.py)")
             print(f"[ERROR] No se pudo crear '{username}': {e}")
             print()
     

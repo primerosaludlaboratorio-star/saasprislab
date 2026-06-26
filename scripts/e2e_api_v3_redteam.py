@@ -48,6 +48,7 @@ import sys
 from typing import Any
 
 import requests
+import logging
 
 
 def _env_int(name: str, default: int | None = None) -> int | None:
@@ -166,6 +167,7 @@ def report(label: str, resp: requests.Response) -> None:
         code = str(data.get("code") or "—")
         message = str(data.get("message") or data.get("mensaje") or "")[:200]
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en report (e2e_api_v3_redteam.py)")
         data = None
     extra = f" | envelope.code={code}" if code != "—" else ""
     if message:

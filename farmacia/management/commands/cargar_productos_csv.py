@@ -8,6 +8,7 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from core.models import Producto, Empresa, Sucursal
+import logging
 
 
 class Command(BaseCommand):
@@ -24,7 +25,7 @@ class Command(BaseCommand):
         try:
             empresa = Empresa.objects.get(id=empresa_id)
             sucursal = Sucursal.objects.filter(empresa=empresa).first()
-        except:
+        except Empresa.DoesNotExist:
             self.stdout.write(self.style.ERROR('[ERROR] Empresa no encontrada'))
             return
 
@@ -98,7 +99,8 @@ class Command(BaseCommand):
                             else:
                                 actualizados += 1
 
-                        except Exception as e:
+                        except Exception as e:  # Aislamiento fila-por-fila: error en una fila no debe abortar toda la carga.
+                            logging.getLogger(__name__).exception("Error inesperado en handle (cargar_productos_csv.py)")
                             self.stdout.write(self.style.WARNING(f'  [!] Error: {e}'))
                             continue
 
@@ -108,5 +110,6 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS('\n[EXITO] Carga completada'))
                 self.stdout.write('=' * 80)
 
-        except Exception as e:
+        except Exception as e:  # Integración externa: archivo CSV provisto por usuario (encoding, delimitador o formato inválido).
+            logging.getLogger(__name__).exception("Error inesperado en handle (cargar_productos_csv.py)")
             self.stdout.write(self.style.ERROR(f'[ERROR] {e}'))

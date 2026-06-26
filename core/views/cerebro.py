@@ -12,6 +12,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 
 from core.models import DocumentoConocimiento
 from core.utils.rag_engine import consultar_cerebro
+import logging
 
 
 @login_required
@@ -63,5 +64,5 @@ def api_cerebro_preguntar(request):
         resultado = consultar_cerebro(pregunta=pregunta, empresa_id=empresa_id, categoria=categoria)
         return JsonResponse({"status": "success", **resultado})
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_cerebro_preguntar (cerebro.py)")
         return JsonResponse({"status": "error", "mensaje": str(e)}, status=500)
-

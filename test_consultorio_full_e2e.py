@@ -15,6 +15,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+import logging
 
 BASE_URL = "https://prislab-v5-811785477499.us-central1.run.app"
 USERNAME = "admin"
@@ -42,6 +43,7 @@ def console_errors(driver):
     try:
         return [e.get("message", str(e)) for e in driver.get_log("browser") if e.get("level") == "SEVERE"]
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en console_errors (test_consultorio_full_e2e.py)")
         return []
 
 def login(driver):
@@ -55,6 +57,7 @@ def login(driver):
         driver.find_element(By.CSS_SELECTOR, "button[type='submit'], input[type='submit']").click()
         time.sleep(3)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en login (test_consultorio_full_e2e.py)")
         act("Login", False, str(e))
         return False
     if "/dashboard/" in driver.current_url or "/medico" in driver.current_url or "/home" in driver.current_url:
@@ -90,10 +93,12 @@ def run():
             driver.find_element(By.XPATH, "//a[contains(@href,'/medico/') and contains(.,'Consultorio')]").click()
             time.sleep(3)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_consultorio_full_e2e.py)")
             try:
                 driver.find_element(By.XPATH, "//a[contains(@href,'/medico/')]").click()
                 time.sleep(3)
             except Exception as e2:
+                logging.getLogger(__name__).exception("Error inesperado en run (test_consultorio_full_e2e.py)")
                 driver.get(BASE_URL.rstrip("/") + "/medico/")
                 time.sleep(3)
                 act("Sidebar Consultorio -> Dashboard", False, str(e2)[:120], driver.current_url)
@@ -111,6 +116,7 @@ def run():
             driver.find_element(By.XPATH, "//a[contains(@href,'/consultorio/agenda/') or contains(.,'Mi Agenda') or contains(.,'Agenda')]").click()
             time.sleep(3)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_consultorio_full_e2e.py)")
             driver.get(BASE_URL.rstrip("/") + "/consultorio/agenda/")
             time.sleep(3)
             act("Agenda / Citas", False, str(e)[:120], driver.current_url)
@@ -128,6 +134,7 @@ def run():
             else:
                 act("Nueva Cita button", False, "Not found", driver.current_url)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_consultorio_full_e2e.py)")
             act("Nueva Cita", False, str(e)[:100], driver.current_url)
         report["errors"].extend(console_errors(driver))
 
@@ -139,6 +146,7 @@ def run():
             driver.find_element(By.XPATH, "//a[contains(@href,'lista-trabajo') or contains(.,'Mis Pacientes Hoy') or contains(.,'Lista de Trabajo')]").click()
             time.sleep(3)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_consultorio_full_e2e.py)")
             driver.get(BASE_URL.rstrip("/") + "/consultorio/medico/lista-trabajo/")
             time.sleep(3)
         report["pages_visited"].append({"url": driver.current_url, "note": "Lista trabajo medico"})
@@ -157,6 +165,7 @@ def run():
             else:
                 act("Click patient in Lista Trabajo", False, "No rows", driver.current_url)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_consultorio_full_e2e.py)")
             act("Click patient Lista Trabajo", False, str(e)[:120], driver.current_url)
         report["errors"].extend(console_errors(driver))
 
@@ -181,6 +190,7 @@ def run():
             ss(driver, "07_expediente_search")
             act("Expediente / Historial or patient search", True, "", driver.current_url)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_consultorio_full_e2e.py)")
             driver.get(BASE_URL.rstrip("/") + "/medico/")
             time.sleep(2)
             report["pages_visited"].append({"url": driver.current_url, "note": "Medico (expediente fallback)"})
@@ -196,6 +206,7 @@ def run():
             driver.find_element(By.XPATH, "//a[contains(@href,'/consultorio/configuracion/') or contains(.,'Mi Configuración') or contains(.,'Configuración')]").click()
             time.sleep(3)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_consultorio_full_e2e.py)")
             driver.get(BASE_URL.rstrip("/") + "/consultorio/configuracion/")
             time.sleep(3)
         report["pages_visited"].append({"url": driver.current_url, "note": "Configuracion"})
@@ -211,6 +222,7 @@ def run():
             driver.find_element(By.XPATH, "//a[contains(@href,'/consultorio/sentinel/') or contains(.,'PRIS Sentinel') or contains(.,'Sentinel')]").click()
             time.sleep(3)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_consultorio_full_e2e.py)")
             driver.get(BASE_URL.rstrip("/") + "/consultorio/sentinel/")
             time.sleep(3)
         report["pages_visited"].append({"url": driver.current_url, "note": "PRIS Sentinel"})
@@ -225,6 +237,7 @@ def run():
             driver.find_element(By.XPATH, "//a[contains(@href,'/director/auditoria/incidencias/') or contains(.,'Incidencias')]").click()
             time.sleep(3)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_consultorio_full_e2e.py)")
             driver.get(BASE_URL.rstrip("/") + "/director/auditoria/incidencias/")
             time.sleep(3)
         report["pages_visited"].append({"url": driver.current_url, "note": "Incidencias"})
@@ -234,10 +247,12 @@ def run():
         ss(driver, "11_final")
 
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en run (test_consultorio_full_e2e.py)")
         err(f"Fatal: {e}")
         try:
             ss(driver, "99_fatal")
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_consultorio_full_e2e.py)")
             pass
     finally:
         driver.quit()

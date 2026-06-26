@@ -5,6 +5,7 @@ from decimal import Decimal, InvalidOperation
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from core.utils.tenant_strict import add_argument_empresa_id, empresa_desde_management
+import logging
 
 
 class Command(BaseCommand):
@@ -53,6 +54,7 @@ class Command(BaseCommand):
         try:
             empresa = empresa_desde_management(options)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (importar_csv_lab.py)")
             self.stdout.write(self.style.ERROR(str(e)))
             return
 
@@ -209,6 +211,7 @@ class Command(BaseCommand):
                         self.stdout.write(self.style.WARNING(f'↻ Actualizado: {codigo} - {descripcion[:50]} (Precio: ${precio})'))
 
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en encontrar_header (importar_csv_lab.py)")
                     contador_errores += 1
                     self.stdout.write(self.style.ERROR(f'✗ Error en línea {row_num}: {str(e)}'))
                     continue
@@ -225,6 +228,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('='*50))
 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en encontrar_header (importar_csv_lab.py)")
             self.stdout.write(self.style.ERROR(f'Error fatal: {str(e)}'))
             import traceback
             self.stdout.write(self.style.ERROR(traceback.format_exc()))

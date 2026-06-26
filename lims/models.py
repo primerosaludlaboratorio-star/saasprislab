@@ -12,6 +12,7 @@ from django.db import models
 
 from core.models import Empresa
 from core.tenant import TenantModel
+import logging
 
 # ─────────────────────────────────────────────────────────────────────────────
 # NIVEL 1-A : ANALITO  (el átomo del sistema)
@@ -196,6 +197,7 @@ class ValorReferenciaAnalito(models.Model):
         try:
             v = Decimal(str(valor_num).replace(',', '.'))
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en evaluar_valor_numerico (models.py)")
             return {
                 'fuera_rango': False,
                 'es_critico': False,

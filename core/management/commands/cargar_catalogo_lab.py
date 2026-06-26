@@ -15,6 +15,7 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 import os
+import logging
 
 
 class Command(BaseCommand):
@@ -83,6 +84,7 @@ class Command(BaseCommand):
                     
                     self.stdout.write(self.style.SUCCESS(f'   [OK] Eliminados: {count_rangos} rangos, {count_parametros} parametros'))
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (cargar_catalogo_lab.py)")
                 self.stdout.write(self.style.ERROR(f'   [ERROR] Error limpiando: {e}'))
                 return
         
@@ -122,6 +124,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f'\n>> Sistema LIMS listo\n'))
         
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (cargar_catalogo_lab.py)")
             self.stdout.write(self.style.ERROR(f'\n[ERROR] CRITICO: {e}'))
             import traceback
             traceback.print_exc()
@@ -231,6 +234,7 @@ class Command(BaseCommand):
                     self.stdout.write(f'         - {nombre_parametro} ({unidad})')
             
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en cargar_parametros (cargar_catalogo_lab.py)")
                 self.stdout.write(self.style.ERROR(f'   [ERROR] Fila {i}: {e}'))
                 stats['errores'] += 1
         
@@ -306,6 +310,7 @@ class Command(BaseCommand):
                     self.stdout.write(f'      [+] {parametro.nombre} | {sexo} {edad_min or 0}-{edad_max or "inf"}')
             
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en cargar_rangos (cargar_catalogo_lab.py)")
                 self.stdout.write(self.style.ERROR(f'   [ERROR] Fila {i}: {e}'))
                 stats['errores'] += 1
         

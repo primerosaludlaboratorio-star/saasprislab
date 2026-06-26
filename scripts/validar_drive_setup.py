@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+import logging
 
 
 def _load_json(path_str: str) -> dict:
@@ -26,6 +27,7 @@ def main() -> int:
     try:
         data = _load_json(creds_path)
     except Exception as exc:
+        logging.getLogger(__name__).exception("Error inesperado en main (validar_drive_setup.py)")
         print(f"ERROR: no se pudo leer el JSON de credenciales: {exc}")
         return 1
 

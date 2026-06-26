@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.db import connection
+from django.db.utils import DatabaseError
 from django.db.models import Avg, Count, FloatField, Max, Min
 from django.db.models.aggregates import Aggregate
 from django.db.models.functions import TruncDay, TruncHour
@@ -148,7 +149,7 @@ def api_cci_lj_summary(request):
     if connection.vendor == 'postgresql':
         try:
             std_global = _float_or_none(qs.aggregate(s=_StdDevSample('valor')).get('s'))
-        except Exception as exc:
+        except (DatabaseError, TypeError) as exc:
             logger.debug('STDDEV_SAMP global: %s', exc)
 
     target = _target_from_lote(empresa.pk, analito_id, lote_id)

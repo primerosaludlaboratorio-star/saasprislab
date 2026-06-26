@@ -66,8 +66,8 @@ class AcademiaViewsTests(TestCase):
 
         response = self.client.get(reverse("academia:dashboard"))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "PRIS Sentinel esta reparando", status_code=200)
+        self.assertEqual(response.status_code, 404)
+        self.assertContains(response, "PRIS Sentinel esta reparando", status_code=404)
 
     def test_curso_detalle_permite_usuario_con_acceso_vigente(self):
         self.client.login(username="academia_alumno", password="test123456")
@@ -136,3 +136,44 @@ class AcademiaViewsTests(TestCase):
             ).count(),
             1,
         )
+
+    def test_curso_detalle_block_cross_tenant(self):
+        curso_externo = CursoAcademia.objects.create(
+            empresa=self.empresa_externa,
+            slug="curso-externo",
+            titulo="Curso Externo",
+            activo=True,
+        )
+        self.client.login(username="academia_alumno", password="test123456")
+        response = self.client.get(reverse("academia:curso_detalle", args=[curso_externo.slug]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_api_video_reproducir_block_cross_tenant(self):
+        curso_externo = CursoAcademia.objects.create(
+            empresa=self.empresa_externa,
+            slug="curso-externo",
+            titulo="Curso Externo",
+            activo=True,
+        )
+        video_externo = VideoAcademia.objects.create(
+            empresa=self.empresa_externa,
+            curso=curso_externo,
+            titulo="Clase Externa",
+            orden=1,
+            bunny_video_id="video_ext_001",
+        )
+        self.client.login(username="academia_alumno", password="test123456")
+        response = self.client.get(reverse("academia:api_video_reproducir", args=[video_externo.id]))
+        self.assertEqual(response.status_code, 404)
+
+    @patch("academia.views._empresa_actual", return_value=None)
+    def test_dashboard_empty_company_blocked(self, _mock_emp):
+        user_sin_emp = Usuario.objects.create_user(
+            username="academia_sin_empresa",
+            password="test123456",
+            empresa=None,
+            rol="RECEPCION"
+        )
+        self.client.login(username="academia_sin_empresa", password="test123456")
+        response = self.client.get(reverse("academia:dashboard"))
+        self.assertEqual(response.status_code, 404)

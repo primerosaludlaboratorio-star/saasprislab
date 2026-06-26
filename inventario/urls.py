@@ -4,10 +4,10 @@ Namespace: inventario
 """
 from django.urls import path
 from . import views
-from . import views_consultorio as vc
-from . import views_generales  as vg
-from . import views_compras    as vcp
-from . import views_traspasos  as vt
+from .views import consultorio as vc
+from .views import generales  as vg
+from .views import compras    as vcp
+from .views import traspasos  as vt
 
 app_name = "inventario"
 

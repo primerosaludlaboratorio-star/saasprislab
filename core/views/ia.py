@@ -11,6 +11,7 @@ from django.views.decorators.http import require_http_methods
 
 from core.utils.ia_permissions import preparar_datos_para_ia, filtrar_datos_para_ia
 from core.models import Empresa, Venta, DetalleVenta, Producto, OrdenDeServicio
+import logging
 
 
 @login_required
@@ -115,6 +116,7 @@ def consultar_ia_negocios(request):
             'mensaje': 'Error al procesar los datos'
         }, status=400)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en consultar_ia_negocios (ia.py)")
         return JsonResponse({
             'status': 'error',
             'mensaje': f'Error: {str(e)}'

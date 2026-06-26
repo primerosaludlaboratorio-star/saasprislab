@@ -32,6 +32,7 @@ import base64
 
 from core.models import Empresa, BackupRegistro
 from core.utils.drive_archive import drive_enabled, subir_archivo_a_drive
+import logging
 
 
 class Command(BaseCommand):
@@ -109,6 +110,7 @@ class Command(BaseCommand):
 
                             append_backup_inmutable_log(backup_registro)
                         except Exception as _im_err:
+                            logging.getLogger(__name__).exception("Error inesperado en handle (backup_nocturno.py)")
                             self.stdout.write(self.style.WARNING(f'Log inmutable no registrado: {_im_err}'))
                     
                     # Limpiar backups antiguos (rotación)
@@ -121,6 +123,7 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR(f'❌ Error en backup: {resultado.get("error", "Error desconocido")}'))
             
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (backup_nocturno.py)")
                 backups_fallidos += 1
                 self.stdout.write(self.style.ERROR(f'❌ Error crítico: {str(e)}'))
         
@@ -201,6 +204,7 @@ class Command(BaseCommand):
                         backup_registro.drive_error = res.error or "Error desconocido"
                         backup_registro.save(update_fields=["archivado_en_drive", "drive_folder_id", "drive_error"])
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en _ejecutar_backup_completo (backup_nocturno.py)")
                     backup_registro.archivado_en_drive = False
                     backup_registro.drive_error = str(e)
                     backup_registro.save(update_fields=["archivado_en_drive", "drive_error"])
@@ -217,6 +221,7 @@ class Command(BaseCommand):
             }
         
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _ejecutar_backup_completo (backup_nocturno.py)")
             backup_registro.estado = 'FALLIDO'
             backup_registro.mensaje_error = str(e)
             backup_registro.save()
@@ -379,6 +384,7 @@ class Command(BaseCommand):
                     os.remove(backup.ruta_completa)
                     backup.delete()
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en _limpiar_backups_antiguos (backup_nocturno.py)")
                     self.stdout.write(self.style.WARNING(f'No se pudo eliminar backup antiguo: {backup.ruta_completa}'))
         
         # 2. Mantener solo los últimos 4 backups semanales
@@ -394,6 +400,7 @@ class Command(BaseCommand):
                     os.remove(backup.ruta_completa)
                     backup.delete()
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en _limpiar_backups_antiguos (backup_nocturno.py)")
                     self.stdout.write(self.style.WARNING(f'No se pudo eliminar backup semanal antiguo: {backup.ruta_completa}'))
         
         # 3. Mantener solo los últimos 6 backups mensuales
@@ -409,4 +416,5 @@ class Command(BaseCommand):
                     os.remove(backup.ruta_completa)
                     backup.delete()
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en _limpiar_backups_antiguos (backup_nocturno.py)")
                     self.stdout.write(self.style.WARNING(f'No se pudo eliminar backup mensual antiguo: {backup.ruta_completa}'))

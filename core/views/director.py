@@ -10,6 +10,8 @@ from django.db.models import Sum, Count, Q
 from django.db.models.functions import Coalesce
 from django.db.models import DecimalField
 from django.utils import timezone
+from django.utils.timezone import localdate
+from django.views.decorators.http import require_POST
 
 from core.models import (
     Empresa, Sucursal, Venta, Pago, Producto, Lote, 
@@ -17,6 +19,8 @@ from core.models import (
     SolicitudAutorizacion, IncidenciaOperativa
 )
 from core.models import EvaluacionDesempeno
+from core.utils.empresa_request import empresa_efectiva_request
+import logging
 
 
 @login_required
@@ -32,13 +36,13 @@ def dashboard_director(request):
             messages.warning(request, 'No tienes permisos para acceder al Dashboard de Dirección.')
             return redirect('home')
 
-        empresa = getattr(request.user, 'empresa', None)
+        empresa = empresa_efectiva_request(request)
         if not empresa:
             from django.contrib import messages
             messages.error(request, 'Usuario no tiene empresa asignada.')
-            return redirect('login')
-        # Fecha actual
-        hoy = timezone.now().date()
+            return redirect('home')
+        # Fecha actual (timezone-aware: usa la zona de TIME_ZONE del proyecto)
+        hoy = localdate()
         inicio_dia = timezone.make_aware(datetime.combine(hoy, datetime.min.time()))
         fin_dia = timezone.make_aware(datetime.combine(hoy, datetime.max.time()))
 
@@ -103,6 +107,7 @@ def dashboard_director(request):
                 es_critico=True,
             ).count()
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en dashboard_director (director.py)")
             alertas_criticas_count = 0
 
         # 4. ESTATUS DE REACTIVOS PRÓXIMOS A VENCER (una query en lugar de N+1)
@@ -288,18 +293,19 @@ def dashboard_director(request):
             'incidencias_hoy_count': incidencias_hoy_count,
         })
     except Exception as exc:
+        logging.getLogger(__name__).exception("Error inesperado en dashboard_director (director.py)")
         from django.contrib import messages
         import logging
         logging.getLogger('core.director').error(
-            'dashboard_director: error inesperado, degradando a login: %s',
+            'dashboard_director: error inesperado: %s',
             exc,
             exc_info=True,
         )
         messages.error(
             request,
-            'El panel de dirección tuvo un problema temporal. Vuelve a iniciar sesión.'
+            'El panel de dirección tuvo un problema temporal. Intenta de nuevo.'
         )
-        return redirect('login')
+        return redirect('home')
 
 
 # ─── MÓDULO GESTIÓN DE ANALIZADORES ─────────────────────────────────────────
@@ -328,8 +334,10 @@ def director_analizadores(request):
     mapeos_qs = CodigoParametroEquipo.objects.select_related('equipo', 'parametro').order_by('equipo__nombre')
     mapeos = mapeos_qs[:200]
 
+    from laboratorio.models import Equipo as _Equipo
+    PROTOCOLOS_INTERFAZ = [c[0] for c in _Equipo.PROTOCOLO_CHOICES]
     equipos_activos = equipos.filter(activo=True).count()
-    equipos_interfazados = equipos.exclude(protocolo='MANUAL').filter(activo=True).count()
+    equipos_interfazados = equipos.filter(activo=True, protocolo__in=PROTOCOLOS_INTERFAZ).count()
     total_mapeos = mapeos_qs.count()
 
     return render(request, 'core/director_analizadores.html', {
@@ -357,12 +365,16 @@ def director_analizadores_crear(request):
         messages.error(request, 'El nombre del equipo es obligatorio.')
         return redirect('director_analizadores')
 
+    from laboratorio.models import Equipo as _EquipoCheck
+    PROTOCOLOS_VALIDOS = {c[0] for c in _EquipoCheck.PROTOCOLO_CHOICES}
+    protocolo_input = request.POST.get('protocolo', '').strip()
+    protocolo = protocolo_input if protocolo_input in PROTOCOLOS_VALIDOS else _EquipoCheck.PROTOCOLO_ASTM
     Equipo.objects.create(
         nombre=nombre,
         marca=request.POST.get('marca', '').strip() or None,
         ip_address=request.POST.get('ip_address', '').strip() or None,
         puerto=request.POST.get('puerto') or None,
-        protocolo=request.POST.get('protocolo', 'MANUAL').strip(),
+        protocolo=protocolo,
         notas=request.POST.get('notas', '').strip() or None,
         activo=True,
     )
@@ -371,6 +383,7 @@ def director_analizadores_crear(request):
 
 
 @login_required
+@require_POST
 def director_analizadores_toggle(request, equipo_id):
     """Activar/desactivar un equipo."""
     from django.http import JsonResponse, HttpResponseForbidden
@@ -405,6 +418,7 @@ def director_analizadores_mapeos(request, equipo_id):
 
 
 @login_required
+@require_POST
 def director_analizadores_probar_conexion(request):
     """Prueba conexión TCP/IP con un equipo."""
     from django.http import JsonResponse, HttpResponseForbidden
@@ -413,8 +427,10 @@ def director_analizadores_probar_conexion(request):
     if not _require_director(request):
         return HttpResponseForbidden('Sin acceso.')
     try:
-        data = json.loads(request.body)
-        ip = data.get('ip', '')
+        data = json.loads(request.body or '{}')
+        ip = data.get('ip', '').strip()
+        if not ip:
+            return JsonResponse({'ok': False, 'mensaje': 'IP requerida'})
         puerto = int(data.get('puerto', 9100))
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(3)
@@ -422,10 +438,12 @@ def director_analizadores_probar_conexion(request):
         sock.close()
         return JsonResponse({'ok': result == 0, 'mensaje': 'Conectado' if result == 0 else 'Sin respuesta'})
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en director_analizadores_probar_conexion (director.py)")
         return JsonResponse({'ok': False, 'mensaje': str(e)})
 
 
 @login_required
+@require_POST
 def director_analizadores_eliminar_mapeo(request, mapeo_id):
     """Eliminar un mapeo de código."""
     from django.http import JsonResponse, HttpResponseForbidden

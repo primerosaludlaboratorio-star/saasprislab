@@ -12,6 +12,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import ElementClickInterceptedException, NoSuchElementException
+import logging
 
 BASE_URL = "https://prislab-v5-811785477499.us-central1.run.app"
 USERNAME = "admin"
@@ -80,8 +81,10 @@ def run():
                     driver.execute_script("arguments[0].click();", corte)
                     corte_clickable = True
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en run (test_pdv_buttons_snapshot.py)")
                     pass
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en run (test_pdv_buttons_snapshot.py)")
                 pass
             time.sleep(2)
         p3 = ss(driver, "03_after_click_corte")
@@ -92,6 +95,7 @@ def run():
             driver.find_element(By.CSS_SELECTOR, ".modal .btn-close, [data-bs-dismiss='modal']").click()
             time.sleep(0.5)
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_pdv_buttons_snapshot.py)")
             pass
         limpiar_clickable = False
         if limpiar:
@@ -103,8 +107,10 @@ def run():
                     driver.execute_script("arguments[0].click();", limpiar)
                     limpiar_clickable = True
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en run (test_pdv_buttons_snapshot.py)")
                     pass
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en run (test_pdv_buttons_snapshot.py)")
                 pass
             time.sleep(1)
         p4 = ss(driver, "04_after_click_limpiar")
@@ -128,6 +134,7 @@ def run():
                 if fr["x"] < cr["x"] + cr["width"] and fr["y"] < cr["y"] + cr["height"] + 100:
                     overlap = True
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en run (test_pdv_buttons_snapshot.py)")
                 pass
 
         # Write report
@@ -147,11 +154,13 @@ def run():
                 f.write("- **%s**: `%s`\n" % (label, path))
         print(f"Report: {md}")
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en run (test_pdv_buttons_snapshot.py)")
         with open(os.path.join(SCREENSHOT_DIR, "PDV_BUTTONS_REPORT.md"), "w", encoding="utf-8") as f:
             f.write("# PDV Buttons Report\n\nError: %s\n" % str(e))
         try:
             ss(driver, "99_error")
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en run (test_pdv_buttons_snapshot.py)")
             pass
     finally:
         driver.quit()

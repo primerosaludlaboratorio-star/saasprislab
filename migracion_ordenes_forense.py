@@ -12,6 +12,7 @@ import sys
 import django
 from decimal import Decimal
 from datetime import datetime
+import logging
 
 # Configurar Django
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -188,6 +189,7 @@ def migrar_orden(orden_lab, empresa_default, usuario_default):
         return orden_nueva, True
     
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en migrar_orden (migracion_ordenes_forense.py)")
         log(f"❌ Error migrando orden #{orden_lab.id}: {str(e)}", "ERROR")
         raise
 
@@ -220,6 +222,7 @@ def migrar_detalles_orden(orden_lab, orden_nueva):
             detalles_migrados += 1
         
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en migrar_detalles_orden (migracion_ordenes_forense.py)")
             log(f"  ⚠️ Error en detalle #{detalle_lab.id}: {str(e)}", "WARNING")
     
     log(f"  → {detalles_migrados} detalles migrados", "INFO")
@@ -261,6 +264,7 @@ def migrar_resultados_detalle(detalle_lab, detalle_nuevo, orden_nueva):
             resultado_nuevo.save()
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en migrar_resultados_detalle (migracion_ordenes_forense.py)")
             log(f"    ⚠️ Error en resultado #{resultado_lab.id}: {str(e)}", "WARNING")
 
 # ==============================================================================
@@ -328,6 +332,7 @@ def ejecutar_migracion():
                 log(f"Progreso: {i}/{total_ordenes} órdenes procesadas", "INFO")
         
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en ejecutar_migracion (migracion_ordenes_forense.py)")
             log(f"❌ Error crítico en orden #{orden_lab.id}: {str(e)}", "ERROR")
             if not DRY_RUN:
                 raise  # Rollback en caso de error
@@ -359,6 +364,7 @@ if __name__ == '__main__':
     try:
         ejecutar_migracion()
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en ejecutar_migracion (migracion_ordenes_forense.py)")
         if "Dry run" not in str(e):
             log(f"❌ Error fatal: {str(e)}", "ERROR")
             import traceback

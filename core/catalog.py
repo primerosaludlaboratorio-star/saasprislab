@@ -116,7 +116,7 @@ class CatalogResolver:
                     )
                     override._es_override = True
                     return override
-                except (LabEstudio.DoesNotExist, Exception):
+                except LabEstudio.DoesNotExist:
                     pass
 
             # Retornar el estudio maestro
@@ -145,13 +145,13 @@ class CatalogResolver:
                     precio = getattr(override, 'precio_base', None)
                     if precio is not None:
                         return Decimal(str(precio))
-                except Exception:
+                except LabEstudio.DoesNotExist:
                     pass
 
             try:
                 estudio = LabEstudio.objects.get(pk=estudio_id)
                 return Decimal(str(estudio.precio_base)) if estudio.precio_base else None
-            except Exception:
+            except LabEstudio.DoesNotExist:
                 return None
 
     def listar_estudios(self, activos_solo=True):
@@ -220,28 +220,28 @@ class CatalogResolver:
     def _buscar_estudio_tenant(self, nombre: str):
         try:
             from laboratorio.models import Estudio
-            return Estudio.objects.filter(
-                empresa=self.empresa,
-                nombre__icontains=nombre,
-            ).first()
-        except Exception:
+        except ImportError:
             return None
+        return Estudio.objects.filter(
+            empresa=self.empresa,
+            nombre__icontains=nombre,
+        ).first()
 
     def _buscar_estudio_maestro(self, nombre: str):
         try:
             from laboratorio.models import Estudio
-            return Estudio.objects.filter(
-                nombre__icontains=nombre,
-            ).order_by('id').first()
-        except Exception:
+        except ImportError:
             return None
+        return Estudio.objects.filter(
+            nombre__icontains=nombre,
+        ).order_by('id').first()
 
     def _buscar_estudio_legacy(self, nombre: str):
         try:
             from core.models import Estudio
-            return Estudio.objects.filter(nombre__icontains=nombre).first()
-        except Exception:
+        except ImportError:
             return None
+        return Estudio.objects.filter(nombre__icontains=nombre).first()
 
     def _get_rango_iso(self, parametro_id: int, edad: int, sexo: str, empresa=None):
         try:
@@ -267,19 +267,22 @@ class CatalogResolver:
 
             # Si no hay rango específico, devolver el general
             return qs.first()
-        except Exception:
+        except ImportError:
             return None
 
     def _get_rango_legacy(self, parametro_id: int, sexo: str):
         try:
             from laboratorio.models import ValorReferencia, Parametro
-            param = Parametro.objects.get(pk=parametro_id)
-            return ValorReferencia.objects.filter(
-                estudio=param.estudio,
-                sexo__in=(sexo, 'I', ''),
-            ).first()
-        except Exception:
+        except ImportError:
             return None
+        try:
+            param = Parametro.objects.get(pk=parametro_id)
+        except Parametro.DoesNotExist:
+            return None
+        return ValorReferencia.objects.filter(
+            estudio=param.estudio,
+            sexo__in=(sexo, 'I', ''),
+        ).first()
 
 
 # ─── FUNCIÓN HELPER GLOBAL ───────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import requests
 from requests.exceptions import RequestException
 import sys
 import os
+import logging
 
 # Configurar encoding para Windows
 if os.name == 'nt':
@@ -228,6 +229,7 @@ def test_url(session, test_config):
         result["error"] = f"Excepción de red: {str(e)}"
         print(f"❌ ERROR: {result['error']}")
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en test_url (test_lab_flow.py)")
         result["error"] = f"Error inesperado: {str(e)}"
         print(f"❌ ERROR: {result['error']}")
     

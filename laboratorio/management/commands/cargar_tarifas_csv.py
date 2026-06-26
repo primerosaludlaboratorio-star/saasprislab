@@ -98,9 +98,20 @@ class Command(BaseCommand):
                         if idx % 10 == 0 or idx <= 20:
                             self.stdout.write(f"[UPDATE] [{idx:03d}] Actualizado: {codigo[:15]:15s} | ${importe:>8.2f}")
                     
-                except Exception as e:
+                except csv.Error as e:
+                    self.stdout.write(self.style.ERROR(f"[ERROR] Fila {idx}: Error CSV - {str(e)}"))
                     errores += 1
-                    self.stdout.write(self.style.ERROR(f"[ERROR] Linea {idx + 2}: {str(e)[:100]}"))
+                    continue
+                except FileNotFoundError as e:
+                    self.stdout.write(self.style.ERROR(f"[ERROR] Archivo no encontrado: {str(e)}"))
+                    raise
+                except ValueError as e:
+                    self.stdout.write(self.style.ERROR(f"[ERROR] Fila {idx}: Error de valor - {str(e)}"))
+                    errores += 1
+                    continue
+                except DatabaseError as e:
+                    self.stdout.write(self.style.ERROR(f"[ERROR] Fila {idx}: Error de base de datos - {str(e)}"))
+                    errores += 1
                     continue
         
         # Resumen final

@@ -185,6 +185,7 @@ class Command(BaseCommand):
 
                     return {'tipo': 'venta', 'id': venta.id, 'status': 'ok'}
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en crear_venta_task (estres_ventas_farmacia.py)")
                 return {'tipo': 'venta', 'n': n, 'status': 'error', 'error': str(e)}
 
         # Ejecutar ventas concurrentes
@@ -235,6 +236,7 @@ class Command(BaseCommand):
                 venta.save(update_fields=['estado'])
                 canceladas.append(venta_id)
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en _cancelar_ventas_aleatorias (estres_ventas_farmacia.py)")
                 self.stdout.write(self.style.ERROR(f"   Error cancelando #{venta_id}: {e}"))
 
         return canceladas

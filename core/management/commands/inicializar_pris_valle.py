@@ -13,6 +13,7 @@ Multi-empresa se configurará más adelante; en desarrollo se asume una sola ins
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from core.models import Empresa, Sucursal, ConfiguracionModulos, Usuario
+import logging
 
 
 class Command(BaseCommand):
@@ -166,6 +167,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS('\n[EXITO] PRISLAB listo (empresa + Matriz + módulos).\n'))
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (inicializar_pris_valle.py)")
             self.stdout.write(self.style.ERROR(f'\n[ERROR] Error durante la inicializacion: {str(e)}'))
             self.stdout.write(self.style.ERROR('   La transaccion ha sido revertida.'))
             raise

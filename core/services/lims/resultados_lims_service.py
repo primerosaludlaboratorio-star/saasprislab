@@ -53,6 +53,7 @@ class ResultadosLimsService:
                 'body': {'status': 'error', 'mensaje': 'Orden no encontrada'},
             }
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en guardar_captura (resultados_lims_service.py)")
             import traceback
 
             error_detail = traceback.format_exc()
@@ -69,6 +70,7 @@ class ResultadosLimsService:
                     empresa.nombre,
                 )
             except Exception as log_error:
+                logging.getLogger(__name__).exception("Error inesperado en guardar_captura (resultados_lims_service.py)")
                 logger_core.error(
                     'guardar_resultados: error secundario al registrar el error principal: %s',
                     log_error,
@@ -322,6 +324,7 @@ class ResultadosLimsService:
                                                 edad_dias=_ctx_v['edad_dias'],
                                             ) or {}
                                         except Exception:
+                                            logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
                                             logger_core.debug(
                                                 'ResultadosLimsService validar_contra_rango rp=%s',
                                                 rp.pk,
@@ -330,6 +333,7 @@ class ResultadosLimsService:
                                         try:
                                             rp.refresh_from_db()
                                         except Exception:
+                                            logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
                                             pass
                                         if _vd.get('es_critico') or getattr(rp, 'es_critico', False):
                                             try:
@@ -344,6 +348,7 @@ class ResultadosLimsService:
                                                     request_user=actor,
                                                 )
                                             except Exception as _esc_exc:
+                                                logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
                                                 logger_core.warning(
                                                     'Escudo LIMS captura manual: %s', _esc_exc
                                                 )
@@ -418,6 +423,7 @@ class ResultadosLimsService:
                             edad_dias=_ctx_c['edad_dias'],
                         ) or {}
                     except Exception:
+                        logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
                         logger_core.debug(
                             'ResultadosLimsService validar_contra_rango rp_calc=%s',
                             _rp_calc.pk,
@@ -426,6 +432,7 @@ class ResultadosLimsService:
                     try:
                         _rp_calc.refresh_from_db()
                     except Exception:
+                        logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
                         pass
                     if _vd_c.get('es_critico') or getattr(_rp_calc, 'es_critico', False):
                         try:
@@ -437,6 +444,7 @@ class ResultadosLimsService:
                                 _rp_calc, orden, _vd_c, request_user=actor
                             )
                         except Exception as _esc_c:
+                            logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
                             logger_core.warning('Escudo LIMS fórmula: %s', _esc_c)
 
                 if accion == 'validar':
@@ -495,6 +503,7 @@ class ResultadosLimsService:
                                 mensaje_consentimiento,
                             )
                     except Exception:
+                        logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
                         logger_core.warning(
                             'guardar_resultados: error verificando consentimiento (orden=%s)',
                             orden_id,
@@ -530,6 +539,7 @@ class ResultadosLimsService:
                             saldo_pdf_pendiente,
                         )
                     except Exception as e:
+                        logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
                         logger_core.error(
                             'guardar_resultados: fallo generando/guardando PDF (orden=%s): %s',
                             orden_id,
@@ -577,6 +587,7 @@ class ResultadosLimsService:
                             },
                         )
                     except Exception as _e:
+                        logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
                         logger_core.warning('BitacoraEntregaResultados: %s', _e)
 
                     try:
@@ -600,16 +611,19 @@ class ResultadosLimsService:
                                 try:
                                     rp.refresh_from_db()
                                 except Exception:
+                                    logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
                                     pass
                                 if getattr(rp, 'es_critico', False):
                                     notificar_panico_escudo_lims(
                                         rp, orden, vr, request_user=actor
                                     )
                             except Exception as _rp_err:
+                                logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
                                 logger_core.warning(
                                     'Escudo LIMS validación final rp %s: %s', rp.pk, _rp_err
                                 )
                     except Exception as _ev:
+                        logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
                         logger_core.warning('Validacion escudo LIMS: %s', _ev)
 
                     registrar_trazabilidad(
@@ -665,6 +679,7 @@ class ResultadosLimsService:
                 'body': {'status': 'error', 'mensaje': 'Orden no encontrada'},
             }
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
             import traceback
 
             error_detail = traceback.format_exc()
@@ -682,6 +697,7 @@ class ResultadosLimsService:
                     empresa.nombre,
                 )
             except Exception as log_error:
+                logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
                 logger_core.error(
                     'guardar_resultados: error secundario al registrar el error principal: %s',
                     log_error,

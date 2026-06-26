@@ -13,6 +13,7 @@ from core.utils.empresa_request import get_empresa_usuario
 from core.utils.tenant_strict import empresa_desde_request
 from lims.models import Analito, PerfilLims, PaqueteLims
 from lims.views.tenant_lims import empresa_lims
+import logging
 
 
 def _check_perm(user):
@@ -130,6 +131,7 @@ def api_agregar_analito(request, pk):
         body = json.loads(request.body)
         analito_id = int(body.get('analito_id', 0))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_agregar_analito (paquetes.py)")
         analito_id = int(request.POST.get('analito_id', 0))
     analito = tenant_protected_get(Analito, pk=analito_id)
     paquete.analitos.add(analito)
@@ -156,6 +158,7 @@ def api_agregar_perfil(request, pk):
         body = json.loads(request.body)
         perfil_id = int(body.get('perfil_id', 0))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en api_agregar_perfil (paquetes.py)")
         perfil_id = int(request.POST.get('perfil_id', 0))
     perfil = tenant_protected_get(PerfilLims, pk=perfil_id)
     paquete.perfiles.add(perfil)

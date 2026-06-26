@@ -16,6 +16,8 @@ import logging
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, get_object_or_404
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.db.utils import DatabaseError
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
@@ -103,7 +105,7 @@ def imprimir_etiquetas_lote_zpl(request):
         try:
             _o = _ODS.objects.select_related('paciente', 'empresa').get(pk=oid, empresa=empresa)
             ordenes_data.append(_orden_to_dict(_o))
-        except Exception:
+        except (ObjectDoesNotExist, DatabaseError):
             pass
 
     if not ordenes_data:
@@ -154,7 +156,7 @@ def kiosko_check_in_qr(request, qr_token: str):
             orden_ods = OrdenDeServicio.objects.select_related('paciente', 'empresa').filter(
                 folio_orden__iexact=token_clean
             ).first()
-    except Exception as e:
+    except (DatabaseError, ValidationError) as e:
         logger.warning('kiosko_check_in_qr: error buscando OrdenDeServicio: %s', e)
 
     if orden_ods:
@@ -171,7 +173,7 @@ def kiosko_check_in_qr(request, qr_token: str):
                     'kiosko check-in: orden %s en estado %s no admite check-in automático',
                     folio_display, orden_ods.estado
                 )
-        except Exception as e:
+        except (AttributeError, TypeError) as e:
             logger.warning('kiosko_check_in_qr: error verificando estado: %s', e)
 
         # Registrar timestamp de llegada en sesión (para notificación a recepción)

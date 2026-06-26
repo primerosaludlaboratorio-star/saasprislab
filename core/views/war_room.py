@@ -54,6 +54,7 @@ def _model_has_field(model, field_name: str) -> bool:
     try:
         return any(f.name == field_name for f in model._meta.get_fields())
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _model_has_field (war_room.py)")
         return False
 
 def _detectar_discrepancias_caja(empresa) -> list[dict]:
@@ -372,6 +373,7 @@ def _detectar_burnout_nom035(empresa) -> list[dict]:
                 'accion_texto': 'Ver bienestar',
             })
     except Exception as exc:
+        logging.getLogger(__name__).exception("Error inesperado en _detectar_burnout_nom035 (war_room.py)")
         logger.debug(f'War Room - burnout (no crítico): {exc}')
     return anomalias
 
@@ -388,6 +390,7 @@ def _obtener_flujo_caja(empresa) -> dict:
         ).aggregate(total=Sum('total'))
         resultado['ingresos'] = float(ventas['total'] or 0)
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _obtener_flujo_caja (war_room.py)")
         pass
     try:
         from inventario.models import OrdenDeCompra
@@ -398,6 +401,7 @@ def _obtener_flujo_caja(empresa) -> dict:
         ).aggregate(total=Sum('total_estimado'))
         resultado['gastos_compras'] = float(gastos['total'] or 0)
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _obtener_flujo_caja (war_room.py)")
         pass
     resultado['saldo_neto'] = resultado['ingresos'] - resultado['gastos_compras']
     return resultado
@@ -528,6 +532,7 @@ def _obtener_metricas_marketing(empresa) -> dict:
         ).count()
         resultado['disponible'] = True
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en _obtener_metricas_marketing (war_room.py)")
         logger.debug('war_room _metricas_marketing CampanaMarketing: %s', e)
 
     try:
@@ -536,6 +541,7 @@ def _obtener_metricas_marketing(empresa) -> dict:
             empresa=empresa, estatus=FacturaSAT.ESTATUS_BORRADOR
         ).count()
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en _obtener_metricas_marketing (war_room.py)")
         logger.debug('war_room _metricas_marketing FacturaSAT: %s', e)
 
     try:
@@ -548,6 +554,7 @@ def _obtener_metricas_marketing(empresa) -> dict:
         ).values('paciente_id').distinct().count()
         resultado['pacientes_inactivos_estimado'] = max(0, total_pac - con_actividad)
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en _obtener_metricas_marketing (war_room.py)")
         logger.debug('war_room _metricas_marketing pacientes inactivos: %s', e)
 
     return resultado
@@ -593,6 +600,7 @@ def war_room(request):
             empresa=empresa, resuelta=False
         ).count()
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en war_room (war_room.py)")
         pass
 
     tendencia_bienestar = _obtener_tendencia_bienestar(empresa)

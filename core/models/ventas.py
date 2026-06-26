@@ -12,6 +12,7 @@ import uuid
 from core.tenant import TenantModel
 from core.validators import validate_image_upload
 from .base import Empresa, Sucursal, Usuario, get_google_drive_storage
+import logging
 
 
 # ==============================================================================
@@ -407,7 +408,8 @@ class DevolucionVenta(models.Model):
                 },
             )
         except Exception:
-            pass
+            logging.getLogger(__name__).exception("Error inesperado en save (ventas.py)")
+            pass  # Auditoría best-effort: no debe fallar la transacción principal de devolución.
 
 
 class Pago(models.Model):
@@ -702,7 +704,8 @@ class MovimientoCaja(models.Model):
                     },
                 )
             except Exception:
-                pass
+                logging.getLogger(__name__).exception("Error inesperado en save (ventas.py)")
+                pass  # Auditoría best-effort: no debe fallar la transacción principal de caja.
 
 
 # ==============================================================================

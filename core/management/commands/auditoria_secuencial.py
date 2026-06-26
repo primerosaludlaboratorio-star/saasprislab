@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.db import transaction
 import traceback
 from colorama import init, Fore, Style
+import logging
 
 init(autoreset=True)
 
@@ -72,6 +73,7 @@ class Command(BaseCommand):
                 return status < 400
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_url (auditoria_secuencial.py)")
             self.log_error(url, nombre, str(e), traceback.format_exc())
             return False
 
@@ -103,6 +105,7 @@ class Command(BaseCommand):
             user.save()
             return user
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en crear_usuario_test (auditoria_secuencial.py)")
             self.stdout.write(f"{Fore.RED}[ERROR] No se pudo crear usuario {username}: {e}")
             return None
 

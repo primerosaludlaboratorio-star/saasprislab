@@ -14,6 +14,7 @@ import time
 import re
 from colorama import init, Fore, Style
 from urllib.parse import urljoin, urlparse
+import logging
 
 init(autoreset=True)
 
@@ -94,6 +95,7 @@ class Command(BaseCommand):
                 return status < 400, response
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_url (auditoria_core_full.py)")
             tiempo_respuesta = time.time() - inicio
             self.log_result('ERROR', f"{nombre} - Excepción: {str(e)}", traceback.format_exc())
             self.resultados['errores_encontrados'].append({
@@ -114,6 +116,7 @@ class Command(BaseCommand):
             self.log_result('ERROR', f"Template {template_name} no existe")
             return False
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en validar_template (auditoria_core_full.py)")
             self.log_result('ERROR', f"Template {template_name} tiene errores: {str(e)}")
             return False
 
@@ -174,6 +177,7 @@ class Command(BaseCommand):
                     })
                     
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en extraer_enlaces (auditoria_core_full.py)")
             self.log_result('WARNING', f"Error al extraer enlaces: {str(e)}")
         
         return enlaces
@@ -224,6 +228,7 @@ class Command(BaseCommand):
                     self.log_result('INFO', f"Enlace: {href[:50]} - Redirect {response.status_code}")
                     
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en probar_enlaces (auditoria_core_full.py)")
                 self.log_result('ERROR', f"Enlace: {href[:50]} - Excepción: {str(e)}")
 
     def handle(self, *args, **options):
@@ -280,6 +285,7 @@ class Command(BaseCommand):
             
             self.log_result('OK', "Usuario de prueba creado: test_auditoria / test123")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_core_full.py)")
             self.log_result('ERROR', f"No se pudo crear usuario de prueba: {str(e)}")
             return
 

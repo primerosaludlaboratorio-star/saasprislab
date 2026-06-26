@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 from core.models import Producto, Lote, Usuario
 from core.utils.tenant_strict import add_argument_empresa_id, empresa_desde_management
+import logging
 
 
 class Command(BaseCommand):
@@ -17,6 +18,7 @@ class Command(BaseCommand):
         try:
             empresa = empresa_desde_management(kwargs)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (cargar_csv.py)")
             self.stdout.write(self.style.ERROR(str(e)))
             return
 
@@ -116,4 +118,5 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f'✔ Lotes procesados: {c_lote}'))
 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en limpiar_numero (cargar_csv.py)")
             self.stdout.write(self.style.ERROR(f'❌ Error grave en proceso: {str(e)}'))

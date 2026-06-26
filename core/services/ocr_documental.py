@@ -238,11 +238,13 @@ def _parse_json_respuesta(texto: str) -> dict:
     try:
         return json.loads(texto)
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _parse_json_respuesta (ocr_documental.py)")
         m = re.search(r'\{.*\}', texto, re.DOTALL)
         if m:
             try:
                 return json.loads(m.group())
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en _parse_json_respuesta (ocr_documental.py)")
                 pass
     return {}
 

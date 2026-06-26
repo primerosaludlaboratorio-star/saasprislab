@@ -13,8 +13,8 @@ MEJORAS IMPLEMENTADAS:
 """
 
 from django import template
-from django.contrib.auth.models import Group
 from django.core.cache import cache
+import logging
 
 register = template.Library()
 
@@ -58,6 +58,7 @@ def has_group(user, group_name):
             is_gerencia = user.groups.filter(name='GERENCIA_OPERATIVA').exists()
             cache.set(cache_key_gerencia, is_gerencia, 300)
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en has_group (auth_extras.py)")
             is_gerencia = False
     
     if is_gerencia:
@@ -79,6 +80,7 @@ def has_group(user, group_name):
         
         return result
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en has_group (auth_extras.py)")
         # En caso de error, denegar acceso
         return False
 
@@ -114,6 +116,7 @@ def has_permission(user, permission_codename):
     try:
         return user.has_perm(permission_codename)
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en has_permission (auth_extras.py)")
         return False
 
 
@@ -161,6 +164,7 @@ def is_role(user, role_name):
             return user.rol.upper() == role_name.upper()
         return False
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en is_role (auth_extras.py)")
         return False
 
 
@@ -244,6 +248,7 @@ def can_access_module(user, module_name):
         return result
         
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en can_access_module (auth_extras.py)")
         # En caso de error, permitir acceso
         return True
 
@@ -283,6 +288,7 @@ def in_groups(user, groups_string):
         
         return False
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en in_groups (auth_extras.py)")
         return False
 
 
@@ -318,6 +324,7 @@ def user_dashboard_url(user):
         if user.groups.filter(name='GERENCIA_OPERATIVA').exists():
             return '/dashboard/'
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en user_dashboard_url (auth_extras.py)")
         pass
     
     # Medico

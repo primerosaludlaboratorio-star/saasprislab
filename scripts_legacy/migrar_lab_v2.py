@@ -20,6 +20,7 @@ from decimal import Decimal
 import csv
 import os
 from django.conf import settings
+import logging
 
 
 class Command(BaseCommand):
@@ -98,12 +99,14 @@ class Command(BaseCommand):
                                 count += 1
                                 
                         except Exception as e:
+                            logging.getLogger(__name__).exception("Error inesperado en cargar_estudios (migrar_lab_v2.py)")
                             print(f"Error en estudio {codigo}: {e}")
                             continue
                 
                 print(f"EXITO: {count} Estudios creados.")
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en cargar_estudios (migrar_lab_v2.py)")
             print(f"ERROR CRITICO en Examenes.csv: {e}")
 
     def cargar_parametros(self):
@@ -149,11 +152,13 @@ class Command(BaseCommand):
                                 count += 1
                                 
                         except Exception as e:
+                            logging.getLogger(__name__).exception("Error inesperado en cargar_parametros (migrar_lab_v2.py)")
                             continue
                 
                 print(f"EXITO: {count} Parametros creados.")
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en cargar_parametros (migrar_lab_v2.py)")
             print(f"ERROR en Parametros.csv: {e}")
 
     def cargar_rangos(self):
@@ -237,11 +242,13 @@ class Command(BaseCommand):
                                 count += 1
                                 
                         except Exception as e:
+                            logging.getLogger(__name__).exception("Error inesperado en cargar_rangos (migrar_lab_v2.py)")
                             continue
                 
                 print(f"EXITO: {count} Rangos de referencia creados.")
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en cargar_rangos (migrar_lab_v2.py)")
             print(f"ERROR en Valores_normalidad.csv: {e}")
 
     def cargar_paquetes(self):
@@ -292,6 +299,7 @@ class Command(BaseCommand):
                                 count += 1
                                 
                         except Exception as e:
+                            logging.getLogger(__name__).exception("Error inesperado en cargar_paquetes (migrar_lab_v2.py)")
                             continue
                 
                 print(f"EXITO: {count} Paquetes creados.")
@@ -332,11 +340,13 @@ class Command(BaseCommand):
                                 vinculados += 1
                                 
                             except Exception as e:
+                                logging.getLogger(__name__).exception("Error inesperado en cargar_paquetes (migrar_lab_v2.py)")
                                 continue
                     
                     print(f"   {vinculados} estudios vinculados a paquetes.")
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en cargar_paquetes (migrar_lab_v2.py)")
             print(f"ERROR en Paquetes: {e}")
 
     def cargar_precios(self):
@@ -397,10 +407,12 @@ class Command(BaseCommand):
                                     updated_paquetes += 1
                             
                         except Exception as e:
+                            logging.getLogger(__name__).exception("Error inesperado en cargar_precios (migrar_lab_v2.py)")
                             continue
                 
                 print(f"EXITO: {updated_estudios} precios de Estudios actualizados.")
                 print(f"EXITO: {updated_paquetes} precios de Paquetes actualizados.")
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en cargar_precios (migrar_lab_v2.py)")
             print(f"ERROR CRITICO en Tarifas: {e}")

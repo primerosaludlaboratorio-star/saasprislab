@@ -160,4 +160,5 @@ class PerformanceMiddleware:
             threading.Thread(target=_crear, daemon=True).start()
 
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en _crear (performance.py)")
             pass

@@ -10,6 +10,7 @@ from django.db import transaction
 import json
 
 from core.models import OrdenDeServicio, ConsentimientoInformado, RegistroAuditoriaConsentimiento
+import logging
 
 
 @login_required
@@ -77,6 +78,7 @@ def api_guardar_consentimiento(request, orden_id):
         })
 
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_guardar_consentimiento (consentimientos.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 
@@ -106,6 +108,7 @@ def api_verificar_consentimiento(request, orden_id):
                 'mensaje': 'La orden no tiene consentimiento firmado'
             })
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_verificar_consentimiento (consentimientos.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 

@@ -23,6 +23,7 @@ from django.utils import timezone
 
 from core.models import Empresa, Usuario, Producto, Lote, Venta, Paciente
 from core.views.farmacia import procesar_venta
+import logging
 
 
 def _safe_int(val, default=1):
@@ -236,6 +237,7 @@ class Command(BaseCommand):
                     errores += 1
                     break
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en cargar_productos_con_stock (simular_ventas_farmacia.py)")
                     errores += 1
                     break
 
@@ -260,4 +262,3 @@ class Command(BaseCommand):
         # Métrica extra rápida
         total_ventas_empresa = Venta.objects.filter(empresa=empresa).count()
         self.stdout.write(f"[INFO] Total ventas en la empresa ahora: {total_ventas_empresa}")
-

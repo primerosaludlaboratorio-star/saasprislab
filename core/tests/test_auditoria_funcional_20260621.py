@@ -200,6 +200,21 @@ class AuditoriaFuncionalJunio21Test(TestCase):
         equipo.refresh_from_db()
         self.assertFalse(equipo.activo)
 
+    def test_dashboard_director_carga_con_empresa_del_usuario(self):
+        response = self.client.get(reverse("dashboard_director"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "PRISLAB Auditoria")
+
+    def test_dashboard_director_sin_empresa_redirige_login(self):
+        self.usuario.empresa = None
+        self.usuario.save(update_fields=["empresa"])
+
+        response = self.client.get(reverse("dashboard_director"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("login"), response.url)
+
     def test_director_puede_ver_expediente_clinico_sin_loop_403(self):
         director = Usuario.objects.create_user(
             username="director_expediente",

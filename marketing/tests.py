@@ -81,3 +81,76 @@ class MarketingTrack204Tests(TestCase):
         hit = MarketingTrackingHit.objects.get()
         self.assertEqual(hit.paciente_id, pac.id)
         self.assertEqual(hit.empresa_id, self.empresa.id)
+
+
+from django.contrib.auth import get_user_model
+
+Usuario = get_user_model()
+
+class MarketingSecurityTests(TestCase):
+    def setUp(self):
+        self.empresa_a = Empresa.objects.create(nombre="Empresa A", rfc="RFC111111AAA")
+        
+        self.user_con_empresa = Usuario.objects.create_user(
+            username="marketing_user_con_emp",
+            password="password123",
+            empresa=self.empresa_a,
+            rol="RECEPCION"
+        )
+        self.user_sin_empresa = Usuario.objects.create_user(
+            username="marketing_user_sin_emp",
+            password="password123",
+            empresa=None,
+            rol="RECEPCION"
+        )
+        self.client = Client()
+
+    def test_api_generar_cupon_enforces_empresa(self):
+        # User without company is blocked
+        self.client.login(username="marketing_user_sin_emp", password="password123")
+        response = self.client.post(reverse("marketing:api_generar_cupon"), {
+            "porcentaje": "15",
+            "descripcion": "Descuento especial"
+        })
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(response.json()["ok"])
+
+        # User with company can generate coupon
+        self.client.login(username="marketing_user_con_emp", password="password123")
+        response = self.client.post(reverse("marketing:api_generar_cupon"), {
+            "porcentaje": "15",
+            "descripcion": "Descuento especial"
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["ok"])
+
+    def test_api_crear_campana_enforces_empresa(self):
+        # User without company is blocked
+        self.client.login(username="marketing_user_sin_emp", password="password123")
+        response = self.client.post(reverse("marketing:api_crear_campana"), {
+            "segmento": "diabeticos",
+            "mensaje": "Mensaje de campaña"
+        })
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(response.json()["ok"])
+
+        # User with company can create campaign
+        self.client.login(username="marketing_user_con_emp", password="password123")
+        response = self.client.post(reverse("marketing:api_crear_campana"), {
+            "segmento": "diabeticos",
+            "mensaje": "Mensaje de campaña"
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["ok"])
+
+    def test_entrenamiento_ia_enforces_empresa(self):
+        # User without company is redirected to home
+        self.client.login(username="marketing_user_sin_emp", password="password123")
+        response = self.client.get(reverse("marketing:entrenamiento_ia"))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("home"), target_status_code=302)
+
+        # User with company can access
+        self.client.login(username="marketing_user_con_emp", password="password123")
+        response = self.client.get(reverse("marketing:entrenamiento_ia"))
+        self.assertEqual(response.status_code, 200)

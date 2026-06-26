@@ -17,6 +17,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.core.files.storage import default_storage
+import logging
 
 CONFIRMACION_REQUERIDA = "CONFIRMAR_WIPE_PRISLAB"
 
@@ -231,4 +232,5 @@ class Command(BaseCommand):
                 if default_storage.exists(ruta):
                     default_storage.delete(ruta)
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en _borrar_archivos_media (wipe_datos_operativos.py)")
                 pass

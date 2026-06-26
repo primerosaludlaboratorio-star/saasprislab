@@ -111,12 +111,17 @@ class EmpresaIdentityMiddleware:
             # ── v8.5: bypass de emergencia (DRP — sin reinstalar) ───────────
             # Si PRISLAB_EMERGENCY_TENANT_BYPASS=1, TenantManager no filtra por empresa.
             emergency = _env_truthy('PRISLAB_EMERGENCY_TENANT_BYPASS')
-            if emergency:
+            if emergency and getattr(settings, 'DEBUG', False):
                 from core.tenant import set_tenant_bypass
                 set_tenant_bypass(True)
                 logger.critical(
                     'PRISLAB_EMERGENCY_TENANT_BYPASS activo — filtro tenant ORM desactivado '
-                    '(incidente). Desactivar en cuanto sea seguro.'
+                    '(solo DEBUG). Desactivar en cuanto sea seguro.'
+                )
+            elif emergency:
+                logger.error(
+                    'PRISLAB_EMERGENCY_TENANT_BYPASS ignorado fuera de DEBUG '
+                    '(protección de producción).'
                 )
 
             response = self.get_response(request)
@@ -128,12 +133,14 @@ class EmpresaIdentityMiddleware:
                 from core.tenant import set_tenant_bypass
                 set_tenant_bypass(False)
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en __call__ (empresa.py)")
                 pass
             set_current_request(None)
             try:
                 from core.tenant import clear_current_empresa
                 clear_current_empresa()
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en __call__ (empresa.py)")
                 pass
 
 
@@ -171,6 +178,7 @@ def _get_modulos_activos(empresa) -> dict:
             'war_room':        cfg.modulo_contabilidad,  # War Room requiere Finanzas
         }
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _get_modulos_activos (empresa.py)")
         return _todos_activos()
 
 

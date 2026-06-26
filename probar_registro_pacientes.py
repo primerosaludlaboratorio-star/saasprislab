@@ -5,6 +5,7 @@ Verifica que el sistema de alta express funcione correctamente
 import os
 import sys
 import django
+import logging
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
@@ -111,6 +112,7 @@ def probar_registro():
             return False
             
     except Exception as e:
+        logging.getLogger(__name__).exception("Error inesperado en probar_registro (probar_registro_pacientes.py)")
         print(f"[ERROR] Fallo al crear paciente: {e}")
         import traceback
         traceback.print_exc()

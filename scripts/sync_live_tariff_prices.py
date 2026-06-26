@@ -11,6 +11,7 @@ from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+import logging
 
 
 def _clean(value) -> str:
@@ -34,6 +35,7 @@ def _parse_price(raw) -> Decimal:
     try:
         return Decimal(txt).quantize(Decimal('0.01'))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _parse_price (sync_live_tariff_prices.py)")
         return Decimal('0.00')
 
 

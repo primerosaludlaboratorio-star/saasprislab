@@ -10,6 +10,8 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Q
 from django.db import transaction
+from django.db.utils import DatabaseError
+from django.core.exceptions import ValidationError
 
 from core.models import NotaClinicaSOAP, SignosVitales, CitaMedica, Paciente
 from core.models.expediente_blindaje import SnapshotNotaMiddleware
@@ -146,7 +148,7 @@ def _crear_snapshot_signos_vitales(cita, signos, request):
                 ip=request.META.get('REMOTE_ADDR'),
                 user_agent=request.META.get('HTTP_USER_AGENT', ''),
             )
-        except Exception as e:
+        except (DatabaseError, ValidationError) as e:
             import logging
             logger = logging.getLogger('enfermeria')
             logger.warning("No se pudo crear snapshot SHA de signos vitales: %s", e)

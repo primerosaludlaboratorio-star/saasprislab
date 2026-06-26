@@ -245,7 +245,7 @@ Genera un JSON válido (sin markdown, sin ```json, SOLO el JSON puro) con esta e
 
         return (analisis_ia, contexto_cursor, contexto_reparacion)
 
-    except Exception as e:
+    except (ImportError, AttributeError, ValueError, RuntimeError) as e:
         logger.error(f"SENTINEL: Error al consultar Gemini: {e}")
         analisis, contexto = _analisis_offline(tipo_excepcion, traceback_texto, url, metodo)
         reparacion = _contexto_reparacion_offline(
@@ -397,7 +397,7 @@ El ticket debe ser copiable directamente a Cursor por Jonathan Alonso.
 
         return generate_content(prompt, max_tokens=1200)
 
-    except Exception as e:
+    except (ImportError, AttributeError, ValueError, RuntimeError) as e:
         logger.error(f"SENTINEL: Error al generar ticket maestro: {e}")
         return (
             f"TICKET DE REPARACIÓN MAESTRO (IA no disponible)\n\n"

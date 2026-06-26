@@ -87,6 +87,7 @@ def solicitar_acceso(request):
             return redirect('pacientes:portal_login')
             
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en solicitar_acceso (portal_views.py)")
             messages.error(request, f'Error al procesar solicitud: {str(e)}')
     
     return render(request, 'pacientes/portal/solicitar_acceso.html')

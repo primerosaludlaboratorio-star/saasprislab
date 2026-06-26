@@ -74,7 +74,7 @@ def _calcular_nivel_riesgo(score: int, total_items: int) -> int:
 def _verificar_riesgo_burnout(empleado, empresa):
     """Detecta patrones de burnout y crea AlertaBurnout si aplica."""
     from datetime import date
-    hace_5_dias = timezone.now().date() - timedelta(days=5)
+    hace_5_dias = timezone.localdate() - timedelta(days=5)
 
     entradas_recientes = DiarioEmocionalStaff.objects.filter(
         empleado=empleado,
@@ -112,10 +112,13 @@ def _verificar_riesgo_burnout(empleado, empresa):
 def dashboard_bienestar(request):
     """Dashboard principal del módulo Bienestar Staff."""
     empresa = get_empresa_usuario(request.user)
+    if not empresa:
+        messages.error(request, 'Usuario sin empresa asignada.')
+        return redirect('home')
     usuario = request.user
 
     # Estadísticas personales (sin revelar contenido privado)
-    hace_30_dias = timezone.now().date() - timedelta(days=30)
+    hace_30_dias = timezone.localdate() - timedelta(days=30)
     entradas_mes = DiarioEmocionalStaff.objects.filter(
         empleado=usuario, fecha__gte=hace_30_dias
     ).count()
@@ -167,6 +170,9 @@ def dashboard_bienestar(request):
 def diario_emocional(request):
     """Vista y registro del Diario Emocional privado (AES-256 activado)."""
     empresa = get_empresa_usuario(request.user)
+    if not empresa:
+        messages.error(request, 'Usuario sin empresa asignada.')
+        return redirect('home')
     usuario = request.user
 
     if request.method == 'POST':
@@ -176,13 +182,13 @@ def diario_emocional(request):
             contenido = request.POST.get('contenido', '').strip()
             horas = request.POST.get('horas_sueno')
             actividad = request.POST.get('actividad_fisica') == 'on'
-            fecha_str = request.POST.get('fecha', timezone.now().date().isoformat())
+            fecha_str = request.POST.get('fecha', timezone.localdate().isoformat())
 
             from datetime import date
             try:
                 fecha = date.fromisoformat(fecha_str)
             except ValueError:
-                fecha = timezone.now().date()
+                fecha = timezone.localdate()
 
             obj, created = DiarioEmocionalStaff.objects.update_or_create(
                 empleado=usuario,
@@ -221,6 +227,9 @@ def diario_emocional(request):
 def evaluacion_nom035(request):
     """Cuestionario NOM-035 (20 ítems representativos). Respuestas cifradas."""
     empresa = get_empresa_usuario(request.user)
+    if not empresa:
+        messages.error(request, 'Usuario sin empresa asignada.')
+        return redirect('home')
     usuario = request.user
     periodo = timezone.now().strftime('%Y-%m')
 
@@ -266,7 +275,7 @@ def evaluacion_nom035(request):
             )
 
         messages.success(request, f'✅ Evaluación NOM-035 completada. Nivel de riesgo: {evaluacion.get_nivel_riesgo_display()}')
-        return redirect('dashboard_bienestar')
+        return redirect('bienestar_dashboard')
 
     evaluaciones_previas = EvaluacionNOM035.objects.filter(
         empleado=usuario
@@ -293,11 +302,11 @@ def alertas_rrhh(request):
 
     if not empresa:
         messages.error(request, 'Usuario sin empresa asignada.')
-        return redirect('dashboard_bienestar')
+        return redirect('home')
 
     if not (request.user.is_superuser or rol in ('ADMIN', 'DIRECTOR', 'GERENTE')):
         messages.error(request, 'Acceso restringido a RRHH/Dirección.')
-        return redirect('dashboard_bienestar')
+        return redirect('bienestar_dashboard')
 
     if request.method == 'POST':
         alerta_id = request.POST.get('alerta_id')
@@ -329,7 +338,10 @@ def alertas_rrhh(request):
 @login_required
 def capacitaciones(request):
     """Registro de capacitaciones del personal."""
-    empresa = getattr(request.user, 'empresa', None)
+    empresa = get_empresa_usuario(request.user)
+    if not empresa:
+        messages.error(request, 'Usuario sin empresa asignada.')
+        return redirect('home')
     usuario = request.user
 
     if request.method == 'POST':

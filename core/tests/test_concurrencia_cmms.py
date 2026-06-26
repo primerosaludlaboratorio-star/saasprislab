@@ -16,6 +16,7 @@ from mantenimiento.services.consumo_refacciones_service import (
     StockInsuficienteError,
     registrar_consumo_refaccion,
 )
+import logging
 
 
 User = get_user_model()
@@ -101,6 +102,7 @@ class TestConcurrenciaCMMS(TransactionTestCase):
         except StockInsuficienteError as exc:
             return ('stock', str(exc))
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en _intentar_consumo (test_concurrencia_cmms.py)")
             return ('error', type(exc).__name__)
         finally:
             close_old_connections()

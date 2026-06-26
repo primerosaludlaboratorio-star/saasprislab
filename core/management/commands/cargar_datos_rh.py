@@ -12,6 +12,7 @@ from core.models import (
     Empresa, Usuario, Empleado, Competencia, EvaluacionDesempeno, 
     DetalleEvaluacion, PlanDesarrollo
 )
+import logging
 
 User = get_user_model()
 
@@ -204,6 +205,7 @@ class Command(BaseCommand):
                     plan = generar_pdi_automatico(evaluacion.id)
                     self.stdout.write(self.style.SUCCESS(f'    → PDI generado: {plan.id}'))
                 except Exception as e:
+                    logging.getLogger(__name__).exception("Error inesperado en handle (cargar_datos_rh.py)")
                     self.stdout.write(self.style.WARNING(f'    ⚠ Error generando PDI: {str(e)}'))
         
         # RESUMEN FINAL

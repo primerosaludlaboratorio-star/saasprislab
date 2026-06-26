@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from django.conf import settings
+import logging
 
 
 @dataclass
@@ -52,6 +53,7 @@ def extraer_texto_pdf_por_pagina(pdf_path: str) -> List[Tuple[int, str]]:
         try:
             txt = page.extract_text() or ""
         except Exception:
+            logging.getLogger(__name__).exception("Error inesperado en extraer_texto_pdf_por_pagina (rag_engine.py)")
             txt = ""
         txt = _normalizar_texto(txt)
         if txt:
@@ -91,6 +93,7 @@ def _chroma_available() -> bool:
 
         return True
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _chroma_available (rag_engine.py)")
         return False
 
 
@@ -166,6 +169,7 @@ def _embed_textos(textos: List[str]) -> List[List[float]]:
                 # Si el formato es diferente, intentar acceder directamente
                 embeddings.append(list(result) if hasattr(result, '__iter__') else [0.0] * 768)
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en _embed_textos (rag_engine.py)")
             # Si falla, generar embedding vacío del tamaño correcto (768 para text-embedding-004)
             embeddings.append([0.0] * 768)
     
@@ -380,4 +384,3 @@ def consultar_cerebro(*, pregunta: str, empresa_id: int, categoria: str) -> Dict
             for c in contexto
         ],
     }
-

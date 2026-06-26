@@ -12,6 +12,7 @@ import sys
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
+import logging
 
 
 OK = "\033[92m[OK]\033[0m"
@@ -137,6 +138,7 @@ def _run_checks():
                 f"Data sample: {str(data)[:200]}",
             )
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en _run_checks (test_integracion_real.py)")
             _check(resultados, "API productos retorna JSON valido", False, str(exc))
 
     resp = client.get(f"/farmacia/api/lotes-producto/{producto.id}/", follow=True)

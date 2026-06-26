@@ -40,6 +40,7 @@ def _default_empresa():
 
         return resolve_default_empresa_sistema()
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en _default_empresa (prisci_webhook.py)")
         return None
 
 

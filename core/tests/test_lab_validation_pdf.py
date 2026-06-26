@@ -125,7 +125,7 @@ class LabValidationPdfTest(TestCase):
     def test_imprimir_resultados_staff_bloquea_orden_no_validada(self):
         orden = self._crear_orden()
 
-        with patch('core.views.laboratorio_reportes.generar_reporte_pdf') as generar:
+        with patch('core.views.laboratorio.reportes.generar_reporte_pdf') as generar:
             response = self.client.get(reverse('imprimir_resultados', args=[orden.id]))
 
         self.assertEqual(response.status_code, 302)
@@ -136,7 +136,7 @@ class LabValidationPdfTest(TestCase):
         orden = self._crear_orden()
         OrdenDeServicio.objects.filter(id=orden.id).update(estado='RESULTADOS_LISTOS')
 
-        with patch('core.views.laboratorio_reportes.generar_reporte_pdf') as generar:
+        with patch('core.views.laboratorio.reportes.generar_reporte_pdf') as generar:
             response = self.client.get(reverse('imprimir_resultados', args=[orden.id]))
 
         self.assertEqual(response.status_code, 302)

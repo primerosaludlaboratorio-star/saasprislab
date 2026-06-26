@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.db import transaction
 import traceback
 from colorama import init, Fore, Style
+import logging
 
 init(autoreset=True)
 
@@ -57,6 +58,7 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(f"{Fore.GREEN}[OK] Login exitoso como admin\n")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_qa.py)")
             self.stdout.write(f"{Fore.RED}[X] ERROR al hacer login: {e}\n")
             return
 
@@ -183,6 +185,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"{estado} {nombre:.<50} {resultado}")
                 
             except Exception as e:
+                logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_qa.py)")
                 estado = f"{Fore.RED}[ROJO]"
                 error_msg = str(e)
                 traceback_str = traceback.format_exc()

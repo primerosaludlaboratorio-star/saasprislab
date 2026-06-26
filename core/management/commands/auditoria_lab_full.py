@@ -12,6 +12,7 @@ import traceback
 import time
 from colorama import init, Fore, Style
 from decimal import Decimal
+import logging
 
 init(autoreset=True)
 
@@ -97,6 +98,7 @@ class Command(BaseCommand):
                 return status < 400, response
                 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en test_url (auditoria_lab_full.py)")
             tiempo_respuesta = time.time() - inicio
             self.log_result('ERROR', f"{nombre} - Excepción: {str(e)}", traceback.format_exc())
             return False, None
@@ -134,6 +136,7 @@ class Command(BaseCommand):
             
             self.log_result('OK', "Usuario Químico creado: test_quimico_lab / test123")
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_lab_full.py)")
             self.log_result('ERROR', f"No se pudo crear usuario: {str(e)}")
             return
 
@@ -234,6 +237,7 @@ class Command(BaseCommand):
             self.log_result('OK', f"Detalle de orden creado con resultado y validación: {estudio.nombre}")
 
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en handle (auditoria_lab_full.py)")
             self.log_result('ERROR', f"Error al crear datos de prueba: {str(e)}", traceback.format_exc())
             return
 

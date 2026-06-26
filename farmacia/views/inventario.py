@@ -13,6 +13,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
+from django.db import DatabaseError
 from django.db.models import DecimalField, Q, Sum, F, Prefetch
 from django.db.models.functions import Coalesce
 from django.utils import timezone
@@ -182,6 +183,7 @@ def carga_masiva_productos(request):
         else:
             return JsonResponse({'status': 'error', 'mensaje': 'Formato no soportado. Use CSV o XLSX'}, status=400)
     except Exception as exc:
+        # Justificación: Integración externa no confiable (procesamiento de binarios Excel/CSV provistos por usuario).
         logger.exception('Error leyendo carga masiva farmacia: %s', exc)
         return JsonResponse({'status': 'error', 'mensaje': f'No se pudo leer el archivo: {exc}'}, status=400)
 
@@ -220,19 +222,34 @@ def _normalizar_header(header):
 
 def _fila_a_producto(row):
     """Convierte una fila de CSV/XLSX a diccionario de producto."""
-    return {
-        'nombre': row.get('nombre', '').strip(),
-        'codigo_barras': row.get('codigo_barras', '').strip(),
-        'sustancia_activa': row.get('sustancia_activa', '').strip(),
-        'marca_laboratorio': row.get('marca', '').strip(),
-        'categoria': row.get('categoria', '').strip(),
+    producto = {
+        'nombre': str(row.get('nombre', '') or '').strip(),
+        'codigo_barras': str(row.get('codigo_barras', '') or '').strip(),
+        'descripcion': str(row.get('descripcion', '') or row.get('sustancia_activa', '') or '').strip(),
+        'marca': str(row.get('marca', '') or row.get('marca_laboratorio', '') or '').strip(),
+        'categoria': str(row.get('categoria', '') or '').strip(),
         'precio_publico': Decimal(str(row.get('precio_publico', 0) or 0)),
-        'precio_compra': Decimal(str(row.get('precio_compra', 0) or 0)),
+        'costo': Decimal(str(row.get('costo', 0) or row.get('precio_compra', 0) or 0)),
         'stock': int(row.get('stock', 0) or 0),
         'stock_minimo': int(row.get('stock_minimo', 0) or 0),
         'iva_porcentaje': Decimal(str(row.get('iva_porcentaje', 16) or 16)),
         'es_antibiotico': str(row.get('es_antibiotico', '')).lower() in {'1', 'true', 'si', 'sí'},
     }
+    # Extraer datos de lote si están presentes en la fila
+    numero_lote = str(row.get('numero_lote', '') or row.get('lote', '') or '').strip()
+    caducidad = str(row.get('caducidad', '') or row.get('fecha_caducidad', '') or row.get('caducidad_lote', '') or '').strip()
+    stock_lote = row.get('stock_lote', '') or row.get('cantidad_lote', '') or ''
+    if numero_lote and caducidad:
+        lote_entry = {
+            'numero': numero_lote,
+            'caducidad': caducidad,
+            'stock': int(stock_lote or producto['stock'] or 0),
+        }
+        fabricacion = str(row.get('fabricacion', '') or row.get('fecha_fabricacion', '') or '').strip()
+        if fabricacion:
+            lote_entry['fabricacion'] = fabricacion
+        producto['lotes'] = [lote_entry]
+    return producto
 
 
 # ==============================================================================
@@ -549,12 +566,13 @@ def registro_gasto(request):
                     request=request,
                 )
             except Exception:
+                # Justificación: Auditoría secundaria no bloqueante.
                 logger.exception("No se pudo registrar auditoria de gasto de caja %s", gasto.id)
             return JsonResponse({'status': 'success'})
         except ValidationError as e:
             err = getattr(e, 'message_dict', None) or str(e)
             return JsonResponse({'status': 'error', 'mensaje': err}, status=400)
-        except Exception as e:
+        except (DatabaseError, ValueError, TypeError, KeyError) as e:
             return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=400)
     return JsonResponse({'status': 'error'}, status=405)
 
@@ -662,9 +680,9 @@ def validar_pin_precio_neto(request):
         PIN_PRECIO_NETO = getattr(settings, 'FARMACIA_PIN_PRECIO_NETO', '1234')
         
         if pin_ingresado == PIN_PRECIO_NETO:
-            return JsonResponse({'status': 'success', 'mensaje': 'PIN válido'})
+            return JsonResponse({'status': 'success', 'autorizado': True, 'mensaje': 'PIN válido'})
         else:
-            return JsonResponse({'status': 'error', 'mensaje': 'PIN incorrecto'}, status=400)
+            return JsonResponse({'status': 'error', 'autorizado': False, 'mensaje': 'PIN incorrecto'}, status=401)
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'mensaje': 'Datos inválidos'}, status=400)
 
@@ -684,12 +702,13 @@ def imprimir_etiquetas(request):
             if not lotes_ids:
                  return JsonResponse({'error': 'No se seleccionaron lotes'}, status=400)
 
-            # TODO: implementar generación real de PDF de etiquetas de productos con reportlab.
+            # PENDIENTE (feature): generación PDF de etiquetas con reportlab.
+            # El endpoint retorna 501 hasta integrar el motor de impresión.
             return JsonResponse({
                 'status': 'error',
                 'message': 'Generación de etiquetas de farmacia no implementada. Contacte al administrador.',
             }, status=501)
-        except Exception as e:
+        except (ValueError, TypeError, KeyError, json.JSONDecodeError) as e:
             return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
@@ -749,6 +768,7 @@ def api_validar_cupon(request):
             'mensaje': 'Módulo de marketing no disponible'
         }, status=503)
     except Exception as e:
+        # Justificación: Boundary top-level de API para validar cupón.
         logger.error(f'Error al validar cupón: {str(e)}')
         return JsonResponse({
             'status': 'error',

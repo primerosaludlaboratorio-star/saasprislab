@@ -11,6 +11,7 @@ from django.utils import timezone
 from core.models import DetalleOrden, Empresa, OrdenDeServicio, Paciente, PagoOrden, Sucursal
 from core.models.laboratorio import ResultadoParametro
 from lims.models import Analito, PaqueteLims, PerfilLims, PrecioItem, ValorReferenciaAnalito
+import logging
 
 User = get_user_model()
 
@@ -426,6 +427,7 @@ class Command(BaseCommand):
                         sexo=orden.paciente_sexo_snapshot,
                     )
                 except Exception:
+                    logging.getLogger(__name__).exception("Error inesperado en _crear_resultados_para_orden (simular_operacion_anual.py)")
                     pass
                 total += 1
         return total

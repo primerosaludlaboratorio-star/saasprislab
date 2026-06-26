@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.db.models import Count, Avg
 from datetime import timedelta, date
+from functools import wraps
 import json
 import logging
 import random
@@ -18,9 +19,23 @@ from core.models import Empresa
 from .models import DiarioEmocional, RecursoCrecimiento
 
 
+def requiere_empresa(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        empresa = getattr(request.user, 'empresa', None)
+        if not empresa:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/bienestar/api/'):
+                return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada.'}, status=403)
+            messages.error(request, 'Usuario sin empresa asignada.')
+            return redirect('home')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+
 # ==================== DASHBOARD ====================
 
 @login_required
+@requiere_empresa
 def dashboard_bienestar(request):
     """Dashboard principal del módulo de bienestar estilo YANA."""
     empresa = getattr(request.user, 'empresa', None)
@@ -69,7 +84,7 @@ def dashboard_bienestar(request):
 
 def calcular_racha(usuario):
     """Calcula la racha de días consecutivos con entradas."""
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     racha = 0
     
     for i in range(365):  # Máximo 365 días
@@ -85,6 +100,7 @@ def calcular_racha(usuario):
 # ==================== CHAT CON PRIS ====================
 
 @login_required
+@requiere_empresa
 def chat_bienestar(request):
     """Chat confidencial con PRIS para apoyo emocional."""
     empresa = getattr(request.user, 'empresa', None)
@@ -96,6 +112,7 @@ def chat_bienestar(request):
 
 @login_required
 @require_http_methods(["POST"])
+@requiere_empresa
 def api_chat_bienestar(request):
     """API para chat de bienestar con PRIS (IA Gemini)."""
     try:
@@ -194,6 +211,7 @@ def detectar_riesgo_emocional(texto):
 # ==================== DIARIO EMOCIONAL ====================
 
 @login_required
+@requiere_empresa
 def diario_emocional(request):
     """Vista del diario emocional - Lista de entradas."""
     usuario = request.user
@@ -203,7 +221,7 @@ def diario_emocional(request):
     entradas = DiarioEmocional.objects.filter(usuario=usuario).order_by('-fecha')[:30]
     
     # Datos para gráfica de tendencias (últimos 30 días)
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     tendencias = []
     
     for i in range(30):
@@ -236,6 +254,7 @@ def diario_emocional(request):
 
 
 @login_required
+@requiere_empresa
 def nueva_entrada_diario(request):
     """Crear nueva entrada en el diario emocional."""
     if request.method == 'POST':
@@ -261,6 +280,7 @@ Responde solo con UNA de estas palabras: feliz, triste, ansioso, enojado, neutra
                 ).strip().lower()
                 
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en nueva_entrada_diario (views.py)")
                 # Si falla la IA, usar detección simple
                 sentimiento_ia = 'neutral'
                 if any(palabra in contenido.lower() for palabra in ['feliz', 'alegre', 'contento', 'bien']):
@@ -274,7 +294,7 @@ Responde solo con UNA de estas palabras: feliz, triste, ansioso, enojado, neutra
             nivel_riesgo = detectar_riesgo_emocional(contenido)
             
             # Crear entrada
-            fecha_hoy = timezone.now().date()
+            fecha_hoy = timezone.localdate()
             entrada, created = DiarioEmocional.objects.update_or_create(
                 usuario=request.user,
                 fecha=fecha_hoy,
@@ -360,13 +380,14 @@ Sistema PRISLAB - Módulo de Bienestar
 
 
 @login_required
+@requiere_empresa
 def estadisticas_diario(request):
     """Estadísticas y patrones emocionales."""
     usuario = request.user
     empresa = getattr(request.user, 'empresa', None)
     
     # Obtener entradas de los últimos 30 días
-    hace_30_dias = timezone.now().date() - timedelta(days=30)
+    hace_30_dias = timezone.localdate() - timedelta(days=30)
     entradas = DiarioEmocional.objects.filter(
         usuario=usuario,
         fecha__gte=hace_30_dias
@@ -423,6 +444,7 @@ def estadisticas_diario(request):
 # ==================== RECURSOS ====================
 
 @login_required
+@requiere_empresa
 def recursos_bienestar(request):
     """Biblioteca de recursos de bienestar."""
     empresa = getattr(request.user, 'empresa', None)
@@ -448,6 +470,7 @@ def recursos_bienestar(request):
 
 
 @login_required
+@requiere_empresa
 def detalle_recurso(request, recurso_id):
     """Detalle de un recurso de bienestar."""
     empresa = getattr(request.user, 'empresa', None)
@@ -470,6 +493,7 @@ def detalle_recurso(request, recurso_id):
 # ==================== CONSULTORIO BIENESTAR ====================
 
 @login_required
+@requiere_empresa
 def agendar_consultorio_bienestar(request):
     """Agendar consulta de bienestar (nutricional, psicológica)."""
     empresa = getattr(request.user, 'empresa', None)

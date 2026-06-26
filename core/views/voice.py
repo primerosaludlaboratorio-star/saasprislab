@@ -197,7 +197,8 @@ def verificar_webauthn(request):
     try:
         data = json.loads(request.body)
         # command_id = data.get('command_id')
-        # TODO: implementar verificación real con py_webauthn antes de habilitar.
+        # PENDIENTE (seguridad): verificación WebAuthn real con py_webauthn.
+        # Bloqueado intencionalmente hasta integrar hardware token / biometría.
         logger.warning(
             "verificar_webauthn: intento de autenticación biométrica bloqueado "
             "(verificación real no implementada)."

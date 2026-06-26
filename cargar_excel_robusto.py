@@ -4,6 +4,7 @@ Script Ultra-Robusto: Carga Excel con pandas (ignorando todo error)
 import os
 import sys
 import django
+import logging
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
@@ -147,6 +148,7 @@ try:
                 print(f"  [{creados + actualizados} productos procesados...]")
         
         except Exception as e:
+            logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (cargar_excel_robusto.py)")
             errores += 1
             if errores <= 10:
                 print(f"  [!] Error fila {idx + 4}: {e}")
@@ -168,6 +170,7 @@ try:
         print(f"  {prod.codigo_barras} | {prod.nombre[:50]} | ${prod.precio_publico} | Stock: {prod.stock}")
 
 except Exception as e:
+    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (cargar_excel_robusto.py)")
     print(f"[ERROR CRITICO] {e}")
     import traceback
     traceback.print_exc()

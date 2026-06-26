@@ -16,6 +16,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
+import logging
 
 
 def _truthy_env(name: str) -> bool:
@@ -56,6 +57,7 @@ class Command(BaseCommand):
             if conflicts:
                 failures.append(f"Conflictos de migraciones detectados: {conflicts}")
         except Exception as exc:
+            logging.getLogger(__name__).exception("Error inesperado en handle (audit_tenant_readiness.py)")
             warnings.append(f"No se pudo ejecutar detect_conflicts: {exc}")
 
         # --- 3) Bypass de emergencia activo (solo advertencia en producción) ---
@@ -75,6 +77,7 @@ class Command(BaseCommand):
             try:
                 from core.tenant import TenantModel
             except Exception:
+                logging.getLogger(__name__).exception("Error inesperado en handle (audit_tenant_readiness.py)")
                 TenantModel = None  # type: ignore
 
             if TenantModel is not None:
@@ -84,6 +87,7 @@ class Command(BaseCommand):
                     try:
                         fk = model._meta.get_field("empresa")
                     except Exception:
+                        logging.getLogger(__name__).exception("Error inesperado en handle (audit_tenant_readiness.py)")
                         continue
                     if getattr(fk, "null", True):
                         continue
@@ -91,6 +95,7 @@ class Command(BaseCommand):
                     try:
                         n = mgr.filter(empresa_id__isnull=True).count()
                     except Exception:
+                        logging.getLogger(__name__).exception("Error inesperado en handle (audit_tenant_readiness.py)")
                         continue
                     if n:
                         label = f"{model._meta.app_label}.{model.__name__}"

@@ -13,6 +13,7 @@ Uso en templates:
 """
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from django import template
+import logging
 
 register = template.Library()
 
@@ -58,6 +59,7 @@ def absolute(value):
     try:
         return abs(_to_decimal(value))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en absolute (math_filters.py)")
         return value
 
 
@@ -78,4 +80,5 @@ def floatformat_es(value, decimals=2):
         fmt = f'{{:,.{int(decimals)}f}}'
         return fmt.format(float(d))
     except Exception:
+        logging.getLogger(__name__).exception("Error inesperado en floatformat_es (math_filters.py)")
         return value
