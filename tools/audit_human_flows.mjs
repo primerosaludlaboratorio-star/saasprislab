@@ -82,6 +82,18 @@ export const MODULE_FLOWS = [
     verificar: 'widgets con datos, sin errores JS de app (ignorar QZ Tray 8181-8485)',
   },
   { modulo: 'Seguridad · 2FA', url: '/seguridad/2fa/', flujo: ['Revisar configuración 2FA y dispositivos.'], verificar: 'página carga, sin 500' },
+  {
+    modulo: 'Notificaciones · Centro',
+    url: '/notificaciones/',
+    flujo: [
+      'Abrir el centro de notificaciones; verificar que SOLO lista las propias (destinatario=tú) y las globales, no las de otros usuarios del mismo tenant.',
+      'Revisar el badge (/notificaciones/badge/): el conteo de no-leídas coincide con propias+globales y no incluye notificaciones ajenas.',
+      'Marcar una notificación propia como leída (POST) y confirmar que el contador baja.',
+      'Intentar (vía POST directo) marcar una notificación de OTRO usuario (id ajeno): debe responder 403 "Sin permisos", NUNCA 200.',
+      'Usuario sin empresa: el listado no debe mostrar datos de otra empresa (corte por empresa).',
+    ],
+    verificar: 'aislamiento por destinatario+empresa, badge correcto, marcar-leída IDOR-safe (403). Verificado en interfaz humana 2026-06: sin fuga.',
+  },
   { modulo: 'Contabilidad', url: '/contabilidad/', flujo: ['Abrir reportes/cortes; abrir un detalle.'], verificar: 'reportes cargan' },
   { modulo: 'Inventario', url: '/silo-lab/', flujo: ['Listar productos/lotes; abrir un detalle de lote.'], verificar: 'stock visible' },
   { modulo: 'Academia', url: '/academia/', flujo: ['Abrir cursos/contenidos.'], verificar: 'carga' },

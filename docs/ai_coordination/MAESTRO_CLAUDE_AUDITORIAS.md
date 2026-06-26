@@ -444,4 +444,26 @@ La vista pública usaba `Empresa.objects.filter(activa=True).first()` → en mul
 
 ---
 
+## V. MÓDULO NOTIFICACIONES  `[auditoría de código + INTERFAZ HUMANA real (Chromium) · sin bug · cierre fuerte]`
+
+**Alcance:** `core/views/notificaciones.py` (lista, badge, marcar_leida, marcar_todas, configurar). Auditado en **código** y ejecutado por **interfaz humana** (Playwright + Chromium contra servidor local con usuarios sembrados — no había Gemini key ni acceso a prod desde el sandbox para el runner IA).
+
+### DESCARTADO / cierre fuerte (intenté romper, no cedió)
+- **Aislamiento por destinatario + empresa:** `lista_notificaciones` y `api_notificaciones_badge` filtran `empresa=…` **Y** `Q(destinatario=request.user) | Q(destinatario__isnull=True)` → un usuario ve solo sus notificaciones personales + las globales, **nunca las de otro usuario** del mismo tenant. `marcar_todas_leidas` aplica el mismo filtro.
+- **IDOR en marcar_leida:** scopeada por empresa + `if notif.destinatario and notif.destinatario != request.user: 403`. Verificado **determinista** (test Client): marcar la notificación de otro usuario → **403** `{"ok": false, "error": "Sin permisos"}`; la propia → **200**.
+- **empresa=None:** `NotificacionSistema.empresa` es `null=False` → no hay notificaciones huérfanas; un usuario sin empresa ve lista vacía (sin fuga).
+
+### Evidencia de interfaz humana (Chromium, servidor local)
+Script `notif_human_audit.mjs` (login real por `/login/` como Alice, 2 usuarios + 3 notifs: global / Alice / Bob). Resultado **8/9 PASS**:
+- login real redirige a `/director/` ✓ · `/notificaciones/` → 200 ✓ · Alice ve Global + su personal ✓ · **Alice NO ve la personal de Bob** ✓ · badge 200 sin incluir a Bob ✓ · marcar propia → 200 ✓.
+- El 9º check (marcar la de Bob) reportó **405** en el run Playwright = **artefacto del harness** (`page.request.post` siguió un redirect→GET); el código real devuelve **403** (confirmado con test Client). En ambos casos la acción cross-usuario quedó **bloqueada** (nunca 2xx). → **no es bug.**
+
+### Herramienta
+Añadido el módulo **`Notificaciones · Centro`** a `tools/audit_human_flows.mjs` (MODULE_FLOWS, 13 módulos) con los pasos humanos y el check IDOR, para que la auditoría canónica lo cubra al correr el runner con credenciales/host reales.
+
+### Nota de método (sobre el smoke test de prod previo)
+El audit de prod que dio "Notificaciones ✅ 200" solo probó que **renderiza** para el Director; **no** ejercitó el aislamiento por destinatario ni el IDOR. Esta auditoría sí ejecutó esos caminos por interfaz humana (local). Recordatorio: prod corre `release/v1.0-local` (sin PR #4).
+
+---
+
 *(Documento vivo: cada nueva auditoría de Claude se añade aquí, no en archivos sueltos.)*
