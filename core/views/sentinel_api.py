@@ -159,6 +159,7 @@ def api_sentinel_diagnostico(request):
 
     try:
         from django.db import connection
+        from psycopg2 import sql
         cursor = connection.cursor()
         info = {}
 
@@ -172,11 +173,13 @@ def api_sentinel_diagnostico(request):
 
         for table in tables:
             try:
-                cursor.execute(f"SELECT COUNT(*) FROM \"{table}\"")
+                # ✅ SEGURO: Usar sql.Identifier para nombres de tabla
+                table_id = sql.Identifier(table)
+                cursor.execute(sql.SQL("SELECT COUNT(*) FROM {}").format(table_id))
                 cnt = cursor.fetchone()[0]
                 info[f'count_{table}'] = cnt
                 if cnt > 0:
-                    cursor.execute(f"SELECT id, nombre, codigo FROM \"{table}\" LIMIT 3")
+                    cursor.execute(sql.SQL("SELECT id, nombre, codigo FROM {} LIMIT 3").format(table_id))
                     info[f'sample_{table}'] = [
                         {'id': r[0], 'nombre': r[1], 'codigo': r[2]}
                         for r in cursor.fetchall()
