@@ -16,7 +16,7 @@
             <i class="fas fa-dna prsb-brand-icon"></i>
             <span class="prsb-brand-text">PRIS<span class="prsb-brand-accent">LAB</span></span>
         </a>
-        {# Botón pin/clip eliminado — sidebar es hover-driven automático #}
+        {# Sidebar en modo click-to-open persistente. Sin hover auto-close. #}
     </div>
 
     {# ── Módulos en acordeón ───────────────────────────────────────────────── #}
@@ -1013,12 +1013,21 @@
     overflow-y: auto;
     overflow-x: hidden;
     padding: 8px 0;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,0.1) transparent;
+    scrollbar-width: auto;
+    scrollbar-color: rgba(255,255,255,0.28) rgba(255,255,255,0.04);
 }
-.prsb-nav::-webkit-scrollbar { width: 4px; }
-.prsb-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-.prsb-nav::-webkit-scrollbar-track { background: transparent; }
+.prsb-nav::-webkit-scrollbar { width: 10px; }
+.prsb-nav::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.28);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.prsb-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.42); }
+.prsb-nav::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.04);
+    border-radius: 999px;
+}
 
 /* ── Módulo (contenedor del acordeón) ─────────────────────────────────────── */
 .prsb-module {
@@ -1391,9 +1400,10 @@
 {# ════════════════════════════════════════════════════════════════════════════ #}
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
-   PRISLAB SIDEBAR — HOVER-DRIVEN V2
-   • Sin botón de pin/clip. El sidebar se expande al pasar el mouse.
-   • EMERGENCY RESET: limpia cualquier estado "atrapado" de localStorage.
+   PRISLAB SIDEBAR — CLICK-TO-OPEN V3
+   • Primer clic abre y mantiene abierto el sidebar.
+   • No se cierra por mover el mouse.
+   • Clic fuera del sidebar lo cierra en desktop.
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
     'use strict';
@@ -1523,12 +1533,20 @@
             });
         });
 
-        // ③ HOVER-DRIVEN: expandir al entrar, colapsar al salir (solo desktop)
+        // ③ DESKTOP CLICK-TO-OPEN: primer clic abre y clic fuera cierra
         if (sidebar && window.innerWidth >= 992) {
-            sidebar.addEventListener('mouseenter', function () {
-                sidebar.classList.add('prsb-expanded');
-            });
-            sidebar.addEventListener('mouseleave', function () {
+            sidebar.addEventListener('click', function (e) {
+                if (!sidebar.classList.contains('prsb-expanded')) {
+                    sidebar.classList.add('prsb-expanded');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+            }, true);
+
+            document.addEventListener('click', function (e) {
+                if (!sidebar.classList.contains('prsb-expanded')) return;
+                if (sidebar.contains(e.target)) return;
                 sidebar.classList.remove('prsb-expanded');
             });
         }
@@ -1548,10 +1566,14 @@
             }
         }
 
-        // ⑤ Cerrar sidebar en móvil al navegar
+        // ⑤ Cerrar sidebar al navegar
         document.querySelectorAll('.prsb-link').forEach(function (link) {
             link.addEventListener('click', function () {
-                if (window.innerWidth < 992) prsbCloseMobile();
+                if (window.innerWidth < 992) {
+                    prsbCloseMobile();
+                } else if (sidebar) {
+                    sidebar.classList.remove('prsb-expanded');
+                }
             });
         });
 
