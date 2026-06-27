@@ -40,7 +40,7 @@ print(f"[0] GET Login: HTTP {code} | CSRF: {csrf[:20]}...")
 # 1. POST LOGIN
 code, html = curl(
     "-X", "POST", BASE + "/login/",
-    "-d", "username=admin&password=PrislabV5_2026&csrfmiddlewaretoken=" + csrf,
+    "-d", "username=admin&password=Prislab%40Admin2026%21&csrfmiddlewaretoken=" + csrf,
     "-H", "Referer: " + BASE + "/login/",
     "-H", "Origin: " + BASE,
     out_file="/tmp/e2e_post_login.html"
