@@ -23,8 +23,8 @@ class IaPrisTimezoneRegressionTest(TestCase):
 
     def test_tool_consultar_indicadores_kpi_usa_fecha_local_en_hoy(self):
         fake_utc_now = datetime(2026, 6, 25, 3, 32, 0, tzinfo=dt_timezone.utc)
-        with patch("core.agent.pris_tools_operativos.timezone.now", return_value=fake_utc_now), patch(
-            "core.agent.pris_tools_operativos.localdate", return_value=date(2026, 6, 24)
+        with patch("django.utils.timezone.now", return_value=fake_utc_now), patch(
+            "django.utils.timezone.localdate", return_value=date(2026, 6, 24)
         ):
             resultado = tool_consultar_indicadores_kpi(
                 {"periodo": "HOY", "categoria": "GENERAL"},

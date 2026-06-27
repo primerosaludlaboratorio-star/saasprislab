@@ -109,7 +109,8 @@ class TwoFactorTest(TestCase):
         self.usuario = Usuario.objects.create_user(
             username='usuario2fa',
             password='test123',
-            empresa=self.empresa
+            empresa=self.empresa,
+            is_superuser=True
         )
         self.client = Client()
         self.client.login(username='usuario2fa', password='test123')

@@ -141,3 +141,5 @@ class RobotChemistFefoTests(TestCase):
         self.assertFalse(
             SalidaAnaliticaLab.objects.filter(orden=self.orden, analito=calc).exists()
         )
+
+from unittest.mock import patch
