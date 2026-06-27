@@ -170,3 +170,4 @@ v3_test*.html
 tools/last_runs/
 tools/last_suite*.json
 diagnostico_omni_*/
+.env.agent
