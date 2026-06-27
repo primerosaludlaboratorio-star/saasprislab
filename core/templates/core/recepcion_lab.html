@@ -3837,54 +3837,56 @@
     // ==============================================================================
     // QZ TRAY: CONTROLADOR MAESTRO DE IMPRESIÓN Y COBRO MULTIMODAL
     // ==============================================================================
-    <!-- Silenciar errores de WebSocket de QZ Tray ANTES de cargar los scripts -->
-    <script>
-        // Interceptar errores de WebSocket de QZ Tray antes de que se cargue
-        (function() {
-            const originalError = console.error;
-            const originalWarn = console.warn;
-            
-            console.error = function(...args) {
-                // Convertir todos los argumentos a string y unirlos
-                const errorMessage = args.map(arg => {
-                    if (arg instanceof Error) {
-                        return arg.message + ' ' + arg.stack;
-                    }
-                    return String(arg);
-                }).join(' ');
-                
-                // Filtrar errores de WebSocket de QZ Tray (más robusto)
-                if (errorMessage.includes('WebSocket') && 
-                    (errorMessage.includes('localhost') || 
-                     errorMessage.includes('qz.io') || 
-                     errorMessage.includes('ws://') ||
-                     errorMessage.includes('failed'))) {
-                    return; // Silenciar este error
+</script>
+
+<!-- Silenciar errores de WebSocket de QZ Tray ANTES de cargar los scripts -->
+<script>
+    // Interceptar errores de WebSocket de QZ Tray antes de que se cargue
+    (function() {
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.error = function(...args) {
+            // Convertir todos los argumentos a string y unirlos
+            const errorMessage = args.map(arg => {
+                if (arg instanceof Error) {
+                    return arg.message + ' ' + arg.stack;
                 }
-                originalError.apply(console, args);
-            };
+                return String(arg);
+            }).join(' ');
             
-            console.warn = function(...args) {
-                // Convertir todos los argumentos a string y unirlos
-                const warnMessage = args.map(arg => {
-                    if (arg instanceof Error) {
-                        return arg.message + ' ' + arg.stack;
-                    }
-                    return String(arg);
-                }).join(' ');
-                
-                // Filtrar advertencias de QZ Tray (más robusto)
-                if (warnMessage.includes('WebSocket') && 
-                    (warnMessage.includes('localhost') || 
-                     warnMessage.includes('qz.io') || 
-                     warnMessage.includes('ws://') ||
-                     warnMessage.includes('failed'))) {
-                    return; // Silenciar esta advertencia
+            // Filtrar errores de WebSocket de QZ Tray (más robusto)
+            if (errorMessage.includes('WebSocket') && 
+                (errorMessage.includes('localhost') || 
+                 errorMessage.includes('qz.io') || 
+                 errorMessage.includes('ws://') ||
+                 errorMessage.includes('failed'))) {
+                return; // Silenciar este error
+            }
+            originalError.apply(console, args);
+        };
+        
+        console.warn = function(...args) {
+            // Convertir todos los argumentos a string y unirlos
+            const warnMessage = args.map(arg => {
+                if (arg instanceof Error) {
+                    return arg.message + ' ' + arg.stack;
                 }
-                originalWarn.apply(console, args);
-            };
-        })();
-    </script>
+                return String(arg);
+            }).join(' ');
+            
+            // Filtrar advertencias de QZ Tray (más robusto)
+            if (warnMessage.includes('WebSocket') && 
+                (warnMessage.includes('localhost') || 
+                 warnMessage.includes('qz.io') || 
+                 warnMessage.includes('ws://') ||
+                 warnMessage.includes('failed'))) {
+                return; // Silenciar esta advertencia
+            }
+            originalWarn.apply(console, args);
+        };
+    })();
+</script>
     <!-- RSVP.js (requerido por QZ Tray) -->
     <script src="https://cdn.jsdelivr.net/npm/rsvp@4.8.2/dist/rsvp.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.1.0/qz-tray.js"></script>
