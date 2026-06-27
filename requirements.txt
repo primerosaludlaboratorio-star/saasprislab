@@ -4,7 +4,7 @@
 # ======================================================
 
 # Framework
-Django==5.0.6
+Django>=5.0.8,<5.2
 django-ninja>=1.3.0,<2
 asgiref>=3.8.1
 whitenoise==6.6.0
@@ -27,7 +27,7 @@ google-cloud-vision>=3.7.0
 google-cloud-speech>=2.20.0
 
 # Encriptación
-cryptography>=41.0.0
+cryptography>=43.0.0
 
 # Tareas asíncronas
 celery==5.3.6
@@ -48,11 +48,11 @@ pandas>=2.2.1
 openpyxl==3.1.2
 
 # PDFs e Imágenes
-reportlab==4.1.0
-weasyprint==61.2
-pillow>=10.2.0
-lxml>=5.1.0
-pypdf>=4.1.0
+reportlab>=4.2.2
+weasyprint>=62.3
+pillow>=10.4.0
+lxml>=5.2.2
+pypdf>=4.3.0
 
 # RAG — Motor de Biblioteca de Entrenamiento PRIS-IA
 chromadb>=0.4.24
@@ -63,7 +63,7 @@ pyotp==2.9.0
 pywebpush==1.14.0
 
 # Utilidades
-requests>=2.31.0
+requests>=2.32.3
 python-decouple==3.8
 pytz==2024.1
 qrcode[pil]==7.4.2
