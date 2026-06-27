@@ -1,363 +1,157 @@
-# 🏥 PRISLAB SaaS v5.0 — LabCoreCloud
+# 🏥 PRISLAB SaaS V5 — Plataforma Clínica Integral
 
-**Sistema de Gestión Integral para Clínicas, Laboratorios y Farmacias**
-
-🌐 **Producción:** [https://prislab.labcorecloud.com](https://prislab.labcorecloud.com)
-
-![Estado](https://img.shields.io/badge/Estado-Producción-success)
-![Versión](https://img.shields.io/badge/Versión-5.0-blue)
-![Django](https://img.shields.io/badge/Django-5.0-green)
-![Python](https://img.shields.io/badge/Python-3.14-blue)
-![VPS](https://img.shields.io/badge/Deploy-Vultr_VPS-blue)
-![SSL](https://img.shields.io/badge/SSL-Let's_Encrypt-green)
+**PRISLAB** es un SaaS clínico multi-tenant diseñado para laboratorios, farmacias y consultorios. Unifica operaciones de **LIMS (Laboratorio)**, **PDV Farmacia**, **Inventario**, **Facturación CFDI 4.0**, **Nómina**, **CRM**, **Bienestar NOM-035** y un **Asistente IA** conversacional.
 
 ---
 
-## 📋 Índice
+## 🧠 Stack Tecnológico
 
-- [Características Principales](#características-principales)
-- [Módulos del Sistema](#módulos-del-sistema)
-- [Tecnologías](#tecnologías)
-- [Instalación Local](#instalación-local)
-- [Despliegue en Producción](#despliegue-en-producción)
-- [Credenciales de Acceso](#credenciales-de-acceso)
-- [Documentación](#documentación)
-- [Equipo](#equipo)
-
----
-
-## ✨ Características Principales
-
-### 🎯 Multi-Tenant
-- Sistema preparado para gestionar múltiples empresas/sucursales
-- Identidad dinámica (logo, colores, branding por empresa)
-- Aislamiento total de datos entre empresas
-
-### 🤖 Inteligencia Artificial Integrada
-- **Google Gemini 1.5 Pro** para:
-  - Transcripción de voz a texto (consultas médicas)
-  - OCR (Optical Character Recognition)
-  - Asistente médico inteligente
-  - Generación de contenido educativo
-
-### 💊 Control Farmacéutico ERP
-- **Kardex Inmutable** con trazabilidad forense
-- **Costo Promedio Ponderado** automático
-- **Libro de Control COFEPRIS** (NOM-072-SSA1-2012)
-- Control de antibióticos con receta médica
-- Sistema de devoluciones
-
-### 🔬 Laboratorio Clínico (LIMS)
-- **554 Estudios Clínicos** cargados
-- **494 Parámetros** vinculados
-- **17 Paquetes/Perfiles** pre-configurados
-- Rangos de normalidad por edad/sexo
-- Generación de resultados automáticos
-
-### 🏥 Consultorio Médico
-- **"Gemelo Digital"** - Vista previa en tiempo real
-- Expediente clínico electrónico
-- Recetas médicas en PDF
-- Certificados médicos
-- Historia clínica SOAP
-
-### 📊 Dashboard Director
-- Métricas en tiempo real
-- Análisis financiero
-- Control de inventarios
-- Reportes personalizables
+| Capa | Tecnología |
+|---|---|
+| **Backend** | Django 5.0.6 + Python 3.11+ |
+| **API** | Django Ninja (OpenAPI) |
+| **Base de Datos** | PostgreSQL 15+ |
+| **Cache / Colas** | Redis + Celery + Channels |
+| **Frontend** | Django Templates + PWA + WebSockets |
+| **Storage** | Local (WhiteNoise) + Google Drive / S3 (Vultr) |
+| **IA** | DeepSeek, Gemini, RAG (ChromaDB) |
+| **Seguridad** | 2FA (pyotp), Fernet, HSTS, CSP, OWASP Top 10 |
+| **Notificaciones** | Web Push (VAPID), Email, Telegram |
+| **Contenedores** | Docker + docker-compose |
 
 ---
 
-## 🧩 Módulos del Sistema
+## 📦 Módulos del Sistema
 
-| # | Módulo | Estado | Descripción |
-|---|--------|--------|-------------|
-| 1 | **Consultorio** | ✅ | Consultas, recetas, expediente clínico |
-| 2 | **Laboratorio** | ✅ | LIMS completo, resultados, órdenes |
-| 3 | **Farmacia** | ✅ | PDV, inventario, control COFEPRIS |
-| 4 | **Recepción** | ✅ | Registro de pacientes, agendamiento |
-| 5 | **Enfermería** | ✅ | Triage, signos vitales |
-| 6 | **Pacientes** | ✅ | Portal del paciente, historial 360° |
-| 7 | **Marketing** | 🟡 | Campañas, cupones QR, WhatsApp |
-| 8 | **Contabilidad** | ✅ | Facturación CFDI 4.0 |
-| 9 | **Finanzas** | ✅ | Cajas segregadas (Lab + Farmacia) |
-| 10 | **Bienestar** | ✅ | Diario emocional, recursos |
-| 11 | **Logística** | ✅ | Transferencias, rutas |
-| 12 | **Seguridad** | ✅ | 2FA, auditoría, sesiones |
-| 13 | **IA/Chat** | 🟡 | Asistente PRIS, chatbot |
-| 14 | **IoT** | ✅ | Kiosco de auto-verificación |
-| 15 | **Director** | ✅ | Panel ejecutivo, KPIs |
-| 16 | **RRHH** | 🔄 | En desarrollo |
-| 17 | **Comunicación** | ✅ | Mensajería interna |
-| 18 | **Cotización** | ✅ | Cotizador rápido |
-| 19 | **Catálogos** | ✅ | Gestión de catálogos maestros |
-| 20 | **Capacitación** | ✅ | Manual integrado, RAG Academy |
-
-**Leyenda:** ✅ Completado | 🟡 Funcional (pendiente API Key) | 🔄 En desarrollo
+| Módulo | App | Descripción |
+|---|---|---|
+| 🏥 **Laboratorio (LIMS)** | `laboratorio/` | Órdenes, estudios, resultados, etiquetas, HL7 |
+| 💊 **Farmacia / PDV** | `farmacia/` | Ventas, kardex, compras, corte de caja, devoluciones |
+| 📦 **Inventario** | `inventario/` | Stock, lotes, mermas, alertas de caducidad |
+| 👥 **Pacientes** | `pacientes/` | Expediente clínico, portal del paciente |
+| 🔐 **Seguridad** | `seguridad/` | 2FA, sesiones, auditoría de accesos |
+| 💰 **Contabilidad** | `contabilidad/` | CFDI 4.0 (Facturama), reportes fiscales |
+| 🧠 **IA** | `ia/` + `core/views/ia*` | Chat, OCR, voz, RAG, PRIS-Jarvis |
+| 📊 **Nómina** | `core/views/nomina.py` | Periodos, recibos, cálculo |
+| 🤝 **CRM** | `core/views/crm.py` | Prospectos, kanban, seguimiento |
+| 🧘 **Bienestar** | `core/views/bienestar*` | NOM-035, diario emocional, alertas RRHH |
+| 🎓 **Academia** | `academia/` | Diplomados, capacitación, RAG |
+| 🛡️ **Sentinel** | `core/views/sentinel*` | Monitoreo, telemetría, GitHub, push |
+| 📈 **Dashboard Director** | `core/views/director*` | KPI, coaching, biblioteca, calidad |
 
 ---
 
-## 🛠️ Tecnologías
+## ⚙️ Requisitos
 
-### Backend
-- **Django 5.0.6** - Framework web
-- **Python 3.14** - Lenguaje principal en producción
-- **PostgreSQL 18** - Base de datos en la VPS actual
-- **Gunicorn** - Servidor WSGI
-- **Redis** - Caché y mensajería
-
-### Frontend
-- **Bootstrap 5** - Framework CSS
-- **JavaScript Vanilla** - Sin frameworks pesados
-- **Chart.js** - Gráficas interactivas
-- **Font Awesome 6** - Iconografía
-
-### APIs y Servicios
-- **Google Gemini** - Inteligencia Artificial
-- **Google Drive API** - Respaldo y almacenamiento de archivos clínicos
-
-### PDF y Reportes
-- **ReportLab** - Generación de PDFs
-- **WeasyPrint** - PDFs desde HTML
-- **Pillow** - Procesamiento de imágenes
+- **Python** 3.11 o superior
+- **PostgreSQL** 15 o superior
+- **Redis** 7+ (opcional, fallback a memoria)
+- **Node.js** 18+ (solo para tooling E2E)
 
 ---
 
-## 🚀 Instalación Local
+## 🚀 Setup Local
 
-### Requisitos Previos
-- Python 3.11+
-- PostgreSQL 14+ (o SQLite para desarrollo)
-- Git
-
-### Pasos
-
-1. **Clonar el repositorio**
 ```bash
-git clone https://github.com/tu-usuario/PRISLAB_SaaS.git
-cd PRISLAB_SaaS
-```
+# 1. Clonar el repositorio
+git clone <repo-url>
+cd PRISLAB_SaaS-master
 
-2. **Crear entorno virtual**
-```bash
+# 2. Crear entorno virtual
 python -m venv venv
-# Windows
-venv\Scripts\activate
-# Linux/Mac
-source venv/bin/activate
-```
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
 
-3. **Instalar dependencias**
-```bash
+# 3. Instalar dependencias
 pip install -r requirements.txt
-```
 
-4. **Configurar variables de entorno**
-Crea un archivo `.env` en la raíz:
-```bash
-DEBUG=True
-SECRET_KEY=tu-secret-key-aqui
-GOOGLE_API_KEY=tu-api-key-de-gemini
+# 4. Configurar variables de entorno
+cp .env.example .env
+# Editar .env con tus valores (DB, APIs, etc.)
 
-# Base de datos (opcional, usa SQLite por defecto)
-# DB_NAME=prislab_v5
-# DB_USER=postgres
-# DB_PASSWORD=tu-password
-# DB_HOST=localhost
-# DB_PORT=5432
-```
-
-5. **Ejecutar migraciones**
-```bash
+# 5. Base de datos
+createdb prislab_v5
 python manage.py migrate
-```
 
-6. **Cargar datos iniciales**
-```bash
-# Catálogo de laboratorio
-python manage.py migrar_lab_completo
-
-# Inventario de farmacia
-python cargar_excel_robusto.py
-
-# Tarifas
-python cargar_tarifas.py
-```
-
-7. **Crear superusuario**
-```bash
+# 6. Crear superusuario
 python manage.py createsuperuser
-# O usar el script automático:
-python crear_superusuario_admin.py
-```
 
-8. **Iniciar servidor**
-```bash
+# 7. Iniciar servidor
 python manage.py runserver
 ```
 
-9. **Acceder al sistema**
-```
-http://localhost:8000
-```
+---
+
+## 🔐 Variables de Entorno (`.env`)
+
+| Variable | Obligatoria | Descripción |
+|---|---|---|
+| `SECRET_KEY` | ✅ | Clave secreta de Django |
+| `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` | ✅ | Conexión PostgreSQL |
+| `DEEPSEEK_API_KEY` | ⚠️ | Para módulo IA (DeepSeek) |
+| `GEMINI_API_KEY` | ⚠️ | Para módulo IA (Gemini) |
+| `FACTURAMA_USER`, `FACTURAMA_PASSWORD` | ⚠️ | Facturación CFDI 4.0 |
+| `FERNET_KEY` | ✅ en prod | Cifrado de campos sensibles |
+| `LAB_VALIDATION_PIN` | ✅ en prod | PIN de validación (mín. 8 chars) |
+| `REDIS_URL` | ⚠️ | Cache/colas (fallback a memoria) |
+| `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | ⚠️ | Notificaciones email |
+| `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY` | ⚠️ | Web Push notifications |
+
+> **⚠️ Seguridad**: Nunca commitees el archivo `.env` real. Usa `.env.example` como plantilla.
 
 ---
 
-## 🌐 Despliegue en Producción
-
-### Opción Única: VPS Vultr + Nginx + Gunicorn + PostgreSQL
-
-**Documentación canónica:** Ver [DEPLOY.md](DEPLOY.md)
-
-Flujo recomendado:
-1. Preparar la VPS con Ubuntu, `ufw`, `nginx`, `postgresql` y `certbot`
-2. Clonar el repositorio en `/opt/prislab/app`
-3. Copiar `.env.production.example` a `/opt/prislab/app/.env` y completar secretos
-4. Ejecutar `sudo bash /opt/prislab/app/scripts/deploy_vps.sh`
-5. Cuando hagas una actualización, ejecutar `sudo bash /opt/prislab/app/scripts/aplicar_fixes_produccion.sh`
-6. Si necesitas subdominios futuros, ejecutar `/opt/prislab/app/scripts/activar_wildcard_ssl.sh` con un token de Cloudflare válido
-
-**Wildcard SSL activo**
-- Certificado actual: `labcorecloud-wildcard`
-- Cubre `labcorecloud.com` y `*.labcorecloud.com`
-- Renovación de prueba: `sudo certbot renew --dry-run && sudo systemctl reload nginx`
-
-**Servicios que sí se conservan del ecosistema Google:**
-- Google Gemini
-- Google Drive API
-
-**Nota de operación:** la plataforma principal está diseñada para operar en `https://prislab.labcorecloud.com`; el wildcard `*.labcorecloud.com` queda como el paso opcional de ampliación.
-
----
-
-## 🔐 Credenciales de Acceso
-
-Las credenciales no se documentan en este archivo por seguridad.
-Configura las contraseñas iniciales mediante variables de entorno antes de ejecutar el provisionamiento:
+## 🧪 Tests
 
 ```bash
-export PRISLAB_INIT_ADMIN_PASSWORD="tu_password_seguro_para_admin"
-export PRISLAB_INIT_PASSWORD="tu_password_seguro_para_equipo"
-export PRISLAB_INIT_PASSWORD_BRIZIA="tu_password_seguro_para_brizia"
+# Ejecutar todos los tests
+python manage.py test core.tests laboratorio.tests farmacia.tests
+
+# Tests específicos
+python manage.py test core.tests.test_auditoria_segura_global
+
+# Con cobertura
+coverage run manage.py test
+coverage report
 ```
 
-Luego ejecuta:
+---
+
+## 🐳 Docker (Producción)
 
 ```bash
-python scripts/run_manage_with_env.py provision_usuarios_base
+docker-compose up -d
 ```
 
-Para sincronizar usuarios de auditoría en producción, usa:
+---
 
-```bash
-python scripts/run_manage_with_env.py sync_usuarios_auditoria \
-  --empresa-id 1 \
-  --admin-password 'CAMBIAR' \
-  --jonathan-password 'CAMBIAR' \
-  --olga-password 'CAMBIAR' \
-  --admin-director-password 'CAMBIAR'
+## 📁 Arquitectura de Carpetas
+
+```
+PRISLAB_SaaS-master/
+├── config/              # Configuración Django (settings, urls, asgi, wsgi)
+├── core/                # Módulo central (views, models, tasks, tests)
+│   ├── views/           # Vistas organizadas por dominio
+│   ├── models/          # Modelos compartidos
+│   ├── tests/           # 80+ tests unitarios
+│   └── management/      # Comandos personalizados
+├── laboratorio/         # Módulo LIMS
+├── farmacia/            # Módulo Farmacia / PDV
+├── inventario/          # Módulo Inventario
+├── pacientes/           # Módulo Pacientes
+├── seguridad/           # Módulo Seguridad (2FA)
+├── contabilidad/        # Módulo Contabilidad (CFDI)
+├── academia/            # Módulo Academia
+├── ia/                  # Módulo IA
+├── lims/                # Integración LIMS
+├── middleware_local/    # Middleware para dispositivos locales
+├── static/              # Archivos estáticos
+├── templates/           # Templates globales
+└── docs/                # Documentación y auditorías
 ```
 
-Nunca subas contraseñas reales a GitHub.
-
 ---
 
-## 📚 Documentación
+## 📜 Licencia
 
-La carpeta raíz contiene **257 archivos de documentación** en Markdown:
-
-### Documentos Clave
-
-- **`SISTEMA_COMPLETO_LISTO.md`** - Estado actual del sistema
-- **`MANUAL_COMPLETO_PRISLAB_V5.md`** - Manual de usuario completo
-- **`PLAN_MAESTRO_NUCLEO_PRIS_VALLE_2030.md`** - Visión y roadmap
-- **`ARQUITECTURA_BLINDAJE_FARMACEUTICO_ERP.md`** - Arquitectura técnica
-- **`BITACORA_MASTER_ESTADO_SISTEMA.md`** - Historial de cambios
-- **`RESUMEN_EJECUTIVO_HOY.md`** - Estado al día de hoy
-
-### Por Categoría
-
-- **Auditorías:** `AUDITORIA_*.md` (31 documentos)
-- **Reportes:** `REPORTE_*.md` (41 documentos)
-- **Bloques:** `BLOQUE*.md` (implementaciones completadas)
-- **Planes:** `PLAN_*.md` (roadmaps y estrategias)
-
----
-
-## 👥 Equipo
-
-**Creado por:** Jonathan Alonso Samos Sánchez  
-**Con ayuda de:** Cursor AI + Google Gemini  
-**Fecha de inicio:** Enero 2026  
-**Última actualización:** 10 de Febrero 2026
-
-### Equipo PRISLAB
-- **Jonathan** - CEO / Super Admin
-- **Nancy** - Gerente General
-- **Gabriela** - Q.C. Laboratorio
-- **Janette** - Recepción
-- **Tania** - Recepción
-- **Deyaneira** - Auxiliar Lab
-- **Brizia Nolasco** - Médico
-
----
-
-## 📊 Estadísticas del Sistema
-
-- **Líneas de código:** ~50,000+
-- **Modelos Django:** 150+
-- **Vistas:** 200+
-- **Templates HTML:** 300+
-- **Archivos JavaScript:** 50+
-- **Documentación:** 257 archivos MD
-- **Productos farmacia:** 674
-- **Estudios laboratorio:** 554
-- **Usuarios activos:** 7
-
----
-
-## 🗺️ Roadmap (PRIS-VALLE 2030)
-
-### Fase 1: La Cara ✅
-- [x] UI/UX unificada
-- [x] PWA instalable
-- [x] Identidad dinámica
-
-### Fase 2: El Motor ✅
-- [x] VPS Vultr
-- [x] PostgreSQL
-- [x] Nginx + Gunicorn
-
-### Fase 3: El Cerebro Dual ✅
-- [x] PRIS (Prislab - ejecutivo)
-- [x] LIA (Valle - familiar)
-- [x] Function calling
-
-### Fase 4: Crecimiento 🔄
-- [x] Academy (RAG)
-- [x] Roleplay
-- [ ] Campañas éticas completas
-
-### Fase 5: Operaciones 🔄
-- [ ] Geolocalización avanzada
-- [ ] Facturación 4.0 completa
-- [ ] Logística optimizada
-
----
-
-## 📄 Licencia
-
-Propietario - Todos los derechos reservados © 2026 PRISLAB
-
----
-
-## 🆘 Soporte
-
-Para soporte técnico, consulta la documentación o contacta al equipo de desarrollo.
-
----
-
-**PRISLAB SaaS v5.0 - Sistema de Gestión Médica de Clase Mundial** 🏥💊🔬
-
-*"Tecnología al servicio de la salud"*
+Uso interno — PRISLAB. Todos los derechos reservados.

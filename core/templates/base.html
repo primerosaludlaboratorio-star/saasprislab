@@ -1,4 +1,4 @@
-﻿{% load static %}<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -115,11 +115,12 @@
             font-weight: 600;
         }
         
-        /* Efectos de hover con color de empresa */
+        /* Efectos de hover con color de empresa (Flat Design Clean) */
         .btn-profesional.neon-hover:hover,
         .btn-primary-profesional.neon-hover:hover {
-            box-shadow: 0 0 24px {{ empresa_actual.color_primario|default:"#D9230F" }}80,
-                        inset 0 0 24px {{ empresa_actual.color_primario|default:"#D9230F" }}30;
+            background-color: var(--empresa-color-primario);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
         }
         
         /* CSS Personalizado adicional de la empresa */
@@ -415,28 +416,28 @@
             animation: fadeIn 0.2s ease;
         }
         
-        /* Efecto de iluminación neón en hover */
+        /* Efecto de elevación limpia en hover */
         .neon-hover {
-            transition: all 0.15s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .neon-hover:hover {
-            box-shadow: 0 0 16px rgba(217, 35, 15, 0.3), inset 0 0 16px rgba(217, 35, 15, 0.08);
-            border-color: var(--prislab-red-neon) !important;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
         }
         
-        /* Botones principales */
+        /* Botones principales (Clean Flat Design) */
         .btn-principal {
-            background: linear-gradient(135deg, var(--prislab-red) 0%, #B71C1C 100%);
+            background-color: var(--prislab-red);
             color: white;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-            box-shadow: 0 4px 16px rgba(217, 35, 15, 0.3);
-            transition: all 0.15s ease;
+            font-weight: 500;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
         }
         .btn-principal:hover {
-            background: linear-gradient(135deg, #FF1744 0%, var(--prislab-red) 100%);
-            box-shadow: 0 6px 24px rgba(217, 35, 15, 0.5);
-            transform: translateY(-2px);
+            background-color: #d32f2f;
+            box-shadow: 0 4px 12px rgba(217, 35, 15, 0.2);
+            transform: translateY(-1px);
             color: white;
         }
         

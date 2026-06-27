@@ -94,14 +94,14 @@ urlpatterns = [
     path('kiosko/check-in/<str:qr_token>/', kiosko_check_in_qr, name='kiosko_check_in'),
 
     # FASE 8: Corte de caja unificado (Lab + Farmacia)
-    path('api/caja/corte-unificado/', __import__('farmacia.views.corte_caja_api', fromlist=['api_corte_caja_unificado']).api_corte_caja_unificado, name='corte_caja_unificado'),
+    path('api/caja/corte-unificado/', lazy_view('farmacia.views.corte_caja_api.api_corte_caja_unificado'), name='corte_caja_unificado'),
 
     # FASE 9: Bienestar Staff NOM-035 (Caja Fuerte Interna)
     # Prefijo /bienestar-staff/ para no colisionar con el módulo Espacio Seguro en /bienestar/
-    path('bienestar-staff/', __import__('core.views.bienestar', fromlist=['dashboard_bienestar']).dashboard_bienestar, name='bienestar_dashboard'),
-    path('bienestar-staff/diario/', __import__('core.views.bienestar', fromlist=['diario_emocional']).diario_emocional, name='diario_emocional'),
-    path('bienestar-staff/nom035/', __import__('core.views.bienestar', fromlist=['evaluacion_nom035']).evaluacion_nom035, name='evaluacion_nom035'),
-    path('bienestar-staff/alertas-rrhh/', __import__('core.views.bienestar', fromlist=['alertas_rrhh']).alertas_rrhh, name='bienestar_alertas_rrhh'),
+    path('bienestar-staff/', lazy_view('core.views.bienestar.dashboard_bienestar'), name='bienestar_dashboard'),
+    path('bienestar-staff/diario/', lazy_view('core.views.bienestar.diario_emocional'), name='diario_emocional'),
+    path('bienestar-staff/nom035/', lazy_view('core.views.bienestar.evaluacion_nom035'), name='evaluacion_nom035'),
+    path('bienestar-staff/alertas-rrhh/', lazy_view('core.views.bienestar.alertas_rrhh'), name='bienestar_alertas_rrhh'),
 
     # Home (redirige según rol después del login - SIN @login_required para evitar bucles)
     path('home/', views.home_view, name='home'),
@@ -348,8 +348,8 @@ urlpatterns = [
     path('configuracion/flags/<str:codigo>/toggle/', __import__('core.views.feature_flags_admin', fromlist=['api_toggle_flag']).api_toggle_flag, name='api_toggle_flag'),
     path('api/flags/estado/', __import__('core.views.feature_flags_admin', fromlist=['api_flags_estado']).api_flags_estado, name='api_flags_estado'),
     # Audio Legal — verificación de integridad de transcripciones
-    path('api/audio/verificar-integridad/<int:registro_id>/', __import__('core.views.audio_legal', fromlist=['api_verificar_integridad_audio']).api_verificar_integridad_audio, name='api_verificar_integridad_audio'),
-    path('api/audio/sellar/', __import__('core.views.audio_legal', fromlist=['api_sellar_audio']).api_sellar_audio, name='api_sellar_audio'),
+    path('api/audio/verificar-integridad/<int:registro_id>/', lazy_view('core.views.audio_legal.api_verificar_integridad_audio'), name='api_verificar_integridad_audio'),
+    path('api/audio/sellar/', lazy_view('core.views.audio_legal.api_sellar_audio'), name='api_sellar_audio'),
     path('ia/panel/', views.ia_dashboard, name='ia_dashboard'),
     path('api/ia/chat/', views.api_ia_chat, name='api_ia_chat'),
     path('api/ia/consultar-negocios/', views.api_ia_consultar_negocios, name='api_ia_consultar_negocios'),
@@ -514,10 +514,10 @@ urlpatterns = [
     path('pris/acciones/<int:accion_id>/validar/', views.validar_accion_pris, name='validar_accion_pris'),
     # ── Checklist Autónomo por Escucha Activa (NLP en tiempo real) ────────
     path('pris/api/checklist-nlp/',
-         __import__('core.views.pris_checklist', fromlist=['api_detectar_intents_checklist']).api_detectar_intents_checklist,
+         lazy_view('core.views.pris_checklist.api_detectar_intents_checklist'),
          name='pris_checklist_nlp'),
     path('pris/api/checklist-guia/',
-         __import__('core.views.pris_checklist', fromlist=['api_guia_preguntas']).api_guia_preguntas,
+         lazy_view('core.views.pris_checklist.api_guia_preguntas'),
          name='pris_checklist_guia'),
     
     # 11. MÓDULO: HISTORIAL DE RESULTADOS CON GRÁFICAS (con namespace 'core')
