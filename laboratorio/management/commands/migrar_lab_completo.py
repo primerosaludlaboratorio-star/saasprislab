@@ -242,20 +242,19 @@ class Command(BaseCommand):
                                 self.stdout.write(f'    {self.parametros_creados} parmetros cargados...')
                     
                     except MigrationError as e:
-    logger.error(f"Error migracion: {e}")
-except DatabaseError as e:
-    logger.error(f"Error BD: {e}", exc_info=True)
-except ValidationError as e:
-    logger.error(f"Validacion fallida: {e}")
-except MigrationError as e:
-    logger.error(f"Error migracion: {e}")
-except DatabaseError as e:
-    logger.error(f"Error BD: {e}", exc_info=True)
-except ValidationError as e:
-    logger.error(f"Validacion fallida: {e}")
-except Exception as e:
-    logger.critical(f"Error desconocido: {e}", exc_info=True)
-    logger.critical(f"Error desconocido: {e}", exc_info=True)
+                        logger.error(f"Error migracion: {e}")
+                        self.errores.append(f'Error en parmetro {descripcion}: {e}')
+                        continue
+                    except DatabaseError as e:
+                        logger.error(f"Error BD: {e}", exc_info=True)
+                        self.errores.append(f'Error en parmetro {descripcion}: {e}')
+                        continue
+                    except ValidationError as e:
+                        logger.error(f"Validacion fallida: {e}")
+                        self.errores.append(f'Error en parmetro {descripcion}: {e}')
+                        continue
+                    except Exception as e:
+                        logger.critical(f"Error desconocido: {e}", exc_info=True)
                         self.errores.append(f'Error en parmetro {descripcion}: {e}')
                         continue
         
@@ -339,20 +338,19 @@ except Exception as e:
                                 self.stdout.write(f'    {self.rangos_creados} rangos cargados...')
                     
                     except MigrationError as e:
-    logger.error(f"Error migracion: {e}")
-except DatabaseError as e:
-    logger.error(f"Error BD: {e}", exc_info=True)
-except ValidationError as e:
-    logger.error(f"Validacion fallida: {e}")
-except MigrationError as e:
-    logger.error(f"Error migracion: {e}")
-except DatabaseError as e:
-    logger.error(f"Error BD: {e}", exc_info=True)
-except ValidationError as e:
-    logger.error(f"Validacion fallida: {e}")
-except Exception as e:
-    logger.critical(f"Error desconocido: {e}", exc_info=True)
-    logger.critical(f"Error desconocido: {e}", exc_info=True)
+                        logger.error(f"Error migracion: {e}")
+                        self.errores.append(f'Error en rango para {codigo}: {e}')
+                        continue
+                    except DatabaseError as e:
+                        logger.error(f"Error BD: {e}", exc_info=True)
+                        self.errores.append(f'Error en rango para {codigo}: {e}')
+                        continue
+                    except ValidationError as e:
+                        logger.error(f"Validacion fallida: {e}")
+                        self.errores.append(f'Error en rango para {codigo}: {e}')
+                        continue
+                    except Exception as e:
+                        logger.critical(f"Error desconocido: {e}", exc_info=True)
                         self.errores.append(f'Error en rango para {codigo}: {e}')
                         continue
         
@@ -405,20 +403,19 @@ except Exception as e:
                             self.paquetes_creados += 1
                     
                     except MigrationError as e:
-    logger.error(f"Error migracion: {e}")
-except DatabaseError as e:
-    logger.error(f"Error BD: {e}", exc_info=True)
-except ValidationError as e:
-    logger.error(f"Validacion fallida: {e}")
-except MigrationError as e:
-    logger.error(f"Error migracion: {e}")
-except DatabaseError as e:
-    logger.error(f"Error BD: {e}", exc_info=True)
-except ValidationError as e:
-    logger.error(f"Validacion fallida: {e}")
-except Exception as e:
-    logger.critical(f"Error desconocido: {e}", exc_info=True)
-    logger.critical(f"Error desconocido: {e}", exc_info=True)
+                        logger.error(f"Error migracion: {e}")
+                        self.errores.append(f'Error en paquete {codigo}: {e}')
+                        continue
+                    except DatabaseError as e:
+                        logger.error(f"Error BD: {e}", exc_info=True)
+                        self.errores.append(f'Error en paquete {codigo}: {e}')
+                        continue
+                    except ValidationError as e:
+                        logger.error(f"Validacion fallida: {e}")
+                        self.errores.append(f'Error en paquete {codigo}: {e}')
+                        continue
+                    except Exception as e:
+                        logger.critical(f"Error desconocido: {e}", exc_info=True)
                         self.errores.append(f'Error en paquete {codigo}: {e}')
                         continue
         
@@ -456,20 +453,19 @@ except Exception as e:
                             perfil.pruebas.add(estudio)
                         
                         except MigrationError as e:
-    logger.error(f"Error migracion: {e}")
-except DatabaseError as e:
-    logger.error(f"Error BD: {e}", exc_info=True)
-except ValidationError as e:
-    logger.error(f"Validacion fallida: {e}")
-except MigrationError as e:
-    logger.error(f"Error migracion: {e}")
-except DatabaseError as e:
-    logger.error(f"Error BD: {e}", exc_info=True)
-except ValidationError as e:
-    logger.error(f"Validacion fallida: {e}")
-except Exception as e:
-    logger.critical(f"Error desconocido: {e}", exc_info=True)
-    logger.critical(f"Error desconocido: {e}", exc_info=True)
+                            logger.error(f"Error migracion: {e}")
+                            self.errores.append(f'Error vinculando {codigo_estudio} a {codigo_paquete}: {e}')
+                            continue
+                        except DatabaseError as e:
+                            logger.error(f"Error BD: {e}", exc_info=True)
+                            self.errores.append(f'Error vinculando {codigo_estudio} a {codigo_paquete}: {e}')
+                            continue
+                        except ValidationError as e:
+                            logger.error(f"Validacion fallida: {e}")
+                            self.errores.append(f'Error vinculando {codigo_estudio} a {codigo_paquete}: {e}')
+                            continue
+                        except Exception as e:
+                            logger.critical(f"Error desconocido: {e}", exc_info=True)
                             self.errores.append(f'Error vinculando {codigo_estudio} a {codigo_paquete}: {e}')
                             continue
         
@@ -580,20 +576,19 @@ except Exception as e:
                             self.stdout.write(f'    {self.precios_actualizados} precios actualizados...')
                     
                     except MigrationError as e:
-    logger.error(f"Error migracion: {e}")
-except DatabaseError as e:
-    logger.error(f"Error BD: {e}", exc_info=True)
-except ValidationError as e:
-    logger.error(f"Validacion fallida: {e}")
-except MigrationError as e:
-    logger.error(f"Error migracion: {e}")
-except DatabaseError as e:
-    logger.error(f"Error BD: {e}", exc_info=True)
-except ValidationError as e:
-    logger.error(f"Validacion fallida: {e}")
-except Exception as e:
-    logger.critical(f"Error desconocido: {e}", exc_info=True)
-    logger.critical(f"Error desconocido: {e}", exc_info=True)
+                        logger.error(f"Error migracion: {e}")
+                        self.errores.append(f'Error en precio {codigo}: {e}')
+                        continue
+                    except DatabaseError as e:
+                        logger.error(f"Error BD: {e}", exc_info=True)
+                        self.errores.append(f'Error en precio {codigo}: {e}')
+                        continue
+                    except ValidationError as e:
+                        logger.error(f"Validacion fallida: {e}")
+                        self.errores.append(f'Error en precio {codigo}: {e}')
+                        continue
+                    except Exception as e:
+                        logger.critical(f"Error desconocido: {e}", exc_info=True)
                         self.errores.append(f'Error en precio {codigo}: {e}')
                         continue
         

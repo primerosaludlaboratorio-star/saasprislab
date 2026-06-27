@@ -86,6 +86,21 @@
       </p>
     </div>
 
+    {% elif error_folio %}
+    <!-- ═══════════════════════ ERROR FOLIO ═══════════════════════ -->
+    <div class="alert alert-danger">
+      <strong>No encontrado:</strong> {{ error_folio }}
+    </div>
+    <form method="GET" class="folio-form mt-3">
+      <div class="mb-3">
+        <label for="folio_input2" class="form-label">Intenta con otro folio</label>
+        <input type="text" id="folio_input2" name="folio" class="form-control"
+               placeholder="Ej. VTA-0001" value="{{ folio }}"
+               style="text-transform:uppercase;">
+      </div>
+      <button type="submit" class="btn btn-outline-primary w-100">Buscar nuevamente</button>
+    </form>
+
     {% elif not folio %}
     <!-- ═══════════════════════ INGRESAR FOLIO ═══════════════════════ -->
     <div class="sat-badge">
@@ -100,21 +115,6 @@
         <div class="form-text">Encuéntralo en tu ticket de compra impreso o digital.</div>
       </div>
       <button type="submit" class="btn-facturar">Buscar Ticket →</button>
-    </form>
-
-    {% elif error_folio %}
-    <!-- ═══════════════════════ ERROR FOLIO ═══════════════════════ -->
-    <div class="alert alert-danger">
-      <strong>No encontrado:</strong> {{ error_folio }}
-    </div>
-    <form method="GET" class="folio-form mt-3">
-      <div class="mb-3">
-        <label for="folio_input2" class="form-label">Intenta con otro folio</label>
-        <input type="text" id="folio_input2" name="folio" class="form-control"
-               placeholder="Ej. VTA-0001" value="{{ folio }}"
-               style="text-transform:uppercase;">
-      </div>
-      <button type="submit" class="btn btn-outline-primary w-100">Buscar nuevamente</button>
     </form>
 
     {% elif factura_existente and factura_existente.estatus == 'TIMBRADA' %}

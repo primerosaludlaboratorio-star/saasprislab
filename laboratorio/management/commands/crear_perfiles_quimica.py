@@ -159,20 +159,22 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(f'\n[EXITO] Perfiles de Química Clínica creados exitosamente!\n'))
                 
         except ValidationError as e:
-    logger.error(f"Validacion fallida: {e}")
-except IntegrityError as e:
-    logger.error(f"Error BD integridad: {e}", exc_info=True)
-except ValueError as e:
-    logger.error(f"ValueError: {e}")
-except ValidationError as e:
-    logger.error(f"Validacion fallida: {e}")
-except IntegrityError as e:
-    logger.error(f"Error BD integridad: {e}", exc_info=True)
-except ValueError as e:
-    logger.error(f"ValueError: {e}")
-except Exception as e:
-    logger.critical(f"Error desconocido: {e}", exc_info=True)
-    logger.critical(f"Error desconocido: {e}", exc_info=True)
+            logger.error(f"Validacion fallida: {e}")
+            self.stdout.write(self.style.ERROR(f'\n[ERROR] Error durante la creación: {str(e)}'))
+            self.stdout.write(self.style.ERROR('   La transacción ha sido revertida.'))
+            raise
+        except IntegrityError as e:
+            logger.error(f"Error BD integridad: {e}", exc_info=True)
+            self.stdout.write(self.style.ERROR(f'\n[ERROR] Error durante la creación: {str(e)}'))
+            self.stdout.write(self.style.ERROR('   La transacción ha sido revertida.'))
+            raise
+        except ValueError as e:
+            logger.error(f"ValueError: {e}")
+            self.stdout.write(self.style.ERROR(f'\n[ERROR] Error durante la creación: {str(e)}'))
+            self.stdout.write(self.style.ERROR('   La transacción ha sido revertida.'))
+            raise
+        except Exception as e:
+            logger.critical(f"Error desconocido: {e}", exc_info=True)
             self.stdout.write(self.style.ERROR(f'\n[ERROR] Error durante la creación: {str(e)}'))
             self.stdout.write(self.style.ERROR('   La transacción ha sido revertida.'))
             raise

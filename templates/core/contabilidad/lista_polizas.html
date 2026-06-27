@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Pólizas Contables</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f7fa; }
+    .container { max-width: 1000px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; }
+    h1 { color: #1F4E79; }
+    .btn { padding: 8px 12px; background: #1F4E79; color: #fff; text-decoration: none; border-radius: 4px; }
+    form { margin: 12px 0; }
+    input, select { padding: 6px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+    th { background: #1F4E79; color: #fff; }
+    .estado-AUTORIZADA { color: #006100; font-weight: bold; }
+    .estado-BORRADOR { color: #999; }
+    .estado-CANCELADA { color: #C00000; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Pólizas Contables</h1>
+    <a class="btn" href="{% url 'contabilidad:crear_poliza' %}">+ Nueva póliza</a>
+    <a class="btn" href="{% url 'contabilidad:dashboard_contabilidad' %}">Dashboard</a>
+    <form method="get">
+      <input type="text" name="q" value="{{ q }}" placeholder="Folio o concepto">
+      <select name="estado">
+        <option value="">Todos</option>
+        {% for val, label in estados %}
+        <option value="{{ val }}" {% if estado == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Filtrar</button>
+    </form>
+    <table>
+      <tr><th>Folio</th><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Estado</th><th>Autorizó</th></tr>
+      {% for p in page_obj %}
+      <tr>
+        <td><a href="{% url 'contabilidad:ver_poliza' p.id %}">{{ p.folio }}</a></td>
+        <td>{{ p.fecha }}</td>
+        <td>{{ p.get_tipo_display }}</td>
+        <td>{{ p.concepto }}</td>
+        <td class="estado-{{ p.estado }}">{{ p.get_estado_display }}</td>
+        <td>{{ p.autorizado_por.username|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6">No hay pólizas registradas.</td></tr>
+      {% endfor %}
+    </table>
+    <div class="pagination">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}">Anterior</a>{% endif %}
+      Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}">Siguiente</a>{% endif %}
+    </div>
+  </div>
+</body>
+</html>

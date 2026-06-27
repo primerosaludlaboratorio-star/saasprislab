@@ -779,15 +779,23 @@
             
             // Interceptar el constructor de WebSocket
             window.WebSocket = function(url, protocols) {
-                // Verificar si es una conexión a QZ Tray (puertos 8182-8485)
+                // Verificar si es una conexión a QZ Tray (puertos 8181-8485)
                 const esQZTray = url && (
+                    url.includes('localhost:8181') ||
                     url.includes('localhost:8182') ||
+                    url.includes('localhost:8282') ||
                     url.includes('localhost:8283') ||
+                    url.includes('localhost:8383') ||
                     url.includes('localhost:8384') ||
+                    url.includes('localhost:8484') ||
                     url.includes('localhost:8485') ||
+                    url.includes('127.0.0.1:8181') ||
                     url.includes('127.0.0.1:8182') ||
+                    url.includes('127.0.0.1:8282') ||
                     url.includes('127.0.0.1:8283') ||
+                    url.includes('127.0.0.1:8383') ||
                     url.includes('127.0.0.1:8384') ||
+                    url.includes('127.0.0.1:8484') ||
                     url.includes('127.0.0.1:8485') ||
                     url.includes('qz.io')
                 );
@@ -855,9 +863,13 @@
                         msg.includes('ws://') ||
                         msg.includes('failed') ||
                         msg.includes('connection') ||
+                        msg.includes('8181') ||
                         msg.includes('8182') ||
+                        msg.includes('8282') ||
                         msg.includes('8283') ||
+                        msg.includes('8383') ||
                         msg.includes('8384') ||
+                        msg.includes('8484') ||
                         msg.includes('8485'));
             }
             

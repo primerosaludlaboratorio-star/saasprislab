@@ -46,8 +46,6 @@ try:
     from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
     from googleapiclient.errors import HttpError
 except Exception:  # pragma: no cover - dependencia legacy opcional
-    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (storage_backends.py)")
-    logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (storage_backends.py)")
     build = None
     MediaIoBaseUpload = None
     MediaIoBaseDownload = None
@@ -59,8 +57,6 @@ except Exception:  # pragma: no cover - dependencia legacy opcional
 try:
     from storages.backends.s3 import S3Storage
 except Exception as exc:  # pragma: no cover - depende del entorno local
-    logging.getLogger(__name__).exception("Error inesperado en HttpError (storage_backends.py)")
-    logging.getLogger(__name__).exception("Error inesperado en HttpError (storage_backends.py)")
     _s3_import_error = exc
 
     class S3Storage(Storage):
@@ -81,8 +77,6 @@ def _drive_http_error_message(exc: HttpError, contexto: str) -> str:
     try:
         raw = exc.content.decode() if getattr(exc, 'content', None) else str(exc)
     except Exception:
-        logging.getLogger(__name__).exception("Error inesperado en _drive_http_error_message (storage_backends.py)")
-        logging.getLogger(__name__).exception("Error inesperado en _drive_http_error_message (storage_backends.py)")
         raw = str(exc)
     raw_lower = raw.lower()
     if status == 403 or 'forbidden' in raw_lower or 'insufficient permissions' in raw_lower:

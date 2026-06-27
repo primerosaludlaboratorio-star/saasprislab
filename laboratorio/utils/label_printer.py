@@ -26,7 +26,7 @@ from reportlab.lib.pagesizes import mm
 from reportlab.lib.units import mm as mm_unit
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
-from reportlab.graphics.barcode import code128
+from reportlab.graphics.barcode import createBarcodeDrawing
 from reportlab.graphics.shapes import Drawing
 from reportlab.graphics import renderPDF
 
@@ -201,18 +201,15 @@ def generar_codigo_barras(texto: str, ancho: float = 40, alto: float = 10) -> Dr
         Drawing: Objeto de dibujo de ReportLab
     """
     try:
-        # Crear código de barras Code128
-        barcode = code128.Code128(
-            texto,
+        # Crear código de barras compatible con versiones recientes de ReportLab
+        # donde los objetos Code128 ya no se pueden insertar directamente en Group.
+        drawing = createBarcodeDrawing(
+            'Code128',
+            value=texto,
             barWidth=ancho * mm_unit,
             barHeight=alto * mm_unit,
-            humanReadable=False  # No mostrar texto debajo (lo ponemos nosotros)
+            humanReadable=False,
         )
-        
-        # Crear dibujo
-        drawing = Drawing(ancho * mm_unit, alto * mm_unit)
-        drawing.add(barcode)
-        
         return drawing
         
     except (ValueError, TypeError, AttributeError) as e:

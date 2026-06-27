@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Cuentas por Cobrar</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f7fa; }
+    .container { max-width: 1200px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; }
+    h1 { color: #1F4E79; }
+    .btn { display: inline-block; padding: 8px 12px; background: #1F4E79; color: #fff; text-decoration: none; border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+    th { background: #1F4E79; color: #fff; }
+    .estado-PENDIENTE { color: #C00000; font-weight: bold; }
+    .estado-PARCIAL { color: #e6a700; font-weight: bold; }
+    .estado-COBRADO { color: #006100; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Cuentas por Cobrar</h1>
+    <a class="btn" href="{% url 'convenios_lista' %}">Convenios</a>
+    <a class="btn" href="{% url 'dashboard_contabilidad' %}">Dashboard</a>
+    <p><strong>Total pendiente:</strong> ${{ total_pendiente }}</p>
+    <table>
+      <tr><th>Folio</th><th>Convenio</th><th>Concepto</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Vencimiento</th><th>Estado</th></tr>
+      {% for c in cuentas %}
+      <tr>
+        <td>{{ c.folio }}</td>
+        <td>{{ c.convenio.nombre }}</td>
+        <td>{{ c.concepto }}</td>
+        <td>${{ c.monto_total }}</td>
+        <td>${{ c.monto_pagado }}</td>
+        <td>${{ c.saldo_pendiente }}</td>
+        <td>{{ c.fecha_vencimiento }}</td>
+        <td class="estado-{{ c.estado }}">{{ c.estado }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8">No hay cuentas por cobrar.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</body>
+</html>

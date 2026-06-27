@@ -13,7 +13,11 @@
     "omni:both": "node tools/run_omni_suite.mjs --target both",
     "human:ui": "node tools/run_human_ui_audit.mjs",
     "human:ui:local": "node tools/run_human_ui_audit.mjs --target local",
-    "human:ui:cloud": "node tools/run_human_ui_audit.mjs --target cloud"
+    "human:ui:cloud": "node tools/run_human_ui_audit.mjs --target cloud",
+    "agent:audit": "node tools/run_ai_agent_audit.mjs",
+    "agent:local": "node tools/run_ai_agent_audit.mjs --target local",
+    "agent:cloud": "node tools/run_ai_agent_audit.mjs --target cloud",
+    "agent:headless": "node tools/run_ai_agent_audit.mjs --headless"
   },
   "dependencies": {
     "playwright": "^1.45.0"

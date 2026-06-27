@@ -93,20 +93,16 @@ class Command(BaseCommand):
                             est.save(update_fields=['codigo'])
                 self.stdout.write(self.style.SUCCESS(f'[OK] {count} Estudios nuevos creados. Total: {Estudio.objects.count()}'))
         except MigrationError as e:
-    logger.error(f"Error migracion: {e}")
-except DatabaseError as e:
-    logger.error(f"Error BD: {e}", exc_info=True)
-except IntegrityError as e:
-    logger.error(f"Error integridad: {e}", exc_info=True)
-except MigrationError as e:
-    logger.error(f"Error migracion: {e}")
-except DatabaseError as e:
-    logger.error(f"Error BD: {e}", exc_info=True)
-except IntegrityError as e:
-    logger.error(f"Error integridad: {e}", exc_info=True)
-except Exception as e:
-    logger.critical(f"Error desconocido: {e}", exc_info=True)
-    logger.critical(f"Error desconocido: {e}", exc_info=True)
+            logger.error(f"Error migracion: {e}")
+            self.stdout.write(self.style.ERROR(f'[ERROR] Error Estudios: {e}'))
+        except DatabaseError as e:
+            logger.error(f"Error BD: {e}", exc_info=True)
+            self.stdout.write(self.style.ERROR(f'[ERROR] Error Estudios: {e}'))
+        except IntegrityError as e:
+            logger.error(f"Error integridad: {e}", exc_info=True)
+            self.stdout.write(self.style.ERROR(f'[ERROR] Error Estudios: {e}'))
+        except Exception as e:
+            logger.critical(f"Error desconocido: {e}", exc_info=True)
             self.stdout.write(self.style.ERROR(f'[ERROR] Error Estudios: {e}'))
 
         # --- FASE 2: PARÁMETROS (ELEMENTOS) ---

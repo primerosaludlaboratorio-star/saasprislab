@@ -561,9 +561,10 @@
                 <a href="{% url 'caja_farmacia' %}" class="prsb-link {% if '/finanzas/farmacia/caja/' in request.path %}prsb-active{% endif %}">
                     <i class="fas fa-pills"></i> Caja Farmacia
                 </a>
-                <a href="{% url 'corte_dia' %}" class="prsb-link {% if '/finanzas/corte/' in request.path %}prsb-active{% endif %}">
+                <!-- TEMPORAL: corte_dia no existe en core.views - pendiente de implementar en módulo finanzas -->
+                <!-- <a href="{% url 'corte_dia' %}" class="prsb-link {% if '/finanzas/corte/' in request.path %}prsb-active{% endif %}">
                     <i class="fas fa-lock"></i> Corte del Día
-                </a>
+                </a> -->
                 <a href="{% url 'genera_reporte_caja' %}" class="prsb-link {% if '/reportes/reporte-caja/' in request.path %}prsb-active{% endif %}">
                     <i class="fas fa-print"></i> Reporte de Caja
                 </a>
@@ -609,7 +610,7 @@
 
                 <div class="prsb-divider"></div>
                 <span class="prsb-group-label">Contabilidad</span>
-                <a href="{% url 'dashboard_contabilidad' %}" class="prsb-link {% if '/contabilidad/' in request.path %}prsb-active{% endif %}">
+                <a href="{% url 'contabilidad:dashboard_contabilidad' %}" class="prsb-link {% if '/contabilidad/' in request.path %}prsb-active{% endif %}">
                     <i class="fas fa-calculator"></i> Dashboard Contable
                 </a>
             </div>
@@ -791,23 +792,23 @@
                 <i class="fas fa-chevron-right prsb-chevron"></i>
             </button>
             <div class="prsb-content" id="prsb-c-bienestar">
-                <a href="{% url 'bienestar_dashboard' %}" class="prsb-link {% if '/bienestar/' in request.path and '/pris/' not in request.path and '/nom035' not in request.path and '/diario' not in request.path and '/alertas' not in request.path and '/capacitaciones' not in request.path %}prsb-active{% endif %}">
+                <a href="{% url 'bienestar_dashboard' %}" class="prsb-link {% if '/bienestar-staff/' in request.path and '/pris/' not in request.path and '/nom035' not in request.path and '/diario' not in request.path and '/alertas' not in request.path and '/capacitaciones' not in request.path %}prsb-active{% endif %}">
                     <i class="fas fa-spa"></i> Dashboard Bienestar
                 </a>
-                <a href="{% url 'diario_emocional' %}" class="prsb-link {% if '/bienestar/diario/' in request.path %}prsb-active{% endif %}">
+                <a href="{% url 'diario_emocional' %}" class="prsb-link {% if '/bienestar-staff/diario/' in request.path %}prsb-active{% endif %}">
                     <i class="fas fa-journal-whills"></i> Diario Emocional
                 </a>
-                <a href="{% url 'evaluacion_nom035' %}" class="prsb-link {% if '/bienestar/nom035/' in request.path %}prsb-active{% endif %}">
+                <a href="{% url 'evaluacion_nom035' %}" class="prsb-link {% if '/bienestar-staff/nom035/' in request.path %}prsb-active{% endif %}">
                     <i class="fas fa-clipboard-list"></i> Evaluación NOM-035
                 </a>
                 <a href="{% url 'chat_bienestar' %}" class="prsb-link {% if '/bienestar/pris/' in request.path %}prsb-active{% endif %}">
                     <i class="fas fa-comments-medical"></i> Chat PRIS Bienestar
                 </a>
-                <a href="{% url 'capacitaciones_bienestar' %}" class="prsb-link {% if '/bienestar/capacitaciones/' in request.path %}prsb-active{% endif %}">
+                <a href="{% url 'capacitaciones_bienestar' %}" class="prsb-link {% if '/bienestar-staff/capacitaciones/' in request.path %}prsb-active{% endif %}">
                     <i class="fas fa-brain"></i> Capacitaciones
                 </a>
                 {% if request.user.is_superuser or request.user.is_staff or request.user|is_role:"DIRECTOR" or request.user|is_role:"ADMIN" %}
-                <a href="{% url 'bienestar_alertas_rrhh' %}" class="prsb-link {% if '/bienestar/alertas-rrhh/' in request.path %}prsb-active{% endif %}">
+                <a href="{% url 'bienestar_alertas_rrhh' %}" class="prsb-link {% if '/bienestar-staff/alertas-rrhh/' in request.path %}prsb-active{% endif %}">
                     <i class="fas fa-bell"></i> Alertas RRHH
                 </a>
                 {% endif %}

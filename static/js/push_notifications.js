@@ -85,7 +85,7 @@ async function suscribirPush(nombreDispositivo = '') {
         try {
             registration = await navigator.serviceWorker.ready;
         } catch (e) {
-            registration = await navigator.serviceWorker.register('/static/sw.js', {
+            registration = await navigator.serviceWorker.register('/sw.js', {
                 scope: '/'
             });
             await navigator.serviceWorker.ready;

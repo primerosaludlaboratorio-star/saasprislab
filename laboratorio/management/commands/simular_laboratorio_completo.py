@@ -193,17 +193,17 @@ class Command(BaseCommand):
                     self.stdout.write(f"[PROGRESO] {i+1}/{ordenes_objetivo} ordenes creadas")
 
             except SimulationError as e:
-                        self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {i+1}: Error de simulación - {str(e)}'))
-                        errores += 1
-                        continue
-                    except ValueError as e:
-                        self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {i+1}: Error de valor - {str(e)}'))
-                        errores += 1
-                        continue
-                    except DatabaseError as e:
-                        self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {i+1}: Error de base de datos - {str(e)}'))
-                        errores += 1
-                        continue
+                self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {i+1}: Error de simulación - {str(e)}'))
+                errores += 1
+                continue
+            except ValueError as e:
+                self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {i+1}: Error de valor - {str(e)}'))
+                errores += 1
+                continue
+            except DatabaseError as e:
+                self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {i+1}: Error de base de datos - {str(e)}'))
+                errores += 1
+                continue
 
         # FASE 2: Capturar resultados y cambiar estados
         self.stdout.write(self.style.SUCCESS("\n[FASE 2] Capturando resultados y validando..."))
@@ -292,17 +292,17 @@ class Command(BaseCommand):
                     ordenes_con_resultados += 1
 
             except SimulationError as e:
-                        self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {orden.id}: Error de simulación - {str(e)}'))
-                        errores += 1
-                        continue
-                    except ValueError as e:
-                        self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {orden.id}: Error de valor - {str(e)}'))
-                        errores += 1
-                        continue
-                    except DatabaseError as e:
-                        self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {orden.id}: Error de base de datos - {str(e)}'))
-                        errores += 1
-                        continue
+                self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {orden.id}: Error de simulación - {str(e)}'))
+                errores += 1
+                continue
+            except ValueError as e:
+                self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {orden.id}: Error de valor - {str(e)}'))
+                errores += 1
+                continue
+            except DatabaseError as e:
+                self.stdout.write(self.style.ERROR(f'  [ERROR] Orden {orden.id}: Error de base de datos - {str(e)}'))
+                errores += 1
+                continue
 
         # FASE 3: Generar QRs para órdenes validadas
         self.stdout.write(self.style.SUCCESS("\n[FASE 3] Generando QRs para ordenes validadas..."))
@@ -315,17 +315,17 @@ class Command(BaseCommand):
                 if qr_image:
                     qrs_generados += 1
             except SimulationError as e:
-                        self.stdout.write(self.style.ERROR(f'  [ERROR] QR orden {orden.id}: Error de simulación - {str(e)}'))
-                        errores += 1
-                        continue
-                    except ValueError as e:
-                        self.stdout.write(self.style.ERROR(f'  [ERROR] QR orden {orden.id}: Error de valor - {str(e)}'))
-                        errores += 1
-                        continue
-                    except DatabaseError as e:
-                        self.stdout.write(self.style.ERROR(f'  [ERROR] QR orden {orden.id}: Error de base de datos - {str(e)}'))
-                        errores += 1
-                        continue
+                self.stdout.write(self.style.ERROR(f'  [ERROR] QR orden {orden.id}: Error de simulación - {str(e)}'))
+                errores += 1
+                continue
+            except ValueError as e:
+                self.stdout.write(self.style.ERROR(f'  [ERROR] QR orden {orden.id}: Error de valor - {str(e)}'))
+                errores += 1
+                continue
+            except DatabaseError as e:
+                self.stdout.write(self.style.ERROR(f'  [ERROR] QR orden {orden.id}: Error de base de datos - {str(e)}'))
+                errores += 1
+                continue
 
         # Calcular tiempo
         tiempo_total = time.time() - t0

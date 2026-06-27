@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Crear Póliza Contable</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f7fa; }
+    .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; }
+    h1 { color: #1F4E79; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input, select, textarea { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+    .asiento { display: grid; grid-template-columns: 3fr 1fr 1fr auto; gap: 8px; margin-top: 8px; align-items: end; }
+    .asiento select, .asiento input { width: 100%; }
+    button { margin-top: 16px; padding: 10px 16px; background: #1F4E79; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .btn { display: inline-block; margin-top: 16px; padding: 8px 12px; background: #999; color: #fff; text-decoration: none; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Crear Póliza Contable</h1>
+    <form method="post">
+      {% csrf_token %}
+      <label for="tipo">Tipo</label>
+      <select id="tipo" name="tipo" required>
+        {% for val, label in tipos %}
+        <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+      <label for="fecha">Fecha</label>
+      <input type="date" id="fecha" name="fecha" value="{{ hoy }}" required>
+      <label for="concepto">Concepto</label>
+      <textarea id="concepto" name="concepto" rows="2" required></textarea>
+
+      <h3>Asientos</h3>
+      <div id="asientos">
+        <div class="asiento">
+          <select name="cuenta_0" required>
+            <option value="">Selecciona cuenta</option>
+            {% for c in cuentas %}
+            <option value="{{ c.id }}">{{ c.codigo }} - {{ c.nombre }}</option>
+            {% endfor %}
+          </select>
+          <input type="number" step="0.01" name="cargo_0" placeholder="Cargo">
+          <input type="number" step="0.01" name="abono_0" placeholder="Abono">
+          <button type="button" onclick="this.parentElement.remove()">×</button>
+        </div>
+      </div>
+      <button type="button" onclick="addAsiento()">+ Agregar asiento</button>
+      <br>
+      <button type="submit">Guardar póliza</button>
+      <a class="btn" href="{% url 'contabilidad:lista_polizas' %}">Cancelar</a>
+    </form>
+  </div>
+  <script>
+    let idx = 1;
+    function addAsiento() {
+      const div = document.createElement('div');
+      div.className = 'asiento';
+      div.innerHTML = `
+        <select name="cuenta_${idx}" required>
+          <option value="">Selecciona cuenta</option>
+          {% for c in cuentas %}<option value="{{ c.id }}">{{ c.codigo }} - {{ c.nombre }}</option>{% endfor %}
+        </select>
+        <input type="number" step="0.01" name="cargo_${idx}" placeholder="Cargo">
+        <input type="number" step="0.01" name="abono_${idx}" placeholder="Abono">
+        <button type="button" onclick="this.parentElement.remove()">×</button>
+      `;
+      document.getElementById('asientos').appendChild(div);
+      idx++;
+    }
+  </script>
+</body>
+</html>
