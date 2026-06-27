@@ -45,10 +45,7 @@ No deben volver a entrar como pendiente salvo evidencia nueva.
 
 ### Prioridad viva para la siguiente ronda
 
-- Bienestar (en proceso, no consolidar aun)
-- Contabilidad / Finanzas (en proceso, no consolidar aun)
-- Buzon / Comunicacion / Notificaciones (en proceso, no consolidar aun)
-- Reconciliar el resto del árbol sucio local antes de intentar otro deploy
+- Ninguna deuda funcional viva. Solo validar que el árbol sucio restante sea documental o de ramas externas antes de cualquier nuevo deploy.
 
 ### Modulos ya cerrados y que no deben reabrirse sin repro nueva
 
@@ -66,28 +63,27 @@ No deben volver a entrar como pendiente salvo evidencia nueva.
 - Marketing
 - IoT
 - RH / Nomina
+- Bienestar
 
 ### Modulos estabilizados que no deben volver al carril critico sin repro nueva
 
 - Ninguno
 
-### Modulos en proceso no consolidados
+### Reportes finales ya integrados y cerrados
 
-- Bienestar
 - Contabilidad / Finanzas
 - Buzon / Comunicacion / Notificaciones
 
 ## Pendientes exactos por modulo
 
-- Bienestar / Contabilidad / Buzón
-  - esperar nuevos reportes finales antes de consolidar
+- Ninguno. Los módulos que antes figuraban aquí quedaron cerrados y solo conservan deuda histórica documentada.
 
 ## Próximo paso: validación final y preparación de deploy
 
-1. Esperar reportes finales de Bienestar / Contabilidad / Buzón
-2. Reconciliar el árbol sucio restante contra código real
-3. Preparar el siguiente paquete limpio de commit
-4. Desplegar de nuevo solo ese paquete validado
+1. Reconciliar el árbol sucio restante contra código real.
+2. Confirmar que no haya archivos ejecutables borrados por accidente.
+3. Preparar el siguiente paquete limpio de commit.
+4. Desplegar de nuevo solo ese paquete validado.
 
 ## Carril Claude
 

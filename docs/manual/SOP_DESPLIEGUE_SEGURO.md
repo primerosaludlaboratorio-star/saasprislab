@@ -55,8 +55,9 @@ Referencia única en código: **`config/settings.py`** (y **`config/drive_creden
 | **`GOOGLE_API_KEY`** / **`GEMINI_API_KEY`** (si se mapea) | Secreto | IA (dictado, OCR, PRIS). |
 | **`OPENAI_API_KEY`** | Secreto | Integraciones OpenAI si activas. |
 | **`GITHUB_TOKEN`**, **`GITHUB_REPO`** | Secreto / config | Sentinel / reportes. |
-| **`GOOGLE_DRIVE_FOLDER_ID`**, **`DRIVE_FOLDER_ID`** | Config | Carpeta maestra media Drive. |
-| **`GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON`**, **`GOOGLE_APPLICATION_CREDENTIALS`** | Secreto | Credenciales Drive (SA JSON o ruta). |
+| **`VULTR_OBJECT_STORAGE_ENABLED`** | Config | Activa el backend operativo de archivos en Vultr S3. |
+| **`VULTR_S3_ACCESS_KEY_ID`**, **`VULTR_S3_SECRET_ACCESS_KEY`**, **`VULTR_S3_ENDPOINT_URL`**, **`VULTR_S3_BUCKET_NAME`** | Secreto / config | Credenciales y endpoint del almacenamiento operativo. |
+| **Google Drive** | Legacy | Retirado del flujo activo. Los secretos Drive ya no deben montarse en producción. |
 | **`GS_BUCKET_NAME`** | Config | GCS legacy / fallback media. |
 | **`GCS_BACKUP_BUCKET`** | Config / DRP | Bucket destino **`backup_database`** (pg_dump cifrado). |
 | **`EMAIL_HOST_USER`**, **`EMAIL_HOST_PASSWORD`**, **`EMAIL_HOST`**, **`EMAIL_PORT`**, **`EMAIL_USE_TLS`** | Secreto / config | SMTP. |

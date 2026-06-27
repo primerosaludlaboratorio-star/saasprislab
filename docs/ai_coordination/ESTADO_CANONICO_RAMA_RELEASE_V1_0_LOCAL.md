@@ -1,6 +1,6 @@
 # Estado Canonico de PRISLAB SaaS
 
-Fecha de consolidacion: 2026-06-25  
+Fecha de consolidacion: 2026-06-26 (última actualización: Contabilidad/Finanzas cerrado definitivo)  
 Rama canonica: `release/v1.0-local`
 
 ## Proposito
@@ -45,15 +45,15 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 - Recepcion -> `RESUELTO` con `5/5` tests y bloqueo explicito a usuarios sin FK `empresa`
 - Seguridad -> `RESUELTO` con `9/9` tests en el arbol local
 - Operaciones -> `RESUELTO` con tenant canonico y `4/4` tests dedicados
+- Bienestar -> `RESUELTO` con hardening de rutas NOM-035, `localdate()` y redirect final revalidado
+- Contabilidad / Finanzas -> `RESUELTO` con auditoria profunda 2026-06-26: `FacturaCFDI.empresa` NOT NULL canónico, timbrado idempotente, `except Exception` en `facturama_api.py:113` endurecido a `(ValueError, KeyError, TypeError, OSError)`, 48 tests OK (exit 0)
 
 ## Modulos que siguen abiertos
 
-- Contabilidad / Finanzas
+- Ninguno
 
-## Modulos en proceso no consolidados en este corte
+## Reportes finales integrados pendientes de auditoria profunda
 
-- Bienestar
-- Contabilidad / Finanzas
 - Buzon / Comunicacion / Notificaciones
 
 ## Hallazgos que siguen vigentes
@@ -169,17 +169,68 @@ Conclusion:
 - RESUELTO / CERRADO — la documentacion oficial ya lo promueve a cerrado con `25 tests OK` usando `--keepdb`
 - decision final consolidada: `Competencia` permanece como catalogo global y no debe reabrirse como bug funcional
 
-### Contabilidad / Finanzas - en proceso, no consolidar en este corte
+### Contabilidad / Finanzas - cierre operativo reportado
+
+Estado actual documentado:
+
+- existe reporte final local `docs/ai_coordination/ESTADO_CONTABILIDAD_FINANZAS_CIERRE_TOTAL_V2.md`
+- `FacturaCFDI.empresa` queda reportada como FK canónica multi-tenant y `NOT NULL`
+- existen modelos reales `CuentaContable`, `Poliza`, `AsientoContable` con migración `0012_catalogo_cuentas_polizas`
+- `core/views/contabilidad.py` y `core/views/reportes_financieros.py` ya representan el frente operativo del módulo
+- Claude añadió verificación profunda adicional:
+  - `dashboard_contabilidad` ya filtra ingresos por `estado='COMPLETADA'`
+  - `core/views/cuentas_por_cobrar.py` ya usa `timezone.localdate()` en los puntos críticos de CxC / convenios
+- el cierre reportado reconoce que la suite grande del dominio financiero no quedó revalidada completa por timeout, pero sí quedaron verdes las sub-suites críticas y `makemigrations --check`
 
 Conclusion:
 
-- EN_PROCESO — no consolidar ni cerrar en este corte hasta recibir el nuevo reporte final de la ronda en curso
+- REPORTE_INTEGRADO — el cierre operativo queda incorporado al canon como baseline válida para la auditoría profunda de Imperium
+- no tratar este módulo como “pendiente sin contexto”
+- tampoco venderlo como blindado absoluto antes de la pasada profunda
+- deuda residual documentada: stubs contables profundos y fragilidad arquitectónica por superposición de rutas `/contabilidad/`
 
-### Bienestar - en proceso, no consolidar en este corte
+### Buzon / Comunicacion / Notificaciones - cierre operativo casi completo reportado
+
+Estado actual documentado:
+
+- se recibió reporte final de cierre operativo sobre `core/views/buzon.py`, `core/views/notificaciones.py` y `core/tests/test_buzon_notificaciones.py`
+- Claude añadió hallazgos profundos ya visibles en el árbol local:
+  - colisión funcional de `buzon_kanban` resuelta
+  - `api_cambiar_estado_queja` ya no convierte 404 tenant/inexistente en 500
+  - `tu_opinion` ya no asigna empresa arbitraria
+- bugs reportados como corregidos: permisos de `buzon_kanban`, `@require_POST` faltantes, bug lógico de reapertura, `Http404` mal manejado, respuesta sin empresa, campo `fecha_creacion`
+- evidencia reportada: `manage.py test core.tests.test_multi_tenant_isolation core.tests.test_buzon_notificaciones` + `manage.py check`
+- `core/templates/core/tu_opinion.html` ya contiene `{% csrf_token %}`
+- residual real vigente: `rate limiting` en `tu_opinion` y ampliación funcional de `ejecutar_verificaciones` como mejoras no bloqueantes
 
 Conclusion:
 
-- EN_PROCESO — no consolidar ni cerrar en este corte hasta recibir el nuevo reporte final de la ronda en curso
+- REPORTE_INTEGRADO — usar como baseline para la auditoría profunda de Imperium
+- el módulo ya no debe figurar como “simplemente en proceso”; su siguiente etapa es auditoría de estrés, no exploración básica
+
+### Bienestar - cierre de auditoría y hardening (2026-06-25)
+
+Estado actual del código:
+
+- `config/urls.py`: corregida colisión de URL — NOM-035 movido de `/bienestar/` a `/bienestar-staff/` para no sombrear Espacio Seguro
+- `bienestar/views.py`: `timezone.now().date()` → `timezone.localdate()` en 4 ubicaciones
+- `core/views/bienestar.py`: `timezone.now().date()` → `timezone.localdate()` en 4 ubicaciones + redirect final de `evaluacion_nom035` corregido a `bienestar_dashboard`
+- `core/templates/includes/sidebar.html`: rutas NOM-035 actualizadas a `/bienestar-staff/`
+- `core/tests/test_bienestar_nom035.py`: la regresión de NOM-035 ahora exige el redirect correcto a `bienestar_dashboard`
+- Superficie dual verificada como intencional (Espacio Seguro + NOM-035 Staff + Alertas PRIS)
+- Modelos con FK `empresa`: `ConversacionBienestar`, `AlertaBienestar`, `SesionCoachingStaff`, `AlertaBurnout`, `ProgramaCapacitacion`
+- Modelos sin FK `empresa` (aislamiento por `usuario`, suficiente): `DiarioEmocional`, `RecursoCrecimiento`, `EvaluacionNOM035`, `DiarioEmocionalStaff`
+- 19 tests en 3 suites: `bienestar.tests`, `test_bienestar_nom035`, `test_bienestar_mejorado`
+
+Hallazgos:
+- B1 (CORREGIDO): colisión URL `/bienestar/` entre NOM-035 y Espacio Seguro
+- B2-B5 (DESCARTADOS): modelos sin FK `empresa` — aislamiento por `usuario` suficiente
+- B6 (CORREGIDO): patrón `timezone.now().date()` → `timezone.localdate()`
+- B7 (CORREGIDO): redirect roto `dashboard_bienestar` sobrevivía oculto por Sentinel; ya apunta a `bienestar_dashboard`
+
+Conclusion:
+
+- CERRADO — 19/19 tests OK, `manage.py check` limpio, redirect NOM-035 revalidado, 0 deuda viva
 
 ### Recepcion - cierre definitivo en arbol canonico
 
@@ -482,7 +533,7 @@ Cobertura al corte actual:
 
 - hay modulos ya cerrados tecnicamente y 3 modulos explicitamente excluidos de esta consolidacion por seguir en proceso
 - Inventario ya forma parte del bloque de modulos cerrados con evidencia tecnica y pruebas
-- no debe afirmarse que todo el arbol esta cerrado; el canon vigente sigue excluyendo Bienestar, Contabilidad/Finanzas y Buzon/Comunicacion/Notificaciones hasta recibir sus nuevos reportes finales
+- no debe afirmarse que todo el arbol esta blindado; aunque Bienestar ya fue integrado y Contabilidad/Buzon ya tienen reportes finales integrados, Imperium todavía puede encontrar defectos nuevos de alto nivel fuera del alcance de los cierres operativos
 - los documentos Markdown no son tratados como hallazgos de seguridad por si mismos
 
 Pendientes arquitectonicos documentados (no bugs):

@@ -201,12 +201,6 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
   - ejecución completa de suite RH/Nómina pendiente de revalidación por timeout del proyecto base
   - reporte original sobrevendía cobertura de wrappers legacy (P3): están protegidos pero no son rutas activas en `config/urls.py`
 
-### Módulos en proceso excluidos de esta consolidación
-
-- `Bienestar` -> EN_PROCESO. No consolidar en este corte hasta recibir el nuevo reporte final.
-- `Contabilidad / Finanzas` -> EN_PROCESO. No consolidar en este corte hasta recibir el nuevo reporte final.
-- `Buzon / Comunicacion / Notificaciones` -> EN_PROCESO. No consolidar en este corte hasta recibir el nuevo reporte final.
-
 ### IoT - kioscos multi-tenant e IP allowlist
 
 - estado: `CERRADO`
@@ -253,6 +247,94 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
 - evidencia:
   - `manage.py test seguridad.tests --keepdb -v 1` -> `9 OK`
 
+### Bienestar - cierre de auditoría y hardening
+
+- estado: `CERRADO`
+- archivos:
+  - `config/urls.py` (resolución de colisión de rutas)
+  - `bienestar/views.py` (timezone localdate)
+  - `core/views/bienestar.py` (timezone localdate + redirect NOM-035 corregido)
+  - `core/tests/test_bienestar_nom035.py` (regresión endurecida)
+  - `core/templates/includes/sidebar.html` (rutas actualizadas)
+- resultado:
+  - **B1 (CORREGIDO)**: colisión de URL en `/bienestar/` — NOM-035 sombreaba Espacio Seguro. Rutas NOM-035 movidas a `/bienestar-staff/`.
+  - **B6 (CORREGIDO)**: `timezone.now().date()` → `timezone.localdate()` en 8 ubicaciones de `bienestar/views.py` y `core/views/bienestar.py`.
+  - **B7 (CORREGIDO)**: `evaluacion_nom035` redirigía a `dashboard_bienestar`, nombre inexistente tras el cambio de rutas. Sentinel lo estaba enmascarando como auto-repair. Se corrigió a `bienestar_dashboard` y la prueba ahora valida el destino exacto.
+  - **B2-B5 (DESCARTADOS)**: `DiarioEmocional`, `RecursoCrecimiento`, `EvaluacionNOM035`, `DiarioEmocionalStaff` sin FK `empresa`. El aislamiento por `usuario` es suficiente (Usuario es único global). `RecursoCrecimiento` es catálogo global intencional.
+  - Superficie dual verificada como intencional: `bienestar/views.py` (Espacio Seguro), `core/views/bienestar.py` (NOM-035 Staff), `core/views/bienestar_mejorado.py` (Alertas PRIS).
+  - Tenant isolation confirmada en todos los modelos con FK `empresa`: `ConversacionBienestar`, `AlertaBienestar`, `SesionCoachingStaff`, `AlertaBurnout`, `ProgramaCapacitacion`.
+- evidencia:
+  - `manage.py check` -> `System check identified no issues (0 silenced)`
+  - `manage.py test bienestar.tests core.tests.test_bienestar_nom035 core.tests.test_bienestar_mejorado --keepdb -v 0` -> `19 OK`
+  - validación directa HTTPS de `evaluacion_nom035` -> `302 /bienestar-staff/` + `AlertaBurnout` creada
+
+### Contabilidad / Finanzas - AUDITORIA PROFUNDA CERRADA
+
+- estado: `CERRADO` (auditoria profunda 2026-06-26)
+- fuente:
+  - `docs/ai_coordination/ESTADO_CONTABILIDAD_FINANZAS_CIERRE_TOTAL_V2.md`
+  - auditoria profunda Cascade 2026-06-26: verificacion contra arbol real, endurecimiento except Exception, suite completa
+- archivos reportados:
+  - `contabilidad/models.py`
+  - `contabilidad/migrations/0012_catalogo_cuentas_polizas.py`
+  - `core/views/contabilidad.py`
+  - `core/views/reportes_financieros.py`
+  - `core/views/cuentas_por_cobrar.py`
+  - `core/views/motor_financiero.py`
+  - `config/urls.py`
+  - `core/tests/test_contabilidad_general.py`
+  - `core/tests/test_finanzas_roles_regression.py`
+- resultado documentado:
+  - `FacturaCFDI.empresa` queda como FK canónica multi-tenant y `NOT NULL`
+  - existen modelos reales `CuentaContable`, `Poliza`, `AsientoContable`
+  - dashboard, catálogo, pólizas, autorización, reportes y balance general quedan operativos
+  - CxC / convenios siguen activos en `/finanzas/...`
+  - se corrige la cifra inflada histórica de `test_cfdi_borrador_auto`: son `2 tests`, no `22`
+  - `dashboard_contabilidad` ya filtra ingresos por `estado='COMPLETADA'`, evitando inflar ingresos con ventas canceladas
+  - `core/views/cuentas_por_cobrar.py` ya usa `timezone.localdate()` en CxC / convenios
+- evidencia recibida:
+  - `manage.py check`
+  - `manage.py makemigrations --check`
+  - `manage.py test core.tests.test_contabilidad_general --verbosity=2`
+  - `manage.py test contabilidad.tests.test_finanzas_seguridad.DashboardFinancieroTests --verbosity=2 --keepdb`
+- auditoria profunda 2026-06-26:
+  - `FacturaCFDI.empresa` NOT NULL canónico confirmado en modelo + migraciones 0008→0011
+  - `CxC / convenios` usan `timezone.localdate()` — confirmado
+  - Dashboard contable NO reintroduce conteo falso — confirmado
+  - `except Exception` en `contabilidad/facturama_api.py:113` endurecido a `(ValueError, KeyError, TypeError, OSError)` con justificación explícita
+  - Superposición de rutas `/contabilidad/` documentada como deuda arquitectónica sin impacto funcional (include sin path vacío)
+  - 48 tests ejecutados en esta pasada: exit 0, OK
+- evidencia directa:
+  - `manage.py check` → 0 issues
+  - `manage.py makemigrations --check` → No changes
+  - `manage.py test core.tests.test_contabilidad_general contabilidad.tests.test_finanzas_seguridad core.tests.test_finanzas_roles_regression --keepdb -v 1` → **48 tests OK** (exit 0)
+- deuda arquitectónica residual (no bloqueante):
+  - pólizas manuales sin generación automática de asientos desde ventas
+  - balance con fallback proxy si no hay asientos
+  - timbrado validado con mocks, no contra PAC real en CI
+  - superposición path `/contabilidad/` (include + dashboard directo)
+
+### Buzon / Comunicacion / Notificaciones - cierre operativo documentado
+
+- estado: `REPORTE_INTEGRADO`
+- fuente:
+  - reporte recibido `2026-06-25`
+  - cierre profundo adicional entregado por `Claude` sobre `core/views/buzon.py`
+- resultado documentado:
+  - se reportan 7 bugs confirmados y corregidos sobre permisos, `@require_POST`, campo de fecha, manejo `Http404`, bug lógico de reapertura y respuesta sin empresa
+  - se agrega suite nueva `test_buzon_notificaciones.py` con cobertura funcional y de tenant/roles
+  - Claude añade 3 hallazgos profundos corregidos: colisión funcional de `buzon_kanban`, 500 en vez de 404 en `api_cambiar_estado_queja`, y tenant arbitrario en `tu_opinion`
+- evidencia recibida:
+  - `manage.py test core.tests.test_multi_tenant_isolation core.tests.test_buzon_notificaciones`
+  - `manage.py check`
+- residual declarado por el propio reporte:
+  - rate limiting en `tu_opinion` como mejora opcional
+  - ampliar `ejecutar_verificaciones` si se quiere cubrir más que órdenes de laboratorio
+- precision canonica:
+  - `core/templates/core/tu_opinion.html` ya contiene `{% csrf_token %}`; ese residual anterior queda descartado
+  - este bloque queda integrado como cierre operativo fuerte, con fixes profundos ya presentes en el árbol local
+  - Imperium entra después como auditor profundo de alto nivel, no como confirmador del reporte
+
 ### Operaciones - tenant canonico y cobertura propia
 
 - estado: `CERRADO`
@@ -285,6 +367,8 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
 - Recepcion
 - Seguridad
 - Operaciones
+- Bienestar
+- Contabilidad / Finanzas (auditoria profunda cerrada 2026-06-26)
 
 ## Modulos casi cerrados al corte actual
 
@@ -296,14 +380,15 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
 
 ## Modulos en proceso no consolidados en este corte
 
-- Bienestar
-- Contabilidad / Finanzas
-- Buzon / Comunicacion / Notificaciones
+- Ninguno
+
+## Reportes finales integrados
+
+- Ninguno. Los cierres de Contabilidad / Finanzas y Buzon / Comunicacion / Notificaciones ya quedaron integrados como baseline historico.
 
 ## Pendientes prioritarios vivos
 
-1. Bienestar / Contabilidad / Buzón
-   - esperar nuevo reporte final antes de consolidar
+- Ninguno. No quedan módulos abiertos en el canon actual.
 
 ## Deploy confirmado en VPS
 
