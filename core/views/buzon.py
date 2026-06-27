@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.db import DatabaseError
 
 from core.models import BuzonQuejas, Empresa
 from core.decorators import role_required
@@ -132,7 +133,7 @@ def buzon_kanban(request):
                 categoria_ia=categoria,
                 estado='PENDIENTE'
             ).count()
-    except Exception as e:
+    except DatabaseError as e:
         logger.error(f"Error en buzon_kanban: {str(e)}", exc_info=True)
         quejas_nuevas = BuzonQuejas.objects.none()
         quejas_investigando = BuzonQuejas.objects.none()
@@ -209,7 +210,7 @@ def api_cambiar_estado_queja(request, queja_id):
         
     except Http404:
         return JsonResponse({'status': 'error', 'mensaje': 'Queja no encontrada'}, status=404)
-    except Exception as e:
+    except (DatabaseError, json.JSONDecodeError) as e:
         logging.getLogger(__name__).exception("Error inesperado en api_cambiar_estado_queja (buzon.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 

@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Max, Subquery, OuterRef, Count
+from django.db import DatabaseError
 from django.utils import timezone
 from django.shortcuts import render
 
@@ -60,7 +61,7 @@ def api_enviar_mensaje(request):
         
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'mensaje': 'JSON invalido'}, status=400)
-    except Exception as e:
+    except DatabaseError as e:
         logging.getLogger(__name__).exception("Error inesperado en api_enviar_mensaje (comunicacion.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
@@ -102,7 +103,7 @@ def api_enviar_audio(request):
             'fecha': timezone.localtime(msg.fecha).strftime('%H:%M'),
         })
         
-    except Exception as e:
+    except DatabaseError as e:
         logging.getLogger(__name__).exception("Error inesperado en api_enviar_audio (comunicacion.py)")
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 

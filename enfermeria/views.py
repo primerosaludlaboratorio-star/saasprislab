@@ -25,7 +25,7 @@ def dashboard_enfermeria(request):
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
 
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     pendientes = CitaMedica.objects.filter(empresa=empresa, fecha_cita=hoy, estado='EN_SALA').count()
     en_triage = CitaMedica.objects.filter(empresa=empresa, fecha_cita=hoy, estado='EN_CURSO').count()
     completados = SignosVitales.objects.filter(empresa=empresa, fecha_registro__date=hoy).count()
@@ -46,7 +46,7 @@ def lista_pacientes_triage(request):
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
 
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     pacientes = CitaMedica.objects.filter(
         empresa=empresa, fecha_cita=hoy, estado='EN_SALA'
     ).select_related('paciente', 'medico').order_by('hora_cita')
@@ -254,7 +254,7 @@ def alertas_signos_criticos(request):
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
 
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     alertas = SignosVitales.objects.filter(
         empresa=empresa, fecha_registro__date=hoy
     ).filter(

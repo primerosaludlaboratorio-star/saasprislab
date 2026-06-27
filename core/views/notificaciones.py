@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_http_methods, require_POST
 from django.db.models import Q
+from django.db import DatabaseError
 from django.core.paginator import Paginator
 from django.utils import timezone
 
@@ -225,7 +226,7 @@ def ejecutar_verificaciones(request):
             generadas += 1
 
         return _json_no_store({'ok': True, 'generadas': generadas, 'mensaje': f'{generadas} verificaciones ejecutadas'})
-    except Exception as exc:
+    except DatabaseError as exc:
         logger.error("Error en ejecutar_verificaciones: %s", exc)
         return _json_no_store({'ok': False, 'error': str(exc)}, status=500)
 
