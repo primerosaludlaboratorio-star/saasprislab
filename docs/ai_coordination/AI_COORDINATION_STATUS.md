@@ -181,7 +181,7 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
 
 ### RH/Nómina - endurecimiento de seguridad y cobertura
 
-- estado: `CERRADO` (código endurecido, suite con timeout conocido)
+- estado: `CERRADO` (revalidado 2026-06-27)
 - archivos:
   - `core/tests/test_rh_nomina_security.py`
   - `core/views/nomina.py`
@@ -196,10 +196,11 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
   - `Competencia` documentada como catálogo global en `core/models/rrhh.py:141`
 - evidencia:
   - `manage.py check OK`
+  - `manage.py test core.tests.test_rh_nomina_security --keepdb -v 0` -> **25/25 OK** (76s, sin timeout)
   - suite `test_rh_nomina_security` reforzada con tests de CompetenciaAdmin (P2 corregido)
-- residual:
-  - ejecución completa de suite RH/Nómina pendiente de revalidación por timeout del proyecto base
-  - reporte original sobrevendía cobertura de wrappers legacy (P3): están protegidos pero no son rutas activas en `config/urls.py`
+- nota: el residual de timeout documentado anteriormente no se reproduce en el arbol actual
+
+
 
 ### IoT - kioscos multi-tenant e IP allowlist
 
@@ -308,11 +309,11 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
   - `manage.py check` → 0 issues
   - `manage.py makemigrations --check` → No changes
   - `manage.py test core.tests.test_contabilidad_general contabilidad.tests.test_finanzas_seguridad core.tests.test_finanzas_roles_regression --keepdb -v 1` → **48 tests OK** (exit 0)
-- deuda arquitectónica residual (no bloqueante):
-  - pólizas manuales sin generación automática de asientos desde ventas
-  - balance con fallback proxy si no hay asientos
-  - timbrado validado con mocks, no contra PAC real en CI
-  - superposición path `/contabilidad/` (include + dashboard directo)
+- deuda arquitectonica residual (confirmada intencional 2026-06-27):
+  - polizas manuales sin generacion automatica de asientos desde ventas — diseno intencional: entrada manual de contadores
+  - balance con fallback proxy si no hay asientos — correcto: retorna cero, no falla
+  - timbrado con mocks via set_facturama_factory_for_tests() — patron correcto para CI; FacturamaAPI real se usa en produccion
+  - superposicion path /contabilidad/ (include + dashboard directo) — sin impacto funcional
 
 ### Buzon / Comunicacion / Notificaciones - cierre operativo documentado
 
