@@ -1,0 +1,191 @@
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+
+Found 10 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: channels, corsheaders, django_extensions, humanize, messages, pwa, staticfiles, storages
+  Apply all migrations: academia, admin, auth, bienestar, consultorio, contabilidad, contenttypes, core, farmacia, ia, inventario, iot, laboratorio, lims, logistica, mantenimiento, marketing, pacientes, reglas_negocio, seguridad, sessions
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying lims.0001_initial... OK
+  Applying lims.0002_perfillims_id_perfil_legacy... OK
+  Applying lims.0003_lims_v75_costos_y_legacy... OK
+  Applying lims.0004_analito_formula_es_calculado... OK
+  Applying lims.0005_analito_codigo_rastreo_iso... OK
+  Applying lims.0006_escudo_clinico_v114... OK
+  Applying lims.0007_forense_acceso_cofepris... OK
+  Applying pacientes.0001_initial... OK
+  Applying consultorio.0001_initial... OK
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying core.0001_initial... OK
+  Applying laboratorio.0001_initial... OK
+  Applying laboratorio.0002_historialresultados_and_more... OK
+  Applying core.0002_agregar_campos_laboratorio... OK
+  Applying core.0003_migrar_datos_laboratorio...
+================================================================================
+MIGRACION FORENSE DE DATOS - LABORATORIO A CORE
+================================================================================
+Total de ordenes a procesar: 0
+
+
+================================================================================
+RESUMEN DE MIGRACIËN
+================================================================================
+Total procesadas: 0/0
+Ërdenes actualizadas: 0
+Ërdenes creadas (nuevas): 0
+================================================================================
+
+ OK
+  Applying core.0004_agregar_medico_origen_unificacion... OK
+  Applying core.0005_citamedica_signosvitales_historiaclinica_and_more... OK
+  Applying core.0006_estudioimagen_plantillaestudioimagen_and_more... OK
+  Applying core.0007_ordendeservicio_archivo_resultado_and_more... OK
+  Applying core.0008_actualizar_rutas_drive_bloque1... OK
+  Applying core.0009_add_movimiento_caja... OK
+  Applying core.0010_consultorio_isla_independiente... OK
+  Applying core.0011_add_pin_precio_neto... OK
+  Applying core.0012_pushsubscription... OK
+  Applying core.0013_paciente_uuid... OK
+  Applying core.0014_voiceauditlog... OK
+  Applying core.0015_mensajeinterno_audio_fields... OK
+  Applying core.0016_convenio_cuentaporcobrar_notacredito... OK
+  Applying core.0017_consentimientoinformado... OK
+  Applying core.0018_paciente_nombres_apellidos... OK
+  Applying core.0019_producto_stock_minimo... OK
+  Applying core.0020_medico_empresa_activo... OK
+  Applying core.0021_change_parametro_unique_to_abreviatura... OK
+  Applying core.0022_detalleventa_costo_unitario_momento... OK
+  Applying core.0023_orden_paciente_snapshot_ciclo5... OK
+  Applying core.0024_performance_indexes... OK
+  Applying core.0025_alter_venta_options_and_more... OK
+  Applying core.0026_signosvitales_nullable_optional... OK
+  Applying core.0027_clinical_data_protection... OK
+  Applying core.0028_bitacora_entrega_resultados... OK
+  Applying core.0029_notificacion_sistema... OK
+  Applying core.0030_nomina_periodo_recibo... OK
+  Applying core.0031_documentocapacitacion_capsulasabiduria_and_more... OK
+  Applying core.0032_remove_paciente_core_pacien_nombre__3dc2ec_idx_and_more... OK
+  Applying core.0033_remove_paciente_core_pacien_nombre__3dc2ec_idx_and_more... OK
+  Applying core.0034_estudio_venta_individual... OK
+  Applying core.0035_descuentos_inapam... OK
+  Applying core.0036_remove_estudio_aplica_descuento_inapam_and_more... OK
+  Applying core.0037_orden_empresa_fk... OK
+  Applying core.0038_usuario_mfa_activo_usuario_totp_secret_and_more... OK
+  Applying core.0039_add_lote_perf_indexes... OK
+  Applying core.0040_add_clinico_perf_indexes... OK
+  Applying core.0041_alter_historiaclinica_numero_expediente_and_more... OK
+  Applying consultorio.0002_initial... OK
+  Applying consultorio.0003_consultorio_isla_independiente... OK
+  Applying consultorio.0004_cajaconsultorio_cobroconsulta_valeliquidacion... OK
+  Applying consultorio.0005_incidenciasentinel... OK
+  Applying consultorio.0006_incidenciasentinel_contexto_reparacion_and_more... OK
+  Applying consultorio.0007_alter_consultamedica_options_and_more... OK
+  Applying consultorio.0008_clinical_data_protection... OK
+  Applying consultorio.0009_reporteultrasonido_imagenultrasonido_and_more... OK
+  Applying inventario.0001_initial... OK
+  Applying inventario.0002_traspasoinventario_notificaciondiscrepancia_and_more... OK
+  Applying inventario.0003_salidaanaliticalab_idempotency_key... OK
+  Applying core.0042_add_requiere_factura_to_orden... OK
+Traceback (most recent call last):
+  File "C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\manage.py", line 22, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\manage.py", line 18, in main
+    execute_from_command_line(sys.argv)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\core\management\__init__.py", line 442, in execute_from_command_line
+    utility.execute()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\core\management\__init__.py", line 436, in execute
+    self.fetch_command(subcommand).run_from_argv(self.argv)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\core\management\commands\test.py", line 24, in run_from_argv
+    super().run_from_argv(argv)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\core\management\base.py", line 413, in run_from_argv
+    self.execute(*args, **cmd_options)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\core\management\base.py", line 459, in execute
+    output = self.handle(*args, **options)
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\core\management\commands\test.py", line 68, in handle
+    failures = test_runner.run_tests(test_labels)
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\test\runner.py", line 1061, in run_tests
+    old_config = self.setup_databases(
+        aliases=databases,
+        serialized_aliases=suite.serialized_aliases,
+    )
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\test\runner.py", line 959, in setup_databases
+    return _setup_databases(
+        self.verbosity,
+    ...<5 lines>...
+        **kwargs,
+    )
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\test\utils.py", line 203, in setup_databases
+    connection.creation.create_test_db(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        verbosity=verbosity,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        serialize=serialize_alias,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\db\backends\base\creation.py", line 78, in create_test_db
+    call_command(
+    ~~~~~~~~~~~~^
+        "migrate",
+        ^^^^^^^^^^
+    ...<3 lines>...
+        run_syncdb=True,
+        ^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\core\management\__init__.py", line 194, in call_command
+    return command.execute(*args, **defaults)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\core\management\base.py", line 459, in execute
+    output = self.handle(*args, **options)
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\core\management\base.py", line 107, in wrapper
+    res = handle_func(*args, **kwargs)
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\core\management\commands\migrate.py", line 356, in handle
+    post_migrate_state = executor.migrate(
+        targets,
+    ...<3 lines>...
+        fake_initial=fake_initial,
+    )
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\db\migrations\executor.py", line 135, in migrate
+    state = self._migrate_all_forwards(
+        state, plan, full_plan, fake=fake, fake_initial=fake_initial
+    )
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\db\migrations\executor.py", line 167, in _migrate_all_forwards
+    state = self.apply_migration(
+        state, migration, fake=fake, fake_initial=fake_initial
+    )
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\db\migrations\executor.py", line 240, in apply_migration
+    self.progress_callback("apply_start", migration, fake)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\core\management\commands\migrate.py", line 398, in migration_progress_callback
+    self.stdout.write("  Applying %s..." % migration, ending="")
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\core\management\base.py", line 181, in write
+    self._out.write(style_func(msg))
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 39-41: character maps to <undefined>

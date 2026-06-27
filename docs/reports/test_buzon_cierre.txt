@@ -1,0 +1,58 @@
+Using existing test database for alias 'default'...
+
+Found 66 test(s).
+
+================================================================================
+MIGRACION FORENSE DE DATOS - LABORATORIO A CORE
+================================================================================
+Total de ordenes a procesar: 0
+
+
+================================================================================
+RESUMEN DE MIGRACIËN
+================================================================================
+Total procesadas: 0/0
+Ërdenes actualizadas: 0
+Ërdenes creadas (nuevas): 0
+================================================================================
+
+System check identified no issues (0 silenced).
+...INFO SENTINEL: Incidencia #1 creada - [MEDIA] Http404 en /director/buzon/api/cambiar-estado/1/
+INFO [AUDIT] CREATE IncidenciaSentinel #1 por 
+WARNING SENTINEL: Sin API key de Gemini, generando anßlisis offline
+INFO SENTINEL: Incidencia #1 enriquecida con analisis IA
+..INFO SENTINEL: Incidencia #1 creada - [MEDIA] Http404 en /director/buzon/api/cambiar-estado/99999/
+INFO [AUDIT] CREATE IncidenciaSentinel #1 por 
+WARNING SENTINEL: Sin API key de Gemini, generando anßlisis offline
+INFO SENTINEL: Incidencia #1 enriquecida con analisis IA
+..WARNING SENTINEL REPAIR [Permisos]: sin_api recibi¾ 403 en /director/buzon/api/cambiar-estado/1/ sin empresa asignada. No se regenera sesi¾n automßtica.
+.....WARNING SENTINEL REPAIR [Permisos]: sin_ntf recibi¾ 403 en /api/notificaciones/crear/ sin empresa asignada. No se regenera sesi¾n automßtica.
+...WARNING SENTINEL REPAIR [Permisos]: sin_get recibi¾ 403 en /director/buzon/api/obtener/ sin empresa asignada. No se regenera sesi¾n automßtica.
+..WARNING Acceso denegado por rol. Usuario: cajero_bz, Rol: CAJERO, Requeridos: {'ADMIN', 'DIRECTOR', 'GERENTE'}
+.....WARNING SENTINEL REPAIR [Permisos]: sin_vf recibi¾ 403 en /notificaciones/ejecutar-verificaciones/ sin empresa asignada. No se regenera sesi¾n automßtica.
+...........ERROR SENTINEL captura [ALTA] Http404 en POST /notificaciones/1/leer/: No NotificacionSistema matches the given query.
+INFO SENTINEL: Incidencia #1 creada - [ALTA] Http404 en /notificaciones/1/leer/
+INFO [AUDIT] CREATE IncidenciaSentinel #1 por 
+WARNING SENTINEL: Sin API key de Gemini, generando anßlisis offline
+INFO SENTINEL: Incidencia #1 enriquecida con analisis IA
+INFO SENTINEL: Incidencia #2 creada - [MEDIA] Http404 en /notificaciones/1/leer/
+INFO [AUDIT] CREATE IncidenciaSentinel #2 por 
+WARNING SENTINEL: Sin API key de Gemini, generando anßlisis offline
+INFO SENTINEL: Incidencia #2 enriquecida con analisis IA
+.WARNING SENTINEL REPAIR [Permisos]: flujo_sin recibi¾ 403 en /notificaciones/1/leer/ sin empresa asignada. No se regenera sesi¾n automßtica.
+..WARNING SENTINEL REPAIR [Permisos]: flujo_sin recibi¾ 403 en /notificaciones/marcar-todas/ sin empresa asignada. No se regenera sesi¾n automßtica.
+..............INFO SENTINEL: Incidencia #1 creada - [MEDIA] Http404 en /chat/api/enviar/
+INFO [AUDIT] CREATE IncidenciaSentinel #1 por 
+WARNING SENTINEL: Sin API key de Gemini, generando anßlisis offline
+INFO SENTINEL: Incidencia #1 enriquecida con analisis IA
+...WARNING SENTINEL REPAIR [Permisos]: sin_empresa_notif recibi¾ 403 en /api/notificaciones/crear/ sin empresa asignada. No se regenera sesi¾n automßtica.
+...WARNING SENTINEL REPAIR [Permisos]: sin_empresa_notif recibi¾ 403 en /notificaciones/ejecutar-verificaciones/ sin empresa asignada. No se regenera sesi¾n automßtica.
+..WARNING SENTINEL REPAIR [Permisos]: sin_empresa_notif recibi¾ 403 en /notificaciones/1/leer/ sin empresa asignada. No se regenera sesi¾n automßtica.
+.WARNING SENTINEL REPAIR [Permisos]: sin_empresa_notif recibi¾ 403 en /notificaciones/marcar-todas/ sin empresa asignada. No se regenera sesi¾n automßtica.
+.......
+----------------------------------------------------------------------
+Ran 66 tests in 139.188s
+
+OK
+Preserving test database for alias 'default'...
+

@@ -1,0 +1,104 @@
+
+REPORTE DE ESTADO - PRISLAB SaaS
+
+============================================================
+1. VERIFICACION DE MONOLITOS -> PAQUETES
+============================================================
+  core/views/laboratorio.py
+    -> paquete:  core/views/laboratorio/ [OK]
+    -> bak:      core/views/laboratorio.py.bak [NO EXISTE]
+    -> monolito: core/views/laboratorio.py [AUN EXISTE - RIESGO]
+    -> Estado: FALLO
+  core/views/pris_ia.py
+    -> paquete:  core/views/pris_ia/ [OK]
+    -> bak:      core/views/pris_ia.py.bak [NO EXISTE]
+    -> monolito: core/views/pris_ia.py [AUN EXISTE - RIESGO]
+    -> Estado: FALLO
+  config/urls.py
+    -> paquete:  config/urls/ [OK]
+    -> bak:      config/urls.py.bak [NO EXISTE]
+    -> monolito: config/urls.py [AUN EXISTE - RIESGO]
+    -> Estado: FALLO
+
+============================================================
+2. VERIFICACION DE IMPORTS (Django setup)
+============================================================
+laboratorio import OK: 73 exports
+pris_ia import OK: 9 exports
+config.urls OK: 406 URL patterns
+
+============================================================
+3. MANAGE.PY CHECK
+============================================================
+  OK: System check identified no issues
+
+============================================================
+4. EXCEPCIONES GENERICAS 'except Exception'
+============================================================
+  Total except Exception: 1193
+  Sin logger (requieren atencion): 3
+    core\tests\test_pris_ia_catchall.py:4: Tests de cobertura para los 4 bloques `except Exception` conservados
+    core\views\laboratorio\resultados.py:74: except Exception as exc:
+    core\views\laboratorio\_helpers.py:3: L├│gica pura ÔÇö sin except Exception.
+
+============================================================
+5. IMPORTS LEGACY RESTANTES
+============================================================
+  ordenes.py legacy: 3 ocurrencias
+    laboratorio\models\ordenes.py:6: ÔØî laboratorio.models.ordenes.Medico -> USE core.models.Medico
+    laboratorio\models\ordenes.py:7: ÔØî laboratorio.models.ordenes.Orden -> USE core.models.OrdenDeServicio
+    laboratorio\models\ordenes.py:22: "ÔÜá´©Å CR├ìTICO: laboratorio.models.ordenes est├í OBSOLETO. "
+  laboratorio Orden legacy: 1 ocurrencias
+    migracion_ordenes_forense.py:24: from laboratorio.models import Orden as OrdenLab, DetalleOrden as DetalleLab, Resultado as ResultadoLab
+  laboratorio Medico legacy: 0 ocurrencias
+  consultorio legacy.py: 0 ocurrencias
+
+============================================================
+6. ARCHIVOS CRITICOS (existencia y tamano)
+============================================================
+  consultorio/api_views.py: 9512 bytes
+  laboratorio/services/cci_canal.py: 7336 bytes
+  laboratorio/services/escudo_clinico_lims.py: 4700 bytes
+
+============================================================
+7. RESUMEN DE PAQUETES REFACTORIZADOS
+============================================================
+  core/views/laboratorio/: 13 archivos
+    - __init__.py (3740 bytes)
+    - _helpers.py (1609 bytes)
+    - caja.py (17022 bytes)
+    - calidad.py (30031 bytes)
+    - captura.py (15349 bytes)
+    - config_lims.py (9383 bytes)
+    - edicion_orden.py (13866 bytes)
+    - escaneo_ia.py (14180 bytes)
+    - pacientes_lab.py (3021 bytes)
+    - pdf_impresion.py (16432 bytes)
+    - recepcion.py (15909 bytes)
+    - reportes.py (8562 bytes)
+    - resultados.py (17107 bytes)
+  core/views/pris_ia/: 9 archivos
+    - __init__.py (1375 bytes)
+    - _constants.py (10909 bytes)
+    - _dispatcher.py (5506 bytes)
+    - _gemini.py (4366 bytes)
+    - _prompts.py (4212 bytes)
+    - _rbac.py (1866 bytes)
+    - _tools_lab.py (10030 bytes)
+    - _tools_lectura.py (26823 bytes)
+    - views.py (16363 bytes)
+  config/urls/: 10 archivos
+    - __init__.py (1234 bytes)
+    - _helpers.py (459 bytes)
+    - api.py (1586 bytes)
+    - core_views.py (1710 bytes)
+    - director.py (6172 bytes)
+    - farmacia.py (3827 bytes)
+    - finanzas.py (4555 bytes)
+    - laboratorio.py (11349 bytes)
+    - modulos.py (15644 bytes)
+    - pris_ia.py (5324 bytes)
+
+============================================================
+FIN DEL REPORTE
+============================================================

@@ -1,0 +1,291 @@
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+
+Found 17 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: channels, corsheaders, django_extensions, humanize, messages, pwa, staticfiles, storages
+  Apply all migrations: academia, admin, auth, bienestar, consultorio, contabilidad, contenttypes, core, farmacia, ia, inventario, iot, laboratorio, lims, logistica, mantenimiento, marketing, pacientes, reglas_negocio, seguridad, sessions
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying lims.0001_initial... OK
+  Applying lims.0002_perfillims_id_perfil_legacy... OK
+  Applying lims.0003_lims_v75_costos_y_legacy... OK
+  Applying lims.0004_analito_formula_es_calculado... OK
+  Applying lims.0005_analito_codigo_rastreo_iso... OK
+  Applying lims.0006_escudo_clinico_v114... OK
+  Applying lims.0007_forense_acceso_cofepris... OK
+  Applying pacientes.0001_initial... OK
+  Applying consultorio.0001_initial... OK
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying core.0001_initial... OK
+  Applying laboratorio.0001_initial... OK
+  Applying laboratorio.0002_historialresultados_and_more... OK
+  Applying core.0002_agregar_campos_laboratorio... OK
+  Applying core.0003_migrar_datos_laboratorio...
+================================================================================
+MIGRACION FORENSE DE DATOS - LABORATORIO A CORE
+================================================================================
+Total de ordenes a procesar: 0
+
+
+================================================================================
+RESUMEN DE MIGRACI├ôN
+================================================================================
+Total procesadas: 0/0
+├ôrdenes actualizadas: 0
+├ôrdenes creadas (nuevas): 0
+================================================================================
+
+ OK
+  Applying core.0004_agregar_medico_origen_unificacion... OK
+  Applying core.0005_citamedica_signosvitales_historiaclinica_and_more... OK
+  Applying core.0006_estudioimagen_plantillaestudioimagen_and_more... OK
+  Applying core.0007_ordendeservicio_archivo_resultado_and_more... OK
+  Applying core.0008_actualizar_rutas_drive_bloque1... OK
+  Applying core.0009_add_movimiento_caja... OK
+  Applying core.0010_consultorio_isla_independiente... OK
+  Applying core.0011_add_pin_precio_neto... OK
+  Applying core.0012_pushsubscription... OK
+  Applying core.0013_paciente_uuid... OK
+  Applying core.0014_voiceauditlog... OK
+  Applying core.0015_mensajeinterno_audio_fields... OK
+  Applying core.0016_convenio_cuentaporcobrar_notacredito... OK
+  Applying core.0017_consentimientoinformado... OK
+  Applying core.0018_paciente_nombres_apellidos... OK
+  Applying core.0019_producto_stock_minimo... OK
+  Applying core.0020_medico_empresa_activo... OK
+  Applying core.0021_change_parametro_unique_to_abreviatura... OK
+  Applying core.0022_detalleventa_costo_unitario_momento... OK
+  Applying core.0023_orden_paciente_snapshot_ciclo5... OK
+  Applying core.0024_performance_indexes... OK
+  Applying core.0025_alter_venta_options_and_more... OK
+  Applying core.0026_signosvitales_nullable_optional... OK
+  Applying core.0027_clinical_data_protection... OK
+  Applying core.0028_bitacora_entrega_resultados... OK
+  Applying core.0029_notificacion_sistema... OK
+  Applying core.0030_nomina_periodo_recibo... OK
+  Applying core.0031_documentocapacitacion_capsulasabiduria_and_more... OK
+  Applying core.0032_remove_paciente_core_pacien_nombre__3dc2ec_idx_and_more... OK
+  Applying core.0033_remove_paciente_core_pacien_nombre__3dc2ec_idx_and_more... OK
+  Applying core.0034_estudio_venta_individual... OK
+  Applying core.0035_descuentos_inapam... OK
+  Applying core.0036_remove_estudio_aplica_descuento_inapam_and_more... OK
+  Applying core.0037_orden_empresa_fk... OK
+  Applying core.0038_usuario_mfa_activo_usuario_totp_secret_and_more... OK
+  Applying core.0039_add_lote_perf_indexes... OK
+  Applying core.0040_add_clinico_perf_indexes... OK
+  Applying core.0041_alter_historiaclinica_numero_expediente_and_more... OK
+  Applying consultorio.0002_initial... OK
+  Applying consultorio.0003_consultorio_isla_independiente... OK
+  Applying consultorio.0004_cajaconsultorio_cobroconsulta_valeliquidacion... OK
+  Applying consultorio.0005_incidenciasentinel... OK
+  Applying consultorio.0006_incidenciasentinel_contexto_reparacion_and_more... OK
+  Applying consultorio.0007_alter_consultamedica_options_and_more... OK
+  Applying consultorio.0008_clinical_data_protection... OK
+  Applying consultorio.0009_reporteultrasonido_imagenultrasonido_and_more... OK
+  Applying inventario.0001_initial... OK
+  Applying inventario.0002_traspasoinventario_notificaciondiscrepancia_and_more... OK
+  Applying inventario.0003_salidaanaliticalab_idempotency_key... OK
+  Applying core.0042_add_requiere_factura_to_orden... OK
+  Applying core.0043_fase2b_2c_4_pagoorð┤ðÁð¢_cxc_tipservicio... OK
+  Applying core.0044_toma_muestra_cubiculo_audio... OK
+  Applying core.0045_ia_governance_byok_drive_cache... OK
+  Applying core.0046_add_rag_fields_to_documentocapacitacion... OK
+  Applying core.0047_add_responsable_sanitaria_to_empresa... OK
+  Applying core.0048_auditoria_model_base_catalogo_resultados... OK
+  Applying inventario.0004_consumoestudioreactivo_analito_lims... OK
+  Applying inventario.0005_notificaciondiscrepancia_tipo_hl7... OK
+  Applying inventario.0006_forense_acceso_cofepris... OK
+  Applying inventario.0007_notificacion_qc_westgard_tipo... OK
+  Applying core.0049_farmacia_sprint2_receta_fraccionamiento... OK
+  Applying core.0050_lims_parametro_develab_v6... OK
+  Applying core.0051_farmacia_tenant_lote_detalleventalote... OK
+  Applying core.0052_notificacionpanico_fk_ordendeservicio... OK
+  Applying core.0053_repoint_ia_iot_fk_ordendeservicio... OK
+  Applying core.0054_venta_inventario_descontado_v113... OK
+  Applying core.0055_movimientocaja_idempotency_v114... OK
+  Applying core.0056_bankguard_v114_niveles_2_3... OK
+  Applying core.0057_gastocaja_documento_adjunto_acayucan... OK
+  Applying core.0058_resultadoparametro_analito_lims... OK
+  Applying core.0059_expediente_blindaje_v20... OK
+  Applying core.0060_reparacion_grietas_blindaje... OK
+  Applying core.0061_backupinmutablelog... OK
+  Applying core.0062_notaclinicasoap_signos_vitales_snapshot... OK
+  Applying core.0063_tejido_blando_v75_marketing_academy... OK
+  Applying core.0064_consentimiento_marketing_y_orden_opcional... OK
+  Applying core.0065_forense_acceso_cofepris... OK
+  Applying core.0066_offline_client_mutation_id... OK
+  Applying core.0067_resultadoparametro_ia_ethics_p18... OK
+  Applying core.0068_detalleorden_lims_fk_columns... OK
+  Applying core.0069_detalleorden_drop_legacy_estudio_id... OK
+  Applying core.0070_repair_client_mutation_columns... OK
+  Applying core.0071_sucursal_gestion_inventario_activa... OK
+  Applying core.0072_sqlite_drop_legacy_unique_together... OK
+  Applying core.0073_conveniopreciolims_and_legacy_lab_drop... OK
+  Applying core.0074_pagoorden_empresa_tenant_guard... OK
+  Applying core.0075_usuario_es_auditor_supremo... OK
+  Applying core.0076_alter_consultamedica_diagnostico_principal_and_more... OK
+  Applying academia.0001_initial... OK
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying bienestar.0001_initial... OK
+  Applying bienestar.0002_initial... OK
+  Applying bienestar.0003_diarioemocional_anonimizado_and_more... OK
+  Applying core.0077_alter_medico_cedula_profesional_and_more... OK
+  Applying core.0078_remove_default_pin_and_disable_emergency_bypass... OK
+  Applying core.0079_add_empresa_fk_mensajeinterno... OK
+  Applying core.0080_backfill_mensajeinterno_empresa... OK
+  Applying core.0081_make_mensajeinterno_empresa_required... OK
+  Applying contabilidad.0001_initial... OK
+  Applying contabilidad.0002_clientefacturacion_empresa_and_more... OK
+  Applying contabilidad.0003_blindaje_fiscal_cupon_enfermeria... OK
+  Applying contabilidad.0004_facturando_timbrado_intento_p16... OK
+  Applying contabilidad.0005_alter_facturacfdi_timbrado_intento_en... OK
+  Applying contabilidad.0006_facturacfdi_puente_lab_farmacia_cfdi40... OK
+  Applying contabilidad.0007_facturacfdi_ultimo_error_pac... OK
+  Applying contabilidad.0008_facturacfdi_empresa_fk... OK
+  Applying contabilidad.0009_clientefacturacion_empresa_not_null... OK
+  Applying contabilidad.0010_rename_contab_empresa_serie_folio_idx_contabilida_empresa_e9f2ce_idx... OK
+  Applying contabilidad.0011_facturacfdi_empresa_not_null... OK
+  Applying contabilidad.0012_catalogo_cuentas_polizas... OK
+  Applying farmacia.0001_initial... OK
+  Applying farmacia.0002_aperturacaja_cierreturnofarmacia_and_more... OK
+  Applying farmacia.0003_alter_devolucionventa_evidencia_fotografica_and_more... OK
+  Applying farmacia.0004_remove_proveedor_farmacia_pr_rfc_b9e130_idx_and_more... OK
+  Applying farmacia.0005_cierreturnofarmacia_unique_cierre_por_apertura... OK
+  Applying ia.0001_initial... OK
+  Applying ia.0002_alter_cotizacionocr_imagen_receta_and_more... OK
+  Applying ia.0003_alter_cotizacionocr_orden_asociada_and_more... OK
+  Applying inventario.0008_agregar_evidencia_pagos_orden_compra... OK
+  Applying inventario.0009_alter_salidaanaliticalab_formula_consumo_and_more... OK
+  Applying pacientes.0002_solicitudaccesoportal_usuariopaciente_and_more... OK
+  Applying laboratorio.0003_estudio_keywords... OK
+  Applying laboratorio.0004_insumoestudio... OK
+  Applying laboratorio.0005_alter_responsablesanitario_firma_digital... OK
+  Applying laboratorio.0006_alter_estudio_keywords... OK
+  Applying laboratorio.0007_orden_empresa_fk... OK
+  Applying laboratorio.0008_resultado_alerta_critica_enviada_and_more... OK
+  Applying laboratorio.0009_add_codigo_parametro_equipo... OK
+  Applying laboratorio.0010_add_catalogo_clinico_fields... OK
+  Applying laboratorio.0011_add_performance_indexes... OK
+  Applying laboratorio.0012_blindaje_hl7_admin_worm... OK
+  Applying laboratorio.0013_hl7_huerfano_y_notif... OK
+  Applying laboratorio.0014_cci_westgard_p21... OK
+  Applying laboratorio.0015_alter_medicioncontrolinterno_options_and_more... OK
+  Applying iot.0001_initial... OK
+  Applying iot.0002_blindaje_hl7_admin_worm... OK
+  Applying iot.0003_alter_transaccionhl7_options_and_more... OK
+  Applying iot.0004_transaccionhl7_equipo_transaccion_unique... OK
+  Applying iot.0005_kiosco_empresa... OK
+  Applying laboratorio.0016_orden_paciente_core_y_drop_legacy_paciente... OK
+  Applying lims.0008_tenant_empresa_row_isolation... OK
+  Applying lims.0007b_empresa_nullable_lims... OK
+  Applying lims.0009_rename_analito_es_venta_a_vendible... OK
+  Applying lims.0010_remove_analito_lims_analit_es_vent_b086f7_idx_and_more... OK
+  Applying logistica.0001_initial... OK
+  Applying logistica.0002_transferenciainventario_logtransferencia_and_more... OK
+  Applying mantenimiento.0001_cmms_v8_2_inicial... OK
+  Applying mantenimiento.0002_sensoriot_lecturasensoriot_certificadometrologia_and_more... OK
+  Applying mantenimiento.0003_incca_csv_interface_models... OK
+  Applying mantenimiento.0004_rename_mantenimien_empresa_7ef61a_idx_mantenimien_empresa_978693_idx_and_more... OK
+  Applying mantenimiento.0005_fix_ticket_nullable_fields... OK
+  Applying marketing.0001_initial... OK
+  Applying marketing.0002_alter_cuponmarketing_imagen... OK
+  Applying marketing.0003_crm_prospectos... OK
+  Applying marketing.0004_campana_nombre_canal... OK
+  Applying marketing.0005_cupon_uso... OK
+  Applying marketing.0006_tracking_hit_and_consent_prospecto... OK
+  Applying marketing.0007_alter_cuponuso_options_and_more... OK
+  Applying pacientes.0003_orden_paciente_core_y_drop_legacy_paciente... OK
+  Applying reglas_negocio.0001_initial... OK
+  Applying reglas_negocio.0002_alter_reglanegocio_codigo_and_more... OK
+  Applying reglas_negocio.0003_reglanegocio_unique_empresa_codigo... OK
+  Applying seguridad.0001_initial... OK
+  Applying seguridad.0002_codigobackup2fa_dispositivosms_dispositivototp_and_more... OK
+  Applying seguridad.0003_fix_user_agent_default... OK
+  Applying sessions.0001_initial... OK
+System check identified no issues (0 silenced).
+test_peso_fuera_de_rango_invalido (enfermeria.tests.EnfermeriaFormTest.test_peso_fuera_de_rango_invalido) ... ok
+test_presion_sistolica_alta_marcada_como_inusual (enfermeria.tests.EnfermeriaFormTest.test_presion_sistolica_alta_marcada_como_inusual) ... ok
+test_signos_normales_validos (enfermeria.tests.EnfermeriaFormTest.test_signos_normales_validos) ... ok
+test_temperatura_fuera_de_rango_invalida (enfermeria.tests.EnfermeriaFormTest.test_temperatura_fuera_de_rango_invalida) ... ok
+test_urls_con_parametros_resuelven_ok (enfermeria.tests.EnfermeriaURLTest.test_urls_con_parametros_resuelven_ok) ... ok
+test_urls_resuelven_ok (enfermeria.tests.EnfermeriaURLTest.test_urls_resuelven_ok) ... ok
+test_alertas_criticas_detectan_signos_anormales (enfermeria.tests.EnfermeriaVistaTest.test_alertas_criticas_detectan_signos_anormales) ... FAIL
+test_alertas_criticas_no_muestran_otra_empresa (enfermeria.tests.EnfermeriaVistaTest.test_alertas_criticas_no_muestran_otra_empresa) ... ok
+test_capturar_signos_vitales_cita_otra_empresa_devuelve_404 (enfermeria.tests.EnfermeriaVistaTest.test_capturar_signos_vitales_cita_otra_empresa_devuelve_404) ... ERROR SENTINEL captura [ALTA] Http404 en GET /enfermeria/capturar-signos/2/: No CitaMedica matches the given query.
+INFO SENTINEL: Incidencia #1 creada - [ALTA] Http404 en /enfermeria/capturar-signos/2/
+INFO [AUDIT] CREATE IncidenciaSentinel #1 por 
+WARNING SENTINEL: Sin API key de Gemini, generando an├ílisis offline
+INFO SENTINEL: Incidencia #1 enriquecida con analisis IA
+INFO SENTINEL: Incidencia #2 creada - [MEDIA] Http404 en /enfermeria/capturar-signos/2/
+INFO [AUDIT] CREATE IncidenciaSentinel #2 por 
+WARNING SENTINEL: Sin API key de Gemini, generando an├ílisis offline
+INFO SENTINEL: Incidencia #2 enriquecida con analisis IA
+ok
+test_capturar_signos_vitales_crea_registro (enfermeria.tests.EnfermeriaVistaTest.test_capturar_signos_vitales_crea_registro) ... ok
+test_dashboard_muestra_metricas (enfermeria.tests.EnfermeriaVistaTest.test_dashboard_muestra_metricas) ... FAIL
+test_dashboard_requiere_login (enfermeria.tests.EnfermeriaVistaTest.test_dashboard_requiere_login) ... ok
+test_dashboard_usuario_sin_empresa_redirige (enfermeria.tests.EnfermeriaVistaTest.test_dashboard_usuario_sin_empresa_redirige) ... ok
+test_graficas_tendencias_genera_json (enfermeria.tests.EnfermeriaVistaTest.test_graficas_tendencias_genera_json) ... ok
+test_historial_paciente_otra_empresa_devuelve_404 (enfermeria.tests.EnfermeriaVistaTest.test_historial_paciente_otra_empresa_devuelve_404) ... ERROR SENTINEL captura [ALTA] Http404 en GET /enfermeria/historial/2/: No Paciente matches the given query.
+INFO SENTINEL: Incidencia #1 creada - [ALTA] Http404 en /enfermeria/historial/2/
+INFO [AUDIT] CREATE IncidenciaSentinel #1 por 
+WARNING SENTINEL: Sin API key de Gemini, generando an├ílisis offline
+INFO SENTINEL: Incidencia #1 enriquecida con analisis IA
+INFO SENTINEL: Incidencia #2 creada - [MEDIA] Http404 en /enfermeria/historial/2/
+INFO [AUDIT] CREATE IncidenciaSentinel #2 por 
+WARNING SENTINEL: Sin API key de Gemini, generando an├ílisis offline
+INFO SENTINEL: Incidencia #2 enriquecida con analisis IA
+ok
+test_historial_signos_filtra_por_empresa (enfermeria.tests.EnfermeriaVistaTest.test_historial_signos_filtra_por_empresa) ... ok
+test_lista_triage_filtra_por_empresa (enfermeria.tests.EnfermeriaVistaTest.test_lista_triage_filtra_por_empresa) ... FAIL
+
+======================================================================
+FAIL: test_alertas_criticas_detectan_signos_anormales (enfermeria.tests.EnfermeriaVistaTest.test_alertas_criticas_detectan_signos_anormales)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\enfermeria\tests.py", line 201, in test_alertas_criticas_detectan_signos_anormales
+    self.assertEqual(response.context['alertas'].count(), 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_dashboard_muestra_metricas (enfermeria.tests.EnfermeriaVistaTest.test_dashboard_muestra_metricas)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\enfermeria\tests.py", line 88, in test_dashboard_muestra_metricas
+    self.assertEqual(response.context['pacientes_pendientes'], 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_lista_triage_filtra_por_empresa (enfermeria.tests.EnfermeriaVistaTest.test_lista_triage_filtra_por_empresa)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\enfermeria\tests.py", line 103, in test_lista_triage_filtra_por_empresa
+    self.assertEqual(response.context['pacientes'].count(), 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+----------------------------------------------------------------------
+Ran 17 tests in 13.798s
+
+FAILED (failures=3)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+

@@ -1,0 +1,44 @@
+Using existing test database for alias 'default'...
+
+Found 17 test(s).
+
+================================================================================
+MIGRACION FORENSE DE DATOS - LABORATORIO A CORE
+================================================================================
+Total de ordenes a procesar: 0
+
+
+================================================================================
+RESUMEN DE MIGRACIËN
+================================================================================
+Total procesadas: 0/0
+Ërdenes actualizadas: 0
+Ërdenes creadas (nuevas): 0
+================================================================================
+
+System check identified no issues (0 silenced).
+........ERROR SENTINEL captura [ALTA] Http404 en GET /enfermeria/capturar-signos/2/: No CitaMedica matches the given query.
+INFO SENTINEL: Incidencia #1 creada - [ALTA] Http404 en /enfermeria/capturar-signos/2/
+INFO [AUDIT] CREATE IncidenciaSentinel #1 por 
+WARNING SENTINEL: Sin API key de Gemini, generando anßlisis offline
+INFO SENTINEL: Incidencia #1 enriquecida con analisis IA
+INFO SENTINEL: Incidencia #2 creada - [MEDIA] Http404 en /enfermeria/capturar-signos/2/
+INFO [AUDIT] CREATE IncidenciaSentinel #2 por 
+WARNING SENTINEL: Sin API key de Gemini, generando anßlisis offline
+INFO SENTINEL: Incidencia #2 enriquecida con analisis IA
+......ERROR SENTINEL captura [ALTA] Http404 en GET /enfermeria/historial/2/: No Paciente matches the given query.
+INFO SENTINEL: Incidencia #1 creada - [ALTA] Http404 en /enfermeria/historial/2/
+INFO [AUDIT] CREATE IncidenciaSentinel #1 por 
+WARNING SENTINEL: Sin API key de Gemini, generando anßlisis offline
+INFO SENTINEL: Incidencia #1 enriquecida con analisis IA
+INFO SENTINEL: Incidencia #2 creada - [MEDIA] Http404 en /enfermeria/historial/2/
+INFO [AUDIT] CREATE IncidenciaSentinel #2 por 
+WARNING SENTINEL: Sin API key de Gemini, generando anßlisis offline
+INFO SENTINEL: Incidencia #2 enriquecida con analisis IA
+...
+----------------------------------------------------------------------
+Ran 17 tests in 21.749s
+
+OK
+Preserving test database for alias 'default'...
+
