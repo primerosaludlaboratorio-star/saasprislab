@@ -45,7 +45,8 @@ class TestDispatcherCatchAll(TestCase):
         self.assertIn('fallo simulado', result['error'])
         self.assertTrue(any('boom_tool' in msg for msg in cm.output))
 
-    def test_herramienta_inexistente_devuelve_error_disponibles(self):
+    @patch('core.views.pris_ia._dispatcher._verificar_rbac', return_value=(True, ""))
+    def test_herramienta_inexistente_devuelve_error_disponibles(self, mock_rbac):
         from core.views.pris_ia._dispatcher import _ejecutar_herramienta
 
         result = _ejecutar_herramienta('herramienta_fantasma', {}, self.empresa, self.user)
@@ -129,7 +130,7 @@ class TestViewsChatCatchAll(TestCase):
 
         with patch('core.views.pris_ia.views._gemini_rest_call',
                    side_effect=RuntimeError("fallo catastrófico simulado")):
-            with patch('core.views.pris_ia.views._verificar_rbac', return_value=True):
+            with patch('core.views.pris_ia._rbac._verificar_rbac', return_value=(True, "")):
                 with patch('core.views.pris_ia.views._build_system_prompt',
                            return_value="prompt"):
                     with self.assertLogs('core.views.pris_ia.views', level='ERROR'):
@@ -153,7 +154,7 @@ class TestViewsChatCatchAll(TestCase):
 
         with patch('core.views.pris_ia.views._gemini_rest_call',
                    side_effect=Exception("429 Resource exhausted")):
-            with patch('core.views.pris_ia.views._verificar_rbac', return_value=True):
+            with patch('core.views.pris_ia._rbac._verificar_rbac', return_value=(True, "")):
                 with patch('core.views.pris_ia.views._build_system_prompt',
                            return_value="prompt"):
                     response = asistente_chat(request)

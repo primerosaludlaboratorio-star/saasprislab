@@ -92,7 +92,9 @@ class SeguridadModuleTest(TestCase):
         except ImportError:
             self.skipTest("Seguridad module not available")
 
+from django.test import TestCase, Client, override_settings
 
+@override_settings(SYSTEM_MAINTENANCE_MODE=False)
 class TwoFactorTest(TestCase):
     """Cobertura funcional para la API 2FA en configuración y respaldo."""
 

@@ -23,8 +23,7 @@ def tool_registrar_venta_farmacia(args: dict, empresa, user) -> dict:
     if not productos_req:
         return {"error": "Necesito la lista de productos para registrar la venta."}
 
-    from core.models import Producto, Venta, DetalleVenta
-    from farmacia.models import Lote
+    from core.models import Producto, Venta, DetalleVenta, Lote
 
     # Resolver productos
     items_resueltos = []

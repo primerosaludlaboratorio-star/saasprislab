@@ -416,28 +416,30 @@
             animation: fadeIn 0.2s ease;
         }
         
-        /* Efecto de elevación limpia en hover */
+        /* Efecto de elevación limpia en hover (Modern Flat) */
         .neon-hover {
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
         }
         .neon-hover:hover {
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
-            transform: translateY(-2px);
+            border: 1px solid #e0e0e0;
+            background-color: #f8f9fa;
         }
         
-        /* Botones principales (Clean Flat Design) */
+        /* Botones principales (Modern Flat Design) */
         .btn-principal {
             background-color: var(--prislab-red);
             color: white;
             font-weight: 500;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            transition: all 0.2s ease;
+            border-radius: 4px;
+            border: 1px solid var(--prislab-red);
+            box-shadow: none;
+            transition: all 0.15s ease;
         }
         .btn-principal:hover {
             background-color: #d32f2f;
-            box-shadow: 0 4px 12px rgba(217, 35, 15, 0.2);
-            transform: translateY(-1px);
+            border-color: #d32f2f;
+            box-shadow: none;
             color: white;
         }
         

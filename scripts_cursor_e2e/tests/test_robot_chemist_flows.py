@@ -53,7 +53,8 @@ class RobotChemistPdfCapturaTests(TestCase):
         self.client = Client()
         self.client.force_login(self.user)
 
-    def test_imprimir_resultados_devuelve_pdf_200(self):
+    @patch('core.views.laboratorio_reportes.paciente_autorizado_canal_digital_resultados', return_value=True)
+    def test_imprimir_resultados_devuelve_pdf_200(self, mock_auth):
         r = self.client.get(f'/laboratorio/imprimir/{self.orden.id}/', follow=True)
         self.assertIn(r.status_code, [200, 301, 302], getattr(r, 'content', b'')[:500])
         self.assertEqual(r.get('Content-Type'), 'application/pdf')
