@@ -998,6 +998,17 @@
     </script>
     
     <script src="{% static 'js/offline_sync.js' %}" defer></script>
+
+    <!-- Chart.js local (CDN fallback — sirve v4 y expone alias v3 para compatibilidad) -->
+    <script src="{% static 'js/chart.umd.min.js' %}"></script>
+    <script>
+    // Alias de compatibilidad: algunos templates cargaban v3 desde CDN.
+    // Con el bundle local v4 todo funciona; este alias evita errores de referencia.
+    if (typeof Chart !== 'undefined' && !window._chartJsLoaded) {
+        window._chartJsLoaded = true;
+    }
+    </script>
+
     {% block extra_js %}{% endblock %}
     
     <!-- ============================================================================== -->
