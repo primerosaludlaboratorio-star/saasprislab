@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Evaluación Semanal 39-A - {{ empresa.nombre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .evaluacion-form {
+        background: var(--bg-glass);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        box-shadow: var(--shadow-glass);
+    }
+    .metrica-card {
+        background: white;
+        border-radius: var(--radius-md);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid var(--empresa-color-primario, #D9230F);
+        transition: all 0.3s ease;
+    }
+    .metrica-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .slider-metrica {
+        width: 100%;
+        height: 8px;
+        border-radius: 4px;
+        background: #e0e0e0;
+        outline: none;
+        -webkit-appearance: none;
+    }
+    .slider-metrica::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--empresa-color-primario, #D9230F);
+        cursor: pointer;
+    }
+    .slider-metrica::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--empresa-color-primario, #D9230F);
+        cursor: pointer;
+        border: none;
+    }
+    .valor-metrica {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--empresa-color-primario, #D9230F);
+    }
+    .badge-calificacion {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-md);
+    }
+    .badge-excelente { background: #28a745; color: white; }
+    .badge-bueno { background: #17a2b8; color: white; }
+    .badge-regular { background: #ffc107; color: black; }
+    .badge-insuficiente { background: #dc3545; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px;">
+    <div class="row">
+        <div class="col-12">
+            <div class="evaluacion-form">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="mb-0">
+                        <i class="bi bi-clipboard-check"></i> Evaluación Semanal - Art. 39-A LFT
+                    </h2>
+                    <a href="{% url 'lista_evaluaciones_39a' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Volver a Evaluaciones
+                    </a>
+                </div>
+
+                {% if error %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> {{ error }}
+                </div>
+                {% endif %}
+
+                <form method="POST" id="formEvaluacion">
+                    {% csrf_token %}
+                    
+                    <!-- Selección de Empleado y Periodo -->
+                    <div class="card-profesional mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-person-badge"></i> Datos de la Evaluación</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"><strong>Empleado:</strong></label>
+                                    <select name="empleado" class="form-control" required>
+                                        <option value="">-- Seleccionar Empleado --</option>
+                                        {% for emp in empleados %}
+                                        <option value="{{ emp.id }}" {% if empleado and empleado.id == emp.id %}selected{% endif %}>
+                                            {{ emp.usuario.get_full_name }} - {{ emp.puesto }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label"><strong>Periodo Semanal:</strong></label>
+                                    <input type="text" name="periodo_semanal" class="form-control" value="{{ periodo_semanal }}" required>
+                                    <small class="text-muted">Formato: 2024-S01</small>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label"><strong>Fecha Inicio:</strong></label>
+                                    <input type="date" name="fecha_inicio" class="form-control" value="{{ fecha_inicio|date:'Y-m-d' }}" required>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label"><strong>Fecha Fin:</strong></label>
+                                    <input type="date" name="fecha_fin" class="form-control" value="{{ fecha_fin|date:'Y-m-d' }}" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5 Métricas de Evaluación -->
+                    <div class="card-profesional mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Métricas de Evaluación (0-100)</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Puntualidad -->
+                            <div class="metrica-card">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0"><strong>1. Puntualidad:</strong></label>
+                                    <span class="valor-metrica" id="valor_puntualidad">0</span>
+                                </div>
+                                <input type="range" name="puntualidad" class="slider-metrica" min="0" max="100" value="0" 
+                                       oninput="actualizarValor('puntualidad', this.value)">
+                                <div class="d-flex justify-content-between mt-1">
+                                    <small>Asistencia y puntualidad</small>
+                                    <span id="badge_puntualidad" class="badge-calificacion badge-insuficiente">Insuficiente</span>
+                                </div>
+                            </div>
+
+                            <!-- Calidad de Captura -->
+                            <div class="metrica-card">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0"><strong>2. Calidad de Captura:</strong></label>
+                                    <span class="valor-metrica" id="valor_calidad_captura">0</span>
+                                </div>
+                                <input type="range" name="calidad_captura" class="slider-metrica" min="0" max="100" value="0" 
+                                       oninput="actualizarValor('calidad_captura', this.value)">
+                                <div class="d-flex justify-content-between mt-1">
+                                    <small>Precisión y calidad en captura de datos</small>
+                                    <span id="badge_calidad_captura" class="badge-calificacion badge-insuficiente">Insuficiente</span>
+                                </div>
+                            </div>
+
+                            <!-- Atención al Cliente -->
+                            <div class="metrica-card">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0"><strong>3. Atención al Cliente:</strong></label>
+                                    <span class="valor-metrica" id="valor_atencion_cliente">0</span>
+                                </div>
+                                <input type="range" name="atencion_cliente" class="slider-metrica" min="0" max="100" value="0" 
+                                       oninput="actualizarValor('atencion_cliente', this.value)">
+                                <div class="d-flex justify-content-between mt-1">
+                                    <small>Trato, comunicación y servicio</small>
+                                    <span id="badge_atencion_cliente" class="badge-calificacion badge-insuficiente">Insuficiente</span>
+                                </div>
+                            </div>
+
+                            <!-- Cumplimiento de Procesos -->
+                            <div class="metrica-card">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0"><strong>4. Cumplimiento de Procesos:</strong></label>
+                                    <span class="valor-metrica" id="valor_cumplimiento_procesos">0</span>
+                                </div>
+                                <input type="range" name="cumplimiento_procesos" class="slider-metrica" min="0" max="100" value="0" 
+                                       oninput="actualizarValor('cumplimiento_procesos', this.value)">
+                                <div class="d-flex justify-content-between mt-1">
+                                    <small>Adherencia a protocolos y procedimientos</small>
+                                    <span id="badge_cumplimiento_procesos" class="badge-calificacion badge-insuficiente">Insuficiente</span>
+                                </div>
+                            </div>
+
+                            <!-- Trabajo en Equipo -->
+                            <div class="metrica-card">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0"><strong>5. Trabajo en Equipo:</strong></label>
+                                    <span class="valor-metrica" id="valor_trabajo_equipo">0</span>
+                                </div>
+                                <input type="range" name="trabajo_equipo" class="slider-metrica" min="0" max="100" value="0" 
+                                       oninput="actualizarValor('trabajo_equipo', this.value)">
+                                <div class="d-flex justify-content-between mt-1">
+                                    <small>Colaboración, comunicación y trabajo conjunto</small>
+                                    <span id="badge_trabajo_equipo" class="badge-calificacion badge-insuficiente">Insuficiente</span>
+                                </div>
+                            </div>
+
+                            <!-- Promedio General -->
+                            <div class="alert alert-info mt-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong>Promedio General:</strong>
+                                    <span class="valor-metrica" id="promedio_general">0</span>
+                                    <input type="hidden" name="calificacion_general" id="calificacion_general" value="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notas Objetivas y Recomendación -->
+                    <div class="card-profesional mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-file-text"></i> Evaluación Detallada</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Notas Objetivas:</strong></label>
+                                <textarea name="notas_objetivas" class="form-control" rows="6" 
+                                          placeholder="Evaluación detallada del desempeño durante este periodo..."></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"><strong>Recomendación:</strong></label>
+                                    <select name="recomendacion" class="form-control" required>
+                                        <option value="CONTRATAR">Contratar</option>
+                                        <option value="PRORROGAR" selected>Prorrogar Periodo de Prueba</option>
+                                        <option value="NO_CONTRATAR">No Contratar</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"><strong>Dictamen de Aptitud Médica:</strong></label>
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" name="aptitud_medica" id="aptitud_medica">
+                                        <label class="form-check-label" for="aptitud_medica">
+                                            Apto médicamente
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="text-end">
+                        <a href="{% url 'lista_evaluaciones_39a' %}" class="btn btn-secondary me-2">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary-profesional neon-hover">
+                            <i class="bi bi-check-circle"></i> Guardar Evaluación y Generar PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function actualizarValor(metrica, valor) {
+    const valorElement = document.getElementById(`valor_${metrica}`);
+    const badgeElement = document.getElementById(`badge_${metrica}`);
+    
+    valorElement.textContent = valor;
+    
+    // Actualizar badge según calificación
+    const numValor = parseInt(valor);
+    badgeElement.className = 'badge-calificacion ';
+    if (numValor >= 90) {
+        badgeElement.className += 'badge-excelente';
+        badgeElement.textContent = 'Excelente';
+    } else if (numValor >= 75) {
+        badgeElement.className += 'badge-bueno';
+        badgeElement.textContent = 'Bueno';
+    } else if (numValor >= 60) {
+        badgeElement.className += 'badge-regular';
+        badgeElement.textContent = 'Regular';
+    } else {
+        badgeElement.className += 'badge-insuficiente';
+        badgeElement.textContent = 'Insuficiente';
+    }
+    
+    // Calcular promedio general
+    calcularPromedio();
+}
+
+function calcularPromedio() {
+    const puntualidad = parseInt(document.querySelector('[name="puntualidad"]').value);
+    const calidad_captura = parseInt(document.querySelector('[name="calidad_captura"]').value);
+    const atencion_cliente = parseInt(document.querySelector('[name="atencion_cliente"]').value);
+    const cumplimiento_procesos = parseInt(document.querySelector('[name="cumplimiento_procesos"]').value);
+    const trabajo_equipo = parseInt(document.querySelector('[name="trabajo_equipo"]').value);
+    
+    const promedio = Math.round((puntualidad + calidad_captura + atencion_cliente + cumplimiento_procesos + trabajo_equipo) / 5);
+    
+    document.getElementById('promedio_general').textContent = promedio;
+    document.getElementById('calificacion_general').value = promedio;
+}
+</script>
+{% endblock %}

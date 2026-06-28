@@ -1,0 +1,676 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Control de Calidad (Westgard){% endblock %}
+
+{% block extra_css %}
+<style>
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+    
+    .kpi-card {
+        transition: transform 0.2s;
+        border-left: 4px solid transparent;
+    }
+    
+    .kpi-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .kpi-card.sigma-ok { border-left-color: #198754; }
+    .kpi-card.sigma-warn { border-left-color: #ffc107; }
+    .kpi-card.sigma-bad { border-left-color: #dc3545; }
+    
+    .westgard-status {
+        font-size: 0.8rem;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+    .westgard-ok { background: #d1e7dd; color: #0f5132; }
+    .westgard-warn { background: #fff3cd; color: #664d03; }
+    .westgard-fail { background: #f8d7da; color: #842029; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px;">
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">
+                <i class="bi bi-graph-up-arrow text-primary"></i> Control de Calidad
+            </h2>
+            <div class="text-muted">Monitoreo Levey-Jennings y Reglas Westgard</div>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-success fw-bold" data-bs-toggle="modal" data-bs-target="#modalIngresarControl">
+                <i class="bi bi-plus-circle me-1"></i> Ingresar Control
+            </button>
+            <button class="btn btn-outline-secondary" onclick="window.print()">
+                <i class="bi bi-printer"></i> Imprimir
+            </button>
+            <a href="{% url 'lista_trabajo_lab' %}" class="btn btn-primary">
+                <i class="bi bi-microscope"></i> Lista de Trabajo
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags|default:'info' }}{% endif %} alert-dismissible fade show" role="alert">
+        {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if not qc_westgard_estricto %}
+    <div class="alert alert-info d-flex align-items-center" role="alert">
+        <i class="bi bi-cloud-slash fs-4 me-3"></i>
+        <div>
+            <strong>Modo sombra (QC_WESTGARD_ACTIVO = off):</strong> Westgard y CCI se registran y alertan en War Room,
+            pero <strong>no bloquean</strong> la validación de pacientes (HL7 / captura). Active el flag en reglas de negocio para modo estricto ISO.
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning py-2" role="alert">
+        <strong>Modo estricto:</strong> <code>QC_CANAL_BLOQUEADO</code> activo ante alerta QC o metrología persistida en canal.
+    </div>
+    {% endif %}
+
+    <!-- MODAL: Ingresar Control Manual / Lote nuevo -->
+    <div class="modal fade" id="modalIngresarControl" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#003366;color:white;">
+                    <h5 class="modal-title"><i class="bi bi-flask me-2"></i>Ingresar Control de Calidad</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{% url 'control_calidad' %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Parámetro / Analito *</label>
+                                <input type="text" name="parametro_nombre" id="cc-parametro" class="form-control"
+                                       placeholder="Glucosa, Hemoglobina, TSH..." required
+                                       list="cc-parametros-list" autocomplete="off">
+                                <datalist id="cc-parametros-list" id="cc-datalist"></datalist>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Lote del Control Material *</label>
+                                <input type="text" name="lote_control" class="form-control"
+                                       placeholder="ej: LOT-2025-001 / BIOCLIN-A3" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Valor Obtenido *</label>
+                                <input type="number" name="valor" class="form-control" step="0.001" placeholder="Ej: 98.5" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Valor Esperado (X̄)</label>
+                                <input type="number" name="valor_esperado" class="form-control" step="0.001" placeholder="Media del inserto">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Desviación Std (±SD)</label>
+                                <input type="number" name="desviacion_std" class="form-control" step="0.0001" placeholder="Del inserto del lote">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Fecha Vencimiento Lote</label>
+                                <input type="date" name="fecha_vencimiento" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Equipo</label>
+                                <select name="equipo_id" class="form-select">
+                                    <option value="">— Sin equipo específico —</option>
+                                    {% for eq in equipos %}
+                                    <option value="{{ eq.id }}">{{ eq.nombre }}{% if eq.marca %} ({{ eq.marca }}){% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Observaciones</label>
+                                <input type="text" name="observaciones" class="form-control"
+                                       placeholder="Nivel Normal, Patológico, Temp. ambiente...">
+                            </div>
+                        </div>
+                        <!-- Cálculo en tiempo real de Z-Score y Sigma -->
+                        <div class="alert alert-light border mt-3" id="cc-calculo" style="display:none;">
+                            <strong>Cálculo preliminar:</strong>
+                            <span id="cc-zscore-texto"></span>
+                        </div>
+                        <!-- PRIS Dictado -->
+                        <div class="mt-3 p-2 bg-light rounded d-flex align-items-center gap-2">
+                            <i class="bi bi-robot text-primary"></i>
+                            <small>
+                                <strong>PRIS:</strong> Puedes dictar el control de voz.
+                                Ejemplo: <em>"PRIS, control de glucosa, lote ABC, valor 98.5, esperado 100, SD 2.5"</em>
+                            </small>
+                            <button type="button" class="btn btn-sm btn-outline-primary ms-auto" onclick="iniciarDictadoCC()">
+                                <i class="bi bi-mic-fill"></i> Dictar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success fw-bold">
+                            <i class="bi bi-check-circle me-1"></i> Registrar Control
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIS SUPERIORES -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm kpi-card sigma-ok h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small">Mediciones CCI (ventana)</h6>
+                    <div class="d-flex align-items-baseline">
+                        <h2 class="mb-0 fw-bold" id="cci-kpi-n">—</h2>
+                        <small class="text-muted ms-2">Puntos agregados</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm kpi-card sigma-ok h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small">Controles Hoy</h6>
+                    <div class="d-flex align-items-baseline">
+                        <h2 class="mb-0 fw-bold">{{ controles|length }}</h2>
+                        <small class="text-muted ms-2">Validaciones</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm kpi-card sigma-warn h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small">Alertas Westgard (CCI)</h6>
+                    <div class="d-flex align-items-baseline">
+                        <h2 class="mb-0 fw-bold text-warning" id="cci-kpi-alertas">—</h2>
+                        <small class="text-muted ms-2">En ventana seleccionada</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm kpi-card sigma-ok h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small">Estado Equipos</h6>
+                    <div class="d-flex align-items-baseline">
+                        <h2 class="mb-0 fw-bold text-success">100%</h2>
+                        <small class="text-muted ms-2">Operativos</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRÁFICOS LEVEY-JENNINGS -->
+    <div class="row g-4 mb-4">
+        <!-- Gráfico Principal (Dinámico) -->
+        <div class="col-lg-8">
+            <div class="card shadow border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex flex-wrap align-items-end gap-2 justify-content-between">
+                        <h5 class="mb-0 fw-bold w-100 w-md-auto"><i class="bi bi-activity"></i> Levey-Jennings (CCI)</h5>
+                        <div class="d-flex flex-wrap gap-2 align-items-end">
+                            <div>
+                                <label class="form-label small mb-0 text-muted">Equipo</label>
+                                <select class="form-select form-select-sm" id="cciSelEquipo" style="min-width:11rem">
+                                    <option value="">— Equipo —</option>
+                                    {% for eq in equipos %}
+                                    <option value="{{ eq.id }}">{{ eq.nombre }}{% if eq.marca %} ({{ eq.marca }}){% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label small mb-0 text-muted">Analito</label>
+                                <select class="form-select form-select-sm" id="cciSelAnalito" style="min-width:12rem">
+                                    <option value="">— Analito —</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label small mb-0 text-muted">Lote (opc.)</label>
+                                <select class="form-select form-select-sm" id="cciSelLote" style="min-width:9rem">
+                                    <option value="">Todos</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label small mb-0 text-muted">Días</label>
+                                <select class="form-select form-select-sm" id="cciSelDays">
+                                    <option value="30">30</option>
+                                    <option value="90" selected>90</option>
+                                    <option value="180">180</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-primary" id="cciBtnCargar">
+                                <i class="bi bi-arrow-repeat"></i> Cargar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="small text-muted mt-2" id="cciChartMeta"></div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="ljChart"></canvas>
+                    </div>
+                    <div class="mt-3 text-center small text-muted">
+                        <span class="badge bg-success me-1">Media (lote)</span>
+                        <span class="badge bg-secondary me-1">±1SD</span>
+                        <span class="badge bg-warning text-dark me-1">±2SD</span>
+                        <span class="badge bg-danger me-1">±3SD</span>
+                        <span class="badge bg-primary me-1">Valor</span>
+                        <span class="badge bg-dark">Rojo = regla Westgard</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alertas Recientes -->
+        <div class="col-lg-4">
+            <div class="card shadow border-0 h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle"></i> Alertas CCI</h5>
+                </div>
+                <div class="card-body p-0" id="cciAlertasList" style="max-height:360px;overflow-y:auto;">
+                    <div class="p-4 text-center text-muted" id="cciAlertasPlaceholder">
+                        <i class="bi bi-hourglass-split display-6"></i>
+                        <p class="mt-2 small">Cargue equipo + analito para ver alertas Westgard.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Serie agregada (API lj-series) -->
+    <div class="card shadow border-0 mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-calendar3"></i> Agregación diaria (BD)</h5>
+        </div>
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-sm table-striped mb-0" id="cciTablaSeries">
+                <thead class="table-light"><tr>
+                    <th>Bucket</th><th class="text-end">n</th><th class="text-end">Promedio</th>
+                    <th class="text-end">Mín</th><th class="text-end">Máx</th><th class="text-end">STDDEV_SAMP</th>
+                </tr></thead>
+                <tbody id="cciTablaSeriesBody"><tr><td colspan="6" class="text-muted text-center py-3">Sin datos</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TABLA DE DATOS HISTÓRICOS -->
+    <div class="card shadow border-0">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-table"></i> Registro Histórico de Controles</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Equipo</th>
+                            <th>Parámetro</th>
+                            <th>Nivel</th>
+                            <th>Lote</th>
+                            <th class="text-end">Valor</th>
+                            <th class="text-end">Desviación (SD)</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in controles %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ c.fecha_registro|date:"d/m/Y" }}</div>
+                                <small class="text-muted">{{ c.fecha_registro|date:"H:i" }}</small>
+                            </td>
+                            <td>{{ c.equipo }}</td>
+                            <td>{{ c.parametro }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ c.nivel|default:"-" }}</span></td>
+                            <td>{{ c.lote }}</td>
+                            <td class="text-end fw-bold">{{ c.valor }}</td>
+                            <td class="text-end">
+                                {% if c.desviacion > 2 or c.desviacion < -2 %}
+                                    <span class="text-danger fw-bold">{{ c.desviacion }}</span>
+                                {% elif c.desviacion > 1 or c.desviacion < -1 %}
+                                    <span class="text-warning fw-bold">{{ c.desviacion }}</span>
+                                {% else %}
+                                    <span class="text-success">{{ c.desviacion }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if c.desviacion > 3 or c.desviacion < -3 %}
+                                    <span class="westgard-status westgard-fail">FALLO (1-3s)</span>
+                                {% elif c.desviacion > 2 or c.desviacion < -2 %}
+                                    <span class="westgard-status westgard-warn">ALERTA (1-2s)</span>
+                                {% else %}
+                                    <span class="westgard-status westgard-ok">OK</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-secondary" title="Ver detalle">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="bi bi-inbox fs-1"></i>
+                                    <p class="mt-2">No hay registros de control de calidad.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+    const URL_LJ_SUMMARY = "{% url 'laboratorio:api_cci_lj_summary' %}";
+    const URL_LJ_SERIES = "{% url 'laboratorio:api_cci_lj_series' %}";
+    const analitosCCI = {{ analitos_cci_json|safe }};
+
+    const ctx = document.getElementById('ljChart').getContext('2d');
+    let ljChart = null;
+
+    function fillAnalitos() {
+        const sel = document.getElementById('cciSelAnalito');
+        if (!sel || !analitosCCI.length) return;
+        analitosCCI.forEach(a => {
+            const o = document.createElement('option');
+            o.value = a.id;
+            o.textContent = (a.codigo || '') + ' — ' + (a.nombre || '');
+            sel.appendChild(o);
+        });
+    }
+
+    function lineConst(n, v) {
+        if (n <= 0 || v == null || isNaN(v)) return [];
+        return Array(n).fill(v);
+    }
+
+    function buildChart(labels, puntos, media, sd, avgFallback) {
+        const n = labels.length;
+        const m = (media != null && !isNaN(media)) ? media : avgFallback;
+        const s = (sd != null && sd > 0) ? sd : null;
+        const pointColors = puntos.map(p => (p.reglas && p.reglas.length) ? '#dc3545' : '#0d6efd');
+        const pointRadii = puntos.map(p => (p.reglas && p.reglas.length) ? 7 : 4);
+
+        const datasets = [
+            {
+                label: 'Valor CCI',
+                data: puntos.map(p => p.valor),
+                borderColor: '#0d6efd',
+                backgroundColor: pointColors,
+                borderWidth: 2,
+                pointBackgroundColor: pointColors,
+                pointRadius: pointRadii,
+                pointHoverRadius: 9,
+                tension: 0.15,
+                showLine: true,
+            },
+        ];
+        if (m != null && !isNaN(m)) {
+            datasets.push({
+                label: 'Media (target)',
+                data: lineConst(n, m),
+                borderColor: '#198754',
+                borderWidth: 2,
+                pointRadius: 0,
+                borderDash: [6, 4],
+            });
+        }
+        if (m != null && s != null) {
+            [[1, '#6c757d'], [2, '#fd7e14'], [3, '#dc3545']].forEach(([k, col]) => {
+                datasets.push({
+                    label: '+' + k + 'SD',
+                    data: lineConst(n, m + k * s),
+                    borderColor: col,
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    borderDash: [3, 3],
+                });
+                datasets.push({
+                    label: '-' + k + 'SD',
+                    data: lineConst(n, m - k * s),
+                    borderColor: col,
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    borderDash: [3, 3],
+                });
+            });
+        }
+
+        let yMin = null, yMax = null;
+        puntos.forEach(p => {
+            if (p.valor == null) return;
+            yMin = yMin == null ? p.valor : Math.min(yMin, p.valor);
+            yMax = yMax == null ? p.valor : Math.max(yMax, p.valor);
+        });
+        if (m != null && s != null) {
+            yMin = Math.min(yMin ?? m, m - 3.5 * s);
+            yMax = Math.max(yMax ?? m, m + 3.5 * s);
+        } else if (m != null) {
+            yMin = (yMin != null) ? Math.min(yMin, m) : m - 1;
+            yMax = (yMax != null) ? Math.max(yMax, m) : m + 1;
+        }
+
+        const cfg = {
+            type: 'line',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            afterBody(items) {
+                                const i = items[0]?.dataIndex;
+                                if (i == null || !puntos[i]) return '';
+                                const r = puntos[i].reglas || [];
+                                const z = puntos[i].z;
+                                let t = [];
+                                if (z != null) t.push('Z: ' + z);
+                                if (r.length) t.push('Reglas: ' + r.join(', '));
+                                return t;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Fecha / hora' } },
+                    y: {
+                        title: { display: true, text: 'Valor (unidades del lote / analito)' },
+                        suggestedMin: yMin,
+                        suggestedMax: yMax,
+                    },
+                },
+            },
+        };
+        if (ljChart) ljChart.destroy();
+        ljChart = new Chart(ctx, cfg);
+    }
+
+    function renderAlertas(items) {
+        const box = document.getElementById('cciAlertasList');
+        if (!box) return;
+        box.innerHTML = '';
+        if (!items || !items.length) {
+            box.innerHTML = '<div class="p-4 text-center text-muted"><i class="bi bi-check-circle display-6 text-success"></i><p class="mt-2 small">Sin violaciones Westgard en la ventana.</p></div>';
+            return;
+        }
+        const lg = document.createElement('div');
+        lg.className = 'list-group list-group-flush';
+        items.forEach(a => {
+            const rules = (a.reglas_disparadas || []).join(', ');
+            const div = document.createElement('div');
+            div.className = 'list-group-item';
+            div.innerHTML = '<div class="d-flex w-100 justify-content-between"><h6 class="mb-1 fw-bold text-danger">' +
+                (a.westgard_estado || 'ALERTA') + '</h6><small>' + (a.fecha_medicion || '') + '</small></div>' +
+                '<p class="mb-0 small">' + rules + '</p><small class="text-muted">Valor: ' + (a.valor != null ? a.valor : '—') + '</small>';
+            lg.appendChild(div);
+        });
+        box.appendChild(lg);
+    }
+
+    function renderSeries(rows) {
+        const tb = document.getElementById('cciTablaSeriesBody');
+        if (!tb) return;
+        tb.innerHTML = '';
+        if (!rows || !rows.length) {
+            tb.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Sin agregados</td></tr>';
+            return;
+        }
+        rows.forEach(r => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + r.bucket + '</td><td class="text-end">' + r.n + '</td><td class="text-end">' +
+                (r.avg_valor != null ? r.avg_valor.toFixed(4) : '—') + '</td><td class="text-end">' +
+                (r.min_valor != null ? r.min_valor.toFixed(4) : '—') + '</td><td class="text-end">' +
+                (r.max_valor != null ? r.max_valor.toFixed(4) : '—') + '</td><td class="text-end">' +
+                (r.stddev_samp_valor != null ? r.stddev_samp_valor.toFixed(4) : '—') + '</td>';
+            tb.appendChild(tr);
+        });
+    }
+
+    async function cargarCCI() {
+        const eq = document.getElementById('cciSelEquipo')?.value;
+        const an = document.getElementById('cciSelAnalito')?.value;
+        const lote = document.getElementById('cciSelLote')?.value;
+        const days = document.getElementById('cciSelDays')?.value || '90';
+        const meta = document.getElementById('cciChartMeta');
+        if (!eq || !an) {
+            if (meta) meta.textContent = 'Seleccione equipo y analito.';
+            return;
+        }
+        const q = new URLSearchParams({ equipo_id: eq, analito_id: an, days });
+        if (lote) q.set('lote_id', lote);
+        try {
+            const [resS, resSer] = await Promise.all([
+                fetch(URL_LJ_SUMMARY + '?' + q.toString(), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } }),
+                fetch(URL_LJ_SERIES + '?' + q.toString() + '&bucket=day', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } }),
+            ]);
+            const data = await resS.json();
+            const ser = await resSer.json();
+            if (!data.ok) {
+                if (meta) meta.textContent = data.error || 'Error API';
+                return;
+            }
+            const lotes = data.lotes_disponibles || [];
+            const selL = document.getElementById('cciSelLote');
+            if (selL) {
+                const cur = selL.value;
+                selL.innerHTML = '<option value="">Todos</option>';
+                lotes.forEach(lo => {
+                    const o = document.createElement('option');
+                    o.value = lo.id;
+                    o.textContent = lo.numero_lote + (lo.nivel ? ' (' + lo.nivel + ')' : '');
+                    selL.appendChild(o);
+                });
+                if (cur && [...selL.options].some(o => o.value === cur)) selL.value = cur;
+            }
+            const puntos = data.puntos || [];
+            const labels = puntos.map(p => p.t);
+            const tgt = data.target_lote || {};
+            const avgF = data.resumen && data.resumen.avg_valor != null ? data.resumen.avg_valor : null;
+            buildChart(labels, puntos, tgt.media, tgt.sd, avgF);
+            const n = data.resumen?.n ?? 0;
+            const na = (data.alertas_recientes || []).length;
+            const elN = document.getElementById('cci-kpi-n');
+            const elA = document.getElementById('cci-kpi-alertas');
+            if (elN) elN.textContent = n;
+            if (elA) elA.textContent = na;
+            if (meta) {
+                meta.textContent = 'Lote ref.: ' + (tgt.numero_lote || '—') + (tgt.sd ? ' | SD=' + tgt.sd : '') +
+                    ' | Puntos graficados: ' + puntos.length;
+            }
+            renderAlertas(data.alertas_recientes || []);
+            if (ser.ok) renderSeries(ser.series || []);
+        } catch (e) {
+            console.error(e);
+            if (meta) meta.textContent = 'Error de red al cargar CCI.';
+        }
+    }
+
+    document.getElementById('cciBtnCargar')?.addEventListener('click', cargarCCI);
+
+    fillAnalitos();
+
+    // Autocomplete de parámetros desde la vista
+    const parametrosLista = {{ parametros_lista_json|default:"[]" }};
+    const datalist = document.getElementById('cc-datalist');
+    if (datalist && parametrosLista.length) {
+        parametrosLista.forEach(p => {
+            const opt = document.createElement('option'); opt.value = p; datalist.appendChild(opt);
+        });
+    }
+
+    // Cálculo en tiempo real de Z-Score
+    const ccValor = document.querySelector('[name="valor"]');
+    const ccEsperado = document.querySelector('[name="valor_esperado"]');
+    const ccSD = document.querySelector('[name="desviacion_std"]');
+    function calcularZScore() {
+        const v = parseFloat(ccValor?.value);
+        const x = parseFloat(ccEsperado?.value);
+        const s = parseFloat(ccSD?.value);
+        const box = document.getElementById('cc-calculo');
+        const texto = document.getElementById('cc-zscore-texto');
+        if (!isNaN(v) && !isNaN(x) && !isNaN(s) && s > 0) {
+            const z = ((v - x) / s).toFixed(2);
+            let estado = '';
+            if (Math.abs(z) <= 1) estado = '<span class="text-success fw-bold">✓ EN CONTROL (±1SD)</span>';
+            else if (Math.abs(z) <= 2) estado = '<span class="text-warning fw-bold">⚠ ADVERTENCIA (±2SD)</span>';
+            else if (Math.abs(z) <= 3) estado = '<span class="text-danger fw-bold">✗ FUERA DE CONTROL (±3SD)</span>';
+            else estado = '<span class="text-danger fw-bold" style="font-size:16px">🚨 RECHAZO Westgard (>±3SD)</span>';
+            texto.innerHTML = ` Z-Score: <strong>${z}</strong> — ${estado}`;
+            box.style.display = '';
+        }
+    }
+    [ccValor, ccEsperado, ccSD].forEach(el => el?.addEventListener('input', calcularZScore));
+
+    // PRIS Dictado para Control de Calidad
+    function iniciarDictadoCC() {
+        if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+            alert('Tu navegador no soporta reconocimiento de voz.');
+            return;
+        }
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const rec = new SR();
+        rec.lang = 'es-MX'; rec.continuous = false; rec.interimResults = false;
+        rec.onresult = function(e) {
+            const texto = e.results[0][0].transcript.toLowerCase();
+            // Parseo simple: "control de glucosa, lote ABC, valor 98.5, esperado 100, SD 2.5"
+            const matchParam = texto.match(/control de ([a-záéíóúñ\s]+?)(?:,|lote)/i);
+            const matchLote = texto.match(/lote\s+([a-z0-9\-]+)/i);
+            const matchValor = texto.match(/valor\s+([\d,.]+)/i);
+            const matchEsp = texto.match(/esperado\s+([\d,.]+)/i);
+            const matchSD = texto.match(/sd\s+([\d,.]+)/i);
+            if (matchParam) document.querySelector('[name="parametro_nombre"]').value = matchParam[1].trim();
+            if (matchLote) document.querySelector('[name="lote_control"]').value = matchLote[1].trim();
+            if (matchValor) { document.querySelector('[name="valor"]').value = matchValor[1]; calcularZScore(); }
+            if (matchEsp) document.querySelector('[name="valor_esperado"]').value = matchEsp[1];
+            if (matchSD) document.querySelector('[name="desviacion_std"]').value = matchSD[1];
+        };
+        rec.start();
+        alert('PRIS escuchando... Diga: "Control de [parámetro], lote [lote], valor [X], esperado [Y], SD [Z]"');
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% block title %}Perfil: {{ perfil.nombre }} — LIMS{% endblock %}
+{% block extra_css %}
+<style>
+body { background: #f4f6f9; }
+.lims-header { background: linear-gradient(135deg, #154360 0%, #1f618d 100%); }
+#typeahead-resultados { position: absolute; z-index: 1000; width: 100%; background: #fff;
+  border: 1px solid #ddd; border-radius: 0 0 8px 8px; max-height: 250px; overflow-y: auto; }
+.ta-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f5f5f5; }
+.ta-item:hover { background: #e8f4fd; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top:70px;">
+
+  <div class="lims-header rounded-3 p-4 mb-4 text-white d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="m-0 fw-bold"><i class="fas fa-layer-group me-2"></i>{{ perfil.nombre }}</h3>
+      <small class="opacity-75">{{ perfil.descripcion|default:"Sin descripción" }}</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'lims_perfil_editar' perfil.pk %}" class="btn btn-warning btn-sm">
+        <i class="fas fa-cog"></i> Configurar
+      </a>
+      <a href="{% url 'lims_perfiles' %}" class="btn btn-outline-light btn-sm">
+        <i class="fas fa-arrow-left"></i> Perfiles
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Buscador Typeahead -->
+    <div class="col-md-5">
+      <div class="card shadow-sm">
+        <div class="card-header fw-bold bg-primary text-white">
+          <i class="fas fa-search me-1"></i> Agregar Analito (Buscador Inteligente)
+        </div>
+        <div class="card-body">
+          <p class="small text-muted">Busca cualquier analito del catálogo — sin restricción de venta directa.</p>
+          <div class="position-relative">
+            <input type="text" id="typeahead-input" class="form-control" 
+                   placeholder="Escribe código, nombre o departamento…" autocomplete="off">
+            <div id="typeahead-resultados" style="display:none;"></div>
+          </div>
+          <div id="ta-msg" class="small text-muted mt-1"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analitos actuales del perfil -->
+    <div class="col-md-7">
+      <div class="card shadow-sm">
+        <div class="card-header fw-bold">
+          <i class="fas fa-list me-1"></i> Analitos del Perfil
+          <span class="badge bg-primary ms-2" id="contador-analitos">{{ analitos|length }}</span>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-hover table-sm mb-0" id="tabla-analitos">
+            <thead class="table-dark">
+              <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Departamento</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbody-analitos">
+              {% for a in analitos %}
+              <tr data-id="{{ a.pk }}">
+                <td><code>{{ a.codigo }}</code></td>
+                <td>{{ a.nombre|truncatechars:50 }}</td>
+                <td><span class="badge bg-secondary">{{ a.departamento }}</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline-danger btn-quitar" data-id="{{ a.pk }}" title="Quitar">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr id="row-vacio">
+                <td colspan="4" class="text-center text-muted py-4">No hay analitos en este perfil aún.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var CSRF = '{{ csrf_token }}';
+var API_BUSCAR   = '/lims/api/analitos/buscar/';
+var API_AGREGAR  = '/lims/perfiles/{{ perfil.pk }}/api/agregar-analito/';
+var API_QUITAR   = '/lims/perfiles/{{ perfil.pk }}/api/quitar-analito/';
+
+var input = document.getElementById('typeahead-input');
+var dropdown = document.getElementById('typeahead-resultados');
+var msg = document.getElementById('ta-msg');
+var timer = null;
+
+input.addEventListener('input', function() {
+    clearTimeout(timer);
+    var q = input.value.trim();
+    if (q.length < 2) { dropdown.style.display = 'none'; return; }
+    timer = setTimeout(function() {
+        fetch(API_BUSCAR + '?q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(data => {
+            dropdown.innerHTML = '';
+            if (!data.resultados || !data.resultados.length) {
+                dropdown.innerHTML = '<div class="ta-item text-muted">Sin resultados para "' + q + '"</div>';
+            } else {
+                data.resultados.forEach(function(a) {
+                    var div = document.createElement('div');
+                    div.className = 'ta-item';
+                    div.innerHTML = '<strong>' + a.abreviatura + '</strong> — ' + a.nombre +
+                                    ' <small class="text-muted">(' + a.departamento + ')</small>';
+                    div.addEventListener('click', function() {
+                        agregarAnalito(a.id, a.nombre, a.codigo, a.departamento);
+                        dropdown.style.display = 'none';
+                        input.value = '';
+                    });
+                    dropdown.appendChild(div);
+                });
+            }
+            dropdown.style.display = 'block';
+        });
+    }, 280);
+});
+
+document.addEventListener('click', function(e) {
+    if (!input.contains(e.target)) dropdown.style.display = 'none';
+});
+
+function agregarAnalito(id, nombre, codigo, departamento) {
+    msg.textContent = 'Agregando...';
+    fetch(API_AGREGAR, {
+        method: 'POST',
+        headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/json'},
+        body: JSON.stringify({analito_id: id}),
+        credentials: 'same-origin',
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            msg.textContent = '+ Agregado: ' + nombre;
+            // Quitar fila vacía si existe
+            var rowVacio = document.getElementById('row-vacio');
+            if (rowVacio) rowVacio.remove();
+            // Agregar fila si no existe ya
+            if (!document.querySelector('[data-id="' + id + '"]')) {
+                var tbody = document.getElementById('tbody-analitos');
+                var tr = document.createElement('tr');
+                tr.dataset.id = id;
+                tr.innerHTML = '<td><code>' + codigo + '</code></td>' +
+                               '<td>' + nombre.substring(0, 50) + '</td>' +
+                               '<td><span class="badge bg-secondary">' + departamento + '</span></td>' +
+                               '<td><button class="btn btn-sm btn-outline-danger btn-quitar" data-id="' + id + '" title="Quitar">' +
+                               '<i class="fas fa-times"></i></button></td>';
+                tbody.appendChild(tr);
+                bindQuitarBtn(tr.querySelector('.btn-quitar'));
+                actualizarContador();
+            }
+        }
+    });
+}
+
+function bindQuitarBtn(btn) {
+    btn.addEventListener('click', function() {
+        var id = btn.dataset.id;
+        if (!confirm('¿Quitar este analito del perfil?')) return;
+        fetch(API_QUITAR + id + '/', {
+            method: 'POST',
+            headers: {'X-CSRFToken': CSRF},
+            credentials: 'same-origin',
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                btn.closest('tr').remove();
+                actualizarContador();
+            }
+        });
+    });
+}
+
+function actualizarContador() {
+    var count = document.querySelectorAll('#tbody-analitos tr').length;
+    document.getElementById('contador-analitos').textContent = count;
+}
+
+document.querySelectorAll('.btn-quitar').forEach(bindQuitarBtn);
+</script>
+{% endblock %}

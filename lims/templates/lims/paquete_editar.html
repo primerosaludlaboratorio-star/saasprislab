@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}{% if paquete %}Editar Paquete{% else %}Nuevo Paquete{% endif %} — LIMS{% endblock %}
+{% block content %}
+<div class="container mt-4" style="margin-top:70px;">
+  <div class="card shadow-sm">
+    <div class="card-header text-white fw-bold" style="background:#7d6608;">
+      <i class="fas fa-box-open me-1"></i>
+      {% if paquete %}Editar Paquete: {{ paquete.nombre }}{% else %}Nuevo Paquete Comercial{% endif %}
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="fw-bold small">Nombre del Paquete *</label>
+          <input type="text" name="nombre" value="{{ paquete.nombre|default:'' }}" class="form-control" required placeholder="Ej: Check-up Ejecutivo Premium">
+        </div>
+        <div class="mb-3">
+          <label class="fw-bold small">Descripción</label>
+          <textarea name="descripcion" class="form-control" rows="2">{{ paquete.descripcion|default:'' }}</textarea>
+        </div>
+        <div class="mb-3">
+          <label class="fw-bold small">Disponibilidad pública</label>
+          <select name="venta_publico" class="form-select" style="max-width:250px;">
+            <option value="1" {% if not paquete or paquete.venta_publico %}selected{% endif %}>Sí — disponible para venta pública</option>
+            <option value="0" {% if paquete and not paquete.venta_publico %}selected{% endif %}>No — solo uso interno</option>
+          </select>
+        </div>
+        {% if paquete %}
+        <div class="mb-3">
+          <label class="fw-bold small">Estado</label>
+          <select name="activo" class="form-select" style="max-width:200px;">
+            <option value="1" {% if paquete.activo %}selected{% endif %}>Activo</option>
+            <option value="0" {% if not paquete.activo %}selected{% endif %}>Inactivo</option>
+          </select>
+        </div>
+        {% endif %}
+        <div class="d-flex gap-2 mt-3">
+          <button type="submit" class="btn btn-warning fw-bold"><i class="fas fa-save me-1"></i>Guardar</button>
+          {% if paquete %}
+          <a href="{% url 'lims_paquete_detalle' paquete.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+          {% else %}
+          <a href="{% url 'lims_paquetes' %}" class="btn btn-outline-secondary">Cancelar</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

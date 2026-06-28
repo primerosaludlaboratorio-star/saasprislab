@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Contabilidad Personal{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px;">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold text-primary">
+                    <i class="bi bi-shield-lock"></i> Contabilidad Personal
+                    <small class="text-muted d-block fs-6">Área privada — solo Director</small>
+                </h2>
+                <a href="{% url 'historial_pagos_proveedores' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-clock-history"></i> Historial de Pagos
+                </a>
+            </div>
+
+            <!-- KPIs del mes -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card border-primary">
+                        <div class="card-body text-center">
+                            <h3 class="text-primary">${{ total_compras|floatformat:2 }}</h3>
+                            <p class="mb-0 text-muted">Compras del mes ({{ mes_nombre }})</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-warning">
+                        <div class="card-body text-center">
+                            <h3 class="text-warning">{{ ordenes_pendientes_pago|length }}</h3>
+                            <p class="mb-0 text-muted">Órdenes pendientes de pago</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-secondary">
+                        <div class="card-body text-center">
+                            <h3 class="text-secondary">${{ total_gastos_caja|floatformat:2 }}</h3>
+                            <p class="mb-0 text-muted">Gastos de caja chica del mes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Órdenes de compra del mes -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-receipt"></i> Órdenes de Compra a Proveedores — {{ mes_nombre }}
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Folio</th>
+                                    <th>Proveedor</th>
+                                    <th>Fecha</th>
+                                    <th>Total</th>
+                                    <th>Estado de pago</th>
+                                    <th>Evidencia</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for orden in ordenes_mes %}
+                                <tr>
+                                    <td>{{ orden.folio }}</td>
+                                    <td>{{ orden.proveedor.razon_social }}</td>
+                                    <td>{{ orden.fecha_generacion|date:"d/m/Y" }}</td>
+                                    <td>${{ orden.total|floatformat:2 }}</td>
+                                    <td>
+                                        {% if orden.pagada %}
+                                            <span class="badge bg-success">Pagada</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">Pendiente</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if orden.factura_adjunta %}
+                                            <a href="{{ orden.factura_adjunta.url }}" target="_blank" title="Ver factura">
+                                                <i class="bi bi-file-earmark-text text-primary"></i>
+                                            </a>
+                                        {% endif %}
+                                        {% if orden.foto_evidencia %}
+                                            <a href="{{ orden.foto_evidencia.url }}" target="_blank" title="Ver foto">
+                                                <i class="bi bi-image text-success"></i>
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if not orden.pagada %}
+                                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalPagar{{ orden.id }}">
+                                            Marcar como pagada
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="7" class="text-center text-muted py-4">Sin órdenes de compra este mes.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gastos de caja chica del mes -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <i class="bi bi-cash-coin"></i> Gastos de Caja Chica — {{ mes_nombre }}
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Concepto</th>
+                                    <th>Monto</th>
+                                    <th>Usuario</th>
+                                    <th>Fecha</th>
+                                    <th>Comprobante</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for gasto in gastos_caja_mes %}
+                                <tr>
+                                    <td>{{ gasto.concepto }}</td>
+                                    <td>${{ gasto.monto|floatformat:2 }}</td>
+                                    <td>{{ gasto.usuario }}</td>
+                                    <td>{{ gasto.fecha|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if gasto.documento_adjunto %}
+                                            <a href="{{ gasto.documento_adjunto.url }}" target="_blank">
+                                                <i class="bi bi-paperclip"></i> Ver
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted py-4">Sin gastos de caja chica este mes.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modales: marcar orden como pagada -->
+{% for orden in ordenes_pendientes_pago %}
+<div class="modal fade" id="modalPagar{{ orden.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" action="{% url 'marcar_orden_pagada' orden.id %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Marcar como pagada — {{ orden.folio }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">
+                        Toda compra debe respaldarse con factura y evidencia fotográfica
+                        antes de registrarse como pagada.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label">Forma de pago</label>
+                        <select name="forma_pago" class="form-select" required>
+                            {% for valor, etiqueta in forma_pago_choices %}
+                            <option value="{{ valor }}">{{ etiqueta }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Referencia de transferencia (opcional)</label>
+                        <input type="text" name="referencia_transferencia" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Factura del proveedor {% if not orden.factura_adjunta %}<span class="text-danger">*</span>{% endif %}</label>
+                        <input type="file" name="factura_adjunta" class="form-control" {% if not orden.factura_adjunta %}required{% endif %}>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Foto de evidencia de recepción {% if not orden.foto_evidencia %}<span class="text-danger">*</span>{% endif %}</label>
+                        <input type="file" name="foto_evidencia" accept="image/*" class="form-control" {% if not orden.foto_evidencia %}required{% endif %}>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar pago</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

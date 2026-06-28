@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Logs de Voz — PRIS{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <h2 class="mb-4"><i class="fas fa-microphone-alt me-2"></i>Dashboard de Comandos de Voz</h2>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card bg-primary text-white text-center">
+        <div class="card-body">
+          <div class="fs-3 fw-bold">{{ total_comandos }}</div>
+          <div class="small">Total comandos</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-danger text-white text-center">
+        <div class="card-body">
+          <div class="fs-3 fw-bold">{{ bloqueados }}</div>
+          <div class="small">Bloqueados</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-warning text-white text-center">
+        <div class="card-body">
+          <div class="fs-3 fw-bold">{{ criticos }}</div>
+          <div class="small">Críticos</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-semibold">Últimos 50 comandos</div>
+        <div class="card-body p-0">
+          <div class="table-responsive" style="max-height:400px;overflow-y:auto;">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light sticky-top">
+                <tr><th>Fecha</th><th>Usuario</th><th>Intención</th><th>Tipo</th><th>Estado</th></tr>
+              </thead>
+              <tbody>
+                {% for log in logs_recientes %}
+                <tr>
+                  <td class="text-nowrap small">{{ log.timestamp|date:"d/m H:i" }}</td>
+                  <td class="small">{{ log.usuario.username|default:"?" }}</td>
+                  <td class="small">{{ log.intencion_detectada|default:"—" }}</td>
+                  <td>
+                    <span class="badge bg-{% if log.tipo_comando == 'CRITICO' %}danger{% else %}secondary{% endif %} small">
+                      {{ log.tipo_comando|default:"—" }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge bg-{% if log.estado == 'BLOQUEADO' %}danger{% elif log.estado == 'OK' %}success{% else %}secondary{% endif %} small">
+                      {{ log.estado|default:"—" }}
+                    </span>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-4">Sin logs registrados</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white fw-semibold">Top usuarios más activos</div>
+        <ul class="list-group list-group-flush">
+          {% for u in top_usuarios %}
+          <li class="list-group-item d-flex justify-content-between">
+            <span>{{ u.usuario__first_name }} {{ u.usuario__last_name|default:u.usuario__username }}</span>
+            <span class="badge bg-primary">{{ u.total }}</span>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted text-center">Sin datos</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-semibold">Top intenciones</div>
+        <ul class="list-group list-group-flush">
+          {% for i in top_intenciones %}
+          <li class="list-group-item d-flex justify-content-between">
+            <span class="small">{{ i.intencion_detectada|default:"sin clasificar" }}</span>
+            <span class="badge bg-info text-dark">{{ i.total }}</span>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted text-center">Sin datos</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

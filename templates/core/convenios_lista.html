@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Convenios</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f7fa; }
+    .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; }
+    h1 { color: #1F4E79; }
+    .btn { display: inline-block; padding: 8px 12px; background: #1F4E79; color: #fff; text-decoration: none; border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+    th { background: #1F4E79; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Convenios</h1>
+    <a class="btn" href="{% url 'cuentas_por_cobrar' %}">CxC</a>
+    <a class="btn" href="{% url 'dashboard_contabilidad' %}">Dashboard</a>
+    <table>
+      <tr><th>Nombre</th><th>RFC</th><th>Días crédito</th><th>Descuento</th><th>Límite</th><th>CxC pendientes</th><th>Saldo total</th></tr>
+      {% for c in convenios %}
+      <tr>
+        <td>{{ c.nombre }}</td>
+        <td>{{ c.rfc }}</td>
+        <td>{{ c.dias_credito }}</td>
+        <td>{{ c.descuento_porcentaje }}%</td>
+        <td>${{ c.limite_credito }}</td>
+        <td>{{ c.cuentas_pendientes }}</td>
+        <td>${{ c.saldo_total|default:"0.00" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7">No hay convenios registrados.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</body>
+</html>

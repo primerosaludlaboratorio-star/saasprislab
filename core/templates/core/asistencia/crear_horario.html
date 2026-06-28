@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Crear Horario — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:600px">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="fas fa-plus-circle text-primary me-2"></i>Nuevo Horario</h3>
+    <a href="{% url 'horarios_trabajo' %}" class="btn btn-outline-secondary btn-sm">← Volver</a>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nombre del turno *</label>
+          <input type="text" name="nombre" class="form-control" placeholder="Ej: Turno Matutino" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Empleado</label>
+          <select name="empleado" class="form-select">
+            <option value="">— General (aplica a todos) —</option>
+            {% for emp in empleados %}
+            <option value="{{ emp.id }}">{{ emp.usuario.get_full_name|default:emp.usuario.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Día de la semana *</label>
+          <select name="dia_semana" class="form-select" required>
+            <option value="LUN">Lunes</option>
+            <option value="MAR">Martes</option>
+            <option value="MIE">Miércoles</option>
+            <option value="JUE">Jueves</option>
+            <option value="VIE">Viernes</option>
+            <option value="SAB">Sábado</option>
+            <option value="DOM">Domingo</option>
+          </select>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Hora de entrada *</label>
+            <input type="time" name="hora_entrada" class="form-control" required>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Hora de salida *</label>
+            <input type="time" name="hora_salida" class="form-control" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Tolerancia (min)</label>
+            <input type="number" name="tolerancia_minutos" class="form-control" value="10" min="0" max="60">
+          </div>
+        </div>
+        <div class="d-flex gap-2 justify-content-end">
+          <a href="{% url 'horarios_trabajo' %}" class="btn btn-outline-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Guardar horario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

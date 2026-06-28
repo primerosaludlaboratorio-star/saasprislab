@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Configurar 2FA — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 540px;">
+  <div class="card shadow border-0 rounded-4">
+    <div class="card-header bg-dark text-white rounded-top-4 py-3 px-4 d-flex align-items-center gap-2">
+      <i class="bi bi-shield-check fs-5"></i>
+      <span class="fw-semibold">Configurar autenticación en dos pasos (2FA)</span>
+    </div>
+    <div class="card-body p-4">
+
+      {% if error %}
+      <div class="alert alert-danger rounded-3 small py-2">
+        <i class="bi bi-exclamation-circle me-1"></i> {{ error }}
+      </div>
+      {% endif %}
+
+      <p class="text-muted small mb-3">
+        Escanea el código QR con <strong>Google Authenticator</strong>, <strong>Authy</strong>
+        o cualquier app TOTP compatible. Luego ingresa el código de 6 dígitos para confirmar.
+      </p>
+
+      <div class="text-center mb-3">
+        <img src="data:image/png;base64,{{ qr_base64 }}"
+             alt="QR 2FA"
+             class="rounded-3 border"
+             style="max-width: 200px;">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-semibold text-muted text-uppercase">Clave secreta (manual)</label>
+        <div class="input-group">
+          <input type="text" class="form-control font-monospace" value="{{ secret }}" id="secretKey" readonly>
+          <button class="btn btn-outline-secondary btn-sm" type="button" onclick="copySecret()">
+            <i class="bi bi-clipboard"></i>
+          </button>
+        </div>
+        <div class="form-text">Solo úsala si no puedes escanear el QR.</div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Código de verificación</label>
+          <input type="text"
+                 name="codigo"
+                 class="form-control form-control-lg text-center fw-bold"
+                 style="letter-spacing: 0.4rem; font-size: 1.8rem;"
+                 maxlength="6"
+                 inputmode="numeric"
+                 placeholder="000000"
+                 autofocus
+                 required>
+        </div>
+        <button type="submit" class="btn btn-success w-100 rounded-3 fw-semibold">
+          <i class="bi bi-shield-check me-2"></i> Activar 2FA
+        </button>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function copySecret() {
+  const el = document.getElementById('secretKey');
+  navigator.clipboard.writeText(el.value).then(() => {
+    const btn = el.nextElementSibling;
+    btn.innerHTML = '<i class="bi bi-check2"></i>';
+    setTimeout(() => btn.innerHTML = '<i class="bi bi-clipboard"></i>', 2000);
+  });
+}
+</script>
+{% endblock %}

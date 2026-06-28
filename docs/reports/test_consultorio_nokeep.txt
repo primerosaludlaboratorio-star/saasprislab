@@ -1,0 +1,40 @@
+Creating test database for alias 'default'...
+
+Found 38 test(s).
+
+================================================================================
+MIGRACION FORENSE DE DATOS - LABORATORIO A CORE
+================================================================================
+Total de ordenes a procesar: 0
+
+
+================================================================================
+RESUMEN DE MIGRACI├ôN
+================================================================================
+Total procesadas: 0/0
+├ôrdenes actualizadas: 0
+├ôrdenes creadas (nuevas): 0
+================================================================================
+
+System check identified no issues (0 silenced).
+...WARNING SENTINEL REPAIR [Permisos]: stress_user_4050d1debc recibi├│ 403 en /consultorio/api/buscar-pacientes/?q=x sin empresa asignada. No se regenera sesi├│n autom├ítica.
+......WARNING SENTINEL REPAIR [Permisos]: stress_user_b238b1e8b5 recibi├│ 403 en /consultorio/api/crear-consulta-directa/ sin empresa asignada. No se regenera sesi├│n autom├ítica.
+.INFO SENTINEL: Incidencia #1 creada - [MEDIA] Http404 en /consultorio/api/crear-consulta-directa/
+INFO [AUDIT] CREATE IncidenciaSentinel #1 por 
+WARNING SENTINEL: Sin API key de Gemini, generando an├ílisis offline
+INFO SENTINEL: Incidencia #1 enriquecida con analisis IA
+......WARNING SENTINEL REPAIR [Permisos]: stress_user_dd1c201c29 recibi├│ 403 en /consultorio/api/plantillas/ sin empresa asignada. No se regenera sesi├│n autom├ítica.
+.....INFO [AUDIT] CREATE CertificadoMedico #1 por 
+......WARNING SENTINEL REPAIR [Permisos]: doctor_pdf recibi├│ 403 en /consultorio/api/receta-pdf/1/ sin empresa asignada. No se regenera sesi├│n autom├ítica.
+.WARNING SENTINEL REPAIR [Permisos]: doctor_pdf recibi├│ 403 en /consultorio/pdf/receta/1/ sin empresa asignada. No se regenera sesi├│n autom├ítica.
+.......WARNING [CAJA-v1.14] Venta #1: empresa sin sucursales; no se puede crear MovimientoCaja (sucursal_id NOT NULL).
+WARNING MovimientoCaja omitido: empresa sin sucursal venta_id=1 empresa_id=1
+INFO Timeline generado para paciente 221bb037-b0dd-44ac-aabe-a1b2f1c9beea: 1 eventos
+.INFO Timeline generado para paciente 7277337b-be9c-4e5c-bb8e-1b8c32c88f2c: 1 eventos
+..
+----------------------------------------------------------------------
+Ran 38 tests in 58.460s
+
+OK
+Destroying test database for alias 'default'...
+

@@ -1,0 +1,658 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalle de Orden {{ orden.folio_orden }} - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+:root { --do-primary: #00838F; --do-dark: #263238; --do-light: #ECEFF1; --do-accent: #00ACC1; --do-red: #D9230F; }
+body { background: #f0f2f5; font-size: 13px; }
+
+/* Header azul */
+.do-header { background: var(--do-primary); color: #fff; padding: 4px 16px; font-size: 12px; border-radius: 4px 4px 0 0; }
+.do-header a { color: #B2EBF2; text-decoration: none; }
+
+/* Título */
+.do-title { background: #fff; border: 1px solid #ddd; border-top: none; padding: 10px 16px; font-size: 16px; font-weight: 700; color: #333; }
+
+/* Datos del paciente */
+.panel-pac { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 12px 16px; font-size: 12px; }
+.panel-pac .dato { margin-bottom: 3px; display: flex; gap: 6px; }
+.panel-pac .dato label { color: #888; font-weight: 600; min-width: 110px; text-transform: uppercase; font-size: 11px; }
+.panel-pac .dato span { color: #333; font-weight: 500; }
+.panel-pac .medico { color: var(--do-red); font-weight: 700; }
+
+/* Card orden */
+.card-orden { background: #fff; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
+.card-orden .titulo { background: var(--do-primary); color: #fff; padding: 8px 12px; font-weight: 700; border-radius: 4px 4px 0 0; display: flex; justify-content: space-between; align-items: center; }
+.card-orden .cuerpo { padding: 10px 14px; }
+.card-orden .dato { display: flex; justify-content: space-between; margin-bottom: 3px; }
+.card-orden .dato label { color: #888; font-weight: 600; }
+.card-orden .dato span { font-weight: 600; color: #333; }
+
+/* Botones bajo card orden */
+.btn-grupo-orden { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+.btn-grupo-orden .btn { font-size: 11px; padding: 4px 10px; }
+
+/* Tabs */
+.tabs-finanzas .nav-link { font-size: 11px; padding: 4px 10px; }
+
+/* Tabla de estudios */
+.tabla-estudios { width: 100%; font-size: 12px; border-collapse: collapse; background: #fff; }
+.tabla-estudios thead { background: var(--do-dark); color: #fff; }
+.tabla-estudios th { padding: 6px 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+.tabla-estudios td { padding: 5px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+.tabla-estudios tbody tr:hover { background: #e0f7fa; }
+
+/* Botones en la tabla */
+.btn-est { width: 26px; height: 26px; border: none; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; }
+.btn-est-urgencia { background: #F44336; color: #fff; }
+.btn-est-urgencia.activo { background: #B71C1C; box-shadow: 0 0 0 2px #FFCDD2; }
+.btn-est-info { background: #2196F3; color: #fff; }
+.btn-est-delete { background: #F44336; color: #fff; }
+.btn-est-ok { background: #4CAF50; color: #fff; }
+.btn-est-ver { background: #FF9800; color: #fff; }
+
+/* Panel financiero */
+.panel-finanzas { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 10px 14px; font-size: 12px; }
+.panel-finanzas .fila { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f5f5f5; }
+.panel-finanzas .fila.total { font-weight: 700; font-size: 14px; border-top: 2px solid #333; }
+.panel-finanzas .fila.saldo { color: #D32F2F; font-weight: 700; }
+.panel-finanzas .fila.abono { color: #2E7D32; }
+.panel-finanzas input.desc-input { width: 55px; font-size: 11px; height: 24px; text-align: center; border: 1px solid #ccc; border-radius: 3px; }
+
+/* Buscador de estudios */
+.buscador-estudios { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 10px 14px; }
+.buscador-estudios .titulo-buscar { font-weight: 700; font-size: 12px; margin-bottom: 6px; color: var(--do-primary); }
+.resultados-busqueda { max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; display: none; }
+.resultados-busqueda .item { padding: 6px 10px; cursor: pointer; font-size: 12px; display: flex; justify-content: space-between; border-bottom: 1px solid #f0f0f0; }
+.resultados-busqueda .item:hover { background: #E0F7FA; }
+
+/* Pagos */
+.tabla-pagos { width: 100%; font-size: 11px; border-collapse: collapse; }
+.tabla-pagos th { background: #ECEFF1; padding: 5px 8px; font-size: 10px; text-transform: uppercase; }
+.tabla-pagos td { padding: 4px 8px; border-bottom: 1px solid #eee; }
+
+/* Botones inferiores */
+.barra-acciones { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 10px 14px; display: flex; gap: 6px; flex-wrap: wrap; }
+.barra-acciones .btn { font-size: 11px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 py-2">
+
+    <!-- Breadcrumb -->
+    <div class="do-header mb-0">
+        <a href="{% url 'recepcion_lab' %}"><i class="fas fa-home"></i> Prislab [Master]</a>
+    </div>
+    <div class="do-title d-flex justify-content-between align-items-center mb-3">
+        <span><i class="fas fa-file-alt"></i> Detalle de la Orden</span>
+        <a href="{% url 'consulta_ordenes' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left"></i> Volver a Consulta</a>
+    </div>
+
+    <div class="row g-3">
+        <!-- ================ COLUMNA IZQUIERDA ================ -->
+        <div class="col-lg-8">
+
+            <!-- Datos del Paciente -->
+            <div class="panel-pac mb-3">
+                <div class="dato"><label>Paciente:</label> <span>{{ paciente.nombre_completo }}</span></div>
+                {% if paciente.telefono %}<div class="dato"><label>Teléfono:</label> <span>{{ paciente.telefono }}</span></div>{% endif %}
+                <div class="dato"><label>Género:</label> <span>{% if paciente.sexo == 'M' %}Masculino{% elif paciente.sexo == 'F' %}Femenino{% else %}--{% endif %}</span></div>
+                {% if paciente.fecha_nacimiento %}
+                <div class="dato">
+                    <label>Fecha Nacimiento:</label> <span>{{ paciente.fecha_nacimiento|date:"d/m/Y" }}</span>
+                </div>
+                {% endif %}
+                <div class="dato"><label>Edad:</label> <span>{% if edad is not None %}{{ edad }} años{% else %}--{% endif %}</span></div>
+                {% if orden.medico_referente %}
+                <div class="dato"><label>Médico:</label> <span class="medico">{{ orden.medico_referente.nombre_completo }}</span></div>
+                {% endif %}
+                <div class="dato"><label>Cliente:</label> <span>{{ orden.tarifa|default:"PÚBLICO EN GENERAL" }}</span></div>
+            </div>
+
+            <!-- Tabla de Estudios -->
+            <div class="buscador-estudios mb-2" id="panelBuscador" {% if not editable %}style="display:none"{% endif %}>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="titulo-buscar"><i class="fas fa-search"></i> ESTUDIOS</div>
+                    <span class="text-muted" style="font-size:11px;">Agregue estudios a la orden</span>
+                </div>
+                <div class="input-group input-group-sm mt-1">
+                    <input type="text" id="inputBuscarEstudio" class="form-control" placeholder="Buscar estudio o paquete..." autocomplete="off">
+                    <button class="btn btn-primary" type="button" onclick="buscarEstudio()"><i class="fas fa-plus"></i> Agregar</button>
+                </div>
+                <div id="divResultadosBusqueda" class="resultados-busqueda mt-1"></div>
+            </div>
+
+            <div class="table-responsive" style="border:1px solid #ddd;border-radius:4px;">
+                <table class="tabla-estudios" id="tablaEstudios">
+                    <thead>
+                        <tr>
+                            <th style="width:70px">Código</th>
+                            <th style="width:80px">Abreviatura</th>
+                            <th>Estudio</th>
+                            <th style="width:80px">Tarifa</th>
+                            <th class="text-end" style="width:90px">Precio</th>
+                            <th class="text-center" style="width:140px">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyEstudios">
+                        {% for det in detalles %}
+                        <tr id="fila-{{ det.id }}" data-detalle="{{ det.id }}" data-precio="{{ det.precio_momento }}">
+                            <td>{% if det.analito %}{{ det.analito.codigo }}{% else %}—{% endif %}</td>
+                            <td>{% if det.analito %}{{ det.analito.abreviatura|default:"--" }}{% else %}—{% endif %}</td>
+                            <td>{% if det.descripcion_linea %}{{ det.descripcion_linea }}{% elif det.analito %}{{ det.analito.nombre }}{% elif det.perfil_lims %}{{ det.perfil_lims.nombre }}{% elif det.paquete_lims %}{{ det.paquete_lims.nombre }}{% else %}—{% endif %}</td>
+                            <td>{{ orden.tarifa|default:"2026"|truncatechars:8 }}</td>
+                            <td class="text-end precio-celda">${{ det.precio_momento|floatformat:2 }}</td>
+                            <td class="text-center" style="white-space:nowrap;">
+                                {% if editable %}
+                                <button class="btn-est btn-est-urgencia" title="Urgencia" onclick="toggleUrgencia(this, {{ det.id }})"><i class="fas fa-bolt"></i></button>
+                                {% endif %}
+                                <a href="{% url 'captura_resultados' orden.id %}" class="btn-est btn-est-info" title="Captura"><i class="fas fa-edit"></i></a>
+                                <button class="btn-est btn-est-ok" title="Estado: {{ det.estado_procesamiento }}"><i class="fas fa-check"></i></button>
+                                <button class="btn-est btn-est-ver" title="Ver detalle"><i class="fas fa-eye"></i></button>
+                                {% if editable %}
+                                <button class="btn-est btn-est-delete" title="Eliminar" onclick="eliminarEstudio({{ orden.id }}, {{ det.id }}, this)"><i class="fas fa-trash"></i></button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center text-muted py-3">Sin estudios</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Barra de Pagos -->
+            <h6 class="mt-3 mb-2" style="font-size:12px;font-weight:700;"><i class="fas fa-money-bill-wave"></i> Pagos Recibidos</h6>
+            <div class="table-responsive" style="border:1px solid #ddd;border-radius:4px;background:#fff;">
+                <table class="tabla-pagos" id="tablaPagos">
+                    <thead>
+                        <tr>
+                            <th>Efectivo</th>
+                            <th>Monedero</th>
+                            <th>T Crédito</th>
+                            <th>T Débito</th>
+                            <th>Transfer</th>
+                            <th>Cheque</th>
+                            <th>Otros</th>
+                            <th>Agregado por</th>
+                            <th>Fecha</th>
+                            <th>Notas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pago in pagos %}
+                        <tr {% if pago.cancelado %}style="text-decoration:line-through; opacity:.5;"{% endif %}>
+                            <td>${{ pago.monto_efectivo|floatformat:2 }}</td>
+                            <td>$0.00</td>
+                            <td>${{ pago.monto_credito|default:pago.monto_tarjeta|floatformat:2 }}</td>
+                            <td>${{ pago.monto_debito|default:"0.00"|floatformat:2 }}</td>
+                            <td>${{ pago.monto_transferencia|floatformat:2 }}</td>
+                            <td>$0.00</td>
+                            <td>$0.00</td>
+                            <td>{{ pago.usuario_registro.get_full_name|default:pago.usuario_registro|default:"--" }}</td>
+                            <td>{{ pago.fecha_pago|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if pago.cancelado %}
+                                    <span class="badge bg-danger" style="font-size:10px;">CANCELADO</span>
+                                {% else %}
+                                    {{ pago.referencia_pago|default:"" }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="10" class="text-center text-muted py-2">Sin pagos registrados</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if facturas_cfdi %}
+            <h6 class="mt-3 mb-2" style="font-size:12px;font-weight:700;"><i class="fas fa-file-invoice-dollar"></i> Facturación (CFDI)</h6>
+            <div class="table-responsive" style="border:1px solid #ddd;border-radius:4px;background:#fff;">
+                <table class="tabla-pagos" id="tablaFacturasCfdi">
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>RFC</th>
+                            <th class="text-end">Total</th>
+                            <th>Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in facturas_cfdi %}
+                        <tr>
+                            <td class="fw-bold">{{ f.folio_interno }}</td>
+                            <td><small>{{ f.cliente.rfc }}</small></td>
+                            <td class="text-end">${{ f.total|floatformat:2 }}</td>
+                            <td>
+                                {% if f.estado == 'TIMBRADO' %}
+                                    <span class="badge bg-success" style="font-size:10px;">TIMBRADA</span>
+                                {% elif f.estado == 'ERROR' %}
+                                    <span class="badge bg-danger" style="font-size:10px;">ERROR</span>
+                                {% elif f.estado == 'FACTURANDO' %}
+                                    <span class="badge bg-warning text-dark" style="font-size:10px;">FACTURANDO</span>
+                                {% else %}
+                                    <span class="badge bg-secondary" style="font-size:10px;">BORRADOR</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center" style="white-space:nowrap;">
+                                {% if f.estado == 'BORRADOR' or f.estado == 'PENDIENTE' or f.estado == 'ERROR' %}
+                                <form method="post" action="{% url 'contabilidad:timbrar_factura' f.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.path }}">
+                                    <button type="submit" class="btn btn-sm btn-danger" style="font-size:10px;" data-prislab-requires-online="1" title="Timbrar con PAC">Timbrar</button>
+                                </form>
+                                {% endif %}
+                                {% if f.estado == 'TIMBRADO' %}
+                                <a href="{% url 'contabilidad:descargar_pdf' f.id %}" class="btn btn-sm btn-outline-primary" style="font-size:10px;" target="_blank" rel="noopener">PDF</a>
+                                <a href="{% url 'contabilidad:descargar_xml' f.id %}" class="btn btn-sm btn-outline-secondary" style="font-size:10px;" target="_blank" rel="noopener">XML</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% if f.estado == 'ERROR' and f.ultimo_error_pac %}
+                        <tr>
+                            <td colspan="5" class="text-danger" style="font-size:10px;white-space:pre-wrap;">{{ f.ultimo_error_pac|truncatechars:500 }}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            <!-- Barra de acciones inferior -->
+            <div class="barra-acciones mt-2">
+                <button class="btn btn-success btn-sm" onclick="abrirModalPago()"><i class="fas fa-plus"></i> Agregar Pago</button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="window.open('/laboratorio/ticket/{{ orden.id }}/raw/', '_blank')"><i class="fas fa-receipt"></i> Reimprimir Recibo</button>
+                <button class="btn btn-outline-info btn-sm"><i class="fas fa-envelope"></i> Enviar Recibo en Email</button>
+                <button class="btn btn-outline-primary btn-sm" onclick="window.open('/laboratorio/etiquetas/{{ orden.id }}/raw/', '_blank')"><i class="fas fa-tag"></i> Imprimir Etiqueta</button>
+                <button class="btn btn-outline-dark btn-sm" onclick="window.open('/laboratorio/ticket/{{ orden.id }}/raw/', '_blank')"><i class="fas fa-print"></i> Imprimir Ticket</button>
+            </div>
+        </div>
+
+        <!-- ================ COLUMNA DERECHA ================ -->
+        <div class="col-lg-4">
+
+            <!-- Card de la Orden -->
+            <div class="card-orden mb-3">
+                <div class="titulo">
+                    <span><i class="fas fa-file-alt"></i> Orden</span>
+                    <span>{{ orden.folio_orden|default:orden.id }}</span>
+                </div>
+                <div class="cuerpo">
+                    <div class="dato"><label>Sucursal:</label> <span>{{ orden.sucursal|default:"Master" }}</span></div>
+                    <div class="dato"><label>Fecha:</label> <span>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</span></div>
+                    <div class="dato"><label>Tipo:</label> <span>{{ orden.get_tipo_servicio_display }}</span></div>
+                    {% if orden.folio_cliente_externo %}<div class="dato"><label>Folio Cte:</label> <span>{{ orden.folio_cliente_externo }}</span></div>{% endif %}
+                    {% if orden.diagnostico %}<div class="dato"><label>Diagnóstico:</label> <span>{{ orden.diagnostico }}</span></div>{% endif %}
+                    {% if orden.hora_entrega_prometida %}<div class="dato"><label>Hora entrega:</label> <span>{{ orden.hora_entrega_prometida|date:"H:i" }}</span></div>{% endif %}
+                    <div class="dato"><label>Estado:</label> <span class="badge bg-{% if orden.estado == 'PAGADO' %}success{% elif orden.estado == 'CANCELADO' %}danger{% elif orden.estado == 'ENTREGADO' %}info{% else %}warning{% endif %}">{{ orden.get_estado_display }}</span></div>
+                    {% if orden.notas_internas %}<div class="dato"><label>Notas:</label> <span>{{ orden.notas_internas }}</span></div>{% endif %}
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="btn-grupo-orden mb-3">
+                {% if editable %}
+                <button class="btn btn-sm btn-primary" onclick="abrirEditorDatos()">
+                    <i class="fas fa-pencil-alt"></i> Editar
+                </button>
+                <a href="{% url 'recepcion_lab' %}" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-plus"></i> Nueva Orden
+                </a>
+                {% endif %}
+                <a href="{% url 'consulta_ordenes' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+
+            <!-- Panel edición inline (colapsable) -->
+            <div id="panelEditar" style="display:none;" class="mb-3 p-3 border border-primary rounded bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong style="font-size:13px; color:#1565C0;"><i class="fas fa-pencil-alt"></i> Editar Datos de la Orden</strong>
+                    <button class="btn btn-sm btn-outline-secondary py-0" onclick="cerrarEditorDatos()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="form-label" style="font-size:11px; font-weight:700;">Tipo de Servicio</label>
+                        <select id="editTipo" class="form-select form-select-sm">
+                            <option value="RUTINA">Rutina</option>
+                            <option value="URGENTE">Urgente</option>
+                            <option value="STAT">STAT</option>
+                            <option value="CONTROL">Control</option>
+                            <option value="MAQUILA">Maquila</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" style="font-size:11px; font-weight:700;">Req. Factura</label>
+                        <div class="form-check mt-1">
+                            <input type="checkbox" id="editReqFactura" class="form-check-input">
+                            <label class="form-check-label" style="font-size:12px;" for="editReqFactura">¿Requiere CFDI?</label>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" style="font-size:11px; font-weight:700;">Diagnóstico</label>
+                        <input type="text" id="editDiagnostico" class="form-control form-control-sm"
+                               value="{{ orden.diagnostico|default:'' }}" maxlength="300"
+                               placeholder="Diagnóstico clínico...">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" style="font-size:11px; font-weight:700;">Notas Internas</label>
+                        <input type="text" id="editNotas" class="form-control form-control-sm"
+                               value="{{ orden.notas_internas|default:'' }}" maxlength="300"
+                               placeholder="Observaciones de recepción...">
+                    </div>
+                    <div class="col-12 text-end">
+                        <button class="btn btn-primary btn-sm" onclick="guardarEdicionDatos()">
+                            <i class="fas fa-save"></i> Guardar Cambios
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs: Totales -->
+            <ul class="nav nav-tabs tabs-finanzas" role="tablist">
+                <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tabTotales">Totales</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabMuestras">Muestras</a></li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="tabTotales">
+                    <div class="panel-finanzas">
+                        <div class="fila"><span>Subtotal:</span> <span id="spanSubtotal">${{ subtotal|floatformat:2 }}</span></div>
+                        <div class="fila" style="align-items:center;">
+                            <span>Descuento (%):</span>
+                            <span>
+                                <input type="number" class="desc-input" id="inputDescPct" value="0" min="0" max="100" step="1" onchange="recalcularDescuento()">%
+                            </span>
+                        </div>
+                        <div class="fila"><span>Desc.Monto:</span> <span id="spanDescMonto">${{ descuento_monto|floatformat:2 }}</span></div>
+                        <div class="fila"><span>Subtotal:</span> <span id="spanSubtotal2">${{ subtotal|floatformat:2 }}</span></div>
+                        <div class="fila"><span>I.V.A. (0.00 %):</span> <span>$0.00</span></div>
+                        <div class="fila total"><span>Total:</span> <span id="spanTotal">${{ total|floatformat:2 }}</span></div>
+                        <div class="fila abono"><span>Abono:</span> <span id="spanAbono">${{ total_pagado|floatformat:2 }}</span></div>
+                        <div class="fila saldo"><span>Saldo:</span> <span id="spanSaldo">${{ saldo|floatformat:2 }}</span></div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="tabMuestras">
+                    <div class="panel-finanzas">
+                        <p class="text-muted text-center py-3" style="font-size:11px;">
+                            <i class="fas fa-vial"></i> Información de muestras pendientes<br>
+                            {% for det in detalles %}
+                            <span class="badge bg-{% if det.estado_procesamiento == 'TOMA_REALIZADA' or det.estado_procesamiento == 'RESULTADO_LISTO' %}success{% else %}warning{% endif %} me-1 mt-1">
+                                {% if det.analito %}{{ det.analito.abreviatura|default:det.analito.codigo }}{% else %}{{ det.descripcion_linea|truncatechars:20 }}{% endif %}: {{ det.get_estado_procesamiento_display }}
+                            </span>
+                            {% endfor %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón Reimprimir abajo de totales -->
+            {% if saldo <= 0 or orden.es_cortesia %}
+            <button class="btn btn-sm btn-outline-success w-100 mt-2" onclick="window.open('/laboratorio/resultados/{{ orden.id }}/pdf/', '_blank')">
+                <i class="fas fa-file-pdf"></i> Reimprimir Resultados PDF
+            </button>
+            {% else %}
+            <button class="btn btn-sm btn-secondary w-100 mt-2" type="button" disabled title="PDF bloqueado hasta liquidar el saldo pendiente">
+                <i class="fas fa-file-pdf"></i> Reimprimir Resultados PDF
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ======================== MODAL AGREGAR PAGO ======================== -->
+<div class="modal fade" id="modalPago" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white py-2">
+                <h6 class="modal-title"><i class="fas fa-money-bill"></i> Agregar Pago a Orden {{ orden.folio_orden }}</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <label class="form-label" style="font-size:12px;">Efectivo</label>
+                    <input type="number" id="pagoEfectivo" class="form-control form-control-sm" value="0" min="0" step="0.01">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label" style="font-size:12px;">Tarjeta</label>
+                    <input type="number" id="pagoTarjeta" class="form-control form-control-sm" value="0" min="0" step="0.01">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label" style="font-size:12px;">Transferencia</label>
+                    <input type="number" id="pagoTransferencia" class="form-control form-control-sm" value="0" min="0" step="0.01">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label" style="font-size:12px;">Referencia</label>
+                    <input type="text" id="pagoReferencia" class="form-control form-control-sm" placeholder="No. autorización o referencia">
+                </div>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-sm btn-success" onclick="guardarPago()"><i class="fas fa-save"></i> Guardar Pago</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ORDEN_ID = {{ orden.id }};
+const CSRF = '{{ csrf_token }}';
+const EDITABLE = {{ editable|yesno:"true,false" }};
+
+// ── Buscar estudio ──
+const inp = document.getElementById('inputBuscarEstudio');
+if (inp) {
+    inp.addEventListener('input', function() {
+        if (this.value.length >= 2) buscarEstudio();
+        else document.getElementById('divResultadosBusqueda').style.display = 'none';
+    });
+    inp.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); buscarEstudio(); }
+    });
+}
+
+function buscarEstudio() {
+    const q = (document.getElementById('inputBuscarEstudio') || {}).value || '';
+    if (q.length < 2) return;
+    const div = document.getElementById('divResultadosBusqueda');
+    div.innerHTML = '<div class="item text-muted">Buscando...</div>';
+    div.style.display = 'block';
+
+    fetch(`/laboratorio/api/buscar-estudios/?q=${encodeURIComponent(q)}`, {
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+    })
+    .then(r => r.json())
+    .then(data => {
+        const estudios = data.estudios || data.results || [];
+        if (!estudios.length) {
+            div.innerHTML = '<div class="item text-muted">Sin resultados</div>';
+            return;
+        }
+        div.innerHTML = estudios.slice(0, 15).map(e => `
+            <div class="item" onclick="agregarEstudio(${e.id}, '${e.source || 'core'}')">
+                <div>
+                    <strong>${esc(e.nombre)}</strong>
+                    ${e.es_perfil ? '<span class="badge bg-warning text-dark ms-1" style="font-size:9px">PERFIL</span>' : ''}
+                    <br><small class="text-muted">${e.codigo || ''} ${e.seccion ? '| ' + e.seccion : ''}</small>
+                </div>
+                <span class="text-success fw-bold">$${parseFloat(e.precio||0).toFixed(2)}</span>
+            </div>
+        `).join('');
+    })
+    .catch(() => { div.innerHTML = '<div class="item text-danger">Error de conexión</div>'; });
+}
+
+function agregarEstudio(estudioId, source) {
+    fetch(`/laboratorio/api/agregar-estudio/${ORDEN_ID}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({ estudio_id: estudioId, source: source })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert(data.mensaje || 'Error al agregar');
+        }
+    })
+    .catch(() => alert('Error de conexión'));
+}
+
+function eliminarEstudio(ordenId, detalleId, btn) {
+    if (!confirm('¿Eliminar este estudio de la orden?')) return;
+    btn.disabled = true;
+    fetch(`/laboratorio/api/eliminar-estudio/${ordenId}/${detalleId}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert(data.mensaje || 'Error al eliminar');
+            btn.disabled = false;
+        }
+    })
+    .catch(() => { alert('Error de conexión'); btn.disabled = false; });
+}
+
+function toggleUrgencia(btn, detalleId) {
+    btn.classList.toggle('activo');
+    recalcularTotales();
+}
+
+function recalcularDescuento() {
+    recalcularTotales();
+}
+
+function recalcularTotales() {
+    let subtotal = 0;
+    document.querySelectorAll('#tbodyEstudios tr[data-precio]').forEach(tr => {
+        subtotal += parseFloat(tr.dataset.precio) || 0;
+    });
+    const descPct = parseFloat(document.getElementById('inputDescPct').value) || 0;
+    const descMonto = subtotal * descPct / 100;
+    const subtotal2 = subtotal - descMonto;
+    const total = subtotal2;
+    const abono = parseFloat('{{ total_pagado|floatformat:2 }}') || 0;
+    const saldo = total - abono;
+
+    document.getElementById('spanSubtotal').textContent = '$' + subtotal.toFixed(2);
+    document.getElementById('spanDescMonto').textContent = '$' + descMonto.toFixed(2);
+    document.getElementById('spanSubtotal2').textContent = '$' + subtotal2.toFixed(2);
+    document.getElementById('spanTotal').textContent = '$' + total.toFixed(2);
+    document.getElementById('spanSaldo').textContent = '$' + saldo.toFixed(2);
+}
+
+function abrirModalPago() {
+    new bootstrap.Modal(document.getElementById('modalPago')).show();
+}
+
+function guardarPago() {
+    if (window.__prislabGuardarPagoEnCurso) {
+        return;
+    }
+    const efectivo = parseFloat(document.getElementById('pagoEfectivo').value) || 0;
+    const tarjeta = parseFloat(document.getElementById('pagoTarjeta').value) || 0;
+    const transferencia = parseFloat(document.getElementById('pagoTransferencia').value) || 0;
+    const referencia = document.getElementById('pagoReferencia').value;
+    const total = efectivo + tarjeta + transferencia;
+
+    if (total <= 0) { alert('Ingrese un monto mayor a $0'); return; }
+
+    let clientMutationId = null;
+    try {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            clientMutationId = window.crypto.randomUUID();
+        }
+    } catch (e) { /* ignore */ }
+
+    window.__prislabGuardarPagoEnCurso = true;
+    fetch(`/laboratorio/api/cobrar-orden/${ORDEN_ID}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({
+            monto_efectivo: efectivo,
+            monto_tarjeta: tarjeta,
+            monto_transferencia: transferencia,
+            referencia_pago: referencia,
+            monto: total,
+            client_mutation_id: clientMutationId,
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success' || data.ok) {
+            location.reload();
+        } else {
+            alert(data.mensaje || data.error || 'Error al registrar pago');
+        }
+    })
+    .catch(() => alert('Error de conexión'))
+    .finally(() => { window.__prislabGuardarPagoEnCurso = false; });
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// ── Editor de Datos Inline ────────────────────────────────────────────────────
+function abrirEditorDatos() {
+    const panel = document.getElementById('panelEditar');
+    if (!panel) return;
+    // Prellenar con valores actuales
+    const tipoEl = document.getElementById('editTipo');
+    if (tipoEl) tipoEl.value = '{{ orden.tipo_servicio|default:"RUTINA" }}';
+    const factEl = document.getElementById('editReqFactura');
+    if (factEl) factEl.checked = {% if orden.requiere_factura %}true{% else %}false{% endif %};
+    panel.style.display = 'block';
+    panel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+}
+
+function cerrarEditorDatos() {
+    const panel = document.getElementById('panelEditar');
+    if (panel) panel.style.display = 'none';
+}
+
+function guardarEdicionDatos() {
+    const payload = {
+        tipo_servicio:   document.getElementById('editTipo')?.value || 'RUTINA',
+        diagnostico:     document.getElementById('editDiagnostico')?.value || '',
+        notas_internas:  document.getElementById('editNotas')?.value || '',
+        requiere_factura: document.getElementById('editReqFactura')?.checked || false,
+    };
+    fetch(`/laboratorio/api/orden/${ORDEN_ID}/editar-datos/`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json', 'X-CSRFToken': CSRF, 'X-Requested-With':'XMLHttpRequest'},
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            // Actualizar UI sin recargar toda la página
+            const tipoEl = document.querySelector('.dato span[data-tipo]') || null;
+            cerrarEditorDatos();
+            // Mostrar toast de éxito y recargar para reflejar cambios
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;background:#2E7D32;color:#fff;padding:10px 18px;border-radius:6px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);';
+            toast.innerHTML = '<i class="fas fa-check-circle me-2"></i>Datos guardados correctamente';
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.remove(); location.reload(); }, 1200);
+        } else {
+            alert('Error: ' + (data.error || 'No se pudo guardar'));
+        }
+    })
+    .catch(() => alert('Error de conexión'));
+}
+</script>
+{% endblock %}

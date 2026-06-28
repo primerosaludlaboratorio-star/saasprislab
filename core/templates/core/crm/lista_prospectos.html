@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+{% now "Y-m-d" as today %}
+{% block title %}Prospectos CRM — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center gap-3">
+      <a href="{% url 'crm_dashboard' %}" class="btn btn-outline-secondary btn-sm">← Dashboard</a>
+      <h3 class="fw-bold mb-0">Prospectos</h3>
+    </div>
+    <a href="{% url 'crm_crear_prospecto' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus me-1"></i>Nuevo Prospecto
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-3 shadow-sm">
+    <div class="card-body py-2">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <input type="text" name="q" value="{{ request.GET.q }}" class="form-control form-control-sm"
+                 placeholder="Buscar por nombre, teléfono, email...">
+        </div>
+        <div class="col-md-3">
+          <select name="estado" class="form-select form-select-sm">
+            <option value="">Todos los estados</option>
+            {% for val, lbl in ESTADO_CHOICES %}<option value="{{ val }}" {% if request.GET.estado == val %}selected{% endif %}>{{ lbl }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select name="origen" class="form-select form-select-sm">
+            <option value="">Todos los orígenes</option>
+            {% for val, lbl in ORIGEN_CHOICES %}<option value="{{ val }}" {% if request.GET.origen == val %}selected{% endif %}>{{ lbl }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary btn-sm w-100">Filtrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nombre</th><th>Teléfono</th><th>Origen</th><th>Servicio</th>
+            <th>Estado</th><th>Próximo contacto</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in prospectos %}
+          <tr>
+            <td class="fw-semibold">{{ p.nombre }}</td>
+            <td><a href="https://wa.me/52{{ p.telefono }}" target="_blank">{{ p.telefono }}</a></td>
+            <td><span class="badge bg-light text-dark border">{{ p.get_origen_display }}</span></td>
+            <td><small>{{ p.servicio_interes|truncatechars:50 }}</small></td>
+            <td>
+              <span class="badge bg-{% if p.estado == 'GANADO' %}success{% elif p.estado == 'PERDIDO' %}secondary{% elif p.estado == 'COTIZADO' %}info{% elif p.estado == 'INTERESADO' %}primary{% elif p.estado == 'CONTACTADO' %}warning text-dark{% else %}light text-dark border{% endif %}">
+                {{ p.get_estado_display }}
+              </span>
+            </td>
+            <td>
+              {% if p.fecha_proximo_contacto %}
+                <span class="{% if p.fecha_proximo_contacto < today %}text-danger fw-bold{% endif %}">
+                  {{ p.fecha_proximo_contacto|date:"d/m/Y" }}
+                </span>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              <a href="{% url 'crm_detalle_prospecto' p.pk %}" class="btn btn-xs btn-outline-primary" style="font-size:.75rem; padding:2px 8px">
+                <i class="fas fa-eye"></i> Ver
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-4">No hay prospectos. <a href="{% url 'crm_crear_prospecto' %}">Crear el primero</a>.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if prospectos.has_other_pages %}
+  <nav class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+      {% if prospectos.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ prospectos.previous_page_number }}&{{ request.GET.urlencode }}">‹</a></li>{% endif %}
+      <li class="page-item disabled"><span class="page-link">{{ prospectos.number }}/{{ prospectos.paginator.num_pages }}</span></li>
+      {% if prospectos.has_next %}<li class="page-item"><a class="page-link" href="?page={{ prospectos.next_page_number }}&{{ request.GET.urlencode }}">›</a></li>{% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

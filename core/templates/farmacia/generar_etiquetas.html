@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Generar Etiquetas - Farmacia PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .etiquetas-card {
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .header-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .producto-checkbox {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s;
+    }
+    
+    .producto-checkbox:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+    }
+    
+    .producto-checkbox input[type="checkbox"]:checked ~ label {
+        color: #667eea;
+        font-weight: 600;
+    }
+    
+    .preview-etiqueta {
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        padding: 2rem;
+        background: #f8f9fa;
+        text-align: center;
+    }
+    
+    .barcode-preview {
+        font-family: 'Libre Barcode 128', cursive;
+        font-size: 3rem;
+        margin: 1rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5 pt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card etiquetas-card">
+                <div class="header-gradient">
+                    <h2>
+                        <i class="fas fa-barcode me-2"></i>
+                        Generar Etiquetas con Código de Barras
+                    </h2>
+                    <p class="mb-0">Selecciona productos y configura el formato de impresión</p>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <!-- Configuración -->
+                        <h4 class="mb-3">
+                            <i class="fas fa-cog me-2"></i>
+                            Configuración de Etiquetas
+                        </h4>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.tamaño_etiqueta.label }}</label>
+                                {{ form.tamaño_etiqueta }}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.cantidad_por_producto.label }}</label>
+                                {{ form.cantidad_por_producto }}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    {{ form.incluir_precio }}
+                                    <label class="form-check-label" for="{{ form.incluir_precio.id_for_label }}">
+                                        {{ form.incluir_precio.label }}
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    {{ form.incluir_caducidad }}
+                                    <label class="form-check-label" for="{{ form.incluir_caducidad.id_for_label }}">
+                                        {{ form.incluir_caducidad.label }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <!-- Selección de Productos -->
+                        <h4 class="mb-3">
+                            <i class="fas fa-box me-2"></i>
+                            Seleccionar Productos
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div style="max-height: 500px; overflow-y: auto;">
+                                    {{ form.productos }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="preview-etiqueta">
+                                    <h5>Vista Previa</h5>
+                                    <div class="barcode-preview">||||| |||| |||||</div>
+                                    <div><strong>Paracetamol 500mg</strong></div>
+                                    <div class="h3 mt-2">$15.00</div>
+                                    <small>Cad: 12/2027</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botones -->
+                        <div class="row mt-4">
+                            <div class="col-12 text-end">
+                                <a href="{% url 'farmacia:kardex_list' %}" class="btn btn-outline-secondary btn-lg me-2">
+                                    <i class="fas fa-times me-2"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-download me-2"></i> Generar PDF
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

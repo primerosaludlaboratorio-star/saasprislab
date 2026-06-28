@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Activar 2FA - PRISLAB{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-shield-check"></i> Activar Autenticación de Dos Factores</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p>Escanea el código QR con tu aplicación autenticadora (Google Authenticator, Authy).</p>
+                    {% if qr_code %}
+                    <div class="my-3">
+                        <img src="data:image/png;base64,{{ qr_code }}" alt="Código QR" class="img-fluid" style="max-width: 200px;">
+                    </div>
+                    {% endif %}
+                    <form method="post" class="mt-3">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Código de verificación (6 dígitos)</label>
+                            <input type="text" name="codigo" class="form-control text-center" maxlength="6" pattern="\d{6}" required autocomplete="one-time-code">
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-check-lg"></i> Verificar y Activar
+                        </button>
+                    </form>
+                    <a href="{% url 'seguridad:configuracion_2fa' %}" class="btn btn-link mt-2">Cancelar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

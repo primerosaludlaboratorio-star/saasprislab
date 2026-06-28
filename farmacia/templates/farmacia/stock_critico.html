@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Stock Crítico — Farmacia{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-number { font-size: 2.5rem; font-weight: 700; line-height: 1; }
+    .stock-bar { height: 8px; border-radius: 4px; background: #e9ecef; overflow: hidden; }
+    .stock-bar-fill { height: 100%; border-radius: 4px; transition: width .3s; }
+    .stock-low .stock-bar-fill { background: #dc3545; }
+    .stock-zero .stock-bar-fill { background: #6c757d; width: 0 !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">Stock Crítico</h4>
+            <small class="text-muted">Productos por debajo del mínimo requerido</small>
+        </div>
+        <a href="{% url 'farmacia:dashboard_semaforo_caducidad' %}" class="btn btn-outline-secondary btn-sm">
+            Semáforo Caducidad
+        </a>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card bg-warning shadow-sm border-0" style="border-radius:12px;">
+                <div class="card-body text-center">
+                    <div class="stat-number text-dark">{{ count_criticos }}</div>
+                    <div class="text-dark mt-1">Productos con Stock Bajo</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-danger text-white shadow-sm border-0" style="border-radius:12px;">
+                <div class="card-body text-center">
+                    <div class="stat-number">{{ count_agotados }}</div>
+                    <div class="mt-1">Productos Agotados (0 unidades)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-dark text-white shadow-sm border-0" style="border-radius:12px;">
+                <div class="card-body text-center">
+                    <div class="stat-number">{{ count_criticos|add:count_agotados }}</div>
+                    <div class="mt-1">Total de Productos Afectados</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Productos con Stock Bajo -->
+    {% if productos_criticos %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-warning d-flex justify-content-between align-items-center">
+            <strong class="text-dark">Stock Bajo (por debajo del mínimo)</strong>
+            <span class="badge bg-dark">{{ count_criticos }}</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Producto</th>
+                            <th>Marca</th>
+                            <th class="text-center">Stock Actual</th>
+                            <th class="text-end">Precio Público</th>
+                            <th class="text-end">Costo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in productos_criticos %}
+                        <tr class="stock-low">
+                            <td><strong>{{ p.nombre }}</strong></td>
+                            <td class="text-muted">{{ p.marca_laboratorio }}</td>
+                            <td class="text-center"><span class="badge bg-danger">{{ p.stock }}</span></td>
+                            <td class="text-end">${{ p.precio_publico|floatformat:2 }}</td>
+                            <td class="text-end text-muted">${{ p.precio_compra|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Productos Agotados -->
+    {% if productos_agotados %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <strong>Agotados (0 unidades)</strong>
+            <span class="badge bg-light text-danger">{{ count_agotados }}</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Producto</th>
+                            <th>Marca</th>
+                            <th>Categoría</th>
+                            <th class="text-end">Precio Público</th>
+                            <th class="text-end">Costo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in productos_agotados %}
+                        <tr class="stock-zero">
+                            <td><strong>{{ p.nombre }}</strong></td>
+                            <td class="text-muted">{{ p.marca_laboratorio }}</td>
+                            <td><span class="badge bg-secondary">{{ p.get_categoria_display }}</span></td>
+                            <td class="text-end">${{ p.precio_publico|floatformat:2 }}</td>
+                            <td class="text-end text-muted">${{ p.precio_compra|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not productos_criticos and not productos_agotados %}
+    <div class="alert alert-success text-center py-5">
+        <h5>Inventario Sano</h5>
+        <p class="mb-0">Todos los productos están por encima del stock mínimo. Sin agotados.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Inventario laboratorio por sucursal — {{ empresa.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="margin-top: 72px; max-width: 720px;">
+    <h2 class="h4 mb-1"><i class="bi bi-box-seam me-2"></i>Gestión de inventario (laboratorio)</h2>
+    <p class="text-muted small mb-4">
+        Desactiva el interruptor para <strong>modo ágil</strong>: al validar resultados no se descuentan reactivos por FEFO
+        en esa sucursal. Útil para pruebas de flujo sin cargar lotes. Producción: mantener activado.
+    </p>
+
+    <form method="post" class="card shadow-sm border-0">
+        {% csrf_token %}
+        <div class="card-body">
+            {% if not sucursales %}
+            <p class="text-warning mb-0">No hay sucursales registradas para esta empresa. Cree una en el administrador.</p>
+            {% else %}
+            <ul class="list-group list-group-flush">
+                {% for s in sucursales %}
+                <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <strong>{{ s.nombre }}</strong>
+                        <span class="text-muted small d-block">{{ s.codigo_sucursal }}{% if not s.activa %} · inactiva{% endif %}</span>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="gestion_{{ s.id }}"
+                               id="gestion_{{ s.id }}" {% if s.gestion_inventario_activa %}checked{% endif %}>
+                        <label class="form-check-label" for="gestion_{{ s.id }}">Inventario estricto (FEFO)</label>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% if sucursales %}
+        <div class="card-footer bg-light d-flex gap-2 justify-content-between">
+            <a href="{% url 'dashboard_director' %}" class="btn btn-outline-secondary btn-sm">Volver al dashboard</a>
+            <button type="submit" class="btn btn-primary btn-sm">Guardar cambios</button>
+        </div>
+        {% else %}
+        <div class="card-footer bg-light">
+            <a href="{% url 'dashboard_director' %}" class="btn btn-outline-secondary btn-sm">Volver al dashboard</a>
+        </div>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

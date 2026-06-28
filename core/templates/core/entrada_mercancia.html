@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Entrada de Mercancía - {{ empresa.nombre|default:"PRISLAB" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Mantener layout original pero bajo el chasis base.html */
+    body { background-color: #f4f6f9; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Token CSRF para peticiones AJAX -->
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" id="csrf-token">
+<div class="container-fluid p-4" style="padding-top: 10px;">
+    <div class="mb-3 border-bottom pb-2">
+        <a href="{% url 'pdv_farmacia' %}" class="btn btn-outline-dark fw-bold">
+            <i class="bi bi-arrow-left-circle"></i> VOLVER AL PUNTO DE VENTA
+        </a>
+    </div>
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card shadow border-0">
+                <div class="card-header bg-dark text-white fw-bold">NUEVA ENTRADA (RIGOR COFEPRIS)</div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="small fw-bold">CÓDIGO DE BARRAS</label><input type="text" id="ent-codigo" class="form-control bg-light"></div>
+                        <div class="col-md-6"><label class="small fw-bold">FACTURA / FOLIO</label><input type="text" id="ent-factura" class="form-control"></div>
+                        <div class="col-md-6"><label class="small fw-bold">NOMBRE DEL MEDICAMENTO</label><input type="text" id="ent-nombre" class="form-control fw-bold"></div>
+                        <div class="col-md-3">
+                            <label class="small fw-bold">CATEGORÍA</label>
+                            <select id="ent-categoria" class="form-select border-primary">
+                                <option value="GENERICO">Genérico</option>
+                                <option value="ANTIBIOTICO">Antibiótico</option>
+                                <option value="PATENTE">Patente / Marca</option>
+                                <option value="CURACION">Material de Curación</option>
+                                <option value="OTRO">Otros / Suplementos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="ent-es-controlado" style="width: 40px; height: 20px;">
+                                <label class="form-check-label fw-bold text-danger ms-2" for="ent-es-controlado">ANTIBIÓTICO</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4"><label class="small fw-bold">LOTE</label><input type="text" id="ent-lote" class="form-control border-danger"></div>
+                        <div class="col-md-4"><label class="small fw-bold">CADUCIDAD</label><input type="date" id="ent-caducidad" class="form-control border-danger"></div>
+                        <div class="col-md-4"><label class="small fw-bold">CANTIDAD (PZ)</label><input type="number" id="ent-cantidad" class="form-control border-primary"></div>
+                        <hr>
+                        <div class="col-md-6"><label class="small fw-bold text-danger">COSTO UNITARIO (COMPRA)</label><input type="number" id="ent-costo" class="form-control"></div>
+                        <div class="col-md-6"><label class="small fw-bold text-success">PRECIO AL PÚBLICO (VENTA)</label><input type="number" id="ent-venta" class="form-control"></div>
+                        <div class="col-md-12"><label class="small fw-bold">PROVEEDOR</label><input type="text" id="ent-proveedor" class="form-control"></div>
+                    </div>
+                    <button class="btn btn-primary w-100 mt-4 fw-bold py-3" onclick="guardarEntrada()">REGISTRAR INGRESO AL ALMACÉN</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card shadow border-0 mb-4">
+                <div class="card-header bg-success text-white fw-bold">CARGA MASIVA EXCEL</div>
+                <div class="card-body text-center p-5">
+                    <i class="bi bi-file-earmark-excel text-success" style="font-size: 4rem;"></i>
+                    <p class="text-muted mt-3">Sube tu archivo .xlsx con las columnas:<br><b>CODIGO, NOMBRE, LOTE, CADUCIDAD, CANTIDAD, COSTO_UNITARIO, PRECIO_VENTA</b></p>
+                    <input type="file" id="input-excel" class="form-control mb-3" accept=".xlsx">
+                    <button class="btn btn-outline-success w-100 fw-bold" onclick="subirExcel()">PROCESAR COMPRA GRANDE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Función para obtener CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    function guardarEntrada() {
+        // Validar campos requeridos
+        const nombre = document.getElementById('ent-nombre').value.trim();
+        const cantidad = parseInt(document.getElementById('ent-cantidad').value) || 0;
+        const costo = parseFloat(document.getElementById('ent-costo').value) || 0;
+        
+        if (!nombre) {
+            Swal.fire('Error', 'El nombre del medicamento es obligatorio', 'error');
+            return;
+        }
+        
+        if (cantidad <= 0) {
+            Swal.fire('Error', 'La cantidad debe ser mayor a cero', 'error');
+            return;
+        }
+        
+        if (costo <= 0) {
+            Swal.fire('Error', 'El costo unitario debe ser mayor a cero', 'error');
+            return;
+        }
+        
+        const payload = {
+            codigo: document.getElementById('ent-codigo').value.trim(),
+            nombre: nombre,
+            factura: document.getElementById('ent-factura').value.trim(),
+            lote: document.getElementById('ent-lote').value.trim(),
+            caducidad: document.getElementById('ent-caducidad').value,
+            cantidad: cantidad,
+            costo_unitario: costo,
+            precio_venta: parseFloat(document.getElementById('ent-venta').value) || 0,
+            proveedor: document.getElementById('ent-proveedor').value.trim(),
+            categoria: document.getElementById('ent-categoria').value,
+            es_controlado: document.getElementById('ent-es-controlado').checked
+        };
+
+        // Obtener CSRF token
+        const csrftoken = getCookie('csrftoken') || document.getElementById('csrf-token')?.value || document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+        
+        // Mostrar loading
+        Swal.fire({
+            title: 'Guardando...',
+            text: 'Registrando ingreso al almacén',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch('/farmacia/almacen/entradas/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.mensaje || `Error HTTP: ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(res => {
+            if(res.status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Guardado',
+                    text: res.mensaje || 'Inventario actualizado correctamente',
+                    confirmButtonText: 'Aceptar'
+                }).then(() => {
+                    // Limpiar formulario
+                    document.getElementById('ent-codigo').value = '';
+                    document.getElementById('ent-nombre').value = '';
+                    document.getElementById('ent-factura').value = '';
+                    document.getElementById('ent-lote').value = '';
+                    document.getElementById('ent-caducidad').value = '';
+                    document.getElementById('ent-cantidad').value = '';
+                    document.getElementById('ent-costo').value = '';
+                    document.getElementById('ent-venta').value = '';
+                    document.getElementById('ent-proveedor').value = '';
+                    document.getElementById('ent-es-controlado').checked = false;
+                    // Recargar para ver cambios en inventario
+                    location.reload();
+                });
+            } else {
+                Swal.fire('Error', res.mensaje || 'Error al guardar', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('Error', error.message || 'Error de conexión. Verifica tu conexión a internet.', 'error');
+        });
+    }
+
+    function subirExcel() {
+        const file = document.getElementById('input-excel').files[0];
+        if(!file) return Swal.fire('Error', 'Selecciona un archivo', 'warning');
+        
+        let formData = new FormData();
+        formData.append('archivo_excel', file);
+
+        fetch('/farmacia/api/carga-masiva/', {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            body: formData
+        }).then(r => r.json()).then(res => {
+            Swal.fire('Procesado', `Éxitos: ${res.exitos}\nErrores: ${res.errores.length}`, 'info');
+        });
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<style>
+    body { padding-bottom: 50px; }
+    
+    @media print {
+        .firma-autor, footer, .fixed-bottom { display: none !important; }
+        body { padding-bottom: 0 !important; }
+    }
+</style>
+
+<footer class="fixed-bottom bg-light text-dark text-center py-2 shadow-lg border-top firma-autor" style="z-index: 1000;">
+    <div class="container-fluid d-flex justify-content-between align-items-center" style="font-size: 12px;">
+        <span class="text-muted">
+            <i class="bi bi-building"></i> PRIMERO SALUD LABORATORIO
+        </span>
+        <span>
+            Arquitectura y Desarrollo: 
+            <strong class="text-primary text-uppercase fw-bold">
+                JONATHAN ALONSO SAMOS SANCHEZ
+            </strong>
+        </span>
+    </div>
+</footer>
+{% endblock %}

@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Alta de Nueva Empresa — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+  <!-- CABECERA -->
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <div style="font-size:48px;">🏭</div>
+    <div>
+      <h2 class="fw-bold mb-0">Wizard de Alta de Empresa</h2>
+      <p class="text-muted mb-0">Registra un nuevo cliente SaaS en PRISLAB — Transacción Atómica</p>
+    </div>
+  </div>
+
+  <!-- STEPPER -->
+  <div class="d-flex gap-2 mb-4" id="stepper">
+    {% for n, label in steps %}
+    <div class="step-pill px-3 py-2 rounded-pill fw-semibold fs-6 {% if forloop.first %}bg-primary text-white{% else %}bg-light text-secondary{% endif %}"
+         data-step="{{ n }}" style="cursor:pointer; transition:.2s;">
+      {{ n }}. {{ label }}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ── PASO 1: Identidad Legal ─────────────────────────────────────── -->
+    <div class="col-12 wizard-step" data-step="1">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white fw-bold">
+          🏛️ Paso 1 — Identidad Legal y Fiscal
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Nombre Comercial *</label>
+              <input type="text" class="form-control" id="campo-nombre" placeholder="Ej. Laboratorio del Valle">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">RFC *</label>
+              <input type="text" class="form-control" id="campo-rfc" placeholder="XAXX010101000" maxlength="13">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label fw-semibold">Dirección</label>
+              <input type="text" class="form-control" id="campo-direccion" placeholder="Calle, No., Col., CP, Ciudad">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Teléfono</label>
+              <input type="text" class="form-control" id="campo-telefono" placeholder="924 000 0000">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PASO 2: Identidad Visual ────────────────────────────────────── -->
+    <div class="col-12 wizard-step d-none" data-step="2">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white fw-bold">
+          🎨 Paso 2 — Identidad Visual
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Color Primario</label>
+              <div class="input-group">
+                <input type="color" class="form-control form-control-color" id="campo-color-primario" value="#003366">
+                <input type="text" class="form-control" id="campo-color-primario-hex" value="#003366">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Color Secundario</label>
+              <div class="input-group">
+                <input type="color" class="form-control form-control-color" id="campo-color-secundario" value="#FFD700">
+                <input type="text" class="form-control" id="campo-color-secundario-hex" value="#FFD700">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Color de Fondo</label>
+              <div class="input-group">
+                <input type="color" class="form-control form-control-color" id="campo-color-fondo" value="#F8F9FA">
+                <input type="text" class="form-control" id="campo-color-fondo-hex" value="#F8F9FA">
+              </div>
+            </div>
+            <!-- Preview en tiempo real -->
+            <div class="col-12">
+              <div id="preview-visual" class="rounded p-4 text-center fw-bold fs-5"
+                   style="background:#003366; color:#FFD700;">
+                Vista previa de identidad
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PASO 3: Plan y Módulos ───────────────────────────────────────── -->
+    <div class="col-12 wizard-step d-none" data-step="3">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white fw-bold">
+          🎛️ Paso 3 — Módulos Contratados
+        </div>
+        <div class="card-body">
+          <!-- Selector de plan rápido -->
+          <div class="row g-2 mb-4">
+            {% for plan_key, plan in planes.items %}
+            <div class="col-md-4">
+              <div class="card border-2 plan-card" data-plan="{{ plan_key }}" style="cursor:pointer;">
+                <div class="card-body text-center">
+                  <h5 class="fw-bold">{{ plan.nombre }}</h5>
+                  <small class="text-muted">{{ plan.precio_ref }}</small>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Switches individuales -->
+          <div class="row g-2" id="modulos-switches">
+            {% for modulo_key, modulo_label in modulos_lista %}
+            <div class="col-md-6 col-lg-4">
+              <div class="d-flex align-items-center justify-content-between border rounded p-2">
+                <span class="fw-semibold">{{ modulo_label }}</span>
+                <div class="form-check form-switch mb-0">
+                  <input class="form-check-input modulo-switch"
+                         type="checkbox"
+                         data-modulo="{{ modulo_key }}"
+                         id="sw-{{ modulo_key }}">
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PASO 4: Usuario Admin ─────────────────────────────────────────── -->
+    <div class="col-12 wizard-step d-none" data-step="4">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white fw-bold">
+          👤 Paso 4 — Usuario Administrador y Personal
+        </div>
+        <div class="card-body">
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Nombre del Admin *</label>
+              <input type="text" class="form-control" id="campo-admin-nombre" placeholder="Jonathan Samos">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Email *</label>
+              <input type="email" class="form-control" id="campo-admin-email" placeholder="admin@empresa.com">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Contraseña temporal</label>
+              <input type="text" class="form-control" id="campo-admin-password"
+                     placeholder="Se genera automáticamente">
+            </div>
+          </div>
+
+          <!-- Carga Excel de personal -->
+          <div class="alert alert-light border">
+            <strong>Carga masiva de personal (opcional)</strong><br>
+            <small>Sube un Excel con columnas: nombre | apellido | email | rol | username</small>
+          </div>
+          <input type="file" class="form-control mb-2" id="excel-personal" accept=".xlsx,.xls">
+          <button class="btn btn-outline-secondary btn-sm" onclick="parsearExcel()">
+            <i class="bi bi-table me-1"></i>Previsualizar personal
+          </button>
+          <div id="preview-personal" class="mt-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PASO 5: Confirmación ─────────────────────────────────────────── -->
+    <div class="col-12 wizard-step d-none" data-step="5">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-success text-white fw-bold">
+          ✅ Paso 5 — Confirmación y Alta
+        </div>
+        <div class="card-body">
+          <div id="resumen-final" class="mb-4">
+            <p class="text-muted">Cargando resumen...</p>
+          </div>
+          <button class="btn btn-success btn-lg px-5 fw-bold" id="btn-crear-empresa">
+            <i class="bi bi-rocket-takeoff me-2"></i>ACTIVAR EMPRESA EN PRISLAB
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.row -->
+
+  <!-- NAVEGACIÓN -->
+  <div class="d-flex gap-2 mt-4">
+    <button class="btn btn-outline-secondary" id="btn-anterior" onclick="navegarPaso(-1)" disabled>
+      ← Anterior
+    </button>
+    <button class="btn btn-primary px-4" id="btn-siguiente" onclick="navegarPaso(1)">
+      Siguiente →
+    </button>
+  </div>
+
+</div><!-- /.container -->
+
+<!-- RESULTADO MODAL -->
+<div class="modal fade" id="modal-resultado" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title fw-bold">🚀 Empresa activada exitosamente</h5>
+      </div>
+      <div class="modal-body" id="modal-resultado-body"></div>
+      <div class="modal-footer">
+        <a href="/admin/" class="btn btn-success">Ir al Admin</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Estado del Wizard ────────────────────────────────────────────────────────
+const state = {
+  pasoActual: 1,
+  totalPasos: 5,
+  datos: {
+    nombre: '', rfc: '', direccion: '', telefono: '',
+    color_primario: '#003366', color_secundario: '#FFD700', color_fondo: '#F8F9FA',
+    plan: 'PROFESIONAL',
+    modulos_custom: {},
+    admin: { nombre: '', email: '', password: '' },
+    personal: [],
+  }
+};
+
+// ── Navegación ───────────────────────────────────────────────────────────────
+function navegarPaso(delta) {
+  const nuevo = state.pasoActual + delta;
+  if (nuevo < 1 || nuevo > state.totalPasos) return;
+
+  // Guardar datos del paso actual antes de navegar
+  guardarDatosPasoActual();
+
+  document.querySelectorAll('.wizard-step').forEach(el => {
+    el.classList.toggle('d-none', parseInt(el.dataset.step) !== nuevo);
+  });
+  document.querySelectorAll('.step-pill').forEach(el => {
+    const activo = parseInt(el.dataset.step) === nuevo;
+    el.classList.toggle('bg-primary', activo);
+    el.classList.toggle('text-white', activo);
+    el.classList.toggle('bg-light', !activo);
+    el.classList.toggle('text-secondary', !activo);
+  });
+
+  state.pasoActual = nuevo;
+  document.getElementById('btn-anterior').disabled = nuevo === 1;
+
+  if (nuevo === state.totalPasos) {
+    renderizarResumen();
+    document.getElementById('btn-siguiente').classList.add('d-none');
+  } else {
+    document.getElementById('btn-siguiente').classList.remove('d-none');
+  }
+}
+
+function guardarDatosPasoActual() {
+  state.datos.nombre    = document.getElementById('campo-nombre')?.value || state.datos.nombre;
+  state.datos.rfc       = document.getElementById('campo-rfc')?.value    || state.datos.rfc;
+  state.datos.direccion = document.getElementById('campo-direccion')?.value || state.datos.direccion;
+  state.datos.telefono  = document.getElementById('campo-telefono')?.value  || state.datos.telefono;
+  state.datos.color_primario   = document.getElementById('campo-color-primario-hex')?.value || state.datos.color_primario;
+  state.datos.color_secundario = document.getElementById('campo-color-secundario-hex')?.value || state.datos.color_secundario;
+  state.datos.color_fondo      = document.getElementById('campo-color-fondo-hex')?.value || state.datos.color_fondo;
+  state.datos.admin.nombre   = document.getElementById('campo-admin-nombre')?.value || state.datos.admin.nombre;
+  state.datos.admin.email    = document.getElementById('campo-admin-email')?.value  || state.datos.admin.email;
+  state.datos.admin.password = document.getElementById('campo-admin-password')?.value || state.datos.admin.password;
+
+  // Módulos activos
+  const switches = document.querySelectorAll('.modulo-switch');
+  switches.forEach(sw => {
+    state.datos.modulos_custom[sw.dataset.modulo] = sw.checked;
+  });
+}
+
+// ── Preview visual en tiempo real ────────────────────────────────────────────
+['campo-color-primario', 'campo-color-secundario', 'campo-color-fondo'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', function() {
+    document.getElementById(id + '-hex').value = this.value;
+    actualizarPreview();
+  });
+});
+
+function actualizarPreview() {
+  const pv = document.getElementById('preview-visual');
+  if (!pv) return;
+  const primario   = document.getElementById('campo-color-primario')?.value || '#003366';
+  const secundario = document.getElementById('campo-color-secundario')?.value || '#FFD700';
+  const fondo      = document.getElementById('campo-color-fondo')?.value || '#F8F9FA';
+  pv.style.background = primario;
+  pv.style.color = secundario;
+  pv.textContent = document.getElementById('campo-nombre')?.value || 'Vista previa de identidad';
+}
+
+// ── Planes predefinidos ──────────────────────────────────────────────────────
+const planesData = {{ planes_json|safe }};
+document.querySelectorAll('.plan-card').forEach(card => {
+  card.addEventListener('click', function() {
+    document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('border-primary'));
+    this.classList.add('border-primary');
+    const plan = planesData[this.dataset.plan];
+    if (!plan) return;
+    state.datos.plan = this.dataset.plan;
+    Object.entries(plan.modulos).forEach(([key, val]) => {
+      const sw = document.querySelector(`.modulo-switch[data-modulo="${key}"]`);
+      if (sw) sw.checked = val;
+    });
+  });
+});
+
+// ── Parseo de Excel ──────────────────────────────────────────────────────────
+async function parsearExcel() {
+  const file = document.getElementById('excel-personal').files[0];
+  if (!file) { alert('Selecciona un archivo Excel primero.'); return; }
+  const fd = new FormData();
+  fd.append('excel', file);
+  const resp = await fetch('/onboarding/parse-excel/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+    body: fd,
+  });
+  const data = await resp.json();
+  if (!data.ok) { alert('Error: ' + data.error); return; }
+  state.datos.personal = data.personal;
+  const container = document.getElementById('preview-personal');
+  container.innerHTML = `<div class="alert alert-success">${data.total} usuarios encontrados en el Excel.</div>
+    <table class="table table-sm table-bordered">
+      <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th></tr></thead>
+      <tbody>${data.personal.slice(0,10).map(u =>
+        `<tr><td>${u.nombre||''} ${u.apellido||''}</td><td>${u.email||''}</td><td>${u.rol||''}</td></tr>`
+      ).join('')}</tbody>
+    </table>`;
+}
+
+// ── Resumen final ────────────────────────────────────────────────────────────
+function renderizarResumen() {
+  guardarDatosPasoActual();
+  const d = state.datos;
+  document.getElementById('resumen-final').innerHTML = `
+    <table class="table table-bordered">
+      <tr><th>Empresa</th><td>${d.nombre}</td></tr>
+      <tr><th>RFC</th><td>${d.rfc}</td></tr>
+      <tr><th>Plan</th><td>${d.plan}</td></tr>
+      <tr><th>Admin</th><td>${d.admin.nombre} (${d.admin.email})</td></tr>
+      <tr><th>Personal a cargar</th><td>${d.personal.length} usuarios</td></tr>
+      <tr><th>Color primario</th><td><span style="background:${d.color_primario};padding:2px 12px;">&nbsp;</span> ${d.color_primario}</td></tr>
+    </table>
+    <div class="alert alert-warning">⚠️ Esta acción es irreversible. Verifica los datos antes de continuar.</div>
+  `;
+}
+
+// ── Crear empresa ────────────────────────────────────────────────────────────
+document.getElementById('btn-crear-empresa')?.addEventListener('click', async function() {
+  guardarDatosPasoActual();
+  this.disabled = true;
+  this.textContent = 'Creando empresa...';
+
+  const resp = await fetch('/onboarding/crear/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}',
+    },
+    body: JSON.stringify(state.datos),
+  });
+  const data = await resp.json();
+
+  if (data.ok) {
+    document.getElementById('modal-resultado-body').innerHTML = `
+      <div class="alert alert-success">✅ Empresa <strong>${data.empresa_nombre}</strong> activada.</div>
+      <table class="table"><tbody>
+        <tr><th>Admin</th><td>${data.admin_username}</td></tr>
+        <tr><th>Contraseña temporal</th><td><code>${data.admin_password}</code> (cambiar en primer login)</td></tr>
+        <tr><th>Plan</th><td>${data.plan}</td></tr>
+        <tr><th>Usuarios creados</th><td>${data.usuarios_creados}</td></tr>
+      </tbody></table>`;
+    new bootstrap.Modal(document.getElementById('modal-resultado')).show();
+  } else {
+    alert('Error al crear empresa: ' + data.error);
+    this.disabled = false;
+    this.textContent = 'ACTIVAR EMPRESA EN PRISLAB';
+  }
+});
+</script>
+{% endblock %}

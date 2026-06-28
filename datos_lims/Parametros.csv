@@ -1,0 +1,1148 @@
+﻿Id_parametro,Codigo,Abreviatura,Descripcion,Clave_hoja_trabajo,Departamento,Tipo_muestra,Metodo,Imprimir_metodo_resultado,Formula,Imprime_en_negritas,Es_antibiograma,Permite_venta_directa,Costo,Comision,Unidades,Sexo,Tipo_resultado,Resultado_default,Tipo_valor_resultado,Resultado_opciones,Decimales,Tiempo_proceso,Indicaciones,Notas,Imprimir_nota,Tipo_referencia,Valor de normalidad (texto libre),Es_Producto
+2037,leuct,leuct,LEUCOCITOS TOTALES,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,10³/µL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2038,RBC,RBC,GLOBULOS ROJOS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,MILLON/MM3,Ambos,Numerico,,Abierto,,2,,NO REQUIERE AYUNO,,Imprimir siempre,Rango numerico,,No
+2039,HGB,HGB,HEMOGLOBINA,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,g/dl,Ambos,Numerico,,Abierto,,1,,NO REQUIERE AYUNO,,Imprimir siempre,Rango numerico,,No
+2040,HCT,HCT,HEMATOCRITO,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,1,,NO REQUIERE AYUNO,,Imprimir siempre,Rango numerico,,No
+2041,VCM,VCM,Volumen globular medio,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,fl,Ambos,Numerico,,Abierto,,1,,NO REQUIERE AYUNO,,Imprimir siempre,Rango numerico,,No
+2042,HCM,HCM,HCM,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,pg,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2043,MCHC,CMHC,CMHC,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,gr/dl,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2046,PLT,PLT,PLAQUETAS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,10³/μL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2047,VPM,VPM,VOLUMEN PLAQUETARIO MEDIO,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,fl,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2051,LYM,LIN,LINFOCITOS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2052,PIE,PIE,PRUEBA INMUNOLOGICA DE EMBARAZO,PIE,INMUNOLOGÍA,SUERO,Inmunocromatografia,No imprimir,,No,No,Si,0.00,0.00,,Femenino,Texto,,Abierto,,0,,NO SE REQUIERE AYUNO,Método: Inmunocromatografia\nSensibilidad 10mIU/ml,Imprimir siempre,Texto libre,NEGATIVO,No
+2053,MON%,MON,MONOCITOS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2054,PCR,PCR,PROTEINA C REACTIVA,PCR,INMUNOLOGÍA,SUERO,Inmunoaglutinación,No imprimir,,No,No,Si,0.00,0.00,MG/L,Ambos,Texto,,Abierto,,0,,NO SE REQUIERE AYUNO,,Imprimir siempre,Texto libre,Hasta de 6.0 mg/L,No
+2055,VDRL,VDRL,VDRL,VDRL,INMUNOLOGÍA,SUERO,Floculacion,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,NO SE REQUIERE AYUNO,,Imprimir siempre,Texto libre,NEGATIVO,No
+2056,ASO,ASO,ANTI-ESTREPTOLISINA O,ASO,INMUNOLOGÍA,SUERO,Inmunoaglutinación,No imprimir,,No,No,Si,0.00,0.00,UI/ml,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"Hasta 200.0 UI/ml
+",No
+2057,85,FR,Factor reumatoide,FR,INMUNOLOGÍA,SUERO,Inmunoturbidimetría,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,Ul/ml,Ambos,Texto,,Abierto,,0,,NO SE REQUIERE AYUNO,,Imprimir siempre,Texto libre,Hasta 8.0,No
+2058,NEU,NEU,NEUTROFILOS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2059,EO%,EO,EOSINOFILOS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2060,ROSA DE BENGALA,RDB,ROSA DE BENGALA,RDBENG,INMUNOLOGÍA,SUERO,Inmunoaglutinación,No imprimir,,No,No,Si,0.00,0.00,UI/mL,Ambos,Texto,,Abierto,,0,,NO SE REQUIERE AYUNO,,Imprimir siempre,Texto libre,HASTA 25,No
+2061,BAS%,BAS,BASOFILOS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2062,TIFICO O,TO,TIFICO O,TO,INMUNOLOGÍA,SUERO,Inmunoaglutinación,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,1,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2063,TIFICO H,TH,TIFICO H,TH,INMUNOLOGÍA,SUERO,Inmunoaglutinación,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,1,,NO SE REQUIERE AYUNO,,Imprimir siempre,Texto libre,NEGATIVO,No
+2064,PARATIFICO B,PB,PARATIFICO B,PB,INMUNOLOGÍA,SUERO,Inmunoaglutinación,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,1,,NO SE REQUIERE AYUNO,,Imprimir siempre,Texto libre,NEGATIVO,No
+2065,PARATIFICO A,PA,PARATIFICO A,PA,INMUNOLOGÍA,SUERO,Inmunoaglutinación,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,1,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2066,BRUCELLA ABORTUS,BA,BRUCELLA ABORTUS,BA,INMUNOLOGÍA,SUERO,Inmunoaglutinación,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,1,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2068,PROTEUS,PT,PROTEUS,PT,INMUNOLOGÍA,SUERO,Inmunoaglutinación,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,1,,NO SE REQUIERE AYUNO,,Imprimir siempre,Texto libre,NEGATIVO,No
+2069,RDW,RDW,RDW,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2071,MON#,MONABS,MONOCITOS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,(MON/100)*LEUCT,No,No,No,0.00,0.00,10³/μL,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2072,NEU,NEUABS,NEUTROFILOS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,(NEU/100)*LEUCT,No,No,No,0.00,0.00,10³/μL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2073,EO#,EOABS,EOSINOFILOS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,(EO/100)*LEUCT,No,No,No,0.00,0.00,10³/μL,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2074,BAS#,BASABS,BASOFILOS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,(BAS/100)*LEUCT,No,No,No,0.00,0.00,10³/μL,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2075,COCA,COCA,COCAINA,COC,INMUNOLOGÍA,ORINA,Inmunocromatografia,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,NO SE REQUIERE AYUNO,,Imprimir siempre,Texto libre,NEGATIVO,No
+2076,CANA,CAN,CANABINOIDES,,INMUNOLOGÍA,ORINA,Inmunocromatografia,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,NO SE REQUIERE AYUNO,,Imprimir siempre,Texto libre,NEGATIVO,No
+2077,174,ANFE,ANFETAMINAS,,INMUNOLOGÍA,ORINA,Inmunocromatografia,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 1 día,"Orina ocasional, alícuota 10 mL",,Imprimir siempre,Texto libre,NEGATIVO,No
+2078,BENZ,BENZ,BENZODIACEPINAS,,INMUNOLOGÍA,ORINA,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,NO SE REQUIERE AYUNO,,Imprimir siempre,Texto libre,NEGATIVO,No
+2079,GLU,GLU,GLUCOSA,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,mg/dl,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,"Normal 70 - 110 
+",No
+2080,24,alb,ALBUMINA,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,g/dL,Ambos,Numerico,,Abierto,,1,,ayunas,,Imprimir siempre,Rango numerico,,No
+2081,ami,ami,AMILASA,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,UI/L,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2082,BAAR 1,BAAR,BAAR 1 MUESTRA,BAAR,MICROBIOLOGÍA,ESPUTO,"Microscopia, Tincion de Ziehl - Nielsen",No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2083,BAAR 2,BAAR2,BAAR 2,BAAR 2,MICROBIOLOGÍA,EXPECTORACIÓN,Microscopía Óptica,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2084,BAAR3,BAAR3,BAAR3,BAAR3,MICROBIOLOGÍA,ESPUTO,Microscopía Óptica,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2085,BD,BD,BILIRRUBINA DIRECTA,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,0.0 - 0.30,No
+2086,BT,BT,BILIRRUBINA TOTAL,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Texto libre,0.0 - 1.2,No
+2087,BI,BI,BILIRRUBINA INDIRECTA,,BIOQUÍMICA CLÍNICA,SUERO,Cálculo Bioinformático,Imprimir siempre,BT-BD,No,No,No,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,0.0 - 0.40,No
+2088,CA S,CAS,CALCIO,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2089,25,cl,CLORO SÉRICO,,BIOQUÍMICA CLÍNICA,SUERO,Ion Selectivo,Imprimir siempre,,No,No,Si,0.00,0.00,mEq/L,Ambos,Texto,,Abierto,,2, 1 día,ORTHIN,,Imprimir siempre,Texto libre,"MASCULINO/FEMENINO CORDON UMBILICAL: 96.0 - 104.0
+RECIEN NACIDOS (0-30 DIAS): 96.0 - 113.0
+1 MES - 100 AÑOS: 96.0 - 107.0",No
+2090,43,cps1,Coproparasitoscópico 1,,PARASITOLOGÍA,HECES,Microscopía Óptica,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2091,48,CPK,Creatinfosfoquinasa (CPK),,BIOQUÍMICA CLÍNICA,SUERO,Enzimático Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,UI/L,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,"MUJER HASTA 130 UI/L
+HOMBRE HASTA 160UI/L",No
+2092,CPK-MB,CPKMB,CPK-MB,,BIOQUÍMICA CLÍNICA,SUERO,Enzimático Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,UI/L,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,MENOR A 22UI/L,No
+2093,50,CRE,Creatinina sérica,,BIOQUÍMICA CLÍNICA,SUERO,Enzimático Automatizado,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,2,,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2094,63,DHL,Deshidrogenasa láctica (DHL),,BIOQUÍMICA CLÍNICA,SUERO,Enzimático Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,U/L,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2095,88,FIB,FIBRINOGENO,,COAGULACIÓN,PLASMA CITRATADO,Coagulometría,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,0, 3 días,,,Imprimir siempre,Rango numerico,,No
+2096,95,alp,Fosfatasa alcalina (ALP),,BIOQUÍMICA CLÍNICA,SUERO,Enzimático Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,UI/L,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,134.00_x0009_346.0 U/L,No
+2097,97,PHOS,Fósforo sérico,,BIOQUÍMICA CLÍNICA,SUERO,Espectrofotometría Automatizada,Imprimir siempre,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2098,101,GGT,Gammaglutamil transpeptidasa (GGT),,BIOQUÍMICA CLÍNICA,SUERO,Enzimático Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,U/L,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2099,HBAIC,HBAIC,HEMOGLOBINA GLUCOSILADA,,BIOQUÍMICA CLÍNICA,SANGRE TOTAL,Inmunofluorescencia,Imprimir siempre,,No,No,Si,0.00,0.00,%,Ambos,Texto,,Abierto,,2,,,,Imprimir siempre,Texto libre,"Pacientes normales 4.8 - 5.9 %
+Riesgo de desarrollar Diabetes 5.7 - 6.4 %
+Diabetes Mellitus
+Diagnostico Diabetes 6.5 - 8.0%
+Con buen control 4.8 - 7.0%
+Intervencion terapeutica 8.0 - 19.0 %
+Pacientes descontrolados 20.0 - 26.0%
+
+",No
+2100,160,LIP,LIPASA SERICA,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,U/L,Ambos,Numerico,,Abierto,,2,,Suero 2 mL.,,Imprimir siempre,Texto libre,13 - 60 ,No
+2101,31,CHDL,Colesterol de alta densidad (HDL),,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Texto libre,"HOMBRES 30.0-70.0
+MUJERES 30.0-85.0",No
+2102,32,CLDL,Colesterol de baja densidad (LDL),,BIOQUÍMICA CLÍNICA,SUERO,,No imprimir,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Texto libre,76.0 - 167.0,No
+2103,COLVLDL,COLVLDL,COLESTEROL VLDL,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir siempre,TRI/5,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Texto libre,10.0 - 40.0,No
+2104,165,MG,MAGNESIO SERICO,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,1, 2 días,"Suero 2 mL. No hemolisis. Estabilidad: Ambiente: 7 dias entre 20°C a 25°C Refrigeración: 7 dias entre 2°C a 8°C No debe presentar fibrina, eritrocitos ni particulas en suspensión.",,Imprimir siempre,Rango numerico,,No
+2105,PROT-S,PROTS,PROTEINAS TOTALES,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,g/dl,Ambos,Numerico,,Abierto,,1,,Suero 2 mL.,,Imprimir siempre,Texto libre,6.0 - 8.0,No
+2106,01,TP,TIEMPO DE PROTROMBINA,TP,COAGULACIÓN,PLASMA CITRATADO,COAGULOMETRICO AUTOMATIZADO,Imprimir siempre,,No,No,No,0.00,0.00,SEGUNDOS,Ambos,Numerico,,Abierto,,1, 4 hrs,,,Imprimir siempre,Rango numerico,11.1 - 14.3 S,No
+2107,TPT,TPT,TIEMPO PARCIAL DE TROMBOPLASTINA,TPT,COAGULACIÓN,PLASMA CITRATADO,COAGULOMETRICO AUTOMATIZADO,No imprimir,,No,No,Si,0.00,0.00,SEGUNDOS,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Texto libre,HASTA 45.0,No
+2108,TGO,TGO,TGO,,BIOQUÍMICA CLÍNICA,SUERO,Enzimático Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,U/L,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Texto libre,6.0 - 40.0,No
+2109,TGP,TGP,TGP,,BIOQUÍMICA CLÍNICA,SUERO,Enzimático Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,U/L,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Texto libre,6.0 - 40.0,No
+2110,TRI,TRI,TRIGLICERIDOS,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,50.0 - 200.0,No
+2111,URE,URE,UREA,,BIOQUÍMICA CLÍNICA,SUERO,Enzimático Automatizado,Imprimir siempre,BUN*2.14,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Texto libre,10.5 - 48.5,No
+2112,92,FOSACID,Fosfatasa acida total,,ESPECIALES,SUERO,Enzimático Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,U/L,Ambos,Texto,,Abierto,,3,,,,Imprimir siempre,Texto libre,0.00-6.00,No
+2113,1018,glupost,GLUCOSA POSTPANDRIAL,,BIOQUÍMICA CLÍNICA,SUERO,Espectrofotometría Automatizada,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,2,,TOMA DE MUESTRA 2 HORAS POSTERIOR AL DESAYUNO.,,Imprimir siempre,Texto libre,<140,No
+2114,PROTEINAS,URINARIA24HRS,PROTEINAS TOTALES EN  ORINA 24 HRS,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Turbidimetría,Imprimir solo cuando el parametro se vende individual,,No,No,No,0.00,0.00,mg/24,Ambos,Numerico,,Abierto,,2,,"Orina de 24 hrs, alícuota 10 mL. Indicar volumen total.",,Imprimir siempre,Texto libre,"Normal: < 150.00
+Indicios de Proteinuria: 150.00 - 300.00
+Proteinuria: > 300.00",No
+2115,AURIC,AURIC,ACIDO URICO,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Texto libre,2.5 - 7.7 mg/dL,No
+2116,219,K,POTASIO,,BIOQUÍMICA CLÍNICA,SUERO,Ion Selectivo,Imprimir siempre,,No,No,Si,0.00,0.00,mEq/L,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,94.0 - 115.0,No
+2117,NA,NA,SODIO,,BIOQUÍMICA CLÍNICA,SUERO,Ion Selectivo,Imprimir siempre,,No,No,Si,0.00,0.00,mEq/L,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,137.0 - 145.0,No
+2118,133,FE,HIERRO SERICO,133,INMUNOQUIMICA,SUERO,Espectrofotometría Automatizada,Imprimir solo cuando el parametro se vende individual,,"Si, solo cuando el parametro se vende individual",No,Si,0.00,0.00,ug/dL,Ambos,Numerico,,Abierto,,0, 1 día,,,Imprimir siempre,Texto libre,33.00 - 193.00,No
+2119,MET,MET,METANFETAMINAS,MET,INMUNOLOGÍA,ORINA,Inmunocromatografia,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2120,34,col,COLESTEROL,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2121,44,CPS2,Coproparasitoscópico 2,CPS2,PARASITOLOGÍA,HECES,Microscopía Óptica,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2122,45,CPS3,Coproparasitoscópico 3,CPS3,PARASITOLOGÍA,HECES,Microscopía Óptica,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2123,grupo,grupo,GRUPO SANGUÍNEO,GYRH,HEMATOLOGÍA,SANGRE TOTAL,Inmunoaglutinación en tubo,No imprimir,,"Si, solo cuando el parametro se vende individual",No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,NO REQUIERE AYUNO,METODO: INMUNOAGLUTINACIÓN  EN TUBO,Imprimir siempre,Texto libre,,No
+2124,SOC,SOC,SANGRE OCULTA EN HECES,SOC,PARASITOLOGÍA,HECES,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2125,162,LIPTL,LIPIDOS TOTALES,,BIOQUÍMICA CLÍNICA,SUERO,Cálculo Bioinformático,Imprimir solo cuando el parametro se vende individual,(COL+TRI)*1.33,No,No,No,0.00,0.00,,Ambos,Numerico,,Abierto,,2, 2 días,Suero 2 mL.,,Imprimir siempre,Texto libre,400 - 800 mg/dL,No
+2126,PDLIPIDOS,INAT,INDICE ATEROGENICO,,BIOQUÍMICA CLÍNICA,SUERO,Cálculo Bioinformático,Imprimir solo cuando el parametro se vende individual,COL/CHDL,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Texto libre,HASTA 5.0,No
+2127,GLOB,GLOB,GLOBULINA,,BIOQUÍMICA CLÍNICA,SUERO,Cálculo Bioinformático,Imprimir siempre,PROTS-ALB,No,No,No,0.00,0.00,g/dL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Texto libre,2.0 -4.0,No
+2128,RAG,RAG,RELACION ALBUMINA GLOBULINA,,BIOQUÍMICA CLÍNICA,SUERO,,No imprimir,ALB/GLOB,No,No,No,0.00,0.00,g/dL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Texto libre,1.1 - 1.8,No
+2129,ban,ban,BANDAS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,, -,,Imprimir siempre,Rango numerico,0 - 10,No
+2130,meta,meta,Metamielocitos,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2131,miel,miel,Mielocitos,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2132,PROM,PROM,PROMIELOCITOS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2133,BLAS,BLAS,BLASTOS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2134,FRH,FRH,FORMULA ROJA,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,"Si, solo cuando el parametro se vende individual",No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,,No
+2135,FORB,FORB,FORMULA BLANCA,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,"Si, solo cuando el parametro se vende individual",No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,,No
+2136,COLOR,COLOR,COLOR,COLOR,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,AMARILLO,No
+2137,ASPECTO,ASPECTO,ASPECTO,ASPECTO,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,CLARO,No
+2138,DENSIDAD,DENSIDAD,DENSIDAD,DENSIDAD,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,3,,,,Imprimir siempre,Rango numerico,,No
+2139,PHUR,PHUR,PH.,PH,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2140,GLUCOSA,GLUCOSA,GLUCOSA,CLUCO,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2141,PROTEINAS,PROTEINAS,PROTEINAS,PROTEINA,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2143,CUERPOS CETONICOS,CUERPOSCETONICOS,CUERPOS CETONICOS,CURPCETO,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2144,BILIRRUBINA,BILIRRUBINA,BILIRRUBINA,BILIRRUB,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2145,UROBILINOGENO,UROBILINOGENO,UROBILINOGENO,UROBILIN,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,1,,,,Imprimir siempre,Texto libre,MENOR A 1 MG/DL,No
+2146,NITRITOS,NITRITOS,NITRITOS,NITRI,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2147,LEUCOCITOS ESTERASA,LEUCOCITOSESTERASA,LEUCOCITOS ESTERASA,ESTERASA,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2148,HEMOGLOBINA,HEMOGLOBINA,HEMOGLOBINA,HEMOGLOB,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2149,CELULAS EPITELIALES ESCAMOSAS,CELULASEPITELIALESESCAMOSAS,CELULAS EPITELIALES ESCAMOSAS,CELESCA,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,ESCASAS,No
+2150,CELULAS URETRALES,CELULASURETRALES,CELULAS URETRALES,CELURETR,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NO SE OBSERVARON,No
+2151,CELULAS UROTELIALES,CELULASUROTELIALES,CELULAS UROTELIALES,CELURO,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NO SE OBSERVARON,No
+2152,CELULAS RENALES,CELULASRENALES,CELULAS RENALES,CELREN,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NO SE OBSERVARON,No
+2153,LEUCOCITOS,LEUCOCITOS,LEUCOCITOS,LEUCOCI,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,0 - 5 ul,No
+2154,PIOCITOS,PIOCITOS,PIOCITOS,PIOCITOS,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NO SE OBSERVARON,No
+2155,BACTERIAS,BACTERIAS,BACTERIAS,BACTERIA,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NO SE OBSERVARON,No
+2156,FILAMENTOS DE MUCINA,FILAMENTODEMUCINA,FILAMENTO DE MUCINA,MUCINA,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NO SE OBSERVARON,No
+2157,ERITROCITOS,ERITROCITOS,ERITROCITOS,ERITROCI,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,0 - 1 XC,No
+2158,LEVADURAS,LEVADURAS,LEVADURAS,LEV,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NO SE OBSERVARON,No
+2159,CILINDROS DE,CILINDROSDE,CILINDROS,CILINDR,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NO SE OBSERVARON,No
+2160,CRISTALES DE,CRISTALESDE,CRISTALES,CRISTAL,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NO SE OBSERVARON,No
+2161,OTROS,OTROS,OTROS,OTROS,UROANÁLISIS,ORINA,"FOTOMETRIA, MICROSCOPIA",No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NO SE OBSERVARON,No
+2162,VIH,VIH,HIV 1 Y 2,VIH,INMUNOLOGÍA,SUERO,Inmunocromatografia,No imprimir,,"Si, siempre",No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"NO REACTIVO
+
+",No
+2163,VSG,VSG,SEDIMENTACION GLOBULAR,VSG,HEMATOLOGÍA,SANGRE TOTAL,Westergren,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,mm/hr,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"Masc 0 - 10
+Fem 0 - 15",No
+2164,DENGUE IgG,DENIGG,DENGUE IgG,DENGUE I,INMUNOLOGÍA,SUERO,Inmunocromatografia,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2165,DENGIgM,DENGIgM,DENGUE IgM,,INMUNOLOGÍA,SUERO,Inmunocromatografia,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2169,105-ORT,AFP,ALFAFETOPROTEINA,,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,2, 2 días,SUERO 2ML,,Imprimir siempre,Texto libre,"0 - 20ng/mL adultos
+
+Semana gestacional:
+14 semanas 12.22 - 36.30
+15 semanas 12.95 - 71.39
+16 semanas 13.31 - 54.45
+17 semanas 16.33 - 65.34
+18 semanas 14.52 - 82.28
+19 semanas 19.00 - 112.53
+20 semanas 22.63 - 234.74
+21 semanas 37.27 - 220.24
+22 semanas 39.93 - 112.53
+23 semanas 57.35 - 141.57",No
+2172,611-ORT,ACE,ANTIGENO CARCINOEMBRIONARIO,,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,2, 2 días,Suero 2 mL.,,Imprimir siempre,Texto libre,0.00-5.00 ,No
+2173,PSA,PSA,ANTIGENO PROSTATICO ESPECIFICO (PSA),,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,"Si, solo cuando el parametro se vende individual",No,Si,0.00,0.00,ng/mL,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Texto libre,"30 - 45 años: 0.0 - 2.0 ng/mL
+46 - 50 años: 0.0 - 2.5 ng/mL
+51 - 55 años: 0.0 - 3.0 ng/mL
+56 - 60 años: 0.0 - 3.5 ng/mL
+61 - 65 años: 0.0 - 4.0 ng/mL
+66 - 105 años: 0.0 - 8.60 ng/ mL",No
+2175,631,CA125,ANTIGENO CA-125,631,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,U/mL,Ambos,Numerico,,Abierto,,2, 2 días,,,Imprimir siempre,Rango numerico,,No
+2176,632,CA153,ANTIGENO CA-15-3,632,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,Ul/mL,Ambos,Numerico,,Abierto,,2, 2 días,2ML SUERO (TUBO DORADO),,Imprimir siempre,Texto libre,0.0 – 25.00,No
+2177,ANTIGENO CA-19-9,CA199,ANTIGENO CA-19-9,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,UI/mL,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2178,CHGC,CHGC,CUANTIFICACION BETA GONADOTROFINA CORIONICA,CHGC,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,mUI/mL,Ambos,Texto,,Abierto,,2,,,,Imprimir siempre,Texto libre,"MUJER NO EMBARAZADA:  
+<25 mUI/mL
+
+EMBARAZO DE:
+1 - 10 SEMANAS: 202.00 - 231000.00
+11 - 15 SEMANAS: 22536.00 - 234990.00
+16 - 22 SEMANAS: 8007.00 - 50064.00
+23 - 40 SEMANAS: 1600.00 - 49413.00
+HOMBRES:
+0.00 - 5.00 
+",No
+2179,77,e2,Estradiol (E2),,HORMONAS,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,pg/mL,Ambos,Numerico,,Abierto,,2, 5 días,,,Imprimir siempre,Texto libre,"            FEMENINO
+Postmenopausia: 5.00 - 138.00
+
+      Fase del ciclo
+Fase folicular: 30.90 - 90.40
+Ovulación:      60.40 - 533.00
+Fase lútea:     60.40 - 232.00
+
+14 días a 7 años Tanner estado I: 0.00 - 20.00
+14 días a 10 años Tanner estado II: 0.00 - 24.00
+14 días a 11 años Tanner estado III: 0.00 - 60.00
+14 días a 12 años Tanner estado IV: 15.00 - 85.00
+14 días a 14 años Tanner estado V: 15.00 - 350.00
+
+           MASCULINO 
+          11.30 - 43.20
+
+14 días a 7 años Tanner estado I: 0.00 - 13.00
+14 días a 12 años Tanner estado II: 0.00 - 16.00
+14 días a 13 años Tanner estado III: 0.00 - 26.00
+14 días a 15 años Tanner estado IV: 0.00 - 38.00
+14 días a 18 años Tanner estado V: 10.00 - 40.00
+
+
+
+",No
+2180,ET,ET,ESTROGENOS TOTALES,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,pg/mL,Ambos,Texto,,Abierto,,2, 1 día,,,Imprimir siempre,Texto libre,"           FEMENINO
+     <8 AÑOS:    <25.00
+  10-14 AÑOS: 30.00 - 280.00
+
+POSTMENOPAUSIA S/T 0.00 - 46.00
+POSTMENOPAUSIA C/T 0.00 - 144.00
+ANTICONCEPTIVO     0.00 - 158.00
+FASE FOLICULAR     0.00 - 248.00
+FASE LUTEA         42.00 - 382.00
+
+          MASCULINO
+        0.00 - 130.00
+",No
+2181,FPSA,FPSA,ANTIGENO ESPECIFICO DE PROSTATA FRACCION LIBRE,,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,3, 2 días,,,Imprimir siempre,Texto libre,0.000 - 0.930,No
+2184,141-OR,HL,HORMONA LUTEINIZANTE (HL),,HORMONAS,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,mUl/mL,Ambos,Texto,,Abierto,,2, 2 días, Suero 2 mL.,,Imprimir siempre,Texto libre,"          FEMENINO
+Fase folicular:  2.40 - 12.60
+Fase ovulatoria: 14.00 - 95.60
+Fase lútea:      1.00 - 11.40
+Postmenopausia:  7.70 - 58.50
+
+1 año a 8 años Tanner estado I: 0.02 - 0.30
+0 días a 18 años Tanner estado II: 0.02 - 4.10
+0 días a 18 años Tanner estado III: 0.60 - 7.20
+0 días a 18 años Tanner estado IV-V: 0.90- 13.30
+
+         MASCULINO
+         1.70 - 8.60 
+
+1 año a 8 años Tanner estado I: 0.02 - 0.50
+0 años a 18 años Tanner estado II: 0.03 - 3.70
+0 años a 18 años Tanner estado III: 0.090 - 4.20
+0 años a 18 años Tanner estado IV-V: 1.30 - 9.80
+",No
+2185,TL,TL,TIROXINA LIBRE,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2186,145,IgE,INMUNOGLOBULINAS E,,INMUNOQUIMICA,SUERO,,Imprimir siempre,,No,No,Si,0.00,0.00,Ul/ml,Ambos,Texto,,Abierto,,3, 1 día,2ML SUERO (TUBO DORADO)ENVIAR A ORTHIN,,Imprimir siempre,Texto libre,"<= 100.00 Ul/ml
+",No
+2187,INS,INS,INSULINA,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,uUI/mL,Ambos,Numerico,,Abierto,,2, 3 días,,,Imprimir siempre,Rango numerico,,No
+2191,BIO,BIOAPE,BIOPSIA APENDICE,.JETYJE,PATOLOGÍA,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2192,171,BUN,BUN,,BIOQUÍMICA CLÍNICA,SUERO,Enzimático Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2193,93,FOSAPSA,Fosfatasa acida/fracción prostática,,BIOQUÍMICA CLÍNICA,SUERO,Enzimático Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,ng/mL,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2194,139-OR,FSH,HORMONA FOLICULO ESTIMULANTE (FSH),,HORMONAS,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,mUI/mL,Ambos,Texto,,Abierto,,2, 1 día, Suero 2 mL. FEM,,Imprimir siempre,Texto libre,"           FEMENINO
+Fase folicular:  3.50-12.50
+Fase ovulatoria: 4.70 - 21.50
+Fase lútea:      1.70- 7.70
+Postmenopausia:  25.80 - 134.80
+
+      0 años a 18 años
+Tanner estado I:   0.60 - 4.10
+Tanner estado II:  0.30 - 5.80
+Tanner estado III: 0.10 - 7.20
+Tanner estado IV:  0.30 - 7.00
+Tanner estado V:   0.40 - 8.60
+
+          MASCULINO
+         1.50 - 12.40
+       
+        0 años a 18 años
+Tanner estado I:   < 1.50
+Tanner estado II:  < 3.0
+Tanner estado III: 0.40 - 6.20
+Tanner estado IV:  0.60 - 5.10
+Tanner estado V:   0.80 - 7.20
+",No
+2195,178-OR,PEPC,PEPTIDO C,,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,2, 3 días,Suero o plasma/heparina 2 mL. Ayuno de 12 hrs.\n\n ,,Imprimir siempre,Texto libre,0.78-5.19,No
+2197,PDT2,PDT2,PERFIL DE TORCH 2,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2199,PROGE,PROGE,PROGESTERONA,,HORMONAS,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,2,,"SE TIENE EN PROCESO , RESULTADOS EL MISMO DIA",,Imprimir siempre,Texto libre,"         FEMENINO
+          <0.05 
+        Embarazadas:
+1er trimestre: 11.00 - 44.30
+2do trimestre: 25.40 - 83.40
+3er trimestre: 58.70 - 214.00
+
+       Fase del ciclo:
+Fase folicular: <0.05 - 0.19
+Ovulación:       0.05 - 4.14
+Fase lútea:      4.11 - 14.50
+
+        MASCULINO
+      <0.05 - 0.14
+
+",No
+2200,225,PROL,PROLACTINA,,HORMONAS,SUERO,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,ng/mL,Ambos,Numerico,,Abierto,,2, 2 días,,,Imprimir siempre,Rango numerico,5.18 - 26.53,No
+2201,256-OR,TEST,TESTOSTERONA TOTAL,,HORMONAS,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,2, 1 día,Suero 2 mL.,,Imprimir siempre,Texto libre,"         FEMENINO
+20-49 AÑOS:  0.08-0.48
+>= 50 AÑOS:  0.02-0.40
+
+      8 AÑOS - 18 AÑOS
+Tanner estadio I   <0.025 - 0.061
+Tanner estadio II  <0.025 -0.104
+Tanner estadio III <0.025 -0.237
+Tanner estadio IV  <0.025- 0.268
+Tanner estadio V    0.025- 0.383
+
+       MASCULINO
+20-49 AÑOS: 2.49-8.36
+>= 50 AÑOS: 1.93-7.40
+
+      7 AÑOS - 18 AÑOS
+Tanner estadio I:   0.000-0.025
+Tanner estadio II:  0.025-4.320
+Tanner estadio III: 0.649-7.780
+Tanner estadio IV:  1.800-7.630
+Tanner estadio V:   1.880-8.820
+
+",No
+2204,WETB,WETB,WESTERN BLOT,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2207,RHA,RH,RH.,,HEMATOLOGÍA,SANGRE TOTAL,Aglutinación en placa,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,,No
+2208,TRAS,TRAS,TRASLADO TOMA,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2209,COLOR,CO,COLOR,COLOR,MICROBIOLOGÍA,LIQ. CEFALORRAQUIDEO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,INCOLORO,No
+2210,ASP,ASP,ASPECTO,ASP,MICROBIOLOGÍA,LIQ. CEFALORRAQUIDEO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,AGUA DE ROCA,No
+2211,DESP,DESP,DESPUÉS DE CENTRIFUGADO,DESC,MICROBIOLOGÍA,LIQ. CEFALORRAQUIDEO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,INCOLORO CON PEQUEÑO BOTÓN ERITROCITARIO.,No
+2212,XANT,XANT,XANTOCROMIA,XANT,MICROBIOLOGÍA,LIQ. CEFALORRAQUIDEO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2213,LEU,LEU,LEUCOCITOS,,MICROBIOLOGÍA,LIQ. CEFALORRAQUIDEO,,No imprimir,,No,No,No,0.00,0.00,/mm3,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"0 - 30 niños
+0 - 15 adultos",No
+2214,ERI,ERIT,ERITROCITOS,ERITR,MICROBIOLOGÍA,LIQ. CEFALORRAQUIDEO,,No imprimir,,No,No,No,0.00,0.00,/mm3,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,,No
+2215,GLU,GLU2,GLUCOSA,GL4,MICROBIOLOGÍA,LIQ. CEFALORRAQUIDEO,,No imprimir,,No,No,No,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Texto libre,60 - 70% DEL VALOR EN SUERO,No
+2216,BAAR2,BAR3,BAAR,BAAR,MICROBIOLOGÍA,LIQ. CEFALORRAQUIDEO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2217,RECDIF,RECDIF,RECUENTO DIFERENCIAL,RECDIF,MICROBIOLOGÍA,LIQ. CEFALORRAQUIDEO,,No imprimir,,No,No,No,0.00,0.00,%,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,,No
+2218,LINF,LINF2,LINFOCITOS,LIN,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,LEUCT*(LIN/100),No,No,No,0.00,0.00,10³/μL,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,"NACIMIENTO  2,000 A 11,000 x 103 mL
+UNA SEMANA  2,000 A 17,000 x 103 mL
+DOS SEMANAS 2,000 A 17,000 x 103 mL
+UN MES      2,500 A 16,500 x 103 mL
+DOS A SEIS MESES    4,000 A 13,500 x 103 mL
+SEIS MESES A 1 AÑO  4,000 A 10,500 x 103 mL
+1 A 2 AÑOS  4,000 A 10,500 x 103 mL
+2 A 4 AÑOS  4,000 A 10,500 x 103 mL
+4 A 6 AÑOS  1,500 A 7,000 x 103 mL
+6 A 8 AÑOS   1,500 A 6,800 x 103 mL
+8 A 10 AÑOS  1,500 A 6,500 x 103 mL
+10 A 12 AÑOS 1,500 A 6,500 x 103 mL 
+12 A 18 AÑOS 1,200 A 5,200 x 103 mL
+MÁS DE 19 AÑOS 1,000 A 4,800 x 103 mL
+
+",No
+2219,MONO,MONO,MONOCITOS,MON,MICROBIOLOGÍA,LIQ. CEFALORRAQUIDEO,,No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Texto libre,6 - 56,No
+2220,EO,EO2,EOSINOFILOS,EO,MICROBIOLOGÍA,LIQ. CEFALORRAQUIDEO,,No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Texto libre,0 - 1,No
+2221,OC,OC,OTRAS CELULAS,OC2,MICROBIOLOGÍA,LIQ. CEFALORRAQUIDEO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,,No
+2222,8,ISODHL,Isoenzimas de deshidrogenasa láctica (LDH),,ESPECIALES,SUERO,Electrofóresis,No imprimir,,No,No,Si,0.00,0.00,U/L,Ambos,Texto,,Abierto,,2,,,,Imprimir siempre,Texto libre,5 - 10% DEL VALOR EN SUERO,No
+2223,PROT,PROT,PROTEINAS,PRO3,MICROBIOLOGÍA,LIQ. CEFALORRAQUIDEO,,No imprimir,,No,No,No,0.00,0.00,g/dL,Ambos,Texto,,Abierto,,1,,,,Imprimir siempre,Texto libre,10.0 - 30.0,No
+2224,TIN,TIN,TINTA CHINA,TC,MICROBIOLOGÍA,LIQ. CEFALORRAQUIDEO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2225,HCV,HCV,ANTI HEPATITIS C TOTAL,HCV TOTA,ESPECIALES,SUERO,Inmunocromatografia,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NO REACTIVO,No
+2226,AHA,AHA,"ANTICUERPOS ANTI HEPATITIS ""A"" IgM (HAV-M)",,ESPECIALES,SUERO,Inmunocromatografia,Imprimir siempre,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,2,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2227,HBsAg,HBsAg,Antigeno de superficie de Hepatitis B (HBsAg),,ESPECIALES,SUERO,Inmunocromatografia,Imprimir siempre,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2228,2102,CCP,AC. ANTI PEPTIDO CICLICO CITRULINADO (CCP),,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,U/mL,Ambos,Texto,,Abierto,,1, 4 días,Suero 2 mL.,,Imprimir siempre,Texto libre,"NEGATIVO: <5.0 
+POSITIVO: >6.0 ",No
+2229,CHIKU,CHIKU,Ac. Anti Chikungunya IgM,,INMUNOLOGÍA,SUERO,Inmunocromatografia,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2230,350,HPYLORIIgG,AC. ANTI HELICOBACTER PYLORI IgG,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2, 1 día,Suero 2 mL.\n\n,,Imprimir siempre,Texto libre,NEGATIVO,No
+2231,1183,HELIIGM,ANTI HELICOBACTER PILORY IgM,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2232,ZIKA,ZIKA,"ANTICUERPOS ANTI ZIKA IgM, IgG",,ESPECIALES,SUERO,,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2, 3 días,,,Imprimir siempre,Rango numerico,,No
+2234,COR,COR,CORTISOL,,HORMONAS,SUERO,,No imprimir,,No,No,Si,0.00,0.00,ug/dL,Ambos,Texto,,Abierto,,0, 1 día,,,Imprimir siempre,Texto libre,6.02 - 18.40,No
+2237,T4Y,T4Y,T4 YODO,,HORMONAS,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,Ug/dL,Ambos,Numerico,,Abierto,,2, 1 día,,,Imprimir siempre,Rango numerico,,No
+2239,EXFAR,EXFAR,EXUDADO FARINGEO,,MICROBIOLOGÍA,EXUDADO FARINGEO,Medios Específicos + Método Kirby-Bauer + Microscopia,Imprimir siempre,,No,Si,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2240,RET,RET,RETICULOCITOS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,,No,No,Si,0.00,0.00,%,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"0.5 A 2.0
+",No
+2241,14,CLE,CELULAS L.E.,,HEMATOLOGÍA,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 1 día,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2242,41-ORT,cdrh,COOMS DIRECTO (Ac. Anti Rh eritrocitarios),,HEMATOLOGÍA,SANGRE TOTAL,Inmunoaglutinación,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,Sangre total EDTA 1 mL.,,Imprimir siempre,Texto libre,NEGATIVO,No
+2243,42,Coomi,Coombs indirecto,,HEMATOLOGÍA,SUERO,Inmunoaglutinación,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,,No
+2244,COPRO,COPRO,COPROCULTIVO,,MICROBIOLOGÍA,HECES,Cultivo Microbiológico,No imprimir,,No,Si,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2245,CULL,CUL,CULTIVO DE LESION,,MICROBIOLOGÍA,EXUDADO DE ,Cultivo Microbiológico,No imprimir,,No,Si,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,,No
+2246,CULLIQ,CULLIQ,CULTIVO DE LIQUIDOS,,MICROBIOLOGÍA,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,Sin desarrollo,No
+2247,CULHO,CULHO,CULTIVO DE HONGOS,,MICROBIOLOGÍA,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 40 días,RESULTADOS EN 40 DIAS,,Imprimir siempre,Rango numerico,,No
+2248,62,CREATININA24HRS,CREATININA URINARIA,,BIOQUÍMICA CLÍNICA,SUERO,Enzimático Automatizado,Imprimir solo cuando el parametro se vende individual,,No,No,No,0.00,0.00,mg/dL,Ambos,Texto,,Abierto,,2, 1 día,"Eliminar la primera micción de la mañana y a partir de la segunda micción recolectar en un frasco limpio durante todo el día hasta la primera micción del día siguiente, manteniendo la muestra refrigerada durante la recolección.\nSuero 2 mL y orina de 24 hrs, alícuota 10 mL. Indicar volumen total de la orina, el peso y talla del paciente.",,Imprimir siempre,Texto libre,47.00-110.00,No
+2249,172,DEPUURE,UREA DE 24 Hrs,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Espectrofotometría Automatizada,Imprimir siempre,,No,No,Si,0.00,0.00,g/24 Hrs,Ambos,Texto,,Abierto,,2, 1 día,"Orina de 24 hrs, alícuota 10 mL. Indicar volumen total.",,Imprimir siempre,Texto libre,25.70 - 42.80,No
+2250,EXUVUL,EXUVUL,EXUDADO VULVAR,,MICROBIOLOGÍA,EXUDADO DE ,,No imprimir,,No,Si,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2251,73,EOSIMO,Eosinófilos en moco nasal,,HEMATOLOGÍA,EXUDADO DE MUCOSAS,Microscopía Óptica,No imprimir,,No,No,Si,0.00,0.00,%,Ambos,Texto,,Abierto,,0, 1 día,,,Imprimir siempre,Texto libre,0 - 5 %,No
+2252,ESPERCUL,ESPERCUL,ESPERMOCULTIVO,,MICROBIOLOGÍA,ESPERMA,,No imprimir,,No,Si,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2253,EXUURE,EXUURE,EXUDADO URETRAL,,MICROBIOLOGÍA,EXUDADO DE ,,No imprimir,,No,Si,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2254,EXUVAG,EXUVAG,EXUDADO VAGINAL,,MICROBIOLOGÍA,EXUDADO VAGINAL,,No imprimir,,No,Si,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2255,EXUNAS,EXUNAS,EXUDADO NASAL,,MICROBIOLOGÍA,EXUDADO DE ,,No imprimir,,No,Si,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2256,EXUOT,EXUOT,EXUDADO OCULAR,,MICROBIOLOGÍA,EXUDADO DE ,,No imprimir,,No,Si,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2257,UROCUL,UROCUL,UROCULTIVO,,MICROBIOLOGÍA,ORINA,Medios Específicos + Método Kirby-Bauer + Microscopia,Imprimir siempre,,No,Si,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 5 días,Orina de micción media (previo aseo de genitales externos).,,Imprimir siempre,Texto libre,,No
+2258,TDS,TDS,TIEMPO DE SANGRADO,,COAGULACIÓN,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,min,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2259,TDC,TDC,TIEMPO DE COAGULACION,,COAGULACIÓN,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,min,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2260,GLU120,GLU120,GLUCOSA 120,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir siempre,,No,No,No,0.00,0.00,mg/dl,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Texto libre,menor a 140 mg/dl,No
+2261,16,CMF,CITOLOGIA MOCO FECAL,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2262,CULTIVODEEXP,CULTIVODEEXP,CULTIVO DE EXPECTORACION,,MICROBIOLOGÍA,ESPUTO,,No imprimir,,No,Si,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2263,AEF,AEF,AMIBA EN FRESCO,,PARASITOLOGÍA,HECES,Microscopía Óptica,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2265,CONC,CONC,CONSISTENCIA,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,BLANDAS-MOLDEADAS,No
+2266,COLC,COLC,COLOR,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,CAFE,No
+2267,OLOC,OLOC,OLOR,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,CARACTERISTICO,No
+2268,PRESC,PRESC,PRESENCIA DE SANGRE,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2269,MOCO,MOCO,MOCO,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,AUSENTE,No
+2270,RESTA,RESTA,RESTOS ALIMENTICIOS,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,AUSENTES,No
+2271,CUERXTR,CUERXTR,CUERPOS EXTRAÑOS,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,AUSENTES,No
+2272,PARA,PARA,PARASITOS,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2273,PHC,PHC,PH.,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"LACTANTES ALIMENTÁNDOSE
+CON LECHE MATERNA 5.5
+-7.0
+ADULTOS Y NIÑOS 6.9- 7.5",No
+2274,AZURE,AZURE,AZUCARES REDUCTORES,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2275,SOH,SOH,S.O.H,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2276,LEUC,LEUC,LEUCOCITOS,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,MENOR A 5 X CAMPO,No
+2277,ERIC,ERIC,ERITROCITOS,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,O X CAMPO,No
+2278,CEEPI,CEEPI,CELULAS EPITELIALES,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,AUSENTES,No
+2279,CRISC,CRISC,CRISTALES,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,AUSENTE,No
+2280,GRAN,GRAN,GRASAS NEUTRAS,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,AUSENTES,No
+2281,FIBMO,FIBMO,FIBRAS MOSCULARES,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,AUSENTES,No
+2282,RESALV,RESALV,RESTOS ALIMENTICIOS VEGETALES,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,AUSENTES,No
+2283,LEVC,LEVC,LEVADURAS,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,AUSENTES,No
+2284,FILC,FILC,FILAMENTO DE MUCINA,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,AUSENTES,No
+2285,ERIUR,ERIUR,ERITROCITOS,ERITROCI,UROANÁLISIS,ORINA,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,0 - 5 ul,No
+2286,LEUUR,LEUUR,LEUCOCITOS,LEUCO,UROANÁLISIS,ORINA,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,1 - 2 XC,No
+2288,TESLI,TESLI,TESTOTERONA LIBRE,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,pg/mL,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Texto libre,4.5 – 42.0 pg/mL,No
+2289,DHEA,DHEA,DESHIDROEPIANDROSTERONA,DHEA,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00, ng/dL ,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Texto libre,0.2 - 9.8 ng/dL,No
+2290,PCC,PCC,PÉPTIDO CÍCLICO CITRULINADO ,PCC,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Texto libre,,No
+2291,TAC,TACC,TAC CRANEO SIMPLE Y CONTRASTADA NÚCLEO DE DIAGNOSTICO,,BIOQUÍMICA CLÍNICA,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2292,HORMONA PARATIROIDEA ,hpt,HORMONA PARATIROIDEA ,,ESPECIALES,SUERO,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2293,1101 VITAMINA D (25-HIDROXI),VITAMINA,VITAMINA D (25-HIDROXI),,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir siempre,,No,No,Si,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,2, 4 días,"Suero 2 mL. Separar inmediatamente, no hemolisis, no lipemia, proteger de la luz, refrigerar y suspender ingesta de alcohol y vitamínicos 24 hrs antes de la toma. Disminuye con glucocorticoides, fenobarbital, fenitoína.",,Imprimir siempre,Texto libre,"DEFICIENCIA: <10.0
+INSUFICIENCIA: 10.0-29.0
+SUFICIENCIA: 30.0-40.0
+VALORES ALTOS 41.0-100.
+TOXICIDAD: >100.0
+",No
+2294,HOMOCISTEÍNA,HOMOC,HOMOCISTEÍNA,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,umol/L,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2295,globh,globh,globulinas,g,BIOQUÍMICA CLÍNICA,SUERO,Cálculo Bioinformático,Imprimir siempre,,No,No,Si,0.00,0.00,g/dL,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,2.0 -4.0,No
+2296,calor,calor,calcio en orina 24 hrs,,BIOQUÍMICA CLÍNICA,ORINA,Colorimétrico Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,mg/24 h,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"Adultos 50-300 mg/24 h
+Niños 80-160 mg/24 h",No
+2297,URG1,URG1,URGENCIA 1,,LASER,SANGRE TOTAL,Citometría de Flujo,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2298,TSH1,TSH1,HORMONA ESTIMULANTE DE TIROIDES (TSH),TSH,HORMONAS,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,µUI/mL,Ambos,Texto,,Abierto,,3, 1 día,,,Imprimir siempre,Rango numerico,"Masc 19A - 99A. 0.35 - 4.94 
+
+Fem 19A-100A 0.35 - 4.94 ",No
+2299,T3T,T3T,T3 TOTAL (TRIYODOTIRONINA),T3T,HORMONAS,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ng/mL,Ambos,Numerico,,Abierto,,2, 1 día,,,Imprimir siempre,Rango numerico,0.90 - 2.40,No
+2300,T4T,T4T,T4 TOTAL (TIROXINA TOTAL),T4T,HORMONAS,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,µg/dL,Ambos,Numerico,,Abierto,,2, 1 día,,,Imprimir siempre,Rango numerico,"4.87 - 11.72 
+Masc 19A - 99A.",No
+2301,T3L,T3L,T3 LIBRE (TRIYODOTIRONINA LIBRE),T3L,HORMONAS,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,pg/dL ,Ambos,Numerico,,Abierto,,2, 1 día,,,Imprimir siempre,Rango numerico,,No
+2302,T4LI,T4LI,T4 LIBRE (TIROXINA LIBRE),T4LI,HORMONAS,SUERO,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,2, 1 día,,,Imprimir siempre,Rango numerico,"0.70 - 1.48
+Masc 19A - 99A",No
+2303,TUC,TUC,T-UPTAKE CAPTACION,TUC,HORMONAS,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00, %,Ambos,Numerico,,Abierto,,2, 1 día,,,Imprimir siempre,Rango numerico,0.69-1.41,No
+2304,ITL,ITL,"INDICE DE TIROXINA LIBRE (ITL,FTI)",ITL,HORMONAS,SUERO,Quimioluminiscencia,No imprimir,,No,No,No,0.00,0.00,µg/dL,Ambos,Numerico,,Abierto,,2, 1 día,,,Imprimir siempre,Rango numerico,5.06 - 9.42,No
+2305,59,ahl,Alcohol etílico en suero,,ESPECIALES,SUERO,Inmunocromatografia,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2306,USGOB,USGOB,ULTRASONIDO OBSTETRICO,,ESPECIALES,ESPUTO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2307,sdc,gs,ÁCIDO ÚRICO URINARIO,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Espectrofotometría Automatizada,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2308,646468,CALUR24,CALCIO EN ORINA DE 24 HRS.,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Espectrofotometría Automatizada,Imprimir siempre,,No,No,Si,0.00,0.00,mg/24 hrs,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2309,cdv,dsfgvsd,CITRATO EN ORINA DE 24 HRS,,ESPECIALES,ORINA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2310,gresg,gsrgbs,PARATOHORMONA,,ESPECIALES,SUERO,Espectrofotometría ,No imprimir,,No,No,Si,0.00,0.00,pg/mL,Ambos,Texto,,Abierto,,3, 3 días,,,Imprimir siempre,Texto libre,15.00    -  65.00  pg/mL,No
+2312,USGAB,USGAB,USG ABDOMINAL,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2313,452,uren,usg renal y vias urinas,,ESPECIALES,ESPERMA,Citometría de Flujo,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2314,USGABD,USGABD,USG ABDOMINAL,,ANÁLISIS DEL SEMEN,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2315,ERHYSERW,RTHWS,CERTIFICADO,,ANÁLISIS DEL SEMEN,ESPERMA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2316,1992,HELICO,HELICOBACTER PYLORI EN HECES,,ESPECIALES,HECES CM,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,\n,Imprimir siempre,Texto libre,NEGATIVO,No
+2317,MED,USG,USG TESTICULAR,0,ESPECIALES,SUERO,Aglutinación en placa,No imprimir,,"Si, solo cuando el parametro se vende individual",No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2318,USGGINECOLOGICO,USGGINECOLOGICO,USG GINECOLOGICO,,ESPECIALES,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2319,TUMF,TUMF,PERFIL TUMORAL FEMENINO,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2320,RXTOB,RXTOB,RC TOBILLO AP Y LATERAL,,ANÁLISIS DEL SEMEN,ESPERMA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2321,TACCRES,TACCRES,TAC CRANEO SIMPLE,,ANÁLISIS DEL SEMEN,ESPERMA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2322,601-ORTH,TPO,AC. ANTI TIROPEROXIDASA (TPO),,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,UI/mL,Ambos,Texto,,Abierto,,2, 2 días,SUERO 2 mL.,,Imprimir siempre,Texto libre,0.00 - 34.00,No
+2323,65,TIRO,ANTICUERPOS ANTI TIROGLOBULINA (COLOIDE TIROIDEO),,ESPECIALES,SUERO,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,UI/mL,Ambos,Texto,,Abierto,,3,,,,Imprimir siempre,Texto libre,"Menor a 4.11 NEGATIVO
+Mayor a 4.11 POSITIVO",No
+2324,574,Sm,ANTICUERPOS ANTI SMITH IgG (Sm),,ESPECIALES,SUERO,INMUNOENSAYO ENZIMATICO (E.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,RATIO,Ambos,Texto,,Abierto,,2, 4 días,"Suero 2 mL. No hemolisis, no lipemia. Muestras muy ictéricas o muestras expuestas a excesivo calor puede alterar hipogamaglobulinemia y tratamiento con esteroides.",,Imprimir siempre,Texto libre,"NEGATIVO: <1.00
+POSITIVO: >=1.00",No
+2325,ANTIDNA,ANTIDNA,ANTICUERPOS ANTI DNA NATIVO (DE DOBLE CADENA),,ESPECIALES,SUERO,INMUNOENSAYO ENZIMÁTICO (EIA),No imprimir,,No,No,No,0.00,0.00,UI/mL,Ambos,Texto,,Abierto,,2,,,,Imprimir siempre,Texto libre,"Menor a 100.00 NEGATIVO
+Mayor igual 100.00 POSITIVO
+",No
+2326,498,ANA,ANTICUERPOS ANTI NUCLEARES (IgG),,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,RATIO,Ambos,Texto,,Abierto,,1, 6 días,,,Imprimir siempre,Texto libre,"NEGATIVO: <1.00
+POSITIVO: >=1.00",No
+2327,895,895,PATRÓN DE INMUNOFLUORESCENCIA,,ESPECIALES,SUERO,MICROSCOPIA INMUNOFLUORESCENTE,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,AUSENTE,No
+2328,USGEM,USGEM,ULTRASONIDO RIÑON,,PATOLOGÍA,ESPERMA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2329,564651,gv,Anticuerpos anti GP 160 (ENV),,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2330,654564,GP120,Anticuerpos anti GP 120 (ENV),,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2331,6542324,P66,Anticuerpos anti P 66,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NGATIVO,No
+2332,56456,P55,Anticuerpos anti P 55 (GAG),,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2333,65456412,P51,Anticuerpos anti P 51,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2334,56422,PGP41,Anticuerpos anti PGP 41 (ENV),,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2335,897897,789798798,Anticuerpos anti P 39,,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2336,3465464,P31,Anticuerpos anti P 31,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2337,P24,P24,Antigeno P 24,,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2338,2313212,P17,Anticuerpos anti P 17,,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2339,4564654,HIV2,Anticuerpos anti HIV 2,,ESPECIALES,SUERO,Inmunocromatografia,Imprimir siempre,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2340,NBFG,SYNJ,USG OBSTETRICO DOMINGO,,ANÁLISIS DEL SEMEN,ESPERMA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2341,BIOB,BIOB,BIOPSIA DE CÉRVIX,,PATOLOGÍA,BIOPSIA,,No imprimir,,"Si, solo cuando el parametro se vende individual",No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2342,RXM,RXM,MUÑECA AP Y LAT,,ANÁLISIS DEL SEMEN,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2343,YP,YP,YODO PROTEÍCO,,HORMONAS,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,µg/dL ,Ambos,Numerico,,Abierto,,2, 1 día,,,Imprimir siempre,Rango numerico,2.90 - 8.10,No
+2344,HSRE,HSRT,TELE DE TORAX,,ANÁLISIS DEL SEMEN,ESPERMA,,No imprimir,,No,No,Si,0.00,0.00,D V,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2345,USGPROS,USGPROS,ULTRASONIDO PROSTATICO,,ANÁLISIS DEL SEMEN,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2346,UK,ETYJ,RX COLUMNA LUMBAR,,ANÁLISIS DEL SEMEN,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2348,EKG,EKG,ELECTROCARDIOGRAMA,,ANÁLISIS DEL SEMEN,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2349,BIOMAMA,BIOMAMA,BIOPSIA DE GLÁNDULA MAMARIA,,PATOLOGÍA,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2350,BIOVESI,BIOVESI,BIOPSIA VESÍCULA BILIAR,,SEROLOGÍA,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2351,US4D,US4D,ULTRASONIDO 4D,,ANÁLISIS DEL SEMEN,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2352,TOMADB,TOMADB,TOMOGRAFÍA CONTRASTADA DE ABDOMEN,,ANÁLISIS DEL SEMEN,ESPERMA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2353,PAP,PAP,PAPANICOLAOU (CITOLOGIA CERVICO – VAGINAL),,ESPECIALES,LAMINILLA,TINCIÓN DE PAPANICOLAOU,No imprimir,,No,No,Si,0.00,0.00,,Femenino,Texto,,Abierto,,0, 7 días,"No tener relaciones sexuales, lavados vaginales y tratamientos tópicos 48 hrs. previas al estudio. El periodo menstrual debe haber finalizado 4 ó 5 días antes de la toma.",,Imprimir siempre,Texto libre,,No
+2356,425,PEROXI,ANTICUERPOS ANTI MICROSOMALES TOTALES (PEROXIDASA),,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,UI/mL,Ambos,Numerico,,Abierto,,0, 2 días,ORTHIN: Suero 2 mL.,,Imprimir siempre,Texto libre,"Menor a 5.61 NEGATIVO
+Mayor a 5.61 POSITIVO",No
+2357,416,17ALFAHIDROXI,17 ALFA HIDROXI-PROGESTERONA (17aOHP4),,INMUNOELISAS,SUERO,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,0, 3 días,,,Imprimir siempre,Texto libre,"NIÑAS
+HASTA 1 MES           2.4-16.8
+2 MESES               1.6-9.7
+3 MESES               0.1-3.1
+
+MUJERES ADULTAS
+FASE FOLICULAR        0.1-0.8
+FASE LUTEA            0.6-2.3
+PERIODO DE OVULACION  0.3-1.4
+POST ACTH             <3.2
+FINAL DEL EMBARAZO    2.0-12
+MENOPAUSIA            0.13-0.51
+
+NIÑOS
+HASTA 1 MES       0.0-8.0
+2 MESES           3.6-13.7
+3 MESES           1.7-4.0
+
+NIÑOS
+3 AÑOS A 14 AÑOS  0.01-1.7
+
+HOMBRES
+HOMBRES NORMALES  0.5-2.1
+",No
+2358,417,17aOHP4NEO,17 ALFA HIDROXI-PROGESTERONA NEONATAL (17aOHP4NEO),,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,1.40 - 20.90,No
+2359,77,aCIDOVALPROICO,ÁCIDO VALPROICO (DEPAKENE) (ATEMPERATOR),,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,,No
+2360,70,Aldolasa,Aldolasa,,ESPECIALES,SUERO,Espectrofotometría ,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,,No
+2361,81,Ald,Aldosterona en suero,,HORMONAS,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 3 días,,,Imprimir siempre,Rango numerico,,No
+2362,97,ALFA1ANTITRIPSINA,ALFA 1 ANTITRIPSINA,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2363,100,ALUMINIOENSUERO,ALUMINIO EN SUERO,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2364,163-MASC-OTH,ANDROS,ANDROSTENEDIONA,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ng/mL,Masculino,Texto,,Abierto,,2, 3 días,Suero 2 mL. ,,Imprimir siempre,Rango numerico,0.60-3.10 ng/ml,No
+2365,1992,GAD65,ANTICUERPOS ANTI ÁCIDO GLUTÁMICO DESCARBOXILASA (GAD-65),,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,,No
+2366,2362,ANTIACTINA,ANTICUERPOS ANTI ACTINA (IgG),,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2367,tra,trsalado,TRASLADO TOMA DE MUESTRA,,ANÁLISIS DEL SEMEN,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2368,NS1,NS1,NS1,,INMUNOLOGÍA,SUERO,Inmunocromatografia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2369,HCM- EQUIN,HCMe,HCMe,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,pg,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2370,ELEHEM,ELEHEM,ELECTROFORESIS DE HEMOGLOBINA,ELHEM,HEMATOLOGÍA,SANGRE TOTAL,Coagulometría,No imprimir,,"Si, solo cuando el parametro se vende individual",No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2371,shs,shs,INDUCCIÓN DE DREPANOCITOS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2373,HEMOGLOBINA A,ELEHEMO,HEMOGLOBINA A,ELE-HEM,ESPECIALES,SANGRE TOTAL,ENFOQUE ISOELECTRICO ,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,3, 10 días,,,Imprimir siempre,Texto libre,"0-2 MESES - NORMAL
+2-4 MESES 36.1-58.1%
+4-8 MESES 93.1-97.5%
+8 MESES - 2 AÑOS 97.4-99.4%
+2 AÑOS -120 AÑOS 96.0%",No
+2374,HEMOGLOBINA A2,ELEHE,HEMOGLOBINA A2,ELE-HEM,ESPECIALES,SANGRE TOTAL,Electrofóresis,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,"0 MESES - 2 MESES AUSENTE
+2 MESES - 125 0-3% ",No
+2375,HEMOGLOBINA F,EHEMO,HEMOGLOBINA F,ELE-HEM,ESPECIALES,SANGRE TOTAL,ENFOQUE ISOELECTRICO ,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,"0-2 MESES - NORMAL
+2-4 MESES 41.9-63.9%
+4-8 MESES 2.5-6.9%
+8 MESES - 2 AÑOS 0.6-2.6%
+2 AÑOS -120 AÑOS 0.0-2.0%",No
+2376,HEMOGLOBINA C,ELHEM,HEMOGLOBINA C,ELE-HEM,ESPECIALES,SANGRE TOTAL,ENFOQUE ISOELECTRICO ,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,AUSENTE,No
+2377,HEMOGLOBINA D,ELHM,HEMOGLOBINA D,ELE-HEM,ESPECIALES,SANGRE TOTAL,Electrofóresis,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,AUSENTE,No
+2378,HEMOGLOBINA G,ELECHEM,HEMOGLOBINA G,ELE-HEM,ESPECIALES,SANGRE TOTAL,Electrofóresis,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,AUSENTE,No
+2379,HEMOGLOBINA S,ELECHEMO,HEMOGLOBINA S,ELE-HEM,ESPECIALES,SANGRE TOTAL,ENFOQUE ISOELECTRICO ,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,AUSENTE,No
+2380,ZINC,ZN,ZINC EN SUERO,,ESPECIALES,SUERO,Espectrofotometría ,No imprimir,,No,No,Si,0.00,0.00,µg/dL,Ambos,Numerico,,Abierto,,2, 14 días,,,Imprimir siempre,Texto libre,70.00-150.00_x0009_ _x0009_,No
+2381,CROMO,CRM,CROMO EN SUERO,,ESPECIALES,SANGRE TOTAL,Espectrofotometría ,No imprimir,,No,No,Si,0.00,0.00,µg/L,Ambos,Texto,,Abierto,,2, 14 días,,,Imprimir siempre,Texto libre,0.00_x0009_0.80,No
+2382,279,Transferrina,TRANSFERRINA,279,INMUNOQUIMICA,SUERO,Inmunoturbidimetría,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,2, 2 días,,,Imprimir siempre,Texto libre,163.00 - 344.00,No
+2383,Desaturac,Desaturac,% DE SATURACION,,HEMATOLOGÍA,SUERO,,No imprimir,,No,No,Si,0.00,0.00,%,Ambos,Numerico,,Abierto,,2, 2 días,,,Imprimir siempre,Texto libre,20.00 - 50.00,No
+2384,87,Ferriti,FERRITINA,87,INMUNOQUIMICA,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ng/dL,Ambos,Texto,,Abierto,,2, 2 días,Suero 2 mL.,,Imprimir siempre,Texto libre,30.00 - 400.00,No
+2385,9,TIBC,CAPACIDAD TOTAL DE FIJACION DE HIERRO (TIBC),9,INMUNOQUIMICA,SUERO,Espectrofotometría Automatizada,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ug/dL,Ambos,Numerico,,Abierto,,2, 3 días,,,Imprimir siempre,Texto libre,250.00  -  450.00,No
+2386,glu2UYU,glucosa2,GLUCOSA 60,0,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,Imprimir siempre,,No,No,No,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Texto libre,menor a 200 mg/dL ,No
+2387,Cistatina,Cistatina,Cistatina C,,BIOQUÍMICA CLÍNICA,SUERO,Inmunofluorescencia,Imprimir siempre,,No,No,Si,0.00,0.00,mg/L,Ambos,Texto,,Abierto,,3, 1 día,,,Imprimir siempre,Rango numerico,,No
+2388,ANTI RNA,ANTIRNA,ANTI RNA,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2389,ANTICENTROMERO,ANTICENTROMERO,ANTICENTROMERO,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,ENSAYO INMUNOFLUORESCENTE INDIRECTO\n,Imprimir siempre,Texto libre,MENOR A 1:40 NEGATIVO,No
+2390, SCL-70 ,SCL70,ANTICUERPOS SCL-70 (ESCLERODERMIA (TOPOISOMERASA),,ESPECIALES,SUERO,Inmunoaglutinación,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,ENSAYO INMUNOABSORBENTE LIGADO A ENZIMA\n,Imprimir siempre,Texto libre,NEGATIVO,No
+2391,PROTEINAS,URINARIAS,PROTEÍNAS URINARIAS,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Turbidimetría,Imprimir solo cuando el parametro se vende individual,,No,No,No,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Texto libre,0.00 - 14.00,No
+2392,VOLUMEN,REMITIDO,VOLUMEN REMITIDO,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,,No imprimir,,No,No,No,0.00,0.00,ml,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2393,53,CRUR24,CREATININA EN ORINA DE 24 Hrs.,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Enzimático Automatizado,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ml/min,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,710.00-1650.00,No
+2394,BA,ABSBAN,BANDAS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,(BAN/100)*LEUCT,No,No,No,0.00,0.00,10³/μL,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2395,2 MERCAPTO ETANOL,MERCET,MERCAPTO ETANOL,,INMUNOLOGÍA,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2, 3 días,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2396,TSH NEONATAL,TSHN,TSH NEONATAL,,ESPECIALES,OTRAS,Inmunocromatografia,No imprimir,,No,No,Si,0.00,0.00,µUI/mL,Ambos,Texto,,Abierto,,3, 10 días,,,Imprimir siempre,Texto libre,"Normal: < 18.00
+Sospechoso: > 18.00",No
+2397,T4 NEONATAL,T4NEONATAL,TIROXINA NEONATAL,,ESPECIALES,OTRAS,Floculacion,No imprimir,,No,No,Si,0.00,0.00,µg/dL,Ambos,Numerico,,Abierto,,2, 10 días,,,Imprimir siempre,Rango numerico,,No
+2398,INMUNOTRIPSINA,INMUNOTRIPSINA,INMUNOTRIPSINA REACTIVA NEONATAL,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,3,,,,Imprimir siempre,Texto libre,0.00 - 90.00,No
+2399,GLUCOSA 6 FOSFATO DESHIDROGENASA,GLUC6FOSDESH,GLUCOSA 6 FOSFATO DESHIDROGENASA NEONATAL,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,U/g Hb,Ambos,Texto,,Abierto,,3, 10 días,,,Imprimir siempre,Texto libre,"Deficiente: < 0.90
+Normal: > 0.90",No
+2400,GALACTOSA URIDIL TRANSFERASA,GALACURIDILTRANSF,GALACTOSA URIDIL TRANSFERASA,,ESPECIALES,OTRAS,,No imprimir,,No,No,No,0.00,0.00,U/g Hb,Ambos,Texto,,Abierto,,3, 10 días,,,Imprimir siempre,Texto libre,"Negativo:>= 2.40
+Presuntamente< 2.4
+positivo:",No
+2401,BIOTINIDASA,BIOTINIDASA,BIOTINIDASA,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,U/dL,Ambos,Texto,,Abierto,,3,,,,Imprimir siempre,Texto libre,"Deficiente: < 22.00
+Normal: > 22.00",No
+2402,FENILALANINA,FENILALANINA,FENILALANINA,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<=118.00,No
+2403,LEUCINA+ISOLEUCINA,LEUISO,ISOLECINA/LEUCINA,,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=239.00,No
+2404,TIROSINA,TIROSINA,TIROSINA,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=377.00,No
+2405,VALINA,VALINA,VALINA,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=229.00,No
+2406,METIONINA,METION,METIONINA,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=45.00,No
+2407,ARGININA,ARGININA,ARGININA,,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,3, 10 días,,,Imprimir siempre,Texto libre,"<=69
+",No
+2408,CITRULINA,CITRULINA,CITRULINA,,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=37.00,No
+2409,ORNITINA ,ORNITINA,ORNITINA,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=305.00,No
+2410,GLICINA,GLICINA,GLICINA,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=1203.00,No
+2411,ALANINA,ALANINA,ALANINA,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=545.00,No
+2412,PROLINA,PROLINA,PROLINA,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=398.00,No
+2413,SUCCINILACETONA,SUCCINILACETONA,SUCCINILACETONA,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=2.20,No
+2414,C0 ,C0,C0,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,8.00 - 59.00,No
+2415,C10,C10,C10,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.21,No
+2416,C10:1 ,C101,C10:1,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.16,No
+2417,C10:2,C102,C10:2,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.04,No
+2418,C12 ,C12,C12,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.26,No
+2419,C12:1,C121,C12:1,,ESPECIALES,OTRAS,,No imprimir,,No,No,No,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.24,No
+2420,C14 ,C14,C14,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.40,No
+2421,C14 HIDROXI,C14HIDROXI,C14 HIDROXI,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.03,No
+2422,C14:1 ,C141,C14:1,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.28,No
+2423,C14:2 ,CC14,C14:2,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.07,No
+2424,C14:2 TETRADECADIENOIL,C142,C14:2 TETRADECADIENOILCARNITINA,,INMUNOLOGÍA,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,NORMAL,No
+2425,C16,C16,C16,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=5.30,No
+2426,C16OH3,C16OH3,C16-OH 3-HIDROXIHEXADECANOILCARNITINA,,ESPECIALES,OTRAS,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,NORMAL,No
+2427,C16:1,C161,C16:1,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.42,No
+2428,C16 HIDROXI,C16OH,C16 HIDROXI,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,"<=0.04
+",No
+2429,C18,C18,C18,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=1.60,No
+2430,C18:1 HIDROXI,C181HIDROXI,C18:1 HIDROXI,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.05,No
+2431,C18:1,C181,C18:1,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=3.00,No
+2432,C18 HIDROXI,C18HIDROXI,C18 HIDROXI,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.02,No
+2433,C18:2 ,C182,C18:2,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.75,No
+2434,C2 ,C2,C2,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,3.80 - 43.00,No
+2435,C3,C3,C3,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=4.50,No
+2436,C3DCC4,C3DCC4OH,C3-DC-C4-OH MALONILCARNITINA/3 -HIDROXI-BUTIRILCARNITINA,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,NORMAL,No
+2437,C4 ,C4,C4,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.70,No
+2438,C4DC5OH,C4DC5OH,C4 DICARBOXILICO-C5 OH,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.40,No
+2441,C5,C5,C5,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.30,No
+2442,C5- DICARBOXILICO,C5DICARBOXILICO,C5-DICARBOXILICO,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.30,No
+2443,C5:1,CC51,C5:1,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.02,No
+2444,C6- DICARBOXILICO,C6DICARBOXILICO,C6-DICARBOXILICO,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.19,No
+2445,C6,C6,C6,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.12,No
+2446,C8,C8,C8,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.16,No
+2447,C8:1,C81,C8:1,,ESPECIALES,OTRAS,,No imprimir,,No,No,No,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,<=0.52,No
+2448,ABSRETIS,ABSRETIS,RETICULOCITOS ABSOLUTOS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,µL,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2449,TOMA,TOMA,TOMA,,ESPECIALES,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2450,2301,PSL,ANTIGENO PROSTATICO LIBRE,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,ng/mL,Masculino,Numerico,,Abierto,,3, 2 días,,,Imprimir siempre,Rango numerico,,No
+2451,GLUTAMINA,GLUTAMINA,AMINOÁCIDO GLUTAMINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NORMAL,No
+2452,COMPLEJO METIONINA/VALINA,METIONINAVALINA,COMPLEJO METIONINA/VALINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NORMAL,No
+2453,COMPLEJO GLUTAMICO/TREONINA,COMPLEJOGLUTAMICOTREONINA,COMPLEJO GLUTAMICO/TREONINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NORMAL,No
+2454,GLICINASERINAÁCIDOASPÁRTICO,GLICINASERINA,COMPLEJO GLICINA/SERINA/ÁCIDO ASPÁRTICO,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NORMAL,No
+2455,ORNITINA/LISINA/HISTIDINA,COMPLEJORNITINALISINAHISTIDINA,COMPLEJO ORNITINA/LISINA/HISTIDINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,NORMAL,Imprimir siempre,Texto libre,NORMAL,No
+2457,500,AcsRNPANA,Ac. anti RNP,,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,RATIO,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2458,PERF3742,AcsSmANA,Acs. anti Sm (Smith),,ESPECIALES,SUERO,INMUNOENSAYO ENZIMATICO (ELISA).,Imprimir solo cuando el parametro se vende individual,,No,No,No,0.00,0.00,RATIO,Ambos,Texto,,Abierto,,0, 4 días,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2459,297,DNA,AC. ANTI DNA*,,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,Ul/mL,Ambos,Texto,,Abierto,,2, 3 días,Suero 2 mL.,,Imprimir siempre,Texto libre,NEGATIVO:,No
+2460,503,AcsRo60ANA,Acs. anti SS-A/Ro60,,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2461,504,AcsRo52ANA,Acs. anti SS-A/Ro52,,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2462,505,AcsLaANA,Acs. anti SS-B/La,,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2463,1001,CULTIVLIQ,CULTIVO DE LIQUIDO,,MICROBIOLOGÍA,MUESTRAS DIVERSAS,Medios Específicos + Método Kirby-Bauer + Microscopia,Imprimir siempre,,No,Si,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 4 días,,,Imprimir siempre,Texto libre,Sin desarrollo,No
+2464,BIOPUTE,BIOPUTE,BIOPSIA UTERO,,PATOLOGÍA,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Femenino,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2465,10001,CITOBALIQ,CITOLOGIA EN BASE LIQUIDA,,ESPECIALES,EXUDADO CERVICAL,,No imprimir,,No,No,Si,0.00,0.00,,Femenino,Texto,,Abierto,,0, 7 días,SOLICITAR CON PREVIA CITA.,,Imprimir siempre,Texto libre,,No
+2466,10102020,BIOPFRAGMA,BIOPSIA FRAGMENTO DE MAMA,,PATOLOGÍA,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 4 días,,,Imprimir siempre,Texto libre,,No
+2467,01230,CULTOTIC,CULTIVO OTICO,,MICROBIOLOGÍA,EXUDADO DE ,Medios Específicos + Método Kirby-Bauer + Microscopia,Imprimir siempre,,No,Si,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 4 días,,,Imprimir siempre,Texto libre,,No
+2468,CCD,DCDC,PAGO DE EQUIPO GENIUS KT6200,,PATOLOGÍA,BIOPSIA,Cálculo Bioinformático,No imprimir,,No,No,Si,0.00,0.00,,Masculino,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2469,0123458025,BIOPENDO,BIOPSIA DE ENDOMETRIO,,PATOLOGÍA,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Femenino,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,,No
+2470,11223344,REVILA,REVISION DE LAMINILLA,,PATOLOGÍA,MUESTRAS DIVERSAS,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,,No
+2471,888,ACSARAIG,Ac. Anti Sarampión IgG,,SEROLOGÍA,SUERO,E.L.I.S.A.,Imprimir siempre,,No,No,No,0.00,0.00,RATIO,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Texto libre,"NEGATIVO: <0.80
+ZONA GRIS: >=0.80 A <1.10
+POSITIVO: >=1.10",No
+2472,999,ACSARAIGM,Ac. Anti Sarampión IgM,,SEROLOGÍA,SUERO,E.L.I.S.A.,Imprimir siempre,,No,No,No,0.00,0.00,RATIO,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Texto libre,"NEGATIVO: <0.80
+ZONA GRIS: >=0.80 A <1.10
+POSITIVO: >=1.10",No
+2473,636,Chikungun,Ac. Anti Chikungunya IgG,,INMUNOLOGÍA,SUERO,Inmunocromatografia,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2474,0011334466,USGPE,USG. PELVICO,,ESPECIALES,OTRAS,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2475,7894,BIOPIEL,BIOPSIA DE PIEL (FRAGMENTO DE TEJIDO),,PATOLOGÍA,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2479,2149,biopprostata,BIOPSIA  DE PRÓSTATA,,PATOLOGÍA,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2480,51,HavTotales,"ANTICUERPOS ANTI HEPATITIS ""A"" TOTALES (HAV-TOTAL)",,INMUNOLOGÍA,SUERO,Quimioluminiscencia,No imprimir,,No,No,No,0.00,0.00,INDICE,Ambos,Texto,,Abierto,,0, 2 días,,,Imprimir siempre,Texto libre,"Mayor a 1.10 NEGATIVO
+0.90 - 1.10 INDETERMINADO
+Menor a 0.90 POSITIVO",No
+2481,52,HavM,"ANTICUERPOS ANTI HEPATITIS ""A"" IgG (HAV-G)",,ESPECIALES,SUERO,Inmunocromatografia,Imprimir siempre,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2482,53,AGEHB,"ANTIGENO ""E"" DE HEPATITIS B (AGEHB)",,INMUNOLOGÍA,SUERO,,No imprimir,,No,No,Si,0.00,0.00,s/c,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"Menor igual 1.00 NO REACTIVO
+Mayor a 1.00 REACTIVO
+",No
+2483,54,australia,"ANTIGENO ""S"" DE HEPATITIS B (AUSTRALIA)",,INMUNOLOGÍA,SUERO,,No imprimir,,No,No,Si,0.00,0.00,s/c,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"Menor a 1.00 NO REACTIVO
+Mayor igual 1.00 REACTIVO
+UN RESULTADO REACTIVO NO ES CONFIRMATORIO PARA ESTE METODO SE REQUIERE CONFIRMACIÓN DEL EXAMEN POR UN MÉTODO DE NEUTRALIZACIÓN DE ANTICUERPOS.",No
+2484,55,HBSAb,Anticuerpo de superficie de HEPATITIS B (HBSAb),Antigeno,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2485,56,HBeAb,Anticuerpo de envoltura de Hepatitis B (HBeAb),,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2486,57,AcAntiAgCoreHepaIgM,"ANTICUERPOS ANTI Ag ""CORE"" HEPATITIS B IgM",,INMUNOLOGÍA,SUERO,,No imprimir,,No,No,Si,0.00,0.00,s/c,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"Mayor igual 1.00 REACTIVO
+Menor a 1.00 NO REACTIVO",No
+2487,57,AcAntiAgCoreIgM,"ANTICUERPOS ANTI Ag ""CORE"" HEPATITIS B IgM",,INMUNOLOGÍA,SUERO,,No imprimir,,No,No,Si,0.00,0.00,s/c,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"Mayor igual 1.00 REACTIVO
+Menor a 1.00 NO REACTIVO",No
+2488,58,HBcAB,Anticuerpo de nucleo de la hepatitis B (HBcAB),,ESPECIALES,SUERO,,Imprimir siempre,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"NEGATIVO
+",No
+2489,59,acAntihepaCpresun,ANTICUERPOS ANTI HEPATITIS C (PRUEBA PRESUNTIVA),,INMUNOLOGÍA,SUERO,,No imprimir,,No,No,Si,0.00,0.00,INDICE,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"Menor a 1.00 NO REACTIVO
+Mayor igual 1.00 REACTIVO
+",No
+2490,BB,DIMER,DIMERO D,,COAGULACIÓN,PLASMA CITRATADO,Inmunofluorescencia,Imprimir siempre,,No,No,Si,0.00,0.00,mg/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"< 0.5 mg/L coagulación y fibrinólisis en estado de equilibrio.
+> 0.6 mg/L produce hiperfunción secundaria de la función de fibrinólisis. se recomienda la terapia trombolítica. ",No
+2491,ASPE,ASPECTOCP,ASPECTO,ASP,PARASITOLOGÍA,HECES,,Imprimir siempre,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 1 día,,,Imprimir siempre,Texto libre,,No
+2492,BACTE,BACTERIA,BACTERIA,BC,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 1 día,,,Imprimir siempre,Texto libre,ESCASAS,No
+2493,ALMIDON,ALM,ALMIDON,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 1 día,,,Imprimir siempre,Texto libre,,No
+2494,OTROS,OT,OTROS,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 1 día,,,Imprimir siempre,Texto libre,,No
+2495,EXAMEN MACROSCOPICO,EXMAC,EXAMEN MACROSCOPICO,,PARASITOLOGÍA,HECES,,No imprimir,,"Si, siempre",No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2496,EXAMEN QUIMICO,EXQ,EXAMEN QUIMICO,,PARASITOLOGÍA,HECES,,Imprimir siempre,,"Si, siempre",No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2497,CoV2IgG,CoV2IgG,SARS-CoV2 IgG,Q COVID ,INMUNOLOGÍA,SUERO,Inmunoinfluorescencia Indirecta,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2498,CoV2IgM,CoV2IgM,SARS-CoV2 IgM,,INMUNOLOGÍA,SUERO,Inmunoinfluorescencia Indirecta,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"NEGATIVO
+",No
+2499,3-ORT,Cal,CALCITONINA,,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir siempre,,No,No,Si,0.00,0.00,pg/mL,Ambos,Texto,,Abierto,,2, 3 días, Suero 2 mL.,,Imprimir siempre,Texto libre,0.00 - 11.50,No
+2500,67876,GeneN,Gene N,,BIOLOGÍA MOLECULAR,EXUDADO DE ,PCR Tiempo Real,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NO DETECTADO,No
+2501,Y765,GeneE,Gene E,,BIOLOGÍA MOLECULAR,EXUDADO FARINGEO,PCR Tiempo Real,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 3 días,,,Imprimir siempre,Texto libre,NO DETECTADO,No
+2502,6586,GeneRdRp,Gene RdRp,,BIOLOGÍA MOLECULAR,EXUDADO DE ,PCR Tiempo Real,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 3 días,,,Imprimir siempre,Texto libre,NO DETECTADO,No
+2503,PCRUL,PCRUL,PCR ULTRASENSIBLE,,ESPECIALES,SUERO,Inmunofluorescencia,Imprimir siempre,,No,No,Si,0.00,0.00,mg/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,"< 1.00 mg/L Riesgo bajo de ECV ( sin inflamación)
+1.00 - 3.00 mg/L riesgo moderado de ECV(sin inflamación )
+> 3.00 mg/L riesgo alto de ECV (sin inflamación)
+> 10 mg/L proceso inflamatorio (infecciones bacterianas o virales)
+10 - 20 mg/L proceso inflamatorio leve
+20 - 50 mg/L proceso inflamatorio moderado
+> 50 mg/L proceso inflamatorio grave.
+
+",No
+2504,%ACTIVIDAD,ACTIVIDAD,% ACTIVIDAD,,COAGULACIÓN,PLASMA CITRATADO,Cálculo Bioinformático,Imprimir siempre,(12.5*100)/TP,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Texto libre,,No
+2505,INR,INR,INR,,COAGULACIÓN,PLASMA CITRATADO,,Imprimir siempre,TP/12.5*1.1,No,No,No,0.00,0.00,,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Texto libre,,No
+2506,FIBMUS,FIBMUS,FIBRAS MUSCULARES,,PARASITOLOGÍA,HECES,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,AUSENTES,No
+2507,Biopsiaendometrio ,Biopsiae,Biopsia de endometrio,,PATOLOGÍA,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2508,WE,YODOBUTANOLICO,YODO BUTANOLICO,,HORMONAS,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ug/dL,Ambos,Numerico,,Abierto,,2, 1 día,,,Imprimir siempre,Rango numerico,,No
+2509,01,RBCP,ERITROCITOS,RCBP,HEMATOLOGÍA,SANGRE TOTAL,Impedancia Eléctrica,No imprimir,,No,No,No,0.00,0.00,MILLON/MM3,Masculino,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2510,04,HCTP,HEMATOCRITO,,HEMATOLOGÍA,SANGRE TOTAL,Impedancia Eléctrica,No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2511,02,HGBP,HEMOGLOBINA,,HEMATOLOGÍA,SANGRE TOTAL,Impedancia Eléctrica,No imprimir,,No,No,No,0.00,0.00,g/dl,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2512,VCMP,VCMP,VOLUMEN CORPOSCULAR MEDIO,,HEMATOLOGÍA,SANGRE TOTAL,Impedancia Eléctrica,No imprimir,,No,No,No,0.00,0.00,fl,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2513,HCMP,HCMP,HEMOGLOBINA CORPOSCULAR MEDIA,,HEMATOLOGÍA,SANGRE TOTAL,Impedancia Eléctrica,No imprimir,,No,No,No,0.00,0.00,pg,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2514,MCHCP,MCHCP,CONCENTRACIÓN DE HEMOGLOBINA CORPUSCULAR MEDIA,,HEMATOLOGÍA,SANGRE TOTAL,Impedancia Eléctrica,No imprimir,,No,No,No,0.00,0.00,g/dl,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2515,RDWP,RDWP,ANCHO DISTRIBUCIÓN ERITROCITARIA,,HEMATOLOGÍA,SANGRE TOTAL,Impedancia Eléctrica,No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2516,LEUCTP,LEUCTP,LEUCOCITOS,,HEMATOLOGÍA,SANGRE TOTAL,Impedancia Eléctrica,No imprimir,,No,No,No,0.00,0.00,10³/µL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2517,BIOCOLO,BIOCOLO,BIOPSIA DE COLON,,PATOLOGÍA,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2518,392-ORTHIN,PATERADN,PCR-PRUEBA DE PATERNIDAD (EN PADRE E HIJO)*,,ESPECIALES,SANGRE TOTAL,PCR- ELECTROFORESIS CAPILAR,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,"TIPO DE MUESTRA: Sangre total/EDTA 3ml*, papel tamiz  o raspado de carrillo* en medio de transporte . INDISPESABLE: \n1. Copia Fotostática de Acta de Nacimiento de la clínica.\n2. Copia Fotostática de IFE o Pasaporte de la Madre en su caso o del Supuesto Padre.\nLlenar de manera CORRECTA Y COMPLETO el formato 5.4-024 Cadena de custodia.\n3. Documentos de Consentimiento Informado de cada sujeto a examinar.\n4. Formatos para Prueba de Exclusión de Paternidad de cada uno de los individuos a\nexaminar. ",,Imprimir siempre,Texto libre,,No
+2519,agcovid,agcovid,Antígeno SARS-CoV-2 (NASOFARINGEO),,ESPECIALES,EXUDADO FARINGEO,Inmunocromatografia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2520,INSHOMAIR,INSHOMAIR,INDICE HOMA-IR,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 5 días,,,Imprimir siempre,Texto libre,"Normal: 0.65 - 2.77
+Insulino resistentes: Mayor a 2.78",No
+2521,PLAP,PLAP,PLAQUETAS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,10³/μL,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2522,NEUP,NEUP,NEUTROFILOS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2523,NEUPAB,NEUPAB,NEUTROFILOS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,(NEUP/100)*LEUCTP,No,No,No,0.00,0.00,10³/µL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2524,ABSBANP,ABSBANP,BANDAS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,(BANP/100)*LEUCTP,No,No,No,0.00,0.00,10³/µL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2525,BANP,BANP,BANDAS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2526,LINP,LINP,LINFOCITOS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2527,LINABP,LINABP,LINFOCITOS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,(LINP/100)*LEUCTP,No,No,No,0.00,0.00,10³/µL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2528,MONP,MONP,MONOCITOS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2529,MONABSP,MONABSP,MONOCITOS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,(MONP/100)*LEUCTP,No,No,No,0.00,0.00,10³/µL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2530,EOABSP,EOABSP,EOSINOFILOS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,(EOP/100)*LEUCTP,No,No,No,0.00,0.00,10³/µL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2531,EOP,EOP,EOSINOFILOS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2532,BASP,BASP,BASOFILOS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Texto libre,RAROS,No
+2533,BASABSP,BASABSP,BASOFILOS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,10³/µL,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2534,BIOPQX,BIOPQX,BIOPSIA,,PATOLOGÍA,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 9 días,,,Imprimir siempre,Rango numerico,,No
+2535,TOXOIGG,TOXOIGG,TOXOPLASMA IgG,,ESPECIALES,SUERO,Inmunocromatografia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2536,TOXOIGM,TOXOIGM,TOXOPLASMA IgM,,ESPECIALES,SUERO,Inmunocromatografia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2537,RUBEOIGG,RUBEOIGG,Rubéola  IgG,,ESPECIALES,SUERO,Inmunocromatografia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2538,RUBEOIGM,RUBEOIGM,Rubéola  IgGM,,ESPECIALES,SUERO,Inmunocromatografia,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2539,IgGCMV ,IgGCMV,CITOMEGALOVIRUS IgG,,ESPECIALES,SUERO,Inmunocromatografia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2540,IgMCMV ,IgMCMV,CITOMEGALOVIRUS IgM,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2541,VHS1/2IgG,VHS12IgG,VHS 1/2 IgG,,ESPECIALES,SUERO,Inmunocromatografia,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2542,VHS1/2IgM,VHS12IgM,VHS 1/2 IgM,,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2543,HCREC,HORMCREC,HORMONA DEL CRECIMIENTO,HORMC,HORMONAS,SUERO,Quimioluminiscencia,No imprimir,,No,No,No,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,2, 3 días,,,Imprimir siempre,Rango numerico,,No
+2544,PTC,PROCAL,PRO-CALCITONINA,,ESPECIALES,SUERO,Inmunofluorescencia,Imprimir siempre,,No,No,Si,0.00,0.00,ng/ml,Ambos,Numerico,,Abierto,,2, 3 días,,,Imprimir siempre,Texto libre,"Normal < 0.50
+
+0.60- 2.0 SRIS,politraumatismo,quem
+aduras, infección sistémica, riesgo moderado
+
+2.10-10.0 SRIS,politraumatismo,quem
+aduras, infección sistémica, riesgo grave
+
+>10.00 SRIS,politraumatismo,quem
+aduras, infección sistémica, fracaso multiorgánico.
+",No
+2545,prli,PRLIN,PRECURSORES LINFOIDES,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,%,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Texto libre,0,No
+2546,ANTILUP,ANTILUPICO,ANTICOAGULANTE CIRCULATORIO LUPICO,,ESPECIALES,PLASMA CITRATADO,,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 1 día,,,Imprimir siempre,Rango numerico,,No
+2547,ANTICAR,ANTICARDIO,AC. ANTI CARDIOLIPINA IgG,,ESPECIALES,SUERO,,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 3 días,,,Imprimir siempre,Rango numerico,,No
+2548,ANTICARD,ANTICARDI,AC. ANTI CARDIOLIPINA IgM,,ESPECIALES,SUERO,,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 3 días,,,Imprimir siempre,Rango numerico,,No
+2549,ANTIMIELO,ANTIMIELO,ANTICUERPO INMUNOHISTOQUIMICO MIELOPEROXIDASA MPO,,ESPECIALES,EXUDADO DE MUCOSAS,,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 12 días,,,Imprimir siempre,Rango numerico,,No
+2550,HLAB27,HLAB27,Detección Antígeno HLA B-27,,ESPECIALES,SANGRE TOTAL,Citometría de Flujo,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2553,61,DHEAS,Dehidroepiandrosterona sulfato (DHEA-S),,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,ug/dL,Ambos,Numerico,,Abierto,,2, 2 días,,,Imprimir siempre,Rango numerico,,No
+2554,FRWE,PNAU,PRO BNP,4216,INMUNOQUIMICA,SUERO,ELECTROQUIMIOLUMINISCENCIA,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,pg/mL,Ambos,Texto,,Abierto,,3, 8 días,,,Imprimir siempre,Texto libre,486.00 - 2346.00,No
+2555,OXCAL24,OXCAL24,Oxalato en orina de 24 hrs.,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 2 días,,,Imprimir siempre,Rango numerico,,No
+2556,624,BETA2MICROGLO,BETA 2 MICROGLOBULINA EN SUERO,624,INMUNOQUIMICA,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ug/mL,Ambos,Numerico,,Abierto,,3, 3 días,,,Imprimir siempre,Texto libre,MENOR O IGUAL A 2.1,No
+2557,2199,2199,Citrato en orina de 24 hrs.,,ESPECIALES,GALON DE ORINA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2558,APLOHES,APLOHES,APLOTIPOS DE HEMOGLOBINA S,,ESPECIALES,SANGRE,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,,No
+2559,TOXO,TOXO,TOXOPLASMA IgG,,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2560,BIO,BIO,BIOPSIA DE SIGMOIDES RESIDUAL Y APENDICE,,ESPECIALES,BIOPSIA,,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2, 9 días,,,Imprimir siempre,Rango numerico,,No
+2561,ANTITRY,ANTITRY,ANTI TRYPANOSOMA CRUZI,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir siempre,,No,Si,Si,0.00,0.00,S/CO,Ambos,Texto,,Abierto,,2, 2 días,,,Imprimir siempre,Texto libre,"No reactivo: < 0.80
+Zona gris: 0.8 - 1.00
+Reactivo: > 1.00",No
+2563,HE4,HE4,ANTIGENO HE4,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,pmol/L,Ambos,Texto,,Abierto,,2, 3 días,,,Imprimir siempre,Texto libre,"Premenopaúsicas: < 70.00
+Posmenopaúsicas: < 140.00",No
+2564,DEV01,DEV01,DEVOLUCIÓN DE VENTA,,BIOQUÍMICA CLÍNICA,SUERO,E.L.I.S.A.,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,Si
+2565,01,GLUCAN,GLUCOSA CAN,01,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mmol/L,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2566,02,UREACAN,UREA CANINO,02,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mg/dl,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Texto libre,20 – 50,No
+2567,03,CREATCAN,CREATININA CANINO,01,BIOQUÍMICA CLÍNICA,SUERO,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,60 - 130,No
+2568,04,COLCAN,COLESTEROL CANINO,04,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mg/dl,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Texto libre,135 – 260,No
+2569,05,BILTCAN,BILIRRUBINA TOTAL CANINO,05,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,2,,,,Imprimir siempre,Texto libre,<5.16,No
+2570,06,BILDCAN,BILIRRUBINA DIRECTA CANINO,06,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<5,No
+2571,07,BILINDCAN,BILIRRUBINA INDIRECTA CANINO,07,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,umol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<1,No
+2572,08,ALTCAN,ALT CANINO,08,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,U/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<70,No
+2573,10,ALCCAN,FOSFATASA ALCALINA,10,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,U/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<189,No
+2574,11,GGTCAN,GGTCANINO,11,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,U/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<6,No
+2575,12,PROTCAN,PROTEINAS TOTALES,12,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,g/L,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2576,13,ALBCAN,ALBUMINA CANINO,13,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,g/L,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2577,14,GLOBCAN,GLOBULINA CANINO,14,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,g/L,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2578,01,GLUCFEL,GLUCOSA FELINO,01,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mmol/L,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2579,02,UREAFEL,UREA FELINO,02,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mmol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2580,03,CREAFEL,CREATININA FELINO,03,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,RANGO ANTERIOR: <175,Imprimir siempre,Rango numerico,,No
+2581,04,COLFEL,COLESTEROL FELINO,04,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mmol/L,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2582,05,BILTFEL,BILIRRUBINA TOTAL FELINO,05,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,μmol/L,Ambos,Texto,,Abierto,,2,,,,Imprimir siempre,Texto libre,<6.84,No
+2583,06,BILDFEL,BILIRRUBINA DIRECTA FELINO,06,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,umol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<5.8,No
+2584,07,BILINDFEL,BILIRRUBINA INDIRECTA FELINO,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,umol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<1,No
+2585,08,ALTFEL,ALT FELINO,08,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,U/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<72,No
+2586,09,ASTFEL,AST FELINO,09,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,U/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<61,No
+2587,10,ALKFEL,FOSFATASA ALCANINA FEL,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,U/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<107,No
+2588,11,GGTFEL,GGT FELINO,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,U/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<5,No
+2589,12 ,PROTFEL,PROTEINAS TOTALES FELINO,12,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,g/L,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2590,13,ALBFEL,ALBUMINA FELINO,13,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,g/L,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2591,14,TRIGFEL,TRIGLICERIDOS FELINO,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mmol/L,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2592,15,TRIGCAN,TRIGLICERIDOS CANINO,,BIOQUÍMICA CLÍNICA,SUERO,,No imprimir,,No,No,Si,0.00,0.00,mmol/L,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
+2593,65,DFE,Difenilhidantoina (Fenitoína),,BIOQUÍMICA CLÍNICA,SUERO,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2594,6554,ACU24,ACIDO URICO URINARIO 24 HR,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Espectrofotometría Automatizada,Imprimir siempre,,No,No,Si,0.00,0.00,mg/24 hrs,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2595,9733,FOSFUR24,FOSFORO EN ORINA DE 24 Hrs.,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Espectrofotometría Automatizada,Imprimir siempre,,No,No,Si,0.00,0.00,mg/24 hrs,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
+2596,9489419,CRUR,CREATININA URINARIA,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Espectrofotometría Automatizada,Imprimir siempre,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,2,,,VALOR DE REFERENCIA PARA MUESTRAS OBTENIDAS POR MICCION ESPONTANEA.,Imprimir siempre,Rango numerico,,No
+2597,33598,FOSURI,FOSFORO URINARIO,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Espectrofotometría Automatizada,Imprimir siempre,,No,No,No,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2598,161345,CALURI,CALCIO EN ORINA,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Espectrofotometría Automatizada,Imprimir siempre,,No,No,No,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
+2599,016,ACUCAN,ACIDO URICO CANINO,016,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,mg/dl,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,HASTA 2,No
+2600,254,GALT,GALACTOSA TOTAL,01,ESPECIALES,SANGRE,,No imprimir,,No,No,No,0.00,0.00,mg/dL,Ambos,Texto,,Abierto,,3,,,,Imprimir siempre,Texto libre,"Normal: < 10.00
+Sospechoso: > 10.00
+",No
+2601,34 ,HIPSUP,HIPERPLASIA SUPRARENAL,01,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2602,35,HIPTPRIM,HIPOTIROIDISMO DE TIPO PRIMARIO ,01,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2603,1451,GA2,"ACIDEMIA GLUTARICA, TIPO II (GA-2)",,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2604,1245,CUD,DEFECTO DE CARNITINA LIBRE (CUD),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2605,12453,VLCAD,ACILCOA DESHIDROGENASA (VLCAD),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2606,12454,L3COA,L-3 HIDROXIACIL-COA DESHIDROGENASA,,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2607,12455,MCAD,ACIL-COA DESHIDROGENASA (MCAD),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2608,12456,MCAT,CETOACIL-COA THIOLASA (MCAT),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2609,12458,SCAD,ACILCO-A DESHIDROGENASA (SCAD),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2610,12459,TFP,PROTEINA TRIFUNCIONAL (TFP),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2611,C16:1 HIDROXI,C161HIDROXI,C16:1 HIDROXI,01,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<=0.07,No
+2612,124591,DERED,"2,4 DIENOL-COA REDUCTASA (DE RED)",,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2613,12452,2M3HBA,2-METIL-3-HIDROXIBUTIRICO ACIDEMIA (2M3HBA),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2614,124593,2MBG,2-METILBUTIRILGLICINURIA (2MBG),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2615,C3 DICARBOXILICO-C4 - OH,C3DICARC4OH,C3 DICARBOXILICO-C4-OH,01,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<=0.24,No
+2616,124594,HMG,3-HIDROXI-3-METILGLUTARICO ACIDURIA (HMG),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2617,124594,3MGA,3-METILGLUTACONICO ACIDURIA (3MGA),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2618,124595,IBG,ISOBUTIRLGLICINURIA (IBG),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2619,124596,ARG,ARGINEMIA (ARG),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2620,124597,HPHE,HIPERFENILALANINEMIA BENIGNA (H-PHE),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2621,124598,CIT,"CITRULINEMIA, TIPO 1 (CIT)",,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2622,124599,PKU,FENILCETONURIA CLASICA (PKU),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2623,124591,MET1,HIPERMETIONINEMIA (MET),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2624,124592,MSUD,ENFERMEDAD DE JARABE DE MAPLE (MSUD),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2625,124593,NKH,NO CETONICA HIPERGLICEMIA (NKH),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2626,124594,PRO,PROLINEMIA  (PRO),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2627,124595,TYR1,TIROSINEMIA TIPO 1 (TYR1),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2628,124596,GA1,GLUTARICA TIPO 1 (GA1),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2629,87,BCET,BETA-CETOLIASA (BKT),01,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2630,124596,IVA,ISOVALERICA (IVA),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2631,124597,MAL,MALONICA (MAL),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2632,88,HOLOCARBOXILASASINT,HOLOCARBOXILASASINT(MCD),88,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2633,124598,CBLAB,"METILMALONICA (COBALAMINA) (CBL A, B)",,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2634,124598,MUT,METILMALONICA (MUT),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2635,89,3MCC,3-METILCROTONIL-CoA-carboxilasa (3-MCC),25,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2636,124599,MUTHO,METILMALONICA CON HOMOCISTINURIA (MUTHO),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2637,90,OCT,ORNITINA TRANSCARBAMILASA (OCT),01,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2638,1245911,PROP,PROPIONICA (PROP),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO ,No
+2639,89 ,HEMVARHB,HEMOGLOBINOPATIAS (Var Hb),03,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2640,99,SBtalasemia,S. Beta- talasemia (Hb-S/BTh),07,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2641,ENFHEM,ENFHEM,ENFERMEDAD DE HEMOGLOBINOPATIA S.C (Hb S/C),07,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2642,ANCELFAL,ANCF,ANEMIA DE CELULAS FALCIFORMES (Hb SS),,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2643,HEMC,HEMOC,HEMOGLOBINOPATIA C,01,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2644,97,DEFBION,DEFICIENCIA DE BIOTINIDASA (BIOT),14,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2645,54,GALCLAS,Galactosemia clásica (ALT),87,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2646,55,FIBRQUIS,FIBROSIS QUISTICA(CF),54,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2647,58,G6PD,Glucosa-6-fosfato deshidrogenasa (G6PD),54,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2648,54,MUCOPOLISACARIDOSIS1,Mucopolisacaridosis tipo I (Hurler),25,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2649,54,EnfdePompe,ENFERMEDAD DE POMPE,25,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2650,58,EnfKrabbe,ENFERMEDAD DE KRABE,52,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2651,25,EnfdeFabry,ENFERMEDAD DE FABRY,52,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2652,58,Hunter,HUNTER,52,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2653,52,MORQUIO,MORQUIO,54,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2654,58,MaroteauxLamy,MAROTEAUX LAMY,54,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2655,41,SANFILIPPO,SANFILIPPO,43,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2656,47,SLY,SLY,48,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2657,58,LANDING,LANDING (GM 1 TIPO 1) CELULAS 1,68,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2658,95,Polipseudoh,POLIDISTROFIA PSEUDO HURLER,74,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2659,FW,HEMOCULTIVO,HEMOCULTIVO,,MICROBIOLOGÍA,SANGRE TOTAL,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 23 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2660,LEU+ISO B,LEUCINAISOLEUCINA,LEUCINA + ISOLEUCINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL ,No
+2661,METIO B,METIO,METIONINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2662,FENILA B,FENILAL,FENILALANINA,,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2663,VALI B,VALIN,VALINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2664,ACI GLUTA B,ACIGLUTA,ACIDO GLUTAMICO,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2665,TREONI B,TREONI,TREONINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2666,GLICI B,GLICIN,GLICINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2667,SERI B,SERI,SERINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2668,ACI ASPA B,ACIASPA,ACIDO ASPARGICO,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2669,ONITI B,ORNITI,ORNITINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2670,LISI B,LISI,LISINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2671,HISTI B,HISTI,HISTIDINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2672,TIRO B,TIROSI,TIROSINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2673,ALANI B,ALANI,ALANINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2674,GLUTA B,GLUTA,GLUTAMINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2675,CITRU B,CITRU,CITRULINA ,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2676,ARGI B,ARGI,ARGININA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2677,CISTE B,CISTE,CISTEINA,,ESPECIALES,SANGRE TOTAL,Cromatografía en Capa Fina Flourometría,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NORMAL,No
+2678,TUB,TUBER,TUBERCULOSIS,,ESPECIALES,EXPECTORACIÓN,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 5 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2680,7766,Accuabti,SARS-CoV-2 IgM/IgG CUANTIFICACION,,ESPECIALES,SUERO,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 3 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2681,2250,FACWILLE,Factor Von Willebrand (función)*,,ESPECIALES,PLASMA CITRATADO,Inmunoturbidimetría,Imprimir siempre,,No,No,Si,0.00,0.00,%,Ambos,Texto,,Abierto,,0, 15 días,*Plasma citratado congelado\n *Día de proceso solo martes. La muestra debe de llegar antes de las 16:00 horas.,,Imprimir solo cuando el parametro se vende individual,Texto libre,58.00 - 172.00,No
+2682,582,ANTIPLAQAUTOLOGAS,AC. ANTI PLAQUETAS AUTOLOGAS,582,ESPECIALES,OTRAS,Citometría de Flujo,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 8 días,TOMA DE MUESTRA DE TUBO DORADO Y VERDE (HEPARINA)\nCONFIRMAR CON 2 DIAS DE ANTICIPACION EL ESTUDIO YA QUE REQUIERE SOLICITAR MATERIAL A ORTHIN (TUBO VERDE-HEPARINA),,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2683,TIRO,TRIO,AC. ANTI TIROGLOBULINA TOTAL,,HORMONAS,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,uI/mL,Ambos,Numerico,,Abierto,,2,,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,0.20 - 70.00,No
+2684,ANTITB,ANTITB,ANTICUERPOS ANTI TUBERCULOSIS IgM,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2685,ANTITBS,ANTITBS,ANTICUERPOS ANTI TUBERCULOSIS IgG,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2686,921216,TB,"ANTICUERPOS ANTITUBERCULOSIS (IgG,IgM,IgA)",,INMUNOLOGÍA,SUERO,Inmunoensayo Cromatográfico,Imprimir siempre,,"Si, siempre",No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2687,CULTIBAC,CULTIBAC,CULTIVO MICOBACTERIA TUBERCULOSIS,,ESPECIALES,ESPUTO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 45 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2688,PAPLI,PAPLI,PAPANICOLAO EN BASE LIQUIDA,,ESPECIALES,LAMINILLA,,No imprimir,,No,No,Si,0.00,0.00,,Femenino,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2690,898,vol,Volumen,,FERTILIDAD,ESPERMA,,No imprimir,,No,No,No,0.00,0.00,ml,Masculino,Texto,,Abierto,,1, 2 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,2.0 - 5.0,No
+2691,89489489,PH,PH,,FERTILIDAD,ESPERMA,,No imprimir,,No,No,No,0.00,0.00,,Masculino,Texto,,Abierto,,1, 2 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,7.2 - 8.0,No
+2692,96969/,CONESPE,Concentración de espermatozoides,,FERTILIDAD,ESPERMA,,No imprimir,,No,No,No,0.00,0.00,Millon/ml,Masculino,Numerico,,Abierto,,1, 2 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,75 - 100,No
+2693,6146641,Totaldeespermatozoides,Total de espermatozoides,,FERTILIDAD,ESPERMA,,No imprimir,,No,No,No,0.00,0.00,millones,Ambos,Numerico,,Abierto,,1, 2 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,95 millones o mas,No
+2694,665,movi,Movilidad,,FERTILIDAD,ESPERMA,,No imprimir,,No,No,No,0.00,0.00,%,Masculino,Texto,,Abierto,,0, 2 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,Mayor al 50 %,No
+2695,9846541,morfologia,Morfología,,FERTILIDAD,ESPERMA,,No imprimir,,No,No,No,0.00,0.00,%,Masculino,Texto,,Abierto,,0, 2 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,Mayor de 50 %,No
+2696,697878,vit,Vitalidad,,FERTILIDAD,ESPERMA,,No imprimir,,No,No,No,0.00,0.00,%,Masculino,Texto,,Abierto,,0, 2 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,Mas del 50 %,No
+2697,61166417,leuco,Leucocitos,,FERTILIDAD,ESPERMA,,No imprimir,,No,No,No,0.00,0.00,millon/ml,Masculino,Texto,,Abierto,,2,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,< 1 millon/ml,No
+2698,98918998,colores,Color,,FERTILIDAD,ESPERMA,,No imprimir,,No,No,No,0.00,0.00,,Masculino,Texto,,Abierto,,0, 2 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,Gris opalescente,No
+2699,88927982,lic,Licuefacción,,FERTILIDAD,ESPERMA,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,completa a los 60 min,No
+2700,6415555,visc,Viscosidad,,FERTILIDAD,ESPERMA,,No imprimir,,No,No,No,0.00,0.00,,Masculino,Texto,,Abierto,,0, 2 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,Normal,No
+2701,erq,CREATCANI,CREATININA,,BIOQUÍMICA CLÍNICA,SUERO,,No imprimir,,No,No,No,0.00,0.00,mg/dl,Ambos,Numerico,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,"0,5-1,6 ",No
+2702,98987465,CHLAM,PCR CHLAMYDIA,16161331,ESPECIALES,EXUDADO DE ,PCR Tiempo Real,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 8 días,ESTUDIO ESPECIAL LASER,ESTUDIO QUE SE ENVÍA A LÁSER SE DEBE PEDIR EL MEDIO DE PCR CON ANTICIPACIÓN LA CLAVE DEL ESTUDIO ES 1718 APARECE COMO CHLAMYDIA TRACHOMATIS PCR,Imprimir siempre,Texto libre,"NO DETECTADO
+",No
+2704,B.1.1.7,22VA,VARIANTE ALPHA (B.1.1.7),,ESPECIALES,EXUDADO FARINGEO,PCR Tiempo Real,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,SE ENVÍA A ORTHIN Y SE ENTREGA RESULTADO A LAS 48 HORAS DE LA TOMA DE MUESTRA.,,Imprimir siempre,Texto libre,NO DETECTADO,No
+2705,22BG,22BG,VARIANTE BETA O GAMMA (B.1.351 O P.1),,ESPECIALES,EXUDADO FARINGEO,PCR Tiempo Real,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,SE ENVÍA A ORTHIN Y SE ENTREGA RESULTADO A LAS 48 HORAS DE LA TOMA DE MUESTRA.,,Imprimir siempre,Texto libre,NO DETECTADO,No
+2706,22DE,22DE,VARIANTE DELTA (B.1.617.2),,ESPECIALES,EXUDADO FARINGEO,PCR Tiempo Real,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,SE ENVÍA A ORTHIN Y SE ENTREGA RESULTADO A LAS 48 HORAS DE LA TOMA DE MUESTRA.,,Imprimir siempre,Texto libre,NO DETECTADO,No
+2707,22OM,22OM,VARIANTE  ÓMICRON (B.1.1.529),,ESPECIALES,EXUDADO FARINGEO,PCR Tiempo Real,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,SE ENVÍA A ORTHIN Y SE ENTREGA RESULTADO A LAS 48 HORAS DE LA TOMA DE MUESTRA.,,Imprimir siempre,Texto libre,NO DETECTADO,No
+2708,46416631,ARGNN,AGININA,,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,2, 10 días,,,Imprimir siempre,Rango numerico,,No
+2709,0801,ACFOL,ACIDO FOLICO,01,INMUNOLOGÍA,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,ng/mL,Ambos,Numerico,,Abierto,,2, 1 día,,,Imprimir siempre,Rango numerico,,No
+2710,291,VITB12,VITAMINA B12,01,INMUNOLOGÍA,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,pg/mL,Ambos,Numerico,,Abierto,,2, 1 día,Suero 2 mL. PROTEGER DE LA LUZ,,Imprimir siempre,Rango numerico,,No
+2711,0305,PL,PLOMO,03,ESPECIALES,SANGRE TOTAL,Espectrofotometría ,No imprimir,,No,No,Si,0.00,0.00,µg/dL,Ambos,Numerico,,Abierto,,2, 6 días,3ml. \nEnviar a temperatura ambiente.,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2712,0305,MERC,MERCURIO,01,INMUNOLOGÍA,SANGRE TOTAL,Espectrofotometría ,No imprimir,,No,No,Si,0.00,0.00,μg/L,Ambos,Numerico,,Abierto,,0, 22 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2713,0305,ARS,ARSENICO,01,INMUNOLOGÍA,SANGRE TOTAL,Espectrofotometría ,No imprimir,,No,No,Si,0.00,0.00, μg/l,Ambos,Numerico,,Abierto,,0, 22 días,"5 mL. \nRefrigerado, no congelar.",,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2714,0305,CD,CADMIO,01,INMUNOLOGÍA,SANGRE TOTAL,Espectrofotometría ,No imprimir,,No,No,Si,0.00,0.00,µg/L,Ambos,Numerico,,Abierto,,3, 6 días,3 mL. \nEnviar a temperatura ambiente. ,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2715,0405,ANTIB,ANTI BORRELIA ,01,ESPECIALES,SUERO,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 4 días,"Suero 2 mL. \nNo hemolisis, no lipemia, no contaminación bacteriana. Interfiere Factor reumatoide elevado.",,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2716,0405,PMODIUM,PLASMODIUM (GOTA GRUESA),01,ESPECIALES,SANGRE TOTAL,Microscopía Óptica,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 1 día,,Sangre total/EDTA.,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2717,0603,BIOENDO,BIOPSIA ENDOSCOPICA,,PATOLOGÍA,BIOPSIA,Microscopía Óptica,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 8 días,"Biopsia con formol al 10%, enviar datos clínicos e indicar área anatómica, indispensable. Para descripción consultar ""Lista de patología"". Llenar formato R-5.4-011 Solicitud de estudio Anatomo-Patológico.",,Imprimir siempre,Texto libre,,No
+2718,023PRIS,HPYLORI,ANTICUERPOS  DE HELICOBACTER PYLORI IgA,96414235,INMUNOLOGÍA,SUERO,Inmunocromatografia,Imprimir siempre,,"Si, siempre",No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,EN SUERO,,Imprimir siempre,Texto libre,"NEGATIVO
+
+",No
+2719,1205,CA724,ANTIGENO CA 72-4,CA72-4,INMUNOLOGÍA,SUERO,INMUNOENSAYO ENZIMATICO (ELISA).,Imprimir siempre,,No,No,Si,0.00,0.00,U/mL,Ambos,Numerico,,Abierto,,3, 6 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,0.00-2.68,No
+2720,3235,PCRVPH,PCR VPH,PCR VPH,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 8 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2721,2323116544,NUCLEARES,ANTICUERPOS ANTI-NUCLEARES,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 5 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2722,13072022,FTA,TREPONEMA PALLIDUM,FTA TREP,ESPECIALES,SUERO,Inmunoinfluorescencia Indirecta,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,3, 5 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2723,337,BIOPCH,BIOPSIA CHICA,BIOPCH,PATOLOGÍA,BIOPSIA,Tinción hematoxilina-eosina (HE) + Visualización microscópica de luz.,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,3, 7 días,"Biopsia de 1.0 - 4.0 cm. Biopsia con formol al 10%, enviar datos clínicos e indicar área anatómica, indispensable. Para descripción consultar ""Lista de patología"". Llenar formato R-5.4-011 Solicitud de estudio Anatomo-Patológico",,Imprimir siempre,Texto libre,,No
+2724,2057-OTH,BIOPESP,BIOPSIA ORGANO ESPECIAL,BIOPESP,PATOLOGÍA,BIOPSIA,Tinción hematoxilina-eosina (HE) + Visualización microscópica de luz.,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,"Biopsia órgano especial. Glándula tiroides, intestino, útero con anexos, riñón, tejido axilar, placenta, etc.",,Imprimir siempre,Texto libre,,No
+2726,4424,PCRVPH14,PCR VPH 14 GENOTIPOS DE ALTO RIESGO,4424,ESPECIALES,OTRAS,PCR Tiempo Real,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 6 días,,,Imprimir siempre,Texto libre,,No
+2727,3007,CHLAMY,CHLAMYDIA TRACHOMATIS,CHLAMY,BIOLOGÍA MOLECULAR,EXUDADO DE ,PCR Tiempo Real,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 6 días,SE ENVIA A ORTHIN Y RESULTADOS SE ENTREGAN EN 3 DIAS HABILES DE LA TOMA,,Imprimir siempre,Texto libre,NEGATIVO,No
+2728,3007,NEISSERIA,NEISSERIA GONORRHOEAE,NEISSE,BIOLOGÍA MOLECULAR,EXUDADO DE ,PCR Tiempo Real,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 6 días,SE ENVIA A ORTHIN ,,Imprimir siempre,Texto libre,NEGATIVO,No
+2729,3007,TRICHO,TRICHOMONAS VAGINALIS,TRICHO,BIOLOGÍA MOLECULAR,EXUDADO DE ,PCR Tiempo Real,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 6 días,ENVIAR A ORTHIN,,Imprimir siempre,Texto libre,NEGATIVO,No
+2730,3007,MYCOHOMINIS,MYCOPLASMA HOMINIS,MYCO HOM,BIOLOGÍA MOLECULAR,EXUDADO DE ,PCR Tiempo Real,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 6 días,ENVIAR A ORTHIN ,,Imprimir siempre,Texto libre,NEGATIVO,No
+2731,3007,MYCOGENITA,MYCOPLASMA GENITALIUM,MYCOGENI,BIOLOGÍA MOLECULAR,EXUDADO DE ,PCR Tiempo Real,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 6 días,ENVIAR A ORTHIN,,Imprimir siempre,Texto libre,NEGATIVO,No
+2732,3007,UREAUREALY,UREAPLASMA UREALYTICUM,U-UREALY,BIOLOGÍA MOLECULAR,EXUDADO DE ,PCR Tiempo Real,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 6 días,,,Imprimir siempre,Texto libre,NEGATIVO,No
+2733,3007,UREAPARVU,UREAPLASMA PARVUM,UREA-PAR,BIOLOGÍA MOLECULAR,EXUDADO DE ,PCR Tiempo Real,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 6 días,ENVIAR A ORTHIN,,Imprimir siempre,Texto libre,NEGATIVO,No
+2734,221,VPH221,GENOTIPO 16 VPH,G16,ESPECIALES,OTRAS,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2735,222,VPH222,GENOTIPO 18 VPH,,ESPECIALES,OTRAS,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2736,223,VPH223,GENOTIPO 31 VPH,,ESPECIALES,OTRAS,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2737,224,VPH224,GENOTIPO 33 VPH,,ESPECIALES,OTRAS,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2738,225,VPH225,GENOTIPO 35 VPH,,ESPECIALES,OTRAS,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2739,226,VPH226,GENOTIPO 35 VPH,,ESPECIALES,OTRAS,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2740,227,VPH227,GENOTIPO 39 VPH,,ESPECIALES,OTRAS,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2741,228,VPH288,GENOTIPO 45 VPH,,ESPECIALES,OTRAS,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2742,228,VPH228,GENOTIPO 51 VPH,,ESPECIALES,OTRAS,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2743,229,VPH229,GENOTIPO 52 VPH,,ESPECIALES,EXUDADO DE ,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2744,2210,VPH2210,GENOTIPO 56 VPH,,ESPECIALES,EXUDADO DE ,PCR Tiempo Real,No imprimir,,"Si, solo cuando el parametro se vende individual",No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2745,2211,VPH2211,GENOTIPO 58 VPH,,ESPECIALES,EXUDADO DE ,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2746,2212,VPH2212,GENOTIPO 59 VPH,,ESPECIALES,EXUDADO DE ,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2747,2213,VPH2213,GENOTIPO 66 VPH,,ESPECIALES,EXUDADO DE ,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2748,2214,VPH2214,GENOTIPO 68 VPH,,ESPECIALES,EXUDADO DE ,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 14 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2749,2308,BIOPGRAN,BIOPSIA GRANDE,BIOPGRAN,ESPECIALES,BIOPSIA,inción hematoxilina-eosina (HE) + Visualización microscópica de luz.,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 8 días,ENVIAR A ORTHIN ,,Imprimir siempre,Texto libre,,No
+2750,10,carba,Carbamacepina (Tegretol),,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2751,100,fruc,Fructosamina,,ESPECIALES,SUERO,Colorimétrico Automatizado,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 5 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2752,1006,Alfaantitripsina,Alfa - 1 antitripsina,,ESPECIALES,SUERO,Nefelometría,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 3 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2753,1013,FRACPROS,Fracción prostática,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ng/mL,Masculino,Texto,,Abierto,,3,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2754,2153,BIOPARAFINA,BIOPSIA REVISION DE BLOQUE DE PARAFINA,2153,PATOLOGÍA,BIOPSIA BLOQUE DE PARAFINA,Tinción hematoxilina-eosina (HE) + Visualización microscópica de luz.,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 8 días,"Bloque de parafina y Laminillas teñidas (Patología). Para descripción consultar ""Lista de patología"". Llenar formato R-5.4-011 Solicitud de estudio Anatomo-Patológico",,Imprimir siempre,Texto libre,,No
+2755,11102022,IGGZIKA,ANTICUERPOS IGG,4345,INMUNOLOGÍA,SUERO,INMUNOENSAYO ENZIMATICO (E.I.A),No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 5 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2756,11102022,IGMZIKA,ANTICUERPOS IGM,ZIKA,INMUNOLOGÍA,SUERO,INMUNOENSAYO ENZIMATICO (E.I.A),No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 5 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2757,2132,CYFRA21,ANTIGENO CYFRA 21,2132,INMUNOLOGÍA,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 4 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,0.00-2.08,No
+2758,271-ORT,TIROGLO,TIROGLOBULINA,271,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir siempre,,No,No,Si,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,2, 3 días, Suero 2 mL.,,Imprimir solo cuando el parametro se vende individual,Texto libre,0.50-43.00,No
+2759,60-ORT,DEHIDRO,DEHIDROEPIANDROSTERONA (DHEA),,ESPECIALES,SUERO,INMUNOENSAYO ENZIMATICO (E.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,2, 2 días,Suero o plasma  con EDTA/citrato en refrigeración entre 2° C a 8° C. Estabilidad 7 días,,Imprimir solo cuando el parametro se vende individual,Texto libre,2.40 - 15.80,No
+2760,1,17OHP,17 Alfa hidroxiprogesterona,,ESPECIALES,SUERO,E.L.I.S.A.,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,1, 3 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2761,2,adre,Adrenalina en plasma,,HORMONAS,PLASMA CITRATADO,E.L.I.S.A.,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 7 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2762,13,cc5,Complemento C-5,,ESPECIALES,SUERO,Nefelometría,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 17 días,Suero 2 mL ,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2763,15,ciclo,Ciclosporina,,ESPECIALES,SANGRE TOTAL,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 4 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2764,23,CLONA,Clonazepan en suero (Rivotril),,ESPECIALES,SANGRE TOTAL,Cromatografía líquida y espectrometría de masas Tándem,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2765,26,clo,Cloro en orina,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Ion Selectivo,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2766,37,ci,Complejos inmunes,,ESPECIALES,SUERO,E.L.I.S.A.,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2767,38,cc3,Complemento C-3,,ESPECIALES,SUERO,Inmunoturbidimetría,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,mg/dL,Ambos,Texto,,Abierto,,2, 3 días,Suero 2 mL,,Imprimir solo cuando el parametro se vende individual,Texto libre,83.00-193.00,No
+2768,39,cc4,Complemento C-4,,ESPECIALES,SUERO,Inmunoturbidimetría,Imprimir siempre,,No,No,Si,0.00,0.00,mg/dL,Ambos,Texto,,Abierto,,2, 3 días,SUERO 2 mL,,Imprimir solo cuando el parametro se vende individual,Texto libre,15.00 - 57.00,No
+2769,40,ch50,Complemento hemolítico 50%,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2770,54,B2MO,Beta 2 microglobulina en orina,,ESPECIALES,ORINA,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2771,55,CrioglOb,Crio globulinas,,ESPECIALES,TUBO ROJO SIN CENTRIFUGAR,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2772,104,GAST,GASTRINA,,ESPECIALES,SUERO,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,pg/mL,Ambos,Numerico,,Abierto,,2, 6 días,SUERO 2 ML,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2773,151,AM,AMONIO,,ESPECIALES,PLASMA CITRATADO,Espectrofotometría Automatizada,Imprimir siempre,,No,No,Si,0.00,0.00,umol/L,Ambos,Texto,,Abierto,,0, 2 días,"Plasma/EDTA 2ml. No hemolisis, enviar de inmediato congelado.",,Imprimir siempre,Texto libre,18.00 - 72.00,No
+2774,107,GLUCG,GLUCAGON,,ESPECIALES,SUERO,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,pg/mL,Ambos,Numerico,,Abierto,,0, 1 día,SUERO 2ML,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2775,157,OXIURO,OXIURO,,ESPECIALES,LAMINILLA,Microscopía Óptica,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,Frotis con Diurex sin fijar.,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2776,120,Hapt,HAPTOGLOBINA,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,mg/L,Ambos,Numerico,,Abierto,,0, 4 días,"Suero 2 mL. No hemolisis, no lipemia",,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2777,66,dig,Digoxina,,ESPECIALES,SUERO,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 3 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2778,132,HIDROP,HIDROXIPROLINA,,ESPECIALES,ORINA,,No imprimir,,No,No,Si,0.00,0.00,hs,Ambos,Numerico,,Abierto,,0,,"Orina de 24 hrs, alícuota 40 mL. Indicar volumen total, dieta baja en colágenos y libre de gelatina.",,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2779,164,LIT,LITIO SERICO,,ESPECIALES,SUERO,Espectrofotometría Automatizada,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2, 2 días,Suero 2 mL.,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2780,78,esnc,Estriol sérico no conjugado,,ESPECIALES,SUERO,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 2 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2781,134,ACTH,HORMONA ADRENOCORTICOTRÓFICA,,INMUNOQUIMICA,SANGRE TOTAL,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir siempre,,No,No,Si,0.00,0.00,pg/mL,Ambos,Texto,,Abierto,,0, 3 días, Centrifugar muestra y separar inmediatamente el plasma. Congelar la muestra \n(REFRIGERAR),,Imprimir solo cuando el parametro se vende individual,Texto libre,0.00-46.00,No
+2782,168,FRAGOSM,Fragilidad osmótica eritrocitaria,,ESPECIALES,SANGRE TOTAL,,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2, 2 días,Sangre total/EDTA 3 mL,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2783,148,AIE,Alérgeno individual especial,,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,"Suero 2 mL. Preguntar al laboratorio si se realiza el alérgeno, (Si no lo encuentra en el ""Anexo alérgenos"").",,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2784,86,fen,Fenobarbital,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2785,169,MORF,MORFINA,,ESPECIALES,ORINA,Inmunoensayo Cromatográfico,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,"Orina ocasional, alícuota 10 mL.",,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2786,170,MYCOBACT,MYCOBACTERIUM TUBERCULOSIS,170,ESPECIALES,OTRAS,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,3, 5 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2787,96,fosfo,Fosfolípidos,,ESPECIALES,SUERO,Espectrofotometría Automatizada,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 2 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2788,175,OSMO,OSMOLARIDAD SERICA,,ESPECIALES,SUERO,OSMOMETRIA,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 1 día,Suero 2 mL.,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2789,176,OSMOURI,OSMOLARIDAD URINARIA,,ESPECIALES,ORINA,OSMOMETRIA,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,2, 1 día,"Orina ocasional, alícuota 10 mL",,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2790,183,CARIOS,CARIOTIPO EN SANGRE PERIFERICA (CON FOTOGRAFIA),,ESPECIALES,SANGRE TOTAL,Tinción de Bandas GTG.,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2, 30 días," Sangre total/heparina, enviar a temperatura ambiente. Llenar el formato R-5.4-012 Cadena de custodia_Cariotipo. Solicitud de Estudio Cariotipo, indispensable. Estabilidad muestra 48 hrs.",,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2791,185,ACANTI,AC. ANTI AMEBA IgG (SERAMEBA),,ESPECIALES,SUERO,Inmunoenzimático,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2, 5 días,Suero 2 mL.,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+2792,23S,VHS2IgG,VHS2IgG,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 3 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2793,217,ChlamIgG,Ac. Anti Chlamydia trachomatis IgG,,ESPECIALES,SUERO,Inmunoensayo Cromatográfico,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,POSITIVO - NEGATIVO,No
+2794,23S-,VHS2,VHS2IgM,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 3 días,Suero 2 mL.,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2795,220,KUR,POTASIO URINARIO,,ESPECIALES,ORINA,Ion Selectivo,No imprimir,,No,No,Si,0.00,0.00,mEq/L,Ambos,Numerico,,Abierto,,0, 2 días,"Orina de 24 hrs, alícuota 10 mL. Indicar volumen total.",,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2796,240,REN,RENINA,,ESPECIALES,SANGRE TOTAL,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,µg/L/hora,Ambos,Numerico,,Abierto,,1, 3 días,"Sangre con EDTA, separar plasma y pasar de inmediato a tubo de plástico, congelar. No hemolisis.",,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2797,222,PORFO,PORFOBILINOGENO ORINA 24 HRS.,,ESPECIALES,ORINA,Espectrofotometría ,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,2, 4 días,"Orina de 24 hrs, alícuota 100 mL. Indicar volumen total, enviar en frasco obscuro y mantener en refrigeración.",,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2798,223,PRIMID,PRIMIDONA (MYSODINE),,ESPECIALES,SUERO,INMUNOFLUOROMERIA POLARIZADA (FPIA),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,2, 8 días,Suero 2 mL.,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2799,3334,INFLUENA,INFLUENZA A,27072023,ESPECIALES,EXUDADO FARINGEO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2800,3334,INFLUENB,INFLUENZA B,27012023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2801,3334,VIRUSSINCIA,VIRUS SINCITIAL RESPIRATORIO A,27012023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2802,3334,VIRUSSINCITIALB,VIRUS SINCIAL RESPIRATORIO B,27012023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2803,3334,ADENOVIRUS,ADENOVIRUS HUMANO,27012023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2804,334,METANEU,METAPNEUMOVIRUS,21072023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2805,3334,PARAINFLU1,PARAINFLUENZA 1,27012023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2806,3334,PARAINFLU2,PARAINFLUENZA 2,27012023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2807,3334,PARAINFLU3,PARAINFLUENZA 3,27012023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2808,3334,PARAINFLUE4,PARAINFLUENZA 4,27012023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2809,3334,CORO229E,CORONAVIRUS 229E,27012023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2810,3334,CORONL63,CORONAVIRUS NL63,27012023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2811,3334,COROOC43,CORONAVIRUS OC43,27012023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2812,3334,HBoV,BOCAVIRUS 1234 HBoV,27012023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2813,3334,RINOVIRUS,RINOVIRUS  ABC-HRV,27012023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2814,3334,ENTEROVIRUS,ENTEROVIRUS,27012023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2815,0602,ANTITUBERCULOSIS,AC. ANTI MYCOBACTERIUM TUBERCULOSIS,06022023,ESPECIALES,SUERO,Inmunocromatografia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2816,350,HELIIGG,ANTI HELICOBACTER PYLORI IgG,16022023,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,ORTHIN:  SUERO 2 mL.,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2817,08032023,GRUPOREMITIDO,GRUPO REMITIDO DE ALTO RIESGO,08032023,ESPECIALES,EXUDADO DE ,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2818,0304,FGPRUEBAINDIVIDUAL,FILTRADO GLOMERULAR,0304,BIOQUÍMICA CLÍNICA,SUERO,Cálculo Bioinformático,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,"mL/min/1,73m2",Ambos,Texto,,Abierto,,3, 1 día,,,Imprimir solo cuando es parte de un perfíl,Texto libre,"NORMAL:>90
+ENFERMEDAD RENAL EN ETAPA TEMPRANA: 60-89
+ENFERMEDAD RENAL: 15-59
+INSUFICIENCIA RENAL: <15",No
+2819,03042023,PESO,PESO,03042023,.,SUERO,,No imprimir,,No,No,Si,0.00,0.00,kg,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando es parte de un perfíl,Rango numerico,,No
+2820,03042023,03042023,TALLA,03042023,.,SUERO,,No imprimir,,No,No,Si,0.00,0.00,cm,Ambos,Texto,,Abierto,,3,,,,Imprimir solo cuando es parte de un perfíl,Texto libre,,No
+2821,585,SSA,AC. ANTI SSA,585,ESPECIALES,SUERO,INMUNOENSAYO ENZIMATICO (E.I.A),No imprimir,,No,No,Si,0.00,0.00,RATIO,Ambos,Texto,,Abierto,,3, 3 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,"NEGATIVO:<1.00
+POSITIVIO:>=1.00",No
+2822,595,SSB,ac.anti SSB,595,ESPECIALES,SUERO,INMUNOENSAYO ENZIMATICO (E.I.A),No imprimir,,No,No,Si,0.00,0.00,RATIO,Ambos,Texto,,Abierto,,0, 3 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,"NEGATIVO:<1.00
+POSITIVO:>=1.00",No
+2823,786,NSE,ENOLASA NEURONAL ESPECIFICA,786,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,μg/L,Ambos,Texto,,Abierto,,0,,EN AYUNO MINIMO 8 HORAS Y ENVIAR A LASER. TARDA DE 15-18 DIAS,,Imprimir solo cuando el parametro se vende individual,Texto libre,<18.30,No
+2824,2100,BIOPSIA,BIOPSIA PIEZA ESPECIAL,2100,ESPECIALES,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,3, 10 días,"Biopsia piezas especiales. Miembro torácico o pélvico, cadena ganglionar, sigmoides, glándula mamaria,intestino, testículo, próstata completa, colón, íleon, riñón.\n\n ",,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2825,137,HORMONACRECIMIENTO,HORMONA DE CRECIMIENTO,137,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir siempre,,No,No,Si,0.00,0.00,ng/mL,Ambos,Texto,,Abierto,,3, 2 días,Suero 2 mL. El paciente tiene que estar en reposo 30 min antes de la toma. Indicar tratamiento.,,Imprimir solo cuando el parametro se vende individual,Texto libre,0.000-6.000,No
+2826,65874984,RSV,VIRUS SINCITIAL RESPIRATORIO,,INMUNOLOGÍA,EXUDADO NASOFARINGEO,Inmunocromatografia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+2827,425,ACANMICROSOMALESTOT,AC. ANTI. MICROSOMALES TOTALES,,HORMONAS,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,Ul/mL,Ambos,Texto,,Abierto,,2, 4 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,0.00-34.00,No
+2828,599,ACANTIRO,AC. ANTI TIROGLOBULINA TOTALES,,HORMONAS,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,Ul/mL,Femenino,Texto,,Abierto,,2, 4 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,0.00 - 115.00,No
+2829,0815,CULPRE,PRELIMINAR DE CULTIVO 24 HRS,,MICROBIOLOGÍA,EXUDADO DE ,,No imprimir,,No,Si,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 1 día,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+2830,1968,VONWILLEBRAND,ANTÍGENO VON WILLEBRAND,1968,ESPECIALES,PLASMA CITRATADO,Inmunoturbidimetría,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,%,Ambos,Texto,,Abierto,,2, 7 días,*TOMA SOLO LOS MARTES\n*PLASMA CITRATADO CONGELADO.,,Imprimir solo cuando el parametro se vende individual,Texto libre,50.00 - 160.00,No
+2831,1771,FACTORCOAGULACION,FACTOR VIII DE LA COAGULACION,1771,ESPECIALES,PLASMA CITRATADO,Coagulometría,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,%,Femenino,Texto,,Abierto,,2, 5 días,*TOMA SOLO LOS MARTES\n*PLASMA CITRATADO CONGELADO.,,Imprimir solo cuando el parametro se vende individual,Texto libre,51.00 - 209.00,No
+2832,340,BIOPMEDIANA,BIOPSIA MEDIANA,340,PATOLOGÍA,BIOPSIA,inción hematoxilina-eosina (HE) + Visualización microscópica de luz.,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,3, 8 días,"Biopsia con formol al 10%, enviar datos clínicos e indicar área anatómica, indispensable.",,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+3832,22000,CXHERN,Honorarios cirugia,,BIOLOGÍA MOLECULAR,BIOPSIA,Citometría de Flujo,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+3833,1183,HPYLOIGM,ANTICUERPOR HELICOBACTER PYLORI IgM,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,No,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 2 días,ORTHIN: SUERO 2mL. ,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+3834,1794,ANTIJO,AC. ANTI JO-1 (POLIMIOSITIS),1794,ESPECIALES,SUERO,INMUNOENSAYO ENZIMATICO (E.I.A),No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,3, 2 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+3837,170,MICOBACTNO,MICOBACTERIAS NO TUBERCULOSIS,170,ESPECIALES,OTRAS,PCR Tiempo Real,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,3, 5 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO ,No
+3838,2849,paa,Perfil Alergico (40 elementos),,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+3840,3720,TROP,TROPONINA I DE ALTA SENSIBILIDAD,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,pg/mL,Ambos,Texto,,Abierto,,2, 3 días,SUERO 2 mL.,,Imprimir solo cuando el parametro se vende individual,Texto libre,0.00 - 15.60,No
+3841,ORT24,ANCA7PR3,c-ANCA/PR3 (PROTEINASA 3),,ESPECIALES,SUERO,INMUNOENSAYO ENZIMÁTICO,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,RATIO,Ambos,Texto,,Abierto,,2, 4 días,SUERO 2 mL.,,Imprimir solo cuando el parametro se vende individual,Texto libre,"NEGATIVO: <1.00
+POSITIVO: >=1.00",No
+3842,ORT24-2,ANCAMPO,p-ANCA/MPO (MIELOPEROXIDASA),,ESPECIALES,SUERO,INMUNOENSAYO ENZIMÁTICO,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,RATIO,Ambos,Texto,,Abierto,,2, 4 días,SUERO 2 mL.,,Imprimir solo cuando el parametro se vende individual,Texto libre,"NEGATIVO: < 1.00
+POSITIVO: >=1.00",No
+3843,258,IIHERPESIgGIgM,"Ac. ANTI HERPES II IgG, IgM",01,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 2 días,2 ML,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+3844,4618,VITD3,VITAMINA D3,03,ESPECIALES,SUERO,Cromatografía líquida y espectrometría de masas Tándem,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 9 días,"Suero 2 mL, Proteger la muestra de la luz. No hemolisis, no lipemia y no tomar un tubo con gel.",,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+3845,PERF,FOSFIgG,AC. ANTI FOSFOLÍPIDOS IgG,,ESPECIALES,SUERO,INMUNOENSAYO ENZIMATICO (ELISA).,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,GPL /mL,Ambos,Texto,,Abierto,,0, 7 días,"Suero 2 mL.\nTiempo de entrega: Días de proceso solo MIÉRCOLES y SÁBADO, muestra debe llegar antes de medio día.",,Imprimir solo cuando el parametro se vende individual,Texto libre,"NEGATIVO: <10.00
+POSITIVO: >=10.00",No
+3846,PERF-2339,FOSFIgM,AC. ANTI FOSFOLÍPIDOS IgM,,ESPECIALES,SUERO,INMUNOENSAYO ENZIMATICO (ELISA).,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,MPL U/mL,Ambos,Texto,,Abierto,,0, 7 días,"Suero 2 mL.\nTiempo de entrega: Días de proceso solo MIÉRCOLES y SÁBADO, muestra debe llegar antes de medio día.",,Imprimir solo cuando el parametro se vende individual,Texto libre,"NEGATIVO: <10.00
+POSITIVO: >=10.00",No
+3848,2130,ANAIFI,AC. ANTI NUCLEARES POR INMUNOFLUORESCENCIA (ANA IFI),2130,ESPECIALES,SUERO,Inmunoinfluorescencia Indirecta,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2, 5 días,SUERO 2 mL.,,Imprimir solo cuando el parametro se vende individual,Texto libre,"NEGATIVO: < 1.40
+POSITIVO: >= 1.10",No
+3849,2319,AcAntiRecTSH,Ac. Anti Receptor TSH,,ESPECIALES,SUERO,INMUNOENSAYO ENZIMATICO (ELISA).,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,U/L,Ambos,Texto,,Abierto,,2, 6 días,"AYUNO DE 8-12 HRS, TOMAR ANTES DE LAS 9 AM,SUERO 2 ML",,Imprimir solo cuando el parametro se vende individual,Texto libre,"NEGATIVO: =<1.0
+ZONA GRIS: 1.1 A 1.5
+POSITIVO: >1.5",No
+3850,3493,DESOXI,11- Desoxicortisol,,ESPECIALES,TUBO ROJO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 16 días,"Suero 2 mL congelado, no tomar en tubo con gel.",,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+3851,4372,17hidroxip,17 hidroxipregenenolona,,ESPECIALES,TUBO ROJO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 17 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+3852,LIPQS32,INALIPQS,INDICE ATEROGENICO,,ESPECIALES,SUERO,Enzimático Automatizado,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2, 1 día,,,Imprimir solo cuando el parametro se vende individual,Texto libre,"ÓPTIMO <5.00
+LIMITROFE 5.00-6.00
+RIESGO ALTO >6.00",No
+3853,PDCP1,PDCP1,INDICE DE CASTELLI I,,ESPECIALES,SUERO,Enzimático Automatizado,Imprimir solo cuando el parametro se vende individual,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,2, 1 día,,,Imprimir solo cuando el parametro se vende individual,Texto libre,0.00-3.00,No
+3854,PDCP2,PDCP2,ÍNDICE DE CASTELLI II,,ESPECIALES,SUERO,Enzimático Automatizado,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2, 1 día,,,Imprimir solo cuando el parametro se vende individual,Texto libre,0.00-4.00,No
+3855,COEFAT,COEFAT,COEFICIENTE ATEROGÉNICO,,ESPECIALES,SUERO,Enzimático Automatizado,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2, 1 día,,,Imprimir solo cuando el parametro se vende individual,Texto libre,0.00 - 2.00,No
+3857,IPSAL,IPSAL,INDICE DE PSA LIBRE,,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,%,Masculino,Numerico,,Abierto,,2, 2 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,"RIESGO ALTO: <20.00
+RIESGO BAJO: >20.00",No
+3858,PF4128,PINF4128,PCR VIRUS DE PAPILOMA HUMANO 1,,ESPECIALES,OTRAS,PCR Tiempo Real,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2, 6 días,RT-PCR TIEMPO REAL,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+3859,PIM4128CT,PIM4128CT,CITOLOGIA URETRAL (PAPANNICOLAOU),,ESPECIALES,LAMINILLA,TINCIÓN DE PAPANICOLAOU,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Masculino,Texto,,Abierto,,2, 6 días,3 LAMINILLAS (UNA FIJADA PCV),,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+3860,383,IIHERPESIgG,AC. ANTI HERPES II IgG,383,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,Index,Ambos,Texto,,Abierto,,2, 3 días,SUERO 3 mL.,,Imprimir solo cuando el parametro se vende individual,Texto libre,"Negativo     <0.90
+Zona gris     0.90-1.10
+Positivo     >1.10",No
+3861,PIM4128HERP,PIM4128HERP,AC. ANTI HERPES II IgM,,ESPECIALES,SUERO,Quimioluminiscencia,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,2,,SUERO 3 mL.,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+3862,139-MSC-O,FSHMAS,HORMONA FOLICULO ESTIMULANTE (FSH),,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,mUI/mL,Masculino,Texto,,Abierto,,2, 1 día,SUERO 2mL,,Imprimir solo cuando el parametro se vende individual,Texto libre,0.95 - 11.95,No
+3863,141-MSC-O,HLMAS,HORMONA LUTEINIZANTE (HL),,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,mUI/mL,Masculino,Texto,,Abierto,,2, 2 días,SUERO 2 mL,,Imprimir solo cuando el parametro se vende individual,Texto libre,0.57 - 12.07 ,No
+3864,256-MS-O,TESTMS,TESTOSTERONA TOTAL,,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ng/mL,Masculino,Texto,,Abierto,,2, 1 día,Suero 2 mL.,,Imprimir solo cuando el parametro se vende individual,Texto libre,"2.40 - 8.71
+",No
+3865,163-OR,ANDFEM,ANDROSTENEDIONA,,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ng/mL,Femenino,Texto,,Abierto,,2, 2 días,Suero 2 mL.,,Imprimir solo cuando el parametro se vende individual,Texto libre,"POSTMENOPAUSICA: 0.1 - 2.1
+PREMENOPAUSICA: 0.4 - 3.4
+2 AÑOS - 6 AÑOS: 0.00 - 0.34
+7 AÑOS - 11 AÑOS: 0.12 - 2.41
+12 AÑOS - 16 AÑOS: 0.42 - 3.41
+17 AÑOS - 21 AÑOS: 0.70 - 4.31",No
+3866,1722-PP,MICROAL,ALBÚMINA URINARIA,,INMUNOQUIMICA,GALON DE ORINA,INMUNONEFELOMETRIA,Imprimir siempre,,No,No,Si,0.00,0.00,mg/dL,Ambos,Texto,,Abierto,,2, 2 días," Orina de 24 hrs, alícuota 10 mL. Indicar volumen total.",,Imprimir solo cuando el parametro se vende individual,Texto libre,0.00 - 3.00 ,No
+3867,1722-OPP,ALB24O,ALBÚMINA EN  ORINA DE 24 HRS.,,INMUNOQUIMICA,GALON DE ORINA,INMUNONEFELOMETRIA,Imprimir siempre,,No,No,Si,0.00,0.00,mg/24hRS.,Ambos,Texto,,Abierto,,2, 2 días," Orina de 24 hrs, alícuota 10 mL. Indicar volumen total.",,Imprimir solo cuando el parametro se vende individual,Texto libre,"Normoalbuminuria < 30 mg/24h
+Microalbuminuria 30-300 mg/24h
+Macroalbuninuria (proteinuria clínica)> 300 mg/24h",No
+3868,1788,hidroi,17 HIDROXIPROGESTERONA NEONATAL,,ESPECIALES,SANGRE TOTAL,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 5 días,Papel tamiz 2 gotas. Verificar que la sangre traspase el papel.,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+3869,2817,dhicol,7 DEHIDRO-COLESTEROL,,ESPECIALES,PLASMA CITRATADO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+3870,2435,a21h,AC. ANTI 21 HIDROXILASA (ADRENAL 21 HIDROXILASA),,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 18 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+3871,2146,gad,AC. ANTI ACIDO GLUTAMICO DESCARBOXILASA,,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Numerico,,Abierto,,0, 10 días,,,Imprimir solo cuando el parametro se vende individual,Rango numerico,,No
+3872,2162,AcAntiGliIgAIgG,Ac. Anti Gliadinas IgA IgG,01,INMUNOLOGÍA,SUERO,E.L.I.S.A.,No imprimir,,No,No,Si,0.00,0.00,U/mL,Ambos,Texto,,Abierto,,0, 4 días,"No hemolisis, no lipemia.",,Imprimir siempre,Texto libre,"Negativo: < 1:40
+Positivo: >=1:40",No
+3873,2323,AcAntiEndomesiales,Ac. Anti Endomesiales,01,ESPECIALES,SUERO,Inmunoinfluorescencia Indirecta,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,3, 4 días,"Suero 2 mL. No hemolisis, no lipemia",,Imprimir siempre,Texto libre,"NEGATIVO < 1:40
+POSITIVO >= 1:40",No
+3874,2159,AcAntisTranstisIgAIgG,"Ac. Anti Transglutaminasa tisular IgA, IgG",01,INMUNOLOGÍA,SUERO,INMUNOENSAYO ENZIMATICO (ELISA).,No imprimir,,No,No,Si,0.00,0.00,RATIO,Ambos,Texto,,Abierto,,0, 2 días,"Solo se procesa los días martes y viernes, la muestra debe llegar antes de las 12:00 p.m. Entrega de resultados el mismo día.",,Imprimir solo cuando el parametro se vende individual,Texto libre,"IgA
+Negativo: < 1.0
+Positivo: >= 1.0
+
+IgG 
+-Negativo: < 1.0
+-Positivo débil: >= 1.0 - 2.0
+-Positivo: >= 2.0 - 5.0
+-Positivo fuerte: >= 5.0
+",No
+3875,3003,CPLPH,Calprotectina (HCP,01,ESPECIALES,HECES,QUIMIOLUMINICENCIA (C.M.I.A),No imprimir,,No,No,Si,0.00,0.00,µg/g,Ambos,Texto,,Abierto,,0, 4 días,"Materia fecal reciente. \nVolumen: 1 muestra reciente 10 g., 2 ml si es liquida\nCriterios de rechazo: Muestra contaminada (físico, químico o biológico), volumen insuficiente, frasco inadecuado",*Los resultados deben ser interpretados considerando la condición clínica de cada individuo.,Imprimir siempre,Texto libre,"Negativo < 50
+Débilmente positivo 50 – 100
+Positivo > 100
+
+",No
+3876,234654,cuorina,Cobre en orina,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,,No imprimir,,No,No,Si,0.00,0.00,µg/24 hrs,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,<= 50.00,No
+3877,1217,ceruro,Ceruloplasmina en suero,,BIOQUÍMICA CLÍNICA,SUERO,,No imprimir,,No,No,Si,0.00,0.00,g/L,Ambos,Texto,,Abierto,,0, 1 día,,,Imprimir solo cuando el parametro se vende individual,Texto libre,0.20 - 0.60,No
+3878,HBeag,HBeag,Antigeno de envoltura de Hepatitis B (HBeAg),,ESPECIALES,SUERO,,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+3879,5465,agaviario,Antigeno Aviario,,BIOQUÍMICA CLÍNICA,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+3880,2072,CVVIH,CARGA VIRAL VIH,2072,ESPECIALES,PLASMA CITRATADO,RT-PCR TIEMPO REAL,No imprimir,,No,No,Si,0.00,0.00,Copias/mL,Ambos,Texto,,Abierto,,0, 7 días,Plasma/EDTA 2 mL refrigerado o congelado (volumen mínimo sin posibilidad de verificación 1 mL). Centrifugar y separar el plasma; enviar lo más pronto posible después de la toma (no superar las 6 hrs para centrifugar la muestra y separar el plasma). No hemólisis. Estabilidad en refrigeración hasta 3 días y en congelación hasta 15 días (considerar la estabilidad desde la separación del plasma hasta su proceso).\n,,Imprimir solo cuando el parametro se vende individual,Texto libre,"No detectado
+Limite de detección/mL 40
+copias/mL
+(1.6 Log.copias/mL)",No
+3881,2072-1,PVIHV,PARTICULAS VIRALES DE VIH,2072-1,ESPECIALES,PLASMA CITRATADO,RT-PCR TIEMPO REAL,No imprimir,,No,No,No,0.00,0.00,Copias/mL,Ambos,Texto,,Abierto,,0, 7 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,"No detectado
+Limite de detección/mL 40
+copias/mL",No
+3882,2072-2,LCVVIH,LOGARITMO CARGA VIRAL VIH,2072-2,ESPECIALES,PLASMA CITRATADO,RT-PCR TIEMPO REAL,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 7 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,(1.6 Log.copias/mL),No
+3883,215,cd4,SUBPOBLACION DE LINFOCITOS CD4 CD8,215,ESPECIALES,SANGRE TOTAL,Citometría de Flujo,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 6 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+3884,170,PCRDMBTB,PCR DETECCION MYCOBACTERIUM TUBERCULOSIS,01,ESPECIALES,ORINA,PCR Tiempo Real,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 4 días,"Expectoración* (estabilidad 72 hrs de 2°-8°C), lavado bronquial* (estabilidad 72 hrs de 2°-8°C), orina ocasional (estabilidad 6 días de 2°-8°C, indicar al paciente no orinar al menos 2 hrs antes de la toma; de preferencia enviar la primera micción de la mañana), líquidos orgánicos sin hemolisis (estabilidad 72 hrs de 2°-8°C), sangre/EDTA (estabilidad 72 hrs de 2°-8°C), biopsia en solución salina* (estabilidad 24 hrs de 2°-8°C) y/o bloques de parafina (estabilidad indefinida de 15-28°C), cultivo sólido (Löwenstein-Jensen) (estabilidad 30 días de 2°-8°C).",,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO ,No
+3885,4439-Hormona MULERIANA,4439HMULERIAN,Hormona anti muleriana AMH/MIS,4439,HORMONAS,SUERO,E.L.I.S.A.,Imprimir solo cuando el parametro se vende individual,,No,No,Si,0.00,0.00,ng/mL,Ambos,Numerico,,Abierto,,3, 6 días,Suero o plasma 2 mL con heparina,,Imprimir solo cuando el parametro se vende individual,Texto libre,"Masculino 18 años a 45 años 0.72 - 19.95
+Masculino 46 años a 80 años 0.40 - 11.43
+Femenino 20 años a 29 años 0.28 - 9.91
+Femenino 30 años a 39 años 0.34 - 7.68
+Femenino 40 años a 49 años 0.00 - 2.14
+Femenino 50 años a 59 años 0.00 - 0.14
+Femenino 60 años a 90 años 0.00 - 0.10",No
+3886,144,IgA,INMUNOGLOBULINA A,144,INMUNOQUIMICA,SUERO,Espectrofotometría Automatizada,Imprimir siempre,,No,No,Si,0.00,0.00,g/L,Ambos,Texto,,Abierto,,0, 3 días,2ML SUERO (TUBO DORADO)ENVIAR A ORTHIN,,Imprimir solo cuando el parametro se vende individual,Texto libre,0.70-4.00,No
+3887,146,IgG,INMUNOGLOBULINA G,146,INMUNOQUIMICA,SUERO,Espectrofotometría Automatizada,Imprimir siempre,,No,No,Si,0.00,0.00,g/L,Ambos,Texto,,Abierto,,0, 3 días,2ML SUERO (TUBO DORADO),,Imprimir solo cuando el parametro se vende individual,Texto libre,7.00-16.00,No
+3888,147,IgM,INMUNOGLOBULINA M,147,INMUNOQUIMICA,SUERO,Espectrofotometría Automatizada,No imprimir,,No,No,Si,0.00,0.00,g/L,Ambos,Texto,,Abierto,,0, 3 días,2ML SUERO (TUBO DORADO),,Imprimir solo cuando el parametro se vende individual,Texto libre,0.40-2.30,No
+3889,ALBCRE,ALBCRE,RELACIÓN ALBUMINA CREATININA,,BIOQUÍMICA CLÍNICA,ORINA,Cálculo Bioinformático,Imprimir siempre,,No,No,Si,0.00,0.00,mg/g,Ambos,Numerico,,Abierto,,2,,,,Imprimir solo cuando el parametro se vende individual,Texto libre,"A1 Normal: Menor a 30 mg/g
+A2 Microalbuminuria: 30 - 300 mg/g
+A3 Macroalbuminuria: Superior a 300 mg/g",No
+3890,361,IHERPESIgG,Ac. Anti Herpes I IgG,361,ESPECIALES,SUERO,QUIMIOLUMINICENCIA (C.M.I.A),No imprimir,,No,No,Si,0.00,0.00,Index,Ambos,Texto,,Abierto,,3, 3 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,"Negativo   <0.90
+Zona gris   0.90-1.10
+Positivo   >1.10  ",No
+3891,582,ANTIPLAQALOGENICAS,AC. ANTI PLAQUETAS ALOGENICAS,582,ESPECIALES,OTRAS,Citometría de Flujo,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 8 días,TOMA DE MUESTRA DE TUBO DORADO Y VERDE (HEPARINA)\nCONFIRMAR CON 2 DIAS DE ANTICIPACION EL ESTUDIO YA QUE REQUIERE SOLICITAR MATERIAL A ORTHIN (TUBO VERDE-HEPARINA),,Imprimir solo cuando el parametro se vende individual,Texto libre,NEGATIVO,No
+3892,2034,PARTICULAVIRALHB,PARTICULAS VIRALES HBV,2034,BIOLOGÍA MOLECULAR,SANGRE TOTAL,PCR Tiempo Real,No imprimir,,No,No,No,0.00,0.00,UI/mL,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,"NO DETECTADO
+LIMITE DE DETECCION: 31.6 UI/mL
+(1.50 Log UI/mL)",No
+3893,2034,LOGARITHEPATIB,LOGARITMO,2034,BIOLOGÍA MOLECULAR,SANGRE TOTAL,PCR Tiempo Real,No imprimir,,No,No,No,0.00,0.00,,Ambos,Texto,,Abierto,,0, 10 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,,No
+3894,446,ANTIMUSCU,AC. ANTI MUSCULO LISO,446,ESPECIALES,SUERO,Inmunoinfluorescencia Indirecta,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0, 4 días,2ML SUERO (TUBO DORADO),,Imprimir solo cuando el parametro se vende individual,Texto libre,"NEGATIVO: <1:40
+POSITIVO: >=1:40",No
+3895,436,ANTIMITOCON,AC. ANTI MITOCONDRIA,436,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,RATIO,Ambos,Numerico,,Abierto,,2, 3 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,"NEGATIVO: <1.00
+POSITIVO: >=1.00",No
+

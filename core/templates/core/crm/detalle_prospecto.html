@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ prospecto.nombre }} — CRM PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center gap-3">
+      <a href="{% url 'crm_lista_prospectos' %}" class="btn btn-outline-secondary btn-sm">← Prospectos</a>
+      <div>
+        <h3 class="fw-bold mb-0">{{ prospecto.nombre }}</h3>
+        <small class="text-muted">{{ prospecto.get_origen_display }} — creado {{ prospecto.creado|date:"d/m/Y" }}</small>
+      </div>
+    </div>
+    <span class="badge bg-primary fs-6 px-3 py-2">{{ prospecto.get_estado_display }}</span>
+  </div>
+
+  <div class="row g-4">
+    <!-- Info del prospecto -->
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-bold">Datos de contacto</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-5 small">Teléfono</dt>
+            <dd class="col-7"><a href="https://wa.me/52{{ prospecto.telefono }}" target="_blank">{{ prospecto.telefono|default:"—" }}</a></dd>
+            <dt class="col-5 small">Email</dt>
+            <dd class="col-7">{{ prospecto.email|default:"—" }}</dd>
+            <dt class="col-5 small">Empresa</dt>
+            <dd class="col-7">{{ prospecto.empresa_prospecto|default:"—" }}</dd>
+            <dt class="col-5 small">Servicio</dt>
+            <dd class="col-7">{{ prospecto.servicio_interes|default:"—" }}</dd>
+            <dt class="col-5 small">Valor est.</dt>
+            <dd class="col-7">${{ prospecto.valor_estimado|floatformat:2|default:"0.00" }}</dd>
+            <dt class="col-5 small">Próx. contacto</dt>
+            <dd class="col-7">{{ prospecto.fecha_proximo_contacto|date:"d/m/Y"|default:"—" }}</dd>
+            <dt class="col-5 small">Asignado a</dt>
+            <dd class="col-7">{{ prospecto.asignado_a.get_full_name|default:"—" }}</dd>
+          </dl>
+          {% if prospecto.notas %}
+          <hr>
+          <p class="small text-muted mb-0">{{ prospecto.notas }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario de seguimiento + historial -->
+    <div class="col-md-8">
+      <!-- Nuevo seguimiento -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white fw-bold">Registrar seguimiento</div>
+        <div class="card-body">
+          <form method="post" action="{% url 'crm_agregar_seguimiento' prospecto.pk %}">
+            {% csrf_token %}
+            <div class="row g-2">
+              <div class="col-md-4">
+                <select name="tipo" class="form-select form-select-sm">
+                  {% for val, lbl in TIPO_CHOICES %}<option value="{{ val }}">{{ lbl }}</option>{% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4">
+                <select name="nuevo_estado" class="form-select form-select-sm">
+                  <option value="">Sin cambio de estado</option>
+                  {% for val, lbl in ESTADO_CHOICES %}<option value="{{ val }}" {% if prospecto.estado == val %}selected{% endif %}>→ {{ lbl }}</option>{% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4">
+                <input type="date" name="fecha_proximo" class="form-control form-control-sm" placeholder="Próximo seguimiento">
+              </div>
+              <div class="col-12">
+                <textarea name="descripcion" class="form-control form-control-sm" rows="2"
+                          placeholder="Descripción del contacto *" required></textarea>
+              </div>
+              <div class="col-12">
+                <textarea name="resultado" class="form-control form-control-sm" rows="1"
+                          placeholder="Resultado / respuesta del prospecto"></textarea>
+              </div>
+              <div class="col-12 text-end">
+                <button type="submit" class="btn btn-success btn-sm">
+                  <i class="fas fa-plus me-1"></i>Guardar Seguimiento
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Historial de seguimientos -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-bold">Historial de seguimientos</div>
+        <div class="list-group list-group-flush">
+          {% for s in seguimientos %}
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between">
+              <span class="badge bg-light text-dark border me-2">{{ s.get_tipo_display }}</span>
+              <small class="text-muted">{{ s.fecha|date:"d/m/Y H:i" }} — {{ s.realizado_por.get_full_name|default:"Sistema" }}</small>
+            </div>
+            <p class="mb-1 mt-1">{{ s.descripcion }}</p>
+            {% if s.resultado %}<p class="mb-0 text-muted small">Resultado: {{ s.resultado }}</p>{% endif %}
+            {% if s.nuevo_estado %}<span class="badge bg-primary mt-1">→ {{ s.get_nuevo_estado_display }}</span>{% endif %}
+          </div>
+          {% empty %}
+          <div class="list-group-item text-muted text-center py-3">Sin seguimientos registrados.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <h5 class="fw-bold mb-3"><i class="bi bi-arrow-left-right me-2 text-primary"></i>{{ titulo }}</h5>
+
+  <form method="post" id="formTraspaso">{% csrf_token %}
+
+    <!-- Paso 1: Configuración -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-light fw-semibold py-2">Configuración del Traspaso</div>
+      <div class="card-body row g-3">
+        <div class="col-sm-4">
+          <label class="form-label fw-semibold">Silo de Inventario *</label>
+          <select name="silo" id="siloSelect" class="form-select" onchange="this.form.submit()">
+            {% for val, lbl in silo_choices %}
+            <option value="{{ val }}" {% if silo == val %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+          <small class="text-muted">Cambia el silo para ver los lotes disponibles</small>
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label fw-semibold">Empresa Destino *</label>
+          <select name="empresa_destino" class="form-select" required>
+            <option value="">— Seleccionar sucursal —</option>
+            {% for emp in empresas_destino %}
+            <option value="{{ emp.pk }}">{{ emp.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label fw-semibold">Motivo / Justificación *</label>
+          <input type="text" name="motivo" required class="form-control" placeholder="Ej: Apoyo emergencia, redistribución mensual…">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Observaciones adicionales</label>
+          <textarea name="observaciones" rows="2" class="form-control"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lotes a traspasar -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Lotes a Traspasar (Silo: <strong>{{ silo }}</strong>)</span>
+        <button type="button" class="btn btn-sm btn-success" onclick="agregarLinea()">
+          <i class="bi bi-plus-circle me-1"></i>Agregar Lote
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0" id="tablaLineas">
+          <thead class="table-light">
+            <tr><th style="width:55%">Lote</th><th style="width:30%">Cantidad a Enviar</th><th style="width:15%" class="text-center">×</th></tr>
+          </thead>
+          <tbody id="cuerpoLineas">
+            <tr class="linea-row">
+              <td>
+                <select name="lote_id" class="form-select form-select-sm" required>
+                  <option value="">— Seleccionar lote —</option>
+                  {% for l in lotes %}
+                  <option value="{{ l.pk }}" data-disponible="{{ l.cantidad_actual|floatformat:2 }}">
+                    {% if silo == 'LAB' %}{{ l.reactivo.nombre }} — L:{{ l.numero_lote|default:"S/L" }} | Disp: {{ l.cantidad_actual|floatformat:2 }}
+                    {% else %}{{ l.insumo.nombre }} | Disp: {{ l.cantidad_actual|floatformat:2 }}{% endif %}
+                  </option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td>
+                <div class="input-group input-group-sm">
+                  <input type="number" name="cantidad_enviada" step="0.01" min="0.01" required class="form-control">
+                  <span class="input-group-text">uds.</span>
+                </div>
+              </td>
+              <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="quitarLinea(this)"><i class="bi bi-trash"></i></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="alert alert-info py-2 small">
+      <i class="bi bi-info-circle me-1"></i>
+      El traspaso se crea en <strong>Borrador</strong>. Deberás despacharlo para descontar el stock de origen.
+      El receptor en destino debe confirmar con su <strong>PIN</strong> para que el stock ingrese.
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" name="silo" value="{{ silo }}" class="btn btn-primary">
+        <i class="bi bi-save me-1"></i>Crear Traspaso en Borrador
+      </button>
+      <a href="{% url 'inventario:lista_traspasos' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+function agregarLinea() {
+  const t = document.querySelector('.linea-row');
+  const c = t.cloneNode(true);
+  c.querySelector('select').value = '';
+  c.querySelector('input').value = '';
+  document.getElementById('cuerpoLineas').appendChild(c);
+}
+function quitarLinea(btn) {
+  const rows = document.querySelectorAll('.linea-row');
+  if (rows.length > 1) btn.closest('tr').remove();
+}
+// Auto-pone max disponible al seleccionar lote
+document.addEventListener('change', e => {
+  if (e.target.name === 'lote_id') {
+    const opt = e.target.options[e.target.selectedIndex];
+    const inp = e.target.closest('tr').querySelector('input[name="cantidad_enviada"]');
+    if (opt.dataset.disponible) {
+      inp.max = opt.dataset.disponible;
+      inp.placeholder = `Máx: ${opt.dataset.disponible}`;
+    }
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalle Venta {{ venta.folio_operacion|default:venta.id }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'lista_ventas_farmacia' %}?fecha_ini={{ venta.fecha|date:'Y-m-d' }}&fecha_fin={{ venta.fecha|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm mb-2">
+                <i class="bi bi-arrow-left"></i> Volver a Lista
+            </a>
+            <h2 class="fw-bold text-primary mb-0">
+                <i class="bi bi-receipt"></i> DETALLE DE VENTA
+            </h2>
+            <p class="text-muted-profesional mb-0">Folio: <strong>{{ venta.folio_operacion|default:venta.id }}</strong></p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'imprimir_ticket' venta.id %}" class="btn btn-principal" target="_blank">
+                <i class="bi bi-printer"></i> Reimprimir Ticket
+            </a>
+            {% if venta.estado == 'COMPLETADA' %}
+            <a href="{% url 'historial_devoluciones' %}?venta_id={{ venta.id }}" class="btn btn-outline-warning">
+                <i class="bi bi-arrow-counterclockwise"></i> Devolución
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-box-seam"></i> Productos</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-end">P. Unitario</th>
+                                    <th class="text-end">Subtotal</th>
+                                    <th>Lote</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for d in detalles %}
+                                <tr>
+                                    <td><strong>{{ d.producto.nombre }}</strong></td>
+                                    <td class="text-center">{{ d.cantidad }}</td>
+                                    <td class="text-end">${{ d.precio_unitario|floatformat:2 }}</td>
+                                    <td class="text-end">${{ d.subtotal|floatformat:2 }}</td>
+                                    <td><small class="text-muted">{% if d.lote_vendido %}{{ d.lote_vendido.numero_lote }}{% else %}-{% endif %}</small></td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="6" class="text-center text-muted">Sin productos</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Información</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Cliente:</strong> {{ venta.paciente_nombre|default:venta.paciente.nombre_completo|default:"PÚBLICO GENERAL" }}</p>
+                    <p><strong>Fecha/Hora:</strong> {{ venta.fecha|date:"d/m/Y H:i" }}</p>
+                    <p><strong>Cajero:</strong> {{ venta.usuario.get_full_name|default:venta.usuario.username }}</p>
+                    <p><strong>Estado:</strong>
+                        {% if venta.estado == 'COMPLETADA' %}
+                        <span class="badge bg-success">Completada</span>
+                        {% elif venta.estado == 'PENDIENTE' %}
+                        <span class="badge bg-warning text-dark">Pendiente</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Cancelada</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-credit-card"></i> Pagos</h5>
+                </div>
+                <div class="card-body">
+                    {% for p in pagos %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{{ p.get_metodo_display }}</span>
+                        <strong>${{ p.monto|floatformat:2 }}</strong>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted mb-0">Sin pagos registrados</p>
+                    {% endfor %}
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold fs-5 text-primary">
+                        <span>TOTAL</span>
+                        <span>${{ venta.total|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Lista de Pacientes{% endblock %}
+
+{% block extra_css %}
+<style>
+    .paciente-card {
+        transition: all 0.3s;
+        border-left: 5px solid #0d6efd;
+    }
+    
+    .paciente-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    
+    .buscador-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- HEADER CON BUSCADOR -->
+    <div class="buscador-header shadow-lg">
+        <h2 class="mb-3">
+            <i class="bi bi-people-fill"></i>
+            Listado de Pacientes
+        </h2>
+        
+        <form method="GET" action="{% url 'pacientes:lista_pacientes' %}">
+            <div class="input-group input-group-lg">
+                <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" 
+                       name="q" 
+                       class="form-control" 
+                       placeholder="Buscar por nombre, teléfono, email o ID..." 
+                       value="{{ query }}"
+                       autofocus>
+                <button type="submit" class="btn btn-light">
+                    Buscar
+                </button>
+                {% if query %}
+                <a href="{% url 'pacientes:lista_pacientes' %}" class="btn btn-outline-light">
+                    <i class="bi bi-x-circle"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+    
+    <!-- RESULTADOS -->
+    <div class="row">
+        {% if pacientes %}
+            {% for paciente in pacientes %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card paciente-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="me-3">
+                                {% if paciente.foto %}
+                                    <img src="{{ paciente.foto.url }}" 
+                                         class="rounded-circle" 
+                                         width="60" 
+                                         height="60"
+                                         alt="{{ paciente.nombre_completo }}">
+                                {% else %}
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                                         style="width: 60px; height: 60px;">
+                                        <i class="bi bi-person-fill" style="font-size: 2rem;"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5 class="mb-1">{{ paciente.nombre_completo }}</h5>
+                                <small class="text-muted">
+                                    {{ paciente.edad }} años | {{ paciente.get_sexo_display }}
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <ul class="list-unstyled mb-3">
+                            {% if paciente.numero_identificacion %}
+                            <li><i class="bi bi-credit-card"></i> {{ paciente.numero_identificacion }}</li>
+                            {% endif %}
+                            {% if paciente.telefono %}
+                            <li><i class="bi bi-telephone"></i> {{ paciente.telefono }}</li>
+                            {% endif %}
+                            {% if paciente.email %}
+                            <li><i class="bi bi-envelope"></i> {{ paciente.email }}</li>
+                            {% endif %}
+                        </ul>
+                        
+                        <a href="{% url 'pacientes:historial_360' paciente.id %}" 
+                           class="btn btn-primary w-100">
+                            <i class="bi bi-file-medical"></i> Ver Historial 360°
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox text-muted" style="font-size: 5rem;"></i>
+                    <p class="text-muted mt-3 h5">
+                        {% if query %}
+                            No se encontraron pacientes con "{{ query }}"
+                        {% else %}
+                            No hay pacientes registrados
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+</div>
+{% endblock %}

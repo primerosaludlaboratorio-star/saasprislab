@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Recepción - Consultorio{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="fas fa-clipboard-list text-primary"></i> Tablero de Recepción</h2>
+            <p class="text-muted mb-0">{{ hoy|date:"l d \d\e F, Y" }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'consultorio:lista_triage' %}" class="btn btn-outline-info">
+                <i class="fas fa-heartbeat"></i> Lista de Triage
+            </a>
+            <a href="{% url 'consultorio:agendar_cita' %}" class="btn btn-primary">
+                <i class="fas fa-calendar-plus"></i> Agendar Cita
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <h3 class="fw-bold text-primary mb-0">{{ stats.total }}</h3>
+                    <small class="text-muted">Total Citas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <h3 class="fw-bold text-warning mb-0">{{ stats.pendientes }}</h3>
+                    <small class="text-muted">Pendientes</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <h3 class="fw-bold text-info mb-0">{{ stats.en_sala }}</h3>
+                    <small class="text-muted">En Sala</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <h3 class="fw-bold text-success mb-0">{{ stats.completadas }}</h3>
+                    <small class="text-muted">Completadas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0"><i class="fas fa-users"></i> Citas del Día</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if citas %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Hora</th>
+                            <th>Paciente</th>
+                            <th>Médico</th>
+                            <th>Motivo</th>
+                            <th>Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for cita in citas %}
+                        <tr>
+                            <td><strong>{{ cita.hora_cita|time:"H:i" }}</strong></td>
+                            <td>{{ cita.paciente.nombre_completo }}</td>
+                            <td>Dr(a). {{ cita.medico.nombre_completo }}</td>
+                            <td>{{ cita.motivo|default:"—"|truncatewords:8 }}</td>
+                            <td>
+                                {% if cita.estado == 'PENDIENTE' %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% elif cita.estado == 'EN_SALA' %}
+                                    <span class="badge bg-info">En Sala</span>
+                                {% elif cita.estado == 'EN_CURSO' %}
+                                    <span class="badge bg-primary">En Curso</span>
+                                {% elif cita.estado == 'COMPLETADA' %}
+                                    <span class="badge bg-success">Completada</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ cita.estado }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if cita.estado == 'PENDIENTE' %}
+                                <form method="post" action="{% url 'consultorio:check_in_cita' cita.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Check-in">
+                                        <i class="fas fa-sign-in-alt"></i> Check-in
+                                    </button>
+                                </form>
+                                {% elif cita.estado == 'EN_SALA' %}
+                                <a href="{% url 'consultorio:captura_signos_vitales' cita.id %}" class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-heartbeat"></i> Signos
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-calendar-day fa-3x mb-3"></i>
+                <p class="mb-0">No hay citas programadas para hoy.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    const INTERVAL = 30000;
+    let countdown = INTERVAL / 1000;
+
+    // Indicador visual de próxima actualización
+    const btnArea = document.querySelector('.d-flex.gap-2');
+    if(btnArea){
+        const badge = document.createElement('span');
+        badge.id = 'refresh-badge';
+        badge.className = 'badge bg-secondary align-self-center';
+        badge.title = 'El tablero se actualiza automáticamente';
+        badge.style.cssText = 'font-size:.75rem;cursor:default;';
+        badge.textContent = 'Actualiza en ' + countdown + 's';
+        btnArea.prepend(badge);
+
+        setInterval(function(){
+            countdown--;
+            if(countdown <= 0){
+                badge.textContent = 'Actualizando…';
+                badge.className = 'badge bg-primary align-self-center';
+                window.location.reload();
+            } else {
+                badge.textContent = 'Actualiza en ' + countdown + 's';
+                if(countdown <= 10) badge.className = 'badge bg-warning text-dark align-self-center';
+            }
+        }, 1000);
+    }
+})();
+</script>
+{% endblock %}

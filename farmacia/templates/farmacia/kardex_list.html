@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Kardex - Movimientos de Inventario{% endblock %}
+
+{% block extra_css %}
+<style>
+    .movimiento-entrada { border-left: 4px solid #28a745; }
+    .movimiento-salida { border-left: 4px solid #dc3545; }
+    .movimiento-ajuste { border-left: 4px solid #ffc107; }
+    
+    .badge-tipo {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .filtros-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .table-kardex tbody tr:hover {
+        background-color: #f8f9fa;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- ========================================================== -->
+    <!-- HEADER -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>
+                <i class="bi bi-list-columns-reverse"></i>
+                Kardex - Movimientos de Inventario
+            </h2>
+            <p class="text-muted">
+                Historial completo de entradas, salidas y ajustes de inventario
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'farmacia:crear_movimiento' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Crear Movimiento Manual
+            </a>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- PANEL DE FILTROS -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm filtros-card">
+                <div class="card-body">
+                    <h6 class="mb-3">
+                        <i class="bi bi-funnel-fill"></i>
+                        Filtros de Búsqueda
+                    </h6>
+                    
+                    <form method="GET" action="{% url 'farmacia:kardex_list' %}" class="row g-3">
+                        
+                        <!-- Tipo de Movimiento -->
+                        <div class="col-md-3">
+                            <label class="form-label">Tipo de Movimiento</label>
+                            <select name="tipo" class="form-select">
+                                <option value="">Todos</option>
+                                {% for codigo, nombre in tipos_movimiento %}
+                                    <option value="{{ codigo }}" 
+                                            {% if request.GET.tipo == codigo %}selected{% endif %}>
+                                        {{ nombre }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Fecha Desde -->
+                        <div class="col-md-2">
+                            <label class="form-label">Fecha Desde</label>
+                            <input type="date" name="fecha_desde" class="form-control" 
+                                   value="{{ request.GET.fecha_desde }}">
+                        </div>
+                        
+                        <!-- Fecha Hasta -->
+                        <div class="col-md-2">
+                            <label class="form-label">Fecha Hasta</label>
+                            <input type="date" name="fecha_hasta" class="form-control" 
+                                   value="{{ request.GET.fecha_hasta }}">
+                        </div>
+                        
+                        <!-- Producto (nombre) -->
+                        <div class="col-md-3">
+                            <label class="form-label">Producto (nombre o código)</label>
+                            <input type="text" name="producto_q" class="form-control" 
+                                   placeholder="Buscar por nombre..."
+                                   value="{{ request.GET.producto_q }}">
+                        </div>
+                        
+                        <!-- Botones -->
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-light me-2 flex-fill">
+                                <i class="bi bi-search"></i> Buscar
+                            </button>
+                            <a href="{% url 'farmacia:kardex_list' %}" 
+                               class="btn btn-outline-light">
+                                <i class="bi bi-x-circle"></i>
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- TABLA DE MOVIMIENTOS -->
+    <!-- ========================================================== -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="bi bi-table"></i>
+                            <strong>Movimientos Registrados</strong>
+                        </span>
+                        <span class="badge bg-primary">
+                            {{ page_obj.paginator.count|default:movimientos.count }} registros
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    
+                    {% if movimientos %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-kardex mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Folio</th>
+                                        <th>Fecha/Hora</th>
+                                        <th>Tipo</th>
+                                        <th>Producto</th>
+                                        <th>Lote</th>
+                                        <th>Cantidad</th>
+                                        <th>Costo Unit.</th>
+                                        <th>Stock Resultante</th>
+                                        <th>Usuario</th>
+                                        <th>Detalles</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for mov in movimientos %}
+                                    <tr class="{% if 'ENTRADA' in mov.tipo_movimiento %}movimiento-entrada{% elif 'SALIDA' in mov.tipo_movimiento %}movimiento-salida{% else %}movimiento-ajuste{% endif %}">
+                                        <td>
+                                            <strong>{{ mov.folio }}</strong>
+                                            {% if mov.requiere_autorizacion and not mov.autorizado %}
+                                                <br><span class="badge bg-warning text-dark">
+                                                    <i class="bi bi-hourglass-split"></i> Pendiente Autorización
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ mov.fecha_movimiento|date:"d/m/Y" }}
+                                            <br><small class="text-muted">{{ mov.fecha_movimiento|time:"H:i" }}</small>
+                                        </td>
+                                        <td>
+                                            {% if 'ENTRADA' in mov.tipo_movimiento %}
+                                                <span class="badge bg-success badge-tipo">
+                                                    <i class="bi bi-arrow-down-circle"></i> {{ mov.get_tipo_movimiento_display }}
+                                                </span>
+                                            {% elif 'SALIDA' in mov.tipo_movimiento %}
+                                                <span class="badge bg-danger badge-tipo">
+                                                    <i class="bi bi-arrow-up-circle"></i> {{ mov.get_tipo_movimiento_display }}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark badge-tipo">
+                                                    <i class="bi bi-arrow-left-right"></i> {{ mov.get_tipo_movimiento_display }}
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <strong>{{ mov.producto.nombre|truncatewords:5 }}</strong>
+                                            <br><small class="text-muted">{{ mov.producto.presentacion }}</small>
+                                        </td>
+                                        <td>
+                                            {% if mov.lote %}
+                                                <code>{{ mov.lote.numero_lote }}</code>
+                                                <br><small class="text-muted">Cad: {{ mov.lote.fecha_caducidad|date:"m/Y" }}</small>
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if 'ENTRADA' in mov.tipo_movimiento %}
+                                                <span class="text-success">+{{ mov.cantidad }}</span>
+                                            {% elif 'SALIDA' in mov.tipo_movimiento %}
+                                                <span class="text-danger">-{{ mov.cantidad }}</span>
+                                            {% else %}
+                                                {{ mov.cantidad }}
+                                            {% endif %}
+                                        </td>
+                                        <td>${{ mov.costo_unitario|floatformat:2 }}</td>
+                                        <td>
+                                            <strong>{{ mov.stock_resultante }}</strong>
+                                        </td>
+                                        <td>
+                                            {{ mov.usuario_responsable.get_full_name|default:mov.usuario_responsable.username }}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-info" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalDetalle{{ mov.id }}">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            
+                                            {% if mov.requiere_autorizacion and not mov.autorizado %}
+                                                <a href="{% url 'farmacia:autorizar_movimiento' mov.id %}" 
+                                                   class="btn btn-sm btn-success"
+                                                   onclick="return confirm('¿Autorizar este movimiento?')">
+                                                    <i class="bi bi-check-circle"></i>
+                                                </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Modal de Detalle -->
+                                    <div class="modal fade" id="modalDetalle{{ mov.id }}" tabindex="-1">
+                                        <div class="modal-dialog modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">
+                                                        Detalle del Movimiento - {{ mov.folio }}
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <dl class="row">
+                                                        <dt class="col-sm-4">Folio:</dt>
+                                                        <dd class="col-sm-8">{{ mov.folio }}</dd>
+                                                        
+                                                        <dt class="col-sm-4">Tipo de Movimiento:</dt>
+                                                        <dd class="col-sm-8">{{ mov.get_tipo_movimiento_display }}</dd>
+                                                        
+                                                        <dt class="col-sm-4">Producto:</dt>
+                                                        <dd class="col-sm-8">{{ mov.producto.nombre }}</dd>
+                                                        
+                                                        <dt class="col-sm-4">Cantidad:</dt>
+                                                        <dd class="col-sm-8">{{ mov.cantidad }}</dd>
+                                                        
+                                                        <dt class="col-sm-4">Costo Unitario:</dt>
+                                                        <dd class="col-sm-8">${{ mov.costo_unitario }}</dd>
+                                                        
+                                                        <dt class="col-sm-4">Stock Anterior:</dt>
+                                                        <dd class="col-sm-8">{{ mov.stock_anterior }}</dd>
+                                                        
+                                                        <dt class="col-sm-4">Stock Resultante:</dt>
+                                                        <dd class="col-sm-8"><strong>{{ mov.stock_resultante }}</strong></dd>
+                                                        
+                                                        {% if mov.proveedor %}
+                                                        <dt class="col-sm-4">Proveedor:</dt>
+                                                        <dd class="col-sm-8">{{ mov.proveedor.razon_social }}</dd>
+                                                        {% endif %}
+                                                        
+                                                        {% if mov.venta %}
+                                                        <dt class="col-sm-4">Venta:</dt>
+                                                        <dd class="col-sm-8">{{ mov.venta.folio_operacion|default:mov.venta.id }}</dd>
+                                                        {% endif %}
+                                                        
+                                                        {% if mov.documento_referencia %}
+                                                        <dt class="col-sm-4">Documento Referencia:</dt>
+                                                        <dd class="col-sm-8">{{ mov.documento_referencia }}</dd>
+                                                        {% endif %}
+                                                        
+                                                        {% if mov.observaciones %}
+                                                        <dt class="col-sm-4">Observaciones:</dt>
+                                                        <dd class="col-sm-8">{{ mov.observaciones }}</dd>
+                                                        {% endif %}
+                                                        
+                                                        <dt class="col-sm-4">Responsable:</dt>
+                                                        <dd class="col-sm-8">{{ mov.usuario_responsable.get_full_name|default:mov.usuario_responsable.username }}</dd>
+                                                        
+                                                        <dt class="col-sm-4">Fecha/Hora:</dt>
+                                                        <dd class="col-sm-8">{{ mov.fecha_movimiento }}</dd>
+                                                    </dl>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                        Cerrar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Paginación -->
+                        {% if is_paginated %}
+                        <div class="card-footer">
+                            <nav>
+                                <ul class="pagination justify-content-center mb-0">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1">Primera</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    <li class="page-item active">
+                                        <span class="page-link">
+                                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                                        </span>
+                                    </li>
+                                    
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                        
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                            <p class="text-muted mt-3">No se encontraron movimientos con los filtros aplicados</p>
+                            <a href="{% url 'farmacia:kardex_list' %}" class="btn btn-outline-primary">
+                                <i class="bi bi-arrow-clockwise"></i> Limpiar Filtros
+                            </a>
+                        </div>
+                    {% endif %}
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- BOTONES DE ACCIÓN -->
+    <!-- ========================================================== -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{% url 'farmacia:dashboard_alertas' %}" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+            <a href="{% url 'farmacia:kardex_list' %}?formato=excel&tipo={{ request.GET.tipo }}&fecha_desde={{ request.GET.fecha_desde }}&fecha_hasta={{ request.GET.fecha_hasta }}&producto_q={{ request.GET.producto_q }}"
+               class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+            </a>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

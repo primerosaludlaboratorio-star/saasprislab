@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Paquetes LIMS{% endblock %}
+{% block extra_css %}
+<style>
+body { background: #f4f6f9; }
+.lims-header { background: linear-gradient(135deg, #7d6608 0%, #b7950b 100%); }
+.table-lims th { background: #9a7b0a; color: #fff; position: sticky; top: 0; z-index: 5; }
+.table-lims td { vertical-align: middle; font-size: 0.9rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top:70px;">
+  <div class="lims-header rounded-3 p-4 mb-3 text-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <h3 class="m-0 fw-bold"><i class="fas fa-box-open me-2"></i>Ventana C — Paquetes LIMS</h3>
+      <small class="opacity-75">Nivel 3 · Lista compacta · <span id="lims-paq-total">{{ total }}</span> paquetes · visibles: <span id="lims-paq-vis">{{ total }}</span></small>
+    </div>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <input type="search" id="lims-paq-filtro" class="form-control form-control-sm" style="min-width:220px;"
+             placeholder="Filtrar por nombre o código…" autocomplete="off" aria-label="Buscar paquete">
+      <a href="{% url 'lims_paquete_nuevo' %}" class="btn btn-success btn-sm">
+        <i class="fas fa-plus me-1"></i>Nuevo Paquete
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive" style="max-height: calc(100vh - 220px);">
+      <table class="table table-hover table-sm table-lims mb-0" id="tabla-paquetes-lims">
+        <thead>
+          <tr>
+            <th style="width:14%">Código / legacy</th>
+            <th>Nombre</th>
+            <th style="width:26%">Descripción</th>
+            <th style="width:7%" class="text-center">An.</th>
+            <th style="width:7%" class="text-center">Perf.</th>
+            <th style="width:12%" class="text-center">Venta</th>
+            <th style="width:10%" class="text-center">Estado</th>
+            <th style="width:12%"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for paq in paquetes %}
+          <tr class="lims-fila-paquete"
+              data-busqueda="{{ paq.nombre|default:''|escape }} {{ paq.id_paquete_legacy|default:''|escape }}">
+            <td><code class="small text-break">{{ paq.id_paquete_legacy|default:"—" }}</code></td>
+            <td class="fw-semibold">{{ paq.nombre }}</td>
+            <td><small class="text-muted">{{ paq.descripcion|default:"—"|truncatechars:80 }}</small></td>
+            <td class="text-center"><span class="badge bg-secondary">{{ paq.n_analitos }}</span></td>
+            <td class="text-center"><span class="badge bg-info text-dark">{{ paq.n_perfiles }}</span></td>
+            <td class="text-center">
+              {% if paq.venta_publico %}<span class="badge bg-success">Pública</span>{% else %}<span class="badge bg-secondary">Interno</span>{% endif %}
+            </td>
+            <td class="text-center">
+              {% if paq.activo %}<span class="badge bg-success">Activo</span>{% else %}<span class="badge bg-danger">Inactivo</span>{% endif %}
+            </td>
+            <td>
+              <a href="{% url 'lims_paquete_detalle' paq.pk %}" class="btn btn-sm btn-outline-warning py-0">
+                <i class="fas fa-edit"></i> Composición
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="fas fa-box-open fa-2x opacity-25 d-block mb-2"></i>
+              No hay paquetes creados aún.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function() {
+  var inp = document.getElementById('lims-paq-filtro');
+  var vis = document.getElementById('lims-paq-vis');
+  if (!inp || !vis) return;
+  var filas = document.querySelectorAll('tr.lims-fila-paquete');
+  function aplicar() {
+    var q = inp.value.trim().toLowerCase();
+    var n = 0;
+    filas.forEach(function(tr) {
+      var hay = !q || (tr.getAttribute('data-busqueda') || '').toLowerCase().indexOf(q) !== -1;
+      tr.style.display = hay ? '' : 'none';
+      if (hay) n++;
+    });
+    vis.textContent = String(n);
+  }
+  inp.addEventListener('input', aplicar);
+  inp.addEventListener('search', aplicar);
+})();
+</script>
+{% endblock %}

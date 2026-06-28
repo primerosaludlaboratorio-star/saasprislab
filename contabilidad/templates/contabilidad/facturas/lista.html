@@ -1,0 +1,175 @@
+{% extends "base_generic.html" %}
+{% load static %}
+
+{% block title %}Facturas Electrónicas{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-file-invoice-dollar text-success"></i> Facturas Electrónicas CFDI 4.0
+                    </h1>
+                    <p class="text-muted mb-0">Administración de comprobantes fiscales</p>
+                </div>
+                <div>
+                    <a href="{% url 'contabilidad:crear_factura' %}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Nueva Factura
+                    </a>
+                    <a href="{% url 'contabilidad:lista_clientes' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-users"></i> Clientes
+                    </a>
+                </div>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center border-success">
+                        <div class="card-body">
+                            <h2 class="text-success mb-0">{{ stats.timbradas }}</h2>
+                            <small class="text-muted">Timbradas</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-warning">
+                        <div class="card-body">
+                            <h2 class="text-warning mb-0">{{ stats.borradores }}</h2>
+                            <small class="text-muted">Borradores</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-primary">
+                        <div class="card-body">
+                            <h2 class="text-primary mb-0">{{ stats.total }}</h2>
+                            <small class="text-muted">Total Facturas</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-info">
+                        <div class="card-body">
+                            <h2 class="text-info mb-0">${{ stats.monto_total|floatformat:2 }}</h2>
+                            <small class="text-muted">Monto Total</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <form method="get" class="row g-2">
+                        <div class="col-md-3">
+                            <label class="form-label small">Estado:</label>
+                            <select name="estado" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                <option value="TIMBRADO">Timbrado</option>
+                                <option value="BORRADOR">Borrador</option>
+                                <option value="CANCELADO">Cancelado</option>
+                                <option value="ERROR">Error</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Cliente:</label>
+                            <select name="cliente" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                {% for cliente in clientes %}
+                                <option value="{{ cliente.id }}">{{ cliente.razon_social }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lista de Facturas -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Folio</th>
+                                    <th>Cliente</th>
+                                    <th>RFC</th>
+                                    <th>Fecha</th>
+                                    <th class="text-end">Total</th>
+                                    <th>Estado</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for factura in facturas %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'contabilidad:detalle_factura' factura.id %}" class="text-decoration-none">
+                                            <strong>{{ factura.folio_interno }}</strong>
+                                        </a>
+                                    </td>
+                                    <td>{{ factura.cliente.razon_social|truncatewords:5 }}</td>
+                                    <td><code>{{ factura.cliente.rfc }}</code></td>
+                                    <td class="small">{{ factura.fecha_emision|date:"d/m/Y H:i" }}</td>
+                                    <td class="text-end"><strong>${{ factura.total|floatformat:2 }}</strong></td>
+                                    <td>
+                                        {% if factura.estado == 'TIMBRADO' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle"></i> Timbrado
+                                        </span>
+                                        {% elif factura.estado == 'BORRADOR' %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-edit"></i> Borrador
+                                        </span>
+                                        {% elif factura.estado == 'ERROR' %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-exclamation-circle"></i> Error
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ factura.get_estado_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'contabilidad:detalle_factura' factura.id %}" 
+                                               class="btn btn-outline-primary" title="Ver detalle">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if factura.estado == 'TIMBRADO' %}
+                                            <a href="{% url 'contabilidad:descargar_pdf' factura.id %}" 
+                                               class="btn btn-outline-success" title="Descargar PDF">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-5">
+                                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                                        <p class="mb-0">No hay facturas registradas</p>
+                                        <a href="{% url 'contabilidad:crear_factura' %}" class="btn btn-primary mt-2">
+                                            <i class="fas fa-plus"></i> Crear Primera Factura
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

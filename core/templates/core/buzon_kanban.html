@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Buzón de Quejas y Sugerencias - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>
+                    <i class="bi bi-inbox"></i> Buzón de Quejas y Sugerencias
+                </h2>
+                <a href="{% url 'reporte_friccion' %}" class="btn btn-primary">
+                    <i class="bi bi-lightbulb"></i> Nuevo Reporte de Fricción
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Total</h5>
+                    <h2>{{ total_quejas }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Pendientes</h5>
+                    <h2>{{ quejas_nuevas.count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5 class="card-title">Críticas</h5>
+                    <h2>{{ quejas_criticas }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Por Categoría</h5>
+                    <small>
+                        Optimización: {{ por_categoria.OPTIMIZACION }} | 
+                        Técnico: {{ por_categoria.ERROR_TECNICO }} | 
+                        Bienestar: {{ por_categoria.BIENESTAR }} | 
+                        Proceso: {{ por_categoria.PROCESO }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="row">
+        <!-- Pendiente -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0">Pendiente ({{ quejas_nuevas.count }})</h5>
+                </div>
+                <div class="card-body" style="min-height: 500px; max-height: 800px; overflow-y: auto;">
+                    {% for queja in quejas_nuevas %}
+                    <div class="card mb-3 queja-card" data-queja-id="{{ queja.id }}" draggable="true">
+                        <div class="card-body">
+                            {% if queja.punto_critico %}
+                            <div class="alert alert-danger py-2 mb-2">
+                                <strong><i class="bi bi-exclamation-triangle"></i> Punto Crítico:</strong><br>
+                                <small>{{ queja.punto_critico }}</small>
+                            </div>
+                            {% endif %}
+                            <h6 class="card-title">
+                                {% if queja.categoria_automatica %}
+                                <span class="badge 
+                                    {% if queja.categoria_automatica == 'OPTIMIZACION' %}bg-primary
+                                    {% elif queja.categoria_automatica == 'ERROR_TECNICO' %}bg-danger
+                                    {% elif queja.categoria_automatica == 'BIENESTAR' %}bg-warning
+                                    {% elif queja.categoria_automatica == 'PROCESO' %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ queja.get_categoria_automatica_display }}
+                                </span>
+                                {% endif %}
+                                {% if queja.modulo_afectado %}
+                                <span class="badge bg-info">{{ queja.get_modulo_afectado_display }}</span>
+                                {% endif %}
+                            </h6>
+                            <p class="card-text small">{{ queja.mensaje|truncatewords:20 }}</p>
+                            {% if queja.solucion_propuesta %}
+                            <div class="alert alert-info py-2 mb-2">
+                                <strong><i class="bi bi-lightbulb"></i> Solución Propuesta:</strong><br>
+                                <small>{{ queja.solucion_propuesta|truncatewords:15 }}</small>
+                            </div>
+                            {% endif %}
+                            <small class="text-muted">
+                                <i class="bi bi-person"></i> {{ queja.nombre_remitente|default:"Anónimo" }}<br>
+                                <i class="bi bi-clock"></i> {{ queja.fecha_creacion|date:"d/m/Y H:i" }}
+                            </small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">No hay reportes pendientes</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- En Revisión -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">En Análisis ({{ quejas_investigando.count }})</h5>
+                </div>
+                <div class="card-body" style="min-height: 500px; max-height: 800px; overflow-y: auto;">
+                    {% for queja in quejas_investigando %}
+                    <div class="card mb-3 queja-card" data-queja-id="{{ queja.id }}" draggable="true">
+                        <div class="card-body">
+                            {% if queja.punto_critico %}
+                            <div class="alert alert-danger py-2 mb-2">
+                                <strong><i class="bi bi-exclamation-triangle"></i> Punto Crítico:</strong><br>
+                                <small>{{ queja.punto_critico }}</small>
+                            </div>
+                            {% endif %}
+                            <h6 class="card-title">
+                                {% if queja.categoria_automatica %}
+                                <span class="badge 
+                                    {% if queja.categoria_automatica == 'OPTIMIZACION' %}bg-primary
+                                    {% elif queja.categoria_automatica == 'ERROR_TECNICO' %}bg-danger
+                                    {% elif queja.categoria_automatica == 'BIENESTAR' %}bg-warning
+                                    {% elif queja.categoria_automatica == 'PROCESO' %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ queja.get_categoria_automatica_display }}
+                                </span>
+                                {% endif %}
+                            </h6>
+                            <p class="card-text small">{{ queja.mensaje|truncatewords:20 }}</p>
+                            {% if queja.notas_seguimiento %}
+                            <div class="alert alert-warning py-2 mb-2">
+                                <strong>Notas:</strong><br>
+                                <small>{{ queja.notas_seguimiento|truncatewords:10 }}</small>
+                            </div>
+                            {% endif %}
+                            <small class="text-muted">
+                                <i class="bi bi-clock"></i> {{ queja.fecha_creacion|date:"d/m/Y H:i" }}
+                            </small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">No hay reportes en análisis</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Resuelto -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Implementado ({{ quejas_resueltas.count }})</h5>
+                </div>
+                <div class="card-body" style="min-height: 500px; max-height: 800px; overflow-y: auto;">
+                    {% for queja in quejas_resueltas %}
+                    <div class="card mb-3 queja-card" data-queja-id="{{ queja.id }}" draggable="true">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <span class="badge bg-success">Resuelto</span>
+                            </h6>
+                            <p class="card-text small">{{ queja.mensaje|truncatewords:15 }}</p>
+                            {% if queja.notas_resolucion %}
+                            <div class="alert alert-success py-2 mb-2">
+                                <strong>Resolución:</strong><br>
+                                <small>{{ queja.notas_resolucion|truncatewords:10 }}</small>
+                            </div>
+                            {% endif %}
+                            <small class="text-muted">
+                                <i class="bi bi-check-circle"></i> {{ queja.fecha_resolucion|date:"d/m/Y" }}
+                                {% if queja.resuelto_por %}
+                                <br><i class="bi bi-person-check"></i> {{ queja.resuelto_por.get_full_name|default:queja.resuelto_por.username }}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">No hay reportes resueltos</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Descartado -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Descartado ({{ quejas_descartadas.count }})</h5>
+                </div>
+                <div class="card-body" style="min-height: 500px; max-height: 800px; overflow-y: auto;">
+                    {% for queja in quejas_descartadas %}
+                    <div class="card mb-3 queja-card" data-queja-id="{{ queja.id }}" draggable="true">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <span class="badge bg-secondary">Descartado</span>
+                            </h6>
+                            <p class="card-text small">{{ queja.mensaje|truncatewords:15 }}</p>
+                            <small class="text-muted">
+                                <i class="bi bi-clock"></i> {{ queja.fecha_creacion|date:"d/m/Y" }}
+                            </small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">No hay reportes descartados</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Drag and Drop para mover quejas entre columnas
+document.querySelectorAll('.queja-card').forEach(card => {
+    card.addEventListener('dragstart', function(e) {
+        e.dataTransfer.setData('text/plain', this.dataset.quejaId);
+    });
+});
+
+document.querySelectorAll('.card-body').forEach(column => {
+    column.addEventListener('dragover', function(e) {
+        e.preventDefault();
+    });
+    
+    column.addEventListener('drop', function(e) {
+        e.preventDefault();
+        const quejaId = e.dataTransfer.getData('text/plain');
+        const nuevoEstado = this.closest('.col-md-3').querySelector('.card-header').textContent.trim();
+        
+        // Mapear texto a estado
+        const estadoMap = {
+            'Pendiente': 'PENDIENTE',
+            'En Análisis': 'EN_REVISION',
+            'Implementado': 'RESUELTO',
+            'Descartado': 'DESCARTADO'
+        };
+        
+        const estado = estadoMap[nuevoEstado.split('(')[0].trim()];
+        
+        if (estado) {
+            fetch(`/director/buzon/api/cambiar-estado/${quejaId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ estado: estado })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.mensaje);
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('Error al mover el reporte');
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

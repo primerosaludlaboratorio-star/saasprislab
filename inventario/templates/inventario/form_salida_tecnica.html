@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3" style="max-width:700px">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'inventario:lista_salidas_tecnicas' %}" class="btn btn-sm btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h2 class="mb-0 fw-bold text-warning"><i class="bi bi-tools me-2"></i>{{ titulo }}</h2>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post" novalidate id="formSalidaTecnica">
+        {% csrf_token %}
+        <div class="row g-3">
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">Lote a descontar <span class="text-danger">*</span></label>
+            <select name="lote" id="selectLote" class="form-select" required
+                    {% if request.GET.lote %}data-selected="{{ request.GET.lote }}"{% endif %}>
+              <option value="">— Seleccionar lote activo —</option>
+              {% for l in lotes %}
+                <option value="{{ l.pk }}"
+                  {% if request.GET.lote == l.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ l.reactivo.nombre }} — Lote {{ l.numero_lote }}
+                  (Disponible: {{ l.cantidad_actual|floatformat:2 }} {{ l.reactivo.unidad_medida }},
+                   Cad: {{ l.fecha_caducidad|date:"d/m/Y" }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tipo de Salida <span class="text-danger">*</span></label>
+            <select name="tipo" class="form-select" required>
+              {% for val, lbl in tipo_choices %}
+                <option value="{{ val }}">{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Cantidad <span class="text-danger">*</span></label>
+            <input type="number" name="cantidad" class="form-control" required step="0.001" min="0.001"
+                   placeholder="Cantidad a descontar">
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">Motivo / Justificación <span class="text-danger">*</span></label>
+            <textarea name="motivo" class="form-control" rows="2" required
+                      placeholder="Ej. Cambio de membrana de fotómetro, derrame accidental, calibración…"></textarea>
+          </div>
+
+          <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+            <a href="{% url 'inventario:lista_salidas_tecnicas' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-warning">
+              <i class="bi bi-save me-1"></i>Registrar Descuento
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

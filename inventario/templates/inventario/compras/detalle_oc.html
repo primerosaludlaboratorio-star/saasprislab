@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+  <!-- Encabezado -->
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h5 class="fw-bold mb-1"><i class="bi bi-cart4 me-2"></i>{{ titulo }}</h5>
+      <small class="text-muted">
+        Proveedor: <strong>{{ oc.proveedor.razon_social }}</strong> |
+        Generó: <strong>{{ oc.generada_por.username|default:"Sistema" }}</strong> |
+        {{ oc.fecha_generacion|date:"d/m/Y H:i" }}
+      </small>
+    </div>
+    <div class="text-end">
+      {% if oc.estado == 'COMPLETADA' %}<span class="badge bg-success fs-6">Completada</span>
+      {% elif oc.estado == 'APROBADA' %}<span class="badge bg-info text-dark fs-6">Aprobada</span>
+      {% elif oc.estado == 'PENDIENTE_DIRECTOR' %}<span class="badge bg-warning text-dark fs-6">Pendiente Director</span>
+      {% elif oc.estado == 'ENVIADA' %}<span class="badge bg-primary fs-6">Enviada</span>
+      {% elif oc.estado == 'PARCIALMENTE_RECIBIDA' %}<span class="badge bg-secondary fs-6">Parcialmente Recibida</span>
+      {% elif oc.estado == 'CANCELADA' %}<span class="badge bg-danger fs-6">Cancelada</span>
+      {% else %}<span class="badge bg-light text-dark fs-6">{{ oc.get_estado_display }}</span>{% endif %}
+    </div>
+  </div>
+
+  <!-- Resumen financiero -->
+  <div class="row g-2 mb-3">
+    <div class="col-sm-3">
+      <div class="card border-0 bg-light text-center py-2">
+        <small class="text-muted">Subtotal</small>
+        <div class="fw-bold">${{ oc.subtotal|floatformat:2 }}</div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="card border-0 bg-light text-center py-2">
+        <small class="text-muted">IVA 16%</small>
+        <div class="fw-bold">${{ oc.iva|floatformat:2 }}</div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="card border-0 bg-primary text-white text-center py-2">
+        <small>Total</small>
+        <div class="fw-bold fs-5">${{ oc.total|floatformat:2 }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Líneas -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-light py-2 fw-semibold">Artículos de la OC</div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Silo</th><th>Artículo</th><th class="text-end">Solicitado</th>
+              <th>Unidad</th><th class="text-end">Precio Est.</th>
+              <th class="text-end">Precio Real</th>
+              <th class="text-end">Subtotal</th><th class="text-end">Recibido</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in lineas %}
+            <tr>
+              <td>
+                {% if l.silo == 'LAB' %}<span class="badge bg-primary">Lab</span>
+                {% elif l.silo == 'CONSULTORIO' %}<span class="badge bg-info text-dark">Consultorio</span>
+                {% else %}<span class="badge bg-secondary">General</span>{% endif %}
+              </td>
+              <td>{{ l.descripcion_snapshot }}</td>
+              <td class="text-end">{{ l.cantidad_solicitada|floatformat:2 }}</td>
+              <td>{{ l.unidad_medida }}</td>
+              <td class="text-end">${{ l.precio_unitario_estimado }}</td>
+              <td class="text-end {% if l.precio_unitario_real %}text-success{% else %}text-muted{% endif %}">
+                {% if l.precio_unitario_real %}${{ l.precio_unitario_real }}{% else %}—{% endif %}
+              </td>
+              <td class="text-end fw-semibold">${{ l.subtotal|floatformat:2 }}</td>
+              <td class="text-end {% if l.cantidad_recibida >= l.cantidad_solicitada %}text-success{% elif l.cantidad_recibida > 0 %}text-warning{% else %}text-muted{% endif %}">
+                {{ l.cantidad_recibida|floatformat:2 }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% if oc.notas_director %}
+  <div class="alert alert-light border mb-3"><strong>Notas:</strong> {{ oc.notas_director }}</div>
+  {% endif %}
+
+  <!-- Formulario de Recepción de Mercancía -->
+  {% if puede_recibir %}
+  <div class="card border-success border-2 shadow-sm mb-3">
+    <div class="card-header bg-success text-white py-2 fw-semibold">
+      <i class="bi bi-box-arrow-in-down me-2"></i>Recibir Mercancía — Crear Lotes Automáticamente
+    </div>
+    <div class="card-body">
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="accion" value="recibir_mercancia">
+        <div class="alert alert-info py-2 small mb-3">
+          <i class="bi bi-info-circle me-1"></i>
+          Ingresa las cantidades realmente recibidas. El sistema creará los lotes en los silos correspondientes.
+          <strong>Reactivos LAB requieren número de lote y caducidad.</strong>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered">
+            <thead class="table-light">
+              <tr>
+                <th>Silo</th><th>Artículo</th>
+                <th>Cant. Recibida</th><th>N° Lote</th>
+                <th>Caducidad</th><th>Precio Real</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for l in lineas %}
+              {% if l.cantidad_recibida < l.cantidad_solicitada %}
+              <tr>
+                <td>
+                  {% if l.silo == 'LAB' %}<span class="badge bg-primary">Lab</span>
+                  {% elif l.silo == 'CONSULTORIO' %}<span class="badge bg-info text-dark">Cons.</span>
+                  {% else %}<span class="badge bg-secondary">Gral.</span>{% endif %}
+                </td>
+                <td class="fw-semibold">{{ l.descripcion_snapshot }}</td>
+                <td><input type="number" name="recibido_{{ l.pk }}_cantidad" step="0.01" min="0"
+                           value="{{ l.cantidad_solicitada|floatformat:2 }}" class="form-control form-control-sm" style="width:100px"></td>
+                <td>
+                  <input type="text" name="recibido_{{ l.pk }}_numero_lote" class="form-control form-control-sm"
+                         placeholder="{% if l.silo == 'LAB' %}Obligatorio{% else %}Opcional{% endif %}"
+                         style="width:130px">
+                </td>
+                <td>
+                  <input type="date" name="recibido_{{ l.pk }}_caducidad" class="form-control form-control-sm"
+                         style="width:140px">
+                </td>
+                <td>
+                  <div class="input-group input-group-sm" style="width:130px">
+                    <span class="input-group-text">$</span>
+                    <input type="number" name="recibido_{{ l.pk }}_precio_real" step="0.0001"
+                           value="{{ l.precio_unitario_estimado }}" class="form-control">
+                  </div>
+                </td>
+              </tr>
+              {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <button type="submit" class="btn btn-success"
+                onclick="return confirm('¿Confirmar recepción? Se crearán los lotes en los silos correspondientes.')">
+          <i class="bi bi-check-circle me-1"></i>Confirmar Recepción de Mercancía
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Botones de flujo -->
+  <div class="d-flex flex-wrap gap-2">
+    {% if oc.estado == 'BORRADOR' %}
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="accion" value="enviar_aprobacion">
+      <button type="submit" class="btn btn-warning"><i class="bi bi-send me-1"></i>Enviar a Aprobación</button>
+    </form>
+    {% endif %}
+
+    {% if oc.estado == 'PENDIENTE_DIRECTOR' %}
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="accion" value="aprobar">
+      <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i>Aprobar OC</button>
+    </form>
+    {% endif %}
+
+    {% if oc.estado == 'APROBADA' %}
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="accion" value="marcar_enviada">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-send me-1"></i>Marcar Enviada al Proveedor</button>
+    </form>
+    {% endif %}
+
+    {% if oc.estado not in 'COMPLETADA,CANCELADA' %}
+    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalCancelar">
+      <i class="bi bi-x-circle me-1"></i>Cancelar OC
+    </button>
+    {% endif %}
+
+    <a href="{% url 'inventario:lista_ordenes_compra' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Volver
+    </a>
+  </div>
+</div>
+
+<!-- Modal Cancelar -->
+<div class="modal fade" id="modalCancelar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="accion" value="cancelar">
+        <div class="modal-header">
+          <h5 class="modal-title">Cancelar OC {{ oc.folio }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label fw-semibold">Motivo de Cancelación</label>
+          <textarea name="razon_cancelacion" class="form-control" rows="3" placeholder="Opcional pero recomendado…"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="submit" class="btn btn-danger">Confirmar Cancelación</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

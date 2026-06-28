@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% load static %}
+{% load math_filters %}
+
+{% block title %}Balance General - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Prevenir Layout Shift en Móvil */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    @media (max-width: 768px) {
+        .btn-group-mobile {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .btn-group-mobile .btn {
+            width: 100%;
+        }
+        .balance-section {
+            margin-bottom: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4 px-2 px-md-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-2">
+                <h2 class="mb-0">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Balance General
+                </h2>
+                <div class="btn-group-mobile d-flex flex-row gap-2">
+                    <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
+                        <i class="bi bi-printer"></i> <span class="d-none d-md-inline">Imprimir</span>
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" onclick="exportarExcel()">
+                        <i class="bi bi-file-earmark-excel"></i> <span class="d-none d-md-inline">Excel</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-12 col-md-5">
+                    <label class="form-label fw-bold">Fecha de Corte</label>
+                    <input type="date" name="fecha_corte" class="form-control" value="{{ fecha_corte }}" required>
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="form-label d-none d-md-block">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Balance General -->
+    <div class="row g-3">
+        <!-- ACTIVOS -->
+        <div class="col-12 col-md-4 balance-section">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-arrow-down-circle"></i> ACTIVOS</h5>
+                </div>
+                <div class="card-body">
+                    {% if activos %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Cuenta</th>
+                                    <th class="text-end">Saldo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activo in activos %}
+                                <tr>
+                                    <td>
+                                        <small class="d-block">{{ activo.cuenta.codigo }}</small>
+                                        <strong>{{ activo.cuenta.nombre }}</strong>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong class="text-success">${{ activo.saldo|floatformat:2 }}</strong>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-secondary">
+                                <tr>
+                                    <td><strong>TOTAL ACTIVOS:</strong></td>
+                                    <td class="text-end">
+                                        <strong class="text-success">${{ total_activos|floatformat:2 }}</strong>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No hay cuentas de activo con saldo</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- PASIVOS -->
+        <div class="col-12 col-md-4 balance-section">
+            <div class="card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-arrow-up-circle"></i> PASIVOS</h5>
+                </div>
+                <div class="card-body">
+                    {% if pasivos %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Cuenta</th>
+                                    <th class="text-end">Saldo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pasivo in pasivos %}
+                                <tr>
+                                    <td>
+                                        <small class="d-block">{{ pasivo.cuenta.codigo }}</small>
+                                        <strong>{{ pasivo.cuenta.nombre }}</strong>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong class="text-danger">${{ pasivo.saldo|floatformat:2 }}</strong>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-secondary">
+                                <tr>
+                                    <td><strong>TOTAL PASIVOS:</strong></td>
+                                    <td class="text-end">
+                                        <strong class="text-danger">${{ total_pasivos|floatformat:2 }}</strong>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No hay cuentas de pasivo con saldo</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- CAPITAL -->
+        <div class="col-12 col-md-4 balance-section">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-badge"></i> CAPITAL</h5>
+                </div>
+                <div class="card-body">
+                    {% if capital %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Cuenta</th>
+                                    <th class="text-end">Saldo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cap in capital %}
+                                <tr>
+                                    <td>
+                                        <small class="d-block">{{ cap.cuenta.codigo }}</small>
+                                        <strong>{{ cap.cuenta.nombre }}</strong>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong class="text-primary">${{ cap.saldo|floatformat:2 }}</strong>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-secondary">
+                                <tr>
+                                    <td><strong>TOTAL CAPITAL:</strong></td>
+                                    <td class="text-end">
+                                        <strong class="text-primary">${{ total_capital|floatformat:2 }}</strong>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No hay cuentas de capital con saldo</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ecuación Contable -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card {% if total_activos == total_pasivos|add:total_capital %}border-success{% else %}border-warning{% endif %}">
+                <div class="card-header {% if total_activos == total_pasivos|add:total_capital %}bg-success{% else %}bg-warning{% endif %} text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-calculator"></i> Ecuación Contable
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center g-3">
+                        <div class="col-12 col-md-4">
+                            <h3 class="text-success mb-2">ACTIVOS</h3>
+                            <h2 class="mb-0">${{ total_activos|floatformat:2 }}</h2>
+                        </div>
+                        <div class="col-12 col-md-1 d-none d-md-block">
+                            <h1 class="mb-0">=</h1>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <h3 class="text-danger mb-2">PASIVOS</h3>
+                            <h2 class="mb-0">${{ total_pasivos|floatformat:2 }}</h2>
+                        </div>
+                        <div class="col-12 col-md-1 d-none d-md-block">
+                            <h1 class="mb-0">+</h1>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <h3 class="text-primary mb-2">CAPITAL</h3>
+                            <h2 class="mb-0">${{ total_capital|floatformat:2 }}</h2>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <h4>
+                            {% if total_activos == total_pasivos|add:total_capital %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle"></i> Balance Cuadra Correctamente
+                            </span>
+                            {% else %}
+                            <span class="badge bg-warning">
+                                <i class="bi bi-exclamation-triangle"></i> Diferencia: 
+                                ${{ total_activos|sub:total_pasivos|sub:total_capital|floatformat:2 }}
+                            </span>
+                            {% endif %}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function exportarExcel() {
+        const params = new URLSearchParams(window.location.search);
+        window.location.href = "{% url 'exportar_excel_balance' %}" + '?' + params.toString();
+    }
+</script>
+{% endblock %}

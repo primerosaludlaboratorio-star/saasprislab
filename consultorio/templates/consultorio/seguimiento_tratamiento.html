@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Seguimiento de Tratamiento{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-pills"></i> Seguimiento de Tratamiento</h2>
+            <p class="text-muted">
+                Alertas automáticas a pacientes sobre medicación, próximas citas y estudios pendientes
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoSeguimiento">
+                <i class="fas fa-plus"></i> Nuevo Seguimiento
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center bg-primary text-white">
+                <div class="card-body py-3">
+                    <h3 class="mb-0">{{ stats.activos }}</h3>
+                    <small>Seguimientos Activos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center bg-success text-white">
+                <div class="card-body py-3">
+                    <h3 class="mb-0">{{ stats.enviados_hoy }}</h3>
+                    <small>Enviados Hoy</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center bg-warning text-dark">
+                <div class="card-body py-3">
+                    <h3 class="mb-0">{{ stats.pendientes_envio }}</h3>
+                    <small>Pendientes de Envío</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center bg-info text-white">
+                <div class="card-body py-3">
+                    <h3 class="mb-0">{{ stats.pacientes_en_seguimiento }}</h3>
+                    <small>Pacientes en Seguimiento</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seguimientos activos agrupados por tipo -->
+    {% if seguimientos_medicacion %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0"><i class="fas fa-capsules"></i> Recordatorios de Medicación</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Paciente</th>
+                            <th>Medicamento / Indicación</th>
+                            <th>Canal</th>
+                            <th>Frecuencia</th>
+                            <th>Próximo Envío</th>
+                            <th>Fin Tratamiento</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in seguimientos_medicacion %}
+                        <tr>
+                            <td><strong>{{ s.paciente.nombre_completo }}</strong></td>
+                            <td>{{ s.mensaje|truncatewords:8 }}</td>
+                            <td><span class="badge bg-secondary">{{ s.get_canal_display }}</span></td>
+                            <td>
+                                {% if s.recurrente %}
+                                    Cada {{ s.intervalo_horas }}h
+                                {% else %}
+                                    Único
+                                {% endif %}
+                            </td>
+                            <td>{{ s.fecha_programada|date:"d/m/Y H:i" }}</td>
+                            <td>{{ s.fecha_fin|date:"d/m/Y"|default:"—" }}</td>
+                            <td>
+                                {% if s.enviado %}
+                                    <span class="badge bg-success">Enviado</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if seguimientos_citas %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-calendar-check"></i> Recordatorios de Próxima Cita</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Paciente</th>
+                            <th>Mensaje</th>
+                            <th>Canal</th>
+                            <th>Fecha Envío</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in seguimientos_citas %}
+                        <tr>
+                            <td><strong>{{ s.paciente.nombre_completo }}</strong></td>
+                            <td>{{ s.mensaje|truncatewords:10 }}</td>
+                            <td><span class="badge bg-secondary">{{ s.get_canal_display }}</span></td>
+                            <td>{{ s.fecha_programada|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if s.enviado %}
+                                    <span class="badge bg-success">Enviado</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if seguimientos_estudios %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-flask"></i> Estudios Pendientes</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Paciente</th>
+                            <th>Estudio</th>
+                            <th>Canal</th>
+                            <th>Fecha Envío</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in seguimientos_estudios %}
+                        <tr>
+                            <td><strong>{{ s.paciente.nombre_completo }}</strong></td>
+                            <td>{{ s.mensaje|truncatewords:10 }}</td>
+                            <td><span class="badge bg-secondary">{{ s.get_canal_display }}</span></td>
+                            <td>{{ s.fecha_programada|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if s.enviado %}
+                                    <span class="badge bg-success">Enviado</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not seguimientos_medicacion and not seguimientos_citas and not seguimientos_estudios %}
+    <div class="text-center py-5">
+        <i class="fas fa-bell fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">Sin seguimientos activos</h4>
+        <p class="text-muted">
+            Los seguimientos se crean automáticamente al finalizar una consulta
+            (según el plan de tratamiento del paciente).
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Nuevo Seguimiento -->
+<div class="modal fade" id="modalNuevoSeguimiento" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-bell"></i> Nuevo Seguimiento</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Paciente</label>
+                    <input type="text" class="form-control" id="buscarPacienteSeg" placeholder="Buscar paciente...">
+                    <input type="hidden" id="pacienteSeguimientoId">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tipo</label>
+                    <select class="form-select" id="tipoSeguimiento">
+                        <option value="MEDICACION">Recordatorio de Medicación</option>
+                        <option value="PROXIMA_CITA">Próxima Cita</option>
+                        <option value="ESTUDIOS">Estudios Pendientes</option>
+                        <option value="EVOLUCION">Seguimiento de Evolución</option>
+                        <option value="CONTROL">Control de Seguimiento</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Mensaje del Recordatorio</label>
+                    <textarea class="form-control" id="mensajeSeguimiento" rows="3"
+                              placeholder="Ej: Recuerde tomar Paracetamol 500mg cada 8 horas..."></textarea>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Canal</label>
+                        <select class="form-select" id="canalSeguimiento">
+                            <option value="WHATSAPP">WhatsApp</option>
+                            <option value="SMS">SMS</option>
+                            <option value="EMAIL">Email</option>
+                            <option value="SISTEMA">Sistema</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Fecha Envío</label>
+                        <input type="datetime-local" class="form-control" id="fechaSeguimiento">
+                    </div>
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="recurrenteSeg">
+                    <label class="form-check-label" for="recurrenteSeg">Recordatorio Recurrente</label>
+                </div>
+                <div id="opcionesRecurrencia" class="d-none">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label">Cada (horas)</label>
+                            <input type="number" class="form-control" id="intervaloHoras" value="8" min="1">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Hasta</label>
+                            <input type="date" class="form-control" id="fechaFinSeg">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnCrearSeguimiento">
+                    <i class="fas fa-bell"></i> Crear Seguimiento
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('recurrenteSeg').addEventListener('change', function() {
+    document.getElementById('opcionesRecurrencia').classList.toggle('d-none', !this.checked);
+});
+</script>
+{% endblock %}

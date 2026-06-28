@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Reporte de Caja{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="fas fa-cash-register me-2"></i>Reporte de Caja</h2>
+    <div class="d-flex gap-2">
+      <a href="?formato=pdf" class="btn btn-outline-danger btn-sm">
+        <i class="fas fa-file-pdf me-1"></i>PDF
+      </a>
+      <a href="?formato=excel" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-file-excel me-1"></i>Excel
+      </a>
+    </div>
+  </div>
+
+  {% if datos %}
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card bg-success text-white">
+        <div class="card-body text-center">
+          <div class="fs-5 fw-bold">${{ datos.total_ingresos|floatformat:2 }}</div>
+          <div class="small">Total ingresos</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-danger text-white">
+        <div class="card-body text-center">
+          <div class="fs-5 fw-bold">${{ datos.total_egresos|floatformat:2 }}</div>
+          <div class="small">Total egresos</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body text-center">
+          <div class="fs-5 fw-bold">${{ datos.saldo_neto|floatformat:2 }}</div>
+          <div class="small">Saldo neto</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-info text-white">
+        <div class="card-body text-center">
+          <div class="fs-5 fw-bold">{{ datos.num_transacciones|default:0 }}</div>
+          <div class="small">Transacciones</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-header bg-white"><span class="fw-semibold">Detalle de movimientos</span></div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Fecha</th><th>Concepto</th><th>Tipo</th><th class="text-end">Monto</th></tr>
+          </thead>
+          <tbody>
+            {% for mov in datos.movimientos|default:'' %}
+            <tr>
+              <td>{{ mov.fecha|date:"d/m/Y" }}</td>
+              <td>{{ mov.concepto }}</td>
+              <td><span class="badge bg-{% if mov.tipo == 'INGRESO' %}success{% else %}danger{% endif %}">{{ mov.tipo }}</span></td>
+              <td class="text-end fw-semibold">${{ mov.monto|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-4">Sin movimientos en el período</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-info">Selecciona un período para generar el reporte de caja.</div>
+  {% endif %}
+</div>
+{% endblock %}

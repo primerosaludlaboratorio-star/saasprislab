@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Academia{% endblock %}
+
+{% block extra_css %}
+<style>
+    .academy-hero {
+        background: linear-gradient(135deg, #0f172a 0%, #111827 45%, #1f2937 100%);
+        color: #fff;
+        border-radius: 1.25rem;
+        padding: 1.5rem;
+        box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+    }
+    .course-card {
+        border: 0;
+        border-radius: 1rem;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .course-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+    }
+    .course-chip {
+        display: inline-block;
+        padding: .2rem .55rem;
+        border-radius: 999px;
+        background: #e0f2fe;
+        color: #075985;
+        font-size: .78rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="academy-hero mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h1 class="h3 mb-1">Academia</h1>
+                <p class="mb-0 text-white-50">Diplomados, videos protegidos y trazabilidad de avance por colaborador.</p>
+            </div>
+            {% if es_admin_academia %}
+            <div class="text-end">
+                <span class="course-chip">Modo administración</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card course-card">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Mis cursos</h2>
+                    {% if cursos %}
+                    <div class="row g-3">
+                        {% for curso in cursos %}
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <div>
+                                            <h3 class="h6 mb-1">{{ curso.titulo }}</h3>
+                                            <p class="text-muted small mb-2">{{ curso.descripcion|default:"Sin descripción" }}</p>
+                                        </div>
+                                        <span class="badge bg-primary">{{ curso.videos.count }} videos</span>
+                                    </div>
+                                    <a href="{% url 'academia:curso_detalle' curso.slug %}" class="btn btn-sm btn-dark mt-2">Abrir curso</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        Aún no tienes cursos asignados. Un administrador puede otorgarte acceso desde el panel.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card course-card mb-4">
+                <div class="card-body">
+                    <h2 class="h6 mb-3">Panel de administración</h2>
+                    {% if es_admin_academia %}
+                    <p class="small text-muted mb-0">Desde el admin puedes cargar cursos, videos y accesos. El módulo ya queda listo para producción y trazabilidad.</p>
+                    {% else %}
+                    <p class="small text-muted mb-0">Solo los usuarios administradores pueden otorgar accesos y ver reportes de avance.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card course-card">
+                <div class="card-body">
+                    <h2 class="h6 mb-3">Acceso rápido</h2>
+                    <a class="btn btn-outline-primary w-100 mb-2" href="/admin/" target="_blank">Abrir Admin Django</a>
+                    {% if es_admin_academia %}
+                    <div class="small text-muted">Usa el admin para cargar el contenido y el módulo para reproducirlo.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

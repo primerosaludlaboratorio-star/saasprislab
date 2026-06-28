@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-03-31T22:49:46.961563",
+  "summary": {
+    "total": 39,
+    "operativas": 29,
+    "fallando": 0,
+    "advertencias": 9,
+    "no_desplegadas": 1,
+    "health_pct": 74.4
+  }
+}

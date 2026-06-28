@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3" style="max-width:860px">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{% url 'mantenimiento:diagnostico_inicio' arbol.expediente.pk %}"
+       class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+    <h2 class="fw-bold text-warning mb-0"><i class="bi bi-diagram-3 me-2"></i>{{ titulo }}</h2>
+  </div>
+
+  <!-- Nodo actual -->
+  <div class="card shadow-sm border-0 mb-4
+    {% if nodo.tipo_nodo == 'SOLUCIONADO' %}border-success border-2
+    {% elif nodo.tipo_nodo == 'ESCALAMIENTO' %}border-danger border-2{% endif %}">
+    <div class="card-header fw-semibold
+      {% if nodo.tipo_nodo == 'PREGUNTA' %}bg-primary text-white
+      {% elif nodo.tipo_nodo == 'ACCION' %}bg-warning bg-opacity-25
+      {% elif nodo.tipo_nodo == 'ESCALAMIENTO' %}bg-danger text-white
+      {% else %}bg-success text-white{% endif %}">
+      <i class="bi
+        {% if nodo.tipo_nodo == 'PREGUNTA' %}bi-question-circle
+        {% elif nodo.tipo_nodo == 'ACCION' %}bi-wrench
+        {% elif nodo.tipo_nodo == 'ESCALAMIENTO' %}bi-arrow-up-circle
+        {% else %}bi-check-circle{% endif %} me-2"></i>
+      {{ nodo.get_tipo_nodo_display }}
+    </div>
+    <div class="card-body">
+      {% if nodo.imagen %}
+        <img src="{{ nodo.imagen.url }}" class="img-fluid rounded mb-3" style="max-height:220px">
+      {% endif %}
+      <p class="fs-5 mb-3">{{ nodo.texto }}</p>
+
+      <!-- Si tiene procedimiento de reparación -->
+      {% if procedimiento %}
+        <div class="card border-warning mb-3">
+          <div class="card-header bg-warning bg-opacity-25 fw-semibold">
+            <i class="bi bi-wrench me-2"></i>Procedimiento: {{ procedimiento.titulo }}
+            <span class="badge bg-secondary ms-2">{{ procedimiento.tiempo_estimado_min }} min</span>
+            {% if procedimiento.requiere_paro_equipo %}
+              <span class="badge bg-danger ms-1"><i class="bi bi-power me-1"></i>Paro de equipo</span>
+            {% endif %}
+          </div>
+          <div class="card-body p-0">
+            {% for paso in pasos_procedimiento %}
+            <div class="border-bottom p-3 d-flex gap-3">
+              <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                   style="width:32px;height:32px;font-size:.85rem">{{ paso.orden }}</div>
+              <div>
+                <div>{{ paso.instruccion }}</div>
+                {% if paso.imagen %}
+                  <img src="{{ paso.imagen.url }}" class="img-thumbnail mt-2" style="max-height:120px">
+                {% endif %}
+                {% if paso.nota_seguridad %}
+                  <div class="alert alert-warning py-1 px-2 small mt-2">
+                    <i class="bi bi-shield-exclamation me-1"></i>{{ paso.nota_seguridad }}
+                  </div>
+                {% endif %}
+                {% if paso.silo_refaccion %}
+                  <span class="badge bg-info text-dark mt-1">
+                    <i class="bi bi-box me-1"></i>Refacción del Silo {{ paso.get_silo_refaccion_display }}:
+                    {{ paso.cantidad_refaccion }} {{ paso.unidad_refaccion }}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Escalamiento a proveedor — requiere autorización director -->
+      {% if nodo.tipo_nodo == 'ESCALAMIENTO' and nodo.nivel_escalamiento == 'PROVEEDOR' %}
+        {% if puede_escalar_proveedor %}
+          <div class="alert alert-danger">
+            <strong>Escalamiento a Proveedor Externo</strong><br>
+            Esta acción registrará tu autorización como Director. El ticket quedará como ESCALADO.
+            <form method="post" action="{% url 'mantenimiento:crear_ticket' %}?nodo={{ nodo.pk }}" class="mt-2">
+              {% csrf_token %}
+              <input type="hidden" name="expediente" value="{{ arbol.expediente_id }}">
+              <input type="hidden" name="nodo_diagnostico_final" value="{{ nodo.pk }}">
+              <input type="hidden" name="tipo_origen" value="DIAGNOSTICO">
+              <input type="hidden" name="nivel_escalamiento_actual" value="PROVEEDOR">
+              <input type="hidden" name="titulo" value="Escalado: {{ arbol.falla_descripcion }}">
+              <button type="submit" class="btn btn-danger">
+                <i class="bi bi-telephone-outbound me-1"></i>Autorizo escalamiento a Proveedor
+              </button>
+            </form>
+          </div>
+        {% else %}
+          <div class="alert alert-danger">
+            <i class="bi bi-lock-fill me-2"></i>
+            Este nodo requiere autorización del <strong>Director</strong> para escalar a un proveedor externo.
+            Notifica a tu Director.
+          </div>
+        {% endif %}
+      {% elif nodo.tipo_nodo == 'ESCALAMIENTO' %}
+        <div class="alert alert-warning">
+          <i class="bi bi-arrow-up-circle me-2"></i>
+          Escala el problema a: <strong>{{ nodo.get_nivel_escalamiento_display }}</strong>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- Hijos (respuestas posibles) -->
+  {% if hijos %}
+  <h5 class="text-muted mb-3">¿Qué ocurre?</h5>
+  <div class="row g-3">
+    {% for hijo in hijos %}
+    <div class="col-md-6">
+      <a href="{% url 'mantenimiento:diagnostico_nodo' arbol.pk hijo.pk %}"
+         class="card border-0 shadow-sm h-100 text-decoration-none hover-shadow">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="bg-primary bg-opacity-10 rounded p-3">
+            <i class="bi bi-arrow-right-circle text-primary fs-4"></i>
+          </div>
+          <div>
+            <div class="fw-bold text-dark">{{ hijo.condicion_de_padre|default:"Continuar" }}</div>
+            <small class="text-muted">{{ hijo.texto|truncatechars:80 }}</small>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% elif nodo.tipo_nodo == 'SOLUCIONADO' %}
+    <div class="alert alert-success mt-3">
+      <i class="bi bi-check-circle-fill me-2"></i>
+      <strong>¡Problema resuelto!</strong> Registra un ticket de cierre si es necesario.
+      <a href="{% url 'mantenimiento:crear_ticket_equipo' arbol.expediente_id %}"
+         class="btn btn-sm btn-success ms-3">Crear Ticket de Cierre</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

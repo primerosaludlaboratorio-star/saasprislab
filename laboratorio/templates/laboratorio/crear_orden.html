@@ -1,0 +1,1004 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Recepción Laboratorio - Crear Orden{% endblock %}
+
+{% block extra_css %}
+<!-- Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+<style>
+    .card-header {
+        background: linear-gradient(135deg, var(--prislab-red) 0%, #B71C1C 100%);
+        color: white;
+    }
+    .select2-container--bootstrap-5 .select2-selection {
+        min-height: 38px;
+    }
+    .btn-nuevo {
+        border-radius: 0 0.375rem 0.375rem 0;
+    }
+    /* Aplicar estilos futuristas a la tabla de estudios */
+    #tablaEstudios {
+        font-family: 'Inter', sans-serif;
+    }
+    #tablaEstudios tbody tr {
+        transition: all var(--transition-fast);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary mb-0">
+            <i class="bi bi-heart-pulse"></i> Recepción de Laboratorio
+        </h2>
+    </div>
+
+    <form method="post" id="formOrden" class="row g-4">
+        {% csrf_token %}
+
+        <!-- Columna izquierda: Datos del Paciente y Médico -->
+        <div class="col-md-4">
+            <!-- Card Paciente -->
+            <div class="card card-profesional mb-3">
+                <div class="card-header card-header-clinico">
+                    <i class="bi bi-person-lines-fill"></i> Paciente
+                </div>
+                <div class="card-body">
+                    <label class="form-label fw-bold small">Buscar Paciente:</label>
+                    <div class="input-group mb-2">
+                        <select id="selectPaciente" name="paciente_id" class="form-select" required>
+                            <option value="">Seleccione o busque un paciente...</option>
+                        </select>
+                        <button type="button" class="btn btn-primary btn-nuevo" data-bs-toggle="modal" data-bs-target="#modalNuevoPaciente">
+                            <i class="bi bi-person-plus"></i> Nuevo
+                        </button>
+                    </div>
+                    <div id="infoPaciente" class="small text-muted mt-2" style="display: none;">
+                        <div><strong>Código:</strong> <span id="codigoPaciente"></span></div>
+                        <div><strong>Edad:</strong> <span id="edadPaciente"></span> años</div>
+                        <div><strong>Sexo:</strong> <span id="sexoPaciente"></span></div>
+                        <div id="telefonoPaciente" style="display: none;"><strong><i class="bi bi-telephone"></i> Tel:</strong> <span id="telefonoPacienteValor"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Médico -->
+            <div class="card card-profesional mb-3">
+                <div class="card-header card-header-clinico">
+                    <i class="bi bi-person-badge"></i> Médico Solicitante
+                </div>
+                <div class="card-body">
+                    <label class="form-label fw-bold small">Buscar Médico:</label>
+                    <div class="input-group mb-2">
+                        <select id="selectMedico" name="medico_id" class="form-select">
+                            <option value="">Sin médico asignado</option>
+                            {% for medico in medicos %}
+                                <option value="{{ medico.id }}">{{ medico.nombre }}{% if medico.especialidad %} - {{ medico.especialidad }}{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-success btn-nuevo" data-bs-toggle="modal" data-bs-target="#modalNuevoMedico">
+                            <i class="bi bi-plus-circle"></i>
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <label class="form-label fw-bold small">O escribir manualmente:</label>
+                        <input type="text" name="medico_texto" id="medicoTexto" class="form-control form-control-sm" placeholder="Nombre del médico">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Origen -->
+            <div class="card card-profesional">
+                <div class="card-header card-header-clinico">
+                    <i class="bi bi-tag"></i> Origen
+                </div>
+                <div class="card-body">
+                    <label class="form-label fw-bold small">Tipo de Orden:</label>
+                    <select name="origen" class="form-select">
+                        {% for valor, etiqueta in origenes %}
+                            <option value="{{ valor }}" {% if valor == 'PUBLICO_GENERAL' %}selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna derecha: Estudios y total -->
+        <div class="col-md-8">
+            <div class="card card-profesional mb-3">
+                <div class="card-header card-header-clinico d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-clipboard-check"></i> Selección de Estudios</span>
+                    <div class="text-end">
+                        <small class="text-muted d-block">Total Estimado</small>
+                        <span id="totalDisplay" class="h4 fw-bold text-primary mb-0 mono-num">$0.00</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Buscador de Estudios -->
+                    <label class="form-label fw-bold mb-2">
+                        <i class="bi bi-search"></i> Buscar Estudio (nombre, código o categoría):
+                    </label>
+                    <select id="selectEstudio" class="form-select mb-3">
+                        <option value="">Escriba para buscar...</option>
+                    </select>
+
+                    <!-- Tabla de Estudios Seleccionados -->
+                    <div class="table-responsive">
+                        <table class="table-profesional table-sm" id="tablaEstudios">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%;">#</th>
+                                    <th style="width: 45%;">Estudio</th>
+                                    <th style="width: 20%;">Categoría</th>
+                                    <th style="width: 15%;" class="text-end">Precio</th>
+                                    <th style="width: 15%;" class="text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyEstudios">
+                                <tr id="filaVacia">
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox"></i> No hay estudios seleccionados. Use el buscador arriba.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-profesional">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">Total a Pagar</div>
+                        <div id="totalDisplayFooter" class="h3 fw-bold text-primary mb-0 mono-num">$0.00</div>
+                    </div>
+                    <button type="submit" id="btn-generar-orden" class="btn btn-principal btn-lg fw-bold"
+                            onclick="this.disabled=true; this.innerHTML='<span class=\'spinner-border spinner-border-sm me-2\' role=\'status\'></span>Generando...';">
+                        <i class="bi bi-file-plus"></i> Generar Orden
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal Nuevo Paciente -->
+<div class="modal fade" id="modalNuevoPaciente" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-person-plus"></i> Nuevo Paciente</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNuevoPaciente">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre(s) <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="pacienteNombres" required
+                               placeholder="Ej: Maria Fernanda" style="text-transform: uppercase;">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Apellido Paterno <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="pacienteApellidoPaterno" required
+                                   placeholder="Ej: Garcia" style="text-transform: uppercase;">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Apellido Materno</label>
+                            <input type="text" class="form-control" id="pacienteApellidoMaterno"
+                                   placeholder="Ej: Lopez" style="text-transform: uppercase;">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Fecha de Nacimiento <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="pacienteFechaNac" required
+                                   max="{{ "now"|date:"Y-m-d" }}">
+                            <div class="invalid-feedback" id="fechaNacError" style="display:none;color:#dc3545;font-size:.8rem;">
+                                <i class="fas fa-exclamation-circle"></i> La fecha no puede ser futura
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Sexo <span class="text-danger">*</span></label>
+                            <select class="form-select" id="pacienteSexo" required>
+                                <option value="">Seleccione...</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-telephone-fill text-primary"></i> Teléfono / WhatsApp
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-whatsapp text-success"></i></span>
+                                <input type="tel" class="form-control" id="pacienteTelefono" 
+                                       placeholder="Ej: 2291234567" maxlength="10" pattern="[0-9]{10}"
+                                       oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)">
+                            </div>
+                            <small class="text-muted" id="telefonoHelp">10 digitos - <b>Obligatorio</b> para WhatsApp</small>
+                            <div class="invalid-feedback" id="telefonoError" style="display:none;color:#dc3545;font-size:.8rem;">
+                                <i class="fas fa-exclamation-circle"></i> El telefono debe tener exactamente 10 digitos
+                            </div>
+                            <div id="telefonoOk" style="display:none;color:#198754;font-size:.8rem;">
+                                <i class="bi bi-check-circle-fill"></i> Telefono valido para WhatsApp
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-envelope-fill text-primary"></i> Email
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                <input type="email" class="form-control" id="pacienteEmail" placeholder="ejemplo@correo.com">
+                            </div>
+                            <small class="text-muted">Opcional - Para envío de resultados</small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarPaciente" disabled>
+                    <i class="bi bi-save"></i> Guardar Paciente
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL COBRO OBLIGATORIO (R102-104) -->
+<!-- ============================================================ -->
+<div class="modal fade" id="modalCobro" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white py-2">
+                <h5 class="modal-title fw-bold"><i class="bi bi-cash-stack"></i> Cobro de Orden</h5>
+            </div>
+            <div class="modal-body">
+                <!-- Resumen -->
+                <div class="bg-light rounded p-3 mb-3 text-center">
+                    <small class="text-muted d-block">TOTAL A COBRAR</small>
+                    <span id="cobroTotal" class="h2 fw-bold text-primary mono-num">$0.00</span>
+                </div>
+
+                <!-- Metodo de pago -->
+                <label class="form-label fw-bold small">Metodo de Pago:</label>
+                <div class="btn-group w-100 mb-3" role="group">
+                    <input type="radio" class="btn-check" name="metodoPago" id="pagoEfectivo" value="EFECTIVO" checked>
+                    <label class="btn btn-outline-success" for="pagoEfectivo"><i class="bi bi-cash"></i> Efectivo</label>
+                    <input type="radio" class="btn-check" name="metodoPago" id="pagoTarjeta" value="TARJETA">
+                    <label class="btn btn-outline-primary" for="pagoTarjeta"><i class="bi bi-credit-card"></i> Tarjeta</label>
+                    <input type="radio" class="btn-check" name="metodoPago" id="pagoTransferencia" value="TRANSFERENCIA">
+                    <label class="btn btn-outline-info" for="pagoTransferencia"><i class="bi bi-bank"></i> Transfer</label>
+                    <input type="radio" class="btn-check" name="metodoPago" id="pagoMixto" value="MIXTO">
+                    <label class="btn btn-outline-warning" for="pagoMixto"><i class="bi bi-layers"></i> Mixto</label>
+                </div>
+
+                <!-- Seccion Efectivo -->
+                <div id="seccionEfectivo">
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Monto Efectivo:</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-success text-white">$</span>
+                            <input type="number" class="form-control form-control-lg fw-bold text-end mono-num"
+                                   id="montoEfectivo" step="0.01" min="0" placeholder="0.00"
+                                   oninput="calcularCambioCobro()">
+                        </div>
+                    </div>
+                    <div id="seccionCambio" class="alert alert-info py-2 text-center" style="display:none;">
+                        <small class="text-muted">CAMBIO:</small>
+                        <strong id="montoCambio" class="h4 d-block mono-num">$0.00</strong>
+                    </div>
+                </div>
+
+                <!-- Seccion Tarjeta (visible si tarjeta o mixto) -->
+                <div id="seccionTarjeta" style="display:none;">
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Monto Tarjeta:</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-primary text-white">$</span>
+                            <input type="number" class="form-control fw-bold text-end mono-num"
+                                   id="montoTarjeta" step="0.01" min="0" placeholder="0.00"
+                                   oninput="calcularCambioCobro()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seccion Transferencia (visible si transfer o mixto) -->
+                <div id="seccionTransferencia" style="display:none;">
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Monto Transferencia:</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-info text-white">$</span>
+                            <input type="number" class="form-control fw-bold text-end mono-num"
+                                   id="montoTransferencia" step="0.01" min="0" placeholder="0.00"
+                                   oninput="calcularCambioCobro()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resto por cubrir (pago mixto) -->
+                <div id="seccionRestante" class="alert alert-warning py-2 text-center" style="display:none;">
+                    <small>Falta por cubrir:</small>
+                    <strong id="montoRestante" class="h5 d-block text-danger mono-num">$0.00</strong>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-outline-secondary" onclick="cerrarModalCobro()">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-success btn-lg fw-bold" id="btnConfirmarCobro" onclick="confirmarCobro()">
+                    <i class="bi bi-check-circle"></i> Confirmar y Generar Orden
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nuevo Médico -->
+<div class="modal fade" id="modalNuevoMedico" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-person-badge"></i> Nuevo Médico</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNuevoMedico">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre Completo <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="medicoNombre" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Especialidad</label>
+                        <input type="text" class="form-control" id="medicoEspecialidad" placeholder="Ej: Cardiología, Pediatría...">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" id="btnGuardarMedico">
+                    <i class="bi bi-save"></i> Guardar Médico
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+    const URL_TICKET_LAB = "{% url 'laboratorio:ticket' 0 %}";
+
+    // Inicializar Select2 para Pacientes
+    $('#selectPaciente').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Buscar por nombre o código...',
+        allowClear: true,
+        ajax: {
+            url: '{% url "api_buscar_pacientes" %}',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return { q: params.term };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.pacientes.map(function(p) {
+                        return {
+                            id: p.id,
+                            text: `${p.nombre_completo}${p.codigo ? ' [' + p.codigo + ']' : ''}`,
+                            paciente: p
+                        };
+                    })
+                };
+            },
+            cache: true
+        }
+    }).on('select2:select', function (e) {
+        const data = e.params.data;
+        if (data.paciente) {
+            $('#codigoPaciente').text(data.paciente.codigo || 'N/A');
+            $('#edadPaciente').text(data.paciente.edad || 'N/A');
+            $('#sexoPaciente').text(data.paciente.sexo || 'N/A');
+            $('#infoPaciente').show();
+        }
+    }).on('select2:clear', function() {
+        $('#infoPaciente').hide();
+    });
+
+    // Inicializar Select2 para Médicos
+    $('#selectMedico').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Buscar médico...',
+        allowClear: true
+    });
+
+    // Inicializar Select2 para Estudios (Buscador tipo POS)
+    $('#selectEstudio').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Escriba para buscar estudios...',
+        allowClear: true,
+        ajax: {
+            url: '{% url "laboratorio:api_buscar_estudios" %}',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return { q: params.term };
+            },
+            processResults: function (data) {
+                var items = data.estudios || data.results || [];
+                return {
+                    results: items.map(function(e) {
+                        return {
+                            id: e.id,
+                            text: `${e.codigo} - ${e.nombre} (${e.seccion || ''}) - $${parseFloat(e.precio).toFixed(2)}`,
+                            estudio: e
+                        };
+                    })
+                };
+            },
+            cache: true
+        }
+    }).on('select2:select', function (e) {
+        const data = e.params.data;
+        if (data.estudio) {
+            agregarEstudioATabla(data.estudio);
+            // Limpiar el buscador para permitir agregar el siguiente
+            $('#selectEstudio').val(null).trigger('change');
+        }
+    });
+
+    // Array para mantener los estudios seleccionados
+    let estudiosSeleccionados = [];
+    let contadorFila = 0;
+
+    // Función para agregar estudio a la tabla
+    function agregarEstudioATabla(estudio) {
+        // Verificar si ya está agregado
+        if (estudiosSeleccionados.find(e => e.id === estudio.id)) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Estudio ya agregado',
+                text: 'Este estudio ya está en la lista.',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            return;
+        }
+
+        contadorFila++;
+        estudiosSeleccionados.push(estudio);
+
+        // Ocultar fila vacía si existe
+        $('#filaVacia').hide();
+
+        // Crear fila en la tabla
+        const fila = `
+            <tr id="fila-estudio-${estudio.id}" data-estudio-id="${estudio.id}">
+                <td>${contadorFila}</td>
+                <td>
+                    <strong>${estudio.nombre}</strong>
+                    ${estudio.codigo ? `<br><small class="text-muted">Código: ${estudio.codigo}</small>` : ''}
+                </td>
+                <td><span class="badge bg-secondary">${estudio.seccion || ''}</span></td>
+                <td class="text-end">
+                    <strong class="text-success mono-num">$${estudio.precio.toFixed(2)}</strong>
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-danger btn-eliminar-estudio" data-estudio-id="${estudio.id}">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    <input type="hidden" name="estudios" value="${estudio.id}">
+                </td>
+            </tr>
+        `;
+
+        $('#tbodyEstudios').append(fila);
+
+        // Agregar evento al botón eliminar
+        $(`#fila-estudio-${estudio.id} .btn-eliminar-estudio`).on('click', function() {
+            eliminarEstudioDeTabla(estudio.id);
+        });
+
+        // Actualizar total
+        actualizarTotal();
+    }
+
+    // Función para eliminar estudio de la tabla
+    function eliminarEstudioDeTabla(estudioId) {
+        estudiosSeleccionados = estudiosSeleccionados.filter(e => e.id !== estudioId);
+        $(`#fila-estudio-${estudioId}`).remove();
+
+        // Si no hay estudios, mostrar fila vacía
+        if (estudiosSeleccionados.length === 0) {
+            $('#filaVacia').show();
+        }
+
+        // Actualizar total
+        actualizarTotal();
+    }
+
+    // Guardar nuevo paciente
+    $('#btnGuardarPaciente').on('click', function() {
+        // Función auxiliar para obtener valores de forma segura
+        const safeGet = (selector) => {
+            const val = $(selector).val();
+            return val ? val.trim() : '';
+        };
+
+        const apellidoP = safeGet('#pacienteApellidoPaterno').toUpperCase();
+        const apellidoM = safeGet('#pacienteApellidoMaterno').toUpperCase();
+        const nombresVal = safeGet('#pacienteNombres').toUpperCase();
+        const apellidosJuntos = [apellidoP, apellidoM].filter(Boolean).join(' ');
+        
+        const datos = {
+            nombres: nombresVal,
+            apellido_paterno: apellidoP,
+            apellido_materno: apellidoM,
+            fecha_nacimiento: safeGet('#pacienteFechaNac'),
+            sexo: safeGet('#pacienteSexo'),
+            telefono: safeGet('#pacienteTelefono') || null,
+            email: safeGet('#pacienteEmail') || null,
+        };
+
+        // ========== VALIDACIONES ANTI-ERROR HUMANO ==========
+        let errores = [];
+        
+        if (!datos.nombres) errores.push('El campo <b>Nombre(s)</b> es obligatorio');
+        if (!apellidoP) errores.push('El campo <b>Apellido Paterno</b> es obligatorio');
+        if (!datos.fecha_nacimiento) {
+            errores.push('La <b>Fecha de Nacimiento</b> es obligatoria');
+        } else {
+            const hoy = new Date();
+            const fechaNac = new Date(datos.fecha_nacimiento + 'T00:00:00');
+            if (fechaNac > hoy) {
+                errores.push('La <b>Fecha de Nacimiento</b> no puede ser futura');
+                $('#pacienteFechaNac').addClass('is-invalid');
+                $('#fechaNacError').show();
+            } else {
+                $('#pacienteFechaNac').removeClass('is-invalid');
+                $('#fechaNacError').hide();
+            }
+        }
+        if (!datos.sexo) errores.push('Seleccione el <b>Sexo</b>');
+        
+        // Validar telefono: si se ingreso, debe tener 10 digitos
+        if (datos.telefono && datos.telefono.length !== 10) {
+            errores.push('El <b>Telefono</b> debe tener exactamente 10 digitos');
+            $('#pacienteTelefono').addClass('is-invalid');
+            $('#telefonoError').show();
+        } else {
+            $('#pacienteTelefono').removeClass('is-invalid');
+            $('#telefonoError').hide();
+        }
+        
+        if (errores.length > 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Campos con errores',
+                html: '<ul style="text-align:left;margin:0;padding-left:20px;">' + 
+                      errores.map(e => '<li>' + e + '</li>').join('') + '</ul>',
+                confirmButtonText: 'Corregir'
+            });
+            return;
+        }
+
+        // Mostrar loading
+        const btnGuardar = $('#btnGuardarPaciente');
+        const textoOriginal = btnGuardar.html();
+        btnGuardar.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Guardando...');
+
+        $.ajax({
+            url: '{% url "api_guardar_paciente" %}',
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json',
+            },
+            data: JSON.stringify(datos),
+            success: function(response) {
+                // Restaurar botón
+                btnGuardar.prop('disabled', false).html(textoOriginal);
+                
+                if (response.status === 'success' || response.success) {
+                    const codigoPac = response.paciente.codigo || `P-${response.paciente.id}`;
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Paciente creado!',
+                        html: `Código generado: <strong>${codigoPac}</strong>`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    
+                    // Cerrar modal y limpiar formulario
+                    $('#modalNuevoPaciente').modal('hide');
+                    $('#formNuevoPaciente')[0].reset();
+                    
+                    // Agregar y seleccionar el nuevo paciente
+                    const nombreCompleto = response.paciente.nombre_completo || response.paciente.nombre;
+                    const option = new Option(
+                        `${nombreCompleto} [${codigoPac}]`,
+                        response.paciente.id,
+                        true,
+                        true
+                    );
+                    $('#selectPaciente').append(option).trigger('change');
+                    
+                    // Mostrar info del paciente
+                    $('#codigoPaciente').text(codigoPac);
+                    $('#edadPaciente').text(response.paciente.edad || 'N/A');
+                    $('#sexoPaciente').text(datos.sexo === 'M' ? 'Masculino' : 'Femenino');
+                    
+                    // Mostrar teléfono si existe
+                    if (response.paciente.telefono) {
+                        $('#telefonoPacienteValor').text(response.paciente.telefono);
+                        $('#telefonoPaciente').show();
+                    } else {
+                        $('#telefonoPaciente').hide();
+                    }
+                    
+                    $('#infoPaciente').show();
+                } else {
+                    // NO cerrar el modal si hay error - mostrar mensaje dentro del modal
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error al crear paciente',
+                        text: response.error || 'Error desconocido al crear el paciente.',
+                        confirmButtonText: 'Entendido'
+                    });
+                    // El modal permanece abierto para que el usuario pueda corregir
+                }
+            },
+            error: function(xhr) {
+                // Restaurar botón
+                btnGuardar.prop('disabled', false).html(textoOriginal);
+                
+                // Obtener mensaje de error del servidor o usar uno genérico
+                let errorMsg = 'Error al crear el paciente.';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg = xhr.responseJSON.error;
+                } else if (xhr.status === 0) {
+                    errorMsg = 'Error de conexión. Verifique su conexión a internet.';
+                } else if (xhr.status >= 500) {
+                    errorMsg = 'Error del servidor. Por favor, intente nuevamente.';
+                }
+                
+                // NO cerrar el modal - mostrar error dentro del modal
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al crear paciente',
+                    text: errorMsg,
+                    confirmButtonText: 'Entendido'
+                });
+                // El modal permanece abierto para que el usuario pueda corregir
+            }
+        });
+    });
+
+    // ========== BLINDAJE TELEFONO: Deshabilitar Guardar hasta 10 digitos ==========
+    function validarEstadoBotonPaciente() {
+        const tel = $('#pacienteTelefono').val() || '';
+        const nombres = $('#pacienteNombres').val() || '';
+        const apellidoP = $('#pacienteApellidoPaterno').val() || '';
+        const fecha = $('#pacienteFechaNac').val() || '';
+        const sexo = $('#pacienteSexo').val() || '';
+        const btn = $('#btnGuardarPaciente');
+
+        // Telefono: si tiene algo, debe ser 10 digitos
+        if (tel.length > 0 && tel.length < 10) {
+            $('#telefonoError').show();
+            $('#telefonoOk').hide();
+            $('#pacienteTelefono').addClass('is-invalid').removeClass('is-valid');
+        } else if (tel.length === 10) {
+            $('#telefonoError').hide();
+            $('#telefonoOk').show();
+            $('#pacienteTelefono').removeClass('is-invalid').addClass('is-valid');
+        } else {
+            $('#telefonoError').hide();
+            $('#telefonoOk').hide();
+            $('#pacienteTelefono').removeClass('is-invalid is-valid');
+        }
+
+        // Habilitar boton solo si campos obligatorios + telefono valido (o vacio)
+        const telefonoValido = tel.length === 0 || tel.length === 10;
+        const camposOk = nombres.trim() && apellidoP.trim() && fecha && sexo;
+        btn.prop('disabled', !(camposOk && telefonoValido));
+    }
+
+    // Escuchar cambios en todos los campos del modal
+    $('#pacienteTelefono, #pacienteNombres, #pacienteApellidoPaterno, #pacienteApellidoMaterno, #pacienteFechaNac, #pacienteSexo').on('input change', function() {
+        validarEstadoBotonPaciente();
+    });
+
+    // Estado inicial: deshabilitado
+    $('#btnGuardarPaciente').prop('disabled', true);
+
+    // Guardar nuevo médico
+    $('#btnGuardarMedico').on('click', function() {
+        const datos = {
+            nombre: $('#medicoNombre').val().trim(),
+            especialidad: $('#medicoEspecialidad').val().trim() || null,
+        };
+
+        if (!datos.nombre) {
+            Swal.fire('Error', 'El nombre del médico es obligatorio.', 'error');
+            return;
+        }
+
+        $.ajax({
+            url: '{% url "laboratorio:api_crear_medico" %}',
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json',
+            },
+            data: JSON.stringify(datos),
+            success: function(response) {
+                if (response.status === 'success' || response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Médico creado!',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    
+                    // Cerrar modal y limpiar formulario
+                    $('#modalNuevoMedico').modal('hide');
+                    $('#formNuevoMedico')[0].reset();
+                    
+                    // Agregar y seleccionar el nuevo médico
+                    const texto = response.medico.especialidad 
+                        ? `${response.medico.nombre} - ${response.medico.especialidad}`
+                        : response.medico.nombre;
+                    const option = new Option(texto, response.medico.id, true, true);
+                    $('#selectMedico').append(option).trigger('change');
+                } else {
+                    Swal.fire('Error', response.error || 'Error al crear el médico.', 'error');
+                }
+            },
+            error: function(xhr) {
+                const error = xhr.responseJSON?.error || 'Error al crear el médico.';
+                Swal.fire('Error', error, 'error');
+            }
+        });
+    });
+
+    // Función para actualizar el total
+    function actualizarTotal() {
+        let total = 0;
+        estudiosSeleccionados.forEach(estudio => {
+            total += estudio.precio;
+        });
+        const totalFormateado = total.toFixed(2);
+        $('#totalDisplay').text('$' + totalFormateado);
+        $('#totalDisplayFooter').text('$' + totalFormateado);
+    }
+
+    // ============================================================
+    // FLUJO DE COBRO OBLIGATORIO (R102-104)
+    // ============================================================
+
+    // Interceptar submit -> abrir modal de cobro
+    $('#formOrden').on('submit', function(e) {
+        e.preventDefault(); // SIEMPRE interceptar
+
+        const pacienteId = $('#selectPaciente').val();
+        if (!pacienteId) {
+            Swal.fire('Error', 'Debe seleccionar un paciente.', 'error');
+            return false;
+        }
+        if (estudiosSeleccionados.length === 0) {
+            Swal.fire('Error', 'Debe seleccionar al menos un estudio.', 'error');
+            return false;
+        }
+
+        // Calcular total y abrir modal de cobro
+        let total = 0;
+        estudiosSeleccionados.forEach(e => total += e.precio);
+        $('#cobroTotal').text('$' + total.toFixed(2));
+        $('#montoEfectivo').val('');
+        $('#montoTarjeta').val('');
+        $('#montoTransferencia').val('');
+        $('#montoCambio').text('$0.00');
+        $('#seccionCambio').hide();
+        $('#seccionRestante').hide();
+
+        // Reset metodo de pago a efectivo
+        $('#pagoEfectivo').prop('checked', true).trigger('change');
+        actualizarSeccionesPago();
+
+        const modal = new bootstrap.Modal(document.getElementById('modalCobro'));
+        modal.show();
+
+        // Autofocus en monto efectivo
+        setTimeout(() => $('#montoEfectivo').focus(), 400);
+    });
+
+    // Toggle secciones segun metodo
+    $('input[name="metodoPago"]').on('change', function() {
+        actualizarSeccionesPago();
+    });
+
+    function actualizarSeccionesPago() {
+        const metodo = $('input[name="metodoPago"]:checked').val();
+        $('#seccionEfectivo').toggle(metodo === 'EFECTIVO' || metodo === 'MIXTO');
+        $('#seccionTarjeta').toggle(metodo === 'TARJETA' || metodo === 'MIXTO');
+        $('#seccionTransferencia').toggle(metodo === 'TRANSFERENCIA' || metodo === 'MIXTO');
+        $('#seccionCambio').toggle(metodo === 'EFECTIVO');
+        $('#seccionRestante').toggle(metodo === 'MIXTO');
+
+        // Pre-llenar monto si es pago unico
+        let total = 0;
+        estudiosSeleccionados.forEach(e => total += e.precio);
+        if (metodo === 'EFECTIVO') {
+            // No pre-llenar efectivo (el cajero ingresa lo que recibe)
+        } else if (metodo === 'TARJETA') {
+            $('#montoTarjeta').val(total.toFixed(2));
+        } else if (metodo === 'TRANSFERENCIA') {
+            $('#montoTransferencia').val(total.toFixed(2));
+        }
+        calcularCambioCobro();
+    }
+
+    function calcularCambioCobro() {
+        let total = 0;
+        estudiosSeleccionados.forEach(e => total += e.precio);
+
+        const metodo = $('input[name="metodoPago"]:checked').val();
+        const efectivo = parseFloat($('#montoEfectivo').val()) || 0;
+        const tarjeta = parseFloat($('#montoTarjeta').val()) || 0;
+        const transferencia = parseFloat($('#montoTransferencia').val()) || 0;
+
+        if (metodo === 'EFECTIVO') {
+            const cambio = efectivo - total;
+            if (efectivo > 0 && cambio >= 0) {
+                $('#montoCambio').text('$' + cambio.toFixed(2));
+                $('#seccionCambio').show();
+                $('#montoCambio').removeClass('text-danger').addClass('text-success');
+            } else if (efectivo > 0) {
+                $('#montoCambio').text('-$' + Math.abs(cambio).toFixed(2));
+                $('#seccionCambio').show();
+                $('#montoCambio').removeClass('text-success').addClass('text-danger');
+            } else {
+                $('#seccionCambio').hide();
+            }
+        } else if (metodo === 'MIXTO') {
+            const pagado = efectivo + tarjeta + transferencia;
+            const restante = total - pagado;
+            $('#montoRestante').text('$' + Math.max(0, restante).toFixed(2));
+            if (restante <= 0) {
+                $('#seccionRestante').hide();
+                if (efectivo > 0 && (efectivo + tarjeta + transferencia) > total) {
+                    const cambio = pagado - total;
+                    $('#montoCambio').text('$' + cambio.toFixed(2));
+                    $('#seccionCambio').show();
+                }
+            } else {
+                $('#seccionRestante').show();
+                $('#seccionCambio').hide();
+            }
+        }
+    }
+
+    function cerrarModalCobro() {
+        bootstrap.Modal.getInstance(document.getElementById('modalCobro')).hide();
+    }
+
+    function confirmarCobro() {
+        let total = 0;
+        estudiosSeleccionados.forEach(e => total += e.precio);
+
+        const metodo = $('input[name="metodoPago"]:checked').val();
+        let efectivo = parseFloat($('#montoEfectivo').val()) || 0;
+        let tarjeta = parseFloat($('#montoTarjeta').val()) || 0;
+        let transferencia = parseFloat($('#montoTransferencia').val()) || 0;
+
+        // Asignar segun metodo simple
+        if (metodo === 'EFECTIVO') { tarjeta = 0; transferencia = 0; }
+        else if (metodo === 'TARJETA') { efectivo = 0; transferencia = 0; }
+        else if (metodo === 'TRANSFERENCIA') { efectivo = 0; tarjeta = 0; }
+
+        // Validar monto suficiente
+        const totalPagado = efectivo + tarjeta + transferencia;
+        if (metodo !== 'EFECTIVO' && totalPagado < total) {
+            Swal.fire('Pago insuficiente',
+                `Faltan $${(total - totalPagado).toFixed(2)} por cubrir.`, 'warning');
+            return;
+        }
+        if (metodo === 'EFECTIVO' && efectivo < total) {
+            Swal.fire('Efectivo insuficiente',
+                `El paciente debe entregar al menos $${total.toFixed(2)}`, 'warning');
+            return;
+        }
+
+        // Deshabilitar boton
+        const btn = document.getElementById('btnConfirmarCobro');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando...';
+
+        // Construir JSON para el backend
+        const payload = {
+            paciente_id: parseInt($('#selectPaciente').val()),
+            estudio_ids: estudiosSeleccionados.map(e => e.id),
+            total: total,
+            anticipo: Math.min(totalPagado, total),
+            init_pago_efectivo: efectivo,
+            init_pago_tarjeta: tarjeta,
+            init_pago_transferencia: transferencia,
+            medico_id: parseInt($('#selectMedico').val()) || null,
+            medico_texto: $('#medicoTexto').val() || '',
+            origen: $('select[name="origen"]').val() || 'PUBLICO_GENERAL',
+        };
+
+        fetch('{% url "crear_orden_servicio" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar y Generar Orden';
+
+            if (data.status === 'success' || data.orden_id) {
+                cerrarModalCobro();
+
+                const ordenId = data.orden_id;
+                const folio = data.folio || 'ORD-' + ordenId;
+                const cambio = metodo === 'EFECTIVO' ? (efectivo - total) : 0;
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Orden Generada',
+                    html: `<div class="text-start">
+                        <p><strong>Folio:</strong> ${folio}</p>
+                        <p><strong>Total:</strong> $${total.toFixed(2)}</p>
+                        ${cambio > 0 ? `<p class="text-success fw-bold">Cambio: $${cambio.toFixed(2)}</p>` : ''}
+                        <hr>
+                        <p class="text-muted small">Se abrira el ticket en una nueva ventana.</p>
+                    </div>`,
+                    confirmButtonText: 'Imprimir Ticket',
+                    showCancelButton: true,
+                    cancelButtonText: 'Cerrar',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.open(URL_TICKET_LAB.replace('/0/', '/' + ordenId + '/'), '_blank');
+                    }
+                    // Redirigir a recepcion
+                    window.location.href = '{% url "recepcion_lab" %}';
+                });
+            } else {
+                Swal.fire('Error', data.mensaje || 'Error al crear la orden.', 'error');
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar y Generar Orden';
+            console.error(err);
+            Swal.fire('Error de conexion', 'No se pudo conectar con el servidor.', 'error');
+        });
+    }
+
+    // Enter en monto efectivo -> confirmar cobro
+    document.getElementById('montoEfectivo')?.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); confirmarCobro(); }
+    });
+</script>
+{% endblock %}

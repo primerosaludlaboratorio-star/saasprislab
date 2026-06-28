@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h5 class="mb-0 fw-bold"><i class="bi bi-thermometer-half me-2 text-info"></i>{{ titulo }}</h5>
+      <small class="text-muted">Telemetría en tiempo real — ISO 15189</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'mantenimiento:registrar_lectura' %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-plus me-1"></i>Lectura Manual
+      </a>
+      <a href="{% url 'mantenimiento:lista_sensores' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-cpu me-1"></i>Gestionar Sensores
+      </a>
+    </div>
+  </div>
+
+  <!-- Alertas activas -->
+  {% if alertas_activas %}
+  <div class="alert alert-danger border-0 mb-3">
+    <strong><i class="bi bi-exclamation-octagon me-2"></i>{{ alertas_activas|length }} Sensor(es) FUERA DE RANGO</strong>
+    <ul class="mb-0 mt-1">
+      {% for a in alertas_activas %}
+      <li>
+        <strong>{{ a.sensor.codigo }}</strong> — {{ a.sensor.nombre }}
+        {% if a.lectura %}
+          | T: {{ a.lectura.temperatura|default:"—" }}°C
+          | H: {{ a.lectura.humedad|default:"—" }}%
+        {% endif %}
+        {% if a.lectura.ticket_generado %}
+          <a href="{% url 'mantenimiento:detalle_ticket' a.lectura.ticket_generado.pk %}" class="ms-2 badge bg-danger text-white">
+            Ticket #{{ a.lectura.ticket_generado.pk }}
+          </a>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- Grid de sensores -->
+  <div class="row g-3 mb-4">
+    {% for d in datos_sensores %}
+    <div class="col-sm-6 col-lg-4">
+      <div class="card border-0 shadow-sm {% if d.fuera %}border-danger border-2{% endif %}">
+        <div class="card-header {% if d.fuera %}bg-danger text-white{% else %}bg-light{% endif %} py-2 d-flex justify-content-between">
+          <span class="fw-semibold"><i class="bi bi-cpu me-1"></i>{{ d.sensor.codigo }}</span>
+          {% if d.sensor.activo %}<span class="badge bg-success">Activo</span>
+          {% else %}<span class="badge bg-secondary">Inactivo</span>{% endif %}
+        </div>
+        <div class="card-body py-2">
+          <div class="small text-muted mb-2">{{ d.sensor.nombre }}</div>
+          {% if d.ultima %}
+          <div class="row g-2 text-center">
+            {% if d.ultima.temperatura is not None %}
+            <div class="col-6">
+              <div class="fs-3 fw-bold {% if d.fuera %}text-danger{% else %}text-primary{% endif %}">
+                {{ d.ultima.temperatura|floatformat:1 }}°C
+              </div>
+              <small class="text-muted">Temperatura</small>
+              <div class="small text-muted">{{ d.sensor.temp_min_aceptable }}–{{ d.sensor.temp_max_aceptable }}°C</div>
+            </div>
+            {% endif %}
+            {% if d.ultima.humedad is not None %}
+            <div class="col-6">
+              <div class="fs-3 fw-bold {% if d.fuera %}text-danger{% else %}text-info{% endif %}">
+                {{ d.ultima.humedad|floatformat:0 }}%
+              </div>
+              <small class="text-muted">Humedad</small>
+            </div>
+            {% endif %}
+          </div>
+          <div class="small text-muted mt-2">
+            <i class="bi bi-clock me-1"></i>{{ d.ultima.timestamp|date:"d/m H:i" }}
+            | Origen: {{ d.ultima.origen }}
+          </div>
+          {% else %}
+          <p class="text-muted small mb-0">Sin lecturas registradas aún.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12"><div class="alert alert-secondary">No hay sensores activos configurados.</div></div>
+    {% endfor %}
+  </div>
+
+  <!-- Alertas últimas 24h -->
+  {% if alertas_24h %}
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-light fw-semibold py-2">
+      <i class="bi bi-clock-history me-1 text-warning"></i>Alertas últimas 24 horas
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Sensor</th><th>Temperatura</th><th>Humedad</th><th>Fecha/Hora</th><th>Ticket</th></tr>
+          </thead>
+          <tbody>
+            {% for l in alertas_24h %}
+            <tr class="table-warning">
+              <td class="fw-semibold">{{ l.sensor.codigo }}</td>
+              <td>{% if l.temperatura %}{{ l.temperatura|floatformat:1 }}°C{% else %}—{% endif %}</td>
+              <td>{% if l.humedad %}{{ l.humedad|floatformat:0 }}%{% else %}—{% endif %}</td>
+              <td class="small">{{ l.timestamp|date:"d/m/Y H:i" }}</td>
+              <td>
+                {% if l.ticket_generado %}
+                <a href="{% url 'mantenimiento:detalle_ticket' l.ticket_generado.pk %}" class="badge bg-danger text-white">
+                  #{{ l.ticket_generado.pk }}
+                </a>
+                {% else %}<span class="text-muted">—</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

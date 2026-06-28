@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Verificación en dos pasos — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);">
+  <div class="card shadow-lg border-0 rounded-4" style="max-width: 420px; width: 100%;">
+    <div class="card-body p-5">
+
+      <div class="text-center mb-4">
+        <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+             style="width: 64px; height: 64px; background: rgba(217,35,15,0.12);">
+          <i class="bi bi-shield-lock-fill fs-3" style="color: #D9230F;"></i>
+        </div>
+        <h4 class="fw-bold text-dark mb-1">Verificación en dos pasos</h4>
+        <p class="text-muted small mb-0">Introduce el código de tu app autenticadora</p>
+      </div>
+
+      {% if error %}
+      <div class="alert alert-danger alert-dismissible fade show rounded-3 small py-2" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}
+      </div>
+      {% endif %}
+
+      <form method="post" id="form2fa" autocomplete="off">
+        {% csrf_token %}
+        <div class="mb-4">
+          <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Código de 6 dígitos</label>
+          <input type="text"
+                 name="codigo"
+                 id="id_codigo"
+                 class="form-control form-control-lg text-center fw-bold fs-3 rounded-3 border-2"
+                 style="letter-spacing: 0.5rem;"
+                 maxlength="6"
+                 inputmode="numeric"
+                 pattern="[0-9]{6}"
+                 placeholder="000000"
+                 autofocus
+                 required>
+          <div class="form-text text-center text-muted mt-1">
+            <i class="bi bi-clock me-1"></i> El código cambia cada 30 segundos
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-danger w-100 rounded-3 fw-semibold py-2">
+          <i class="bi bi-unlock-fill me-2"></i> Verificar y Entrar
+        </button>
+      </form>
+
+      <div class="mt-4 text-center">
+        <a href="{% url 'login' %}" class="text-muted small">
+          <i class="bi bi-arrow-left me-1"></i> Volver al inicio de sesión
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  /* Auto-submit cuando se completan los 6 dígitos */
+  document.getElementById('id_codigo').addEventListener('input', function () {
+    this.value = this.value.replace(/\D/g, '').slice(0, 6);
+    if (this.value.length === 6) {
+      document.getElementById('form2fa').submit();
+    }
+  });
+</script>
+{% endblock %}

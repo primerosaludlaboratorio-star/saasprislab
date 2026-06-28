@@ -1,0 +1,69 @@
+{
+  "name": "PRISLAB Sistema Integral",
+  "short_name": "PRISLAB",
+  "description": "Sistema integral de gestión clínica, farmacia y laboratorio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0d6efd",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/static/img/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["medical", "health", "business"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Recepción Laboratorio",
+      "short_name": "Recepción",
+      "description": "Acceso rápido a recepción de laboratorio",
+      "url": "/laboratorio/recepcion/",
+      "icons": [
+        {
+          "src": "/static/img/icon-192.svg",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Punto de Venta",
+      "short_name": "PDV",
+      "description": "Acceso rápido al punto de venta de farmacia",
+      "url": "/farmacia/pdv/",
+      "icons": [
+        {
+          "src": "/static/img/icon-192.svg",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/laboratorio/recepcion/",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "imagen",
+          "accept": ["image/*"]
+        }
+      ]
+    }
+  }
+}

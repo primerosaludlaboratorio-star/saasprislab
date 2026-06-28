@@ -1,0 +1,13 @@
+# ==============================================================================
+# DEPENDENCIAS - AGENTE LABORATORIO PRISLAB
+# ==============================================================================
+# Dependencias necesarias para ejecutar el agente de integración LIS
+
+# Comunicación serial
+pyserial>=3.5
+
+# Configuración YAML
+PyYAML>=6.0
+
+# Comunicación HTTP con la nube
+requests>=2.31.0

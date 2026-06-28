@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Nuevo Prospecto — CRM PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:700px">
+  <div class="d-flex align-items-center mb-4 gap-3">
+    <a href="{% url 'crm_dashboard' %}" class="btn btn-outline-secondary btn-sm">← Regresar</a>
+    <h3 class="fw-bold mb-0">Nuevo Prospecto</h3>
+  </div>
+  <div class="card shadow-sm">
+    <div class="card-body p-4">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Nombre completo <span class="text-danger">*</span></label>
+            <input type="text" name="nombre" class="form-control" required autofocus>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Teléfono (WhatsApp)</label>
+            <input type="tel" name="telefono" class="form-control" placeholder="5512345678">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Correo electrónico</label>
+            <input type="email" name="email" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Empresa / Institución</label>
+            <input type="text" name="empresa_prospecto" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Origen del contacto</label>
+            <select name="origen" class="form-select">
+              {% for val, lbl in ORIGEN_CHOICES %}
+              <option value="{{ val }}">{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Servicio de interés</label>
+            <input type="text" name="servicio_interes" class="form-control"
+                   placeholder="Ej: Perfil bioquímico, Consulta médica, Ultrasonido...">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Valor estimado ($)</label>
+            <div class="input-group"><span class="input-group-text">$</span>
+              <input type="number" name="valor_estimado" step="0.01" min="0" class="form-control">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Próximo contacto</label>
+            <input type="date" name="fecha_proximo_contacto" class="form-control">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Notas internas</label>
+            <textarea name="notas" class="form-control" rows="3"
+                      placeholder="Detalles relevantes, necesidades especiales, referencias..."></textarea>
+          </div>
+          <div class="col-12 d-flex justify-content-end gap-2">
+            <a href="{% url 'crm_dashboard' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="fas fa-plus me-1"></i>Crear Prospecto
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

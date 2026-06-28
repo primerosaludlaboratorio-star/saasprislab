@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Solicitudes CFDI Pendientes{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+    <div>
+      <h4 class="mb-0">📥 Bandeja de Solicitudes CFDI 4.0</h4>
+      <p class="text-muted mb-0" style="font-size:.83rem;">
+        Solicitudes de autofactura enviadas por pacientes desde el QR del ticket.
+        {% if pendientes > 0 %}
+        <span class="badge bg-warning text-dark ms-1">{{ pendientes }} pendiente{{ pendientes|pluralize }}</span>
+        {% endif %}
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="?estado=BORRADOR" class="btn btn-sm {% if estado_filtro == 'BORRADOR' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+        Pendientes
+      </a>
+      <a href="?estado=TIMBRADA" class="btn btn-sm {% if estado_filtro == 'TIMBRADA' %}btn-success{% else %}btn-outline-success{% endif %}">
+        Timbradas
+      </a>
+      <a href="?estado=TODAS" class="btn btn-sm {% if estado_filtro == 'TODAS' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+        Todas
+      </a>
+    </div>
+  </div>
+
+  {% if not facturas_data %}
+  <div class="alert alert-success">
+    <i class="fas fa-check-circle me-2"></i>
+    No hay solicitudes en este estado. ¡Todo al día!
+  </div>
+  {% else %}
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-dark" style="font-size:.8rem;">
+          <tr>
+            <th>Fecha</th>
+            <th>Folio Ticket</th>
+            <th>Paciente</th>
+            <th>Total</th>
+            <th>RFC Solicitado</th>
+            <th>Razón Social</th>
+            <th>Régimen</th>
+            <th>Uso CFDI</th>
+            <th>Email</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in facturas_data %}
+          {% with f=item.factura d=item.datos %}
+          <tr id="row-{{ f.id }}">
+            <td style="font-size:.78rem; white-space:nowrap;">{{ f.fecha_creacion|date:"d/m/Y H:i" }}</td>
+            <td><code style="font-size:.78rem;">{{ f.folio }}</code></td>
+            <td style="font-size:.82rem;">
+              {% if f.paciente %}{{ f.paciente.nombre_completo }}{% else %}—{% endif %}
+            </td>
+            <td style="font-size:.82rem;">
+              {% if f.venta %}${{ f.venta.total|floatformat:2 }}{% else %}—{% endif %}
+            </td>
+            <td><code style="font-size:.75rem;">{{ d.rfc|default:"—" }}</code></td>
+            <td style="font-size:.78rem;">{{ d.razon_social|default:"—" }}</td>
+            <td style="font-size:.72rem;">{{ d.regimen_fiscal|default:"—" }}</td>
+            <td style="font-size:.72rem;">{{ d.uso_cfdi|default:"—" }}</td>
+            <td style="font-size:.75rem;">{{ d.email|default:"—" }}</td>
+            <td>
+              {% if f.estatus == 'BORRADOR' %}
+                <span class="badge bg-warning text-dark">Pendiente</span>
+              {% elif f.estatus == 'TIMBRADA' %}
+                <span class="badge bg-success">Timbrada</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ f.get_estatus_display }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if f.estatus == 'BORRADOR' %}
+              <button onclick="marcarTimbrada({{ f.id }})" class="btn btn-xs btn-success py-0 px-2" style="font-size:.72rem;">
+                ✅ Timbrada
+              </button>
+              {% else %}
+              <span class="text-muted" style="font-size:.72rem;">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endwith %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <p class="text-muted mt-3" style="font-size:.75rem;">
+    <i class="fas fa-info-circle me-1"></i>
+    Cuando integres un PAC (Proveedor Autorizado de Certificación), el timbrado será automático.
+    Por ahora, marca manualmente cuando hayas timbrado en tu sistema del SAT.
+  </p>
+</div>
+
+<script>
+async function marcarTimbrada(facturaId) {
+  if (!navigator.onLine) {
+    alert('Timbrar o marcar factura requiere conexión al servidor central. No está disponible en modo offline.');
+    return;
+  }
+  const uuid = prompt('UUID SAT (opcional, deja vacío si no tienes):') ?? '';
+  if (uuid === null) return; // canceló
+  const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+  const resp = await fetch(`/facturacion/cfdi/${facturaId}/timbrar/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `uuid_cfdi=${encodeURIComponent(uuid)}`,
+  });
+  const data = await resp.json();
+  if (data.ok) {
+    const row = document.getElementById(`row-${facturaId}`);
+    if (row) row.style.opacity = '0.4';
+    alert('✅ Marcada como timbrada.');
+  } else {
+    alert('Error: ' + (data.error || 'No se pudo actualizar.'));
+  }
+}
+</script>
+{% endblock %}

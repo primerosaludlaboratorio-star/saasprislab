@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Políticas de Descuento - {{ empresa.nombre|default:empresa }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    body { background-color: #f8f9fa; }
+    @media print { .fixed-bottom, .header-liquido, .island-sidebar, .hamburger-btn-island, .sidebar-overlay { display: none !important; } }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid p-4" style="padding-top: 10px;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold text-primary"><i class="bi bi-tag-fill"></i> POLÍTICAS DE DESCUENTO</h2>
+                <small class="text-muted">{{ empresa }}</small>
+            </div>
+            <div>
+                <button class="btn btn-success fw-bold" onclick="abrirModalCrear()">
+                    <i class="bi bi-plus-circle"></i> NUEVA POLÍTICA
+                </button>
+                <a href="{% url 'pdv_farmacia' %}" class="btn btn-dark fw-bold ms-2">
+                    <i class="bi bi-arrow-left"></i> VOLVER AL PDV
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white fw-bold">
+                        <i class="bi bi-list-check"></i> POLÍTICAS CONFIGURADAS
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Descuento</th>
+                                        <th>Requiere Autorización</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for politica in politicas %}
+                                    <tr>
+                                        <td><strong>{{ politica.nombre }}</strong></td>
+                                        <td><span class="badge bg-success fs-6">{{ politica.porcentaje_descuento }}%</span></td>
+                                        <td>
+                                            {% if politica.requiere_autorizacion %}
+                                                <span class="badge bg-warning">Sí</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">No</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if politica.activa %}
+                                                <span class="badge bg-success">Activa</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Inactiva</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary" onclick="editarPolitica({{ politica.id }}, '{{ politica.nombre }}', {{ politica.porcentaje_descuento }}, {{ politica.requiere_autorizacion|yesno:"true,false" }})">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-warning" onclick="toggleActiva({{ politica.id }}, {{ politica.activa|yesno:"true,false" }})">
+                                                <i class="bi bi-{{ politica.activa|yesno:"pause,play" }}-circle"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" onclick="eliminarPolitica({{ politica.id }}, '{{ politica.nombre }}')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">
+                                            <i class="bi bi-inbox"></i> No hay políticas configuradas aún.
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Crear/Editar -->
+    <div class="modal fade" id="modalPolitica" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="modal-titulo">NUEVA POLÍTICA DE DESCUENTO</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-politica">
+                        <input type="hidden" id="politica-id">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nombre de la Política:</label>
+                            <input type="text" class="form-control" id="politica-nombre" placeholder="Ej: Personal Interno, Familia Directa, INAPAM" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Porcentaje de Descuento:</label>
+                            <div class="input-group">
+                                <input type="number" step="0.01" min="0" max="100" class="form-control" id="politica-porcentaje" placeholder="20.00" required>
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="politica-requiere-auth" checked>
+                                <label class="form-check-label" for="politica-requiere-auth">
+                                    Requiere Autorización del Gerente
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary fw-bold" onclick="guardarPolitica()">
+                        <i class="bi bi-check-circle"></i> GUARDAR
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="fixed-bottom bg-dark text-white text-center py-1 firma-autor" style="font-size: 11px;">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <span>© 2026 <strong>PRIMERO SALUD LABORATORIO</strong> | Gestión de Descuentos</span>
+            <span>Desarrollado por <strong>Jonathan Ibarra</strong> | V 2.0</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const modal = new bootstrap.Modal(document.getElementById('modalPolitica'));
+
+        function abrirModalCrear() {
+            document.getElementById('modal-titulo').textContent = 'NUEVA POLÍTICA DE DESCUENTO';
+            document.getElementById('form-politica').reset();
+            document.getElementById('politica-id').value = '';
+            modal.show();
+        }
+
+        function editarPolitica(id, nombre, porcentaje, requiereAuth) {
+            document.getElementById('modal-titulo').textContent = 'EDITAR POLÍTICA DE DESCUENTO';
+            document.getElementById('politica-id').value = id;
+            document.getElementById('politica-nombre').value = nombre;
+            document.getElementById('politica-porcentaje').value = porcentaje;
+            document.getElementById('politica-requiere-auth').checked = requiereAuth;
+            modal.show();
+        }
+
+        function guardarPolitica() {
+            const id = document.getElementById('politica-id').value;
+            const data = {
+                accion: id ? 'editar' : 'crear',
+                id: id || null,
+                nombre: document.getElementById('politica-nombre').value,
+                porcentaje: parseFloat(document.getElementById('politica-porcentaje').value),
+                requiere_autorizacion: document.getElementById('politica-requiere-auth').checked
+            };
+
+            fetch('/farmacia/politicas-descuento/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire('Éxito', 'Política guardada correctamente', 'success').then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', 'Error al guardar la política', 'error');
+                }
+            });
+        }
+
+        function toggleActiva(id, activa) {
+            fetch('/farmacia/politicas-descuento/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    accion: 'toggle_activa',
+                    id: id
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    location.reload();
+                } else {
+                    Swal.fire('Error', 'Error al cambiar el estado', 'error');
+                }
+            });
+        }
+
+        function eliminarPolitica(id, nombre) {
+            Swal.fire({
+                title: '¿Eliminar Política?',
+                text: `¿Está seguro de eliminar la política "${nombre}"?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, Eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/farmacia/politicas-descuento/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            accion: 'eliminar',
+                            id: id
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            Swal.fire('Éxito', 'Política eliminada', 'success').then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', 'Error al eliminar', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+{% endblock %}

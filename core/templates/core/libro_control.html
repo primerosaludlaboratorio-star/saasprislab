@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Libro de Control - {{ empresa.nombre|default:"PRISLAB" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .no-print, .header-liquido, .island-sidebar, .hamburger-btn-island, .sidebar-overlay { display: none !important; }
+        body { margin: 0; padding: 0; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4" style="padding-top: 10px;">
+    <div class="card shadow border-0">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0 fw-bold">LIBRO DE CONTROL DE ANTIBIÓTICOS</h5>
+                <small>{{ razon_social }} | RFC: {{ rfc }}</small>
+            </div>
+            <button class="btn btn-outline-light btn-sm no-print" onclick="window.print()">
+                <i class="bi bi-printer"></i> IMPRIMIR REPORTE COFEPRIS
+            </button>
+        </div>
+        <div class="card-body">
+            <!-- Filtro de fecha -->
+            <div class="mb-3 no-print">
+                <form method="get" class="d-flex align-items-center gap-2" id="filtro-fecha-form">
+                    <div class="input-group" style="width: 220px;">
+                        <span class="input-group-text bg-primary text-white">
+                            <i class="bi bi-calendar3"></i>
+                        </span>
+                        <input type="date" 
+                               name="fecha" 
+                               id="filtro-fecha" 
+                               class="form-control" 
+                               value="{{ fecha_seleccionada|default:'' }}"
+                               style="border-color: #D9230F; color: #D9230F; font-weight: bold;"
+                               onchange="document.getElementById('filtro-fecha-form').submit();">
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetearFecha()" title="Ver fecha de hoy">
+                        <i class="bi bi-arrow-clockwise"></i> HOY
+                    </button>
+                    <!-- Mantener compatibilidad con filtros antiguos (fecha_inicio/fecha_fin) -->
+                    <input type="hidden" name="fecha_inicio" id="fecha-inicio-hidden">
+                    <input type="hidden" name="fecha_fin" id="fecha-fin-hidden">
+                </form>
+            </div>
+            
+            {% if reporte %}
+            {% for item in reporte %}
+            <div class="mb-5">
+                <h6 class="bg-light p-2 border-start border-4 border-primary fw-bold text-uppercase">
+                    {{ item.producto.nombre }} - {{ item.producto.sustancia_activa }}
+                </h6>
+                <table class="table table-sm table-bordered mt-2" style="font-size: 0.85rem;">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>FECHA</th>
+                            <th>CONCEPTO (ENTRADA/VENTA)</th>
+                            <th>LOTE</th>
+                            <th>ADQUISICIÓN</th>
+                            <th>DISPENSACIÓN</th>
+                            <th>SALDO</th>
+                            <th>MÉDICO / CÉDULA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entrada in item.entradas %}
+                        <tr>
+                            <td>{{ entrada.fecha_registro|date:"d/m/Y" }}</td>
+                            <td>ENTRADA</td>
+                            <td>{{ entrada.numero_lote }}</td>
+                            <td>{{ entrada.cantidad }}</td>
+                            <td>-</td>
+                            <td>---</td>
+                            <td>---</td>
+                        </tr>
+                        {% endfor %}
+                        
+                        {% for salida in item.salidas %}
+                        <tr class="{% if salida.tipo != 'VENTA' %}table-warning{% endif %}">
+                            <td>{{ salida.fecha_mov|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if salida.tipo == 'VENTA' %}
+                                    VENTA (Folio: {{ salida.ref }})
+                                {% else %}
+                                    <strong class="text-danger">{{ salida.tipo }}</strong> ({{ salida.ref }})
+                                {% endif %}
+                            </td>
+                            <td>{{ salida.lote_usado|default:"N/A" }}</td>
+                            <td>-</td>
+                            <td>{{ salida.cantidad }}</td>
+                            <td>---</td>
+                            <td>
+                                {% if salida.tipo == 'VENTA' %}
+                                    {{ salida.doctor|default:"SIN RECETA" }}
+                                {% else %}
+                                    <small class="text-muted">{{ salida.doctor }}</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                <p class="mt-3 text-muted">No hay movimientos de antibióticos registrados.</p>
+                {% if fecha_inicio or fecha_fin %}
+                <a href="{% url 'libro_control' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-x-circle"></i> Limpiar Filtros
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Sincronizar fecha única con fecha_inicio y fecha_fin para compatibilidad
+    document.addEventListener('DOMContentLoaded', function() {
+        const fechaInput = document.getElementById('filtro-fecha');
+        const fechaInicioHidden = document.getElementById('fecha-inicio-hidden');
+        const fechaFinHidden = document.getElementById('fecha-fin-hidden');
+        const fechaGuardada = localStorage.getItem('fechaFiltroLibroControl');
+        
+        // Si hay fecha guardada y no hay parámetro en URL, usar la guardada
+        if (fechaGuardada && !new URLSearchParams(window.location.search).get('fecha')) {
+            fechaInput.value = fechaGuardada;
+            fechaInicioHidden.value = fechaGuardada;
+            fechaFinHidden.value = fechaGuardada;
+            if (fechaInput.value !== '{{ fecha_seleccionada|default:"" }}') {
+                window.location.href = window.location.pathname + '?fecha=' + fechaGuardada;
+            }
+        } else if (!fechaInput.value) {
+            const hoy = new Date().toISOString().split('T')[0];
+            fechaInput.value = hoy;
+            fechaInicioHidden.value = hoy;
+            fechaFinHidden.value = hoy;
+        } else {
+            // Sincronizar fecha seleccionada con campos hidden
+            fechaInicioHidden.value = fechaInput.value;
+            fechaFinHidden.value = fechaInput.value;
+        }
+        
+        // Guardar fecha cuando cambia
+        fechaInput.addEventListener('change', function() {
+            localStorage.setItem('fechaFiltroLibroControl', this.value);
+            fechaInicioHidden.value = this.value;
+            fechaFinHidden.value = this.value;
+        });
+    });
+    
+    function resetearFecha() {
+        const hoy = new Date().toISOString().split('T')[0];
+        localStorage.setItem('fechaFiltroLibroControl', hoy);
+        window.location.href = window.location.pathname;
+    }
+</script>
+
+<style>
+    body { padding-bottom: 50px; }
+    
+    @media print {
+        .firma-autor, footer, .fixed-bottom { display: none !important; }
+        body { padding-bottom: 0 !important; }
+    }
+</style>
+
+<footer class="fixed-bottom bg-light text-dark text-center py-2 shadow-lg border-top firma-autor" style="z-index: 1000;">
+    <div class="container-fluid d-flex justify-content-between align-items-center" style="font-size: 12px;">
+        <span class="text-muted">
+            <i class="bi bi-building"></i> PRIMERO SALUD LABORATORIO
+        </span>
+        <span>
+            Arquitectura y Desarrollo: 
+            <strong class="text-primary text-uppercase fw-bold">
+                JONATHAN ALONSO SAMOS SANCHEZ
+            </strong>
+        </span>
+    </div>
+</footer>
+{% endblock %}

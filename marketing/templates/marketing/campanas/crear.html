@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Crear Campaña - {{ empresa.nombre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .preview-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        min-height: 300px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .phone-mockup {
+        background: white;
+        border-radius: 30px;
+        padding: 50px 15px;
+        box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+        position: relative;
+    }
+    .phone-notch {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 20px;
+        background: #000;
+        border-radius: 10px;
+    }
+    .message-bubble {
+        background: #dcf8c6;
+        padding: 10px 15px;
+        border-radius: 10px;
+        margin: 10px 0;
+        color: #000;
+        max-width: 80%;
+        word-wrap: break-word;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'marketing:dashboard_marketing' %}">Marketing</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'marketing:lista_campanas' %}">Campañas</a></li>
+                    <li class="breadcrumb-item active">Crear Nueva</li>
+                </ol>
+            </nav>
+            <h2><i class="fas fa-bullhorn"></i> Crear Nueva Campaña</h2>
+            <p class="text-muted">Diseña tu estrategia de comunicación con pacientes</p>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="row">
+            <!-- Formulario -->
+            <div class="col-md-7">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-edit"></i> Configuración de la Campaña</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Nombre de la campaña -->
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-tag"></i> Nombre de la Campaña *</label>
+                            <input type="text" name="nombre" class="form-control" required 
+                                   placeholder="Ej: Campaña Diabetes 2026" id="inputNombre">
+                        </div>
+
+                        <!-- Segmento -->
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-users"></i> Segmento de Pacientes *</label>
+                            <select name="segmento" class="form-select" required>
+                                <option value="">Seleccione un segmento</option>
+                                {% for segmento in segmentos %}
+                                    <option value="{{ segmento }}">{{ segmento }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Define a qué grupo de pacientes se enviará</small>
+                        </div>
+
+                        <!-- Canal de comunicación -->
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-paper-plane"></i> Canal de Comunicación *</label>
+                            <div class="btn-group w-100" role="group">
+                                {% for canal in canales %}
+                                <input type="radio" class="btn-check" name="canal" id="canal{{ forloop.counter }}" 
+                                       value="{{ canal }}" {% if forloop.first %}checked{% endif %}>
+                                <label class="btn btn-outline-success" for="canal{{ forloop.counter }}">
+                                    {% if canal == 'whatsapp' %}
+                                        <i class="fab fa-whatsapp"></i> WhatsApp
+                                    {% elif canal == 'email' %}
+                                        <i class="fas fa-envelope"></i> Email
+                                    {% elif canal == 'sms' %}
+                                        <i class="fas fa-sms"></i> SMS
+                                    {% endif %}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Mensaje -->
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-comment-dots"></i> Mensaje *</label>
+                            <textarea name="mensaje" class="form-control" rows="6" required 
+                                      placeholder="Escriba el mensaje que se enviará a los pacientes..." 
+                                      id="inputMensaje"></textarea>
+                            <small class="form-text text-muted">
+                                <span id="charCount">0</span> / 500 caracteres
+                            </small>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'marketing:lista_campanas' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-check"></i> Crear Campaña
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview en Tiempo Real -->
+            <div class="col-md-5">
+                <div class="card shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-eye"></i> Vista Previa</h5>
+                    </div>
+                    <div class="card-body preview-box">
+                        <div class="phone-mockup">
+                            <div class="phone-notch"></div>
+                            <div class="mb-3 text-center">
+                                <strong class="text-dark">{{ empresa.nombre }}</strong>
+                            </div>
+                            <div class="message-bubble" id="previewMensaje">
+                                <p class="mb-0"><em>El mensaje aparecerá aquí...</em></p>
+                            </div>
+                            <small class="text-muted d-block mt-2 text-center">
+                                <i class="fas fa-clock"></i> Ahora
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputMensaje = document.getElementById('inputMensaje');
+    const previewMensaje = document.getElementById('previewMensaje');
+    const charCount = document.getElementById('charCount');
+
+    inputMensaje.addEventListener('input', function() {
+        const texto = this.value;
+        charCount.textContent = texto.length;
+        
+        if (texto.trim()) {
+            previewMensaje.innerHTML = `<p class="mb-0">${texto.replace(/\n/g, '<br>')}</p>`;
+        } else {
+            previewMensaje.innerHTML = '<p class="mb-0"><em>El mensaje aparecerá aquí...</em></p>';
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

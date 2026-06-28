@@ -1,0 +1,437 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Consulta Médica - {{ cita.paciente.nombre_completo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card-consulta { border-left: 4px solid #007bff; }
+    .signos-readonly { background-color: #f8f9fa; }
+    .signos-editable { background-color: #fff; }
+    .alerta-alergia { background-color: #fff3cd; border-left: 4px solid #856404; padding: 10px; margin-bottom: 15px; }
+    .tab-content { padding: 20px; background-color: #fff; border: 1px solid #dee2e6; border-top: none; }
+    .imc-badge { font-size: 1.1em; font-weight: bold; }
+    .consultas-previas { max-height: 300px; overflow-y: auto; }
+    textarea.soap-field { min-height: 120px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- Encabezado con información del paciente -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card card-consulta">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3 class="mb-0">
+                                <i class="fas fa-user-md text-primary"></i>
+                                {{ cita.paciente.nombre_completo }}
+                            </h3>
+                            <p class="mb-0 text-muted">
+                                <strong>Edad:</strong> {{ cita.paciente.edad }} años |
+                                <strong>Sexo:</strong> {{ cita.paciente.get_sexo_display }} |
+                                <strong>Cita:</strong> {{ cita.fecha_cita }} {{ cita.hora_cita }}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <span class="badge bg-info fs-6">
+                                <i class="fas fa-calendar-check"></i>
+                                Cita #{{ cita.id }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- ALERTA DE ALERGIAS -->
+                    {% if historia_clinica and historia_clinica.app_alergias %}
+                    <div class="alerta-alergia mt-3">
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                        <strong>⚠️ ALERTA - ALERGIAS:</strong> {{ historia_clinica.app_alergias }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <form method="post" id="formConsulta">
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- Columna Principal: Signos Vitales + SOAP -->
+            <div class="col-lg-9">
+                
+                <!-- ============================================ -->
+                <!-- SIGNOS VITALES (LÓGICA HÍBRIDA ADAPTATIVA) -->
+                <!-- ============================================ -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-heartbeat"></i>
+                            Signos Vitales
+                            {% if signos_vitales_existen %}
+                                <span class="badge bg-success">✓ Capturados por Enfermería</span>
+                            {% else %}
+                                <span class="badge bg-warning">⚠️ Capturar Ahora</span>
+                            {% endif %}
+                        </h5>
+                    </div>
+                    <div class="card-body {% if signos_vitales_existen %}signos-readonly{% else %}signos-editable{% endif %}">
+                        {% if signos_vitales_existen %}
+                            <!-- CASO A: Signos ya existen - Mostrar como READ-ONLY -->
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label class="form-label"><strong>Presión Arterial</strong></label>
+                                    <p class="fs-5">{{ signos_vitales.presion_arterial }} mmHg</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label"><strong>Frecuencia Cardíaca</strong></label>
+                                    <p class="fs-5">{{ signos_vitales.frecuencia_cardiaca }} lat/min</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label"><strong>Frecuencia Respiratoria</strong></label>
+                                    <p class="fs-5">{{ signos_vitales.frecuencia_respiratoria }} resp/min</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label"><strong>Temperatura</strong></label>
+                                    <p class="fs-5">{{ signos_vitales.temperatura }} °C</p>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-2">
+                                    <label class="form-label"><strong>Peso</strong></label>
+                                    <p class="fs-5">{{ signos_vitales.peso }} kg</p>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label"><strong>Talla</strong></label>
+                                    <p class="fs-5">{{ signos_vitales.talla }} m</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label"><strong>IMC</strong></label>
+                                    <p>
+                                        <span class="imc-badge badge bg-info">{{ signos_vitales.imc|floatformat:2 }}</span>
+                                        <br><small class="text-muted">{{ signos_vitales.clasificacion_imc }}</small>
+                                    </p>
+                                </div>
+                                {% if signos_vitales.saturacion_oxigeno %}
+                                <div class="col-md-2">
+                                    <label class="form-label"><strong>SpO₂</strong></label>
+                                    <p class="fs-5">{{ signos_vitales.saturacion_oxigeno }}%</p>
+                                </div>
+                                {% endif %}
+                                {% if signos_vitales.glucosa_capilar %}
+                                <div class="col-md-3">
+                                    <label class="form-label"><strong>Glucosa</strong></label>
+                                    <p class="fs-5">{{ signos_vitales.glucosa_capilar }} mg/dL</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% if signos_vitales.observaciones %}
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <label class="form-label"><strong>Observaciones:</strong></label>
+                                    <p class="text-muted">{{ signos_vitales.observaciones }}</p>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            <!-- CASO B: Signos NO existen - Formulario EDITABLE -->
+                            <input type="hidden" name="capturar_signos" value="1">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Modo Médico Solitario:</strong> Capture los signos vitales aquí mismo.
+                            </div>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label class="form-label">PA Sistólica <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" name="pa_sistolica" placeholder="120" required>
+                                    <small class="text-muted">mmHg</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">PA Diastólica <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" name="pa_diastolica" placeholder="80" required>
+                                    <small class="text-muted">mmHg</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Frec. Cardíaca <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" name="frecuencia_cardiaca" placeholder="72" required>
+                                    <small class="text-muted">lat/min</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Frec. Respiratoria <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" name="frecuencia_respiratoria" placeholder="18" required>
+                                    <small class="text-muted">resp/min</small>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-2">
+                                    <label class="form-label">Temperatura <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" class="form-control" name="temperatura" placeholder="36.5" required>
+                                    <small class="text-muted">°C</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Peso <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" class="form-control" name="peso" id="peso" placeholder="70" required>
+                                    <small class="text-muted">kg</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Talla <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" class="form-control" name="talla" id="talla" placeholder="1.70" required>
+                                    <small class="text-muted">m</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Perímetro Abd.</label>
+                                    <input type="number" step="0.01" class="form-control" name="perimetro_abdominal" placeholder="90">
+                                    <small class="text-muted">cm</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">SpO₂</label>
+                                    <input type="number" class="form-control" name="saturacion_oxigeno" placeholder="98">
+                                    <small class="text-muted">%</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Glucosa</label>
+                                    <input type="number" step="0.01" class="form-control" name="glucosa_capilar" placeholder="95">
+                                    <small class="text-muted">mg/dL</small>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <label class="form-label">Observaciones</label>
+                                    <textarea class="form-control" name="observaciones_signos" rows="2" placeholder="Observaciones adicionales..."></textarea>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- ============================================ -->
+                <!-- FORMATO SOAP -->
+                <!-- ============================================ -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-notes-medical"></i> Consulta Médica - Formato SOAP</h5>
+                    </div>
+                    <div class="card-body">
+                        
+                        <!-- S - SUBJETIVO -->
+                        <div class="mb-4">
+                            <h6 class="text-primary"><strong>S - SUBJETIVO</strong> (Lo que el paciente cuenta)</h6>
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Motivo de Consulta <span class="text-danger">*</span></label>
+                                    <textarea class="form-control soap-field" name="motivo_consulta" required placeholder="¿Por qué viene el paciente?">{{ consulta.motivo_consulta }}</textarea>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Padecimiento Actual <span class="text-danger">*</span></label>
+                                    <textarea class="form-control soap-field" name="padecimiento_actual" required placeholder="Historia del padecimiento...">{{ consulta.padecimiento_actual }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- O - OBJETIVO -->
+                        <div class="mb-4">
+                            <h6 class="text-primary"><strong>O - OBJETIVO</strong> (Lo que el médico observa)</h6>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label class="form-label">Exploración Física <span class="text-danger">*</span></label>
+                                    <textarea class="form-control soap-field" name="exploracion_fisica" required placeholder="Hallazgos en la exploración física...">{{ consulta.exploracion_fisica }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- A - ASSESSMENT -->
+                        <div class="mb-4">
+                            <h6 class="text-primary"><strong>A - ASSESSMENT</strong> (Diagnóstico/Evaluación)</h6>
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label class="form-label">Diagnóstico Principal <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="diagnostico_principal" required value="{{ consulta.diagnostico_principal }}" placeholder="Ej: Hipertensión Arterial Sistémica">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Código CIE-10</label>
+                                    <input type="text" class="form-control" name="diagnostico_cie10" value="{{ consulta.diagnostico_cie10 }}" placeholder="Ej: I10">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Diagnósticos Secundarios</label>
+                                    <textarea class="form-control" name="diagnosticos_secundarios" rows="2" placeholder="Diagnósticos adicionales...">{{ consulta.diagnosticos_secundarios }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- P - PLAN -->
+                        <div class="mb-4">
+                            <h6 class="text-primary"><strong>P - PLAN</strong> (Plan de tratamiento)</h6>
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Plan de Tratamiento <span class="text-danger">*</span></label>
+                                    <textarea class="form-control soap-field" name="plan_tratamiento" required placeholder="Medicamentos, indicaciones, dieta, ejercicio...">{{ consulta.plan_tratamiento }}</textarea>
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Estudios Solicitados</label>
+                                    <textarea class="form-control" name="estudios_solicitados" rows="3" placeholder="Laboratorio, rayos X, ultrasonidos...">{{ consulta.estudios_solicitados }}</textarea>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Pronóstico</label>
+                                    <select class="form-select" name="pronostico">
+                                        <option value="EXCELENTE" {% if consulta.pronostico == 'EXCELENTE' %}selected{% endif %}>Excelente</option>
+                                        <option value="BUENO" {% if consulta.pronostico == 'BUENO' or not consulta.pronostico %}selected{% endif %}>Bueno</option>
+                                        <option value="REGULAR" {% if consulta.pronostico == 'REGULAR' %}selected{% endif %}>Regular</option>
+                                        <option value="RESERVADO" {% if consulta.pronostico == 'RESERVADO' %}selected{% endif %}>Reservado</option>
+                                        <option value="MALO" {% if consulta.pronostico == 'MALO' %}selected{% endif %}>Malo</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Próxima Cita</label>
+                                    <input type="date" class="form-control" name="fecha_proxima_cita" value="{{ consulta.fecha_proxima_cita|date:'Y-m-d' }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Datos adicionales -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo de Consulta</label>
+                                <select class="form-select" name="tipo_consulta">
+                                    <option value="PRIMERA_VEZ" {% if consulta.tipo_consulta == 'PRIMERA_VEZ' %}selected{% endif %}>Primera Vez</option>
+                                    <option value="SUBSECUENTE" {% if consulta.tipo_consulta == 'SUBSECUENTE' or not consulta.tipo_consulta %}selected{% endif %}>Subsecuente</option>
+                                    <option value="URGENCIA" {% if consulta.tipo_consulta == 'URGENCIA' %}selected{% endif %}>Urgencia</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Precio de Consulta</label>
+                                <input type="number" step="0.01" class="form-control" name="precio_consulta" value="{{ consulta.precio_consulta|default:'300.00' }}" placeholder="300.00">
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+                
+                <!-- Botones de Acción -->
+                <div class="d-flex justify-content-between mb-4">
+                    <a href="{% url 'consultorio:lista_trabajo_medico' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </a>
+                    <div>
+                        <button type="submit" class="btn btn-primary btn-lg me-2">
+                            <i class="fas fa-save"></i> Guardar Consulta
+                        </button>
+                        <button type="submit" name="finalizar" value="1" class="btn btn-success btn-lg">
+                            <i class="fas fa-check-circle"></i> Finalizar Consulta
+                        </button>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Columna Derecha: Historia Clínica y Consultas Previas -->
+            <div class="col-lg-3">
+                
+                <!-- Historia Clínica -->
+                {% if historia_clinica %}
+                <div class="card mb-3">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="mb-0"><i class="fas fa-file-medical"></i> Historia Clínica</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><small class="text-muted">Expediente: {{ historia_clinica.numero_expediente }}</small></p>
+                        
+                        <div class="accordion" id="accordionHistoria">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAHF">
+                                        AHF
+                                    </button>
+                                </h2>
+                                <div id="collapseAHF" class="accordion-collapse collapse" data-bs-parent="#accordionHistoria">
+                                    <div class="accordion-body">
+                                        <ul class="list-unstyled mb-0">
+                                            {% if historia_clinica.ahf_diabetes %}<li>✓ Diabetes</li>{% endif %}
+                                            {% if historia_clinica.ahf_hipertension %}<li>✓ Hipertensión</li>{% endif %}
+                                            {% if historia_clinica.ahf_cancer %}<li>✓ Cáncer</li>{% endif %}
+                                            {% if historia_clinica.ahf_cardiopatias %}<li>✓ Cardiopatías</li>{% endif %}
+                                            {% if historia_clinica.ahf_otros %}<li>{{ historia_clinica.ahf_otros }}</li>{% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAPP">
+                                        APP
+                                    </button>
+                                </h2>
+                                <div id="collapseAPP" class="accordion-collapse collapse" data-bs-parent="#accordionHistoria">
+                                    <div class="accordion-body">
+                                        <p class="mb-1"><strong>Alergias:</strong> {{ historia_clinica.app_alergias|default:"Ninguna" }}</p>
+                                        <p class="mb-1"><strong>Enf. Crónicas:</strong> {{ historia_clinica.app_enfermedades_cronicas|default:"Ninguna" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="card mb-3 border-warning">
+                    <div class="card-header bg-warning">
+                        <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Sin Historia Clínica</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="small mb-2">Este paciente no tiene historia clínica. Créala en esta consulta.</p>
+                        <input type="hidden" name="crear_historia" value="1">
+                        <!-- Aquí puedes agregar un acordeón para capturar AHF/APNP/APP/AGO si lo deseas -->
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Consultas Previas -->
+                {% if consultas_previas %}
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="fas fa-history"></i> Consultas Previas</h6>
+                    </div>
+                    <div class="card-body consultas-previas p-2">
+                        {% for c in consultas_previas %}
+                        <div class="border-bottom pb-2 mb-2">
+                            <p class="mb-1"><small><strong>{{ c.fecha_consulta|date:"d/m/Y" }}</strong></small></p>
+                            <p class="mb-1"><small>{{ c.diagnostico_principal|truncatewords:5 }}</small></p>
+                            <p class="mb-0"><small class="text-muted">Dr. {{ c.medico.nombre_completo }}</small></p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+            </div>
+        </div>
+        
+    </form>
+    
+</div>
+
+<script>
+// Calcular IMC automáticamente cuando se capturan signos vitales
+document.addEventListener('DOMContentLoaded', function() {
+    const peso = document.getElementById('peso');
+    const talla = document.getElementById('talla');
+    
+    if (peso && talla) {
+        function calcularIMC() {
+            const p = parseFloat(peso.value);
+            const t = parseFloat(talla.value);
+            if (p > 0 && t > 0) {
+                const imc = (p / (t * t)).toFixed(2);
+                console.log('IMC calculado:', imc);
+                // Aquí puedes mostrar el IMC en tiempo real si agregas un campo adicional
+            }
+        }
+        
+        peso.addEventListener('input', calcularIMC);
+        talla.addEventListener('input', calcularIMC);
+    }
+});
+</script>
+
+{% endblock %}

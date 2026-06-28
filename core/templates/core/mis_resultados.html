@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mis Resultados - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .fortaleza-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+    .mejora-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+    .evaluacion-card {
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: box-shadow 0.3s;
+    }
+    .evaluacion-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top: 70px;">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="fw-bold text-primary mb-0">
+                <i class="bi bi-person-check"></i> MIS RESULTADOS
+            </h2>
+            <small class="text-muted">Vista personal de evaluaciones y planes de desarrollo</small>
+        </div>
+        {% if empleado %}
+        <span class="badge bg-success" style="font-size: 1rem;">
+            {{ empleado.puesto }}
+        </span>
+        {% endif %}
+    </div>
+
+    {% if empleado %}
+    <!-- FORTALEZAS Y ÁREAS DE MEJORA -->
+    {% if evaluaciones %}
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="fortaleza-card shadow">
+                <h5 class="fw-bold mb-3"><i class="bi bi-star-fill"></i> MIS FORTALEZAS</h5>
+                <ul class="list-unstyled">
+                    {% for eval in evaluaciones|slice:":1" %}
+                    {% for detalle in eval.detalles.all %}
+                    {% if detalle.calificacion >= 4 %}
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle-fill"></i> 
+                        <strong>{{ detalle.competencia.nombre }}</strong>: {{ detalle.calificacion }}/5
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="mejora-card shadow">
+                <h5 class="fw-bold mb-3"><i class="bi bi-arrow-up-circle-fill"></i> ÁREAS DE MEJORA</h5>
+                <ul class="list-unstyled">
+                    {% for eval in evaluaciones|slice:":1" %}
+                    {% for detalle in eval.detalles.all %}
+                    {% if detalle.calificacion < 3 %}
+                    <li class="mb-2">
+                        <i class="bi bi-exclamation-circle-fill"></i> 
+                        <strong>{{ detalle.competencia.nombre }}</strong>: {{ detalle.calificacion }}/5
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- EVALUACIONES RECIENTES -->
+    <div class="card shadow border-0 mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-clipboard-check"></i> MIS EVALUACIONES</h5>
+        </div>
+        <div class="card-body">
+            {% if evaluaciones %}
+            {% for evaluacion in evaluaciones %}
+            <div class="evaluacion-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-1">{{ evaluacion.periodo }}</h5>
+                        <small class="text-muted">
+                            Evaluado por: {{ evaluacion.evaluador.get_full_name }} | 
+                            Fecha: {{ evaluacion.fecha|date:"d/m/Y" }}
+                        </small>
+                    </div>
+                    <span class="badge bg-info" style="font-size: 1rem;">
+                        {{ evaluacion.get_cuadrante_9box_display }}
+                    </span>
+                </div>
+                
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <small class="text-muted d-block">Desempeño</small>
+                            <strong class="text-primary">{{ evaluacion.desempeno_score|floatformat:1 }}/100</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <small class="text-muted d-block">Potencial</small>
+                            <strong class="text-success">{{ evaluacion.potencial_score|floatformat:1 }}/100</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <small class="text-muted d-block">Promedio</small>
+                            <strong class="text-info">{{ evaluacion.promedio_competencias|floatformat:1 }}/100</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <small class="text-muted d-block">KPIs</small>
+                            <strong class="text-warning">{{ evaluacion.cumplimiento_kpis|floatformat:1 }}/100</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if evaluacion.feedback_ia %}
+                <div class="alert alert-info mb-2">
+                    <strong>Feedback de IA:</strong><br>
+                    <small>{{ evaluacion.feedback_ia|linebreaks }}</small>
+                </div>
+                {% endif %}
+                
+                <a href="{% url 'ver_evaluacion_desempeno' evaluacion.id %}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-eye"></i> Ver Detalle
+                </a>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                <p class="mt-3">Aún no tienes evaluaciones registradas.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- PLANES DE DESARROLLO -->
+    <div class="card shadow border-0">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-book"></i> MIS PLANES DE DESARROLLO</h5>
+        </div>
+        <div class="card-body">
+            {% if planes %}
+            {% for plan in planes %}
+            <div class="card mb-3 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h6 class="fw-bold mb-1">Plan de {{ plan.evaluacion_origen.periodo }}</h6>
+                            <small class="text-muted">
+                                Creado: {{ plan.fecha_creacion|date:"d/m/Y" }} | 
+                                Límite: <span class="text-{% if plan.esta_vencido %}danger{% else %}primary{% endif %}">
+                                    {{ plan.fecha_limite|date:"d/m/Y" }}
+                                </span>
+                            </small>
+                        </div>
+                        <span class="badge bg-{% if plan.estado == 'COMPLETADO' %}success{% elif plan.estado == 'EN_PROCESO' %}warning{% else %}info{% endif %}">
+                            {{ plan.get_estado_display }}
+                        </span>
+                    </div>
+                    
+                    {% if plan.observaciones %}
+                    <div class="alert alert-light">
+                        <small>{{ plan.observaciones|linebreaks }}</small>
+                    </div>
+                    {% endif %}
+                    
+                    <a href="{% url 'marketing:dashboard_marketing' %}" class="btn btn-success btn-sm">
+                        <i class="bi bi-book"></i> Acceder a Academy
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-book" style="font-size: 3rem;"></i>
+                <p class="mt-3">No tienes planes de desarrollo asignados aún.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning text-center">
+        <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+        <p class="mt-3">No estás registrado como empleado en el sistema.</p>
+        <p>Contacta al administrador para configurar tu perfil de empleado.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

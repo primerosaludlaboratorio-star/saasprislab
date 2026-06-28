@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Estadísticas de Bienestar - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2><i class="fas fa-chart-line text-primary"></i> Estadísticas de Bienestar</h2>
+    <p class="text-muted">Evolución de tu estado físico y mental</p>
+    
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted">Promedio Físico</h6>
+                    <h2>{{ promedio_fisico }}/10</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted">Promedio Mental</h6>
+                    <h2>{{ promedio_mental }}/10</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted">Días Registrados</h6>
+                    <h2>{{ total_dias }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    Evolución Últimos 30 Días
+                </div>
+                <div class="card-body">
+                    <canvas id="chartBienestar"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    Estado de Ánimo Más Común
+                </div>
+                <div class="card-body">
+                    <canvas id="chartEstadoAnimo"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    Recomendaciones Personalizadas
+                </div>
+                <div class="card-body">
+                    <ul>
+                        {% for recomendacion in recomendaciones %}
+                        <li>{{ recomendacion }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

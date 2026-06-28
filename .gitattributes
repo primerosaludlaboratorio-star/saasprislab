@@ -1,0 +1,2 @@
+# Scripts de shell: LF obligatorio en imagen Linux (Cloud Run / Docker).
+scripts/**/*.sh text eol=lf

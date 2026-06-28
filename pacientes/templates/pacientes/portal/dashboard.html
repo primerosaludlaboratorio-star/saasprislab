@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Portal - {{ paciente.nombre_completo }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'pacientes:portal_dashboard' %}">
+                <i class="bi bi-heart-pulse"></i> Mi Portal Médico
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'pacientes:portal_mis_consultas' %}">
+                            <i class="bi bi-clipboard2-pulse"></i> Mis Consultas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'pacientes:portal_mis_estudios' %}">
+                            <i class="bi bi-collection"></i> Mis Estudios
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'pacientes:portal_mis_recetas' %}">
+                            <i class="bi bi-prescription2"></i> Mis Recetas
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ paciente.nombre_completo }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'pacientes:portal_mi_perfil' %}">Mi Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'pacientes:portal_logout' %}">Cerrar Sesión</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container py-4">
+        <h2 class="mb-4">Bienvenido, {{ paciente.nombre_completo }}</h2>
+        
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-clipboard2-pulse text-primary" style="font-size: 2.5rem;"></i>
+                        <h3 class="mt-2">{{ stats.total_consultas }}</h3>
+                        <small class="text-muted">Consultas</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-collection text-success" style="font-size: 2.5rem;"></i>
+                        <h3 class="mt-2">{{ stats.total_estudios }}</h3>
+                        <small class="text-muted">Estudios de Lab</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-prescription2 text-warning" style="font-size: 2.5rem;"></i>
+                        <h3 class="mt-2">{{ stats.recetas_activas }}</h3>
+                        <small class="text-muted">Recetas Activas</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-hourglass-split text-info" style="font-size: 2.5rem;"></i>
+                        <h3 class="mt-2">{{ stats.estudios_pendientes }}</h3>
+                        <small class="text-muted">Estudios Pendientes</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Última Consulta</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if ultima_consulta %}
+                            <p><strong>Fecha:</strong> {{ ultima_consulta.fecha_consulta|date:"d/m/Y" }}</p>
+                            <p><strong>Médico:</strong> Dr. {{ ultima_consulta.medico.nombre_completo }}</p>
+                            <p><strong>Motivo:</strong> {{ ultima_consulta.motivo_consulta|truncatewords:20 }}</p>
+                            <a href="{% url 'pacientes:portal_mis_consultas' %}" class="btn btn-sm btn-outline-primary">
+                                Ver Todas
+                            </a>
+                        {% else %}
+                            <p class="text-muted">No tienes consultas registradas</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">Recetas Recientes</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if recetas_activas %}
+                            {% for receta in recetas_activas %}
+                                <div class="mb-2">
+                                    <small class="text-muted">{{ receta.fecha_prescripcion|date:"d/m/Y" }}</small>
+                                    <br><strong>{{ receta.medicamentos|truncatewords:10 }}</strong>
+                                </div>
+                                {% if not forloop.last %}<hr>{% endif %}
+                            {% endfor %}
+                            <a href="{% url 'pacientes:portal_mis_recetas' %}" class="btn btn-sm btn-outline-warning mt-2">
+                                Ver Todas
+                            </a>
+                        {% else %}
+                            <p class="text-muted">No tienes recetas activas</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

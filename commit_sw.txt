@@ -1,0 +1,7 @@
+fix: corregir Service Worker - eliminar CDNs del precache y rutas de iconos
+
+Cachear CDNs externos con mode:no-cors genera respuestas opacas que pueden
+corromperse y causar 'Unexpected token' al servirse como scripts.
+Se limita STATIC_ASSETS a recursos propios del servidor.
+Tambien se corrigen rutas de iconos para Web Push notifications.
+Version de cache bumpeada a v1.1.0 para limpiar caches anteriores.

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load static humanize %}
+{% block title %}{{ periodo.nombre }} — Nómina PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center gap-3">
+      <a href="{% url 'nomina_dashboard' %}" class="btn btn-outline-secondary btn-sm">← Regresar</a>
+      <div>
+        <h3 class="fw-bold mb-0">{{ periodo.nombre }}</h3>
+        <small class="text-muted">{{ periodo.fecha_inicio|date:"d/m/Y" }} — {{ periodo.fecha_fin|date:"d/m/Y" }} |
+          <span class="badge bg-{% if periodo.estado == 'PAGADO' %}success{% elif periodo.estado == 'ABIERTO' %}warning text-dark{% else %}secondary{% endif %}">{{ periodo.get_estado_display }}</span>
+        </small>
+      </div>
+    </div>
+    {% if periodo.estado != 'PAGADO' %}
+    <form method="post" action="{% url 'nomina_marcar_pagado' periodo.pk %}" class="d-flex gap-2 align-items-center">
+      {% csrf_token %}
+      <select name="metodo_pago" class="form-select form-select-sm" style="width:180px">
+        <option value="TRANSFERENCIA">Transferencia</option>
+        <option value="EFECTIVO">Efectivo</option>
+        <option value="CHEQUE">Cheque</option>
+      </select>
+      <button type="submit" class="btn btn-success btn-sm"
+              onclick="return confirm('¿Marcar todo el período como PAGADO?')">
+        <i class="fas fa-check me-1"></i>Marcar Pagado
+      </button>
+    </form>
+    {% endif %}
+  </div>
+
+  <!-- Resumen financiero -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body">
+          <div class="h4 fw-bold text-success">${{ resumen.total_neto|floatformat:2|intcomma|default:"0.00" }}</div>
+          <div class="small text-muted">Neto total a pagar</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body">
+          <div class="h4 fw-bold text-primary">${{ resumen.total_percepciones|floatformat:2|intcomma|default:"0.00" }}</div>
+          <div class="small text-muted">Percepciones</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body">
+          <div class="h4 fw-bold text-danger">${{ resumen.total_deducciones|floatformat:2|intcomma|default:"0.00" }}</div>
+          <div class="small text-muted">Deducciones</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body">
+          <div class="h4 fw-bold">{{ recibos|length }}</div>
+          <div class="small text-muted">Empleados</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de recibos -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-white fw-bold">Recibos individuales</div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Empleado</th><th>Puesto</th><th class="text-end">Sueldo base</th>
+            <th class="text-end">Percepciones</th><th class="text-end">Deducciones</th>
+            <th class="text-end fw-bold">Neto</th><th>Estado</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in recibos %}
+          <tr>
+            <td>{{ r.empleado.usuario.get_full_name }}</td>
+            <td><small>{{ r.empleado.puesto }}</small></td>
+            <td class="text-end">${{ r.sueldo_base|floatformat:2 }}</td>
+            <td class="text-end text-success">${{ r.total_percepciones|floatformat:2 }}</td>
+            <td class="text-end text-danger">${{ r.total_deducciones|floatformat:2 }}</td>
+            <td class="text-end fw-bold">${{ r.neto_pagar|floatformat:2 }}</td>
+            <td>
+              {% if r.pagado %}
+                <span class="badge bg-success">Pagado</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Pendiente</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if periodo.estado != 'PAGADO' %}
+              <a href="{% url 'nomina_editar_recibo' r.pk %}" class="btn btn-xs btn-outline-primary" style="font-size:.75rem; padding:2px 8px">
+                <i class="fas fa-edit"></i> Editar
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center text-muted py-4">No hay recibos en este período.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

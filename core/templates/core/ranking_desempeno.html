@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ranking de Desempeño{% endblock %}
+
+{% block extra_css %}
+<style>
+    .podio-container {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 2rem;
+        margin: 3rem 0;
+        padding: 2rem;
+    }
+    .podio-item {
+        text-align: center;
+        flex: 1;
+        max-width: 300px;
+    }
+    .podio-oro {
+        order: 2;
+        transform: scale(1.1);
+    }
+    .podio-plata {
+        order: 1;
+    }
+    .podio-bronce {
+        order: 3;
+    }
+    .medalla {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        margin: 0 auto 1rem;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    .medalla-oro {
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+        color: #fff;
+    }
+    .medalla-plata {
+        background: linear-gradient(135deg, #C0C0C0 0%, #808080 100%);
+        color: #fff;
+    }
+    .medalla-bronce {
+        background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%);
+        color: #fff;
+    }
+    .score-badge {
+        font-size: 2rem;
+        font-weight: bold;
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        display: inline-block;
+        margin-top: 0.5rem;
+    }
+    .score-excelente { background-color: #28a745; color: white; }
+    .score-bueno { background-color: #17a2b8; color: white; }
+    .score-regular { background-color: #ffc107; color: black; }
+    .score-bajo { background-color: #dc3545; color: white; }
+    
+    .tendencia-subio {
+        color: #28a745;
+        font-weight: bold;
+    }
+    .tendencia-bajo {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    .tendencia-igual {
+        color: #6c757d;
+    }
+    
+    .fortalezas-badge {
+        display: inline-block;
+        margin: 0.25rem;
+        padding: 0.25rem 0.75rem;
+        background-color: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        border-radius: 15px;
+        font-size: 0.85rem;
+    }
+    
+    .tabla-ranking tbody tr:hover {
+        background-color: #f8f9fa;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px;">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <h2>
+                <i class="bi bi-trophy-fill"></i> Ranking de Desempeño - {{ mes_nombre }} {{ anio_actual }}
+            </h2>
+            <a href="{% url 'dashboard_director' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Podio de Honor -->
+    {% if podio %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card shadow-lg">
+                <div class="card-header bg-gradient text-white text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h3 class="mb-0">
+                        <i class="bi bi-trophy"></i> Podio de Honor
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="podio-container">
+                        {% for item in podio %}
+                        <div class="podio-item {% if forloop.counter == 1 %}podio-oro{% elif forloop.counter == 2 %}podio-plata{% else %}podio-bronce{% endif %}">
+                            <div class="medalla {% if forloop.counter == 1 %}medalla-oro{% elif forloop.counter == 2 %}medalla-plata{% else %}medalla-bronce{% endif %}">
+                                {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% else %}🥉{% endif %}
+                            </div>
+                            <h4 class="fw-bold">{{ item.empleado.nombre_completo }}</h4>
+                            <div class="score-badge score-excelente">{{ item.score.score_total|floatformat:1 }}</div>
+                            <p class="text-muted mt-2 mb-1">
+                                <small>{{ item.score.volumen_ordenes }} acciones</small>
+                            </p>
+                            <div class="mt-2">
+                                {% for fortaleza in item.score.fortalezas|slice:":2" %}
+                                <span class="fortalezas-badge">{{ fortaleza }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tabla General -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ol"></i> Tabla General de Desempeño
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover tabla-ranking">
+                            <thead>
+                                <tr>
+                                    <th>Posición</th>
+                                    <th>Empleado</th>
+                                    <th>Score Total</th>
+                                    <th>Velocidad</th>
+                                    <th>Integridad</th>
+                                    <th>Satisfacción</th>
+                                    <th>Volumen</th>
+                                    <th>Tendencia</th>
+                                    <th>Fortalezas</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in tabla_general %}
+                                <tr onclick="window.location.href='{% url 'detalle_empleado_ranking' item.empleado.id %}'">
+                                    <td>
+                                        <strong class="text-primary">#{{ forloop.counter }}</strong>
+                                    </td>
+                                    <td>
+                                        <strong>{{ item.empleado.nombre_completo }}</strong><br>
+                                        <small class="text-muted">{{ item.empleado.get_rol_display }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="score-badge {% if item.score.score_total >= 80 %}score-excelente{% elif item.score.score_total >= 60 %}score-bueno{% elif item.score.score_total >= 40 %}score-regular{% else %}score-bajo{% endif %}">
+                                            {{ item.score.score_total|floatformat:1 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small>{{ item.score.velocidad|floatformat:1 }}</small>
+                                        <div class="progress" style="height: 5px;">
+                                            <div class="progress-bar bg-info" style="width: {{ item.score.velocidad }}%"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small>{{ item.score.integridad|floatformat:1 }}</small>
+                                        <div class="progress" style="height: 5px;">
+                                            <div class="progress-bar bg-success" style="width: {{ item.score.integridad }}%"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small>{{ item.score.satisfaccion|floatformat:1 }}</small>
+                                        <div class="progress" style="height: 5px;">
+                                            <div class="progress-bar bg-warning" style="width: {{ item.score.satisfaccion }}%"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>{{ item.score.volumen_ordenes }}</strong> acciones<br>
+                                        <small class="text-muted">
+                                            {{ item.score.volumen_ventas }} ventas, 
+                                            {{ item.score.volumen_ordenes_lab }} órdenes
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if item.tendencia.tendencia == 'subio' %}
+                                        <span class="tendencia-subio">
+                                            <i class="bi bi-arrow-up-circle-fill"></i> +{{ item.tendencia.diferencia|floatformat:1 }}
+                                        </span>
+                                        {% elif item.tendencia.tendencia == 'bajo' %}
+                                        <span class="tendencia-bajo">
+                                            <i class="bi bi-arrow-down-circle-fill"></i> {{ item.tendencia.diferencia|floatformat:1 }}
+                                        </span>
+                                        {% elif item.tendencia.tendencia == 'nuevo' %}
+                                        <span class="text-info">
+                                            <i class="bi bi-star-fill"></i> Nuevo
+                                        </span>
+                                        {% else %}
+                                        <span class="tendencia-igual">
+                                            <i class="bi bi-dash-circle"></i> {{ item.tendencia.diferencia|floatformat:1 }}
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% for fortaleza in item.score.fortalezas|slice:":3" %}
+                                        <span class="fortalezas-badge">{{ fortaleza }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'detalle_empleado_ranking' item.empleado.id %}" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();">
+                                            <i class="bi bi-eye"></i> Ver Detalle
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted py-4">
+                                        No hay empleados para mostrar.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

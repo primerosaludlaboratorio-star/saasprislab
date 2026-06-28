@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Precios LIMS por convenio - {{ convenio.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top: 70px;">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold text-primary mb-1"><i class="bi bi-tag"></i> PRECIOS LIMS (ANALITOS)</h2>
+      <div class="text-muted">
+        Convenio: <strong>{{ convenio.nombre }}</strong> | Tipo: {{ convenio.get_tipo_display }} | % Desc fallback: {{ convenio.descuento_porcentaje }}%
+      </div>
+    </div>
+    <a href="{% url 'catalogo_convenios' %}" class="btn btn-outline-secondary fw-bold">
+      <i class="bi bi-arrow-left"></i> Volver
+    </a>
+  </div>
+
+  <div class="alert alert-info">
+    Precios por analito (catálogo LIMS v7.5). Si el campo queda vacío, aplica precio público o el % de descuento del convenio.
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <strong>Configuración</strong>
+        <button class="btn btn-sm btn-success fw-bold" type="submit">
+          <i class="bi bi-save"></i> Guardar
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Analito</th>
+                <th>Precio público</th>
+                <th>Precio convenio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for f in filas %}
+                {% with a=f.analito p=f.precio_obj %}
+                  <tr>
+                    <td class="fw-bold">{{ a.codigo }}</td>
+                    <td>{{ a.nombre }}</td>
+                    <td>${{ f.precio_publico }}</td>
+                    <td style="max-width: 160px;">
+                      <input class="form-control form-control-sm" name="precio_a_{{ a.id }}" value="{% if p %}{{ p.precio_convenio }}{% endif %}" placeholder="(vacío = fallback)">
+                    </td>
+                  </tr>
+                {% endwith %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

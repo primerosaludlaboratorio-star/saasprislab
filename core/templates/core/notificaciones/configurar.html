@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Configurar Notificaciones — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:640px">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="fas fa-bell-slash text-primary me-2"></i>Configurar Notificaciones</h3>
+    <a href="{% url 'notificaciones_lista' %}" class="btn btn-outline-secondary btn-sm">← Volver</a>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white fw-semibold small text-muted">RESUMEN</div>
+    <div class="card-body d-flex justify-content-around text-center">
+      <div>
+        <div class="fw-bold fs-4 text-primary">{{ total }}</div>
+        <div class="small text-muted">Total notificaciones</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <h6 class="fw-semibold mb-3">Canales</h6>
+        <div class="form-check form-switch mb-2">
+          <input class="form-check-input" type="checkbox" name="email_activo" id="sw-email" value="1"
+                 {% if prefs.email %}checked{% endif %}>
+          <label class="form-check-label" for="sw-email">
+            <i class="fas fa-envelope me-1"></i>Notificaciones por email
+          </label>
+        </div>
+        <div class="form-check form-switch mb-4">
+          <input class="form-check-input" type="checkbox" name="browser_activo" id="sw-browser" value="1"
+                 {% if prefs.browser %}checked{% endif %}>
+          <label class="form-check-label" for="sw-browser">
+            <i class="fas fa-desktop me-1"></i>Notificaciones en navegador
+          </label>
+        </div>
+
+        <h6 class="fw-semibold mb-3">Tipos de notificación</h6>
+        <div class="row g-2 mb-4">
+          {% for val, lbl in tipos %}
+          <div class="col-6">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="tipos" value="{{ val }}"
+                     id="tipo-{{ val }}"
+                     {% if val in prefs.tipos or not prefs.tipos %}checked{% endif %}>
+              <label class="form-check-label small" for="tipo-{{ val }}">{{ lbl }}</label>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="d-flex gap-2 justify-content-end">
+          {% if request.user.is_staff %}
+          <a href="{% url 'ejecutar_verificaciones' %}" class="btn btn-outline-warning btn-sm"
+             onclick="return confirm('¿Ejecutar verificaciones del sistema?')">
+            <i class="fas fa-sync me-1"></i>Ejecutar verificaciones
+          </a>
+          {% endif %}
+          <button type="submit" class="btn btn-primary">Guardar preferencias</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

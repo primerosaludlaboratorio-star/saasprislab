@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Períodos de Nómina{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Períodos de Nómina</h2>
+    <a href="{% url 'nomina_crear_periodo' %}" class="btn btn-primary">
+      <i class="fas fa-plus me-1"></i>Nuevo período
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Período</th>
+              <th>Fecha inicio</th>
+              <th>Fecha fin</th>
+              <th>Empleados</th>
+              <th>Total neto</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in periodos %}
+            <tr>
+              <td class="fw-semibold">{{ p.nombre|default:p }}</td>
+              <td>{{ p.fecha_inicio|date:"d/m/Y" }}</td>
+              <td>{{ p.fecha_fin|date:"d/m/Y" }}</td>
+              <td>{{ p.recibos.count|default:"—" }}</td>
+              <td>${{ p.total_neto|floatformat:2|default:"0.00" }}</td>
+              <td>
+                <span class="badge bg-{% if p.estado == 'PAGADO' %}success{% elif p.estado == 'AUTORIZADO' %}primary{% elif p.estado == 'CERRADO' %}secondary{% else %}warning text-dark{% endif %}">
+                  {{ p.get_estado_display|default:p.estado }}
+                </span>
+              </td>
+              <td>
+                <a href="{% url 'nomina_detalle_periodo' p.pk %}" class="btn btn-sm btn-outline-primary">
+                  <i class="fas fa-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-4">Sin períodos de nómina</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if periodos.has_other_pages %}
+    <div class="card-footer d-flex justify-content-center">
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          {% if periodos.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ periodos.previous_page_number }}">Anterior</a></li>{% endif %}
+          <li class="page-item active"><a class="page-link" href="#">{{ periodos.number }}/{{ periodos.paginator.num_pages }}</a></li>
+          {% if periodos.has_next %}<li class="page-item"><a class="page-link" href="?page={{ periodos.next_page_number }}">Siguiente</a></li>{% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

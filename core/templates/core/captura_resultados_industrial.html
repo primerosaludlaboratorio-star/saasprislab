@@ -1,0 +1,1621 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Registro de Resultados - {{ orden.folio_orden }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    body { background-color: #f0f2f5; font-family: 'Inter', 'Roboto', sans-serif; overflow-x: hidden; }
+
+    /* Layout dual: folios | captura */
+    .layout-dual { display: flex; height: calc(100vh - 60px); gap: 0; }
+
+    /* Panel izquierdo: Lista de Folios */
+    .columna-folios {
+        width: 280px; background: white; border-right: 2px solid #dee2e6;
+        overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column;
+    }
+    .columna-folios-header {
+        padding: 12px 15px; background: #003366; color: white;
+        position: sticky; top: 0; z-index: 10;
+    }
+    .lista-folios { padding: 8px; flex: 1; overflow-y: auto; }
+    .item-folio {
+        padding: 10px 12px; margin-bottom: 4px; border-radius: 5px; cursor: pointer;
+        transition: all 0.15s; border-left: 3px solid transparent; font-size: 13px;
+    }
+    .item-folio:hover { background-color: #f0f0f0; border-left-color: #003366; }
+    .item-folio.activo { background-color: #e3f2fd; border-left-color: #1565c0; font-weight: 600; }
+
+    /* Panel derecho: Captura */
+    .columna-captura { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* Ficha paciente (estilo DeveLab — compacta) */
+    .ficha-paciente {
+        background: white; padding: 8px 16px; border-bottom: 2px solid #003366; flex-shrink: 0;
+    }
+    .ficha-paciente table { width: 100%; font-size: 12.5px; }
+    .ficha-paciente td { padding: 1px 8px 1px 0; }
+    .ficha-paciente .lbl { color: #6b7280; font-weight: 400; width: 72px; font-size: 11.5px; }
+    .ficha-paciente .val { font-weight: 700; color: #111827; }
+
+    /* Cuadrícula de captura */
+    .cuadricula-area { flex: 1; overflow: auto; background: #fff; padding: 0; }
+
+    /* Tabla de captura estilo DeveLab — MODO COMPACTO */
+    .tabla-captura { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .tabla-captura thead { position: sticky; top: 0; z-index: 5; }
+    .tabla-captura thead th {
+        background: #003366; color: white; padding: 7px 6px;
+        font-weight: 600; font-size: 10.5px; text-transform: uppercase;
+        letter-spacing: 0.4px; border: 1px solid #002244; text-align: center;
+        white-space: nowrap;
+    }
+    .tabla-captura tbody td { padding: 4px 6px; border: 1px solid #e5e7eb; vertical-align: middle; }
+    .tabla-captura tbody tr:nth-child(even) { background-color: #f9fafb; }
+    .tabla-captura tbody tr:hover { background-color: #eff6ff; }
+
+    /* Fila de sección */
+    .fila-seccion td {
+        background: #dbeafe !important; color: #1e3a5f; font-weight: 700;
+        font-size: 11px; padding: 5px 8px !important; text-transform: uppercase;
+        letter-spacing: 0.3px; border-bottom: 2px solid #003366 !important;
+    }
+    /* Fila de nombre de estudio */
+    .fila-estudio td {
+        background: #f1f5f9 !important; font-weight: 700; font-size: 11.5px;
+        padding: 4px 8px !important; color: #1e293b; border-left: 3px solid #003366 !important;
+    }
+
+    /* Columnas */
+    .col-analito { width: 200px; font-weight: 600; color: #1e293b; font-size: 12px; }
+    .col-resultado { width: 110px; }
+    .col-unidades { width: 80px; text-align: center; font-style: italic; color: #6b7280; font-size: 11px; }
+    .col-referencia { width: 125px; text-align: center; color: #6b7280; font-size: 11px; }
+    .col-delta { width: 140px; text-align: center; font-size: 11px; color: #9ca3af; cursor: default; }
+    .delta-cell { display:inline-block; line-height:1.25; }
+    .delta-valor { color: #374151; font-size: .8rem; }
+    .delta-flecha { font-weight: 700; font-size: .88rem; transition: color .2s; }
+    .delta-pct { font-size: .65rem; font-weight: 600; }
+    td.col-delta:has(.delta-flecha:not(:empty)) { background: rgba(16,185,129,.04); }
+    .col-estatus { width: 46px; text-align: center; }
+
+    /* Input de resultado — compacto */
+    .input-resultado-industrial {
+        width: 100%; padding: 3px 6px; border: 1.5px solid #d1d5db; border-radius: 3px;
+        text-align: center; font-weight: 700; font-size: 12.5px; transition: all 0.2s;
+        background: #fff;
+    }
+    .input-resultado-industrial:focus { border-color: #003366; outline: none; box-shadow: 0 0 0 2px rgba(0,51,102,0.12); }
+    .input-resultado-industrial.fuera-rango {
+        background-color: #fffbeb !important;
+        color: #b45309 !important;
+        font-weight: 800 !important;
+        border: 2px solid #f59e0b !important;
+        box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.35);
+    }
+    tr.fila-fuera-rango:not(.fila-valor-critico) td {
+        background-color: #fffbeb !important;
+        border-left: 4px solid #f59e0b !important;
+    }
+    .input-resultado-industrial.valor-critico {
+        background-color: #8B0000 !important; color: #FFFFFF !important; font-weight: 900 !important;
+        border: 3px solid #FF0000 !important; animation: parpadeo-critico 0.7s infinite;
+        font-size: 15px !important;
+    }
+    @keyframes parpadeo-critico { 0%,100%{box-shadow:0 0 0 4px rgba(255,0,0,0.7)} 50%{box-shadow:0 0 0 8px rgba(255,0,0,0.3)} }
+    .fila-valor-critico td { background-color: #ffe5e5 !important; }
+    .input-resultado-industrial.dentro-rango { background-color: #f0fff4; color: #28a745; border-color: #28a745; }
+    /* PRIS: acceso exclusivo por sidebar — no hay orbe flotante */
+    /* Modal Semáforo de Pánico */
+    .modal-panico-overlay {
+        display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+        background:rgba(139,0,0,0.92); z-index:9999; align-items:center; justify-content:center;
+    }
+    .modal-panico-overlay.activo { display:flex; }
+    .modal-panico-box {
+        background:white; border-radius:12px; padding:32px 40px; max-width:520px; width:90%;
+        text-align:center; border-top:8px solid #D9230F;
+    }
+
+    /* Barra de acciones inferior */
+    .barra-acciones {
+        background: white; border-top: 2px solid #dee2e6; padding: 10px 20px;
+        display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+    }
+
+    /* Badge estatus */
+    .badge-estatus { font-size: 10px; padding: 3px 6px; border-radius: 3px; font-weight: 700; }
+
+    /* P18 — leyenda siempre visible (auditoría / móvil) */
+    .p18-leyenda-global {
+        font-size: 10.5px;
+        line-height: 1.35;
+        word-break: break-word;
+        border-left: 3px solid #ffc107;
+        background: #fffdf5;
+    }
+
+    @media (max-width: 575.98px) {
+        .layout-dual { display: block; height: auto; }
+        .columna-folios { display: none; }
+        .columna-captura { overflow: visible; min-height: 100vh; }
+        .ficha-paciente {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            padding: 8px 12px 84px;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.12);
+        }
+        .ficha-paciente > .d-flex {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 8px;
+        }
+        .ficha-paciente table { max-width: 100% !important; }
+        #barra-acciones-lab {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1080;
+            margin-top: 0 !important;
+            padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+            background: rgba(255, 255, 255, 0.98);
+            border-top: 1px solid #dbe2ea;
+            box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.15);
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px !important;
+        }
+        #barra-acciones-lab > * {
+            min-width: 0;
+        }
+        #barra-acciones-lab .btn,
+        #barra-acciones-lab .badge,
+        #barra-acciones-lab .form-select,
+        #barra-acciones-lab .d-flex {
+            width: 100%;
+        }
+        #barra-acciones-lab .d-flex.align-items-center.gap-1.me-2 {
+            grid-column: 1 / -1;
+            margin-right: 0 !important;
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+        #barra-acciones-lab #btn-validar-resultados,
+        #barra-acciones-lab #btn-editar-resultados {
+            min-height: 44px;
+        }
+        .cuadricula-area { padding-bottom: 112px; }
+    }
+
+    @media print { .columna-folios, .barra-acciones { display: none; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="layout-dual">
+    <!-- ======== PANEL IZQUIERDO: Folios del día ======== -->
+    <div class="columna-folios">
+        <div class="columna-folios-header">
+            <h6 class="mb-1 fw-bold" style="font-size:14px;">
+                <i class="bi bi-list-ul me-1"></i> Folios del Día
+            </h6>
+            <input type="text" id="buscador-folios" class="form-control form-control-sm"
+                   placeholder="Buscar folio o paciente..." style="font-size:12px;">
+        </div>
+        <div class="lista-folios" id="lista-folios">
+            {% for folio in folios_dia %}
+            <div class="item-folio {% if folio.es_actual %}activo{% endif %}"
+                 onclick="cargarFolio({{ folio.id }})"
+                 data-folio="{{ folio.folio|lower }}"
+                 data-paciente="{{ folio.paciente|lower }}">
+                <div class="fw-bold" style="font-size:12px;">{{ folio.folio }}</div>
+                <div class="text-muted" style="font-size:11px;">{{ folio.paciente }}</div>
+                <span class="badge bg-{% if folio.estado == 'RESULTADOS_LISTOS' %}success{% elif folio.estado == 'EN_PROCESO' %}warning text-dark{% elif folio.estado == 'PAGADO' %}info{% else %}secondary{% endif %}" style="font-size:9px;">
+                    {{ folio.estado }}
+                </span>
+            </div>
+            {% empty %}
+            <div class="text-center text-muted py-4"><small>No hay folios del día</small></div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ======== PANEL DERECHO: Captura ======== -->
+    <div class="columna-captura">
+        <!-- Ficha del paciente (estilo DeveLab) -->
+        <div class="ficha-paciente">
+            <div class="d-flex justify-content-between align-items-start">
+                <table style="max-width:700px;">
+                    <tr>
+                        <td class="lbl">Paciente:</td>
+                        <td class="val" style="font-size:15px;">{{ paciente.nombre_completo|upper }}</td>
+                        <td class="lbl" style="padding-left:20px;">Id:</td>
+                        <td class="val">{{ orden.folio_orden }}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Edad:</td>
+                        <td class="val">{% if edad_paciente %}{{ edad_paciente }} años{% else %}N/D{% endif %}</td>
+                        <td class="lbl" style="padding-left:20px;">Sexo:</td>
+                        <td class="val">{{ paciente.get_sexo_display|default:sexo_paciente }}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Fecha:</td>
+                        <td class="val">{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                        <td class="lbl" style="padding-left:20px;">Estado:</td>
+                        <td>
+                            {% if esta_validado %}
+                            <span class="badge bg-success">VALIDADO</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">PENDIENTE</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+                {# ══ BARRA DE ACCIONES DEVELAB ══ #}
+                <div class="d-flex gap-1 align-items-center flex-wrap mt-1" id="barra-acciones-lab">
+
+                    {# 0. SELECTOR DE EQUIPO — Metrología G2 #}
+                    {% if not esta_validado %}
+                    <div class="d-flex align-items-center gap-1 me-2">
+                        <label for="equipo-select" class="text-muted mb-0" style="font-size:11px;">
+                            <i class="bi bi-motherboard me-1"></i>Equipo:
+                        </label>
+                        <select id="equipo-select" class="form-select form-select-sm" style="width:auto;min-width:140px;font-size:11px;">
+                            <option value="">— Seleccionar —</option>
+                            {% for equipo in equipos_laboratorio %}
+                            <option value="{{ equipo.id }}">{{ equipo.nombre }}{% if equipo.marca %} ({{ equipo.marca }}){% endif %}</option>
+                            {% empty %}
+                            <option value="" disabled>No hay equipos activos</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    {# 1. EDITAR / GUARDAR (toggle único) #}
+                    {% if not esta_validado %}
+                    <button type="button" id="btn-editar-resultados"
+                            class="btn btn-sm btn-warning px-3 fw-bold"
+                            onclick="toggleModoEdicion(this)"
+                            title="Haga clic para editar resultados; haga clic de nuevo para guardar">
+                        <i class="bi bi-pencil-square me-1"></i>EDITAR
+                    </button>
+                    {% else %}
+                    <span class="badge bg-success px-3 py-2 align-self-center fs-6">
+                        <i class="bi bi-lock-fill me-1"></i>VALIDADO
+                    </span>
+                    {% endif %}
+
+                    {# 2. VALIDAR #}
+                    {% if not esta_validado %}
+                    <button type="button" id="btn-validar-resultados"
+                            class="btn btn-sm btn-success px-3 fw-bold"
+                            onclick="validarYPublicar()"
+                            data-prislab-requires-online="1"
+                            title="Validar resultados como QFB (requiere guardar primero)">
+                        <i class="bi bi-check-circle-fill me-1"></i>VALIDAR
+                    </button>
+                    {% endif %}
+
+                    {# 3. IMPRIMIR CON MEMBRETE — solo si validado + pagado #}
+                    {% if puede_imprimir %}
+                    <a href="{% url 'imprimir_resultados' orden.id %}?modo=membrete" target="_blank"
+                       class="btn btn-sm btn-danger"
+                       title="Imprimir con membrete institucional">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Imprimir con Membrete
+                    </a>
+                    {% else %}
+                    <button type="button" class="btn btn-sm btn-danger opacity-50" disabled
+                            title="{% if not esta_validado %}Primero valide los resultados{% else %}La orden no está completamente pagada{% endif %}">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Imprimir con Membrete
+                    </button>
+                    {% endif %}
+
+                    {# 4. IMPRIMIR SIN MEMBRETE — solo si validado + pagado #}
+                    {% if puede_imprimir %}
+                    <a href="{% url 'imprimir_resultados' orden.id %}?modo=blanco" target="_blank"
+                       class="btn btn-sm btn-outline-danger"
+                       title="Imprimir en hoja blanca (sin membrete)">
+                        <i class="bi bi-file-earmark me-1"></i>Imprimir sin Membrete
+                    </a>
+                    {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-danger opacity-50" disabled
+                            title="{% if not esta_validado %}Primero valide los resultados{% else %}La orden no está completamente pagada{% endif %}">
+                        <i class="bi bi-file-earmark me-1"></i>Imprimir sin Membrete
+                    </button>
+                    {% endif %}
+
+                    {# 5. PUBLICAR — genera enlace QR para el paciente #}
+                    {% if esta_validado %}
+                    <button type="button" id="btn-publicar-resultados"
+                            class="btn btn-sm btn-primary px-3 fw-bold"
+                            onclick="publicarResultadosQR()"
+                            data-token="{{ token_acceso|default:'' }}"
+                            title="Publicar resultados: genera QR para que el paciente descargue en línea">
+                        <i class="bi bi-qr-code me-1"></i>PUBLICAR
+                    </button>
+                    {% else %}
+                    <button type="button" class="btn btn-sm btn-primary opacity-50 px-3" disabled
+                            title="Primero valide los resultados para poder publicar">
+                        <i class="bi bi-qr-code me-1"></i>PUBLICAR
+                    </button>
+                    {% endif %}
+
+                    {# 6. MANUALES RAG #}
+                    <button type="button" class="btn btn-sm btn-outline-info px-3"
+                            onclick="togglePanelRAG()" id="btn-consultar-manuales"
+                            title="Consultar Bethesda / Manuales CLSI">
+                        <i class="bi bi-book-half me-1"></i>Manuales
+                    </button>
+
+                    {# 7. REGRESAR #}
+                    <a href="{% url 'consulta_ordenes' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Regresar
+                    </a>
+                </div>
+
+                {# ── Modal QR de Publicación ── #}
+                <div class="modal fade" id="modalQRPublicar" tabindex="-1">
+                    <div class="modal-dialog modal-sm">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary text-white py-2">
+                                <h6 class="modal-title mb-0"><i class="bi bi-qr-code me-2"></i>Publicar Resultados</h6>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body text-center py-3">
+                                <div id="qr-container" class="mb-3"></div>
+                                <p class="small text-muted mb-1">Enlace de acceso para el paciente:</p>
+                                <input type="text" id="qr-enlace-input" class="form-control form-control-sm text-center"
+                                       readonly onclick="this.select()" value="">
+                                <button class="btn btn-sm btn-outline-secondary mt-2"
+                                        onclick="navigator.clipboard.writeText(document.getElementById('qr-enlace-input').value);this.innerHTML='<i class=\'bi bi-check\'></i> Copiado'">
+                                    <i class="bi bi-clipboard"></i> Copiar enlace
+                                </button>
+                            </div>
+                            <div class="modal-footer py-1 justify-content-center">
+                                <small class="text-muted">El paciente puede acceder desde cualquier dispositivo</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p18-leyenda-global px-2 py-1 mx-0 border-bottom"
+             role="note"
+             data-testid="p18-leyenda-global"
+             aria-label="Ética IA punto 18">
+            <strong>Ética IA (P18):</strong>
+            el badge ámbar «Validado por IA · pendiente firma humana» marca filas que requieren revisión explícita antes de liberar.
+            Los analitos <em>calculados</em> son solo lectura (motor clínico).
+        </div>
+
+        <!-- Cuadrícula de captura -->
+        <div class="cuadricula-area">
+            <table class="tabla-captura" id="tabla-captura">
+                <thead>
+                    <tr>
+                        <th class="col-analito">Examen</th>
+                        <th class="col-resultado">Resultado</th>
+                        <th class="col-unidades">Unidades</th>
+                        <th class="col-referencia">Valores de Ref.</th>
+                        <th class="col-delta">Δ Anterior <small style="font-weight:400;opacity:.7;">(Delta Check)</small></th>
+                        <th class="col-estatus">V/I</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-captura">
+                    {% for item in detalles %}
+                        {# Fila de sección/categoría #}
+                        {% if item.seccion %}
+                        <tr class="fila-seccion">
+                            <td colspan="6"><i class="bi bi-folder2-open me-1"></i>{{ item.seccion|upper }}</td>
+                        </tr>
+                        {% endif %}
+
+                        {# Fila de nombre del estudio #}
+                        <tr class="fila-estudio">
+                            <td colspan="6">{% if item.estudio %}{{ item.estudio.nombre|upper }}{% else %}SIN ESTUDIO{% endif %}</td>
+                        </tr>
+
+                        {# Filas de parámetros #}
+                        {% for param in item.parametros %}
+                        <tr data-detalle-id="{{ item.detalle.id }}"
+                            data-param-id="{{ param.parametro_id }}"
+                            data-ref-min="{% if param.ref_min != None %}{{ param.ref_min|floatformat:2 }}{% endif %}"
+                            data-ref-max="{% if param.ref_max != None %}{{ param.ref_max|floatformat:2 }}{% endif %}">
+                            <td class="col-analito" style="padding-left:20px;">
+                                {{ param.descripcion }}
+                                {% include "core/partials/escudo_ia_captura_badge.html" with mostrar=param.escudo_ia_advertencia %}
+                            </td>
+                            <td class="col-resultado">
+                                <input type="text"
+                                       class="input-resultado-industrial result-input{% if param.es_calculado %} input-calculado{% endif %}"
+                                       name="resultado_{{ item.detalle.id }}_{{ param.parametro_id }}"
+                                       id="inp_{{ item.detalle.id }}_{{ param.parametro_id }}"
+                                       data-detalle-id="{{ item.detalle.id }}"
+                                       data-param-id="{{ param.parametro_id }}"
+                                       data-es-calculado="{% if param.es_calculado %}1{% else %}0{% endif %}"
+                                       data-ref-min="{% if param.ref_min != None %}{{ param.ref_min|floatformat:2 }}{% endif %}"
+                                       data-ref-max="{% if param.ref_max != None %}{{ param.ref_max|floatformat:2 }}{% endif %}"
+                                       data-critico-min="{% if param.critico_min != None %}{{ param.critico_min|floatformat:2 }}{% endif %}"
+                                       data-critico-max="{% if param.critico_max != None %}{{ param.critico_max|floatformat:2 }}{% endif %}"
+                                       data-panico-fuera-ref="{% if param.panico_fuera_ref %}1{% else %}0{% endif %}"
+                                       data-analito="{{ param.descripcion }}"
+                                       value="{{ param.valor_previo }}"
+                                       placeholder="--"
+                                       oninput="validarRango(this); if (this.getAttribute('data-es-calculado') !== '1') schedulePreviewFormulas();"
+                                       onkeydown="manejarNav(this, event)"
+                                       autocomplete="off"
+                                       {% if param.es_calculado %}readonly title="Calculado por fórmula (motor clínico); no editable manualmente"{% else %}readonly{% endif %}>
+                            </td>
+                            <td class="col-unidades">{{ param.unidades }}</td>
+                            <td class="col-referencia">{{ param.ref_texto }}</td>
+                            <td class="col-delta"
+                                data-delta-valor="{{ param.resultado_anterior.valor|default:'' }}"
+                                data-delta-fecha="{{ param.resultado_anterior.fecha|default:'' }}"
+                                data-delta-folio="{{ param.resultado_anterior.folio|default:'' }}"
+                                data-ref-min="{% if param.ref_min != None %}{{ param.ref_min|floatformat:2 }}{% endif %}"
+                                data-ref-max="{% if param.ref_max != None %}{{ param.ref_max|floatformat:2 }}{% endif %}">
+                                {% if param.resultado_anterior %}
+                                <div class="delta-cell"
+                                     title="Folio: {{ param.resultado_anterior.folio }} — {{ param.resultado_anterior.fecha }}">
+                                    <span class="delta-valor fw-semibold">{{ param.resultado_anterior.valor }}</span>
+                                    <span class="delta-flecha" style="font-size:1rem;"></span>
+                                    <span class="delta-pct" style="font-size:.68rem;"></span>
+                                    <br>
+                                    <small class="text-muted" style="font-size:.67rem;">{{ param.resultado_anterior.fecha }}</small>
+                                </div>
+                                {% else %}
+                                <span class="text-muted delta-cell">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="col-estatus">
+                                <span class="badge badge-estatus bg-secondary" id="badge_{{ item.detalle.id }}_{{ param.parametro_id }}">P</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">No hay estudios en esta orden</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Barra inferior compacta — solo contador y atajos -->
+        <div class="barra-acciones py-1">
+            <span class="text-muted" style="font-size:11px;">
+                <i class="bi bi-grid-3x3"></i> {{ total_parametros }} parámetro{{ total_parametros|pluralize:"s" }}
+                &nbsp;|&nbsp; <kbd>Enter</kbd>/<kbd>Tab</kbd> siguiente &nbsp; <kbd>↑</kbd><kbd>↓</kbd> navegar
+                &nbsp;|&nbsp; <kbd>Ctrl+S</kbd> guardar
+            </span>
+            <span id="status-guardado" class="text-muted" style="font-size:11px;"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+const ordenId = {{ orden.id }};
+const csrfToken = '{{ csrf_token }}';
+
+/* Previsualización de analitos es_calculado (servidor, sin persistir) */
+let _previewFormulasTimer = null;
+function schedulePreviewFormulas() {
+    if (typeof _modoEdicionActivo !== 'undefined' && !_modoEdicionActivo) return;
+    clearTimeout(_previewFormulasTimer);
+    _previewFormulasTimer = setTimeout(() => { ejecutarPreviewFormulas(); }, 300);
+}
+async function ejecutarPreviewFormulas() {
+    const overrides = {};
+    document.querySelectorAll('.input-resultado-industrial').forEach(inp => {
+        if (inp.getAttribute('data-es-calculado') === '1') return;
+        const id = inp.dataset.paramId;
+        const v = (inp.value || '').trim();
+        if (id && id !== '0' && v) overrides[id] = v;
+    });
+    try {
+        const resp = await fetch(`/laboratorio/api/preview-formulas/${ordenId}/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ overrides }),
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (data.status !== 'success' || !data.computados) return;
+        Object.entries(data.computados).forEach(([aid, val]) => {
+            const el = document.querySelector(
+                `.input-resultado-industrial[data-es-calculado="1"][data-param-id="${aid}"]`
+            );
+            if (el) {
+                el.value = val;
+                if (typeof validarRango === 'function') validarRango(el);
+                if (typeof actualizarDelta === 'function') actualizarDelta(el);
+            }
+        });
+    } catch (e) { /* silencioso: preview best-effort */ }
+}
+
+/* ======== Navegación entre celdas ======== */
+function manejarNav(input, event) {
+    const inputs = Array.from(document.querySelectorAll('.input-resultado-industrial')).filter(
+        i => i.getAttribute('data-es-calculado') !== '1'
+    );
+    const idx = inputs.indexOf(input);
+    if (event.key === 'Enter' || (event.key === 'Tab' && !event.shiftKey)) {
+        event.preventDefault();
+        if (idx < inputs.length - 1) { inputs[idx + 1].focus(); inputs[idx + 1].select(); }
+    } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        if (idx < inputs.length - 1) { inputs[idx + 1].focus(); inputs[idx + 1].select(); }
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (idx > 0) { inputs[idx - 1].focus(); inputs[idx - 1].select(); }
+    }
+}
+
+/* ======== Delta Check — indicador visual de cambio ======== */
+function actualizarDelta(input) {
+    const row = input.closest('tr');
+    if (!row) return;
+    const deltaCell = row.querySelector('.col-delta');
+    if (!deltaCell) return;
+
+    const valorAnteriorStr = deltaCell.dataset.deltaValor || '';
+    const valorActualStr   = input.value.trim();
+
+    const flecha = deltaCell.querySelector('.delta-flecha');
+    const pct    = deltaCell.querySelector('.delta-pct');
+    const valEl  = deltaCell.querySelector('.delta-valor');
+    if (!flecha || !pct) return;
+
+    if (!valorAnteriorStr || !valorActualStr) {
+        flecha.textContent = '';
+        pct.textContent = '';
+        return;
+    }
+
+    const anterior = parseFloat(valorAnteriorStr);
+    const actual   = parseFloat(valorActualStr);
+    if (isNaN(anterior) || isNaN(actual)) {
+        flecha.textContent = '';
+        pct.textContent = '';
+        return;
+    }
+
+    const diff = actual - anterior;
+    const pctVal = anterior !== 0 ? Math.abs(diff / anterior * 100) : 0;
+
+    // Determinar si es un cambio significativo (>20% es alerta clínica)
+    const esSignificativo = pctVal >= 20;
+    const esMuyAlto       = pctVal >= 50;
+
+    if (diff > 0) {
+        flecha.textContent = ' ↑';
+        flecha.style.color = esMuyAlto ? '#ef4444' : esSignificativo ? '#f59e0b' : '#10b981';
+    } else if (diff < 0) {
+        flecha.textContent = ' ↓';
+        flecha.style.color = esMuyAlto ? '#ef4444' : esSignificativo ? '#f59e0b' : '#3b82f6';
+    } else {
+        flecha.textContent = ' =';
+        flecha.style.color = '#6b7280';
+    }
+
+    pct.textContent = pctVal > 0 ? `(${pctVal.toFixed(0)}%)` : '';
+    pct.style.color = esMuyAlto ? '#ef4444' : esSignificativo ? '#f59e0b' : '#6b7280';
+
+    // Tooltip en la celda completa
+    deltaCell.title = `Anterior: ${anterior} | Actual: ${actual} | Δ ${diff > 0 ? '+' : ''}${diff.toFixed(2)} (${pctVal.toFixed(1)}%)${esSignificativo ? ' ⚠ Cambio significativo' : ''}`;
+}
+
+// Auto-select al enfocar
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.input-resultado-industrial').forEach(inp => {
+        inp.addEventListener('focus', function() { this.select(); });
+        inp.addEventListener('input', function() { actualizarDelta(this); });
+        // Calcular delta para valores ya pre-cargados al cargar la página
+        if (inp.value.trim()) actualizarDelta(inp);
+    });
+    // Validar valores pre-cargados
+    document.querySelectorAll('.input-resultado-industrial').forEach(inp => {
+        if (inp.value.trim()) validarRango(inp);
+    });
+});
+
+/* validarRango definida abajo en "SEMÁFORO DE PÁNICO ISO 15189" */
+
+/* ══════════════════════════════════════════════════════════════════
+   CANDADO DE SEGURIDAD ANALÍTICA — Protocolo [EDITAR / GUARDAR]
+   • Inputs readonly por defecto.
+   • Clic en EDITAR → habilita inputs, el botón cambia a GUARDAR (azul).
+   • Clic en GUARDAR → guarda el borrador, vuelve a readonly y EDITAR.
+   ══════════════════════════════════════════════════════════════════ */
+let _modoEdicionActivo = false;
+
+function toggleModoEdicion(btn) {
+    if (!_modoEdicionActivo) {
+        /* ── Entrar a modo edición ── */
+        _modoEdicionActivo = true;
+        document.querySelectorAll('.input-resultado-industrial').forEach(inp => {
+            if (inp.getAttribute('data-es-calculado') === '1') return;
+            inp.removeAttribute('readonly');
+        });
+        btn.innerHTML = '<i class="bi bi-floppy-fill me-1"></i>GUARDAR';
+        btn.classList.replace('btn-warning', 'btn-primary');
+        btn.title = 'Haga clic para guardar los resultados capturados';
+        /* Enfocar primer input vacío */
+        const primero = Array.from(
+            document.querySelectorAll('.input-resultado-industrial')
+        ).find(i => i.getAttribute('data-es-calculado') !== '1' && !i.value.trim());
+        if (primero) primero.focus();
+        schedulePreviewFormulas();
+    } else {
+        /* ── Modo edición activo → GUARDAR ── */
+        guardarBorrador();
+    }
+}
+
+/* Tras guardar exitoso: regresa a readonly y restaura el botón EDITAR */
+function _volverAReadonly() {
+    _modoEdicionActivo = false;
+    document.querySelectorAll('.input-resultado-industrial')
+            .forEach(inp => inp.setAttribute('readonly', ''));
+    const btn = document.getElementById('btn-editar-resultados');
+    if (btn) {
+        btn.innerHTML = '<i class="bi bi-pencil-square me-1"></i>EDITAR';
+        btn.classList.replace('btn-primary', 'btn-warning');
+        btn.title = 'Haga clic para editar resultados; haga clic de nuevo para guardar';
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PUBLICAR RESULTADOS — genera modal con enlace QR para el paciente
+   ══════════════════════════════════════════════════════════════════ */
+function publicarResultadosQR() {
+    const btn = document.getElementById('btn-publicar-resultados');
+    const token = btn ? btn.dataset.token : '';
+    if (!token) {
+        alert('No se encontró el token de acceso. Intente recargar la página.');
+        return;
+    }
+    const baseUrl = window.location.origin;
+    const enlace = `${baseUrl}/laboratorio/resultados/publico/${token}/`;
+    document.getElementById('qr-enlace-input').value = enlace;
+
+    /* Generar QR usando QRServer API (sin dependencia extra) */
+    const qrContainer = document.getElementById('qr-container');
+    qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(enlace)}"
+                                   alt="QR Resultados" class="img-fluid border rounded" style="max-width:180px;">`;
+
+    const modal = new bootstrap.Modal(document.getElementById('modalQRPublicar'));
+    modal.show();
+}
+
+/* ======== Navegación entre folios ======== */
+function cargarFolio(folioId) {
+    window.location.href = `/laboratorio/captura/${folioId}/`;
+}
+
+// Buscador de folios
+document.addEventListener('DOMContentLoaded', function() {
+    const buscador = document.getElementById('buscador-folios');
+    if (buscador) {
+        buscador.addEventListener('input', function() {
+            const q = this.value.toLowerCase();
+            document.querySelectorAll('.item-folio').forEach(item => {
+                const folio = item.dataset.folio || '';
+                const pac = item.dataset.paciente || '';
+                item.style.display = (folio.includes(q) || pac.includes(q)) ? '' : 'none';
+            });
+        });
+    }
+});
+
+/* ======== Guardar resultados ======== */
+async function guardarBorrador() {
+    await guardarResultados('borrador');
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   OMNI-GUARDIÁN QC — MOTOR DE VALIDACIÓN HOLÍSTICO
+   Aplicable a TODAS las secciones: Hematología, Química Clínica, Hormonas,
+   Inmunología, Orina, Especiales. Sin sesgo departamental.
+
+   REGLAS ACTIVAS:
+   A. Semáforo de Pánico   — cualquier analito con valor-critico
+   B. Delta Check Universal — cualquier analito con histórico (>20% = alerta)
+   C. Regla de 3 Hb/Hto    — Hematología
+   D. Friedewald (Lípidos)  — CT ≈ LDL + HDL + TG/5
+   E. Bilirrubinas          — Bi Total ≈ Bi Directa + Bi Indirecta
+   F. Anion Gap             — Na - (Cl + HCO₃) normal 8-16
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/** Busca el valor numérico de un input por patrón de nombre de analito. */
+function _ov(pattern) {
+    const inp = Array.from(document.querySelectorAll('.input-resultado-industrial'))
+        .find(i => pattern.test((i.dataset.analito || '').trim()));
+    if (!inp || !inp.value.trim()) return null;
+    const n = parseFloat(inp.value.replace(',', '.'));
+    return isNaN(n) ? null : n;
+}
+
+async function validarYPublicar() {
+    const alertasPanico  = [];  // valores críticos — bloquean SIEMPRE
+    const alertasDelta   = [];  // Delta Check >20%
+    const alertasCongruencia = []; // incongruencias biológicas
+
+    /* ──────────────────────────────────────────────────────────────────────
+       A. SEMÁFORO DE PÁNICO UNIVERSAL
+       Bug corregido: la clase es 'valor-critico' (no 'fuera-rango-critico')
+       ────────────────────────────────────────────────────────────────────── */
+    document.querySelectorAll('.input-resultado-industrial.valor-critico').forEach(inp => {
+        const analito  = (inp.dataset.analito || inp.id || 'Parámetro').trim();
+        const criMin   = inp.dataset.criticoMin || '—';
+        const criMax   = inp.dataset.criticoMax || '—';
+        alertasPanico.push(
+            `🚨 PÁNICO [${analito}]: resultado=${inp.value}  |  límites críticos (${criMin} – ${criMax})`
+        );
+    });
+
+    /* Valores fuera de rango de referencia (anormales, no críticos) */
+    document.querySelectorAll('.input-resultado-industrial.fuera-rango:not(.valor-critico)').forEach(inp => {
+        const analito = (inp.dataset.analito || inp.id || 'Parámetro').trim();
+        const rMin = inp.dataset.refMin !== undefined ? inp.dataset.refMin : '—';
+        const rMax = inp.dataset.refMax !== undefined ? inp.dataset.refMax : '—';
+        alertasDelta.push(
+            `🟡 Fuera de rango [${analito}]: ${inp.value}  (ref: ${rMin} – ${rMax})`
+        );
+    });
+
+    /* ──────────────────────────────────────────────────────────────────────
+       B. DELTA CHECK UNIVERSAL (cualquier analito con dato histórico)
+       Calcula % vs data-delta-valor del TD hermano. Opera sin importar área.
+       ────────────────────────────────────────────────────────────────────── */
+    document.querySelectorAll('.input-resultado-industrial').forEach(inp => {
+        if (!inp.value.trim()) return;
+        const tr = inp.closest('tr');
+        if (!tr) return;
+        const tdDelta     = tr.querySelector('td.col-delta');
+        if (!tdDelta) return;
+        const prevStr     = (tdDelta.dataset.deltaValor || '').replace(',', '.');
+        const prev        = parseFloat(prevStr);
+        const curr        = parseFloat(inp.value.replace(',', '.'));
+        if (isNaN(prev) || prev === 0 || isNaN(curr)) return;
+        const pct         = ((curr - prev) / Math.abs(prev)) * 100;
+        tdDelta.dataset.deltaPct = pct.toFixed(1);
+        if (Math.abs(pct) > 20) {
+            const analito = (inp.dataset.analito || tr.querySelector('.col-analito')?.textContent || '?').trim();
+            const nivel = Math.abs(pct) > 30 ? '🔴' : '🟠';
+            alertasDelta.push(
+                `${nivel} Delta Check [${analito}]: actual=${curr}  anterior=${prev}  variación=${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`
+            );
+        }
+    });
+
+    /* ──────────────────────────────────────────────────────────────────────
+       C. REGLA DE 3 Hb / Hto  (Hematología)
+       Cociente Hto/Hb debe estar entre 2.5 y 3.5 (Wintrobe)
+       ────────────────────────────────────────────────────────────────────── */
+    {
+        const hb  = _ov(/^hemoglobina$|^hb$/i);
+        const hto = _ov(/^hematocrito$|^hto$/i);
+        if (hb !== null && hto !== null && hb > 0) {
+            const ratio = hto / hb;
+            if (ratio < 2.5 || ratio > 3.5) {
+                alertasCongruencia.push(
+                    `🔬 Regla de 3 Hb/Hto: Hb=${hb} g/dL  Hto=${hto}%  →  cociente=${ratio.toFixed(2)} (esperado 3 ± 0.5). Posible error de transcripción o hemólisis.`
+                );
+            }
+        }
+    }
+
+    /* ──────────────────────────────────────────────────────────────────────
+       D. FRIEDEWALD — Perfil de Lípidos
+       Colesterol Total ≈ LDL + HDL + VLDL  (VLDL = TG / 5)
+       Tolerancia: ±15 mg/dL. Inválido si TG > 400 mg/dL.
+       ────────────────────────────────────────────────────────────────────── */
+    {
+        const ct  = _ov(/colesterol\s*(total)?$|^ct$/i);
+        const ldl = _ov(/ldl|colesterol.*ldl/i);
+        const hdl = _ov(/hdl|colesterol.*hdl/i);
+        const tg  = _ov(/triglicéridos|trigliceridos|tg$/i);
+        if (ct !== null && ldl !== null && hdl !== null && tg !== null) {
+            if (tg > 400) {
+                alertasCongruencia.push(
+                    `⚠️ Friedewald inválido: TG=${tg} mg/dL > 400 mg/dL. No aplica fórmula. Use LDL directo.`
+                );
+            } else {
+                const vldl     = tg / 5;
+                const ctCalc   = ldl + hdl + vldl;
+                const diff     = Math.abs(ct - ctCalc);
+                if (diff > 15) {
+                    alertasCongruencia.push(
+                        `🧪 Friedewald [Lípidos]: CT=${ct}  LDL=${ldl}  HDL=${hdl}  VLDL(TG/5)=${vldl.toFixed(1)}  ` +
+                        `→ CT calculado=${ctCalc.toFixed(1)}  diferencia=${diff.toFixed(1)} mg/dL (tolerancia ±15). Verifique muestra o transcripción.`
+                    );
+                }
+            }
+        }
+    }
+
+    /* ──────────────────────────────────────────────────────────────────────
+       E. BILIRRUBINAS — Función Hepática
+       Bi Total ≈ Bi Directa + Bi Indirecta  (tolerancia: ±0.3 mg/dL)
+       ────────────────────────────────────────────────────────────────────── */
+    {
+        const biT = _ov(/bilirrubina\s*total|bi\s*t$/i);
+        const biD = _ov(/bilirrubina\s*dir|directa|bi\s*d$/i);
+        const biI = _ov(/bilirrubina\s*ind|indirecta|bi\s*i$/i);
+        if (biT !== null && biD !== null && biI !== null) {
+            const suma = biD + biI;
+            const diff = Math.abs(biT - suma);
+            if (diff > 0.3) {
+                alertasCongruencia.push(
+                    `🫀 Bilirrubinas: BiT=${biT}  BiD=${biD}  BiI=${biI}  ` +
+                    `→ BiD+BiI=${suma.toFixed(2)}  diferencia=${diff.toFixed(2)} mg/dL (tolerancia ±0.3). Verifique resultados.`
+                );
+            }
+        } else if (biT !== null && biD !== null && biI === null) {
+            // Calcular Bi Indirecta y avisar si parece incongruente
+            const biIcalc = biT - biD;
+            if (biIcalc < 0) {
+                alertasCongruencia.push(
+                    `🫀 Bilirrubinas: BiT=${biT} < BiD=${biD} — Bi Indirecta resultaría negativa (${biIcalc.toFixed(2)}). Imposible biológicamente.`
+                );
+            }
+        }
+    }
+
+    /* ──────────────────────────────────────────────────────────────────────
+       F. ANION GAP — Electrolitos
+       AG = Na - (Cl + HCO₃)  |  Normal: 8-16 mEq/L
+       ────────────────────────────────────────────────────────────────────── */
+    {
+        const na   = _ov(/^sodio$|^na\+?$/i);
+        const cl   = _ov(/^cloro$|^cloruro$|^cl\-?$/i);
+        const hco3 = _ov(/bicarbonato|hco3|co2\s*total/i);
+        if (na !== null && cl !== null && hco3 !== null) {
+            const ag = na - (cl + hco3);
+            if (ag < 6 || ag > 18) {
+                const estado = ag < 6 ? 'BAJO — posible hipoalbuminemia o error' : 'ELEVADO — acidosis metabólica, intoxicación';
+                alertasCongruencia.push(
+                    `⚡ Anion Gap: Na=${na}  Cl=${cl}  HCO₃=${hco3}  →  AG=${ag.toFixed(1)} mEq/L (normal 8-16). ${estado}.`
+                );
+            }
+        }
+    }
+
+    /* ──────────────────────────────────────────────────────────────────────
+       BLOQUEO DE VALIDACIÓN TRANSVERSAL
+       Si hay alertas de CUALQUIER categoría, se requiere comentario del QFB.
+       Los valores críticos (pánico) siempre exigen comentario.
+       ────────────────────────────────────────────────────────────────────── */
+    const todasAlertas = [...alertasPanico, ...alertasDelta, ...alertasCongruencia];
+
+    if (todasAlertas.length > 0) {
+        // Clasificar por severidad para el prompt
+        const seccionesMensaje = [];
+        if (alertasPanico.length > 0)
+            seccionesMensaje.push(`🚨 VALORES CRÍTICOS (${alertasPanico.length}):\n` + alertasPanico.map(a => `  • ${a}`).join('\n'));
+        if (alertasCongruencia.length > 0)
+            seccionesMensaje.push(`🔬 INCONGRUENCIAS BIOLÓGICAS (${alertasCongruencia.length}):\n` + alertasCongruencia.map(a => `  • ${a}`).join('\n'));
+        if (alertasDelta.length > 0)
+            seccionesMensaje.push(`📊 DELTA CHECK / FUERA DE RANGO (${alertasDelta.length}):\n` + alertasDelta.map(a => `  • ${a}`).join('\n'));
+
+        const msgCompleto = seccionesMensaje.join('\n\n');
+        const comentario = prompt(
+            `⚠️ OMNI-GUARDIÁN QC detectó ${todasAlertas.length} alerta(s) en esta orden:\n\n` +
+            msgCompleto +
+            `\n\n${'─'.repeat(50)}\n` +
+            `Como QFB autorizado, ingrese su comentario técnico (mínimo 10 caracteres) para liberar la validación:`
+        );
+        if (!comentario || comentario.trim().length < 10) {
+            alert(
+                '❌ VALIDACIÓN BLOQUEADA (ISO 15189 §5.8.3)\n\n' +
+                'Se detectaron alertas clínicas que requieren justificación técnica del QFB.\n' +
+                'Ingrese un comentario de al menos 10 caracteres para continuar.'
+            );
+            return;
+        }
+        window._comentarioValidacion = comentario.trim();
+    }
+
+    await guardarResultados('validar');
+}
+
+async function guardarResultados(accion) {
+    const resultados = {};
+    let hayResultados = false;
+
+    document.querySelectorAll('.input-resultado-industrial').forEach(input => {
+        const val = input.value.trim();
+        if (val) {
+            hayResultados = true;
+            const detalleId = input.dataset.detalleId;
+            const paramId = input.dataset.paramId;
+            const tr = input.closest('tr');
+            const descr = tr ? tr.querySelector('.col-analito').textContent.trim() : '';
+            const unidad = '';
+
+            if (!resultados[detalleId]) {
+                resultados[detalleId] = { resultado: '', parametros: {} };
+            }
+            resultados[detalleId].parametros[paramId] = {
+                valor: val,
+                descripcion: descr,
+            };
+        }
+    });
+
+    // Construir texto de resultado por detalle
+    for (let dId in resultados) {
+        const params = resultados[dId].parametros;
+        const lineas = [];
+        for (let pId in params) {
+            lineas.push(`${params[pId].descripcion}: ${params[pId].valor}`);
+        }
+        resultados[dId].resultado = lineas.join('\n');
+    }
+
+    if (!hayResultados) {
+        alert('Debe ingresar al menos un resultado.');
+        return;
+    }
+
+    try {
+        const equipoSelect = document.getElementById('equipo-select');
+        const equipoId = equipoSelect ? equipoSelect.value : '';
+        
+        const resp = await fetch(`/laboratorio/api/guardar-resultados/${ordenId}/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ resultados, accion, equipo_id: equipoId })
+        });
+        if (resp.status === 401 || (resp.redirected && resp.url && String(resp.url).includes('/login'))) {
+            alert('Sesión expirada. Redirigiendo al login.');
+            window.location.href = resp.url || '/login/';
+            return;
+        }
+        if (!resp.ok) {
+            const text = await resp.text();
+            let msg = 'Error del servidor';
+            try { const j = JSON.parse(text); msg = j.mensaje || j.error || msg; } catch (e) {}
+            alert('Error: ' + msg);
+            return;
+        }
+        const data = await resp.json();
+        if (data.status === 'success') {
+            if (accion === 'validar') {
+                // Mostrar alerta de éxito con botón de WhatsApp si hay enlace disponible
+                const waEnlace = data.whatsapp_enlace || null;
+                if (waEnlace) {
+                    const abrirWA = confirm(
+                        '✅ Orden validada exitosamente.\n\n' +
+                        '¿Notificar al paciente por WhatsApp que sus resultados están listos?'
+                    );
+                    if (abrirWA) window.open(waEnlace, '_blank');
+                } else {
+                    alert('✅ Orden validada exitosamente.');
+                }
+                window.location.reload();
+            } else {
+                alert('Borrador guardado.');
+                _volverAReadonly();
+            }
+        } else {
+            alert('Error: ' + (data.mensaje || 'Error desconocido'));
+        }
+    } catch (err) {
+        alert('Error de conexión.');
+        console.error(err);
+    }
+}
+
+// Ctrl+S para guardar
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 's') { e.preventDefault(); guardarBorrador(); }
+});
+
+// ─── FOCO AUTOMÁTICO: navegar al siguiente input pendiente ────────────────
+// Al presionar Enter en un input, el cursor salta al próximo input vacío.
+// Permite captura a dos manos sin usar el ratón.
+function _focusSiguientePendiente(inputActual) {
+    const todos = [...document.querySelectorAll('.input-resultado-industrial:not([readonly])')];
+    const idx = todos.indexOf(inputActual);
+    if (idx === -1) return;
+    // Buscar siguiente input vacío a partir del actual
+    for (let i = idx + 1; i < todos.length; i++) {
+        if (!todos[i].value.trim()) {
+            todos[i].focus();
+            todos[i].select();
+            todos[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+    }
+    // Si no hay vacío después, buscar el primero vacío desde el inicio
+    for (let i = 0; i < idx; i++) {
+        if (!todos[i].value.trim()) {
+            todos[i].focus();
+            todos[i].select();
+            todos[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+    }
+    // Todos llenos: posicionar en el botón de guardar
+    const btnGuardar = document.getElementById('btn-guardar-borrador');
+    if (btnGuardar) btnGuardar.focus();
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && e.target.classList.contains('input-resultado-industrial')) {
+        e.preventDefault();
+        _focusSiguientePendiente(e.target);
+    }
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SEMÁFORO DE PÁNICO ISO 15189 + DELTA CHECK UNIVERSAL
+   Aplica a CUALQUIER analito: Hematología, Química, Hormonal, Inmunología, etc.
+   ════════════════════════════════════════════════════════════════════════════ */
+let _panicoPendiente = null;
+
+function validarRango(input) {
+    const val = input.value.trim();
+    const tr = input.closest('tr');
+    const badge = document.getElementById('badge_' + input.dataset.detalleId + '_' + input.dataset.paramId);
+
+    if (!val) {
+        input.classList.remove('fuera-rango', 'dentro-rango', 'valor-critico');
+        if (tr) {
+            tr.classList.remove('fila-valor-critico');
+            tr.classList.remove('fila-fuera-rango');
+        }
+        if (badge) { badge.textContent = 'P'; badge.className = 'badge badge-estatus bg-secondary'; }
+        _actualizarDeltaCell(tr, null);
+        return;
+    }
+
+    const num = parseFloat(val.replace(',', '.'));
+    const refMin   = input.dataset.refMin    ? parseFloat(input.dataset.refMin)    : null;
+    const refMax   = input.dataset.refMax    ? parseFloat(input.dataset.refMax)    : null;
+    const criticoMin = input.dataset.criticoMin ? parseFloat(input.dataset.criticoMin) : null;
+    const criticoMax = input.dataset.criticoMax ? parseFloat(input.dataset.criticoMax) : null;
+    const analito  = input.dataset.analito   || 'Parámetro';
+
+    input.classList.remove('fuera-rango', 'dentro-rango', 'valor-critico');
+    if (tr) {
+        tr.classList.remove('fila-valor-critico');
+        tr.classList.remove('fila-fuera-rango');
+    }
+
+    if (!isNaN(num)) {
+        // 1. Semáforo: VALOR CRÍTICO / PÁNICO (umbrales LIMS + "pánico si fuera de referencia")
+        let esCritico = false;
+        if (criticoMin !== null && num < criticoMin) esCritico = true;
+        if (criticoMax !== null && num > criticoMax) esCritico = true;
+
+        let fueraRef = false;
+        if (refMin !== null && refMax !== null) fueraRef = num < refMin || num > refMax;
+        else if (refMin !== null) fueraRef = num < refMin;
+        else if (refMax !== null) fueraRef = num > refMax;
+        const panicoFuera = (input.dataset.panicoFueraRef === '1');
+        if (!esCritico && panicoFuera && fueraRef) esCritico = true;
+
+        if (esCritico) {
+            input.classList.add('valor-critico');
+            if (tr) tr.classList.add('fila-valor-critico');
+            if (badge) { badge.textContent = '!!!'; badge.className = 'badge badge-estatus bg-danger'; }
+            mostrarModalPanico(analito, num, criticoMin, criticoMax, input);
+            _actualizarDeltaCell(tr, num);
+            return;
+        }
+
+        // 2. Fuera de rango de referencia (anormal, no crítico) — ámbar / fila marcada
+        let fuera = fueraRef;
+
+        if (fuera) {
+            input.classList.add('fuera-rango');
+            if (tr) tr.classList.add('fila-fuera-rango');
+            if (badge) { badge.textContent = '*'; badge.className = 'badge badge-estatus bg-warning text-dark'; }
+        } else {
+            input.classList.add('dentro-rango');
+            if (badge) { badge.textContent = 'V'; badge.className = 'badge badge-estatus bg-success'; }
+        }
+
+        // 3. Delta Check universal — calcula % vs histórico y escribe data-delta-pct en TD
+        _actualizarDeltaCell(tr, num);
+    } else {
+        if (badge) { badge.textContent = 'V'; badge.className = 'badge badge-estatus bg-success'; }
+    }
+}
+
+/**
+ * Calcula Delta Check vs histórico y actualiza la celda visual.
+ * Universal: funciona para cualquier analito con dato previo en data-delta-valor.
+ * Escribe data-delta-pct en el TD para que validarYPublicar lo lea.
+ */
+function _actualizarDeltaCell(tr, valorActual) {
+    if (!tr) return;
+    const tdDelta = tr.querySelector('td.col-delta');
+    if (!tdDelta) return;
+
+    const valorPrevioStr = tdDelta.dataset.deltaValor || '';
+    const valorPrevio = parseFloat(valorPrevioStr.replace(',', '.'));
+
+    if (valorActual === null || isNaN(valorPrevio) || valorPrevio === 0) {
+        tdDelta.removeAttribute('data-delta-pct');
+        const flechaEl = tdDelta.querySelector('.delta-flecha');
+        if (flechaEl) flechaEl.style.color = '';
+        return;
+    }
+
+    const pct = ((valorActual - valorPrevio) / Math.abs(valorPrevio)) * 100;
+    tdDelta.dataset.deltaPct = pct.toFixed(1);
+
+    // Actualizar flechas visuales en tiempo real
+    const flechaEl  = tdDelta.querySelector('.delta-flecha');
+    const pctEl     = tdDelta.querySelector('.delta-pct');
+
+    if (flechaEl) {
+        const absPct = Math.abs(pct);
+        if (absPct > 30) {
+            flechaEl.textContent = pct > 0 ? '▲▲' : '▼▼';
+            flechaEl.style.color = '#dc3545';  // rojo — variación severa
+        } else if (absPct > 20) {
+            flechaEl.textContent = pct > 0 ? '▲' : '▼';
+            flechaEl.style.color = '#fd7e14';  // naranja — alerta Delta Check
+        } else {
+            flechaEl.textContent = pct > 0 ? '↑' : '↓';
+            flechaEl.style.color = '#198754';  // verde — variación aceptable
+        }
+    }
+    if (pctEl) {
+        pctEl.textContent = (pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
+        pctEl.style.color = Math.abs(pct) > 20 ? '#dc3545' : '#6b7280';
+    }
+}
+
+function mostrarModalPanico(analito, valor, criticoMin, criticoMax, inputRef) {
+    _panicoPendiente = inputRef;
+    document.getElementById('panico-analito').textContent = analito;
+    document.getElementById('panico-valor').textContent = valor;
+    let limiteTexto = '';
+    if (criticoMin !== null && valor < criticoMin) limiteTexto = `Límite crítico inferior: ${criticoMin}`;
+    if (criticoMax !== null && valor > criticoMax) limiteTexto = `Límite crítico superior: ${criticoMax}`;
+    document.getElementById('panico-limite').textContent = limiteTexto;
+    document.getElementById('modal-panico').classList.add('activo');
+    document.getElementById('panico-confirmado').checked = false;
+    document.getElementById('btn-panico-aceptar').disabled = true;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const cb = document.getElementById('panico-confirmado');
+    if (cb) cb.addEventListener('change', function() {
+        document.getElementById('btn-panico-aceptar').disabled = !this.checked;
+    });
+});
+
+function cerrarModalPanico() {
+    document.getElementById('modal-panico').classList.remove('activo');
+    if (_panicoPendiente) {
+        _panicoPendiente.classList.remove('valor-critico');
+        _panicoPendiente.value = '';
+        _panicoPendiente.focus();
+        _panicoPendiente = null;
+    }
+}
+
+function aceptarValorCritico() {
+    document.getElementById('modal-panico').classList.remove('activo');
+    if (_panicoPendiente) {
+        const badge = document.getElementById('badge_' + _panicoPendiente.dataset.detalleId + '_' + _panicoPendiente.dataset.paramId);
+        if (badge) { badge.textContent = '!!!'; badge.className = 'badge badge-estatus bg-danger'; }
+        _panicoPendiente = null;
+    }
+}
+
+/* ======== PRIS DICTADO DE RESULTADOS ======== */
+let _prisEscuchando = false;
+let _recognition = null;
+
+function togglePrisDictado() {
+    const orb = document.getElementById('btn-pris-dictado');  // botón en sidebar o barra
+    if (_prisEscuchando) {
+        _prisEscuchando = false;
+        if (_recognition) _recognition.stop();
+        if (orb) { orb.classList.remove('escuchando'); orb.title = 'PRIS: Dictar resultado'; }
+        return;
+    }
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+        alert('Tu navegador no soporta reconocimiento de voz. Usa Chrome.');
+        return;
+    }
+    _prisEscuchando = true;
+    if (orb) { orb.classList.add('escuchando'); orb.title = 'PRIS escuchando... (clic para detener)'; }
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    _recognition = new SR();
+    _recognition.lang = 'es-MX';
+    _recognition.continuous = false;
+    _recognition.interimResults = false;
+
+    _recognition.onresult = async function(e) {
+        const texto = e.results[0][0].transcript;
+        if (orb) orb.classList.remove('escuchando');
+        _prisEscuchando = false;
+        await procesarDictadoPRIS(texto);
+    };
+    _recognition.onerror = function() {
+        if (orb) orb.classList.remove('escuchando');
+        _prisEscuchando = false;
+    };
+    _recognition.onend = function() {
+        if (orb) orb.classList.remove('escuchando');
+        _prisEscuchando = false;
+    };
+    _recognition.start();
+}
+
+async function procesarDictadoPRIS(texto) {
+    const orb = document.getElementById('btn-pris-dictado');
+    if (orb) orb.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+    try {
+        const resp = await fetch('/pris/api/dictado-resultado/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ transcripcion: texto, orden_id: ordenId })
+        });
+        const data = await resp.json();
+        if (data.status === 'ok' && data.prellenado) {
+            // Prellenar los inputs que PRIS identificó
+            for (const [analito, valor] of Object.entries(data.prellenado)) {
+                const inputs = document.querySelectorAll('.input-resultado-industrial');
+                inputs.forEach(inp => {
+                    if (inp.dataset.analito && inp.dataset.analito.toLowerCase().includes(analito.toLowerCase())) {
+                        inp.value = valor;
+                        inp.style.transition = 'background 0.3s';
+                        inp.style.backgroundColor = '#e8f4fd';
+                        setTimeout(() => inp.style.backgroundColor = '', 1200);
+                        validarRango(inp);
+                    }
+                });
+            }
+            mostrarToast('PRIS prellenó: ' + Object.keys(data.prellenado).join(', '), 'success');
+        } else {
+            mostrarToast('PRIS: "' + texto + '" — Procesando...', 'info');
+        }
+    } catch (err) {
+        mostrarToast('PRIS no disponible. Modo manual activo.', 'warning');
+    }
+    if (orb) orb.innerHTML = '<i class="bi bi-mic-fill"></i>';
+}
+
+function mostrarToast(msg, tipo) {
+    const colores = { success:'#28a745', info:'#0066cc', warning:'#ffc107', error:'#dc3545' };
+    const toast = document.createElement('div');
+    toast.style.cssText = `position:fixed;bottom:140px;right:20px;background:${colores[tipo]||'#333'};color:white;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9998;max-width:320px;box-shadow:0 3px 12px rgba(0,0,0,0.3)`;
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+}
+</script>
+
+<!-- MODAL SEMÁFORO DE PÁNICO (ISO 15189) -->
+<div class="modal-panico-overlay" id="modal-panico">
+    <div class="modal-panico-box">
+        <div style="font-size:64px; line-height:1; margin-bottom:12px;">🚨</div>
+        <h3 style="color:#D9230F; font-weight:900; margin-bottom:8px;">VALOR CRÍTICO DE PÁNICO</h3>
+        <p style="font-size:16px; color:#333; margin-bottom:4px;">
+            <strong id="panico-analito">Parámetro</strong>
+        </p>
+        <div style="font-size:40px; font-weight:900; color:#8B0000; margin:12px 0;">
+            <span id="panico-valor">—</span>
+        </div>
+        <p style="font-size:13px; color:#666; margin-bottom:16px;" id="panico-limite"></p>
+        <div style="background:#fff8f8; border:2px solid #D9230F; border-radius:8px; padding:14px; margin-bottom:16px; text-align:left;">
+            <strong>Acción requerida (ISO 15189 §7.4.3):</strong>
+            <ul style="margin:8px 0 0 16px; font-size:13px;">
+                <li>Verificar que la muestra no esté hemolizada o lipémica</li>
+                <li>Confirmar la identidad del paciente y la muestra</li>
+                <li>Notificar al médico solicitante de inmediato</li>
+                <li>Registrar la hora de notificación en el expediente</li>
+            </ul>
+        </div>
+        <div class="form-check text-start mb-3">
+            <input class="form-check-input" type="checkbox" id="panico-confirmado">
+            <label class="form-check-label fw-bold" for="panico-confirmado">
+                Confirmo que verifiqué la muestra y notificaré al médico
+            </label>
+        </div>
+        <div class="d-flex gap-2 justify-content-center">
+            <button class="btn btn-outline-secondary" onclick="cerrarModalPanico()">
+                Corregir valor
+            </button>
+            <button class="btn btn-danger fw-bold px-4" id="btn-panico-aceptar" onclick="aceptarValorCritico()" disabled>
+                Confirmar y continuar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- PRIS ORB DE DICTADO — integrado en sidebar PRIS IA (no flotante) -->
+<!-- El acceso al dictado se activa desde el botón "PRIS IA" del sidebar izquierdo -->
+
+<!-- ════════════════════════════════════════════════════════════════
+     PANEL FLOTANTE — CONSULTAR MANUALES (RAG BIBLIOTECA)
+     ════════════════════════════════════════════════════════════════ -->
+<div id="panel-rag" style="
+    display:none; position:fixed; bottom:60px; right:20px; width:380px; max-width:95vw;
+    background:#fff; border:1px solid #dee2e6; border-radius:12px;
+    box-shadow:0 8px 32px rgba(0,0,0,.18); z-index:9999; font-size:.82rem;
+    overflow:hidden; animation: slideUp .2s ease;
+">
+<style>
+@keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+.rag-header { background:linear-gradient(135deg,#003366,#0055a5); color:#fff; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; }
+.rag-history { max-height:240px; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:6px; }
+.rag-msg-user { background:#e8f0fe; border-radius:8px; padding:6px 10px; align-self:flex-end; max-width:85%; }
+.rag-msg-bot  { background:#f0fdf4; border-left:3px solid #22c55e; border-radius:0 8px 8px 0; padding:6px 10px; max-width:95%; white-space:pre-wrap; }
+.rag-msg-fuente { font-size:.7rem; color:#6b7280; font-style:italic; padding:2px 6px; border-left:2px solid #d1d5db; }
+</style>
+<div class="rag-header">
+    <div>
+        <i class="bi bi-book-half me-1"></i>
+        <strong>PRIS + Biblioteca Clínica</strong>
+        <div style="font-size:.7rem; opacity:.85;">Bethesda · CLSI · Manuales internos</div>
+    </div>
+    <button class="btn btn-sm btn-light" onclick="togglePanelRAG()"><i class="bi bi-x-lg"></i></button>
+</div>
+<div class="rag-history" id="rag-history">
+    <div class="rag-msg-bot">
+        <i class="bi bi-brain me-1 text-success"></i>
+        Hola. Puedo consultar los manuales de la Biblioteca para interpretar los resultados actuales.
+        Haz clic en <strong>"Interpretar resultados actuales"</strong> o escribe tu pregunta.
+    </div>
+</div>
+<div class="px-2 pb-2">
+    <button class="btn btn-success btn-sm w-100 mb-2 fw-semibold" onclick="consultarRAGContexto()">
+        <i class="bi bi-stars me-1"></i>Interpretar resultados actuales
+    </button>
+    <div class="input-group input-group-sm">
+        <input type="text" id="rag-input" class="form-control" placeholder="Ej: ¿Qué significa HGB baja con VCM alto?">
+        <button class="btn btn-outline-primary fw-bold" onclick="consultarRAGManual()">
+            <i class="bi bi-send-fill"></i>
+        </button>
+    </div>
+    <div class="text-muted pt-1" style="font-size:.68rem;">
+        <i class="bi bi-shield-check text-success me-1"></i>
+        Validación: <strong>Q.B. Giselle Margarita López Gutiérrez</strong>
+    </div>
+</div>
+</div>
+
+<script>
+/* ──── Panel RAG toggle ──── */
+function togglePanelRAG() {
+    const p = document.getElementById('panel-rag');
+    if (p) p.style.display = (p.style.display === 'none' || !p.style.display) ? 'block' : 'none';
+}
+
+function addRagMsg(text, type, fuentes=[]) {
+    const hist = document.getElementById('rag-history');
+    if (!hist) return;
+    const div = document.createElement('div');
+    div.className = type === 'user' ? 'rag-msg-user' : 'rag-msg-bot';
+    div.innerHTML = (text||'').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+    hist.appendChild(div);
+    if (fuentes.length) {
+        const f = document.createElement('div');
+        f.className = 'rag-msg-fuente';
+        f.textContent = '📚 ' + fuentes.join(' · ');
+        hist.appendChild(f);
+    }
+    hist.scrollTop = hist.scrollHeight;
+}
+
+async function consultarRAGContexto() {
+    /* Recolecta los valores actualmente capturados y los envía al RAG */
+    const estudios = [];
+    document.querySelectorAll('tr[data-parametro-id]').forEach(row => {
+        const input = row.querySelector('input.input-resultado-industrial');
+        if (!input || !input.value) return;
+        estudios.push({
+            nombre: row.querySelector('td:nth-child(2)')?.textContent?.trim() || '?',
+            valor:  input.value,
+            unidad: row.querySelector('.unidad-texto')?.textContent?.trim() || '',
+            ref_min: row.dataset.refMin || '',
+            ref_max: row.dataset.refMax || '',
+        });
+    });
+
+    const estudioNombre = document.querySelector('.ficha-paciente')?.dataset?.estudio || 'Estudio';
+    addRagMsg('Interpretando resultados actuales…', 'bot');
+    const btn = document.querySelector('[onclick="consultarRAGContexto()"]');
+    if (btn) btn.disabled = true;
+
+    try {
+        const r = await fetch('/capacitacion/rag/worklist/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({
+                estudio: estudioNombre,
+                parametros: estudios,
+                contexto: '{{ orden.paciente.nombre|default:"" }}'
+            }),
+        });
+        const hist = document.getElementById('rag-history');
+        if (hist && hist.lastChild.classList.contains('rag-msg-bot')) hist.removeChild(hist.lastChild);
+        const d = await r.json();
+        addRagMsg(d.respuesta || 'Sin respuesta del RAG', 'bot', d.fuentes || []);
+    } catch(e) {
+        const hist = document.getElementById('rag-history');
+        if (hist && hist.lastChild) hist.removeChild(hist.lastChild);
+        addRagMsg('Error de conexión con la Biblioteca RAG.', 'bot');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+async function consultarRAGManual() {
+    const inp = document.getElementById('rag-input');
+    if (!inp) return;
+    const q = inp.value.trim();
+    if (!q) return;
+    addRagMsg(q, 'user');
+    inp.value = '';
+
+    try {
+        const r = await fetch('/capacitacion/rag/consultar/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ consulta: q, modulo_contexto: 'LABORATORIO' }),
+        });
+        const d = await r.json();
+        addRagMsg(d.respuesta || 'Sin respuesta', 'bot', d.fuentes || []);
+    } catch(e) {
+        addRagMsg('Error de conexión.', 'bot');
+    }
+}
+
+document.getElementById('rag-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); consultarRAGManual(); }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   SISTEMA DE ABREVIATURAS RÁPIDAS (DeveLab estándar)
+   Escriba la abreviatura en un campo de resultado y presione
+   Tab o Espacio para expandirla automáticamente.
+   ══════════════════════════════════════════════════════════════════ */
+const ABREVIATURAS_LAB = {
+    'A':'ABUNDANTE','ABS':'ABUNDANTES','AM':'AMARILLO','AMA':'AMORFA',
+    'AO':'AMARILLO ORO','AP':'AMARILLO PALIDO','AU':'AUSENTES',
+    'B':'BLANDA','C':'CLARO',
+    'C01':'0-1 POR CAMPO','C02':'0-2 POR CAMPO','C12':'1-2 POR CAMPO',
+    'C13':'1-3 POR CAMPO','C23':'2-3 POR CAMPO','C24':'2-4 POR CAMPO',
+    'C34':'3-4 POR CAMPO','C35':'3-5 POR CAMPO','C45':'4-5 POR CAMPO',
+    'C46':'4-6 POR CAMPO','C56':'5-6 POR CAMPO','C57':'5-7 POR CAMPO',
+    'C67':'6-7 POR CAMPO','C68':'6-8 POR CAMPO','C78':'7-8 POR CAMPO',
+    'C79':'7-9 POR CAMPO','C89':'8-9 POR CAMPO',
+    'CA':'CAFE','E':'ESCASOS','ESA':'ESCASAS','F':'FORMADA',
+    'I':'INTERMEDIO','L':'LIQUIDO','LT':'LIGERAMENTE TURBIO',
+    'M':'MODERADAS','MOD':'MODERADO','N':'NEGATIVO',
+    'N40':'NEGATIVO DIL 1:40','ND':'NO DETECTADO','NO':'NORMAL',
+    'NR':'NO REACTIVO','NSO':'NO SE OBSERVARON',
+    'P':'POSITIVO','P+':'POSITIVO (+)','P++':'POSITIVO (++)',
+    'P+++':'POSITIVO (+++)','P160':'POSITIVO DIL 1:160',
+    'P320':'POSITIVO DIL 1:320','P640':'POSITIVO DIL 1:640',
+    'P80':'POSITIVO DIL 1:80','PA':'PASTOSO',
+    'R':'RESISTENTE','RA':'RESTOS DE ALIMENTOS',
+    'S':'SENSIBLE','T':'TURBIO','TR':'TRANSPARENTE','V':'VERDE'
+};
+
+/* Tooltip de sugerencia que aparece bajo el input activo */
+(function initAbreviaturas() {
+    const tip = document.createElement('div');
+    tip.id = 'abrev-tip';
+    tip.style.cssText = 'position:fixed;background:#1e3a5f;color:#fff;font-size:11px;padding:3px 8px;' +
+        'border-radius:4px;z-index:9999;display:none;pointer-events:none;white-space:nowrap;' +
+        'box-shadow:0 2px 8px rgba(0,0,0,.4);';
+    document.body.appendChild(tip);
+
+    let _activeInp = null;
+
+    function showTip(inp, texto) {
+        const r = inp.getBoundingClientRect();
+        tip.textContent = `→ ${texto}   [Tab para aceptar]`;
+        tip.style.left = r.left + 'px';
+        tip.style.top  = (r.bottom + 4) + 'px';
+        tip.style.display = 'block';
+    }
+    function hideTip() { tip.style.display = 'none'; }
+
+    document.addEventListener('input', function(e) {
+        const inp = e.target;
+        if (!inp.classList.contains('input-resultado-industrial')) return;
+        _activeInp = inp;
+        const val = inp.value.toUpperCase().trim();
+        const expansion = ABREVIATURAS_LAB[val];
+        if (expansion) showTip(inp, expansion);
+        else hideTip();
+    }, true);
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Tab' && e.key !== 'Enter') return;
+        const inp = e.target;
+        if (!inp.classList.contains('input-resultado-industrial')) return;
+        const val = inp.value.toUpperCase().trim();
+        const expansion = ABREVIATURAS_LAB[val];
+        if (expansion) {
+            e.preventDefault();
+            inp.value = expansion;
+            inp.dispatchEvent(new Event('input', { bubbles: true }));
+            hideTip();
+            /* Avanzar al siguiente input */
+            const all = Array.from(document.querySelectorAll('.input-resultado-industrial:not([readonly])'));
+            const idx = all.indexOf(inp);
+            if (idx >= 0 && idx + 1 < all.length) all[idx + 1].focus();
+        }
+    }, true);
+
+    document.addEventListener('blur', function(e) {
+        if (e.target.classList.contains('input-resultado-industrial')) hideTip();
+    }, true);
+})();
+
+/* ══ Panel de referencia de abreviaturas (expandible) ══ */
+document.addEventListener('DOMContentLoaded', function() {
+    const cuad = document.querySelector('.cuadricula-area');
+    if (!cuad) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.id = 'panel-abreviaturas';
+    wrapper.style.cssText = 'background:#f8f9fa;border-top:2px solid #003366;padding:0;font-size:11px;';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'padding:4px 12px;background:#003366;color:#fff;cursor:pointer;' +
+        'display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:11px;';
+    header.innerHTML = '<span><i class="bi bi-lightning-fill me-1"></i>ABREVIATURAS RÁPIDAS ' +
+        '<small style="font-weight:400;opacity:.8;">(escriba el código en el campo y presione Tab para expandir)</small></span>' +
+        '<span id="abrev-toggle-icon">▼ Ver tabla</span>';
+
+    const body = document.createElement('div');
+    body.id = 'abrev-body';
+    body.style.cssText = 'display:none;padding:6px 12px;max-height:160px;overflow-y:auto;';
+
+    /* Construir tabla compacta */
+    const table = document.createElement('table');
+    table.style.cssText = 'width:100%;border-collapse:collapse;';
+    const cols = 5;
+    const entries = Object.entries(ABREVIATURAS_LAB);
+    let html = '<tbody>';
+    for (let i = 0; i < entries.length; i += cols) {
+        html += '<tr>';
+        for (let c = 0; c < cols; c++) {
+            const e = entries[i + c];
+            if (e) {
+                html += `<td style="padding:1px 6px;border:1px solid #dee2e6;">` +
+                    `<b style="color:#003366;">${e[0]}</b>` +
+                    `<span style="color:#6b7280;"> = ${e[1]}</span></td>`;
+            } else {
+                html += '<td></td>';
+            }
+        }
+        html += '</tr>';
+    }
+    html += '</tbody>';
+    table.innerHTML = html;
+    body.appendChild(table);
+
+    let _abrevOpen = false;
+    header.addEventListener('click', function() {
+        _abrevOpen = !_abrevOpen;
+        body.style.display = _abrevOpen ? 'block' : 'none';
+        document.getElementById('abrev-toggle-icon').textContent = _abrevOpen ? '▲ Ocultar' : '▼ Ver tabla';
+    });
+
+    wrapper.appendChild(header);
+    wrapper.appendChild(body);
+    cuad.appendChild(wrapper);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,716 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Registrar Compra - Multi-Lote{% endblock %}
+
+{% block extra_css %}
+<style>
+    .header-compra {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .tabla-items {
+        font-size: 0.85rem;
+    }
+    
+    .total-compra {
+        background-color: #e7f3ff;
+        border-left: 4px solid #0d6efd;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+    
+    .btn-agregar-lote {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+        50% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+    }
+    
+    .lote-row {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .lote-row:hover {
+        background-color: #e9ecef;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .lote-number {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.8rem;
+    }
+    
+    .multi-lote-container {
+        border: 2px dashed #667eea;
+        border-radius: 12px;
+        padding: 20px;
+        background: linear-gradient(135deg, #f5f7ff 0%, #eff1ff 100%);
+    }
+    
+    .badge-lote {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        font-size: 0.75rem;
+    }
+    
+    .tabla-resumen tr.mismo-producto {
+        border-left: 4px solid #667eea;
+    }
+    
+    .product-group-header {
+        background-color: #e8edf5 !important;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- HEADER -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'farmacia:dashboard_alertas' %}">Farmacia</a></li>
+                    <li class="breadcrumb-item active">Registrar Compra Multi-Lote</li>
+                </ol>
+            </nav>
+            
+            <h2 class="mb-2">
+                <i class="bi bi-box-seam-fill text-primary"></i>
+                Alta de Mercancia - Registro Multi-Lote
+            </h2>
+            <p class="text-muted">
+                Ingresa multiples lotes por producto en una sola factura. El sistema calcula automaticamente el 
+                <strong>Costo Promedio Ponderado (CPP)</strong>, activa <strong>FEFO</strong> (Primero en Caducar, Primero en Salir)
+                y registra todo en el <strong>Kardex inmutable</strong>.
+            </p>
+        </div>
+    </div>
+    
+    <!-- PASO 1: DATOS DE LA COMPRA -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header header-compra">
+                    <h5 class="mb-0">
+                        <i class="bi bi-1-circle-fill"></i>
+                        Datos Generales de la Factura
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="formDatosCompra">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form_compra.proveedor.label_tag }}
+                                {{ form_compra.proveedor }}
+                                <small class="form-text text-muted">{{ form_compra.proveedor.help_text }}</small>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form_compra.documento_compra.label_tag }}
+                                {{ form_compra.documento_compra }}
+                                <small class="form-text text-muted">{{ form_compra.documento_compra.help_text }}</small>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form_compra.fecha_compra.label_tag }}
+                                {{ form_compra.fecha_compra }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                {{ form_compra.observaciones.label_tag }}
+                                {{ form_compra.observaciones }}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PASO 2: AGREGAR PRODUCTOS CON MULTI-LOTE -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-2-circle-fill"></i>
+                        Productos y Lotes de la Compra
+                        <span class="badge bg-light text-primary ms-2" id="badgeContador">
+                            {{ items_temp|length }} item(s)
+                        </span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- SECCION MULTI-LOTE: Seleccionar producto y agregar N lotes -->
+                    <div class="multi-lote-container mb-4">
+                        <h6 class="mb-3">
+                            <i class="bi bi-layers-fill text-primary"></i> 
+                            Agregar Producto con Multiples Lotes
+                        </h6>
+                        
+                        <!-- Selector de Producto -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Producto</label>
+                                {{ form_detalle.producto }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Marca / Laboratorio</label>
+                                <input type="text" id="id_marca_global" class="form-control" 
+                                       placeholder="Ej: Bayer, Pfizer">
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="button" class="btn btn-outline-primary w-100" 
+                                        onclick="agregarFilaLote()">
+                                    <i class="bi bi-plus-circle"></i> Agregar Fila de Lote
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Contenedor dinamico de filas de lotes -->
+                        <div id="contenedorLotes">
+                            <!-- Fila de lote por defecto -->
+                            <div class="lote-row" data-lote-idx="0">
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-auto">
+                                        <div class="lote-number">1</div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small mb-0">Lote</label>
+                                        <input type="text" class="form-control form-control-sm lote-numero" 
+                                               placeholder="LOTE-001" style="text-transform: uppercase;" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small mb-0">Costo Neto (unit.)</label>
+                                        <input type="number" class="form-control form-control-sm lote-costo" 
+                                               step="0.01" min="0.01" placeholder="0.00" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small mb-0">Unidades</label>
+                                        <input type="number" class="form-control form-control-sm lote-cantidad" 
+                                               step="1" min="1" placeholder="0" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small mb-0">Fecha Caducidad</label>
+                                        <input type="date" class="form-control form-control-sm lote-caducidad" required>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <label class="form-label small mb-0">Subtotal</label>
+                                        <input type="text" class="form-control form-control-sm lote-subtotal" 
+                                               readonly value="$0.00" style="background-color: #e9ecef;">
+                                    </div>
+                                    <div class="col-auto">
+                                        <label class="form-label small mb-0">&nbsp;</label>
+                                        <button type="button" class="btn btn-outline-danger btn-sm d-block" 
+                                                onclick="eliminarFilaLote(this)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Boton para agregar todos los lotes -->
+                        <div class="row mt-3">
+                            <div class="col-12 text-end">
+                                <button type="button" class="btn btn-success btn-agregar-lote" 
+                                        onclick="agregarTodosLotes()">
+                                    <i class="bi bi-check-all"></i> 
+                                    Agregar Todos los Lotes a la Compra
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ALTERNATIVA: Agregar lote individual rapido -->
+                    <details class="mb-3">
+                        <summary class="text-muted" style="cursor: pointer;">
+                            <i class="bi bi-lightning"></i> Modo rapido: Agregar un solo lote
+                        </summary>
+                        <div class="border p-3 mt-2 bg-light rounded">
+                            <form id="formAgregarProducto">
+                                <div class="row g-2">
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Producto</label>
+                                        <select id="id_producto_rapido" class="form-select form-select-sm">
+                                            <option value="">Seleccionar...</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Lote</label>
+                                        <input type="text" id="id_lote_rapido" class="form-control form-control-sm" 
+                                               placeholder="LOTE-001" style="text-transform: uppercase;">
+                                    </div>
+                                    <div class="col-md-1">
+                                        <label class="form-label small">Costo</label>
+                                        <input type="number" id="id_costo_rapido" class="form-control form-control-sm" 
+                                               step="0.01" min="0.01" placeholder="0.00">
+                                    </div>
+                                    <div class="col-md-1">
+                                        <label class="form-label small">Unids.</label>
+                                        <input type="number" id="id_cantidad_rapido" class="form-control form-control-sm" 
+                                               step="1" min="1" placeholder="0">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Caducidad</label>
+                                        <input type="date" id="id_caducidad_rapido" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Marca</label>
+                                        <input type="text" id="id_marca_rapido" class="form-control form-control-sm" 
+                                               placeholder="Marca">
+                                    </div>
+                                    <div class="col-md-1 d-flex align-items-end">
+                                        <button type="button" class="btn btn-success btn-sm w-100" 
+                                                onclick="agregarProductoRapido()">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </details>
+                    
+                    <!-- Lista de productos agregados -->
+                    <div class="table-responsive">
+                        <table class="table table-hover tabla-items tabla-resumen">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 40px;">#</th>
+                                    <th>Producto</th>
+                                    <th>Marca</th>
+                                    <th>Lote</th>
+                                    <th class="text-end">Unidades</th>
+                                    <th class="text-end">Costo Neto</th>
+                                    <th class="text-end">Subtotal</th>
+                                    <th>Caducidad</th>
+                                    <th style="width: 60px;">Accion</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaProductos">
+                                {% if items_temp %}
+                                    {% for item in items_temp %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td><strong>{{ item.producto_nombre }}</strong></td>
+                                        <td><span class="badge bg-secondary">{{ item.marca|default:"GENERICO" }}</span></td>
+                                        <td><code>{{ item.numero_lote }}</code></td>
+                                        <td class="text-end">{{ item.cantidad }}</td>
+                                        <td class="text-end">${{ item.costo_unitario }}</td>
+                                        <td class="text-end"><strong>${{ item.subtotal }}</strong></td>
+                                        <td>{{ item.fecha_caducidad }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-danger" 
+                                                    onclick="eliminarProducto({{ forloop.counter0 }})">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr id="filaVacia">
+                                        <td colspan="9" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                            <p class="mt-2 mb-0">No hay productos agregados.</p>
+                                            <small>Selecciona un producto arriba y agrega sus lotes.</small>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="6" class="text-end"><strong>TOTAL COMPRA:</strong></td>
+                                    <td class="text-end" colspan="3">
+                                        <strong class="text-primary" style="font-size: 1.5rem;">
+                                            $<span id="totalCompra">{{ total_temp|floatformat:2 }}</span>
+                                        </strong>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PASO 3: GUARDAR COMPRA -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-3-circle-fill"></i>
+                        Guardar Compra
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% url 'farmacia:registrar_compra' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="guardar_completo">
+                        
+                        <input type="hidden" name="proveedor" id="hidden_proveedor">
+                        <input type="hidden" name="documento_compra" id="hidden_documento">
+                        <input type="hidden" name="fecha_compra" id="hidden_fecha">
+                        <input type="hidden" name="observaciones" id="hidden_observaciones">
+                        
+                        <div class="total-compra">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1">Total de la Compra:</h5>
+                                    <p class="text-muted mb-0">
+                                        {% if items_temp %}
+                                            {{ items_temp|length }} lote(s) de producto(s) agregado(s)
+                                        {% else %}
+                                            0 lotes agregados
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="text-end">
+                                    <h2 class="mb-0 text-primary">${{ total_temp|floatformat:2 }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3" role="alert">
+                            <i class="bi bi-info-circle-fill"></i>
+                            <strong>Al guardar:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Se crearan los lotes automaticamente (cada uno con su caducidad independiente)</li>
+                                <li>Se actualizara el stock de cada producto</li>
+                                <li>Se recalculara el <strong>Costo Promedio Ponderado (CPP)</strong></li>
+                                <li>Se activara <strong>FEFO</strong> para cada lote (Primero en Caducar = Primero en Salir)</li>
+                                <li>Todo quedara registrado en el <strong>Kardex inmutable</strong></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'farmacia:dashboard_alertas' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg" 
+                                    onclick="return confirmarGuardado()">
+                                <i class="bi bi-check-circle"></i> Guardar Compra Completa
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let loteCounter = 1;
+    
+    // ============================================================
+    // MULTI-LOTE: Agregar fila de lote dinamica
+    // ============================================================
+    function agregarFilaLote() {
+        loteCounter++;
+        const contenedor = document.getElementById('contenedorLotes');
+        
+        const fila = document.createElement('div');
+        fila.className = 'lote-row';
+        fila.setAttribute('data-lote-idx', loteCounter - 1);
+        fila.innerHTML = `
+            <div class="row g-2 align-items-center">
+                <div class="col-auto">
+                    <div class="lote-number">${loteCounter}</div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-0">Lote</label>
+                    <input type="text" class="form-control form-control-sm lote-numero" 
+                           placeholder="LOTE-00${loteCounter}" style="text-transform: uppercase;" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-0">Costo Neto (unit.)</label>
+                    <input type="number" class="form-control form-control-sm lote-costo" 
+                           step="0.01" min="0.01" placeholder="0.00" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-0">Unidades</label>
+                    <input type="number" class="form-control form-control-sm lote-cantidad" 
+                           step="1" min="1" placeholder="0" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-0">Fecha Caducidad</label>
+                    <input type="date" class="form-control form-control-sm lote-caducidad" required>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small mb-0">Subtotal</label>
+                    <input type="text" class="form-control form-control-sm lote-subtotal" 
+                           readonly value="$0.00" style="background-color: #e9ecef;">
+                </div>
+                <div class="col-auto">
+                    <label class="form-label small mb-0">&nbsp;</label>
+                    <button type="button" class="btn btn-outline-danger btn-sm d-block" 
+                            onclick="eliminarFilaLote(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        contenedor.appendChild(fila);
+        
+        // Agregar listeners para calcular subtotal
+        const costoInput = fila.querySelector('.lote-costo');
+        const cantidadInput = fila.querySelector('.lote-cantidad');
+        costoInput.addEventListener('input', () => calcularSubtotalFila(fila));
+        cantidadInput.addEventListener('input', () => calcularSubtotalFila(fila));
+    }
+    
+    // ============================================================
+    // Calcular subtotal de una fila de lote
+    // ============================================================
+    function calcularSubtotalFila(fila) {
+        const costo = parseFloat(fila.querySelector('.lote-costo').value) || 0;
+        const cantidad = parseFloat(fila.querySelector('.lote-cantidad').value) || 0;
+        const subtotal = costo * cantidad;
+        fila.querySelector('.lote-subtotal').value = `$${subtotal.toFixed(2)}`;
+    }
+    
+    // Agregar listeners a la fila inicial
+    document.addEventListener('DOMContentLoaded', function() {
+        const filaInicial = document.querySelector('.lote-row');
+        if (filaInicial) {
+            const costoInput = filaInicial.querySelector('.lote-costo');
+            const cantidadInput = filaInicial.querySelector('.lote-cantidad');
+            if (costoInput) costoInput.addEventListener('input', () => calcularSubtotalFila(filaInicial));
+            if (cantidadInput) cantidadInput.addEventListener('input', () => calcularSubtotalFila(filaInicial));
+        }
+        
+        // Clonar opciones del producto principal al selector rapido
+        const selectPrincipal = document.querySelector('#id_producto');
+        const selectRapido = document.querySelector('#id_producto_rapido');
+        if (selectPrincipal && selectRapido) {
+            selectPrincipal.querySelectorAll('option').forEach(opt => {
+                const clone = opt.cloneNode(true);
+                selectRapido.appendChild(clone);
+            });
+        }
+    });
+    
+    // ============================================================
+    // Eliminar fila de lote
+    // ============================================================
+    function eliminarFilaLote(btn) {
+        const fila = btn.closest('.lote-row');
+        const contenedor = document.getElementById('contenedorLotes');
+        
+        // No eliminar si es la unica fila
+        if (contenedor.querySelectorAll('.lote-row').length <= 1) {
+            alert('Debe haber al menos una fila de lote.');
+            return;
+        }
+        
+        fila.remove();
+        
+        // Renumerar
+        contenedor.querySelectorAll('.lote-row').forEach((row, idx) => {
+            row.querySelector('.lote-number').textContent = idx + 1;
+        });
+        loteCounter = contenedor.querySelectorAll('.lote-row').length;
+    }
+    
+    // ============================================================
+    // AGREGAR TODOS LOS LOTES DE UNA VEZ (API Multi-Lote)
+    // ============================================================
+    function agregarTodosLotes() {
+        const productoSelect = document.querySelector('#id_producto');
+        const productoId = productoSelect.value;
+        
+        if (!productoId) {
+            alert('Selecciona un producto primero.');
+            productoSelect.focus();
+            return;
+        }
+        
+        const marca = document.querySelector('#id_marca_global').value.trim();
+        const filas = document.querySelectorAll('#contenedorLotes .lote-row');
+        const lotes = [];
+        let hayError = false;
+        
+        filas.forEach((fila, idx) => {
+            const numero_lote = fila.querySelector('.lote-numero').value.trim().toUpperCase();
+            const costo = fila.querySelector('.lote-costo').value;
+            const cantidad = fila.querySelector('.lote-cantidad').value;
+            const caducidad = fila.querySelector('.lote-caducidad').value;
+            
+            if (!numero_lote || !costo || !cantidad || !caducidad) {
+                hayError = true;
+                fila.style.borderColor = 'red';
+                return;
+            }
+            
+            fila.style.borderColor = '#dee2e6';
+            lotes.push({
+                numero_lote: numero_lote,
+                costo_unitario: parseFloat(costo),
+                cantidad: parseFloat(cantidad),
+                fecha_caducidad: caducidad,
+                marca: marca
+            });
+        });
+        
+        if (hayError) {
+            alert('Completa todos los campos de cada lote (marcados en rojo).');
+            return;
+        }
+        
+        if (lotes.length === 0) {
+            alert('Agrega al menos un lote.');
+            return;
+        }
+        
+        // Enviar al backend
+        const btnAgregar = document.querySelector('.btn-agregar-lote');
+        btnAgregar.disabled = true;
+        btnAgregar.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
+        
+        fetch('{% url "farmacia:api_agregar_multi_lote" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                producto_id: productoId,
+                lotes: lotes
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Error: ' + data.mensaje);
+                btnAgregar.disabled = false;
+                btnAgregar.innerHTML = '<i class="bi bi-check-all"></i> Agregar Todos los Lotes a la Compra';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al agregar lotes');
+            btnAgregar.disabled = false;
+            btnAgregar.innerHTML = '<i class="bi bi-check-all"></i> Agregar Todos los Lotes a la Compra';
+        });
+    }
+    
+    // ============================================================
+    // MODO RAPIDO: Agregar un solo lote
+    // ============================================================
+    function agregarProductoRapido() {
+        const producto_id = document.querySelector('#id_producto_rapido').value;
+        const numero_lote = document.querySelector('#id_lote_rapido').value;
+        const costo_unitario = document.querySelector('#id_costo_rapido').value;
+        const cantidad = document.querySelector('#id_cantidad_rapido').value;
+        const fecha_caducidad = document.querySelector('#id_caducidad_rapido').value;
+        const marca = document.querySelector('#id_marca_rapido').value;
+        
+        if (!producto_id || !numero_lote || !costo_unitario || !cantidad || !fecha_caducidad) {
+            alert('Completa todos los campos obligatorios');
+            return;
+        }
+        
+        fetch('{% url "farmacia:api_agregar_producto_compra" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                producto_id: producto_id,
+                cantidad: cantidad,
+                costo_unitario: costo_unitario,
+                numero_lote: numero_lote,
+                fecha_caducidad: fecha_caducidad,
+                marca: marca
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Error: ' + data.mensaje);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al agregar producto');
+        });
+    }
+    
+    // ============================================================
+    // ELIMINAR PRODUCTO DE LA COMPRA TEMPORAL
+    // ============================================================
+    function eliminarProducto(index) {
+        if (!confirm('Eliminar este lote de la compra?')) return;
+        
+        fetch(`/farmacia/erp/api/eliminar-producto-compra/${index}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Error: ' + data.mensaje);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al eliminar producto');
+        });
+    }
+    
+    // ============================================================
+    // CONFIRMAR GUARDADO FINAL
+    // ============================================================
+    function confirmarGuardado() {
+        document.getElementById('hidden_proveedor').value = document.querySelector('#id_proveedor').value;
+        document.getElementById('hidden_documento').value = document.querySelector('#id_documento_compra').value;
+        document.getElementById('hidden_fecha').value = document.querySelector('#id_fecha_compra').value;
+        document.getElementById('hidden_observaciones').value = document.querySelector('#id_observaciones').value;
+        
+        const tablaProductos = document.getElementById('tablaProductos');
+        if (tablaProductos.children.length === 1 && tablaProductos.children[0].id === 'filaVacia') {
+            alert('Agrega al menos un producto con lote a la compra');
+            return false;
+        }
+        
+        return confirm('Confirmas que todos los datos son correctos? La compra se registrara de forma inmutable en el Kardex.');
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,18 @@
+{
+  "empresa_a_search_secret": {
+    "total": 0,
+    "pacientes": []
+  },
+  "empresa_b_search_secret": {
+    "total": 1,
+    "pacientes": [
+      {
+        "id": 3,
+        "nombre": "Pacientesecreto1778256310784 B",
+        "telefono": "",
+        "fecha_nacimiento": ""
+      }
+    ]
+  },
+  "ok_no_leak": true
+}

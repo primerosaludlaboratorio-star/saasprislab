@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recepción - Tablero de Citas{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-calendar-check"></i> Tablero de Recepción - {{ hoy|date:"d/m/Y" }}</h2>
+        </div>
+    </div>
+    
+    <!-- Estadísticas del Día -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>{{ stats.total }}</h3>
+                    <p class="mb-0">Total Citas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h3>{{ stats.pendientes }}</h3>
+                    <p class="mb-0">Pendientes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>{{ stats.en_sala }}</h3>
+                    <p class="mb-0">En Sala</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h3>{{ stats.en_curso }}</h3>
+                    <p class="mb-0">En Consulta</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>{{ stats.completadas }}</h3>
+                    <p class="mb-0">Completadas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="d-grid">
+                <a href="{% url 'consultorio:agendar_cita' %}" class="btn btn-lg btn-primary">
+                    <i class="fas fa-plus"></i> Nueva Cita
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lista de Citas del Día -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Citas del Día</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Hora</th>
+                            <th>Paciente</th>
+                            <th>Médico</th>
+                            <th>Motivo</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cita in citas %}
+                        <tr>
+                            <td><strong>{{ cita.hora_cita }}</strong></td>
+                            <td>{{ cita.paciente.nombre_completo }}</td>
+                            <td>Dr. {{ cita.medico.nombre_completo }}</td>
+                            <td>{{ cita.motivo|truncatewords:5 }}</td>
+                            <td>
+                                {% if cita.estado == 'PENDIENTE' %}
+                                    <span class="badge bg-warning">Pendiente</span>
+                                {% elif cita.estado == 'EN_SALA' %}
+                                    <span class="badge bg-info">En Sala</span>
+                                {% elif cita.estado == 'EN_CURSO' %}
+                                    <span class="badge bg-danger">En Consulta</span>
+                                {% elif cita.estado == 'COMPLETADA' %}
+                                    <span class="badge bg-success">Completada</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ cita.get_estado_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if cita.estado == 'PENDIENTE' %}
+                                <form method="post" action="{% url 'consultorio:check_in_cita' cita.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-check"></i> Check-In
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <a href="#" class="btn btn-sm btn-info">
+                                    <i class="fas fa-eye"></i> Ver
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                                <p>No hay citas programadas para hoy</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

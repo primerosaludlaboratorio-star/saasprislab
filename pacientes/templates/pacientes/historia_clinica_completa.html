@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Historia Clínica - {{ paciente.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-journal-medical"></i>
+            Historia Clínica (NOM-004-SSA3-2012)
+        </h2>
+        <a href="{% url 'pacientes:historial_360' paciente.id %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+    
+    {% if historia %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Información General</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Folio:</dt>
+                    <dd class="col-sm-9"><code>{{ historia.folio }}</code></dd>
+                    
+                    <dt class="col-sm-3">Tipo de Sangre:</dt>
+                    <dd class="col-sm-9">{{ historia.tipo_sangre|default:"No registrado" }}</dd>
+                    
+                    {% if historia.alergias %}
+                    <dt class="col-sm-3 text-danger">⚠️ Alergias:</dt>
+                    <dd class="col-sm-9 text-danger"><strong>{{ historia.alergias }}</strong></dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Antecedentes Heredofamiliares (AHF)</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ historia.ahf|default:"No registrado"|linebreaks }}</p>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">Antecedentes Personales Patológicos (APP)</h5>
+            </div>
+            <div class="card-body">
+                <h6>Enfermedades Crónicas:</h6>
+                <p>{{ historia.app_enfermedades_cronicas|default:"Ninguna"|linebreaks }}</p>
+                
+                <h6>Cirugías Previas:</h6>
+                <p>{{ historia.app_cirugias|default:"Ninguna"|linebreaks }}</p>
+                
+                <h6>Hospitalizaciones:</h6>
+                <p>{{ historia.app_hospitalizaciones|default:"Ninguna"|linebreaks }}</p>
+                
+                <h6>Transfusiones:</h6>
+                <p>{{ historia.app_transfusiones|default:"Ninguna"|linebreaks }}</p>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Antecedentes Personales No Patológicos (APNP)</h5>
+            </div>
+            <div class="card-body">
+                <h6>Hábitos y Estilo de Vida:</h6>
+                <dl class="row">
+                    <dt class="col-sm-3">Tabaquismo:</dt>
+                    <dd class="col-sm-9">
+                        {{ historia.get_apnp_toxicomanias_tabaco_display }}
+                        {% if historia.apnp_toxicomanias_tabaco_detalle %}
+                            - {{ historia.apnp_toxicomanias_tabaco_detalle }}
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-3">Alcoholismo:</dt>
+                    <dd class="col-sm-9">
+                        {{ historia.get_apnp_toxicomanias_alcohol_display }}
+                        {% if historia.apnp_toxicomanias_alcohol_detalle %}
+                            - {{ historia.apnp_toxicomanias_alcohol_detalle %}
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-3">Actividad Física:</dt>
+                    <dd class="col-sm-9">{{ historia.get_apnp_actividad_fisica_display }}</dd>
+                    
+                    <dt class="col-sm-3">Alimentación:</dt>
+                    <dd class="col-sm-9">{{ historia.apnp_alimentacion|default:"No registrado" }}</dd>
+                </dl>
+            </div>
+        </div>
+        
+        {% if paciente.sexo == 'F' %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Antecedentes Gineco-Obstétricos (AGO)</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    {% if historia.ago_menarca %}
+                    <dt class="col-sm-3">Menarca:</dt>
+                    <dd class="col-sm-9">{{ historia.ago_menarca }} años</dd>
+                    {% endif %}
+                    
+                    {% if historia.ago_ritmo_menstrual %}
+                    <dt class="col-sm-3">Ritmo Menstrual:</dt>
+                    <dd class="col-sm-9">{{ historia.ago_ritmo_menstrual }}</dd>
+                    {% endif %}
+                    
+                    {% if historia.ago_fum %}
+                    <dt class="col-sm-3">FUM:</dt>
+                    <dd class="col-sm-9">{{ historia.ago_fum|date:"d/m/Y" }}</dd>
+                    {% endif %}
+                    
+                    {% if historia.ago_gestas %}
+                    <dt class="col-sm-3">Gestas:</dt>
+                    <dd class="col-sm-9">{{ historia.ago_gestas }}</dd>
+                    {% endif %}
+                    
+                    {% if historia.ago_partos %}
+                    <dt class="col-sm-3">Partos:</dt>
+                    <dd class="col-sm-9">{{ historia.ago_partos }}</dd>
+                    {% endif %}
+                    
+                    {% if historia.ago_cesareas %}
+                    <dt class="col-sm-3">Cesáreas:</dt>
+                    <dd class="col-sm-9">{{ historia.ago_cesareas }}</dd>
+                    {% endif %}
+                    
+                    {% if historia.ago_abortos %}
+                    <dt class="col-sm-3">Abortos:</dt>
+                    <dd class="col-sm-9">{{ historia.ago_abortos }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+        {% endif %}
+        
+    {% else %}
+        <div class="alert alert-warning">
+            <h4 class="alert-heading">
+                <i class="bi bi-exclamation-triangle"></i>
+                Historia Clínica No Capturada
+            </h4>
+            <p>Este paciente aún no tiene su historia clínica capturada.</p>
+            <hr>
+            <p class="mb-0">
+                Debe completarse en la primera consulta médica según la NOM-004-SSA3-2012.
+            </p>
+        </div>
+    {% endif %}
+    
+</div>
+{% endblock %}

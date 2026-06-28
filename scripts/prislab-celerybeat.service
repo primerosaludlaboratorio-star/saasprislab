@@ -1,0 +1,28 @@
+[Unit]
+Description=PRISLAB SaaS — Celery Beat (tareas programadas)
+After=network.target redis-server.service postgresql.service prislab-celery.service
+Requires=redis-server.service prislab-celery.service
+
+[Service]
+Type=simple
+User=prislab
+Group=prislab
+WorkingDirectory=/opt/prislab
+
+EnvironmentFile=/opt/prislab/.env
+
+ExecStart=/opt/prislab/.venv/bin/celery \
+    -A config.celery beat \
+    --loglevel=info \
+    --scheduler celery.beat:PersistentScheduler \
+    --schedule=/opt/prislab/logs/celerybeat-schedule
+
+Restart=on-failure
+RestartSec=10s
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=prislab-celerybeat
+
+[Install]
+WantedBy=multi-user.target

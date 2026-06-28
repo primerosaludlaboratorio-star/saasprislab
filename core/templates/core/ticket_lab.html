@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket Lab - {{ orden.folio_orden|default:orden.id }}</title>
+    <style>
+        :root { --ticket-width: 80mm; }
+        @page { size: var(--ticket-width) auto; margin: 0; }
+        body {
+            width: var(--ticket-width);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 9pt; padding: 5mm;
+            box-sizing: border-box; margin: 0;
+        }
+        .text-center { text-align: center; }
+        .bold { font-weight: bold; }
+        .divider { border-top: 1px dashed #000; margin: 2mm 0; }
+        .divider-double { border-top: 2px double #000; margin: 2mm 0; }
+        table { width: 100%; border-collapse: collapse; }
+        .total-section { font-size: 11pt; margin-top: 3mm; }
+        .row-item { display: flex; justify-content: space-between; padding: 1px 0; }
+        .badge { display: inline-block; border: 1px solid #000; padding: 1px 4px; font-size: 7pt; }
+        @media screen {
+            body { width: 80mm; margin: 20px auto; border: 1px dashed #ccc; }
+            .no-print { display: block !important; }
+        }
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body onload="window.print()">
+    <!-- ENCABEZADO -->
+    <div class="text-center">
+        <span class="bold" style="font-size: 12pt;">{{ empresa.nombre|upper }}</span><br>
+        {% if orden.sucursal %}
+        <span style="font-size: 8pt;">Sucursal: {{ orden.sucursal.nombre }}</span><br>
+        {% endif %}
+        {% if empresa.direccion %}
+        <span style="font-size: 7pt;">{{ empresa.direccion }}</span><br>
+        {% endif %}
+        {% if empresa.telefono %}
+        <span>Tel: {{ empresa.telefono }}</span><br>
+        {% endif %}
+        <span class="bold">COMPROBANTE DE LABORATORIO</span>
+    </div>
+
+    <div class="divider-double"></div>
+
+    <!-- DATOS DE LA ORDEN -->
+    <div>
+        <div class="row-item"><span>Folio:</span><span class="bold">{{ orden.folio_orden|default:orden.id }}</span></div>
+        <div class="row-item"><span>Fecha:</span><span>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</span></div>
+        <div class="row-item"><span>Paciente:</span><span class="bold">{{ orden.paciente.nombre_completo|upper|truncatechars:22 }}</span></div>
+        {% if orden.medico_solicitante %}
+        <div class="row-item"><span>Medico:</span><span>{{ orden.medico_solicitante|truncatechars:22 }}</span></div>
+        {% endif %}
+        {% if orden.tipo_orden %}
+        <div class="row-item"><span>Tipo:</span><span><span class="badge">{{ orden.tipo_orden|upper }}</span></span></div>
+        {% endif %}
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ESTUDIOS -->
+    <table class="bold">
+        <thead>
+            <tr>
+                <th align="left">ESTUDIO</th>
+                <th align="right">PRECIO</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detalle in detalles %}
+            <tr>
+                <td style="padding: 2px 0;">{% if detalle.descripcion_linea %}{{ detalle.descripcion_linea|truncatechars:22 }}{% elif detalle.analito_id %}{{ detalle.analito.nombre|truncatechars:22 }}{% elif detalle.perfil_lims_id %}{{ detalle.perfil_lims.nombre|truncatechars:22 }}{% elif detalle.paquete_lims_id %}{{ detalle.paquete_lims.nombre|truncatechars:22 }}{% else %}—{% endif %}</td>
+                <td align="right" style="padding: 2px 0;">${{ detalle.precio_momento|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="divider-double"></div>
+
+    <!-- TOTALES -->
+    <div class="total-section">
+        <table class="bold">
+            {% if orden.descuento and orden.descuento > 0 %}
+            <tr><td>SUBTOTAL:</td><td align="right">${{ orden.subtotal|floatformat:2 }}</td></tr>
+            <tr style="color: #900;"><td>DESC:</td><td align="right">-${{ orden.descuento|floatformat:2 }}</td></tr>
+            {% endif %}
+            <tr style="font-size: 12pt;"><td>TOTAL:</td><td align="right">${{ orden.total|floatformat:2 }}</td></tr>
+            <tr><td>PAGADO:</td><td align="right">${{ pagado|floatformat:2 }}</td></tr>
+            {% if saldo_pendiente > 0 %}
+            <tr style="color: red;"><td>SALDO:</td><td align="right">${{ saldo_pendiente|floatformat:2 }}</td></tr>
+            {% else %}
+            <tr style="color: green;"><td colspan="2" align="center">*** PAGADO ***</td></tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- METODO DE PAGO -->
+    {% if pago_info %}
+    <div>
+        <span class="bold" style="font-size: 8pt;">FORMA DE PAGO:</span><br>
+        {% if pago_info.monto_efectivo and pago_info.monto_efectivo > 0 %}
+        <div class="row-item"><span><span class="badge">EFECTIVO</span></span><span>${{ pago_info.monto_efectivo|floatformat:2 }}</span></div>
+        {% endif %}
+        {% if pago_info.monto_tarjeta and pago_info.monto_tarjeta > 0 %}
+        <div class="row-item"><span><span class="badge">TARJETA</span></span><span>${{ pago_info.monto_tarjeta|floatformat:2 }}</span></div>
+        {% endif %}
+        {% if pago_info.monto_transferencia and pago_info.monto_transferencia > 0 %}
+        <div class="row-item"><span><span class="badge">TRANSF</span></span><span>${{ pago_info.monto_transferencia|floatformat:2 }}</span></div>
+        {% endif %}
+    </div>
+    <div class="divider"></div>
+    {% endif %}
+
+    <!-- ENTREGA -->
+    {% if orden.fecha_entrega_estimada %}
+    <div class="text-center">
+        <span class="bold">ENTREGA ESTIMADA:</span><br>
+        <span style="font-size: 10pt;">{{ orden.fecha_entrega_estimada|date:"d/m/Y H:i" }}</span>
+    </div>
+    <div class="divider"></div>
+    {% endif %}
+
+    <!-- TOKEN DE CONSULTA -->
+    {% if orden.token_acceso %}
+    <div class="text-center" style="margin: 2mm 0;">
+        <span style="font-size: 7pt;">CONSULTE SUS RESULTADOS EN:</span><br>
+        <span class="bold" style="font-size: 8pt;">prislab.app/r/{{ orden.token_acceso|truncatechars:13 }}</span><br>
+        <span style="font-size: 7pt;">FOLIO: <span class="bold">{{ orden.folio_orden|default:orden.id }}</span></span>
+    </div>
+    <div class="divider"></div>
+    {% endif %}
+
+    <!-- PIE -->
+    <div class="text-center">
+        <p class="bold">*** GRACIAS POR SU PREFERENCIA ***</p>
+        <p style="font-size: 7pt;">Conserve este comprobante para recoger sus resultados.</p>
+        {% if empresa.direccion %}
+        <p style="font-size: 7pt;">{{ empresa.direccion }}</p>
+        {% endif %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reporte de Valorización de Inventario{% endblock %}
+
+{% block extra_css %}
+<style>
+    .header-valorizacion {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .total-inventario {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .tabla-productos {
+        font-size: 0.95rem;
+    }
+    
+    .producto-top {
+        background-color: #fff3cd;
+    }
+    
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- ========================================================== -->
+    <!-- HEADER -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm header-valorizacion">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1">
+                                <i class="bi bi-file-earmark-bar-graph"></i>
+                                Reporte de Valorización de Inventario
+                            </h2>
+                            <p class="mb-0">
+                                <i class="bi bi-calendar3"></i>
+                                Generado el {{ fecha_reporte|date:"d/m/Y H:i:s" }}
+                            </p>
+                        </div>
+                        <div class="no-print">
+                            <button onclick="window.print()" class="btn btn-light btn-lg">
+                                <i class="bi bi-printer"></i> Imprimir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- RESUMEN TOTAL -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="total-inventario shadow-lg">
+                <h3 class="mb-3">VALOR TOTAL DEL INVENTARIO</h3>
+                <h1 class="display-3 mb-3">${{ total_valor|floatformat:2 }}</h1>
+                <p class="lead mb-0">
+                    {{ total_unidades|floatformat:0 }} unidades en stock
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- ESTADÍSTICAS RÁPIDAS -->
+    <!-- ========================================================== -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card">
+                <i class="bi bi-box-seam text-primary" style="font-size: 2.5rem;"></i>
+                <h3 class="mt-2 mb-0">{{ productos.count }}</h3>
+                <small class="text-muted">Productos con Stock</small>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="stat-card">
+                <i class="bi bi-stack text-success" style="font-size: 2.5rem;"></i>
+                <h3 class="mt-2 mb-0">{{ total_unidades|floatformat:0 }}</h3>
+                <small class="text-muted">Unidades Totales</small>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="stat-card">
+                <i class="bi bi-currency-dollar text-warning" style="font-size: 2.5rem;"></i>
+                <h3 class="mt-2 mb-0">
+                    {% widthratio total_valor total_unidades 1 %}
+                </h3>
+                <small class="text-muted">Costo Promedio/Unidad</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- TABLA DETALLADA DE PRODUCTOS -->
+    <!-- ========================================================== -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-table"></i>
+                        Detalle por Producto (Ordenado por Valor)
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    
+                    {% if productos %}
+                        <div class="table-responsive">
+                            <table class="table table-hover tabla-productos mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Código</th>
+                                        <th>Producto</th>
+                                        <th>Presentación</th>
+                                        <th class="text-end">Stock</th>
+                                        <th class="text-end">Costo Unit.</th>
+                                        <th class="text-end">Valor Total</th>
+                                        <th class="text-center">% del Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for producto in productos %}
+                                    <tr {% if forloop.counter <= 10 %}class="producto-top"{% endif %}>
+                                        <td>
+                                            {{ forloop.counter }}
+                                            {% if forloop.counter <= 10 %}
+                                                <i class="bi bi-star-fill text-warning"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if producto.codigo_barras %}
+                                                <code>{{ producto.codigo_barras }}</code>
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <strong>{{ producto.nombre }}</strong>
+                                        </td>
+                                        <td>{{ producto.presentacion|default:"N/A" }}</td>
+                                        <td class="text-end">
+                                            <span class="badge bg-info">
+                                                {{ producto.stock|floatformat:2 }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            ${{ producto.precio_compra|floatformat:2 }}
+                                        </td>
+                                        <td class="text-end">
+                                            <strong class="text-primary">
+                                                ${{ producto.valor_inventario|floatformat:2 }}
+                                            </strong>
+                                        </td>
+                                        <td class="text-center">
+                                            {% widthratio producto.valor_inventario total_valor 100 %}%
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-dark">
+                                    <tr>
+                                        <th colspan="4">TOTALES</th>
+                                        <th class="text-end">{{ total_unidades|floatformat:0 }}</th>
+                                        <th class="text-end">-</th>
+                                        <th class="text-end">${{ total_valor|floatformat:2 }}</th>
+                                        <th class="text-center">100%</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                            <p class="text-muted mt-3">No hay productos con stock disponible</p>
+                        </div>
+                    {% endif %}
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- NOTAS IMPORTANTES -->
+    <!-- ========================================================== -->
+    <div class="row mt-4 no-print">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle-fill text-primary"></i>
+                        Notas Importantes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>El valor del inventario se calcula usando el <strong>Costo Promedio Ponderado (CPP)</strong> de cada producto.</li>
+                        <li>Solo se incluyen productos con stock mayor a 0.</li>
+                        <li>Los productos marcados con ⭐ representan el <strong>Top 10</strong> de mayor valor.</li>
+                        <li>Este reporte es un snapshot al momento de su generación: {{ fecha_reporte|date:"d/m/Y H:i:s" }}</li>
+                        <li>Para auditoría contable, este reporte debe ser firmado y sellado.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- BOTONES DE ACCIÓN -->
+    <!-- ========================================================== -->
+    <div class="row mt-4 mb-5 no-print">
+        <div class="col-12 text-center">
+            <button onclick="window.print()" class="btn btn-primary btn-lg me-2">
+                <i class="bi bi-printer"></i> Imprimir Reporte
+            </button>
+            <button onclick="exportarExcel()" class="btn btn-success btn-lg me-2">
+                <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+            </button>
+            <a href="{% url 'farmacia:dashboard_alertas' %}" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- PIE DE PÁGINA PARA IMPRESIÓN -->
+    <!-- ========================================================== -->
+    <div class="row mt-5 d-none d-print-block">
+        <div class="col-12">
+            <hr>
+            <div class="row">
+                <div class="col-6 text-center">
+                    <p class="mb-0">_______________________________</p>
+                    <small>Firma del Responsable</small>
+                </div>
+                <div class="col-6 text-center">
+                    <p class="mb-0">_______________________________</p>
+                    <small>Sello de la Empresa</small>
+                </div>
+            </div>
+            <p class="text-center text-muted mt-3 small">
+                Documento generado por PRISLAB - Sistema de Gestión Clínica
+            </p>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function exportarExcel() {
+        window.location.href = "{% url 'farmacia:reporte_valorizacion' %}?formato=excel";
+    }
+</script>
+{% endblock %}

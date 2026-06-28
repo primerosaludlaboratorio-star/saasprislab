@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Corte de Caja{% endblock %}
+
+{% block extra_css %}
+<style>
+    .arqueo-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .input-dinero {
+        font-size: 1.5rem;
+        font-weight: bold;
+        text-align: right;
+    }
+    
+    .alerta-ciego {
+        background-color: #fff3cd;
+        border-left: 5px solid #ffc107;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .contador-ventas {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+    
+    .step-card {
+        border: 2px solid #e9ecef;
+        transition: all 0.3s;
+    }
+    
+    .step-card:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    
+    <!-- ========================================================== -->
+    <!-- HEADER -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h1 class="display-5">
+                <i class="bi bi-cash-stack"></i>
+                Corte de Caja - Fin de Turno
+            </h1>
+            <p class="text-muted">Arqueo Ciego de Efectivo y Pagos Electrónicos</p>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- ALERTA: ARQUEO CIEGO -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="alerta-ciego">
+                <h5>
+                    <i class="bi bi-shield-exclamation"></i>
+                    <strong>ARQUEO CIEGO:</strong> Importante
+                </h5>
+                <ul class="mb-0">
+                    <li>NO verás cuánto espera el sistema. Solo ingresa el dinero <strong>REAL</strong> que tienes.</li>
+                    <li>Cuenta cuidadosamente el efectivo, vouchers de tarjeta y comprobantes de transferencia.</li>
+                    <li>El sistema comparará tu declaración con las ventas registradas.</li>
+                    <li><strong>El corte es un documento legal inmutable. No podrás modificarlo después.</strong></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- INFORMACIÓN DEL TURNO -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="contador-ventas">
+                <h3 class="mb-0">{{ ventas_turno_count }}</h3>
+                <p class="mb-0">Ventas realizadas en tu turno</p>
+                <small>Desde {{ turno_inicio|date:"d/m/Y H:i" }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- FORMULARIO DE ARQUEO -->
+    <!-- ========================================================== -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header arqueo-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-calculator"></i>
+                        Declaración de Dinero en Caja
+                    </h5>
+                </div>
+                <div class="card-body">
+                    
+                    <form method="POST" action="{% url 'farmacia:corte_caja' %}">
+                        {% csrf_token %}
+                        
+                        <!-- PASO 1: EFECTIVO -->
+                        <div class="step-card p-4 mb-3">
+                            <h6 class="text-primary">
+                                <i class="bi bi-1-circle-fill"></i>
+                                Efectivo en Mano
+                            </h6>
+                            <p class="text-muted">Cuenta todos los billetes y monedas en la caja</p>
+                            
+                            <div class="mb-3">
+                                {{ form.efectivo_declarado.label_tag }}
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text">$</span>
+                                    {{ form.efectivo_declarado }}
+                                </div>
+                                <small class="form-text text-muted">{{ form.efectivo_declarado.help_text }}</small>
+                            </div>
+                        </div>
+                        
+                        <!-- PASO 2: TARJETAS -->
+                        <div class="step-card p-4 mb-3">
+                            <h6 class="text-primary">
+                                <i class="bi bi-2-circle-fill"></i>
+                                Pagos con Tarjeta
+                            </h6>
+                            <p class="text-muted">Suma todos los vouchers de tarjeta de crédito/débito</p>
+                            
+                            <div class="mb-3">
+                                {{ form.tarjeta_declarada.label_tag }}
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text">$</span>
+                                    {{ form.tarjeta_declarada }}
+                                </div>
+                                <small class="form-text text-muted">{{ form.tarjeta_declarada.help_text }}</small>
+                            </div>
+                        </div>
+                        
+                        <!-- PASO 3: TRANSFERENCIAS -->
+                        <div class="step-card p-4 mb-3">
+                            <h6 class="text-primary">
+                                <i class="bi bi-3-circle-fill"></i>
+                                Transferencias y SPEI
+                            </h6>
+                            <p class="text-muted">Suma todas las transferencias bancarias recibidas</p>
+                            
+                            <div class="mb-3">
+                                {{ form.transferencia_declarada.label_tag }}
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text">$</span>
+                                    {{ form.transferencia_declarada }}
+                                </div>
+                                <small class="form-text text-muted">{{ form.transferencia_declarada.help_text }}</small>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <!-- OBSERVACIONES -->
+                        <div class="mb-3">
+                            {{ form.observaciones_corte.label_tag }}
+                            {{ form.observaciones_corte }}
+                            <small class="form-text text-muted">{{ form.observaciones_corte.help_text }}</small>
+                        </div>
+                        
+                        <!-- CONFIRMACIÓN -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                {{ form.acepto_responsabilidad }}
+                                {{ form.acepto_responsabilidad.label_tag }}
+                            </div>
+                            <small class="form-text text-danger">{{ form.acepto_responsabilidad.help_text }}</small>
+                        </div>
+                        
+                        <!-- RESUMEN VISUAL -->
+                        <div class="alert alert-primary" role="alert">
+                            <h5 class="alert-heading">
+                                <i class="bi bi-info-circle-fill"></i>
+                                Total que Declaras:
+                            </h5>
+                            <hr>
+                            <p class="mb-0" style="font-size: 2rem; font-weight: bold;">
+                                $<span id="totalDeclarado">0.00</span>
+                            </p>
+                        </div>
+                        
+                        <!-- BOTONES -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i>
+                                Finalizar Corte de Caja
+                            </button>
+                            <a href="{% url 'farmacia:dashboard_alertas' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                        </div>
+                        
+                    </form>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ============================================================
+    // CALCULAR TOTAL DECLARADO EN TIEMPO REAL
+    // ============================================================
+    function calcularTotal() {
+        const efectivo = parseFloat(document.getElementById('id_efectivo_declarado').value) || 0;
+        const tarjeta = parseFloat(document.getElementById('id_tarjeta_declarada').value) || 0;
+        const transferencia = parseFloat(document.getElementById('id_transferencia_declarada').value) || 0;
+        
+        const total = efectivo + tarjeta + transferencia;
+        
+        document.getElementById('totalDeclarado').textContent = total.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    }
+    
+    // Actualizar al escribir
+    document.getElementById('id_efectivo_declarado').addEventListener('input', calcularTotal);
+    document.getElementById('id_tarjeta_declarada').addEventListener('input', calcularTotal);
+    document.getElementById('id_transferencia_declarada').addEventListener('input', calcularTotal);
+    
+    // Calcular al cargar
+    calcularTotal();
+    
+    // ============================================================
+    // VALIDACIÓN Y CONFIRMACIÓN
+    // ============================================================
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const acepto = document.getElementById('id_acepto_responsabilidad').checked;
+        
+        if (!acepto) {
+            e.preventDefault();
+            alert('Debes confirmar que los montos declarados son correctos');
+            return false;
+        }
+        
+        const total = parseFloat(document.getElementById('totalDeclarado').textContent.replace(/,/g, ''));
+        
+        if (total <= 0) {
+            e.preventDefault();
+            alert('El total declarado debe ser mayor a cero');
+            return false;
+        }
+        
+        const confirmar = confirm(
+            `¿Confirmas que el total declarado es de $${total.toFixed(2)}?\n\n` +
+            `⚠️ IMPORTANTE: Una vez guardado, el corte es INMUTABLE y queda registrado legalmente.`
+        );
+        
+        if (!confirmar) {
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>
+{% endblock %}

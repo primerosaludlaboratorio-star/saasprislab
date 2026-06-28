@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Marketing & Academy{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="fw-bold mb-0"><i class="bi bi-megaphone"></i> Marketing & Academy</h2>
+    <small class="text-muted">Campañas éticas + cupones QR</small>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="card card-profesional">
+        <div class="card-header bg-secondary-profesional text-white">
+          <strong>Generar Cupón</strong>
+        </div>
+        <div class="card-body">
+          <form id="formCupon" class="row g-2">
+            {% csrf_token %}
+            <div class="col-12">
+              <label class="form-label fw-bold">Paciente</label>
+              <select class="form-select" name="paciente_id">
+                <option value="">(Opcional) Sin paciente</option>
+                {% for p in pacientes %}
+                  <option value="{{ p.id }}">{{ p.nombre_completo }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold">% descuento</label>
+              <input class="form-control" name="porcentaje" placeholder="Ej: 10.00">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold">Descripción</label>
+              <input class="form-control" name="descripcion" placeholder="Ej: Chequeo anual">
+            </div>
+            <div class="col-12">
+              <button class="btn btn-primary-profesional btn-profesional neon-hover w-100" type="submit">
+                <i class="bi bi-qr-code"></i> Generar cupón (JPG + QR)
+              </button>
+            </div>
+          </form>
+          <div id="cuponPreview" class="mt-3" style="display:none;">
+            <div class="text-muted small mb-2">Cupón generado:</div>
+            <img id="cuponImg" src="" alt="Cupón" style="max-width: 100%; border-radius: 14px;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card card-profesional">
+        <div class="card-header bg-secondary-profesional text-white">
+          <strong>Crear Campaña</strong>
+        </div>
+        <div class="card-body">
+          <form id="formCampana" class="row g-2">
+            {% csrf_token %}
+            <div class="col-12">
+              <label class="form-label fw-bold">Segmento</label>
+              <input class="form-control" name="segmento" placeholder="Ej: diabeticos_inactivos_6m">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-bold">Mensaje WhatsApp (ético)</label>
+              <textarea class="form-control" name="mensaje" rows="4" placeholder="Mensaje educativo, no invasivo."></textarea>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-outline-secondary btn-profesional w-100" type="submit">
+                <i class="bi bi-send"></i> Guardar campaña
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card card-profesional">
+        <div class="card-header bg-secondary-profesional text-white">
+          <strong>Historial</strong>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <h6 class="text-muted text-uppercase small mb-2">Cupones</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-profesional">
+                  <thead><tr><th>Código</th><th>%</th><th>Paciente</th><th>Fecha</th></tr></thead>
+                  <tbody>
+                    {% for c in cupones %}
+                      <tr>
+                        <td>{{ c.codigo }}</td>
+                        <td>{{ c.porcentaje_descuento }}</td>
+                        <td>{{ c.paciente.nombre_completo|default:"-" }}</td>
+                        <td>{{ c.fecha_creacion|date:"Y-m-d H:i" }}</td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="4" class="text-muted">Sin cupones aún.</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <h6 class="text-muted text-uppercase small mb-2">Campañas</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-profesional">
+                  <thead><tr><th>Segmento</th><th>Activa</th><th>Fecha</th></tr></thead>
+                  <tbody>
+                    {% for c in campanas %}
+                      <tr>
+                        <td>{{ c.segmento }}</td>
+                        <td>{% if c.activa %}<span class="badge bg-success">ON</span>{% else %}<span class="badge bg-secondary">OFF</span>{% endif %}</td>
+                        <td>{{ c.fecha_creacion|date:"Y-m-d H:i" }}</td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="3" class="text-muted">Sin campañas aún.</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  async function postForm(url, formEl) {
+    const formData = new FormData(formEl);
+    const resp = await fetch(url, { method: "POST", body: formData, headers: { "X-Requested-With": "XMLHttpRequest" }});
+    return await resp.json();
+  }
+
+  document.getElementById("formCupon").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const data = await postForm("{% url 'marketing:api_generar_cupon' %}", e.target);
+    if (data.ok && data.imagen) {
+      document.getElementById("cuponImg").src = data.imagen;
+      document.getElementById("cuponPreview").style.display = "block";
+    } else {
+      alert(data.error || "No se pudo generar el cupón.");
+    }
+  });
+
+  document.getElementById("formCampana").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const data = await postForm("{% url 'marketing:api_crear_campana' %}", e.target);
+    if (data.ok) {
+      location.reload();
+    } else {
+      alert(data.error || "No se pudo crear la campaña.");
+    }
+  });
+</script>
+{% endblock %}
+

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket {{ venta.folio_operacion|default:venta.id }}</title>
+    <style>
+        :root { --ticket-width: 80mm; }
+        @page { size: var(--ticket-width) auto; margin: 0; }
+        body {
+            width: var(--ticket-width);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 9pt; padding: 5mm;
+            box-sizing: border-box; margin: 0;
+        }
+        .text-center { text-align: center; }
+        .bold { font-weight: bold; }
+        .divider { border-top: 1px dashed #000; margin: 2mm 0; }
+        .divider-double { border-top: 2px double #000; margin: 2mm 0; }
+        table { width: 100%; border-collapse: collapse; }
+        .total-section { font-size: 11pt; margin-top: 3mm; }
+        .row-item { display: flex; justify-content: space-between; }
+        .badge { display: inline-block; border: 1px solid #000; padding: 1px 3px; font-size: 7pt; }
+    </style>
+</head>
+<body>
+    <div class="text-center">
+        <span class="bold" style="font-size: 12pt;">{{ empresa.nombre|upper }}</span><br>
+        {% if empresa.direccion %}
+        <span style="font-size: 7pt;">{{ empresa.direccion }}</span><br>
+        {% endif %}
+        {% if empresa.telefono %}
+        <span>Tel: {{ empresa.telefono }}</span><br>
+        {% endif %}
+    </div>
+
+    <div class="divider-double"></div>
+
+    <div>
+        <div class="row-item"><span>Folio:</span><span class="bold">{{ venta.folio_operacion|default:venta.id }}</span></div>
+        <div class="row-item"><span>Fecha:</span><span>{{ venta.fecha|date:"d/m/Y H:i" }}</span></div>
+        <div class="row-item"><span>Cliente:</span><span>{{ venta.paciente_nombre|default:"PUBLICO GENERAL"|truncatechars:20 }}</span></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th align="left">PRODUCTO</th>
+                <th align="right">CANT</th>
+                <th align="right">PRECIO</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in detalles %}
+            <tr>
+                <td style="padding: 2px 0;">{{ d.producto.nombre|truncatechars:15 }}</td>
+                <td align="right">{{ d.cantidad }}</td>
+                <td align="right">${{ d.precio_unitario|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            {% for d in venta.detalles.all %}
+            <tr>
+                <td style="padding: 2px 0;">{{ d.producto.nombre|truncatechars:15 }}</td>
+                <td align="right">{{ d.cantidad }}</td>
+                <td align="right">${{ d.precio_unitario|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="divider-double"></div>
+
+    <div class="total-section">
+        <table class="bold">
+            <tr><td>SUBTOTAL:</td><td align="right">${{ venta.subtotal|floatformat:2 }}</td></tr>
+            {% if venta.descuento_aplicado > 0 %}
+            <tr style="color: #900;"><td>DESC:</td><td align="right">-${{ venta.descuento_aplicado|floatformat:2 }}</td></tr>
+            {% endif %}
+            {% if venta.impuestos_iva > 0 %}
+            <tr><td>IVA:</td><td align="right">${{ venta.impuestos_iva|floatformat:2 }}</td></tr>
+            {% endif %}
+            <tr style="font-size: 12pt;"><td>TOTAL:</td><td align="right">${{ venta.total|floatformat:2 }}</td></tr>
+        </table>
+    </div>
+
+    {% if venta.efectivo_recibido and venta.efectivo_recibido > 0 %}
+    <div class="divider"></div>
+    <div>
+        <div class="row-item"><span>Efectivo:</span><span>${{ venta.efectivo_recibido|floatformat:2 }}</span></div>
+        <div class="row-item"><span>Cambio:</span><span>${{ venta.cambio_entregado|floatformat:2 }}</span></div>
+    </div>
+    {% endif %}
+
+    {% if pagos %}
+    <div class="divider"></div>
+    <div>
+        {% for pago in pagos %}
+        <div class="row-item"><span><span class="badge">{{ pago.metodo }}</span></span><span>${{ pago.monto|floatformat:2 }}</span></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="divider-double"></div>
+    <div class="text-center">
+        <p class="bold">*** GRACIAS POR SU PREFERENCIA ***</p>
+        {% if empresa.direccion %}
+        <p style="font-size: 7pt;">{{ empresa.direccion }}</p>
+        {% endif %}
+    </div>
+</body>
+</html>

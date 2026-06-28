@@ -1,0 +1,134 @@
+<!-- Modal de Espera de Autorización -->
+<div class="modal fade" id="modalEsperaAutorizacion" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="bi bi-clock-history"></i> Esperando Aprobación del Director
+                </h5>
+            </div>
+            <div class="modal-body text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status" style="width: 4rem; height: 4rem;">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <h5 id="mensajeEspera">Tu solicitud ha sido enviada al Director...</h5>
+                <p class="text-muted mt-3" id="detalleEspera">
+                    Por favor, espera mientras se procesa tu solicitud de autorización.
+                </p>
+                <div class="mt-4">
+                    <button type="button" class="btn btn-secondary" onclick="cancelarEsperaAutorizacion()">
+                        <i class="bi bi-x-circle"></i> Cancelar Solicitud
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let pollingInterval = null;
+    let solicitudIdActual = null;
+
+    function solicitarAutorizacion(tipoAccion, descripcion, datosContexto, callbackAprobado, callbackRechazado) {
+        // Crear la solicitud
+        fetch('{% url "crear_solicitud_autorizacion" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                tipo_accion: tipoAccion,
+                descripcion: descripcion,
+                datos_contexto: datosContexto || {}
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                solicitudIdActual = data.solicitud_id;
+                // Mostrar modal de espera
+                const modal = new bootstrap.Modal(document.getElementById('modalEsperaAutorizacion'));
+                modal.show();
+                
+                // Iniciar polling
+                iniciarPolling(data.solicitud_id, callbackAprobado, callbackRechazado);
+            } else {
+                Swal.fire('Error', data.mensaje || 'No se pudo crear la solicitud', 'error');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+        });
+    }
+
+    function iniciarPolling(solicitudId, callbackAprobado, callbackRechazado) {
+        // Verificar estado cada 2 segundos
+        pollingInterval = setInterval(() => {
+            fetch(`/api/autorizaciones/${solicitudId}/verificar/`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    if (data.estado === 'APROBADO') {
+                        // Aprobado
+                        clearInterval(pollingInterval);
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('modalEsperaAutorizacion'));
+                        modal.hide();
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Autorización Aprobada!',
+                            text: 'Ya puedes continuar con la acción.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            if (callbackAprobado) callbackAprobado();
+                        });
+                    } else if (data.estado === 'RECHAZADO') {
+                        // Rechazado
+                        clearInterval(pollingInterval);
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('modalEsperaAutorizacion'));
+                        modal.hide();
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Solicitud Rechazada',
+                            html: `<p>Tu solicitud ha sido rechazada.</p><p><strong>Motivo:</strong> ${data.comentario_rechazo || 'No especificado'}</p>`,
+                            confirmButtonText: 'Entendido'
+                        }).then(() => {
+                            if (callbackRechazado) callbackRechazado(data.comentario_rechazo);
+                        });
+                    }
+                    // Si sigue PENDIENTE, continuar polling
+                }
+            })
+            .catch(err => {
+                console.error('Error al verificar estado:', err);
+            });
+        }, 2000); // Polling cada 2 segundos
+    }
+
+    function cancelarEsperaAutorizacion() {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+        }
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalEsperaAutorizacion'));
+        modal.hide();
+        solicitudIdActual = null;
+    }
+
+    // Limpiar al cerrar el modal
+    document.getElementById('modalEsperaAutorizacion').addEventListener('hidden.bs.modal', function() {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+        }
+    });
+</script>

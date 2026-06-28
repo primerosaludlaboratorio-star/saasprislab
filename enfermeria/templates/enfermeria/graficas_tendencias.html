@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}Tendencias - Signos Vitales{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css">{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2><i class="fas fa-chart-line"></i> Tendencias de Signos Vitales</h2>
+    <h4>{{ paciente.nombre_completo }}</h4>
+    <div class="row">
+        <div class="col-md-6"><canvas id="chartPresion"></canvas></div>
+        <div class="col-md-6"><canvas id="chartTemp"></canvas></div>
+    </div>
+</div>
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+const datosPresion = {{ datos_presion|safe }};
+new Chart(document.getElementById('chartPresion'), {
+    type: 'line',
+    data: {
+        labels: datosPresion.labels,
+        datasets: [{label: 'Sistólica', data: datosPresion.sistolica, borderColor: 'red'},
+                   {label: 'Diastólica', data: datosPresion.diastolica, borderColor: 'blue'}]
+    }
+});
+const datosTemp = {{ datos_temperatura|safe }};
+new Chart(document.getElementById('chartTemp'), {
+    type: 'line',
+    data: {labels: datosTemp.labels, datasets: [{label: 'Temperatura', data: datosTemp.values, borderColor: 'orange'}]}
+});
+</script>
+{% endblock %}
+{% endblock %}

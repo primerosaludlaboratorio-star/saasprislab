@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Resultados de Laboratorio — Consulta{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="javascript:history.back()" class="btn btn-outline-secondary me-3">
+      <i class="fas fa-arrow-left"></i>
+    </a>
+    <div>
+      <h2 class="mb-0">Resultados de Laboratorio</h2>
+      <small class="text-muted">
+        Paciente: <strong>{{ consulta.paciente.nombre_completo }}</strong> —
+        Consulta del {{ consulta.fecha_creacion|date:"d/m/Y" }}
+      </small>
+    </div>
+  </div>
+
+  {% if ordenes_lab %}
+    {% for orden in ordenes_lab %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <span class="fw-semibold">Orden #{{ orden.id }}</span>
+          <span class="text-muted small ms-2">{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</span>
+        </div>
+        <span class="badge bg-{% if orden.estado == 'ENTREGADO' %}success{% elif orden.estado == 'LISTO' %}primary{% elif orden.estado == 'PROCESANDO' %}warning text-dark{% else %}secondary{% endif %}">
+          {{ orden.get_estado_display|default:orden.estado }}
+        </span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Estudio</th>
+                <th>Resultado</th>
+                <th>Rango referencia</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for detalle in orden.detalles.all %}
+              <tr>
+                <td>{{ detalle.display_nombre|default:"—" }}</td>
+                <td class="fw-semibold">
+                  {% if detalle.resultado %}
+                    <span class="{% if detalle.fuera_rango %}text-danger{% endif %}">
+                      {{ detalle.resultado }} {{ detalle.display_unidades|default:'' }}
+                    </span>
+                  {% else %}
+                    <span class="text-muted">Pendiente</span>
+                  {% endif %}
+                </td>
+                <td class="text-muted small">{{ detalle.rango_referencia|default:"—" }}</td>
+                <td>
+                  {% if detalle.fuera_rango %}
+                    <span class="badge bg-danger">Fuera de rango</span>
+                  {% elif detalle.resultado %}
+                    <span class="badge bg-success">Normal</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Pendiente</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-3">Sin detalles en esta orden</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% if orden.estado == 'LISTO' or orden.estado == 'ENTREGADO' %}
+      <div class="card-footer text-end bg-white">
+        <a href="{% url 'imprimir_resultados_pdf' orden.pk %}" class="btn btn-sm btn-outline-danger" target="_blank">
+          <i class="fas fa-file-pdf me-1"></i>Imprimir resultados
+        </a>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="card shadow-sm text-center py-5">
+      <i class="fas fa-flask fa-3x text-muted mb-3"></i>
+      <p class="text-muted">Sin órdenes de laboratorio asociadas a esta consulta</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

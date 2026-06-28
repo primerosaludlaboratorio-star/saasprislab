@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Póliza {{ poliza.folio }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f7fa; }
+    .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; }
+    h1 { color: #1F4E79; }
+    .btn { display: inline-block; padding: 8px 12px; background: #1F4E79; color: #fff; text-decoration: none; border-radius: 4px; }
+    .btn-success { background: #006100; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+    th { background: #1F4E79; color: #fff; }
+    .totals { margin-top: 16px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Póliza {{ poliza.folio }}</h1>
+    <p><strong>Concepto:</strong> {{ poliza.concepto }}</p>
+    <p><strong>Fecha:</strong> {{ poliza.fecha }} | <strong>Tipo:</strong> {{ poliza.get_tipo_display }} | <strong>Estado:</strong> {{ poliza.get_estado_display }}</p>
+    <p><strong>Creado por:</strong> {{ poliza.creado_por.username }} | <strong>Autorizado por:</strong> {{ poliza.autorizado_por.username|default:"—" }}</p>
+
+    <table>
+      <tr><th>Cuenta</th><th>Concepto</th><th>Cargo</th><th>Abono</th></tr>
+      {% for a in asientos %}
+      <tr>
+        <td>{{ a.cuenta.codigo }} - {{ a.cuenta.nombre }}</td>
+        <td>{{ a.concepto|default:"—" }}</td>
+        <td>${{ a.cargo }}</td>
+        <td>${{ a.abono }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    <div class="totals">
+      Total cargos: ${{ asientos|length }} registros — verificar cuadre en la tabla.
+    </div>
+    {% if poliza.estado == 'BORRADOR' %}
+    <form method="post" action="{% url 'contabilidad:autorizar_poliza' poliza.id %}" style="margin-top: 16px;">
+      {% csrf_token %}
+      <button class="btn btn-success" type="submit">Autorizar póliza</button>
+    </form>
+    {% endif %}
+    <a class="btn" href="{% url 'contabilidad:lista_polizas' %}" style="margin-top: 12px;">Volver</a>
+  </div>
+</body>
+</html>

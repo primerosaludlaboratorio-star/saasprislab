@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nueva Consulta Sin Cita - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="bi bi-person-plus-fill text-primary"></i> Nueva Consulta Sin Cita (Walk-in)</h2>
+                    <p class="text-muted">Crea una consulta rápida para pacientes que llegan sin cita previa</p>
+                </div>
+                <a href="{% url 'consultorio:lista_trabajo_medico' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver a Lista de Trabajo
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-search"></i> Seleccionar Paciente</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="formConsultaSinCita">
+                        {% csrf_token %}
+                        
+                        <!-- Búsqueda de Paciente -->
+                        <div class="mb-4">
+                            <label for="buscarPaciente" class="form-label fw-bold">
+                                <i class="bi bi-search"></i> Buscar Paciente *
+                            </label>
+                            <input 
+                                type="text" 
+                                class="form-control form-control-lg" 
+                                id="buscarPaciente" 
+                                placeholder="Escribe el nombre, apellido o teléfono del paciente..."
+                                autocomplete="off"
+                                required
+                            >
+                            <input type="hidden" name="paciente_id" id="paciente_id" required>
+                            
+                            <!-- Resultados de búsqueda -->
+                            <div id="resultadosBusqueda" class="list-group mt-2" style="display: none;"></div>
+                            
+                            <!-- Paciente seleccionado -->
+                            <div id="pacienteSeleccionado" class="alert alert-info mt-3" style="display: none;">
+                                <strong><i class="bi bi-person-check"></i> Paciente Seleccionado:</strong>
+                                <p class="mb-0" id="datosPaciente"></p>
+                            </div>
+                        </div>
+
+                        <!-- Motivo de Consulta -->
+                        <div class="mb-4">
+                            <label for="motivo" class="form-label fw-bold">
+                                <i class="bi bi-clipboard-pulse"></i> Motivo de Consulta *
+                            </label>
+                            <textarea 
+                                name="motivo" 
+                                id="motivo" 
+                                class="form-control" 
+                                rows="3" 
+                                placeholder="Describe brevemente el motivo de la consulta..."
+                                required
+                            >Consulta sin cita previa</textarea>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg" id="btnCrearConsulta" disabled>
+                                <i class="bi bi-plus-circle"></i> Crear Consulta e Iniciar Atención
+                            </button>
+                            <a href="{% url 'consultorio:lista_trabajo_medico' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Pacientes Recientes (Acceso Rápido) -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-clock-history"></i> Pacientes Recientes (Acceso Rápido)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for paciente in pacientes_recientes %}
+                        <div class="col-md-6 mb-2">
+                            <button 
+                                type="button" 
+                                class="btn btn-outline-primary w-100 text-start btn-paciente-rapido"
+                                data-id="{{ paciente.id }}"
+                                data-nombre="{{ paciente.nombre_completo }}"
+                                data-edad="{{ paciente.edad }}"
+                                data-sexo="{{ paciente.get_sexo_display }}"
+                                data-telefono="{{ paciente.telefono|default:'N/A' }}"
+                            >
+                                <i class="bi bi-person-circle"></i> <strong>{{ paciente.nombre_completo }}</strong><br>
+                                <small class="text-muted">{{ paciente.edad }} años | {{ paciente.get_sexo_display }} | {{ paciente.telefono|default:'Sin teléfono' }}</small>
+                            </button>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <p class="text-muted text-center mb-0">No hay pacientes registrados recientemente</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Crear Paciente Nuevo -->
+            <div class="card shadow-sm mt-4 border-success">
+                <div class="card-body text-center">
+                    <h6><i class="bi bi-person-plus"></i> ¿El paciente es nuevo?</h6>
+                    <p class="text-muted small mb-3">Si no encuentras al paciente en el sistema, regístralo primero</p>
+                    <a href="{% url 'recepcion:registrar_paciente' %}" class="btn btn-success" target="_blank">
+                        <i class="bi bi-plus-circle"></i> Registrar Nuevo Paciente
+                    </a>
+                    <p class="text-muted small mt-2">Se abrirá en una nueva pestaña</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const buscarInput = document.getElementById('buscarPaciente');
+    const resultadosDiv = document.getElementById('resultadosBusqueda');
+    const pacienteIdInput = document.getElementById('paciente_id');
+    const pacienteSeleccionadoDiv = document.getElementById('pacienteSeleccionado');
+    const datosPacienteP = document.getElementById('datosPaciente');
+    const btnCrearConsulta = document.getElementById('btnCrearConsulta');
+    let timeoutBusqueda;
+
+    // Búsqueda en tiempo real
+    buscarInput.addEventListener('input', function() {
+        clearTimeout(timeoutBusqueda);
+        const termino = this.value.trim();
+
+        if (termino.length < 2) {
+            resultadosDiv.style.display = 'none';
+            return;
+        }
+
+        timeoutBusqueda = setTimeout(function() {
+            fetch(`/api/pacientes/buscar/?q=${encodeURIComponent(termino)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        resultadosDiv.innerHTML = '<div class="list-group-item text-muted">No se encontraron pacientes</div>';
+                    } else {
+                        resultadosDiv.innerHTML = data.map(p => `
+                            <button type="button" class="list-group-item list-group-item-action btn-seleccionar-paciente"
+                                    data-id="${p.id}"
+                                    data-nombre="${p.nombre_completo}"
+                                    data-edad="${p.edad}"
+                                    data-sexo="${p.sexo_display}"
+                                    data-telefono="${p.telefono || 'N/A'}">
+                                <strong>${p.nombre_completo}</strong><br>
+                                <small class="text-muted">${p.edad} años | ${p.sexo_display} | ${p.telefono || 'Sin teléfono'}</small>
+                            </button>
+                        `).join('');
+
+                        // Agregar listeners a los botones
+                        document.querySelectorAll('.btn-seleccionar-paciente').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                seleccionarPaciente(this);
+                            });
+                        });
+                    }
+                    resultadosDiv.style.display = 'block';
+                })
+                .catch(err => {
+                    console.error('Error al buscar pacientes:', err);
+                    resultadosDiv.innerHTML = '<div class="list-group-item text-danger">Error al buscar pacientes</div>';
+                    resultadosDiv.style.display = 'block';
+                });
+        }, 300);
+    });
+
+    // Función para seleccionar paciente
+    function seleccionarPaciente(element) {
+        const id = element.dataset.id;
+        const nombre = element.dataset.nombre;
+        const edad = element.dataset.edad;
+        const sexo = element.dataset.sexo;
+        const telefono = element.dataset.telefono;
+
+        pacienteIdInput.value = id;
+        buscarInput.value = nombre;
+        datosPacienteP.innerHTML = `
+            <strong>${nombre}</strong><br>
+            ${edad} años | ${sexo} | Tel: ${telefono}
+        `;
+        pacienteSeleccionadoDiv.style.display = 'block';
+        resultadosDiv.style.display = 'none';
+        btnCrearConsulta.disabled = false;
+    }
+
+    // Botones de acceso rápido
+    document.querySelectorAll('.btn-paciente-rapido').forEach(btn => {
+        btn.addEventListener('click', function() {
+            seleccionarPaciente(this);
+        });
+    });
+
+    // Validación del formulario
+    document.getElementById('formConsultaSinCita').addEventListener('submit', function(e) {
+        if (!pacienteIdInput.value) {
+            e.preventDefault();
+            alert('Por favor selecciona un paciente antes de continuar');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 1mm; 
+            font-family: Arial, sans-serif; 
+            width: 38mm; 
+            height: 25mm; 
+            overflow: hidden; 
+        }
+        .label { 
+            page-break-after: always; 
+            border-bottom: 0.1mm solid #eee; 
+        }
+        .f-small { 
+            font-size: 6pt; 
+        }
+        .f-bold { 
+            font-weight: bold; 
+            font-size: 7pt; 
+        }
+    </style>
+</head>
+<body>
+    {% for d in detalles %}
+    <div class="label">
+        <div style="display:flex; justify-content:space-between" class="f-small">
+            <span>{{ orden.folio_orden|default:orden.id }}</span>
+            <span>{{ orden.fecha_creacion|date:"d/m/y" }}</span>
+        </div>
+        <div class="f-bold">{{ orden.paciente.nombre_completo|truncatechars:20|upper }}</div>
+        <div class="f-small"><b>{{ d.display_muestra|default:"S/N" }}</b> | {{ d.display_abreviatura|default:d.display_nombre|truncatechars:12 }}</div>
+        <svg id="barcode-{{ forloop.counter }}" style="width:100%; height:10mm;"></svg>
+    </div>
+    <script>
+        JsBarcode("#barcode-{{ forloop.counter }}", "{{ orden.folio_orden|default:orden.id }}", {
+            format: "CODE128", 
+            width: 1, 
+            height: 30, 
+            displayValue: false, 
+            margin: 0
+        });
+    </script>
+    {% endfor %}
+</body>
+</html>

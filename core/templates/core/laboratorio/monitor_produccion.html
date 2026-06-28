@@ -1,0 +1,622 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Monitor de Producción - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ================================================================
+       MONITOR DE PRODUCCIÓN - KANBAN BOARD
+       Diseño premium inspirado en Trello/Jira con semaforización
+       ================================================================ */
+    
+    .monitor-container {
+        height: calc(100vh - 140px);
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+    }
+    
+    /* Header del monitor */
+    .monitor-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: white;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+        border-bottom: 3px solid #0f3460;
+    }
+    
+    .monitor-header h1 {
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: 0.5px;
+    }
+    
+    .monitor-header .badge-total {
+        background: rgba(255,255,255,0.15);
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        margin-left: 12px;
+    }
+    
+    .monitor-stats {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .stat-pill {
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        border: 2px solid transparent;
+    }
+    
+    .stat-pill:hover {
+        transform: scale(1.05);
+    }
+    
+    .stat-pill.active {
+        border-color: white;
+        box-shadow: 0 0 10px rgba(255,255,255,0.3);
+    }
+    
+    .stat-pill.all { background: rgba(255,255,255,0.2); color: white; }
+    .stat-pill.urgente { background: #dc3545; color: white; }
+    .stat-pill.rutina { background: #6c757d; color: white; }
+    
+    /* Kanban board */
+    .kanban-board {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        padding: 12px;
+        flex: 1;
+        overflow: hidden;
+    }
+    
+    .kanban-column {
+        display: flex;
+        flex-direction: column;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+    }
+    
+    .column-header {
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 700;
+        font-size: 0.9rem;
+        letter-spacing: 0.3px;
+        flex-shrink: 0;
+        border-bottom: 2px solid;
+    }
+    
+    .column-header .count-badge {
+        background: rgba(0,0,0,0.15);
+        color: inherit;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 800;
+    }
+    
+    .column-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+    }
+    
+    .column-body::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    .column-body::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,0.15);
+        border-radius: 4px;
+    }
+    
+    /* Cards (tarjetas de órdenes) */
+    .order-card {
+        background: white;
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        border-left: 4px solid;
+        transition: all 0.2s;
+        cursor: default;
+        position: relative;
+    }
+    
+    .order-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: translateY(-1px);
+    }
+    
+    .order-card.urgente {
+        animation: pulse-border 2s infinite;
+    }
+    
+    @keyframes pulse-border {
+        0%, 100% { box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        50% { box-shadow: 0 1px 8px rgba(220, 53, 69, 0.4); }
+    }
+    
+    .card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 6px;
+    }
+    
+    .card-folio {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #2c3e50;
+    }
+    
+    .card-time {
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+    
+    .card-time.danger { background: #fee2e2; color: #dc2626; }
+    .card-time.warning { background: #fef3c7; color: #d97706; }
+    .card-time.normal { background: #e8f5e9; color: #2e7d32; }
+    
+    .card-patient {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #34495e;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .card-studies {
+        font-size: 0.72rem;
+        color: #7f8c8d;
+        margin-bottom: 6px;
+    }
+    
+    .card-studies span {
+        display: inline-block;
+        background: #f0f0f0;
+        padding: 1px 6px;
+        border-radius: 4px;
+        margin: 1px 2px 1px 0;
+    }
+    
+    .card-progress {
+        height: 4px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+    
+    .card-progress-bar {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s;
+    }
+    
+    .badge-urgente {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: #dc3545;
+        color: white;
+        font-size: 0.6rem;
+        padding: 2px 6px;
+        border-radius: 8px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .btn-avanzar {
+        width: 100%;
+        padding: 5px 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+    }
+    
+    .btn-avanzar:hover {
+        filter: brightness(1.1);
+        transform: scale(1.02);
+    }
+    
+    .btn-avanzar:active {
+        transform: scale(0.98);
+    }
+    
+    .btn-avanzar:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    /* Indicador de auto-refresh */
+    .refresh-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.75rem;
+        color: rgba(255,255,255,0.7);
+    }
+    
+    .refresh-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #28a745;
+        animation: blink 2s infinite;
+    }
+    
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+    
+    /* Empty state */
+    .empty-column {
+        text-align: center;
+        padding: 40px 16px;
+        color: #adb5bd;
+    }
+    
+    .empty-column i {
+        font-size: 2rem;
+        margin-bottom: 8px;
+        display: block;
+    }
+    
+    /* Responsive */
+    @media (max-width: 992px) {
+        .kanban-board {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .kanban-board {
+            grid-template-columns: 1fr;
+        }
+        .monitor-header {
+            flex-direction: column;
+            gap: 8px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="monitor-container">
+    
+    <!-- ======================== HEADER ======================== -->
+    <div class="monitor-header">
+        <div class="d-flex align-items-center">
+            <h1><i class="fas fa-tv me-2"></i> Monitor de Producción</h1>
+            <span class="badge-total" id="totalOrdenes">{{ total_ordenes }} órdenes activas</span>
+        </div>
+        
+        <div class="d-flex align-items-center gap-3">
+            <!-- Filtros de urgencia -->
+            <div class="monitor-stats">
+                <a href="?urgencia=" class="stat-pill all {% if not filtro_urgencia %}active{% endif %}">
+                    <i class="fas fa-layer-group me-1"></i> Todas
+                </a>
+                <a href="?urgencia=URGENCIA" class="stat-pill urgente {% if filtro_urgencia == 'URGENCIA' %}active{% endif %}">
+                    <i class="fas fa-bolt me-1"></i> Urgentes ({{ urgentes_count }})
+                </a>
+                <a href="?urgencia=RUTINA" class="stat-pill rutina {% if filtro_urgencia == 'RUTINA' %}active{% endif %}">
+                    <i class="fas fa-clock me-1"></i> Rutina ({{ rutina_count }})
+                </a>
+            </div>
+            
+            <!-- Indicador auto-refresh -->
+            <div class="refresh-indicator">
+                <div class="refresh-dot"></div>
+                <span>Auto-refresh: <strong id="countdown">60</strong>s</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ======================== METRICAS DE DESEMPEÑO ======================== -->
+    {% if metricas_tiempo.ordenes_analizadas > 0 %}
+    <div class="d-flex justify-content-center gap-3 py-2" style="background: rgba(0,0,0,0.15); flex-shrink:0;">
+        {% if metricas_tiempo.recepcion_a_muestra %}
+        <div class="d-flex align-items-center gap-2 px-3 py-1 rounded-pill" style="background:rgba(255,255,255,0.1);">
+            <i class="fas fa-hourglass-start text-warning" style="font-size:.85rem;"></i>
+            <span style="color:rgba(255,255,255,0.7); font-size:.75rem;">Recepcion → Muestra:</span>
+            <span class="fw-bold text-white" style="font-size:.85rem;">{{ metricas_tiempo.recepcion_a_muestra.texto }}</span>
+        </div>
+        {% endif %}
+        {% if metricas_tiempo.muestra_a_validacion %}
+        <div class="d-flex align-items-center gap-2 px-3 py-1 rounded-pill" style="background:rgba(255,255,255,0.1);">
+            <i class="fas fa-flask text-info" style="font-size:.85rem;"></i>
+            <span style="color:rgba(255,255,255,0.7); font-size:.75rem;">Muestra → Validacion:</span>
+            <span class="fw-bold text-white" style="font-size:.85rem;">{{ metricas_tiempo.muestra_a_validacion.texto }}</span>
+        </div>
+        {% endif %}
+        {% if metricas_tiempo.total_proceso %}
+        <div class="d-flex align-items-center gap-2 px-3 py-1 rounded-pill" style="background:rgba(40,167,69,0.3); border:1px solid rgba(40,167,69,0.5);">
+            <i class="fas fa-tachometer-alt text-success" style="font-size:.85rem;"></i>
+            <span style="color:rgba(255,255,255,0.7); font-size:.75rem;">Proceso Total:</span>
+            <span class="fw-bold text-success" style="font-size:.95rem;">{{ metricas_tiempo.total_proceso.texto }}</span>
+            <small style="color:rgba(255,255,255,0.5); font-size:.65rem;">({{ metricas_tiempo.ordenes_analizadas }} ord.)</small>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ======================== KANBAN BOARD ======================== -->
+    <div class="kanban-board" id="kanbanBoard">
+        {% for col in columnas %}
+        <div class="kanban-column" data-column="{{ col.key }}">
+            <div class="column-header" style="color: {{ col.color }}; background: {{ col.bg }}; border-color: {{ col.color }};">
+                <div>
+                    <i class="{{ col.icon }} me-1"></i>
+                    {{ col.label }}
+                </div>
+                <span class="count-badge" id="count-{{ col.key }}">{{ col.count }}</span>
+            </div>
+            
+            <div class="column-body" id="body-{{ col.key }}">
+                {% if col.cards %}
+                    {% for card in col.cards %}
+                    <div class="order-card {% if card.es_urgente %}urgente{% endif %}" 
+                         style="border-left-color: {{ col.color }};"
+                         data-orden-id="{{ card.id }}">
+                        
+                        {% if card.es_urgente %}
+                        <span class="badge-urgente"><i class="fas fa-bolt"></i> URG</span>
+                        {% endif %}
+                        
+                        <div class="card-top">
+                            <span class="card-folio">{{ card.folio }}</span>
+                            <span class="card-time {% if card.minutos_transcurridos > 180 %}danger{% elif card.minutos_transcurridos > 60 %}warning{% else %}normal{% endif %}">
+                                <i class="far fa-clock"></i> {{ card.tiempo_str }}
+                            </span>
+                        </div>
+                        
+                        <div class="card-patient" title="{{ card.paciente }}">
+                            <i class="fas fa-user-circle me-1 text-muted"></i>{{ card.paciente }}
+                        </div>
+                        
+                        <div class="card-studies">
+                            {% for est in card.estudios_nombres %}
+                            <span>{{ est }}</span>
+                            {% endfor %}
+                            {% if card.total_estudios > 4 %}
+                            <span>+{{ card.total_estudios|add:"-4" }} más</span>
+                            {% endif %}
+                        </div>
+                        
+                        {% if card.total_estudios > 0 %}
+                        <div class="card-progress">
+                            <div class="card-progress-bar" 
+                                 style="width: {{ card.progreso_pct }}%; background: {{ col.color }};">
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if card.siguiente_estado %}
+                        <button class="btn-avanzar" 
+                                style="background: {{ col.color }}; color: white;"
+                                onclick="avanzarEstado({{ card.id }}, this)"
+                                title="{{ card.siguiente_label }}">
+                            <i class="fas fa-arrow-right"></i> {{ card.siguiente_label }}
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-column">
+                        <i class="{{ col.icon }}"></i>
+                        <small>Sin órdenes</small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+    
+    const CSRF_TOKEN = '{{ csrf_token }}';
+    const REFRESH_INTERVAL = 60; // segundos
+    let countdown = REFRESH_INTERVAL;
+    let refreshTimer = null;
+    
+    // ========================
+    // AVANZAR ESTADO (AJAX)
+    // ========================
+    window.avanzarEstado = function(ordenId, btn) {
+        btn.disabled = true;
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+        
+        fetch('/laboratorio/monitor/api/avanzar-estado/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': CSRF_TOKEN,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ orden_id: ordenId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Feedback visual
+                const card = btn.closest('.order-card');
+                card.style.opacity = '0.5';
+                card.style.transform = 'scale(0.95)';
+                
+                // Recargar datos después de breve delay
+                setTimeout(() => refreshBoard(), 300);
+                
+                // Si se genero PDF, mostrar opciones
+                if (data.pdf_url) {
+                    showToast(data.mensaje + ' <a href="' + data.pdf_url + '" target="_blank" class="text-white text-decoration-underline ms-2">Ver PDF</a>', 'success');
+                    // Abrir dialogo de WhatsApp si hay mensaje
+                    if (data.whatsapp_msg) {
+                        setTimeout(() => {
+                            if (confirm('PDF generado. ¿Desea enviar por WhatsApp?')) {
+                                const waUrl = 'https://wa.me/?text=' + encodeURIComponent(data.whatsapp_msg);
+                                window.open(waUrl, '_blank');
+                            }
+                        }, 500);
+                    }
+                } else {
+                    showToast(data.mensaje, 'success');
+                }
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+                showToast(data.mensaje || 'Error al avanzar estado', 'danger');
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+            showToast('Error de conexión', 'danger');
+        });
+    };
+    
+    // ========================
+    // AUTO-REFRESH
+    // ========================
+    function refreshBoard() {
+        const filtro = new URLSearchParams(window.location.search).get('urgencia') || '';
+        
+        fetch(`/laboratorio/monitor/api/datos/?urgencia=${filtro}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status !== 'success') return;
+            
+            // Actualizar cada columna
+            const columnMap = {
+                pendiente: { color: '#dc3545', bg: '#fff5f5' },
+                en_proceso: { color: '#ffc107', bg: '#fffbeb' },
+                por_validar: { color: '#0d6efd', bg: '#eff6ff' },
+                finalizado: { color: '#198754', bg: '#f0fdf4' },
+            };
+            
+            let totalOrdenes = 0;
+            
+            for (const [key, col] of Object.entries(data.columnas)) {
+                const countEl = document.getElementById(`count-${key}`);
+                const bodyEl = document.getElementById(`body-${key}`);
+                
+                if (countEl) countEl.textContent = col.count;
+                totalOrdenes += col.count;
+                
+                if (bodyEl) {
+                    const cfg = columnMap[key] || { color: '#333', bg: '#fff' };
+                    bodyEl.innerHTML = col.cards.length === 0 
+                        ? `<div class="empty-column"><i class="fas fa-inbox"></i><small>Sin órdenes</small></div>`
+                        : col.cards.map(c => renderCard(c, cfg)).join('');
+                }
+            }
+            
+            document.getElementById('totalOrdenes').textContent = `${totalOrdenes} órdenes activas`;
+            countdown = REFRESH_INTERVAL;
+        })
+        .catch(() => {});
+    }
+    
+    function renderCard(c, cfg) {
+        const timeClass = c.minutos_transcurridos > 180 ? 'danger' : c.minutos_transcurridos > 60 ? 'warning' : 'normal';
+        const estudios = (c.estudios_nombres || []).map(e => `<span>${e}</span>`).join('');
+        const extra = c.total_estudios > 4 ? `<span>+${c.total_estudios - 4} más</span>` : '';
+        const urgBadge = c.es_urgente ? '<span class="badge-urgente"><i class="fas fa-bolt"></i> URG</span>' : '';
+        const urgClass = c.es_urgente ? 'urgente' : '';
+        const btnHTML = c.siguiente_estado 
+            ? `<button class="btn-avanzar" style="background:${cfg.color};color:white;" onclick="avanzarEstado(${c.id},this)"><i class="fas fa-arrow-right"></i> ${c.siguiente_label}</button>`
+            : '';
+        const progressHTML = c.total_estudios > 0 
+            ? `<div class="card-progress"><div class="card-progress-bar" style="width:${c.progreso_pct}%;background:${cfg.color};"></div></div>`
+            : '';
+        
+        return `
+        <div class="order-card ${urgClass}" style="border-left-color:${cfg.color};" data-orden-id="${c.id}">
+            ${urgBadge}
+            <div class="card-top">
+                <span class="card-folio">${c.folio}</span>
+                <span class="card-time ${timeClass}"><i class="far fa-clock"></i> ${c.tiempo_str}</span>
+            </div>
+            <div class="card-patient" title="${c.paciente}">
+                <i class="fas fa-user-circle me-1 text-muted"></i>${c.paciente}
+            </div>
+            <div class="card-studies">${estudios}${extra}</div>
+            ${progressHTML}
+            ${btnHTML}
+        </div>`;
+    }
+    
+    // ========================
+    // COUNTDOWN TIMER
+    // ========================
+    refreshTimer = setInterval(() => {
+        countdown--;
+        const el = document.getElementById('countdown');
+        if (el) el.textContent = countdown;
+        
+        if (countdown <= 0) {
+            refreshBoard();
+        }
+    }, 1000);
+    
+    // ========================
+    // TOAST NOTIFICATIONS
+    // ========================
+    function showToast(msg, type) {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} position-fixed shadow-lg`;
+        toast.style.cssText = 'top:20px;right:20px;z-index:9999;min-width:280px;animation:fadeIn 0.3s;';
+        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>${msg}`;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+    
+})();
+</script>
+{% endblock %}

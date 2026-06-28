@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Generar Etiquetas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .header-etiquetas {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        color: white;
+    }
+    
+    .config-card {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s;
+    }
+    
+    .config-card:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+    }
+    
+    .producto-item {
+        border-bottom: 1px solid #e9ecef;
+        padding: 0.75rem 0;
+    }
+    
+    .producto-item:last-child {
+        border-bottom: none;
+    }
+    
+    .preview-etiqueta {
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        padding: 2rem;
+        background-color: #f8f9fa;
+        text-align: center;
+        min-height: 300px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .barcode-preview {
+        font-family: 'Courier New', monospace;
+        font-size: 1.5rem;
+        letter-spacing: 3px;
+        background: white;
+        padding: 1rem;
+        border: 1px solid #dee2e6;
+        margin: 1rem 0;
+    }
+    
+    .seleccionar-todos {
+        background-color: #e7f3ff;
+        padding: 0.75rem;
+        border-radius: 5px;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    
+    <!-- ========================================================== -->
+    <!-- HEADER -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'farmacia:dashboard_alertas' %}">Farmacia</a></li>
+                    <li class="breadcrumb-item active">Generar Etiquetas</li>
+                </ol>
+            </nav>
+            
+            <div class="card shadow-sm header-etiquetas">
+                <div class="card-body">
+                    <h2 class="mb-1">
+                        <i class="bi bi-upc-scan"></i>
+                        Generador de Etiquetas con Código de Barras
+                    </h2>
+                    <p class="mb-0">
+                        Crea etiquetas profesionales con código de barras Code128 para tus productos
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- FORMULARIO -->
+    <!-- ========================================================== -->
+    <form method="POST" action="{% url 'farmacia:generar_etiquetas' %}">
+        {% csrf_token %}
+        
+        <div class="row">
+            
+            <!-- ===== COLUMNA IZQUIERDA: CONFIGURACIÓN ===== -->
+            <div class="col-md-7">
+                
+                <!-- PASO 1: SELECCIONAR PRODUCTOS -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-1-circle-fill"></i>
+                            Seleccionar Productos
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        
+                        <div class="seleccionar-todos">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="selectAll">
+                                <label class="form-check-label fw-bold" for="selectAll">
+                                    Seleccionar/Deseleccionar Todos
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            {{ form.productos }}
+                        </div>
+                        
+                        <small class="form-text text-muted mt-2 d-block">
+                            <i class="bi bi-info-circle"></i>
+                            Selecciona los productos para los que deseas generar etiquetas
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- PASO 2: OPCIONES DE LA ETIQUETA -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-2-circle-fill"></i>
+                            Opciones de la Etiqueta
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        
+                        <div class="config-card">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch">
+                                        {{ form.incluir_precio }}
+                                        <label class="form-check-label" for="id_incluir_precio">
+                                            <i class="bi bi-currency-dollar"></i>
+                                            {{ form.incluir_precio.label }}
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch">
+                                        {{ form.incluir_caducidad }}
+                                        <label class="form-check-label" for="id_incluir_caducidad">
+                                            <i class="bi bi-calendar-x"></i>
+                                            {{ form.incluir_caducidad.label }}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="config-card">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="bi bi-rulers"></i>
+                                        {{ form.tamaño_etiqueta.label }}
+                                    </label>
+                                    {{ form.tamaño_etiqueta }}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="bi bi-123"></i>
+                                        {{ form.cantidad_por_producto.label }}
+                                    </label>
+                                    {{ form.cantidad_por_producto }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- ===== COLUMNA DERECHA: VISTA PREVIA ===== -->
+            <div class="col-md-5">
+                
+                <div class="card shadow-sm mb-4 sticky-top" style="top: 20px;">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-eye"></i>
+                            Vista Previa
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        
+                        <div class="preview-etiqueta">
+                            <div class="w-100">
+                                <div class="barcode-preview">
+                                    ||||| |||| || ||||| |||| ||
+                                    <div class="small">PROD-000001</div>
+                                </div>
+                                
+                                <h6 class="mt-3 mb-2">Nombre del Producto</h6>
+                                
+                                <div id="precioPreview" class="d-none">
+                                    <h4 class="text-success mb-2">$99.99</h4>
+                                </div>
+                                
+                                <div id="caducidadPreview" class="d-none">
+                                    <small class="text-muted">Cad: 12/2026</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3" role="alert">
+                            <small>
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Formatos soportados:</strong>
+                                <ul class="mb-0 mt-2 small">
+                                    <li><strong>Zebra 4x6":</strong> Etiquetas grandes (productos)</li>
+                                    <li><strong>Dymo 2x1":</strong> Etiquetas pequeñas (inventario)</li>
+                                    <li><strong>A4:</strong> Múltiples etiquetas por hoja</li>
+                                </ul>
+                            </small>
+                        </div>
+                        
+                        <div class="alert alert-warning" role="alert">
+                            <small>
+                                <i class="bi bi-printer"></i>
+                                <strong>Impresión:</strong><br>
+                                El PDF generado se puede imprimir en cualquier impresora de etiquetas 
+                                (Zebra, Dymo, Brother) o en impresora láser convencional.
+                            </small>
+                        </div>
+                        
+                    </div>
+                </div>
+                
+            </div>
+            
+        </div>
+        
+        <!-- ========================================================== -->
+        <!-- PASO 3: GENERAR ETIQUETAS -->
+        <!-- ========================================================== -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning">
+                        <h5 class="mb-0">
+                            <i class="bi bi-3-circle-fill"></i>
+                            Generar Etiquetas
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-2">¿Todo listo?</h6>
+                                <p class="text-muted mb-md-0">
+                                    Se generará un archivo PDF con los códigos de barras Code128. 
+                                    Puedes descargarlo e imprimirlo inmediatamente.
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-md-end">
+                                <button type="submit" class="btn btn-warning btn-lg">
+                                    <i class="bi bi-download"></i>
+                                    Generar PDF
+                                </button>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </form>
+    
+    <!-- ========================================================== -->
+    <!-- BOTÓN VOLVER -->
+    <!-- ========================================================== -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{% url 'farmacia:dashboard_alertas' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ============================================================
+    // SELECCIONAR/DESELECCIONAR TODOS
+    // ============================================================
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('input[name="productos"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+    });
+    
+    // ============================================================
+    // VISTA PREVIA DINÁMICA
+    // ============================================================
+    const precioCheckbox = document.getElementById('id_incluir_precio');
+    const caducidadCheckbox = document.getElementById('id_incluir_caducidad');
+    const precioPreview = document.getElementById('precioPreview');
+    const caducidadPreview = document.getElementById('caducidadPreview');
+    
+    precioCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            precioPreview.classList.remove('d-none');
+        } else {
+            precioPreview.classList.add('d-none');
+        }
+    });
+    
+    caducidadCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            caducidadPreview.classList.remove('d-none');
+        } else {
+            caducidadPreview.classList.add('d-none');
+        }
+    });
+    
+    // Inicializar vista previa
+    if (precioCheckbox.checked) {
+        precioPreview.classList.remove('d-none');
+    }
+    if (caducidadCheckbox.checked) {
+        caducidadPreview.classList.remove('d-none');
+    }
+    
+    // ============================================================
+    // VALIDACIÓN DE FORMULARIO
+    // ============================================================
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const productosSeleccionados = document.querySelectorAll('input[name="productos"]:checked');
+        
+        if (productosSeleccionados.length === 0) {
+            e.preventDefault();
+            alert('Por favor selecciona al menos un producto para generar etiquetas');
+            return false;
+        }
+        
+        // Mensaje de confirmación
+        const cantidad = document.getElementById('id_cantidad_por_producto').value;
+        const total = productosSeleccionados.length * cantidad;
+        
+        const confirmar = confirm(
+            `Se generarán ${total} etiquetas (${productosSeleccionados.length} productos × ${cantidad} etiquetas c/u).\n\n` +
+            `¿Continuar?`
+        );
+        
+        if (!confirmar) {
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>
+{% endblock %}

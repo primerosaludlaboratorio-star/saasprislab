@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+.buscar-container {
+    max-width: 700px;
+    margin: 2rem auto;
+}
+.buscar-hero {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.buscar-hero h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+.buscar-hero p {
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+.buscar-input-wrapper {
+    position: relative;
+}
+.buscar-input-wrapper .form-control {
+    font-size: 1.25rem;
+    padding: 1rem 1.5rem 1rem 3rem;
+    border: 3px solid #667eea;
+    border-radius: 12px;
+}
+.buscar-input-wrapper .form-control:focus {
+    border-color: #4c63d2;
+    box-shadow: 0 0 0 .25rem rgba(102,126,234,.25);
+}
+.buscar-input-wrapper .search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #667eea;
+    font-size: 1.3rem;
+}
+.resultado-paciente {
+    cursor: pointer;
+    transition: all .2s;
+    border-left: 4px solid transparent;
+}
+.resultado-paciente:hover {
+    background: #e7f3ff;
+    border-left-color: #667eea;
+}
+.recientes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: .75rem;
+}
+.paciente-card {
+    cursor: pointer;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    transition: all .2s;
+}
+.paciente-card:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+.paciente-card .nombre {
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: .25rem;
+}
+.paciente-card .detalle {
+    font-size: .85rem;
+    color: #6c757d;
+}
+.btn-nuevo-paciente {
+    border: 3px dashed #28a745;
+    background: #f0fff4;
+    color: #28a745;
+    font-weight: 700;
+    border-radius: 10px;
+    padding: 1rem;
+    width: 100%;
+    font-size: 1.1rem;
+    transition: all .2s;
+}
+.btn-nuevo-paciente:hover {
+    background: #28a745;
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="buscar-container">
+    <!-- Hero -->
+    <div class="buscar-hero">
+        <i class="fas fa-stethoscope fa-3x text-primary mb-3"></i>
+        <h2>Nueva Consulta Medica</h2>
+        <p>Busca al paciente o registra uno nuevo antes de iniciar la consulta</p>
+    </div>
+
+    <!-- Buscador Grande -->
+    <div class="buscar-input-wrapper mb-3">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="form-control" id="buscarPaciente"
+               placeholder="Escribe el nombre del paciente..." autocomplete="off" autofocus>
+    </div>
+
+    <!-- Resultados de busqueda -->
+    <div id="resultadosBusqueda" class="list-group mb-4" style="display:none;"></div>
+
+    <!-- Boton Nuevo Paciente -->
+    <div class="mb-4">
+        <button type="button" class="btn-nuevo-paciente" data-bs-toggle="modal" data-bs-target="#modalNuevoPaciente">
+            <i class="fas fa-user-plus me-2"></i>NUEVO PACIENTE (Primera vez)
+        </button>
+    </div>
+
+    <!-- Pacientes Recientes -->
+    {% if pacientes_recientes %}
+    <div class="mb-4">
+        <h5 class="text-muted mb-3">
+            <i class="fas fa-clock me-2"></i>Pacientes recientes
+        </h5>
+        <div class="recientes-grid">
+            {% for paciente in pacientes_recientes %}
+            <div class="paciente-card" data-uuid="{{ paciente.uuid }}" onclick="irAConsulta('{{ paciente.uuid }}')">
+                <div class="nombre">{{ paciente.nombre_completo|truncatewords:3 }}</div>
+                <div class="detalle">
+                    {% if paciente.edad %}{{ paciente.edad }} anios{% endif %}
+                    {% if paciente.sexo %} | {{ paciente.get_sexo_display }}{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Nuevo Paciente -->
+<div class="modal fade" id="modalNuevoPaciente" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Nuevo Paciente</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formNuevoPaciente">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre(s) <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="np_nombres" required placeholder="Ej: Maria Fernanda"
+                               style="text-transform: uppercase;">
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Apellido Paterno <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="np_apellido_paterno" required placeholder="Ej: Garcia"
+                                   style="text-transform: uppercase;">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Apellido Materno</label>
+                            <input type="text" class="form-control" id="np_apellido_materno" placeholder="Ej: Lopez"
+                                   style="text-transform: uppercase;">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Fecha de Nacimiento</label>
+                            <input type="date" class="form-control" id="np_fecha_nac"
+                                   max="{{ "now"|date:"Y-m-d" }}">
+                            <div class="invalid-feedback">La fecha no puede ser futura</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Sexo</label>
+                            <select class="form-select" id="np_sexo">
+                                <option value="">-- Seleccionar --</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Telefono <small class="text-muted">(10 digitos)</small></label>
+                        <input type="tel" class="form-control" id="np_telefono" placeholder="10 digitos"
+                               maxlength="10" pattern="[0-9]{10}"
+                               oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10); validarCamposConsultorio();">
+                        <div class="invalid-feedback">Debe tener exactamente 10 digitos</div>
+                        <div id="np_telefono_ok" style="display:none;color:#198754;font-size:.8rem;">
+                            <i class="bi bi-check-circle-fill"></i> Telefono valido
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Email</label>
+                        <input type="email" class="form-control" id="np_email" placeholder="correo@ejemplo.com">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success" id="btnGuardarPaciente" disabled>
+                        <i class="fas fa-save me-2"></i>Guardar e Iniciar Consulta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const buscarInput = document.getElementById('buscarPaciente');
+    const resultadosDiv = document.getElementById('resultadosBusqueda');
+    let timeout;
+
+    // ---- BUSQUEDA EN TIEMPO REAL ----
+    buscarInput.addEventListener('input', function() {
+        clearTimeout(timeout);
+        const q = this.value.trim();
+        if (q.length < 2) { resultadosDiv.style.display = 'none'; return; }
+        timeout = setTimeout(async () => {
+            try {
+                const resp = await fetch(`/consultorio/api/buscar-pacientes/?q=${encodeURIComponent(q)}`);
+                const data = await resp.json();
+                resultadosDiv.innerHTML = '';
+                if (data.success && data.pacientes.length > 0) {
+                    data.pacientes.forEach(p => {
+                        const item = document.createElement('a');
+                        item.href = '#';
+                        item.className = 'list-group-item list-group-item-action resultado-paciente';
+                        item.innerHTML = `
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${p.nombre_completo}</strong>
+                                    <br><small class="text-muted">${p.edad || '--'} anios | ${p.sexo_display || '--'} ${p.telefono ? '| '+p.telefono : ''}</small>
+                                </div>
+                                <i class="fas fa-chevron-right text-primary"></i>
+                            </div>`;
+                        item.addEventListener('click', e => { e.preventDefault(); irAConsulta(p.uuid); });
+                        resultadosDiv.appendChild(item);
+                    });
+                } else {
+                    resultadosDiv.innerHTML = `<div class="list-group-item text-muted text-center">
+                        No se encontro "<strong>${q}</strong>"
+                        <br><button type="button" class="btn btn-sm btn-success mt-2" data-bs-toggle="modal" data-bs-target="#modalNuevoPaciente">
+                            <i class="fas fa-user-plus me-1"></i>Registrar como nuevo
+                        </button>
+                    </div>`;
+                }
+                resultadosDiv.style.display = 'block';
+            } catch(err) { console.error(err); }
+        }, 300);
+    });
+
+    // ---- NAVEGAR A CONSULTA ----
+    window.irAConsulta = function(uuid) {
+        if (!uuid || uuid === 'None') {
+            alert('Este paciente no tiene UUID asignado. Contacte al administrador.');
+            return;
+        }
+        window.location.href = `/consultorio/medico/consulta/nueva/${uuid}/`;
+    };
+
+    // ---- MOSTRAR ERROR ELEGANTE (sin alert) ----
+    function mostrarError(msg) {
+        // Remover alerta previa
+        const prev = document.getElementById('errorAlerta');
+        if (prev) prev.remove();
+        const div = document.createElement('div');
+        div.id = 'errorAlerta';
+        div.className = 'alert alert-danger alert-dismissible fade show shadow';
+        div.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;max-width:450px;animation:slideIn .3s ease;';
+        div.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i><strong>Error:</strong> ${msg}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+        document.body.appendChild(div);
+        setTimeout(() => { if (div.parentNode) div.remove(); }, 8000);
+    }
+
+    // ========== BLINDAJE: Validacion de campos del formulario ==========
+    // Exponer al scope global para acceso desde oninput inline
+    window.validarCamposConsultorio = validarCamposConsultorio;
+    function validarCamposConsultorio() {
+        const tel = (document.getElementById('np_telefono').value || '').trim();
+        const nombres = (document.getElementById('np_nombres').value || '').trim();
+        const apellidoP = (document.getElementById('np_apellido_paterno').value || '').trim();
+        const btn = document.getElementById('btnGuardarPaciente');
+        const okDiv = document.getElementById('np_telefono_ok');
+        const telInput = document.getElementById('np_telefono');
+
+        if (tel.length > 0 && tel.length < 10) {
+            telInput.classList.add('is-invalid');
+            telInput.classList.remove('is-valid');
+            if (okDiv) okDiv.style.display = 'none';
+        } else if (tel.length === 10) {
+            telInput.classList.remove('is-invalid');
+            telInput.classList.add('is-valid');
+            if (okDiv) okDiv.style.display = 'block';
+        } else {
+            telInput.classList.remove('is-invalid', 'is-valid');
+            if (okDiv) okDiv.style.display = 'none';
+        }
+
+        const telefonoOk = tel.length === 0 || tel.length === 10;
+        btn.disabled = !(nombres && apellidoP && telefonoOk);
+    }
+
+    // Escuchar cambios en campos del modal
+    ['np_nombres', 'np_apellido_paterno', 'np_apellido_materno', 'np_telefono', 'np_fecha_nac', 'np_sexo'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', validarCamposConsultorio);
+        if (el) el.addEventListener('change', validarCamposConsultorio);
+    });
+
+    // Estado inicial: deshabilitado
+    document.getElementById('btnGuardarPaciente').disabled = true;
+
+    // ---- CREAR NUEVO PACIENTE Y IR A CONSULTA ----
+    document.getElementById('formNuevoPaciente').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // ========== VALIDACIONES ANTI-ERROR HUMANO ==========
+        const nombres = document.getElementById('np_nombres').value.trim().toUpperCase();
+        const apellidoPaterno = document.getElementById('np_apellido_paterno').value.trim().toUpperCase();
+        const apellidoMaterno = (document.getElementById('np_apellido_materno').value || '').trim().toUpperCase();
+        const fechaNac = document.getElementById('np_fecha_nac').value;
+        const telefono = document.getElementById('np_telefono').value.trim();
+        let errores = [];
+        
+        if (!nombres) errores.push('El <b>Nombre(s)</b> es obligatorio');
+        if (!apellidoPaterno) errores.push('El <b>Apellido Paterno</b> es obligatorio');
+        
+        if (fechaNac) {
+            const hoy = new Date();
+            const fn = new Date(fechaNac + 'T00:00:00');
+            if (fn > hoy) {
+                errores.push('La <b>Fecha de Nacimiento</b> no puede ser futura');
+                document.getElementById('np_fecha_nac').classList.add('is-invalid');
+            } else {
+                document.getElementById('np_fecha_nac').classList.remove('is-invalid');
+            }
+        }
+        
+        if (telefono && telefono.length !== 10) {
+            errores.push('El <b>Telefono</b> debe tener exactamente 10 digitos');
+            document.getElementById('np_telefono').classList.add('is-invalid');
+        } else {
+            document.getElementById('np_telefono').classList.remove('is-invalid');
+        }
+        
+        if (errores.length > 0) {
+            mostrarError(errores.join('<br>'));
+            return;
+        }
+        // ========== FIN VALIDACIONES ==========
+        
+        // Construir nombre completo para retrocompatibilidad
+        let nombreCompleto = nombres;
+        if (apellidoPaterno) nombreCompleto += ' ' + apellidoPaterno;
+        if (apellidoMaterno) nombreCompleto += ' ' + apellidoMaterno;
+        
+        const btn = document.getElementById('btnGuardarPaciente');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+
+        try {
+            const resp = await fetch('/consultorio/paciente/nuevo/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+                body: JSON.stringify({
+                    nombres: nombres,
+                    apellido_paterno: apellidoPaterno,
+                    apellido_materno: apellidoMaterno,
+                    nombre_completo: nombreCompleto,
+                    fecha_nacimiento: fechaNac || '',
+                    sexo: document.getElementById('np_sexo').value || '',
+                    telefono: telefono || '',
+                    email: document.getElementById('np_email').value.trim() || '',
+                })
+            });
+            const data = await resp.json();
+            if (data.ok && data.uuid) {
+                window.location.href = `/consultorio/medico/consulta/nueva/${data.uuid}/`;
+            } else {
+                mostrarError(data.error || data.mensaje || 'No se pudo crear el paciente');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-2"></i>Guardar e Iniciar Consulta';
+            }
+        } catch(err) {
+            mostrarError('Error de conexion. Verifica tu internet e intenta de nuevo.');
+            console.error('PRIS Error:', err);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save me-2"></i>Guardar e Iniciar Consulta';
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="fas fa-user-md text-primary"></i> Consultorio Médico</h2>
+            <p class="text-muted">Bienvenido, Dr(a). {{ user.first_name }} {{ user.last_name }}</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'consultorio:agendar_cita' %}" class="btn btn-primary btn-lg shadow-sm">
+                <i class="fas fa-calendar-plus"></i> Agendar Cita
+            </a>
+            <a href="{% url 'consultorio:tablero_recepcion' %}" class="btn btn-outline-primary btn-lg shadow-sm">
+                <i class="fas fa-clipboard-list"></i> Tablero Recepción
+            </a>
+            <a href="{% url 'consultorio:lista_triage' %}" class="btn btn-outline-info btn-lg shadow-sm">
+                <i class="fas fa-heartbeat"></i> Lista Triage
+            </a>
+            <a href="{% url 'consultorio:lista_trabajo_medico' %}" class="btn btn-outline-success btn-lg shadow-sm">
+                <i class="fas fa-stethoscope"></i> Lista Trabajo Médico
+            </a>
+            <button type="button" class="btn btn-success btn-lg shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoPaciente">
+                <i class="fas fa-user-plus"></i> NUEVO PACIENTE
+            </button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-10 position-relative">
+                    <input type="text" id="consultorio-search-input" class="form-control form-control-lg"
+                           placeholder="Buscar por Nombre, Teléfono o Expediente..." value="{{ query|default:'' }}"
+                           autocomplete="off">
+                    <div id="consultorio-search-results" class="list-group position-absolute w-100 shadow-lg" style="z-index:1060; max-height:320px; overflow-y:auto; display:none; border-radius:0 0 8px 8px;"></div>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" id="consultorio-search-btn" class="btn btn-primary btn-lg w-100"><i class="fas fa-search"></i> Buscar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h4 class="text-primary mb-0">{{ stats_mes.consultas|default:0 }}</h4>
+                    <small class="text-muted">Consultas del mes (finalizadas)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h4 class="text-success mb-0">${{ stats_mes.ingresos|floatformat:0|default:"0" }}</h4>
+                    <small class="text-muted">Ingresos del mes (consultas pagadas)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow border-0">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Citas de Hoy / Pacientes Recientes</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Expediente</th>
+                        <th>Paciente</th>
+                        <th>Edad/Sexo</th>
+                        <th>Teléfono</th>
+                        <th>Última Visita</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in citas_hoy %}
+                    <tr>
+                        <td><span class="badge bg-secondary">{{ c.paciente.id }}</span></td>
+                        <td class="fw-bold">{{ c.paciente.nombre_completo }}</td>
+                        <td>{{ c.paciente.edad|default:"--" }} años / {{ c.paciente.get_sexo_display }}</td>
+                        <td>{{ c.paciente.telefono|default:"--" }}</td>
+                        <td>{{ c.fecha_cita|date:"d/m/Y"|default:"Hoy" }}</td>
+                        <td>
+                            <a href="{% url 'consultorio:nueva_consulta_soap' c.id %}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-stethoscope"></i> Atender
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="fas fa-users fa-3x mb-3 text-secondary"></i>
+                            <p>No hay citas programadas para hoy. ¡Registra un paciente nuevo arriba!</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNuevoPaciente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form method="post" action="{% url 'consultorio:crear_paciente_express' %}">
+                {% csrf_token %}
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-user-plus"></i> Alta Rápida de Paciente</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2">
+                        <small><i class="fas fa-info-circle"></i> Llena los datos para generar el expediente base.</small>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Nombre(s) *</label>
+                            <input type="text" name="nombres" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Apellido Paterno *</label>
+                            <input type="text" name="apellido_paterno" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Apellido Materno</label>
+                            <input type="text" name="apellido_materno" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Fecha de Nacimiento *</label>
+                            <input type="date" name="fecha_nacimiento" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Sexo *</label>
+                            <select name="sexo" class="form-select" required>
+                                <option value="F">Femenino</option>
+                                <option value="M">Masculino</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Teléfono / WhatsApp</label>
+                            <input type="tel" name="telefono" class="form-control" placeholder="(000) 000-0000">
+                        </div>
+                         <div class="col-md-6">
+                            <label class="form-label">Email (Opcional)</label>
+                            <input type="email" name="email" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-bold px-4">
+                        <i class="fas fa-save"></i> GUARDAR Y ATENDER
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    const input = document.getElementById('consultorio-search-input');
+    const resultsDiv = document.getElementById('consultorio-search-results');
+    const btnSearch = document.getElementById('consultorio-search-btn');
+    const tbody = document.querySelector('.table tbody');
+    if (!input || !resultsDiv) return;
+
+    let debounceTimer = null;
+
+    function doSearch(q) {
+        if (q.length < 2) { resultsDiv.style.display = 'none'; return; }
+        resultsDiv.innerHTML = '<div class="list-group-item text-muted"><i class="fas fa-spinner fa-spin me-1"></i> Buscando...</div>';
+        resultsDiv.style.display = 'block';
+
+        fetch('/api/pacientes/buscar/?q=' + encodeURIComponent(q), {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.pacientes || data.pacientes.length === 0) {
+                resultsDiv.innerHTML = '<div class="list-group-item text-muted text-center py-3"><i class="fas fa-search me-1"></i> Sin resultados para "' + q + '"</div>';
+                return;
+            }
+            let html = '';
+            data.pacientes.forEach(p => {
+                html += '<a href="/pacientes/' + p.id + '/expediente/" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">' +
+                    '<div><strong>' + p.nombre + '</strong>' +
+                    (p.telefono ? '<br><small class="text-muted"><i class="fas fa-phone me-1"></i>' + p.telefono + '</small>' : '') +
+                    '</div>' +
+                    '<span class="badge bg-secondary">Exp. ' + p.id + '</span>' +
+                '</a>';
+            });
+            resultsDiv.innerHTML = html;
+        })
+        .catch(() => {
+            resultsDiv.innerHTML = '<div class="list-group-item text-danger">Error de conexión</div>';
+        });
+    }
+
+    input.addEventListener('input', function(){
+        clearTimeout(debounceTimer);
+        const q = this.value.trim();
+        if (q.length < 2) { resultsDiv.style.display = 'none'; return; }
+        debounceTimer = setTimeout(() => doSearch(q), 300);
+    });
+
+    input.addEventListener('keydown', function(e){
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            clearTimeout(debounceTimer);
+            doSearch(this.value.trim());
+        }
+        if (e.key === 'Escape') {
+            resultsDiv.style.display = 'none';
+        }
+    });
+
+    if (btnSearch) {
+        btnSearch.addEventListener('click', function(){
+            clearTimeout(debounceTimer);
+            doSearch(input.value.trim());
+        });
+    }
+
+    document.addEventListener('click', function(e){
+        if (!e.target.closest('.card.shadow-sm.mb-4')) {
+            resultsDiv.style.display = 'none';
+        }
+    });
+})();
+</script>
+{% endblock %}

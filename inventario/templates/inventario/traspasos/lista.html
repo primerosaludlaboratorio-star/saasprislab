@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h5 class="mb-0 fw-bold"><i class="bi bi-arrow-left-right me-2 text-primary"></i>{{ titulo }}</h5>
+      <small class="text-muted">Movimiento de stock inter-sedes con firma PIN</small>
+    </div>
+    <div class="d-flex gap-2">
+      {% if pendientes_recibir > 0 %}
+      <span class="badge bg-warning text-dark fs-6 me-2">
+        <i class="bi bi-clock me-1"></i>{{ pendientes_recibir }} pendiente(s) de recibir
+      </span>
+      {% endif %}
+      <a href="{% url 'inventario:crear_traspaso' %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>Nuevo Traspaso
+      </a>
+      <a href="{% url 'inventario:lista_notificaciones' %}" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-bell me-1"></i>Notificaciones
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <form class="row g-2 mb-3">
+    <div class="col-sm-3">
+      <select name="dir" class="form-select form-select-sm">
+        <option value="enviados" {% if direccion == 'enviados' %}selected{% endif %}>Traspasos enviados</option>
+        <option value="recibidos" {% if direccion == 'recibidos' %}selected{% endif %}>Traspasos recibidos</option>
+      </select>
+    </div>
+    <div class="col-sm-3">
+      <select name="estado" class="form-select form-select-sm">
+        <option value="">— Todos los estados —</option>
+        {% for val, lbl in estado_choices %}
+        <option value="{{ val }}" {% if estado_f == val %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-sm-2"><button class="btn btn-sm btn-secondary w-100">Filtrar</button></div>
+  </form>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>Folio</th><th>Silo</th><th>Estado</th>
+              <th>Origen → Destino</th><th>Ítems</th>
+              <th>Solicitó</th><th>Fecha</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in traspasos %}
+            <tr>
+              <td><a href="{% url 'inventario:detalle_traspaso' t.pk %}" class="fw-semibold">{{ t.folio }}</a></td>
+              <td>
+                {% if t.silo == 'LAB' %}<span class="badge bg-primary">Lab</span>
+                {% elif t.silo == 'CONSULTORIO' %}<span class="badge bg-info text-dark">Cons.</span>
+                {% else %}<span class="badge bg-secondary">Gral.</span>{% endif %}
+              </td>
+              <td>
+                {% if t.estado == 'EN_TRANSITO' %}<span class="badge bg-warning text-dark">En Tránsito</span>
+                {% elif t.estado == 'RECIBIDO' %}<span class="badge bg-success">Recibido ✓</span>
+                {% elif t.estado == 'RECHAZADO' %}<span class="badge bg-danger">Rechazado</span>
+                {% elif t.estado == 'CANCELADO' %}<span class="badge bg-dark">Cancelado</span>
+                {% else %}<span class="badge bg-light text-dark">{{ t.get_estado_display }}</span>{% endif %}
+              </td>
+              <td class="small">{{ t.empresa_origen.nombre }} → {{ t.empresa_destino.nombre }}</td>
+              <td class="text-center">{{ t.lineas.count }}</td>
+              <td class="text-muted small">{{ t.solicitado_por.username }}</td>
+              <td class="text-muted small">{{ t.fecha_solicitud|date:"d/m/Y H:i" }}</td>
+              <td>
+                <a href="{% url 'inventario:detalle_traspaso' t.pk %}" class="btn btn-sm btn-outline-primary py-0 px-2">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center text-muted py-4">Sin traspasos registrados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

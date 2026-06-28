@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Expediente Clínico - {{ paciente.nombre_completo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .timeline-container {
+        position: relative;
+        padding-left: 40px;
+    }
+    .timeline-line {
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: linear-gradient(to bottom, #007bff, #28a745);
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 2rem;
+        padding-left: 2rem;
+    }
+    .timeline-icon {
+        position: absolute;
+        left: -32px;
+        top: 5px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .timeline-icon.consulta {
+        background: #007bff;
+    }
+    .timeline-icon.laboratorio {
+        background: #28a745;
+    }
+    .timeline-card {
+        border-left: 4px solid;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    .timeline-card.consulta {
+        border-left-color: #007bff;
+    }
+    .timeline-card.laboratorio {
+        border-left-color: #28a745;
+    }
+    .timeline-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top: 70px;">
+    <!-- HEADER DEL EXPEDIENTE -->
+    <div class="card shadow border-0 mb-4">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-0 fw-bold">
+                        <i class="bi bi-file-medical"></i> Expediente Clínico
+                    </h4>
+                </div>
+                <div>
+                    <a href="{% url 'medico' %}" class="btn btn-light btn-sm">
+                        <i class="bi bi-arrow-left"></i> Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="fw-bold">{{ paciente.nombre_completo }}</h5>
+                    <p class="mb-1">
+                        <strong>Fecha de Nacimiento:</strong> 
+                        {{ paciente.fecha_nacimiento|date:"d/m/Y"|default:"No registrada" }}
+                        {% if paciente.fecha_nacimiento %}
+                            ({{ paciente.calcular_edad }} años)
+                        {% endif %}
+                    </p>
+                    <p class="mb-1">
+                        <strong>Sexo:</strong> {{ paciente.get_sexo_display|default:"No registrado" }}
+                    </p>
+                    <p class="mb-0">
+                        <strong>Teléfono:</strong> {{ paciente.telefono|default:"No registrado" }}
+                    </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="alert alert-info mb-0">
+                        <strong>Estadísticas:</strong><br>
+                        <i class="bi bi-heart-pulse"></i> {{ total_consultas }} Consultas Médicas<br>
+                        <i class="bi bi-flask"></i> {{ total_ordenes }} Órdenes de Laboratorio
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIMELINE DEL EXPEDIENTE -->
+    <div class="card shadow border-0">
+        <div class="card-header bg-light">
+            <h5 class="mb-0 fw-bold">
+                <i class="bi bi-clock-history"></i> Línea de Tiempo Clínica
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if timeline_items %}
+                <div class="timeline-container">
+                    <div class="timeline-line"></div>
+                    
+                    {% for item in timeline_items %}
+                    <div class="timeline-item">
+                        <div class="timeline-icon {{ item.tipo }}">
+                            {% if item.tipo == 'consulta' %}
+                                <i class="bi bi-heart-pulse"></i>
+                            {% else %}
+                                <i class="bi bi-flask"></i>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="timeline-card {{ item.tipo }} card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="fw-bold mb-1">
+                                            {% if item.tipo == 'consulta' %}
+                                                <i class="bi bi-heart-pulse text-primary"></i> Consulta Médica
+                                            {% else %}
+                                                <i class="bi bi-flask text-success"></i> Orden de Laboratorio
+                                            {% endif %}
+                                        </h6>
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar3"></i> 
+                                            {{ item.fecha|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </div>
+                                    <div>
+                                        {% if item.tipo == 'laboratorio' and item.tiene_pdf %}
+                                        <a href="{% url 'imprimir_resultados_pdf' item.id %}" 
+                                           target="_blank" 
+                                           class="btn btn-sm btn-success">
+                                            <i class="bi bi-file-pdf"></i> Ver PDF
+                                        </a>
+                                        {% endif %}
+                                        {% if item.tipo == 'consulta' %}
+                                        <a href="{% url 'consulta_medica' paciente.id %}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="bi bi-eye"></i> Ver Detalle
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                {% if item.tipo == 'consulta' %}
+                                    <p class="mb-1">
+                                        <strong>Médico:</strong> {{ item.medico }}
+                                    </p>
+                                    {% if item.diagnostico %}
+                                    <p class="mb-1">
+                                        <strong>Diagnóstico:</strong> {{ item.diagnostico|truncatewords:30 }}
+                                    </p>
+                                    {% endif %}
+                                    {% if item.tratamiento %}
+                                    <p class="mb-0">
+                                        <strong>Tratamiento:</strong> {{ item.tratamiento|truncatewords:20 }}
+                                    </p>
+                                    {% endif %}
+                                {% else %}
+                                    <p class="mb-1">
+                                        <strong>Folio:</strong> {{ item.folio }}
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Estudios:</strong> {{ item.estudios }}
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Estado:</strong> 
+                                        <span class="badge 
+                                            {% if item.estado == 'ENTREGADO' %}bg-success
+                                            {% elif item.estado == 'RESULTADOS_LISTOS' %}bg-primary
+                                            {% elif item.estado == 'EN_PROCESO' %}bg-info
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ item.orden.get_estado_display|default:item.estado }}
+                                        </span>
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                    <p class="mt-3 mb-0">No hay registros clínicos para este paciente.</p>
+                    <p class="small">El historial aparecerá aquí cuando se registren consultas o estudios de laboratorio.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

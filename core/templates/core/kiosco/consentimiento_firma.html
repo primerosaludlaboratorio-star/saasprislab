@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Consentimiento Informado | PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+.firma-container {
+  max-width: 720px; margin: 2rem auto; padding: 0 1rem;
+}
+.firma-card {
+  background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.12);
+  overflow: hidden;
+}
+.firma-header {
+  background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+  padding: 1.5rem; color: #fff; text-align: center;
+}
+.firma-header h2 { margin: 0; font-size: 1.25rem; font-weight: 700; }
+.firma-header p { margin: 6px 0 0; opacity: .8; font-size: 13px; }
+
+.firma-body { padding: 1.5rem; }
+
+.firma-info {
+  background: #f8f9fa; border-radius: 10px; padding: 1rem;
+  margin-bottom: 1.5rem; border: 1px solid #e9ecef;
+}
+.firma-info .label { font-size: 11px; text-transform: uppercase;
+  color: #6c757d; letter-spacing: 1px; }
+.firma-info .value { font-size: 15px; font-weight: 600; color: #212529; }
+
+.declaracion {
+  background: #fff8e1; border: 1px solid #ffe082; border-radius: 10px;
+  padding: 1rem; margin-bottom: 1.5rem; font-size: 13px; line-height: 1.6; color: #5d4037;
+}
+
+/* Canvas de firma */
+.canvas-wrapper {
+  border: 2px dashed #adb5bd; border-radius: 10px; background: #fafafa;
+  cursor: crosshair; position: relative; overflow: hidden; margin-bottom: 1rem;
+}
+.canvas-wrapper canvas { display: block; width: 100%; touch-action: none; }
+.canvas-placeholder {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  color: #adb5bd; font-size: 13px; pointer-events: none; text-align: center;
+  transition: opacity .3s;
+}
+.canvas-placeholder i { font-size: 2rem; display: block; margin-bottom: 6px; }
+
+.canvas-actions { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+.btn-limpiar {
+  background: #f8f9fa; border: 1px solid #dee2e6; color: #6c757d;
+  padding: 7px 16px; border-radius: 8px; font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-limpiar:hover { background: #e9ecef; }
+
+.checkbox-acepto {
+  display: flex; align-items: flex-start; gap: 10px; margin-bottom: 1.5rem;
+  padding: 12px; background: #f8f9fa; border-radius: 10px;
+  border: 1px solid #dee2e6;
+}
+.checkbox-acepto input[type=checkbox] { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; }
+.checkbox-acepto label { font-size: 13px; color: #495057; line-height: 1.5; cursor: pointer; }
+
+.btn-confirmar {
+  width: 100%; background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+  color: #fff; border: none; padding: 14px; border-radius: 10px;
+  font-size: 16px; font-weight: 700; cursor: pointer; letter-spacing: 1px;
+  transition: transform .1s, box-shadow .1s;
+}
+.btn-confirmar:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(26,35,126,.4); }
+.btn-confirmar:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Estado de grabación de audio */
+.audio-seal {
+  display: none; background: #e8f5e9; border: 1px solid #a5d6a7;
+  border-radius: 10px; padding: 12px; margin-bottom: 1rem; font-size: 12px;
+  align-items: center; gap: 10px;
+}
+.audio-seal.visible { display: flex; }
+.audio-seal i { color: #2e7d32; font-size: 1.2rem; }
+
+/* Éxito */
+.exito-panel {
+  display: none; text-align: center; padding: 2rem; background: #e8f5e9;
+  border-radius: 16px;
+}
+.exito-panel.visible { display: block; }
+.exito-panel .check-icon {
+  font-size: 4rem; color: #2e7d32; margin-bottom: 1rem; display: block;
+}
+.folio-display {
+  background: #fff; border: 1px solid #a5d6a7; border-radius: 8px;
+  padding: 10px 16px; font-family: monospace; font-size: 14px;
+  color: #1b5e20; margin: 1rem auto; max-width: 320px;
+}
+.hash-display {
+  font-family: monospace; font-size: 9px; color: #555; word-break: break-all;
+  background: #f5f5f5; padding: 8px; border-radius: 6px; margin-top: 8px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="firma-container">
+  <!-- Panel de éxito (oculto hasta confirmar) -->
+  <div class="exito-panel" id="exitoPanel">
+    <i class="fas fa-circle-check check-icon"></i>
+    <h3 style="color:#1b5e20;">Consentimiento Registrado</h3>
+    <p style="color:#388e3c;">Su consentimiento ha sido capturado y sellado digitalmente.</p>
+    <div class="folio-display">
+      Folio: <b id="folio-resultado">—</b>
+    </div>
+    <div class="hash-display" id="hash-resultado"></div>
+    <div style="margin-top:1.5rem;">
+      <a id="link-descargar-pdf" href="#" class="btn btn-success me-2" target="_blank">
+        <i class="fas fa-file-pdf me-1"></i>Descargar PDF
+      </a>
+      <button onclick="window.close()" class="btn btn-outline-secondary">
+        <i class="fas fa-times me-1"></i>Cerrar ventana
+      </button>
+    </div>
+  </div>
+
+  <!-- Formulario principal -->
+  <div class="firma-card" id="firmaCard">
+    <div class="firma-header">
+      <h2><i class="fas fa-file-signature me-2"></i>Consentimiento Informado Digital</h2>
+      <p>{{ empresa_nombre }} — Documentación 100% digital y con validez legal</p>
+    </div>
+
+    <div class="firma-body">
+      <!-- Info del paciente -->
+      <div class="firma-info">
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="label">Paciente</div>
+            <div class="value">{{ paciente_nombre }}</div>
+          </div>
+          <div class="col-6">
+            <div class="label">Estudios</div>
+            <div class="value">
+              {% if estudios %}
+                {{ estudios|join:", " }}
+              {% else %}
+                Procedimiento de laboratorio
+              {% endif %}
+            </div>
+          </div>
+          {% if orden %}
+          <div class="col-6">
+            <div class="label">Folio de Orden</div>
+            <div class="value">{{ orden.folio_orden }}</div>
+          </div>
+          <div class="col-6">
+            <div class="label">Fecha</div>
+            <div class="value" id="fechaActual"></div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Declaración -->
+      <div class="declaracion">
+        <strong><i class="fas fa-info-circle me-1"></i>Declaración de Consentimiento:</strong><br>
+        Yo, <strong>{{ paciente_nombre }}</strong>, declaro haber sido informado(a) de manera
+        clara y comprensible sobre el procedimiento/estudio que se me realizará en las
+        instalaciones de <strong>{{ empresa_nombre }}</strong>. He tenido la oportunidad de
+        hacer preguntas que han sido respondidas satisfactoriamente, y consiento de manera
+        libre y voluntaria la realización del procedimiento mencionado.
+      </div>
+
+      <!-- Sello de audio (si hay hash de audio) -->
+      <div class="audio-seal" id="audioSeal">
+        <i class="fas fa-lock"></i>
+        <div>
+          <strong>Audio de explicación sellado digitalmente</strong><br>
+          <span id="audioHashDisplay" style="font-family:monospace;font-size:10px;color:#555;"></span>
+        </div>
+      </div>
+
+      <!-- Botón para grabar audio de explicación (opcional) -->
+      <div style="margin-bottom:1rem;">
+        <button type="button" id="btnGrabarAudio" onclick="toggleAudio()"
+          class="btn btn-sm btn-outline-secondary">
+          <i class="fas fa-microphone me-1"></i>Grabar explicación del estudio (opcional)
+        </button>
+        <span id="audioStatus" style="font-size:11px;color:#6c757d;margin-left:8px;"></span>
+      </div>
+
+      <!-- Canvas de firma -->
+      <div style="margin-bottom:.5rem;">
+        <label style="font-weight:600;font-size:13px;color:#495057;">
+          <i class="fas fa-pen-fancy me-1"></i>Firma del Paciente <span style="color:#dc3545;">*</span>
+        </label>
+      </div>
+      <div class="canvas-wrapper" id="canvasWrapper">
+        <canvas id="firmaCanvas" height="180"></canvas>
+        <div class="canvas-placeholder" id="canvasPlaceholder">
+          <i class="fas fa-signature"></i>
+          Firme aquí con su dedo o stylus
+        </div>
+      </div>
+      <div class="canvas-actions">
+        <button type="button" class="btn-limpiar" onclick="limpiarFirma()">
+          <i class="fas fa-eraser"></i>Limpiar firma
+        </button>
+        <span id="firmaStatus" style="font-size:11px;color:#6c757d;align-self:center;"></span>
+      </div>
+
+      <!-- Checkbox de aceptación -->
+      <div class="checkbox-acepto">
+        <input type="checkbox" id="checkAcepto" onchange="verificarFormulario()">
+        <label for="checkAcepto">
+          He leído y entiendo el contenido de este consentimiento informado. Autorizo la
+          realización del procedimiento mencionado y confirmo que la información
+          proporcionada es correcta.
+        </label>
+      </div>
+
+      <!-- Botón de confirmación -->
+      <button class="btn-confirmar" id="btnConfirmar" disabled onclick="confirmarConsentimiento()">
+        <i class="fas fa-check-circle me-2"></i>CONFIRMAR Y FIRMAR DIGITALMENTE
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Variables globales ────────────────────────────────────────────────────────
+const canvas = document.getElementById('firmaCanvas');
+const ctx2d = canvas.getContext('2d');
+let firmando = false;
+let tieneFirma = false;
+let hashAudio = null;
+let mediaRecorder = null;
+let grabandoAudio = false;
+let audioChunks = [];
+
+// ── Setup canvas ──────────────────────────────────────────────────────────────
+function setupCanvas() {
+  const wrapper = document.getElementById('canvasWrapper');
+  canvas.width = wrapper.clientWidth;
+  ctx2d.strokeStyle = '#1a237e';
+  ctx2d.lineWidth = 2.5;
+  ctx2d.lineCap = 'round';
+  ctx2d.lineJoin = 'round';
+}
+window.addEventListener('resize', setupCanvas);
+setupCanvas();
+
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const src = e.touches ? e.touches[0] : e;
+  return {
+    x: (src.clientX - rect.left) * scaleX,
+    y: (src.clientY - rect.top) * scaleY,
+  };
+}
+
+canvas.addEventListener('mousedown', e => { firmando = true; ctx2d.beginPath(); const p = getPos(e); ctx2d.moveTo(p.x, p.y); });
+canvas.addEventListener('mousemove', e => { if (!firmando) return; const p = getPos(e); ctx2d.lineTo(p.x, p.y); ctx2d.stroke(); tieneFirma = true; ocultarPlaceholder(); });
+canvas.addEventListener('mouseup', () => { firmando = false; verificarFormulario(); });
+canvas.addEventListener('mouseleave', () => { firmando = false; });
+canvas.addEventListener('touchstart', e => { e.preventDefault(); firmando = true; ctx2d.beginPath(); const p = getPos(e); ctx2d.moveTo(p.x, p.y); }, {passive:false});
+canvas.addEventListener('touchmove', e => { e.preventDefault(); if (!firmando) return; const p = getPos(e); ctx2d.lineTo(p.x, p.y); ctx2d.stroke(); tieneFirma = true; ocultarPlaceholder(); }, {passive:false});
+canvas.addEventListener('touchend', () => { firmando = false; verificarFormulario(); });
+
+function ocultarPlaceholder() {
+  document.getElementById('canvasPlaceholder').style.opacity = '0';
+}
+
+function limpiarFirma() {
+  ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+  tieneFirma = false;
+  document.getElementById('canvasPlaceholder').style.opacity = '1';
+  document.getElementById('firmaStatus').textContent = '';
+  verificarFormulario();
+}
+
+function verificarFormulario() {
+  const acepto = document.getElementById('checkAcepto').checked;
+  const btn = document.getElementById('btnConfirmar');
+  if (tieneFirma) {
+    document.getElementById('firmaStatus').textContent = 'Firma capturada';
+    document.getElementById('firmaStatus').style.color = '#2e7d32';
+  }
+  btn.disabled = !(tieneFirma && acepto);
+}
+
+// ── Audio opcional ────────────────────────────────────────────────────────────
+async function toggleAudio() {
+  if (grabandoAudio) {
+    mediaRecorder?.stop();
+    grabandoAudio = false;
+    document.getElementById('btnGrabarAudio').innerHTML = '<i class="fas fa-microphone me-1"></i>Grabar explicación del estudio (opcional)';
+    document.getElementById('audioStatus').textContent = 'Procesando...';
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = async () => {
+      const blob = new Blob(audioChunks, {type: 'audio/webm'});
+      const buffer = await blob.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      hashAudio = hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+      document.getElementById('audioStatus').textContent = 'Audio sellado con SHA-256';
+      document.getElementById('audioStatus').style.color = '#2e7d32';
+      document.getElementById('audioSeal').classList.add('visible');
+      document.getElementById('audioHashDisplay').textContent = 'SHA-256: ' + hashAudio;
+      stream.getTracks().forEach(t => t.stop());
+    };
+    mediaRecorder.start();
+    grabandoAudio = true;
+    document.getElementById('btnGrabarAudio').innerHTML = '<i class="fas fa-stop me-1" style="color:red;"></i>Detener grabacion';
+    document.getElementById('audioStatus').textContent = 'Grabando...';
+    document.getElementById('audioStatus').style.color = '#c62828';
+  } catch(e) {
+    document.getElementById('audioStatus').textContent = 'Microfono no disponible';
+  }
+}
+
+// ── Confirmar y enviar ────────────────────────────────────────────────────────
+async function confirmarConsentimiento() {
+  const btn = document.getElementById('btnConfirmar');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Registrando...';
+
+  const firmaDataUrl = canvas.toDataURL('image/png');
+  const pacienteNombre = '{{ paciente_nombre|escapejs }}';
+  const estudios = '{% if estudios %}{{ estudios|join:", "|escapejs }}{% else %}Procedimiento de laboratorio{% endif %}';
+
+  try {
+    const resp = await fetch('/consentimiento/{{ orden_id }}/guardar/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '',
+      },
+      body: JSON.stringify({
+        firma_data_url: firmaDataUrl,
+        hash_audio: hashAudio,
+        paciente_nombre: pacienteNombre,
+        estudios: estudios,
+        acepta: true,
+      }),
+    });
+
+    const data = await resp.json();
+    if (data.ok) {
+      // Ocultar el formulario y mostrar el panel de éxito con confirmación clara
+      const firmaCard = document.getElementById('firmaCard');
+      const exitoPanel = document.getElementById('exitoPanel');
+      if (firmaCard) firmaCard.style.display = 'none';
+      if (exitoPanel) {
+        exitoPanel.classList.add('visible');
+        // Forzar scroll hacia el panel de éxito para que el usuario lo vea
+        exitoPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      // Llenar los datos del folio y hash
+      const folioEl = document.getElementById('folio-resultado');
+      const hashEl  = document.getElementById('hash-resultado');
+      if (folioEl) folioEl.textContent = data.folio || '—';
+      if (hashEl)  hashEl.textContent  = 'SHA-256: ' + (data.hash_firma || '—');
+      // Actualizar el link de descarga PDF
+      const linkPdf = document.getElementById('link-descargar-pdf');
+      if (linkPdf && data.folio) {
+        linkPdf.href = '/consentimiento/pdf/' + data.folio + '/';
+        linkPdf.style.display = 'inline-block';
+      }
+      // Mostrar notificación al staff que esté en la ventana padre (si aplica)
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({ tipo: 'CONSENTIMIENTO_FIRMADO', folio: data.folio }, '*');
+        }
+      } catch(e) {}
+    } else {
+      // Mostrar el error claramente sin silenciar
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>CONFIRMAR Y FIRMAR DIGITALMENTE';
+      const errorMsg = data.error || 'No se pudo registrar el consentimiento.';
+      // Mostrar error inline en lugar de alert
+      let errDiv = document.getElementById('error-firma-inline');
+      if (!errDiv) {
+        errDiv = document.createElement('div');
+        errDiv.id = 'error-firma-inline';
+        errDiv.style.cssText = 'background:#ffebee;color:#b71c1c;border:1px solid #ef9a9a;border-radius:8px;padding:12px 16px;margin-top:12px;font-size:13px;font-weight:600;text-align:center;';
+        btn.parentElement.appendChild(errDiv);
+      }
+      errDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>' + errorMsg;
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>CONFIRMAR Y FIRMAR DIGITALMENTE';
+    let errDiv = document.getElementById('error-firma-inline');
+    if (!errDiv) {
+      errDiv = document.createElement('div');
+      errDiv.id = 'error-firma-inline';
+      errDiv.style.cssText = 'background:#ffebee;color:#b71c1c;border:1px solid #ef9a9a;border-radius:8px;padding:12px 16px;margin-top:12px;font-size:13px;font-weight:600;text-align:center;';
+      btn.parentElement.appendChild(errDiv);
+    }
+    errDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Error de red: ' + e.message;
+  }
+}
+
+// Mostrar fecha actual
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('fechaActual');
+  if (el) el.textContent = new Date().toLocaleString('es-MX');
+});
+</script>
+{% endblock %}

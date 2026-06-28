@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Agenda del Médico{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2><i class="fas fa-calendar-alt"></i> Agenda de Citas</h2>
+            <p class="text-muted">
+                {% if config.agenda_activa %}
+                    <span class="badge bg-success">Agenda Activa</span>
+                {% else %}
+                    <span class="badge bg-secondary">Agenda Desactivada (Orden de llegada)</span>
+                {% endif %}
+                | {{ fecha_actual|date:"l d \d\e F, Y" }}
+            </p>
+        </div>
+        <div class="col-md-6 text-end">
+            <div class="btn-group">
+                <a href="?fecha={{ fecha_anterior|date:'Y-m-d' }}" class="btn btn-outline-primary">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                <a href="?fecha={% now 'Y-m-d' %}" class="btn btn-outline-primary">Hoy</a>
+                <a href="?fecha={{ fecha_siguiente|date:'Y-m-d' }}" class="btn btn-outline-primary">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+            <a href="{% url 'consultorio:configuracion_medico' %}" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-cog"></i> Configurar
+            </a>
+        </div>
+    </div>
+
+    <!-- Estadísticas del día -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-0">{{ stats.total }}</h3>
+                    <small>Total Citas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-warning text-dark">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-0">{{ stats.pendientes }}</h3>
+                    <small>Pendientes</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-info text-white">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-0">{{ stats.en_curso }}</h3>
+                    <small>En Curso</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-0">{{ stats.completadas }}</h3>
+                    <small>Completadas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if config.agenda_activa %}
+    <!-- Timeline de citas -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list"></i> Citas del Día</h5>
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaCita">
+                <i class="fas fa-plus"></i> Nueva Cita
+            </button>
+        </div>
+        <div class="card-body">
+            {% if citas %}
+            <div class="timeline">
+                {% for cita in citas %}
+                <div class="d-flex align-items-start mb-3 p-3 rounded
+                            {% if cita.estado == 'EN_CURSO' %}bg-info bg-opacity-10 border-start border-4 border-info
+                            {% elif cita.estado == 'COMPLETADA' %}bg-success bg-opacity-10 border-start border-4 border-success
+                            {% elif cita.estado == 'CANCELADA' %}bg-danger bg-opacity-10 border-start border-4 border-danger
+                            {% else %}bg-light border-start border-4 border-warning{% endif %}">
+                    <div class="me-3 text-center" style="min-width:80px;">
+                        <h4 class="mb-0">{{ cita.hora_cita|time:"H:i" }}</h4>
+                        <small class="text-muted">{{ cita.duracion_estimada }}min</small>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">
+                            {{ cita.paciente.nombre_completo }}
+                            {% if cita.estado == 'PENDIENTE' %}
+                                <span class="badge bg-warning text-dark">Pendiente</span>
+                            {% elif cita.estado == 'EN_SALA' %}
+                                <span class="badge bg-info">En Sala</span>
+                            {% elif cita.estado == 'EN_CURSO' %}
+                                <span class="badge bg-primary">En Curso</span>
+                            {% elif cita.estado == 'COMPLETADA' %}
+                                <span class="badge bg-success">Completada</span>
+                            {% elif cita.estado == 'CANCELADA' %}
+                                <span class="badge bg-danger">Cancelada</span>
+                            {% endif %}
+                        </h6>
+                        <p class="mb-1 text-muted">{{ cita.motivo|default:"Sin motivo" }}</p>
+                        {% if cita.paciente.telefono %}
+                            <small class="text-muted"><i class="fas fa-phone"></i> {{ cita.paciente.telefono }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="ms-auto">
+                        {% if cita.estado == 'PENDIENTE' or cita.estado == 'EN_SALA' %}
+                        <a href="{% url 'consultorio:nueva_consulta_soap' cita.id %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-stethoscope"></i> Atender
+                        </a>
+                        {% elif cita.estado == 'COMPLETADA' %}
+                        <a href="{% url 'consultorio:nueva_consulta_soap' cita.id %}" class="btn btn-sm btn-outline-success">
+                            <i class="fas fa-eye"></i> Ver
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-calendar-check fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No hay citas para este día</h5>
+                <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#modalNuevaCita">
+                    <i class="fas fa-plus"></i> Agendar Cita
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <!-- Modo sin agenda (orden de llegada) -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-users fa-4x text-info mb-3"></i>
+            <h4>Modo de Trabajo: Orden de Llegada</h4>
+            <p class="text-muted">
+                La agenda está desactivada. Los pacientes se atienden conforme llegan.<br>
+                Puedes activar la agenda desde
+                <a href="{% url 'consultorio:configuracion_medico' %}">Configuración</a>.
+            </p>
+            <a href="{% url 'consultorio:nueva_consulta' %}" class="btn btn-primary btn-lg mt-2">
+                <i class="fas fa-stethoscope"></i> Nueva Consulta
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Nueva Cita (simplificado) -->
+<div class="modal fade" id="modalNuevaCita" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-calendar-plus"></i> Nueva Cita</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'consultorio:agendar_cita' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Paciente</label>
+                        <input type="text" class="form-control" id="buscarPacienteCita" placeholder="Buscar paciente...">
+                        <input type="hidden" name="paciente_id" id="paciente_id_cita">
+                        <div id="resultadosPacienteCita"></div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" class="form-control" name="fecha_cita" value="{% now 'Y-m-d' %}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Hora</label>
+                            <input type="time" class="form-control" name="hora_cita" required>
+                        </div>
+                    </div>
+                    <div class="mb-3 mt-3">
+                        <label class="form-label">Motivo</label>
+                        <input type="text" class="form-control" name="motivo" placeholder="Motivo de la consulta">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Duración (minutos)</label>
+                        <input type="number" class="form-control" name="duracion_estimada" value="{{ config.duracion_consulta_default|default:30 }}" min="10" max="120">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-calendar-check"></i> Agendar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Búsqueda de pacientes para agendar
+let timeoutBusqueda;
+document.getElementById('buscarPacienteCita').addEventListener('input', function() {
+    clearTimeout(timeoutBusqueda);
+    const q = this.value.trim();
+    if (q.length < 2) { document.getElementById('resultadosPacienteCita').innerHTML = ''; return; }
+    
+    timeoutBusqueda = setTimeout(async () => {
+        const resp = await fetch(`{% url 'consultorio:api_buscar_pacientes' %}?q=${encodeURIComponent(q)}`);
+        const pacientes = await resp.json();
+        
+        let html = '<div class="list-group mt-1">';
+        pacientes.forEach(p => {
+            html += `<a href="#" class="list-group-item list-group-item-action" 
+                        onclick="seleccionarPacienteCita(${p.id}, '${p.nombre_completo}'); return false;">
+                        <strong>${p.nombre_completo}</strong> 
+                        <small class="text-muted">${p.edad ? p.edad + ' años' : ''} ${p.telefono || ''}</small>
+                     </a>`;
+        });
+        html += '</div>';
+        document.getElementById('resultadosPacienteCita').innerHTML = html;
+    }, 300);
+});
+
+function seleccionarPacienteCita(id, nombre) {
+    document.getElementById('paciente_id_cita').value = id;
+    document.getElementById('buscarPacienteCita').value = nombre;
+    document.getElementById('resultadosPacienteCita').innerHTML = '';
+}
+</script>
+{% endblock %}

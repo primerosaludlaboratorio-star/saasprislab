@@ -1,0 +1,421 @@
+{% load static %}
+<!-- Widget PRIS - desactivado: movido al sidebar izquierdo -->
+<div id="pris-widget" style="display:none;">
+    <!-- Botón flotante PRIS -->
+    <button id="pris-toggle-btn" class="btn btn-primary btn-lg rounded-circle shadow-lg" 
+            style="width: 70px; height: 70px; font-size: 1.8rem; position: relative; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+        <i class="bi bi-robot"></i>
+        <span id="pris-badge" class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle" 
+              style="display: none; font-size: 0.7rem;">!</span>
+    </button>
+    
+    <!-- Ventana PRIS -->
+    <div id="pris-window" style="display: none; position: absolute; bottom: 90px; right: 0; width: 400px; max-height: 600px; 
+         background: white; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); flex-direction: column;">
+        <div class="card border-0 h-100 shadow-lg">
+            <!-- Header PRIS -->
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px 15px 0 0;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 fw-bold"><i class="bi bi-robot"></i> PRIS - Sistema Nervioso Central</h6>
+                        <small>Asistente de Acción Total</small>
+                    </div>
+                    <button id="pris-close-btn" class="btn btn-sm btn-light text-dark">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Tabs de Funciones -->
+            <div class="card-body p-0">
+                <ul class="nav nav-tabs nav-tabs-custom" id="pris-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="pris-audio-tab" data-bs-toggle="tab" data-bs-target="#pris-audio" type="button">
+                            <i class="bi bi-mic"></i> Audio
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pris-vision-tab" data-bs-toggle="tab" data-bs-target="#pris-vision" type="button">
+                            <i class="bi bi-camera"></i> Visión
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pris-consulta-tab" data-bs-toggle="tab" data-bs-target="#pris-consulta" type="button">
+                            <i class="bi bi-question-circle"></i> Consulta
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content p-3" id="pris-tab-content" style="max-height: 450px; overflow-y: auto;">
+                    <!-- Tab Audio: Dictado -->
+                    <div class="tab-pane fade show active" id="pris-audio" role="tabpanel">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Modo de Dictado:</label>
+                            <select id="pris-mod-dictado" class="form-select form-select-sm">
+                                <option value="inventario">Inventario / Farmacia</option>
+                                <option value="resultado">Resultado Clínico</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button id="pris-btn-dictado" class="btn btn-primary w-100">
+                                <i class="bi bi-mic-fill"></i> <span id="pris-dictado-texto">Iniciar Dictado</span>
+                            </button>
+                            <small class="text-muted d-block mt-2">
+                                <i class="bi bi-info-circle"></i> Ejemplo: "5 cajas de Paracetamol y 3 piezas sueltas"
+                            </small>
+                        </div>
+                        
+                        <div id="pris-transcripcion-container" style="display: none;">
+                            <div class="alert alert-info">
+                                <strong>Transcripción:</strong>
+                                <p id="pris-transcripcion-texto" class="mb-0"></p>
+                            </div>
+                            <button id="pris-btn-procesar" class="btn btn-success btn-sm w-100">
+                                <i class="bi bi-check-circle"></i> Procesar
+                            </button>
+                        </div>
+                        
+                        <div id="pris-resultado-dictado" class="mt-3"></div>
+                    </div>
+                    
+                    <!-- Tab Visión: OCR -->
+                    <div class="tab-pane fade" id="pris-vision" role="tabpanel">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Tipo de Documento:</label>
+                            <select id="pris-tipo-documento" class="form-select form-select-sm">
+                                <option value="FACTURA_COMPRA">Factura de Compra</option>
+                                <option value="RECETA_MEDICA">Receta Médica</option>
+                                <option value="OTRO">Otro</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Capturar Imagen:</label>
+                            <input type="file" id="pris-input-imagen" accept="image/*" capture="environment" class="form-control form-control-sm">
+                            <small class="text-muted d-block mt-2">
+                                <i class="bi bi-info-circle"></i> Usa la cámara o selecciona una imagen
+                            </small>
+                        </div>
+                        
+                        <div id="pris-preview-imagen" class="mb-3" style="display: none;">
+                            <img id="pris-imagen-preview" src="" alt="Preview" class="img-fluid rounded" style="max-height: 200px;">
+                        </div>
+                        
+                        <button id="pris-btn-procesar-ocr" class="btn btn-primary w-100" disabled>
+                            <i class="bi bi-eye"></i> Procesar OCR
+                        </button>
+                        
+                        <div id="pris-resultado-ocr" class="mt-3"></div>
+                    </div>
+                    
+                    <!-- Tab Consulta: Voz -->
+                    <div class="tab-pane fade" id="pris-consulta" role="tabpanel">
+                        <div class="mb-3">
+                            <p class="small text-muted">
+                                <i class="bi bi-info-circle"></i> Pregunta a PRIS sobre pendientes logísticos
+                            </p>
+                            <p class="small text-muted mb-3">
+                                Ejemplos:<br>
+                                • "¿Cuántos cultivos hay por entregar hoy?"<br>
+                                • "¿Cuántos folios sin validar hay?"<br>
+                                • "¿Cuántas laminillas pendientes?"
+                            </p>
+                        </div>
+                        
+                        <button id="pris-btn-consulta-voz" class="btn btn-info w-100">
+                            <i class="bi bi-mic-fill"></i> Consultar por Voz
+                        </button>
+                        
+                        <div id="pris-consulta-transcripcion" class="mt-3" style="display: none;">
+                            <div class="alert alert-secondary">
+                                <strong>Tu consulta:</strong>
+                                <p id="pris-consulta-texto" class="mb-0"></p>
+                            </div>
+                        </div>
+                        
+                        <div id="pris-respuesta-consulta" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.nav-tabs-custom .nav-link {
+    border: none;
+    color: #6c757d;
+    font-size: 0.85rem;
+}
+.nav-tabs-custom .nav-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px 8px 0 0;
+}
+#pris-window {
+    animation: slideUp 0.3s ease;
+}
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+
+<script>
+// Web Speech API para Dictado
+let recognition = null;
+let isListening = false;
+
+// Inicializar Web Speech API
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.lang = 'es-MX';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    
+    recognition.onresult = function(event) {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+        }
+        
+        const modDictado = document.getElementById('pris-mod-dictado').value;
+        const textoElement = modDictado === 'inventario' 
+            ? document.getElementById('pris-transcripcion-texto')
+            : document.getElementById('pris-consulta-texto');
+        
+        if (textoElement) {
+            textoElement.textContent = transcript;
+            if (modDictado === 'inventario') {
+                document.getElementById('pris-transcripcion-container').style.display = 'block';
+            } else {
+                document.getElementById('pris-consulta-transcripcion').style.display = 'block';
+            }
+        }
+    };
+    
+    recognition.onend = function() {
+        isListening = false;
+        const btn = document.getElementById('pris-btn-dictado');
+        if (btn) {
+            btn.innerHTML = '<i class="bi bi-mic-fill"></i> Iniciar Dictado';
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-primary');
+        }
+    };
+    
+    recognition.onerror = function(event) {
+        console.error('Error en reconocimiento de voz:', event.error);
+        isListening = false;
+    };
+}
+
+// Botón de dictado
+document.getElementById('pris-btn-dictado')?.addEventListener('click', function() {
+    if (!recognition) {
+        alert('Tu navegador no soporta reconocimiento de voz.');
+        return;
+    }
+    
+    const modDictado = document.getElementById('pris-mod-dictado').value;
+    
+    if (!isListening) {
+        recognition.start();
+        isListening = true;
+        this.innerHTML = '<i class="bi bi-mic-fill"></i> <span class="spinner-border spinner-border-sm"></span> Escuchando...';
+        this.classList.remove('btn-primary');
+        this.classList.add('btn-danger');
+    } else {
+        recognition.stop();
+        isListening = false;
+    }
+});
+
+// Procesar dictado de inventario
+document.getElementById('pris-btn-procesar')?.addEventListener('click', function() {
+    const transcripcion = document.getElementById('pris-transcripcion-texto').textContent;
+    const modDictado = document.getElementById('pris-mod-dictado').value;
+    
+    if (!transcripcion) {
+        alert('No hay transcripción para procesar');
+        return;
+    }
+    
+    const url = modDictado === 'inventario' 
+        ? '/pris/api/dictado-inventario/'
+        : '/pris/api/dictado-resultado/';
+    
+    const formData = new FormData();
+    formData.append('transcripcion', transcripcion);
+    if (modDictado === 'resultado') {
+        // Necesitaríamos orden_id y detalle_id
+        formData.append('orden_id', '');
+        formData.append('detalle_id', '');
+    }
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            document.getElementById('pris-resultado-dictado').innerHTML = `
+                <div class="alert alert-success">
+                    <strong>✓ Procesado:</strong> ${data.mensaje}<br>
+                    <small>Pendiente de validación</small>
+                </div>
+            `;
+        } else {
+            alert('Error: ' + data.mensaje);
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('Error al procesar dictado');
+    });
+});
+
+// OCR de Documentos
+document.getElementById('pris-input-imagen')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('pris-imagen-preview').src = e.target.result;
+            document.getElementById('pris-preview-imagen').style.display = 'block';
+            document.getElementById('pris-btn-procesar-ocr').disabled = false;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+document.getElementById('pris-btn-procesar-ocr')?.addEventListener('click', function() {
+    const fileInput = document.getElementById('pris-input-imagen');
+    const tipoDocumento = document.getElementById('pris-tipo-documento').value;
+    
+    if (!fileInput.files[0]) {
+        alert('Selecciona una imagen primero');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('imagen', fileInput.files[0]);
+    formData.append('tipo_documento', tipoDocumento);
+    
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Procesando...';
+    
+    fetch('/pris/api/ocr-documento/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            document.getElementById('pris-resultado-ocr').innerHTML = `
+                <div class="alert alert-success">
+                    <strong>✓ Documento procesado:</strong> ${data.mensaje}<br>
+                    <small>Pendiente de validación</small>
+                </div>
+            `;
+        } else {
+            alert('Error: ' + data.mensaje);
+        }
+        this.disabled = false;
+        this.innerHTML = '<i class="bi bi-eye"></i> Procesar OCR';
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('Error al procesar OCR');
+        this.disabled = false;
+        this.innerHTML = '<i class="bi bi-eye"></i> Procesar OCR';
+    });
+});
+
+// Consulta de Voz
+document.getElementById('pris-btn-consulta-voz')?.addEventListener('click', function() {
+    if (!recognition) {
+        alert('Tu navegador no soporta reconocimiento de voz.');
+        return;
+    }
+    
+    if (!isListening) {
+        recognition.start();
+        isListening = true;
+        this.innerHTML = '<i class="bi bi-mic-fill"></i> <span class="spinner-border spinner-border-sm"></span> Escuchando...';
+        this.classList.remove('btn-info');
+        this.classList.add('btn-danger');
+    } else {
+        recognition.stop();
+        isListening = false;
+    }
+});
+
+// Procesar consulta de voz cuando termine
+if (recognition) {
+    recognition.onend = function() {
+        if (isListening) {
+            const consultaTexto = document.getElementById('pris-consulta-texto')?.textContent;
+            if (consultaTexto) {
+                const formData = new FormData();
+                formData.append('consulta', consultaTexto);
+                
+                fetch('/pris/api/consulta-voz/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('pris-respuesta-consulta').innerHTML = `
+                            <div class="alert alert-info">
+                                <strong><i class="bi bi-robot"></i> PRIS:</strong><br>
+                                ${data.respuesta}
+                            </div>
+                        `;
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                });
+            }
+        }
+        
+        isListening = false;
+        const btn = document.getElementById('pris-btn-consulta-voz');
+        if (btn) {
+            btn.innerHTML = '<i class="bi bi-mic-fill"></i> Consultar por Voz';
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-info');
+        }
+    };
+}
+
+// Abrir/cerrar widget
+document.getElementById('pris-toggle-btn')?.addEventListener('click', function() {
+    const window = document.getElementById('pris-window');
+    window.style.display = window.style.display === 'none' ? 'flex' : 'none';
+});
+
+document.getElementById('pris-close-btn')?.addEventListener('click', function() {
+    document.getElementById('pris-window').style.display = 'none';
+});
+</script>

@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load l10n %}
+{% block title %}Analitos — LIMS{% endblock %}
+
+{% block extra_css %}
+<style>
+body { background: #f4f6f9; }
+.badge-venta  { background: #27ae60; }
+.badge-noventa { background: #95a5a6; }
+.table-lims th { background: #2c3e50; color: #fff; position: sticky; top: 0; z-index: 5; }
+.lims-header { background: linear-gradient(135deg, #1a252f 0%, #2c3e50 100%); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top:70px;">
+
+  <!-- Header -->
+  <div class="lims-header rounded-3 p-4 mb-4 text-white d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="m-0 fw-bold"><i class="fas fa-vial me-2"></i>Ventana A — Catálogo de Analitos</h3>
+      <small class="opacity-75">Nivel 1 · Ingeniería del analito · {{ total }} registros</small>
+    </div>
+    <div class="d-flex gap-2">
+      <span class="badge bg-success py-2 px-3">Venta directa: {{ analitos|length }}</span>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <form method="get" class="card shadow-sm mb-4">
+    <div class="card-body p-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="small fw-bold text-muted">Buscar</label>
+          <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Código, abreviatura, nombre…" autocomplete="off">
+        </div>
+        <div class="col-md-3">
+          <label class="small fw-bold text-muted">Departamento</label>
+          <select name="dep" class="form-select">
+            <option value="">Todos</option>
+            {% for dep in departamentos %}
+            <option value="{{ dep }}" {% if dep == dep_sel %}selected{% endif %}>{{ dep }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="small fw-bold text-muted">Visibilidad PDV</label>
+          <select name="venta" class="form-select">
+            <option value="">Todos</option>
+            <option value="1" {% if venta_sel == '1' %}selected{% endif %}>Solo venta directa</option>
+            <option value="0" {% if venta_sel == '0' %}selected{% endif %}>Solo perfiles internos</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> Filtrar</button>
+          <a href="{% url 'lims_analitos' %}" class="btn btn-outline-secondary"><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- Tabla -->
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover table-lims mb-0">
+        <thead>
+          <tr>
+            <th width="5%">Código</th>
+            <th width="8%">Abrev.</th>
+            <th width="30%">Nombre / Descripción</th>
+            <th width="15%">Departamento</th>
+            <th width="10%">Tipo resultado</th>
+            <th width="8%">Unidades</th>
+            <th width="6%">Dec.</th>
+            <th width="9%" class="text-end">Precio</th>
+            <th width="10%">PDV</th>
+            <th width="8%">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in analitos %}
+          <tr>
+            <td><code class="small">{{ a.codigo }}</code></td>
+            <td class="fw-bold">{{ a.abreviatura }}</td>
+            <td>{{ a.nombre }}</td>
+            <td><span class="badge bg-secondary">{{ a.departamento }}</span></td>
+            <td><small>{{ a.tipo_resultado }}</small></td>
+            <td><small>{{ a.unidades|default:"—" }}</small></td>
+            <td class="text-center">{{ a.decimales }}</td>
+            <td class="text-end small">
+              {% if a.precio %}
+                {% localize off %}<span class="fw-semibold text-success">${{ a.precio.precio_venta }}</span>{% endlocalize %}
+              {% elif a.es_vendible_individualmente %}
+                <span class="text-muted" title="Sin fila en Nivel 4; costo lista CSV">{% localize off %}${{ a.costo_lista }}{% endlocalize %} <small>(lista)</small></span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if a.es_vendible_individualmente %}
+                <span class="badge badge-venta">Visible en PDV</span>
+              {% else %}
+                <span class="badge badge-noventa">Solo perfiles</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'lims_analito_detalle' a.pk %}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
+                <i class="fas fa-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="text-center py-5 text-muted">
+              <i class="fas fa-vial fa-3x opacity-25 d-block mb-2"></i>
+              No se encontraron analitos con los filtros aplicados.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

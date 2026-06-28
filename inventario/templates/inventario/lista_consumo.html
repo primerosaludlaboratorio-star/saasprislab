@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="mb-0 fw-bold text-primary"><i class="bi bi-diagram-3 me-2"></i>{{ titulo }}</h2>
+      <small class="text-muted">Configura qué reactivos consume cada analito LIMS — Motor FEFO Automático</small>
+    </div>
+    <a href="{% url 'inventario:crear_consumo' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>Nueva Fórmula
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="alert alert-info small">
+    <i class="bi bi-info-circle me-2"></i>
+    Cada fórmula define cuánto reactivo se descuenta <strong>automáticamente</strong> del stock cuando
+    un resultado es validado en el LIMS. Soporta múltiples reactivos por analito.
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Estudio</th>
+              <th>Reactivo</th>
+              <th class="text-end">Cantidad / Prueba</th>
+              <th>Unidad</th>
+              <th class="text-center">Overhead QC</th>
+              <th class="text-center">Activo</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% regroup consumos by analito as estudios_list %}
+            {% for grupo in estudios_list %}
+            <tr class="table-primary table-sm">
+              <td colspan="7" class="fw-bold py-1">
+                <i class="bi bi-flask me-2"></i>{{ grupo.grouper.nombre }}
+              </td>
+            </tr>
+            {% for c in grupo.list %}
+            <tr>
+              <td></td>
+              <td class="fw-semibold">
+                <span class="badge bg-secondary me-1">{{ c.reactivo.get_tipo_display }}</span>
+                {{ c.reactivo.nombre }}
+              </td>
+              <td class="text-end">{{ c.cantidad_por_prueba|floatformat:4 }}</td>
+              <td class="small text-muted">{{ c.unidad }}</td>
+              <td class="text-center">
+                {% if c.incluye_overhead_qc %}
+                  <i class="bi bi-check-circle-fill text-success"></i>
+                {% else %}
+                  <i class="bi bi-x-circle text-muted"></i>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if c.activo %}
+                  <i class="bi bi-toggle-on text-success fs-5"></i>
+                {% else %}
+                  <i class="bi bi-toggle-off text-muted fs-5"></i>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="btn-group btn-group-sm">
+                  <a href="{% url 'inventario:editar_consumo' c.pk %}" class="btn btn-outline-primary">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <form method="post" action="{% url 'inventario:eliminar_consumo' c.pk %}"
+                        onsubmit="return confirm('¿Eliminar esta fórmula?');" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-4">
+                <i class="bi bi-diagram-3 display-6 d-block mb-2 opacity-25"></i>
+                No hay fórmulas configuradas. El motor FEFO no realizará descuentos automáticos.
+                <a href="{% url 'inventario:crear_consumo' %}">Crear primera fórmula</a>.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

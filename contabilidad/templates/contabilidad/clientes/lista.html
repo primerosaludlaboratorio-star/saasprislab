@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Clientes - Contabilidad - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-users text-primary me-2"></i>
+            Clientes de Facturación
+        </h1>
+        <a href="{% url 'contabilidad:crear_cliente' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Nuevo Cliente
+        </a>
+    </div>
+
+    <!-- Búsqueda -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-10">
+                    <input type="text" name="q" class="form-control" placeholder="Buscar por RFC, razón social o email..." value="{{ q }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Clientes -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                Total de Clientes: {{ clientes.count }}
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>RFC</th>
+                            <th>Razón Social</th>
+                            <th>Email</th>
+                            <th>Régimen Fiscal</th>
+                            <th>Uso CFDI</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cliente in clientes %}
+                        <tr>
+                            <td><strong>{{ cliente.rfc }}</strong></td>
+                            <td>{{ cliente.razon_social }}</td>
+                            <td>{{ cliente.email }}</td>
+                            <td>{{ cliente.regimen_fiscal }}</td>
+                            <td>{{ cliente.uso_cfdi_default }}</td>
+                            <td>
+                                <a href="#" class="btn btn-sm btn-info" title="Ver Detalles">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="#" class="btn btn-sm btn-primary" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="fas fa-users fa-3x mb-3 d-block"></i>
+                                No se encontraron clientes
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

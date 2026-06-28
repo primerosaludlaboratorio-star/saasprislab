@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Tickets CMMS — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="fw-bold text-primary mb-0"><i class="bi bi-ticket-perforated me-2"></i>{{ titulo }}</h2>
+    <a href="{% url 'mantenimiento:crear_ticket' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>Nuevo Ticket
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <form method="get" class="d-flex gap-2 mb-3">
+    <select name="estado" class="form-select form-select-sm w-auto">
+      <option value="">— Todos los estados —</option>
+      {% for val, lbl in estado_choices %}
+        <option value="{{ val }}" {% if estado_f == val %}selected{% endif %}>{{ lbl }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn btn-outline-secondary btn-sm">Filtrar</button>
+    {% if estado_f %}<a href="{% url 'mantenimiento:lista_tickets' %}" class="btn btn-outline-danger btn-sm"><i class="bi bi-x"></i></a>{% endif %}
+  </form>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr><th>#</th><th>Equipo</th><th>Síntoma</th><th>Origen</th>
+                <th>Escalamiento</th><th>Estado</th><th>Apertura</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for t in tickets %}
+            <tr class="{% if t.estado in 'ABIERTO,EN_PROCESO' %}table-warning{% elif t.estado == 'ESCALADO' %}table-danger{% endif %}">
+              <td><strong>#{{ t.pk }}</strong></td>
+              <td><small>{{ t.expediente.equipo.nombre }}</small></td>
+              <td>{{ t.titulo|truncatechars:60 }}</td>
+              <td><span class="badge bg-secondary">{{ t.get_tipo_origen_display }}</span></td>
+              <td><small class="text-muted">{{ t.get_nivel_escalamiento_actual_display }}</small></td>
+              <td>
+                <span class="badge
+                  {% if t.estado == 'ABIERTO' %}bg-warning text-dark
+                  {% elif t.estado == 'EN_PROCESO' %}bg-primary
+                  {% elif t.estado == 'RESUELTO' or t.estado == 'CERRADO' %}bg-success
+                  {% elif t.estado == 'ESCALADO' %}bg-danger
+                  {% else %}bg-secondary{% endif %}">
+                  {{ t.get_estado_display }}
+                </span>
+              </td>
+              <td><small>{{ t.fecha_apertura|date:"d/m H:i" }}</small></td>
+              <td>
+                <a href="{% url 'mantenimiento:detalle_ticket' t.pk %}"
+                   class="btn btn-sm btn-outline-primary">Ver</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center text-muted py-4">Sin tickets.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

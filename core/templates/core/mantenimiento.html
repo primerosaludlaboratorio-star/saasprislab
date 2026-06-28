@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mantenimiento del Sistema — PRISLAB</title>
+  <style>
+    :root { --rojo: #D9230F; --azul: #2B3A42; --gris: #f8f9fa; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--azul);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+    }
+    .card {
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 1.5rem;
+      padding: 3rem 2.5rem;
+      max-width: 560px; width: 90%;
+      text-align: center;
+      backdrop-filter: blur(12px);
+    }
+    .icon { font-size: 4rem; margin-bottom: 1.2rem; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: .6rem; }
+    p { font-size: .95rem; opacity: .75; line-height: 1.6; margin-bottom: .6rem; }
+    .badge {
+      display: inline-block;
+      background: var(--rojo); color: #fff;
+      border-radius: 2rem; padding: .3rem 1.1rem;
+      font-size: .8rem; font-weight: 600; letter-spacing: .05em;
+      margin-bottom: 1.5rem;
+      text-transform: uppercase;
+    }
+    .eta {
+      margin-top: 1.5rem;
+      font-size: .85rem;
+      opacity: .6;
+    }
+    .logo {
+      font-size: 1.1rem; font-weight: 800;
+      letter-spacing: .12em; color: #fff;
+      margin-bottom: 1.5rem;
+      opacity: .85;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">⬡ PRISLAB</div>
+    <div class="icon">🔧</div>
+    <span class="badge">Mantenimiento Programado</span>
+    <h1>Sistema en actualización</h1>
+    <p>
+      Estamos realizando una actualización importante del sistema para mejorar
+      el rendimiento y la seguridad. Las operaciones de escritura están
+      temporalmente suspendidas.
+    </p>
+    {% if mensaje_extra %}
+    <p style="color: #f0c040; font-style: italic;">{{ mensaje_extra }}</p>
+    {% endif %}
+    <p>La <strong>lectura de datos</strong> sigue disponible. Puede navegar el sistema normalmente.</p>
+    {% if eta %}
+    <div class="eta">⏱ Tiempo estimado de regreso: <strong>{{ eta }}</strong></div>
+    {% endif %}
+    <div class="eta" style="margin-top:.8rem">
+      Para soporte urgente contacte al administrador del sistema.
+    </div>
+  </div>
+</body>
+</html>

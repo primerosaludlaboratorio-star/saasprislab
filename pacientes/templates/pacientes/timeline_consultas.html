@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Timeline Completo - {{ paciente.nombre_completo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .timeline {
+        position: relative;
+        padding: 2rem 0;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50px;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-left: 100px;
+        margin-bottom: 3rem;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: 35px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: white;
+        border: 5px solid #0d6efd;
+        z-index: 1;
+    }
+    
+    .timeline-card {
+        border-left: 5px solid #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-clock-history"></i>
+            Timeline Completo - {{ paciente.nombre_completo }}
+        </h2>
+        <a href="{% url 'pacientes:historial_360' paciente.id %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver al Historial 360°
+        </a>
+    </div>
+    
+    <div class="timeline">
+        {% for consulta in consultas %}
+        <div class="timeline-item">
+            <div class="timeline-marker"></div>
+            <div class="card timeline-card shadow-sm">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ consulta.fecha_consulta|date:"d \d\e F \d\e Y - H:i" }}</strong>
+                        <span class="badge bg-primary">Dr. {{ consulta.medico.nombre_completo }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if consulta.signos_vitales %}
+                    <div class="row text-center mb-3 bg-light p-3 rounded">
+                        <div class="col">
+                            <small class="text-muted">PA</small>
+                            <div><strong>{{ consulta.signos_vitales.presion_arterial_sistolica }}/{{ consulta.signos_vitales.presion_arterial_diastolica }}</strong></div>
+                        </div>
+                        <div class="col">
+                            <small class="text-muted">FC</small>
+                            <div><strong>{{ consulta.signos_vitales.frecuencia_cardiaca }}</strong></div>
+                        </div>
+                        <div class="col">
+                            <small class="text-muted">Temp</small>
+                            <div><strong>{{ consulta.signos_vitales.temperatura }}°C</strong></div>
+                        </div>
+                        <div class="col">
+                            <small class="text-muted">Peso</small>
+                            <div><strong>{{ consulta.signos_vitales.peso }} kg</strong></div>
+                        </div>
+                        <div class="col">
+                            <small class="text-muted">IMC</small>
+                            <div><strong>{{ consulta.signos_vitales.imc }}</strong></div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <h6 class="text-primary">MOTIVO DE CONSULTA:</h6>
+                    <p>{{ consulta.motivo_consulta }}</p>
+                    
+                    {% if consulta.subjetivo %}
+                    <h6 class="text-primary">SUBJETIVO (S):</h6>
+                    <p>{{ consulta.subjetivo }}</p>
+                    {% endif %}
+                    
+                    {% if consulta.objetivo %}
+                    <h6 class="text-primary">OBJETIVO (O):</h6>
+                    <p>{{ consulta.objetivo }}</p>
+                    {% endif %}
+                    
+                    {% if consulta.diagnostico_cie10 %}
+                    <h6 class="text-danger">DIAGNÓSTICO (A):</h6>
+                    <p><strong>{{ consulta.diagnostico_cie10 }}</strong></p>
+                    {% endif %}
+                    
+                    {% if consulta.plan_tratamiento %}
+                    <h6 class="text-success">PLAN (P):</h6>
+                    <p>{{ consulta.plan_tratamiento }}</p>
+                    {% endif %}
+                    
+                    {% if consulta.nota_medica_editada %}
+                    <div class="alert alert-info">
+                        <strong>Nota Final:</strong>
+                        <pre class="mb-0">{{ consulta.nota_medica_editada }}</pre>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+</div>
+{% endblock %}

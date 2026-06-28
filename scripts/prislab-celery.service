@@ -1,0 +1,29 @@
+[Unit]
+Description=PRISLAB SaaS — Celery Worker (tareas asíncronas)
+Documentation=https://github.com/tu-usuario/prislab
+After=network.target redis-server.service postgresql.service
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=prislab
+Group=prislab
+WorkingDirectory=/opt/prislab
+
+EnvironmentFile=/opt/prislab/.env
+
+ExecStart=/opt/prislab/.venv/bin/celery \
+    -A config.celery worker \
+    --loglevel=info \
+    --concurrency=2 \
+    --queues=default,drive_sync,backup
+
+Restart=on-failure
+RestartSec=10s
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=prislab-celery
+
+[Install]
+WantedBy=multi-user.target

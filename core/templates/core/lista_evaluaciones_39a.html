@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Evaluaciones 39-A - {{ empresa.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px;">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <h2>
+                <i class="bi bi-clipboard-data"></i> Bitácora de Evaluaciones - Art. 39-A LFT
+            </h2>
+            <a href="{% url 'crear_evaluacion_39a' %}" class="btn btn-primary-profesional neon-hover">
+                <i class="bi bi-plus-circle"></i> Nueva Evaluación
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card-profesional mb-4">
+        <div class="card-body">
+            <form method="GET" class="row align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label"><strong>Filtrar por Empleado:</strong></label>
+                    <select name="empleado_id" class="form-control" onchange="this.form.submit()">
+                        <option value="">-- Todos los Empleados --</option>
+                        {% for emp in empleados %}
+                        <option value="{{ emp.id }}" {% if empleado_seleccionado == emp.id %}selected{% endif %}>
+                            {{ emp.usuario.get_full_name }} - {{ emp.puesto }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 text-end">
+                    <a href="{% url 'lista_evaluaciones_39a' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> Limpiar Filtros
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Evaluaciones -->
+    <div class="card-profesional">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-profesional">
+                    <thead>
+                        <tr>
+                            <th>Periodo</th>
+                            <th>Empleado</th>
+                            <th>Puesto</th>
+                            <th>5 Métricas</th>
+                            <th>Promedio</th>
+                            <th>Recomendación</th>
+                            <th>Evaluador</th>
+                            <th>Fecha</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for eval in evaluaciones %}
+                        <tr>
+                            <td>
+                                <strong>{{ eval.periodo_semanal }}</strong><br>
+                                <small class="text-muted">{{ eval.fecha_inicio|date:"d/m/Y" }} - {{ eval.fecha_fin|date:"d/m/Y" }}</small>
+                            </td>
+                            <td>{{ eval.empleado.usuario.get_full_name }}</td>
+                            <td>{{ eval.empleado.puesto }}</td>
+                            <td>
+                                <small>
+                                    P: {{ eval.puntualidad }} | 
+                                    C: {{ eval.calidad_captura }} | 
+                                    A: {{ eval.atencion_cliente }}<br>
+                                    Pr: {{ eval.cumplimiento_procesos }} | 
+                                    E: {{ eval.trabajo_equipo }}
+                                </small>
+                            </td>
+                            <td>
+                                <span class="badge {% if eval.calificacion_general >= 90 %}bg-success{% elif eval.calificacion_general >= 75 %}bg-info{% elif eval.calificacion_general >= 60 %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ eval.calificacion_general }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge {% if eval.recomendacion == 'CONTRATAR' %}bg-success{% elif eval.recomendacion == 'PRORROGAR' %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ eval.get_recomendacion_display }}
+                                </span>
+                            </td>
+                            <td>{{ eval.evaluador.get_full_name|default:"N/A" }}</td>
+                            <td>{{ eval.fecha_evaluacion|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'ver_evaluacion_39a' eval.id %}" class="btn btn-sm btn-outline-primary me-1" title="Ver Detalles">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if eval.pdf_firmado %}
+                                <a href="{% url 'descargar_pdf_evaluacion_39a' eval.id %}" class="btn btn-sm btn-outline-danger" title="Descargar PDF">
+                                    <i class="bi bi-file-pdf"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox"></i> No hay evaluaciones registradas
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

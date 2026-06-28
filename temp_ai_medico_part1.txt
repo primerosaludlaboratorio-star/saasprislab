@@ -1,0 +1,200 @@
+﻿"""
+PRISLAB V5.0 - SERVICIO DE INTELIGENCIA ARTIFICIAL MÃ‰DICA
+=========================================================
+Fecha: 1 de Febrero de 2026
+Objetivo: IntegraciÃ³n con Google Gemini 1.5 Flash para procesamiento de audio mÃ©dico
+
+CARACTERÃSTICAS:
+âœ… ConexiÃ³n con Google Gemini 1.5 Flash
+âœ… Prompts mÃ©dicos especializados
+âœ… Procesamiento de audio a texto estructurado
+âœ… ValidaciÃ³n y limpieza de datos
+âœ… Manejo robusto de errores
+âœ… Logging detallado
+
+CASOS DE USO:
+1. Consulta MÃ©dica: Extraer motivo, signos vitales, diagnÃ³stico, tratamiento
+2. Resultados de Laboratorio: Mapear valores dictados a parÃ¡metros
+"""
+
+import os
+import json
+import logging
+from typing import Dict, Any, Optional, List
+from pathlib import Path
+import tempfile
+
+# Importar Google Generative AI
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    logging.warning("google-generativeai no estÃ¡ instalado. Instalarlo con: pip install google-generativeai")
+
+from django.conf import settings
+
+logger = logging.getLogger('ia')
+
+
+# ==============================================================================
+# CONFIGURACIÃ“N DE GEMINI
+# ==============================================================================
+
+def configurar_gemini():
+    """
+    Configura la API de Google Gemini con la clave de API.
+    
+    Returns:
+        bool: True si se configurÃ³ correctamente, False si hay error
+    """
+    if not GEMINI_AVAILABLE:
+        logger.error("Google Generative AI no estÃ¡ disponible")
+        return False
+    
+    try:
+        # Obtener API key desde settings o variables de entorno
+        api_key = (
+            getattr(settings, 'GOOGLE_GEMINI_API_KEY', None) or 
+            getattr(settings, 'GOOGLE_API_KEY', None) or 
+            getattr(settings, 'GEMINI_API_KEY', None) or
+            os.environ.get('GOOGLE_GEMINI_API_KEY') or
+            os.environ.get('GOOGLE_API_KEY') or
+            os.environ.get('GEMINI_API_KEY')
+        )
+        
+        if not api_key:
+            logger.error("GOOGLE_API_KEY no estÃ¡ configurado en settings o variables de entorno")
+            return False
+        
+        # Configurar Gemini
+        genai.configure(api_key=api_key)
+        logger.info("âœ“ Google Gemini configurado correctamente")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error al configurar Gemini: {e}", exc_info=True)
+        return False
+
+
+# ==============================================================================
+# FUNCIÃ“N 1: PROCESAR CONSULTA MÃ‰DICA
+# ==============================================================================
+
+def procesar_consulta_medica(audio_file) -> Dict[str, Any]:
+    """
+    Procesa audio de consulta mÃ©dica y extrae informaciÃ³n estructurada.
+    
+    Args:
+        audio_file: Archivo de audio (File object o ruta)
+        
+    Returns:
+        dict: Datos estructurados de la consulta
+        {
+            'motivo': str,
+            'signos_vitales': {
+                'temperatura': float,
+                'frecuencia_cardiaca': int,
+                'presion_arterial': str,
+                'peso': float,
+                'talla': float
+            },
+            'diagnostico': str,
+            'tratamiento': str,
+            'exploracion_fisica': str
+        }
+        
+    Raises:
+        Exception: Si hay error en el procesamiento
+    """
+    if not GEMINI_AVAILABLE:
+        raise Exception("Google Generative AI no estÃ¡ instalado")
+    
+    if not configurar_gemini():
+        raise Exception("Error al configurar Google Gemini")
+    
+    try:
+        logger.info("Iniciando procesamiento de consulta mÃ©dica")
+        
+        # Guardar audio temporalmente si es necesario
+        audio_path = _guardar_audio_temporal(audio_file)
+        
+        # Crear modelo Gemini
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # Subir archivo de audio
+        logger.info(f"Subiendo archivo de audio: {audio_path}")
+        audio_upload = genai.upload_file(audio_path)
+        
+        # Prompt especializado para consulta mÃ©dica
+        prompt = """
+Eres un asistente mÃ©dico experto en transcripciÃ³n y extracciÃ³n de datos clÃ­nicos.
+
+TAREA:
+Transcribe el audio de esta consulta mÃ©dica y extrae la siguiente informaciÃ³n en formato JSON ESTRICTO.
+
+FORMATO DE SALIDA (JSON):
+{
+    "motivo": "Motivo de consulta o sÃ­ntomas reportados por el paciente",
+    "signos_vitales": {
+        "temperatura": 36.5,  // En Â°C, null si no se menciona
+        "frecuencia_cardiaca": 70,  // En latidos/min, null si no se menciona
+        "frecuencia_respiratoria": 18,  // En respiraciones/min, null si no se menciona
+        "presion_arterial": "120/80",  // En mmHg, null si no se menciona
+        "saturacion": 98,  // En %, null si no se menciona
+        "peso": 70.0,  // En kg, null si no se menciona
+        "talla": 1.70  // En metros, null si no se menciona
+    },
+    "exploracion_fisica": "Hallazgos de la exploraciÃ³n fÃ­sica",
+    "diagnostico": "DiagnÃ³stico principal",
+    "tratamiento": "Indicaciones, medicamentos, dosis, frecuencia, duraciÃ³n"
+}
+
+REGLAS CRÃTICAS:
+1. Solo incluye informaciÃ³n que se mencione explÃ­citamente en el audio
+2. Si un dato no se menciona, usa null
+3. NO inventes informaciÃ³n
+4. Respeta el formato JSON exacto
+5. Para presiÃ³n arterial, usa formato "sistÃ³lica/diastÃ³lica" (ej: "120/80")
+6. Para peso y talla, usa punto decimal (ej: 1.70, no 1,70)
+7. Para tratamiento, incluye dosis y frecuencia si se mencionan
+
+DEVUELVE SOLO EL JSON, SIN TEXTO ADICIONAL.
+"""
+        
+        # Generar respuesta
+        logger.info("Enviando audio a Gemini para anÃ¡lisis...")
+        response = model.generate_content([prompt, audio_upload])
+        
+        # Limpiar archivo temporal
+        _limpiar_archivo_temporal(audio_path, audio_file)
+        
+        # Parsear respuesta
+        response_text = response.text.strip()
+        logger.info(f"Respuesta de Gemini: {response_text[:200]}...")
+        
+        # Extraer JSON de la respuesta
+        data = _extraer_json_de_respuesta(response_text)
+        
+        # Validar y limpiar datos
+        data = _validar_datos_consulta(data)
+        
+        logger.info("âœ“ Consulta mÃ©dica procesada exitosamente")
+        return data
+        
+    except Exception as e:
+        logger.error(f"Error al procesar consulta mÃ©dica: {e}", exc_info=True)
+        raise Exception(f"Error al procesar audio mÃ©dico: {str(e)}")
+
+
+# ==============================================================================
+# FUNCIÃ“N 2: PROCESAR RESULTADOS DE LABORATORIO
+# ==============================================================================
+
+def procesar_resultados_lab(audio_file, lista_parametros: List[Dict[str, str]]) -> Dict[str, Any]:
+    """
+    Procesa audio de dictado de resultados de laboratorio.
+    
+    Args:
+        audio_file: Archivo de audio (File object o ruta)
+        lista_parametros: Lista de parÃ¡metros disponibles

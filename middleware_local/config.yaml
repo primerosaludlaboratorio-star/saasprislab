@@ -1,0 +1,129 @@
+# ==============================================================================
+# CONFIGURACIÓN AGENTE LABORATORIO PRISLAB
+# ==============================================================================
+# Configuración para el agente de integración LIS que conecta equipos físicos
+# del laboratorio con el sistema PRISLAB SaaS en la nube.
+
+# ID de la sucursal en el sistema PRISLAB
+sucursal_id: 1
+
+# URL del servidor PRISLAB SaaS en la nube
+cloud_url: "http://localhost:8000"
+# cloud_url: "https://prislab-saas.com"
+
+# Token de autenticación para comunicación con la nube
+# Obtener este token desde el panel de administración de PRISLAB
+cloud_token: "tu_token_aqui"
+
+# ============================================================================== 
+# RECEPTOR HL7/ASTM (SaaS)
+# ============================================================================== 
+# Endpoint real en el SaaS para recibir HL7 v2.x / ASTM
+hl7_endpoint_path: "/api/iot/hl7/"
+# API key configurada en el SaaS (env HL7_API_KEY)
+hl7_api_key: "tu_hl7_api_key_aqui"
+# Tenant/empresa destino (se envía como header X-EMPRESA-ID)
+empresa_id: 1
+
+# ==============================================================================
+# CONFIGURACIÓN DE EQUIPOS
+# ==============================================================================
+equipos:
+  # ----------------------------------------------------------------------------
+  # Equipo 1: Norma Icon 5 (TCP/IP con HL7 v2 + MLLP)
+  # ----------------------------------------------------------------------------
+  - nombre: "Norma Icon 5"
+    driver: "norma_icon"
+    tipo: "tcp"
+    ip: "192.168.1.50"      # IP del equipo Norma Icon
+    puerto: 5000             # Puerto TCP/IP del equipo
+    mllp: true               # VT(0x0b) ... FS(0x1c) CR(0x0d)
+    encoding: "utf-8"        # Manual: UNICODE UTF-8
+    ack_timeout_sec: 9       # Manual: espera ACK ~9s
+    
+  # ----------------------------------------------------------------------------
+  # Equipo 2: InCCA Química (Serial con ASTM 1394)
+  # ----------------------------------------------------------------------------
+  - nombre: "InCCA Química"
+    driver: "incca"
+    tipo: "serial"
+    puerto: "COM1"           # Puerto COM en Windows (ej: COM1, COM2, COM3)
+    baudrate: 9600           # Velocidad de transmisión
+    bytesize: 8              # Bits de datos
+    parity: "N"              # Paridad: N (None), E (Even), O (Odd)
+    stopbits: 1              # Bits de parada
+    timeout: 1.0             # Timeout en segundos
+    
+  # ----------------------------------------------------------------------------
+  # Equipo 3: Mission U120 (Serial con texto simple)
+  # ----------------------------------------------------------------------------
+  - nombre: "Mission U120"
+    driver: "mission_u120"
+    tipo: "serial"
+    puerto: "COM2"
+    baudrate: 9600
+    delimiter: "\r\n"        # Delimitador de líneas
+    
+  # ----------------------------------------------------------------------------
+  # Equipo 4: Wondfo Finecare (LIS unidireccional - Serial)
+  # ----------------------------------------------------------------------------
+  - nombre: "Wondfo Finecare"
+    driver: "wondfo_finecare"
+    tipo: "serial"
+    puerto: "COM3"
+    baudrate: 9600
+    delimiter: "\r\n"
+    encoding: "utf-8"
+    
+  # ----------------------------------------------------------------------------
+  # Equipo 5: Fuji DRI-CHEM NX600 (Urgencias - Serial)
+  # ----------------------------------------------------------------------------
+  - nombre: "Fuji NX600 (Urgencias)"
+    driver: "fuji_nx600"
+    tipo: "serial"
+    puerto: "COM3"           # Puerto COM en Windows (ej: COM3, COM4, COM5)
+    baudrate: 9600           # Velocidad de transmisión
+    bytesize: 8              # Bits de datos
+    parity: "N"              # Paridad: N (None), E (Even), O (Odd)
+    stopbits: 1              # Bits de parada
+    timeout: 1.0             # Timeout en segundos
+    
+  # ----------------------------------------------------------------------------
+  # Equipo 5: Wondfo Finecare v2 (LIS unidireccional - TCP/IP)
+  # ----------------------------------------------------------------------------
+  # - nombre: "Wondfo Finecare TCP"
+  #   driver: "wondfo_finecare"
+  #   tipo: "tcp"
+  #   ip: "192.168.1.60"
+  #   puerto: 5001
+  #   delimiter: "\r\n"
+  #   encoding: "utf-8"
+
+# ==============================================================================
+# NOTAS DE CONFIGURACIÓN
+# ==============================================================================
+# 
+# DRIVERS DISPONIBLES:
+# - norma_icon: Para equipos Norma Icon que comunican por TCP/IP con HL7/XML
+# - incca: Para equipos InCCA que comunican por serial con protocolo ASTM 1394
+# - mission_u120: Para equipos Mission U120 con formato de texto serial
+# - wondfo_finecare: Driver genérico para LIS unidireccionales (serial o TCP/IP)
+# - fuji_nx600: Para equipos Fuji DRI-CHEM NX600 que comunican por serial
+#
+# PUERTOS SERIALES (Windows):
+# - COM1, COM2, COM3, etc.
+# - Verificar puerto asignado en Administrador de dispositivos
+#
+# PUERTOS SERIALES (Linux/Mac):
+# - /dev/ttyUSB0, /dev/ttyACM0, /dev/ttyS0, etc.
+# - Usar: ls /dev/tty* para ver puertos disponibles
+#
+# VELOCIDADES COMUNES (Baudrate):
+# - 9600, 19200, 38400, 57600, 115200
+# - Consultar manual del equipo para velocidad correcta
+#
+# TOKEN DE AUTENTICACIÓN:
+# - Obtener desde el panel de administración de PRISLAB SaaS
+# - Sección: Configuración > Integración LIS > Tokens
+# - El token permite que el agente envíe resultados al sistema
+#

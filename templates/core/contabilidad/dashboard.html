@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Contabilidad</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f7fa; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { color: #1F4E79; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 20px 0; }
+    .card { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .card h3 { margin: 0 0 8px; color: #555; font-size: 14px; text-transform: uppercase; }
+    .card .value { font-size: 24px; font-weight: bold; color: #1F4E79; }
+    .links a { display: inline-block; margin: 6px 6px 0 0; padding: 8px 12px; background: #1F4E79; color: #fff; text-decoration: none; border-radius: 4px; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; background: #fff; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+    th { background: #1F4E79; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Contabilidad / {{ empresa.nombre }}</h1>
+    <p>Período: {{ mes_nombre }}</p>
+    <div class="links">
+      <a href="{% url 'contabilidad:catalogo_cuentas' %}">Catálogo de cuentas</a>
+      <a href="{% url 'contabilidad:lista_polizas' %}">Pólizas</a>
+      <a href="{% url 'reporte_ingresos_egresos' %}">Ingresos/Egresos</a>
+      <a href="{% url 'reporte_balance_general' %}">Balance General</a>
+      <a href="{% url 'reporte_flujo_caja' %}">Flujo de Caja</a>
+    </div>
+    <div class="grid">
+      <div class="card"><h3>Ingresos del mes</h3><div class="value">${{ ingreso_total }}</div></div>
+      <div class="card"><h3>Gastos del mes</h3><div class="value">${{ gastos_mes }}</div></div>
+      <div class="card"><h3>Utilidad del mes</h3><div class="value" style="color:{% if utilidad_mes >= 0 %}#006100{% else %}#C00000{% endif %};">${{ utilidad_mes }}</div></div>
+      <div class="card"><h3>Cuentas activas</h3><div class="value">{{ total_cuentas }}</div></div>
+      <div class="card"><h3>Pólizas</h3><div class="value">{{ total_polizas }}</div></div>
+      <div class="card"><h3>CFDI pendientes</h3><div class="value">{{ cfdi_pendientes }}</div></div>
+    </div>
+    <h2>Pólizas recientes</h2>
+    <table>
+      <tr><th>Folio</th><th>Fecha</th><th>Concepto</th><th>Estado</th></tr>
+      {% for p in polizas_recientes %}
+      <tr>
+        <td>{{ p.folio }}</td>
+        <td>{{ p.fecha }}</td>
+        <td>{{ p.concepto }}</td>
+        <td>{{ p.estado }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4">No hay pólizas registradas.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</body>
+</html>

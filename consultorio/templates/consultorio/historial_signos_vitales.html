@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Historial de Signos Vitales - {{ paciente.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-heartbeat"></i> Historial de Constantes Vitales</h2>
+            <p class="text-muted">
+                Paciente: <strong>{{ paciente.nombre_completo }}</strong>
+                {% if paciente.edad %} | Edad: {{ paciente.edad }} años{% endif %}
+                {% if paciente.sexo %} | {{ paciente.get_sexo_display }}{% endif %}
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'consultorio:historial_clinico_paciente' paciente.id %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Volver al Expediente
+            </a>
+        </div>
+    </div>
+
+    {% if signos_vitales %}
+    <!-- Tarjetas resumen último registro -->
+    {% with ultimo=signos_vitales.0 %}
+    <div class="row g-3 mb-4">
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <i class="fas fa-weight fa-2x text-primary mb-2"></i>
+                    <h4 class="mb-0">{{ ultimo.peso|default:"—" }} kg</h4>
+                    <small class="text-muted">Peso</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <i class="fas fa-ruler-vertical fa-2x text-info mb-2"></i>
+                    <h4 class="mb-0">{{ ultimo.imc|default:"—" }}</h4>
+                    <small class="text-muted">IMC</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <i class="fas fa-tachometer-alt fa-2x text-danger mb-2"></i>
+                    <h4 class="mb-0">{{ ultimo.presion_arterial_sistolica|default:"—" }}/{{ ultimo.presion_arterial_diastolica|default:"—" }}</h4>
+                    <small class="text-muted">Presión Arterial</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <i class="fas fa-thermometer-half fa-2x text-warning mb-2"></i>
+                    <h4 class="mb-0">{{ ultimo.temperatura|default:"—" }}°C</h4>
+                    <small class="text-muted">Temperatura</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <i class="fas fa-heartbeat fa-2x text-success mb-2"></i>
+                    <h4 class="mb-0">{{ ultimo.frecuencia_cardiaca|default:"—" }}</h4>
+                    <small class="text-muted">FC (lpm)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <i class="fas fa-lungs fa-2x text-primary mb-2"></i>
+                    <h4 class="mb-0">{{ ultimo.saturacion_oxigeno|default:"—" }}%</h4>
+                    <small class="text-muted">SpO2</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endwith %}
+
+    <!-- Gráficas de tendencias -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-weight"></i> Tendencia de Peso e IMC</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartPesoIMC" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0"><i class="fas fa-tachometer-alt"></i> Tendencia de Presión Arterial</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartPresion" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-thermometer-half"></i> Temperatura y Glucosa</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartTempGlucosa" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-heartbeat"></i> FC y SpO2</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartFCSpo2" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla historial completo -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-table"></i> Historial Completo de Registros</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Peso</th>
+                            <th>Talla</th>
+                            <th>IMC</th>
+                            <th>PA</th>
+                            <th>FC</th>
+                            <th>FR</th>
+                            <th>Temp</th>
+                            <th>SpO2</th>
+                            <th>Glucosa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in signos_vitales %}
+                        <tr>
+                            <td>{{ s.fecha_registro|date:"d/m/Y H:i" }}</td>
+                            <td>{{ s.peso|default:"—" }}</td>
+                            <td>{{ s.talla|default:"—" }}</td>
+                            <td>{{ s.imc|default:"—" }}</td>
+                            <td>{{ s.presion_arterial_sistolica|default:"—" }}/{{ s.presion_arterial_diastolica|default:"—" }}</td>
+                            <td>{{ s.frecuencia_cardiaca|default:"—" }}</td>
+                            <td>{{ s.frecuencia_respiratoria|default:"—" }}</td>
+                            <td>{{ s.temperatura|default:"—" }}</td>
+                            <td>{{ s.saturacion_oxigeno|default:"—" }}</td>
+                            <td>{{ s.glucosa_capilar|default:"—" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-chart-line fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">Sin registros de signos vitales</h4>
+        <p class="text-muted">Los signos vitales se registran durante la consulta o el triage</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        const response = await fetch('{% url "consultorio:api_signos_vitales_tendencia" paciente.id %}');
+        const data = await response.json();
+        
+        if (!data.ok || data.total_registros < 1) return;
+        
+        const d = data.datos;
+        const fechas = d.fechas;
+        
+        // Peso e IMC
+        new Chart(document.getElementById('chartPesoIMC'), {
+            type: 'line',
+            data: {
+                labels: fechas,
+                datasets: [
+                    { label: 'Peso (kg)', data: d.peso, borderColor: '#0d6efd', tension: 0.3, fill: false },
+                    { label: 'IMC', data: d.imc, borderColor: '#6610f2', tension: 0.3, fill: false, yAxisID: 'y1' }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { title: { display: true, text: 'Peso (kg)' } },
+                    y1: { position: 'right', title: { display: true, text: 'IMC' }, grid: { drawOnChartArea: false } }
+                }
+            }
+        });
+        
+        // Presión Arterial
+        new Chart(document.getElementById('chartPresion'), {
+            type: 'line',
+            data: {
+                labels: fechas,
+                datasets: [
+                    { label: 'Sistólica', data: d.pa_sistolica, borderColor: '#dc3545', tension: 0.3, fill: false },
+                    { label: 'Diastólica', data: d.pa_diastolica, borderColor: '#fd7e14', tension: 0.3, fill: false }
+                ]
+            },
+            options: { responsive: true, scales: { y: { title: { display: true, text: 'mmHg' } } } }
+        });
+        
+        // Temperatura y Glucosa
+        new Chart(document.getElementById('chartTempGlucosa'), {
+            type: 'line',
+            data: {
+                labels: fechas,
+                datasets: [
+                    { label: 'Temperatura (C)', data: d.temperatura, borderColor: '#ffc107', tension: 0.3, fill: false },
+                    { label: 'Glucosa (mg/dL)', data: d.glucosa, borderColor: '#198754', tension: 0.3, fill: false, yAxisID: 'y1' }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { title: { display: true, text: 'Temp (C)' } },
+                    y1: { position: 'right', title: { display: true, text: 'Glucosa' }, grid: { drawOnChartArea: false } }
+                }
+            }
+        });
+        
+        // FC y SpO2
+        new Chart(document.getElementById('chartFCSpo2'), {
+            type: 'line',
+            data: {
+                labels: fechas,
+                datasets: [
+                    { label: 'FC (lpm)', data: d.fc, borderColor: '#198754', tension: 0.3, fill: false },
+                    { label: 'SpO2 (%)', data: d.spo2, borderColor: '#0dcaf0', tension: 0.3, fill: false, yAxisID: 'y1' }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { title: { display: true, text: 'FC (lpm)' } },
+                    y1: { position: 'right', title: { display: true, text: 'SpO2 (%)' }, min: 80, max: 100, grid: { drawOnChartArea: false } }
+                }
+            }
+        });
+        
+    } catch(err) {
+        console.error('Error cargando datos de signos vitales:', err);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,42 @@
+<!-- Modal de Cancelación de Orden -->
+<div class="modal fade" id="modalCancelar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-danger border-3">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-x-circle-fill"></i> CANCELAR ORDEN
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> <strong>ADVERTENCIA:</strong> Esta acción requiere permisos de Superusuario. La orden será cancelada y se generará un registro negativo en el corte de caja.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Folio de Orden:</label>
+                    <p id="modalCancelarFolio" class="fw-bold">---</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Paciente:</label>
+                    <p id="modalCancelarPaciente">---</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Motivo de Cancelación:</label>
+                    <textarea class="form-control" id="motivoCancelacion" rows="3" required placeholder="Describa el motivo de la cancelación..."></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Clave de Supervisor (Simulada):</label>
+                    <input type="password" class="form-control" id="claveSupervisor" placeholder="Ingrese clave de supervisor" required>
+                    <small class="text-muted">Nota: En producción, esto requeriría autenticación biométrica o 2FA</small>
+                </div>
+                <input type="hidden" id="modalCancelarOrdenId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger fw-bold" onclick="confirmarCancelacion()">
+                    <i class="bi bi-x-circle"></i> Confirmar Cancelación
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,707 @@
+{% load static %}
+{# ═══════════════════════════════════════════════════════════════════════════════
+   PRIS COPILOT WIDGET — v2.0 (FASE 2)
+   Widget flotante global: voz, texto, confirmación auditable (ISO 15189).
+   Regla de hierro: PRIS sugiere → humano siempre confirma el clic final.
+   Inyectado en base.html para todos los módulos.
+═══════════════════════════════════════════════════════════════════════════════ #}
+
+<!-- ══ PRIS FLOATING BUTTON ══════════════════════════════════════════════════ -->
+<button id="pris-fab"
+        title="Hablar con PRIS"
+        aria-label="Abrir asistente PRIS"
+        onclick="prisWidget.toggle()">
+  <span class="pris-fab-icon">
+    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" width="26" height="26">
+      <circle cx="18" cy="18" r="17" fill="url(#pg)" stroke="rgba(255,255,255,.25)" stroke-width="1"/>
+      <defs>
+        <radialGradient id="pg" cx="40%" cy="30%">
+          <stop offset="0%" stop-color="#6ee7f7"/>
+          <stop offset="100%" stop-color="#2563eb"/>
+        </radialGradient>
+      </defs>
+      <!-- PRIS brain icon -->
+      <path d="M12 22c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="18" cy="13" r="3.5" fill="white" opacity=".9"/>
+      <circle cx="12" cy="20" r="1.5" fill="white" opacity=".7"/>
+      <circle cx="24" cy="20" r="1.5" fill="white" opacity=".7"/>
+    </svg>
+  </span>
+  <span id="pris-badge" class="pris-badge d-none">0</span>
+</button>
+
+<!-- ══ PRIS PANEL ═══════════════════════════════════════════════════════════ -->
+<div id="pris-panel" class="pris-panel" role="dialog" aria-label="Asistente PRIS" aria-hidden="true">
+
+  <!-- Header -->
+  <div class="pris-header">
+    <div class="d-flex align-items-center gap-2">
+      <span class="pris-avatar">🧠</span>
+      <div>
+        <div class="pris-title">PRIS — Copiloto IA</div>
+        <div class="pris-subtitle" id="pris-status-txt">Listo · Gemini 2.0 Flash</div>
+      </div>
+    </div>
+    <div class="d-flex gap-1">
+      <button class="pris-icon-btn" title="Limpiar historial" onclick="prisWidget.clearHistory()">
+        <i class="bi bi-trash3"></i>
+      </button>
+      <button class="pris-icon-btn" title="Cerrar" onclick="prisWidget.toggle()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs: Chat / Pending actions -->
+  <div class="pris-tabs">
+    <button class="pris-tab active" id="tab-chat" onclick="prisWidget.showTab('chat')">
+      <i class="bi bi-chat-dots me-1"></i>Chat
+    </button>
+    <button class="pris-tab" id="tab-acciones" onclick="prisWidget.showTab('acciones')">
+      <i class="bi bi-clipboard-check me-1"></i>Pendientes
+      <span id="pris-pending-count" class="badge bg-danger ms-1 d-none">0</span>
+    </button>
+  </div>
+
+  <!-- TAB: Chat -->
+  <div id="pris-tab-chat" class="pris-tab-content active">
+    <div id="pris-messages" class="pris-messages" role="log" aria-live="polite"></div>
+    <div class="pris-input-row">
+      <button id="pris-mic-btn" class="pris-mic-btn" title="Dictado por voz" onclick="prisWidget.toggleVoice()">
+        <i class="bi bi-mic-fill"></i>
+      </button>
+      <input id="pris-input"
+             class="pris-input"
+             type="text"
+             placeholder="Escribe o dicta a PRIS..."
+             autocomplete="off"
+             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();prisWidget.send();}">
+      <button class="pris-send-btn" onclick="prisWidget.send()" title="Enviar">
+        <i class="bi bi-send-fill"></i>
+      </button>
+    </div>
+    <div id="pris-voice-status" class="pris-voice-status d-none">
+      <span class="pris-pulse"></span> Escuchando…
+    </div>
+  </div>
+
+  <!-- TAB: Acciones pendientes -->
+  <div id="pris-tab-acciones" class="pris-tab-content">
+    <div id="pris-acciones-list" class="pris-acciones-list">
+      <div class="text-center text-muted py-4 small">
+        <i class="bi bi-check2-circle fs-4 d-block mb-2 opacity-50"></i>
+        Sin acciones pendientes
+      </div>
+    </div>
+    <button class="btn btn-sm btn-outline-secondary w-100 mt-2"
+            onclick="prisWidget.loadPendientes()">
+      <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+    </button>
+  </div>
+
+</div>
+
+<!-- ══ PRIS STYLES ══════════════════════════════════════════════════════════ -->
+<style>
+/* ── FAB ─────────────────────────────────────────────────────────────── */
+#pris-fab {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 9998;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #1e40af, #2563eb, #0ea5e9);
+  box-shadow: 0 4px 20px rgba(37,99,235,.55), 0 0 0 0 rgba(37,99,235,.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .2s, box-shadow .2s;
+  animation: pris-pulse-ring 3s infinite;
+}
+#pris-fab:hover { transform: scale(1.1); box-shadow: 0 6px 28px rgba(37,99,235,.7); }
+#pris-fab.open  { transform: scale(1.05); background: linear-gradient(135deg, #1e3a8a, #1d4ed8); }
+.pris-badge {
+  position: absolute;
+  top: 2px; right: 2px;
+  min-width: 18px; height: 18px;
+  border-radius: 9px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #fff;
+}
+@keyframes pris-pulse-ring {
+  0%,100% { box-shadow: 0 4px 20px rgba(37,99,235,.55), 0 0 0 0 rgba(37,99,235,.4); }
+  50%      { box-shadow: 0 4px 20px rgba(37,99,235,.55), 0 0 0 8px rgba(37,99,235,.0); }
+}
+
+/* ── Panel ───────────────────────────────────────────────────────────── */
+.pris-panel {
+  position: fixed;
+  bottom: 88px;
+  left: 16px;
+  z-index: 9999;
+  width: 370px;
+  max-height: 560px;
+  background: #0f172a;
+  border: 1px solid rgba(148,163,184,.18);
+  border-radius: 18px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(16px) scale(.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s;
+}
+.pris-panel.visible {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  pointer-events: all;
+}
+@media (max-width: 480px) {
+  .pris-panel { width: calc(100vw - 16px); left: 8px; bottom: 80px; }
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+.pris-header {
+  padding: 14px 16px 10px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.pris-avatar { font-size: 1.5rem; line-height: 1; }
+.pris-title  { color: #fff; font-size: .9rem; font-weight: 700; letter-spacing: .01em; }
+.pris-subtitle { color: rgba(186,230,253,.8); font-size: .72rem; }
+.pris-icon-btn {
+  background: rgba(255,255,255,.12); border: none; color: #bae6fd;
+  width: 28px; height: 28px; border-radius: 7px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: .75rem;
+  transition: background .15s;
+}
+.pris-icon-btn:hover { background: rgba(255,255,255,.22); color: #fff; }
+
+/* ── Tabs ────────────────────────────────────────────────────────────── */
+.pris-tabs {
+  display: flex; gap: 1px;
+  background: rgba(30,64,175,.5);
+  flex-shrink: 0;
+}
+.pris-tab {
+  flex: 1; padding: 7px 4px; border: none;
+  background: rgba(15,23,42,.6); color: #94a3b8;
+  font-size: .78rem; cursor: pointer; transition: background .15s, color .15s;
+}
+.pris-tab.active { background: #0f172a; color: #60a5fa; font-weight: 600; }
+.pris-tab-content { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+.pris-tab-content.active { display: flex; }
+
+/* ── Messages ────────────────────────────────────────────────────────── */
+.pris-messages {
+  flex: 1; overflow-y: auto; padding: 12px;
+  display: flex; flex-direction: column; gap: 8px;
+  scrollbar-width: thin; scrollbar-color: rgba(148,163,184,.2) transparent;
+}
+.pris-msg { max-width: 90%; animation: fadeSlide .2s ease-out; }
+.pris-msg.user { align-self: flex-end; }
+.pris-msg.pris  { align-self: flex-start; }
+.pris-bubble {
+  padding: 8px 12px; border-radius: 12px;
+  font-size: .82rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+}
+.pris-msg.user .pris-bubble {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  color: #fff; border-bottom-right-radius: 4px;
+}
+.pris-msg.pris .pris-bubble {
+  background: #1e293b; color: #e2e8f0; border-bottom-left-radius: 4px;
+  border: 1px solid rgba(148,163,184,.15);
+}
+.pris-msg.typing .pris-bubble { color: #60a5fa; }
+@keyframes fadeSlide { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+/* ── Input row ───────────────────────────────────────────────────────── */
+.pris-input-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 12px; background: #0f172a;
+  border-top: 1px solid rgba(148,163,184,.1); flex-shrink: 0;
+}
+.pris-input {
+  flex: 1; background: #1e293b; border: 1px solid rgba(148,163,184,.2);
+  border-radius: 10px; color: #e2e8f0; font-size: .82rem;
+  padding: 7px 12px; outline: none;
+  transition: border-color .15s;
+}
+.pris-input:focus { border-color: #2563eb; }
+.pris-input::placeholder { color: #475569; }
+.pris-mic-btn, .pris-send-btn {
+  width: 34px; height: 34px; border-radius: 9px; border: none;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; flex-shrink: 0; transition: background .15s;
+}
+.pris-mic-btn  { background: #1e293b; color: #94a3b8; }
+.pris-mic-btn:hover, .pris-mic-btn.recording { background: #ef4444; color: #fff; }
+.pris-send-btn { background: #2563eb; color: #fff; }
+.pris-send-btn:hover { background: #1d4ed8; }
+
+/* ── Voice status ────────────────────────────────────────────────────── */
+.pris-voice-status {
+  padding: 4px 12px 8px; color: #f87171;
+  font-size: .76rem; display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.pris-pulse {
+  width: 8px; height: 8px; border-radius: 50%; background: #ef4444;
+  animation: pulse .8s infinite alternate;
+}
+@keyframes pulse { to { opacity: .3; transform: scale(.7); } }
+
+/* ── Acciones pendientes ─────────────────────────────────────────────── */
+.pris-acciones-list {
+  flex: 1; overflow-y: auto; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.pris-accion-card {
+  background: #1e293b; border: 1px solid rgba(148,163,184,.15);
+  border-radius: 10px; padding: 10px 12px;
+  font-size: .78rem; color: #cbd5e1;
+}
+.pris-accion-card .accion-tipo {
+  font-weight: 700; color: #60a5fa; font-size: .72rem; text-transform: uppercase; letter-spacing: .05em;
+}
+.pris-accion-card .accion-instruccion {
+  color: #e2e8f0; margin: 4px 0; line-height: 1.4;
+}
+.pris-accion-card .accion-btns { display: flex; gap: 6px; margin-top: 8px; }
+.btn-confirmar-accion {
+  flex: 1; padding: 5px; border: none; border-radius: 7px;
+  background: #16a34a; color: #fff; font-size: .75rem; cursor: pointer;
+  transition: background .15s;
+}
+.btn-confirmar-accion:hover { background: #15803d; }
+.btn-rechazar-accion {
+  flex: 1; padding: 5px; border: none; border-radius: 7px;
+  background: #dc2626; color: #fff; font-size: .75rem; cursor: pointer;
+  transition: background .15s;
+}
+.btn-rechazar-accion:hover { background: #b91c1c; }
+</style>
+
+<!-- ══ PRIS JAVASCRIPT ══════════════════════════════════════════════════════ -->
+<script>
+const prisWidget = (() => {
+  const CHAT_URL     = "{% url 'pris_ia_chat' %}";
+  const PENDING_URL  = "{% url 'pris_acciones_pendientes' %}";
+  const CSRF         = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+  let historial    = [];
+  let currentTab   = 'chat';
+  let isOpen       = false;
+  let isThinking   = false;
+  let recognition  = null;
+  let isRecording  = false;
+
+  // ── DOM refs ──────────────────────────────────────────────────────────
+  const fab      = () => document.getElementById('pris-fab');
+  const panel    = () => document.getElementById('pris-panel');
+  const msgs     = () => document.getElementById('pris-messages');
+  const input    = () => document.getElementById('pris-input');
+  const micBtn   = () => document.getElementById('pris-mic-btn');
+  const voiceSt  = () => document.getElementById('pris-voice-status');
+  const badge    = () => document.getElementById('pris-badge');
+  const pendCount= () => document.getElementById('pris-pending-count');
+  const accionesList = () => document.getElementById('pris-acciones-list');
+  const statusTxt= () => document.getElementById('pris-status-txt');
+
+  // ── Toggle ────────────────────────────────────────────────────────────
+  function toggle() {
+    isOpen = !isOpen;
+    panel().classList.toggle('visible', isOpen);
+    panel().setAttribute('aria-hidden', String(!isOpen));
+    fab().classList.toggle('open', isOpen);
+    if (isOpen) {
+      if (msgs().children.length === 0) addSystemMsg('¡Hola! Soy PRIS 🧠 Tu copiloto clínico. Puedo registrar pacientes, crear órdenes, capturar resultados de laboratorio, cobrar servicios y más.\n\nDime qué necesitas. Puedes escribir o usar el micrófono 🎙️');
+      setTimeout(() => input()?.focus(), 200);
+      loadPendientes();
+    }
+  }
+
+  // ── Tabs ──────────────────────────────────────────────────────────────
+  function showTab(tab) {
+    currentTab = tab;
+    document.getElementById('tab-chat').classList.toggle('active', tab === 'chat');
+    document.getElementById('tab-acciones').classList.toggle('active', tab === 'acciones');
+    document.getElementById('pris-tab-chat').classList.toggle('active', tab === 'chat');
+    document.getElementById('pris-tab-acciones').classList.toggle('active', tab === 'acciones');
+    if (tab === 'acciones') loadPendientes();
+    else setTimeout(() => input()?.focus(), 100);
+  }
+
+  // ── Messages ──────────────────────────────────────────────────────────
+  function addMsg(text, rol) {
+    const el = document.createElement('div');
+    el.className = `pris-msg ${rol}`;
+    const bubble = document.createElement('div');
+    bubble.className = 'pris-bubble';
+    bubble.textContent = text;
+    el.appendChild(bubble);
+    msgs().appendChild(el);
+    msgs().scrollTop = msgs().scrollHeight;
+    return el;
+  }
+  function addSystemMsg(text) {
+    return addMsg(text, 'pris');
+  }
+  function showTyping() {
+    const el = addMsg('…', 'pris typing');
+    el.id = 'pris-typing';
+    return el;
+  }
+  function removeTyping() {
+    document.getElementById('pris-typing')?.remove();
+  }
+
+  // ── Orb Contingency Mode ──────────────────────────────────────────────
+  let _orbModo = 'normal'; // 'normal' | 'contingencia'
+  let _geminiFailCount = 0;
+
+  const ACCIONES_CRITICAS = [
+    { icon: '📋', label: 'Nueva Orden de Laboratorio', url: '/laboratorio/recepcion/' },
+    { icon: '💊', label: 'Punto de Venta Farmacia', url: '/farmacia/pdv/' },
+    { icon: '👤', label: 'Buscar Paciente', url: '/pacientes/' },
+    { icon: '🔬', label: 'Worklist de Laboratorio', url: '/laboratorio/lista-trabajo/' },
+    { icon: '📦', label: 'Stock Crítico Inventario', url: '/silo-lab/dashboard/' },
+    { icon: '🏥', label: 'War Room Director', url: '/director/war-room/' },
+  ];
+
+  function _activarContingencia(razon) {
+    if (_orbModo === 'contingencia') return;
+    _orbModo = 'contingencia';
+    // Cambiar FAB a rojo
+    const f = fab();
+    if (f) {
+      f.style.background = 'linear-gradient(135deg, #b91c1c, #ef4444)';
+      f.style.animation = 'pris-pulse-ring 1s infinite';
+      f.title = '⚠️ PRIS en modo de emergencia — IA no disponible';
+    }
+    // Cambiar header del panel
+    statusTxt().textContent = '⚠️ Modo Contingencia — IA no disponible';
+    // Mostrar menú estático
+    addSystemMsg(
+      `⚠️ PRIS en Modo de Contingencia\n\n` +
+      `La IA (Gemini) no está disponible en este momento: ${razon}\n\n` +
+      `Usa las acciones críticas del menú a continuación para continuar operando. ` +
+      `El laboratorio no se detiene.`
+    );
+    _renderMenuContingencia();
+  }
+
+  function _desactivarContingencia() {
+    if (_orbModo === 'normal') return;
+    _orbModo = 'normal';
+    _geminiFailCount = 0;
+    const f = fab();
+    if (f) {
+      f.style.background = '';
+      f.style.animation = '';
+      f.title = 'Hablar con PRIS';
+    }
+    statusTxt().textContent = 'Listo · Gemini 2.0 Flash';
+  }
+
+  function _renderMenuContingencia() {
+    const container = document.createElement('div');
+    container.className = 'pris-msg pris';
+    container.innerHTML = `
+      <div class="pris-bubble" style="background:#1e1b1b; border-color:#ef4444; padding:10px;">
+        <div style="font-size:.72rem; color:#fca5a5; font-weight:700; letter-spacing:.05em; margin-bottom:8px;">
+          ACCIONES CRÍTICAS (MODO MANUAL)
+        </div>
+        ${ACCIONES_CRITICAS.map(a => `
+          <a href="${a.url}" style="display:flex; align-items:center; gap:8px; padding:7px 8px;
+             background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.25); border-radius:7px;
+             color:#fca5a5; text-decoration:none; margin-bottom:5px; font-size:.78rem; font-weight:600;
+             transition:background .15s;">
+            <span>${a.icon}</span><span>${a.label}</span>
+            <span style="margin-left:auto; opacity:.6;">→</span>
+          </a>
+        `).join('')}
+        <button onclick="prisWidget._intentarReconectar()" style="width:100%; margin-top:6px; padding:6px;
+          background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:7px;
+          color:#94a3b8; font-size:.75rem; cursor:pointer;">
+          🔄 Reintentar conexión con IA
+        </button>
+      </div>`;
+    msgs().appendChild(container);
+    msgs().scrollTop = msgs().scrollHeight;
+  }
+
+  async function _intentarReconectar() {
+    addSystemMsg('🔄 Probando conexión con Gemini…');
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ mensaje: 'ping', historial: [], contexto_pagina: '/' }),
+      });
+      if (resp.ok) {
+        _desactivarContingencia();
+        addSystemMsg('✅ Conexión restaurada. PRIS está en línea nuevamente.');
+      } else {
+        addSystemMsg(`⚠️ Gemini sigue sin responder (HTTP ${resp.status}). Intenta en unos minutos.`);
+      }
+    } catch {
+      addSystemMsg('⚠️ Sin conexión todavía. Continúa operando manualmente.');
+    }
+  }
+
+  // ── Send ──────────────────────────────────────────────────────────────
+  async function send() {
+    const text = input().value.trim();
+    if (!text || isThinking) return;
+    input().value = '';
+    addMsg(text, 'user');
+    historial.push({ rol: 'user', texto: text });
+    isThinking = true;
+    statusTxt().textContent = 'Pensando…';
+    const typingEl = showTyping();
+
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({
+          mensaje: text,
+          historial: historial.slice(-14),
+          contexto_pagina: window.location.pathname,
+        }),
+      });
+      const data = await resp.json();
+      removeTyping();
+      const reply = data.respuesta || data.mensaje || 'Sin respuesta';
+      addMsg(reply, 'pris');
+      historial.push({ rol: 'pris', texto: reply });
+      statusTxt().textContent = data.tiempo_ms ? `${data.tiempo_ms}ms · Gemini 2.0 Flash` : 'Listo';
+      // Reconectar si volvió de contingencia
+      if (_orbModo === 'contingencia') _desactivarContingencia();
+      // Si hay herramientas ejecutadas con pendiente, refrescar badge
+      if (data.herramientas_ejecutadas?.length) loadPendientes();
+    } catch (err) {
+      removeTyping();
+      _geminiFailCount++;
+      if (_geminiFailCount >= 2) {
+        // 2 fallos consecutivos → activar contingencia
+        _activarContingencia(err.message?.includes('fetch') ? 'Sin conexión a internet' : 'Servicio IA no disponible');
+      } else {
+        addMsg('Error de conexión. Si persiste, PRIS activará el modo de emergencia.', 'pris');
+      }
+      statusTxt().textContent = 'Error de red';
+    } finally {
+      isThinking = false;
+    }
+  }
+
+  // ── Voice ─────────────────────────────────────────────────────────────
+  function toggleVoice() {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      addSystemMsg('Tu navegador no soporta reconocimiento de voz. Usa Google Chrome.');
+      return;
+    }
+    if (isRecording) {
+      recognition?.stop();
+      return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SR();
+    recognition.lang = 'es-MX';
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = false;
+    recognition.onstart = () => {
+      isRecording = true;
+      micBtn().classList.add('recording');
+      voiceSt().classList.remove('d-none');
+    };
+    recognition.onresult = (evt) => {
+      const transcript = Array.from(evt.results).map(r => r[0].transcript).join('');
+      input().value = transcript;
+    };
+    recognition.onend = () => {
+      isRecording = false;
+      micBtn().classList.remove('recording');
+      voiceSt().classList.add('d-none');
+      const transcript = (input().value || '').trim().toLowerCase();
+      // Keyword "confirmar" → auto-confirmar primera AccionPRIS pendiente
+      if (transcript === 'confirmar' || transcript === 'confirmo' || transcript === 'sí confirmo' || transcript === 'si confirmo') {
+        input().value = '';
+        _autoConfirmarPrimeraPendiente();
+      } else if (transcript) {
+        send();
+      }
+    };
+    recognition.onerror = (e) => {
+      isRecording = false;
+      micBtn().classList.remove('recording');
+      voiceSt().classList.add('d-none');
+      if (e.error !== 'aborted') addSystemMsg(`Error de micrófono: ${e.error}`);
+    };
+    recognition.start();
+  }
+
+  // ── Pending actions ───────────────────────────────────────────────────
+  async function loadPendientes() {
+    try {
+      const resp = await fetch(PENDING_URL, {
+        headers: { 'X-CSRFToken': CSRF }
+      });
+      const data = await resp.json();
+      const total = data.total || 0;
+      // Update badge
+      badge().textContent = total;
+      badge().classList.toggle('d-none', total === 0);
+      pendCount().textContent = total;
+      pendCount().classList.toggle('d-none', total === 0);
+      // Render list
+      renderAcciones(data.acciones || []);
+    } catch (e) {
+      console.warn('PRIS: no se pudieron cargar acciones pendientes', e);
+    }
+  }
+
+  function renderAcciones(acciones) {
+    const list = accionesList();
+    if (acciones.length === 0) {
+      list.innerHTML = `<div class="text-center text-muted py-4 small">
+        <i class="bi bi-check2-circle fs-4 d-block mb-2 opacity-50"></i>
+        Sin acciones pendientes
+      </div>`;
+      return;
+    }
+    list.innerHTML = acciones.map(a => `
+      <div class="pris-accion-card" id="pris-accion-${a.id}">
+        <div class="accion-tipo">${escHtml(a.tipo)} · ${escHtml(a.modulo)}</div>
+        <div class="accion-instruccion">"${escHtml(a.instruccion)}"</div>
+        <div class="text-muted" style="font-size:.7rem">${escHtml(a.usuario)} · ${escHtml(a.fecha)}</div>
+        <div class="accion-btns">
+          <button class="btn-confirmar-accion"
+                  onclick="prisWidget.confirmarAccion(${a.id})">
+            <i class="bi bi-check-lg me-1"></i>Confirmar
+          </button>
+          <button class="btn-rechazar-accion"
+                  onclick="prisWidget.rechazarAccion(${a.id})">
+            <i class="bi bi-x-lg me-1"></i>Rechazar
+          </button>
+        </div>
+      </div>`).join('');
+  }
+
+  async function confirmarAccion(id) {
+    try {
+      const url = `/pris/api/accion/${id}/confirmar/`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF },
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        document.getElementById(`pris-accion-${id}`)?.remove();
+        loadPendientes();
+        addMsg(`✅ Acción #${id} confirmada correctamente.`, 'pris');
+        if (currentTab === 'acciones') showTab('acciones');
+      } else {
+        addMsg(`⚠️ ${data.error}`, 'pris');
+      }
+    } catch (e) {
+      addMsg('Error al confirmar la acción.', 'pris');
+    }
+  }
+
+  async function rechazarAccion(id) {
+    const motivo = prompt('Motivo del rechazo (opcional):') || '';
+    try {
+      const url = `/pris/api/accion/${id}/rechazar/`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ motivo }),
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        document.getElementById(`pris-accion-${id}`)?.remove();
+        loadPendientes();
+      } else {
+        addMsg(`⚠️ ${data.error}`, 'pris');
+      }
+    } catch (e) {
+      addMsg('Error al rechazar la acción.', 'pris');
+    }
+  }
+
+  // ── Auto-confirmar primera AccionPRIS pendiente por voz ──────────────
+  async function _autoConfirmarPrimeraPendiente() {
+    try {
+      const resp = await fetch(PENDING_URL, { headers: { 'X-CSRFToken': CSRF } });
+      const data = await resp.json();
+      const acciones = data.acciones || [];
+      if (acciones.length === 0) {
+        addSystemMsg('🎙️ Dije "Confirmar" pero no hay acciones pendientes en este momento.');
+        return;
+      }
+      const primera = acciones[0];
+      addSystemMsg(`🎙️ Voz detectada: "Confirmar". Ejecutando acción #${primera.id}: "${primera.instruccion}"…`);
+      await confirmarAccion(primera.id);
+    } catch (e) {
+      addSystemMsg('No pude confirmar automáticamente. Usa el botón en la pestaña Pendientes.');
+    }
+  }
+
+  // ── History ───────────────────────────────────────────────────────────
+  function clearHistory() {
+    historial = [];
+    msgs().innerHTML = '';
+    addSystemMsg('Historial limpiado. ¿En qué te ayudo?');
+  }
+
+  // ── Utils ─────────────────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ── Keyboard shortcut: Ctrl+Shift+P ───────────────────────────────────
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.shiftKey && (e.key === 'P' || e.key === 'p')) {
+      e.preventDefault();
+      toggle();
+    }
+  });
+
+  // ── Auto-load pending badge on page load ──────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => setTimeout(loadPendientes, 2000));
+
+  // ── Modo Offline: detección por navigator.onLine ─────────────────────────
+  function _setupOfflineDetection() {
+    window.addEventListener('offline', () => {
+      _activarContingencia('Sin conexión a internet (sin señal de red)');
+    });
+    window.addEventListener('online', () => {
+      if (_orbModo === 'contingencia') {
+        addSystemMsg('📶 Conexión restaurada. Probando acceso a PRIS…');
+        setTimeout(() => _intentarReconectar(), 1500);
+      }
+    });
+    // Verificar estado inicial al cargar
+    if (!navigator.onLine) {
+      setTimeout(() => _activarContingencia('Sin conexión a internet (sin señal de red)'), 500);
+    }
+  }
+  _setupOfflineDetection();
+
+  return { toggle, showTab, send, toggleVoice, clearHistory, loadPendientes, confirmarAccion, rechazarAccion, _autoConfirmarPrimeraPendiente, _intentarReconectar };
+})();
+</script>

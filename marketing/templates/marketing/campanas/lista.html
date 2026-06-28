@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Campañas de Marketing - {{ empresa.nombre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .campaign-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border-left: 4px solid var(--empresa-color-primario, #0d6efd);
+    }
+    .campaign-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .badge-activa {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+    .badge-inactiva {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        color: white;
+    }
+    .filter-pills .btn {
+        border-radius: 50px;
+        margin-right: 8px;
+        margin-bottom: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-bullhorn"></i> Campañas de Marketing</h2>
+            <p class="text-muted">Gestiona tus campañas publicitarias y de comunicación</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'marketing:crear_campana' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus"></i> Nueva Campaña
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title mb-3"><i class="fas fa-filter"></i> Filtros</h5>
+            <form method="get" class="filter-pills">
+                <div class="btn-group" role="group">
+                    <a href="?estado=todas" class="btn btn-sm {% if filtro_estado == 'todas' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        <i class="fas fa-list"></i> Todas
+                    </a>
+                    <a href="?estado=activas" class="btn btn-sm {% if filtro_estado == 'activas' %}btn-success{% else %}btn-outline-success{% endif %}">
+                        <i class="fas fa-check-circle"></i> Activas
+                    </a>
+                    <a href="?estado=inactivas" class="btn btn-sm {% if filtro_estado == 'inactivas' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+                        <i class="fas fa-times-circle"></i> Inactivas
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Campañas -->
+    <div class="row">
+        {% if campanas %}
+            {% for campana in campanas %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card campaign-card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title mb-0">
+                                {{ campana.nombre|default:campana.segmento }}
+                            </h5>
+                            {% if campana.activa %}
+                                <span class="badge badge-activa">
+                                    <i class="fas fa-circle-notch fa-spin"></i> Activa
+                                </span>
+                            {% else %}
+                                <span class="badge badge-inactiva">
+                                    <i class="fas fa-pause"></i> Inactiva
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-users"></i> <strong>Segmento:</strong> {{ campana.segmento }}
+                        </p>
+
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-comment"></i> <strong>Canal:</strong> 
+                            {% if campana.canal_comunicacion == 'whatsapp' %}
+                                <span class="badge bg-success">WhatsApp</span>
+                            {% elif campana.canal_comunicacion == 'email' %}
+                                <span class="badge bg-info">Email</span>
+                            {% elif campana.canal_comunicacion == 'sms' %}
+                                <span class="badge bg-warning">SMS</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ campana.canal_comunicacion }}</span>
+                            {% endif %}
+                        </p>
+
+                        <hr>
+
+                        <div class="mensaje-preview mb-3">
+                            <small class="text-muted">Mensaje:</small>
+                            <p class="small">{{ campana.mensaje_whatsapp|truncatewords:15 }}</p>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar"></i> {{ campana.fecha_creacion|date:"d/m/Y" }}
+                            </small>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary" title="Ver detalles">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <a href="{% url 'marketing:editar_campana' campana.id %}" class="btn btn-sm btn-outline-success" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle fa-3x mb-3"></i>
+                    <h4>No hay campañas registradas</h4>
+                    <p>Comienza creando tu primera campaña de marketing.</p>
+                    <a href="{% url 'marketing:crear_campana' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Crear Primera Campaña
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Estadísticas Rápidas -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ campanas|length }}</h3>
+                    <p class="text-muted mb-0">Campañas Totales</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h3 class="text-success">{{ campanas|length }}</h3>
+                    <p class="text-muted mb-0">Activas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h3 class="text-warning">0</h3>
+                    <p class="text-muted mb-0">Programadas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

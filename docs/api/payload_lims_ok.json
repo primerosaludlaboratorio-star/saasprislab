@@ -1,0 +1,22 @@
+{
+  "_qa_orden_id": "Raiz: sustituir orden_id (22222) por PK real de OrdenDeServicio.",
+  "_qa_detalle_id": "Sustituir la clave 55555 dentro de resultados por el id real de DetalleOrden (string en JSON).",
+  "_qa_analito_id": "Sustituir 33333 y 44444 en parametros por ids reales de Analito.",
+  "orden_id": 22222,
+  "accion": "borrador",
+  "metodo_captura": "MANUAL",
+  "resultados": {
+    "55555": {
+      "resultado": "98",
+      "observaciones": "QA Jonathan — LIMS plantilla borrador",
+      "parametros": {
+        "33333": {
+          "valor": "5.2"
+        },
+        "44444": {
+          "valor": "140"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Captura Reporte USG — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header" style="background: linear-gradient(135deg, #4A90E2, #357ABD);">
+                    <h5 class="mb-0 text-white">
+                        <i class="fas fa-wave-square me-2"></i>Nuevo Reporte de Ultrasonido
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if messages %}
+                        {% for msg in messages %}
+                        <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+                            {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Paciente</label>
+                            <select name="paciente_id" class="form-select" required>
+                                <option value="">— Seleccionar paciente —</option>
+                                {% for p in pacientes %}
+                                <option value="{{ p.id }}" {% if paciente and paciente.id == p.id %}selected{% endif %}>
+                                    {{ p.nombre_completo }} — {{ p.fecha_nacimiento|date:"d/m/Y" }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tipo de Estudio</label>
+                            <select name="tipo_estudio" class="form-select" required>
+                                <option value="GENERAL">General</option>
+                                <option value="OBSTETRICO">Obstétrico</option>
+                                <option value="GINECOLOGICO">Ginecológico</option>
+                                <option value="ABDOMINAL">Abdominal</option>
+                                <option value="RENAL">Renal</option>
+                                <option value="TIROIDES">Tiroides</option>
+                                <option value="MAMARIO">Mamario</option>
+                                <option value="DOPPLER">Doppler</option>
+                                <option value="MUSCULO_ESQUELETICO">Músculo-Esquelético</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Hallazgos</label>
+                            <textarea name="hallazgos" class="form-control" rows="5"
+                                placeholder="Descripción detallada de los hallazgos ecográficos..."></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Conclusión / Diagnóstico</label>
+                            <textarea name="conclusion" class="form-control" rows="3"
+                                placeholder="Conclusión e impresión diagnóstica..."></textarea>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> Guardar Reporte
+                            </button>
+                            <a href="{% url 'lista_trabajo_usg' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

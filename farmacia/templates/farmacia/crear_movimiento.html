@@ -1,0 +1,304 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Crear Movimiento Manual - Kardex{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .info-box {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .tipo-movimiento-card {
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 2px solid transparent;
+    }
+    
+    .tipo-movimiento-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .tipo-movimiento-card.selected {
+        border-color: #0d6efd;
+        background-color: #e7f1ff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    
+    <!-- ========================================================== -->
+    <!-- HEADER -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'farmacia:dashboard_alertas' %}">Farmacia</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'farmacia:kardex_list' %}">Kardex</a></li>
+                    <li class="breadcrumb-item active">Crear Movimiento Manual</li>
+                </ol>
+            </nav>
+            
+            <h2 class="mb-3">
+                <i class="bi bi-pencil-square"></i>
+                Crear Movimiento Manual de Inventario
+            </h2>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- ALERTA INFORMATIVA -->
+    <!-- ========================================================== -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="info-box">
+                <i class="bi bi-info-circle-fill text-warning"></i>
+                <strong>Importante:</strong> 
+                Los movimientos manuales son para ajustes de inventario por conteo físico, mermas, 
+                robos o correcciones. Las compras y ventas se registran automáticamente.
+                <strong>Todo movimiento queda registrado en el historial inmutable.</strong>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================================== -->
+    <!-- FORMULARIO -->
+    <!-- ========================================================== -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header form-card text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clipboard-data"></i>
+                        Datos del Movimiento
+                    </h5>
+                </div>
+                <div class="card-body">
+                    
+                    <form id="formMovimiento" method="POST" action="{% url 'farmacia:crear_movimiento' %}">
+                        {% csrf_token %}
+                        
+                        <!-- Paso 1: Seleccionar Tipo de Movimiento -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-1-circle-fill text-primary"></i>
+                                Tipo de Movimiento
+                            </label>
+                            <div class="row g-3">
+                                {% for codigo, nombre in tipos_movimiento %}
+                                    <div class="col-md-6">
+                                        <div class="card tipo-movimiento-card h-100" 
+                                             onclick="seleccionarTipo('{{ codigo }}', this)">
+                                            <div class="card-body text-center">
+                                                {% if 'ENTRADA' in codigo %}
+                                                    <i class="bi bi-arrow-down-circle text-success" style="font-size: 2.5rem;"></i>
+                                                {% elif 'SALIDA' in codigo %}
+                                                    <i class="bi bi-arrow-up-circle text-danger" style="font-size: 2.5rem;"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-left-right text-warning" style="font-size: 2.5rem;"></i>
+                                                {% endif %}
+                                                <h6 class="mt-2 mb-0">{{ nombre }}</h6>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="tipo_movimiento" id="tipo_movimiento" required>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Paso 2: Seleccionar Producto -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-2-circle-fill text-primary"></i>
+                                Producto <span class="text-danger">*</span>
+                            </label>
+                            <select name="producto_id" id="producto_id" class="form-select" required>
+                                <option value="">-- Seleccionar Producto --</option>
+                                {% for prod in productos %}
+                                    <option value="{{ prod.id }}" 
+                                            data-stock="{{ prod.stock }}">
+                                        {{ prod.nombre }} - {{ prod.presentacion }} 
+                                        (Stock: {{ prod.stock }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div id="infoStock" class="form-text"></div>
+                        </div>
+                        
+                        <!-- Paso 3: Seleccionar Lote (opcional) -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-3-circle-fill text-primary"></i>
+                                Lote (Opcional)
+                            </label>
+                            <select name="lote_id" id="lote_id" class="form-select">
+                                <option value="">-- Seleccionar Lote --</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                Los lotes se cargarán al seleccionar un producto
+                            </small>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Cantidad y Costo -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">
+                                    Cantidad <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" name="cantidad" id="cantidad" 
+                                       class="form-control" step="0.01" min="0.01" required
+                                       placeholder="0.00">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">
+                                    Costo Unitario <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" name="costo_unitario" id="costo_unitario" 
+                                           class="form-control" step="0.01" min="0" required
+                                           placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Motivo de Ajuste -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                Motivo del Ajuste
+                            </label>
+                            <select name="motivo_ajuste_id" class="form-select">
+                                <option value="">-- Seleccionar Motivo --</option>
+                                {% for motivo in motivos %}
+                                    <option value="{{ motivo.id }}">
+                                        {{ motivo.codigo }} - {{ motivo.descripcion }}
+                                        {% if motivo.requiere_autorizacion_gerente %}
+                                            (Requiere Autorización)
+                                        {% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Observaciones -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                Observaciones <span class="text-danger">*</span>
+                            </label>
+                            <textarea name="observaciones" class="form-control" rows="4" 
+                                      required placeholder="Describe detalladamente el motivo del movimiento..."></textarea>
+                            <small class="form-text text-danger">
+                                <i class="bi bi-shield-exclamation"></i>
+                                Las observaciones son obligatorias para trazabilidad forense
+                            </small>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Botones -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'farmacia:kardex_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="btnGuardar">
+                                <i class="bi bi-check-circle"></i> Guardar Movimiento
+                            </button>
+                        </div>
+                        
+                    </form>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ============================================================
+    // SELECCIONAR TIPO DE MOVIMIENTO
+    // ============================================================
+    function seleccionarTipo(codigo, elemento) {
+        // Remover selección anterior
+        document.querySelectorAll('.tipo-movimiento-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        // Marcar como seleccionado
+        elemento.classList.add('selected');
+        document.getElementById('tipo_movimiento').value = codigo;
+    }
+    
+    // ============================================================
+    // CARGAR LOTES AL SELECCIONAR PRODUCTO
+    // ============================================================
+    document.getElementById('producto_id').addEventListener('change', function() {
+        const productoId = this.value;
+        const stockActual = this.options[this.selectedIndex].dataset.stock;
+        const infoStock = document.getElementById('infoStock');
+        const selectLote = document.getElementById('lote_id');
+        
+        // Mostrar stock actual
+        if (productoId) {
+            infoStock.innerHTML = `<strong>Stock actual: ${stockActual} unidades</strong>`;
+            
+            // Cargar lotes del producto
+            fetch(`/farmacia/erp/api/lotes-producto/${productoId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    selectLote.innerHTML = '<option value="">-- Seleccionar Lote --</option>';
+                    
+                    data.lotes.forEach(lote => {
+                        const option = document.createElement('option');
+                        option.value = lote.id;
+                        option.textContent = `${lote.numero_lote} - Cad: ${lote.fecha_caducidad} (${lote.cantidad} unidades)`;
+                        selectLote.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error al cargar lotes:', error);
+                });
+        } else {
+            infoStock.innerHTML = '';
+            selectLote.innerHTML = '<option value="">-- Seleccionar Lote --</option>';
+        }
+    });
+    
+    // ============================================================
+    // VALIDACIÓN DE FORMULARIO
+    // ============================================================
+    document.getElementById('formMovimiento').addEventListener('submit', function(e) {
+        const tipoMovimiento = document.getElementById('tipo_movimiento').value;
+        
+        if (!tipoMovimiento) {
+            e.preventDefault();
+            alert('Por favor selecciona un tipo de movimiento');
+            return false;
+        }
+        
+        // Confirmación
+        if (!confirm('¿Confirmas que los datos son correctos? El movimiento quedará registrado de forma inmutable.')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>
+{% endblock %}

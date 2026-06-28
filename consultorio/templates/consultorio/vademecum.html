@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Vademécum Integrado{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-pills"></i> Vademécum Integrado</h2>
+            <p class="text-muted">Base de datos de medicamentos con dosis, contraindicaciones e interacciones</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoMedicamento">
+                <i class="fas fa-plus"></i> Agregar Medicamento
+            </button>
+        </div>
+    </div>
+
+    <!-- Buscador -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" id="buscarMedicamento"
+                               placeholder="Buscar por nombre genérico, comercial o principio activo..."
+                               autocomplete="off">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select form-select-lg" id="filtroVia">
+                        <option value="">Todas las vías</option>
+                        <option value="ORAL">Oral</option>
+                        <option value="IM">Intramuscular</option>
+                        <option value="IV">Intravenosa</option>
+                        <option value="SC">Subcutánea</option>
+                        <option value="TOPICA">Tópica</option>
+                        <option value="INHALADA">Inhalada</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select form-select-lg" id="filtroGrupo">
+                        <option value="">Todos los grupos</option>
+                        {% for grupo in grupos_terapeuticos %}
+                        <option value="{{ grupo }}">{{ grupo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resultados de búsqueda en tiempo real -->
+    <div id="resultadosBusqueda"></div>
+
+    <!-- Listado de medicamentos -->
+    {% if medicamentos %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="tablaMedicamentos">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Medicamento</th>
+                            <th>Principio Activo</th>
+                            <th>Presentación</th>
+                            <th>Vía</th>
+                            <th>Dosis Adulto</th>
+                            <th>Control</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for med in medicamentos %}
+                        <tr class="medicamento-row"
+                            data-nombre="{{ med.nombre_generico }}"
+                            data-comercial="{{ med.nombre_comercial }}"
+                            data-activo="{{ med.principio_activo }}">
+                            <td>
+                                <strong>{{ med.nombre_generico }}</strong>
+                                {% if med.nombre_comercial %}
+                                    <br><small class="text-muted">{{ med.nombre_comercial }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ med.principio_activo }}</td>
+                            <td>
+                                {{ med.presentacion }}
+                                <br><small class="text-info">{{ med.concentracion }}</small>
+                            </td>
+                            <td><span class="badge bg-secondary">{{ med.get_via_administracion_display }}</span></td>
+                            <td>
+                                <small>{{ med.dosis_adulto|truncatewords:8 }}</small>
+                                {% if med.dosis_maxima %}
+                                    <br><small class="text-danger">Max: {{ med.dosis_maxima }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if med.controlado %}
+                                    <span class="badge bg-danger">Controlado</span>
+                                {% endif %}
+                                {% if med.requiere_receta %}
+                                    <span class="badge bg-warning text-dark">Receta</span>
+                                {% endif %}
+                                {% if med.embarazo_categoria %}
+                                    <span class="badge bg-info">Emb: {{ med.embarazo_categoria }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary btn-ver-detalle"
+                                        data-bs-toggle="modal" data-bs-target="#modalDetalle"
+                                        data-id="{{ med.id }}"
+                                        data-nombre="{{ med.nombre_generico }}"
+                                        data-comercial="{{ med.nombre_comercial }}"
+                                        data-activo="{{ med.principio_activo }}"
+                                        data-presentacion="{{ med.presentacion }}"
+                                        data-concentracion="{{ med.concentracion }}"
+                                        data-via="{{ med.get_via_administracion_display }}"
+                                        data-dosis-adulto="{{ med.dosis_adulto }}"
+                                        data-dosis-pediatrica="{{ med.dosis_pediatrica }}"
+                                        data-dosis-maxima="{{ med.dosis_maxima }}"
+                                        data-contraindicaciones="{{ med.contraindicaciones }}"
+                                        data-efectos="{{ med.efectos_adversos }}"
+                                        data-interacciones="{{ med.interacciones }}"
+                                        data-grupo="{{ med.grupo_terapeutico }}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-capsules fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">Vademécum vacío</h4>
+        <p class="text-muted">Aún no se han registrado medicamentos. Agrega el primero.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal: Detalle de Medicamento -->
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-pills"></i> <span id="detalleNombre"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Información General</h6>
+                        <table class="table table-sm">
+                            <tr><td class="fw-bold">Nombre Comercial:</td><td id="detalleComercial"></td></tr>
+                            <tr><td class="fw-bold">Principio Activo:</td><td id="detalleActivo"></td></tr>
+                            <tr><td class="fw-bold">Presentación:</td><td id="detallePresentacion"></td></tr>
+                            <tr><td class="fw-bold">Concentración:</td><td id="detalleConcentracion"></td></tr>
+                            <tr><td class="fw-bold">Vía:</td><td id="detalleVia"></td></tr>
+                            <tr><td class="fw-bold">Grupo:</td><td id="detalleGrupo"></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-success">Dosificación</h6>
+                        <div class="mb-2">
+                            <strong>Adultos:</strong>
+                            <p id="detalleDosisAdulto" class="mb-1"></p>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Pediátrica:</strong>
+                            <p id="detalleDosisPediatrica" class="mb-1"></p>
+                        </div>
+                        <div>
+                            <strong class="text-danger">Dosis Máxima:</strong>
+                            <p id="detalleDosisMax" class="mb-0"></p>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h6 class="text-danger"><i class="fas fa-exclamation-triangle"></i> Contraindicaciones</h6>
+                                <p id="detalleContraindicaciones" style="white-space:pre-wrap;"></p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="text-warning"><i class="fas fa-exclamation-circle"></i> Efectos Adversos</h6>
+                                <p id="detalleEfectos" style="white-space:pre-wrap;"></p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="text-info"><i class="fas fa-exchange-alt"></i> Interacciones</h6>
+                                <p id="detalleInteracciones" style="white-space:pre-wrap;"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Búsqueda en tiempo real
+document.getElementById('buscarMedicamento').addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    document.querySelectorAll('.medicamento-row').forEach(row => {
+        const nombre = row.dataset.nombre.toLowerCase();
+        const comercial = row.dataset.comercial.toLowerCase();
+        const activo = row.dataset.activo.toLowerCase();
+        row.style.display = (q.length < 2 || nombre.includes(q) || comercial.includes(q) || activo.includes(q)) ? '' : 'none';
+    });
+});
+
+// Mostrar detalle
+document.querySelectorAll('.btn-ver-detalle').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.getElementById('detalleNombre').textContent = this.dataset.nombre;
+        document.getElementById('detalleComercial').textContent = this.dataset.comercial || '—';
+        document.getElementById('detalleActivo').textContent = this.dataset.activo;
+        document.getElementById('detallePresentacion').textContent = this.dataset.presentacion;
+        document.getElementById('detalleConcentracion').textContent = this.dataset.concentracion;
+        document.getElementById('detalleVia').textContent = this.dataset.via;
+        document.getElementById('detalleGrupo').textContent = this.dataset.grupo || '—';
+        document.getElementById('detalleDosisAdulto').textContent = this.dataset.dosisAdulto || '—';
+        document.getElementById('detalleDosisPediatrica').textContent = this.dataset.dosisPediatrica || '—';
+        document.getElementById('detalleDosisMax').textContent = this.dataset.dosisMaxima || '—';
+        document.getElementById('detalleContraindicaciones').textContent = this.dataset.contraindicaciones || 'No reportadas';
+        document.getElementById('detalleEfectos').textContent = this.dataset.efectos || 'No reportados';
+        document.getElementById('detalleInteracciones').textContent = this.dataset.interacciones || 'No reportadas';
+    });
+});
+</script>
+{% endblock %}

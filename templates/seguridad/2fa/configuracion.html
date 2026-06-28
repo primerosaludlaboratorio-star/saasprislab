@@ -1,0 +1,323 @@
+{% extends "base_generic.html" %}
+{% load static %}
+
+{% block title %}Configuración de 2FA - Seguridad{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card-2fa {
+        border-left: 4px solid #007bff;
+    }
+    .device-card {
+        transition: transform 0.2s;
+    }
+    .device-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .status-badge {
+        font-size: 0.85rem;
+        padding: 0.25rem 0.75rem;
+    }
+    .backup-code {
+        font-family: 'Courier New', monospace;
+        font-size: 1.1rem;
+        letter-spacing: 1px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-shield-alt text-primary"></i>
+                        Autenticación de Dos Factores (2FA)
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Protege tu cuenta con una capa adicional de seguridad
+                    </p>
+                </div>
+                <a href="{% url 'seguridad:sesiones_activas' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-desktop"></i> Ver Sesiones Activas
+                </a>
+            </div>
+
+            <!-- Estado de 2FA -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card card-2fa">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h5 class="card-title mb-2">
+                                        {% if tiene_2fa_activo %}
+                                            <i class="fas fa-check-circle text-success"></i>
+                                            Autenticación de dos factores ACTIVADA
+                                        {% else %}
+                                            <i class="fas fa-exclamation-triangle text-warning"></i>
+                                            Autenticación de dos factores DESACTIVADA
+                                        {% endif %}
+                                    </h5>
+                                    <p class="text-muted mb-0">
+                                        {% if tiene_2fa_activo %}
+                                            Tu cuenta está protegida. Se requiere un código adicional al iniciar sesión.
+                                        {% else %}
+                                            <strong>Recomendación:</strong> Activa 2FA para proteger tu cuenta contra accesos no autorizados.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                {% if not tiene_2fa_activo %}
+                                <a href="{% url 'seguridad:activar_totp' %}" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-lock"></i> Activar 2FA Ahora
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dispositivos TOTP (Google Authenticator, etc.) -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-mobile-alt text-info"></i>
+                                Aplicaciones de Autenticación (TOTP)
+                            </h5>
+                            <small class="text-muted">Google Authenticator, Microsoft Authenticator, Authy, etc.</small>
+                        </div>
+                        <div class="card-body">
+                            {% if dispositivos_totp %}
+                                <div class="row">
+                                    {% for dispositivo in dispositivos_totp %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card device-card h-100">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <div>
+                                                        <h6 class="mb-1">
+                                                            <i class="fas fa-mobile-alt"></i>
+                                                            {{ dispositivo.nombre }}
+                                                        </h6>
+                                                        <small class="text-muted">
+                                                            Agregado: {{ dispositivo.fecha_creacion|date:"d/m/Y H:i" }}
+                                                        </small>
+                                                    </div>
+                                                    {% if dispositivo.activo %}
+                                                        <span class="badge bg-success status-badge">
+                                                            <i class="fas fa-check"></i> Activo
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary status-badge">
+                                                            <i class="fas fa-times"></i> Inactivo
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        {% if dispositivo.confirmado %}
+                                                            <small class="text-success">
+                                                                <i class="fas fa-check-circle"></i> Confirmado
+                                                            </small>
+                                                        {% else %}
+                                                            <small class="text-warning">
+                                                                <i class="fas fa-exclamation-circle"></i> Pendiente de confirmar
+                                                            </small>
+                                                        {% endif %}
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            Usado {{ dispositivo.contador_usos }} veces
+                                                        </small>
+                                                        {% if dispositivo.fecha_ultimo_uso %}
+                                                            <br>
+                                                            <small class="text-muted">
+                                                                Último uso: {{ dispositivo.fecha_ultimo_uso|date:"d/m/Y H:i" }}
+                                                            </small>
+                                                        {% endif %}
+                                                    </div>
+
+                                                    {% if dispositivo.activo %}
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#modalDesactivar{{ dispositivo.id }}">
+                                                        <i class="fas fa-power-off"></i> Desactivar
+                                                    </button>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Modal de confirmación para desactivar -->
+                                    <div class="modal fade" id="modalDesactivar{{ dispositivo.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Desactivar 2FA</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="post" action="{% url 'seguridad:desactivar_totp' dispositivo.id %}">
+                                                    {% csrf_token %}
+                                                    <div class="modal-body">
+                                                        <div class="alert alert-warning">
+                                                            <i class="fas fa-exclamation-triangle"></i>
+                                                            <strong>¡Advertencia!</strong> Al desactivar 2FA, tu cuenta será menos segura.
+                                                        </div>
+                                                        <p>Para confirmar, ingresa tu contraseña:</p>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Contraseña:</label>
+                                                            <input type="password" name="password" class="form-control" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-danger">
+                                                            <i class="fas fa-power-off"></i> Desactivar 2FA
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-mobile-alt text-muted" style="font-size: 48px;"></i>
+                                    <p class="text-muted mt-3 mb-3">No tienes ningún dispositivo de autenticación configurado.</p>
+                                    <a href="{% url 'seguridad:activar_totp' %}" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Agregar Dispositivo
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Códigos de Respaldo -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-key text-warning"></i>
+                                Códigos de Respaldo
+                            </h5>
+                            <small class="text-muted">Usa estos códigos si pierdes acceso a tu dispositivo</small>
+                        </div>
+                        <div class="card-body">
+                            {% if codigos_backup %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Tienes {{ total_codigos_backup }} código(s) de respaldo disponible(s).</strong>
+                                    Cada código solo se puede usar una vez.
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'seguridad:mostrar_codigos_backup' %}" class="btn btn-primary">
+                                        <i class="fas fa-eye"></i> Ver Códigos
+                                    </a>
+                                    <form method="post" action="{% url 'seguridad:regenerar_codigos_backup' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-warning" 
+                                                onclick="return confirm('¿Estás seguro? Los códigos anteriores dejarán de funcionar.')">
+                                            <i class="fas fa-sync"></i> Regenerar Códigos
+                                        </button>
+                                    </form>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    No tienes códigos de respaldo. Se generarán automáticamente al activar 2FA.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información y Ayuda -->
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-question-circle text-info"></i>
+                                ¿Cómo funciona 2FA?
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="text-center mb-3">
+                                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                                             style="width: 60px; height: 60px;">
+                                            <h3 class="mb-0">1</h3>
+                                        </div>
+                                    </div>
+                                    <h6>Instala una App</h6>
+                                    <p class="text-muted small">
+                                        Descarga Google Authenticator, Microsoft Authenticator o Authy en tu teléfono.
+                                    </p>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-center mb-3">
+                                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                                             style="width: 60px; height: 60px;">
+                                            <h3 class="mb-0">2</h3>
+                                        </div>
+                                    </div>
+                                    <h6>Escanea el Código QR</h6>
+                                    <p class="text-muted small">
+                                        Al activar 2FA, escanea el código QR con la app para vincular tu cuenta.
+                                    </p>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-center mb-3">
+                                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                                             style="width: 60px; height: 60px;">
+                                            <h3 class="mb-0">3</h3>
+                                        </div>
+                                    </div>
+                                    <h6>Ingresa el Código</h6>
+                                    <p class="text-muted small">
+                                        Cada vez que inicies sesión, ingresa el código de 6 dígitos que muestra la app.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-success mt-3">
+                                <i class="fas fa-shield-alt"></i>
+                                <strong>Beneficio:</strong> Aunque alguien conozca tu contraseña, no podrá acceder sin el código de tu teléfono.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-cerrar mensajes después de 5 segundos
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert-dismissible');
+        alerts.forEach(alert => {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 5000);
+</script>
+{% endblock %}

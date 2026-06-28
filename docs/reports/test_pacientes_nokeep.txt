@@ -1,0 +1,36 @@
+Creating test database for alias 'default'...
+
+Found 7 test(s).
+
+================================================================================
+MIGRACION FORENSE DE DATOS - LABORATORIO A CORE
+================================================================================
+Total de ordenes a procesar: 0
+
+
+================================================================================
+RESUMEN DE MIGRACI├ôN
+================================================================================
+Total procesadas: 0/0
+├ôrdenes actualizadas: 0
+├ôrdenes creadas (nuevas): 0
+================================================================================
+
+System check identified no issues (0 silenced).
+...ERROR Error inesperado en test_portal_paciente_view_get (tests.py)
+Traceback (most recent call last):
+  File "C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master\pacientes\tests.py", line 84, in test_portal_paciente_view_get
+    url = reverse('pacientes:portal_paciente')
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\urls\resolvers.py", line 851, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'portal_paciente' not found. 'portal_paciente' is not a valid view function or pattern name.
+s...
+----------------------------------------------------------------------
+Ran 7 tests in 8.562s
+
+OK (skipped=1)
+Destroying test database for alias 'default'...
+

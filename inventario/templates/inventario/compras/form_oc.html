@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <h5 class="fw-bold mb-3"><i class="bi bi-cart-plus me-2 text-primary"></i>{{ titulo }}</h5>
+
+  <form method="post" id="formOC">{% csrf_token %}
+    <!-- Datos generales -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-light py-2 fw-semibold">Datos de la OC</div>
+      <div class="card-body row g-3">
+        <div class="col-sm-6">
+          <label class="form-label fw-semibold">Proveedor *</label>
+          <select name="proveedor" class="form-select" required>
+            <option value="">— Seleccionar proveedor —</option>
+            {% for p in proveedores %}
+            <option value="{{ p.pk }}">{{ p.razon_social }} ({{ p.rfc|default:"Sin RFC" }})</option>
+            {% endfor %}
+          </select>
+          <small class="text-muted">¿No está? <a href="{% url 'inventario:crear_proveedor' %}" target="_blank">Crear proveedor</a></small>
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Notas / Condiciones Especiales</label>
+          <textarea name="notas_director" rows="2" class="form-control" placeholder="Condiciones de pago, urgencia, etc."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Silo selector + líneas dinámicas -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Artículos a Ordenar (multi-silo)</span>
+        <button type="button" class="btn btn-sm btn-success" onclick="agregarLinea()">
+          <i class="bi bi-plus-circle me-1"></i>Agregar Línea
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0" id="tablaLineas">
+          <thead class="table-light">
+            <tr>
+              <th style="width:15%">Silo</th>
+              <th style="width:35%">Artículo</th>
+              <th style="width:12%">Cantidad</th>
+              <th style="width:10%">Unidad</th>
+              <th style="width:13%">Precio Est.</th>
+              <th style="width:10%" class="text-end">Subtotal</th>
+              <th style="width:5%" class="text-center">×</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpoLineas">
+            <!-- Primera línea por defecto -->
+            <tr class="linea-row">
+              <td>
+                <select name="linea_silo" class="form-select form-select-sm silo-select" onchange="actualizarArticulos(this)">
+                  <option value="LAB">Laboratorio</option>
+                  <option value="CONSULTORIO">Consultorio</option>
+                  <option value="GENERAL">Generales</option>
+                </select>
+              </td>
+              <td>
+                <select name="linea_articulo_id" class="form-select form-select-sm articulo-select">
+                  <option value="">— Seleccionar artículo —</option>
+                  {% for r in reactivos %}
+                  <option value="{{ r.pk }}" data-silo="LAB" data-precio="{{ r.precio_ultima_compra }}" data-unidad="{{ r.unidad_medida }}">
+                    {{ r.nombre }} ({{ r.codigo_interno }})
+                  </option>
+                  {% endfor %}
+                  {% for i in insumos_con %}
+                  <option value="{{ i.pk }}" data-silo="CONSULTORIO" data-precio="{{ i.precio_ultima_compra }}" data-unidad="{{ i.unidad_medida }}" style="display:none">
+                    {{ i.nombre }} ({{ i.codigo_interno }})
+                  </option>
+                  {% endfor %}
+                  {% for i in insumos_gen %}
+                  <option value="{{ i.pk }}" data-silo="GENERAL" data-precio="{{ i.precio_ultima_compra }}" data-unidad="{{ i.unidad_medida }}" style="display:none">
+                    {{ i.nombre }} ({{ i.codigo_interno }})
+                  </option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td><input type="number" name="linea_cantidad" step="0.01" min="0.01" value="1" class="form-control form-control-sm cant-input" oninput="calcSubtotal(this)"></td>
+              <td><input type="text" name="linea_unidad" class="form-control form-control-sm" placeholder="PIEZA"></td>
+              <td>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text">$</span>
+                  <input type="number" name="linea_precio" step="0.0001" value="0" class="form-control precio-input" oninput="calcSubtotal(this)">
+                </div>
+              </td>
+              <td class="text-end fw-semibold subtotal-cell">$0.00</td>
+              <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="quitarLinea(this)"><i class="bi bi-trash"></i></button></td>
+            </tr>
+          </tbody>
+          <tfoot class="table-light">
+            <tr>
+              <td colspan="5" class="text-end fw-semibold">Subtotal (sin IVA):</td>
+              <td class="text-end fw-bold" id="totalSinIva">$0.00</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="5" class="text-end text-muted">IVA 16%:</td>
+              <td class="text-end text-muted" id="totalIva">$0.00</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="5" class="text-end fw-bold fs-5">Total:</td>
+              <td class="text-end fw-bold fs-5 text-primary" id="totalFinal">$0.00</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Hidden descriptions -->
+    <div id="descripcionesHidden"></div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-save me-1"></i>Crear OC en Borrador
+      </button>
+      <a href="{% url 'inventario:lista_ordenes_compra' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+function actualizarArticulos(siloSelect) {
+  const silo = siloSelect.value;
+  const row = siloSelect.closest('tr');
+  const artSelect = row.querySelector('.articulo-select');
+  Array.from(artSelect.options).forEach(opt => {
+    if (!opt.value) { opt.style.display = ''; return; }
+    opt.style.display = (opt.dataset.silo === silo) ? '' : 'none';
+  });
+  artSelect.value = '';
+}
+
+function calcSubtotal(input) {
+  const row = input.closest('tr');
+  const cant = parseFloat(row.querySelector('.cant-input').value) || 0;
+  const precio = parseFloat(row.querySelector('.precio-input').value) || 0;
+  row.querySelector('.subtotal-cell').textContent = '$' + (cant * precio).toFixed(2);
+  actualizarTotales();
+}
+
+function actualizarTotales() {
+  let subtotal = 0;
+  document.querySelectorAll('.subtotal-cell').forEach(cell => {
+    subtotal += parseFloat(cell.textContent.replace('$','')) || 0;
+  });
+  const iva = subtotal * 0.16;
+  document.getElementById('totalSinIva').textContent = '$' + subtotal.toFixed(2);
+  document.getElementById('totalIva').textContent = '$' + iva.toFixed(2);
+  document.getElementById('totalFinal').textContent = '$' + (subtotal + iva).toFixed(2);
+}
+
+function agregarLinea() {
+  const template = document.querySelector('.linea-row');
+  const clone = template.cloneNode(true);
+  clone.querySelector('.silo-select').value = 'LAB';
+  clone.querySelector('.articulo-select').value = '';
+  clone.querySelector('.cant-input').value = '1';
+  clone.querySelector('.precio-input').value = '0';
+  clone.querySelector('.subtotal-cell').textContent = '$0.00';
+  document.getElementById('cuerpoLineas').appendChild(clone);
+  // Asegurar visibilidad LAB
+  actualizarArticulos(clone.querySelector('.silo-select'));
+}
+
+function quitarLinea(btn) {
+  const rows = document.querySelectorAll('.linea-row');
+  if (rows.length <= 1) { alert('Debe quedar al menos una línea.'); return; }
+  btn.closest('tr').remove();
+  actualizarTotales();
+}
+
+// Inyectar descripciones antes de submit
+document.getElementById('formOC').addEventListener('submit', function() {
+  const container = document.getElementById('descripcionesHidden');
+  container.innerHTML = '';
+  document.querySelectorAll('.linea-row').forEach(row => {
+    const artSelect = row.querySelector('.articulo-select');
+    const desc = artSelect.options[artSelect.selectedIndex]?.text || '';
+    const inp = document.createElement('input');
+    inp.type = 'hidden'; inp.name = 'linea_descripcion'; inp.value = desc;
+    container.appendChild(inp);
+  });
+});
+
+// Auto-rellenar precio al seleccionar artículo
+document.addEventListener('change', function(e) {
+  if (e.target && e.target.classList.contains('articulo-select')) {
+    const opt = e.target.options[e.target.selectedIndex];
+    const row = e.target.closest('tr');
+    if (opt && opt.dataset.precio) {
+      row.querySelector('.precio-input').value = parseFloat(opt.dataset.precio).toFixed(4);
+      if (opt.dataset.unidad) row.querySelector('input[name="linea_unidad"]').value = opt.dataset.unidad;
+      calcSubtotal(row.querySelector('.precio-input'));
+    }
+  }
+});
+</script>
+{% endblock %}

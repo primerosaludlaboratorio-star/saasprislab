@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autofacturación CFDI 4.0 — {% if empresa %}{{ empresa.nombre }}{% else %}PRISLAB{% endif %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    body { background: #f0f4f8; font-family: 'Segoe UI', sans-serif; }
+    .af-card {
+      max-width: 540px; margin: 2rem auto; background: #fff;
+      border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+    .af-header {
+      background: linear-gradient(135deg, #1e40af, #2563eb);
+      color: #fff; padding: 1.5rem 1.5rem 1.25rem;
+    }
+    .af-header h1 { font-size: 1.25rem; margin: 0; }
+    .af-header .subtitle { font-size: .82rem; opacity: .85; margin-top: 4px; }
+    .af-body { padding: 1.5rem; }
+    .venta-resumen {
+      background: #f8fafc; border: 1px solid #e2e8f0;
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 1.25rem;
+    }
+    .venta-resumen .folio { font-weight: 700; color: #1e40af; }
+    .venta-resumen .total { font-size: 1.4rem; font-weight: 800; color: #10b981; }
+    .sat-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #fef3c7; color: #92400e; border: 1px solid #fde68a;
+      border-radius: 6px; padding: 4px 10px; font-size: .75rem; margin-bottom: 1rem;
+    }
+    label { font-weight: 600; font-size: .85rem; color: #374151; }
+    .form-control, .form-select { font-size: .88rem; }
+    .btn-facturar {
+      background: linear-gradient(135deg, #1e40af, #2563eb);
+      color: #fff; border: none; width: 100%; padding: 12px;
+      border-radius: 10px; font-weight: 700; font-size: 1rem;
+      cursor: pointer; transition: opacity .2s;
+    }
+    .btn-facturar:hover { opacity: .9; }
+    .exito-panel {
+      text-align: center; padding: 2rem;
+    }
+    .exito-panel .check { font-size: 4rem; color: #10b981; }
+    .exito-panel h2 { font-size: 1.3rem; color: #1f2937; margin-top: .5rem; }
+    .folio-form input { text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    .ya-registrada { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px 16px; }
+  </style>
+</head>
+<body>
+
+<div class="af-card">
+
+  <!-- HEADER -->
+  <div class="af-header">
+    <h1>📄 Autofacturación CFDI 4.0</h1>
+    <div class="subtitle">
+      {% if empresa %}{{ empresa.nombre }}{% else %}PRISLAB{% endif %} ·
+      Captura tus datos fiscales para solicitar tu factura electrónica
+    </div>
+  </div>
+
+  <div class="af-body">
+
+    {% if exito %}
+    <!-- ═══════════════════════ ÉXITO ═══════════════════════ -->
+    <div class="exito-panel">
+      <div class="check">✅</div>
+      <h2>¡Solicitud Registrada!</h2>
+      <p class="text-muted" style="font-size:.9rem;">
+        Tu solicitud de factura CFDI 4.0 para el folio <strong>{{ folio }}</strong>
+        fue registrada correctamente. El equipo de facturación la procesará
+        y la recibirás en el correo que indicaste.
+      </p>
+      {% if factura_existente %}
+      <div class="alert alert-info mt-3" style="font-size:.82rem; text-align:left;">
+        <strong>Referencia interna:</strong> #{{ factura_existente.id }}<br>
+        <strong>Estado:</strong> {{ factura_existente.get_estatus_display }}<br>
+        <strong>Folio:</strong> {{ factura_existente.folio }}
+      </div>
+      {% endif %}
+      <p class="text-muted mt-3" style="font-size:.78rem;">
+        El tiempo de procesamiento es de 1–2 días hábiles.<br>
+        ¿Dudas? Llama o escríbenos directamente.
+      </p>
+    </div>
+
+    {% elif error_folio %}
+    <!-- ═══════════════════════ ERROR FOLIO ═══════════════════════ -->
+    <div class="alert alert-danger">
+      <strong>No encontrado:</strong> {{ error_folio }}
+    </div>
+    <form method="GET" class="folio-form mt-3">
+      <div class="mb-3">
+        <label for="folio_input2" class="form-label">Intenta con otro folio</label>
+        <input type="text" id="folio_input2" name="folio" class="form-control"
+               placeholder="Ej. VTA-0001" value="{{ folio }}"
+               style="text-transform:uppercase;">
+      </div>
+      <button type="submit" class="btn btn-outline-primary w-100">Buscar nuevamente</button>
+    </form>
+
+    {% elif not folio %}
+    <!-- ═══════════════════════ INGRESAR FOLIO ═══════════════════════ -->
+    <div class="sat-badge">
+      <span>⚠️</span> Ingresa el folio de tu ticket para comenzar
+    </div>
+    <form method="GET" class="folio-form">
+      <div class="mb-3">
+        <label for="folio_input" class="form-label">Folio del Ticket</label>
+        <input type="text" id="folio_input" name="folio" class="form-control form-control-lg"
+               placeholder="Ej. VTA-0001" required
+               style="text-transform:uppercase; font-weight:700; letter-spacing:2px;">
+        <div class="form-text">Encuéntralo en tu ticket de compra impreso o digital.</div>
+      </div>
+      <button type="submit" class="btn-facturar">Buscar Ticket →</button>
+    </form>
+
+    {% elif factura_existente and factura_existente.estatus == 'TIMBRADA' %}
+    <!-- ═══════════════════════ YA TIMBRADA ═══════════════════════ -->
+    <div class="ya-registrada">
+      <strong style="color:#16a34a;">✅ Tu factura ya fue emitida</strong><br>
+      <span style="font-size:.82rem; color:#374151;">
+        UUID SAT: <code>{{ factura_existente.uuid }}</code>
+      </span>
+    </div>
+
+    {% else %}
+    <!-- ═══════════════════════ FORMULARIO FISCAL ═══════════════════════ -->
+    {% if venta %}
+    <div class="venta-resumen">
+      <div class="row align-items-center">
+        <div class="col">
+          <span class="folio">{{ venta.folio_operacion }}</span>
+          <div style="font-size:.78rem; color:#64748b;">
+            {{ venta.fecha|date:"d/m/Y H:i" }} ·
+            {% if venta.paciente %}{{ venta.paciente.nombre_completo }}{% else %}Público general{% endif %}
+          </div>
+        </div>
+        <div class="col-auto">
+          <span class="total">${{ venta.total|floatformat:2 }}</span>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if factura_existente %}
+    <div class="already alert alert-warning" style="font-size:.8rem;">
+      <strong>⚠️</strong> Ya existe una solicitud para este folio. Puedes actualizarla si es necesario.
+    </div>
+    {% endif %}
+
+    <div class="sat-badge">
+      <span>📋</span> Datos necesarios para tu CFDI 4.0 (SAT)
+    </div>
+
+    {% if errores_form %}
+    <div class="alert alert-danger" style="font-size:.82rem;">
+      <strong>Corrige lo siguiente:</strong>
+      <ul class="mb-0 mt-1">
+        {% for e in errores_form %}<li>{{ e }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <form method="POST" autocomplete="on">
+      {% csrf_token %}
+      <input type="hidden" name="folio" value="{{ folio }}">
+
+      <div class="mb-3">
+        <label>RFC *</label>
+        <input type="text" name="rfc" class="form-control" required
+               value="{{ form_data.rfc|default:'' }}"
+               placeholder="XAXX010101000" maxlength="13"
+               style="text-transform:uppercase; letter-spacing:1px;">
+        <div class="form-text">RFC con homoclave. Persona física: 13 caracteres. Moral: 12 caracteres.</div>
+      </div>
+
+      <div class="mb-3">
+        <label>Razón Social *</label>
+        <input type="text" name="razon_social" class="form-control" required
+               value="{{ form_data.razon_social|default:'' }}"
+               placeholder="TU NOMBRE O EMPRESA S.A. DE C.V."
+               style="text-transform:uppercase;">
+        <div class="form-text">Tal como aparece en tu Constancia de Situación Fiscal del SAT.</div>
+      </div>
+
+      <div class="mb-3">
+        <label>Código Postal Fiscal *</label>
+        <input type="text" name="cp" class="form-control" required
+               value="{{ form_data.cp|default:'' }}"
+               placeholder="96400" maxlength="5" pattern="[0-9]{5}"
+               inputmode="numeric">
+      </div>
+
+      <div class="mb-3">
+        <label>Régimen Fiscal *</label>
+        <select name="regimen_fiscal" class="form-select" required>
+          <option value="">— Selecciona tu régimen —</option>
+          {% for codigo, nombre in regimenes %}
+          <option value="{{ codigo }}"
+            {% if form_data.regimen_fiscal == codigo %}selected{% endif %}>
+            {{ codigo }} — {{ nombre }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label>Uso del CFDI *</label>
+        <select name="uso_cfdi" class="form-select" required>
+          <option value="">— Selecciona el uso —</option>
+          {% for codigo, nombre in usos_cfdi %}
+          <option value="{{ codigo }}"
+            {% if form_data.uso_cfdi == codigo %}selected{% elif codigo == 'D01' and not form_data.uso_cfdi %}selected{% endif %}>
+            {{ codigo }} — {{ nombre }}
+          </option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Para servicios médicos/laboratorio generalmente es <strong>D01</strong>.</div>
+      </div>
+
+      <div class="mb-4">
+        <label>Correo para recibir el CFDI</label>
+        <input type="email" name="email" class="form-control"
+               value="{{ form_data.email|default:'' }}"
+               placeholder="tucorreo@ejemplo.com">
+        <div class="form-text">Recibirás el PDF y XML de tu factura aquí.</div>
+      </div>
+
+      <button type="submit" class="btn-facturar">
+        📤 Solicitar mi Factura CFDI 4.0
+      </button>
+
+      <p class="text-center text-muted mt-3" style="font-size:.72rem;">
+        Tus datos fiscales son manejados conforme a las leyes de protección de datos (ARCO).<br>
+        El timbrado se realiza en 1–2 días hábiles posterior a tu solicitud.
+      </p>
+    </form>
+    {% endif %}
+
+  </div><!-- /af-body -->
+</div><!-- /af-card -->
+
+<script>
+// Auto-mayúsculas en RFC y Razón Social
+document.querySelectorAll('input[name="rfc"], input[name="razon_social"]').forEach(el => {
+  el.addEventListener('input', () => { el.value = el.value.toUpperCase(); });
+});
+</script>
+</body>
+</html>

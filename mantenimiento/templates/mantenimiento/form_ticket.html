@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3" style="max-width:700px">
+  <div class="d-flex align-items-center mb-4 gap-3">
+    <a href="{% url 'mantenimiento:lista_tickets' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h2 class="mb-0 fw-bold text-warning"><i class="bi bi-ticket-perforated me-2"></i>{{ titulo }}</h2>
+  </div>
+
+  {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+          {% if not expediente %}
+          <div class="col-12">
+            <label class="form-label fw-semibold">Equipo <span class="text-danger">*</span></label>
+            <select name="expediente" class="form-select" required>
+              <option value="">— Selecciona —</option>
+              {% for exp in expedientes %}
+                <option value="{{ exp.pk }}">{{ exp.equipo.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% else %}
+          <input type="hidden" name="expediente" value="{{ expediente.pk }}">
+          <div class="col-12">
+            <div class="alert alert-info py-2">
+              <i class="bi bi-cpu me-2"></i>Equipo: <strong>{{ expediente.equipo.nombre }}</strong>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tipo de Origen</label>
+            <select name="tipo_origen" class="form-select">
+              {% for val, lbl in tipo_origen_choices %}
+                <option value="{{ val }}">{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">Título / Síntoma <span class="text-danger">*</span></label>
+            <input type="text" name="titulo" class="form-control" required
+                   placeholder="Ej: Alarma de flujo, Resultados de QC fuera de rango, No enciende…">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Descripción Detallada</label>
+            <textarea name="descripcion" class="form-control" rows="4"
+                      placeholder="Describe el problema con el mayor detalle posible…"></textarea>
+          </div>
+
+          <div class="col-12 d-flex justify-content-end gap-2">
+            <a href="{% url 'mantenimiento:lista_tickets' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-warning">
+              <i class="bi bi-ticket-perforated me-1"></i>Crear Ticket
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

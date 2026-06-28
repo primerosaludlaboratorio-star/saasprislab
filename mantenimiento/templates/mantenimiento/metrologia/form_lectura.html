@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3" style="max-width:480px">
+  <h5 class="fw-bold mb-3"><i class="bi bi-thermometer-half me-2 text-info"></i>{{ titulo }}</h5>
+
+  <form method="post">{% csrf_token %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="alert alert-info py-2 small mb-3">
+          <i class="bi bi-info-circle me-1"></i>
+          Si la lectura supera el rango aceptable del sensor, se generará un
+          <strong>Ticket de Mantenimiento CRÍTICO</strong> automáticamente.
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Sensor *</label>
+          <select name="sensor" class="form-select" required id="sensorSel">
+            <option value="">— Seleccionar sensor —</option>
+            {% for s in sensores %}
+            <option value="{{ s.pk }}"
+              data-tmin="{{ s.temp_min_aceptable }}"
+              data-tmax="{{ s.temp_max_aceptable }}">
+              {{ s.codigo }} — {{ s.nombre }}
+              (Rango: {{ s.temp_min_aceptable }}–{{ s.temp_max_aceptable }}°C)
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Temperatura (°C)</label>
+          <input type="number" name="temperatura" step="0.1" class="form-control" id="inpTemp"
+                 placeholder="Ej: 4.5">
+          <small class="text-muted" id="rangoHint"></small>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Humedad Relativa (%)</label>
+          <input type="number" name="humedad" step="0.1" min="0" max="100" class="form-control"
+                 placeholder="Ej: 60">
+        </div>
+      </div>
+      <div class="card-footer d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-circle me-1"></i>Registrar Lectura
+        </button>
+        <a href="{% url 'mantenimiento:dashboard_sensores' %}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+document.getElementById('sensorSel').addEventListener('change', function() {
+  const opt = this.options[this.selectedIndex];
+  const hint = document.getElementById('rangoHint');
+  if (opt.dataset.tmin) {
+    hint.textContent = `Rango aceptable: ${opt.dataset.tmin}°C – ${opt.dataset.tmax}°C`;
+    hint.className = 'text-info';
+  } else {
+    hint.textContent = '';
+  }
+});
+</script>
+{% endblock %}

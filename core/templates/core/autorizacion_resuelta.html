@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Autorización ya procesada{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm text-center">
+        <div class="card-body py-5">
+          <i class="fas fa-check-circle fa-4x text-secondary mb-3"></i>
+          <h4>Solicitud ya procesada</h4>
+          <p class="text-muted">{{ mensaje }}</p>
+          <hr>
+          <dl class="row text-start">
+            <dt class="col-sm-5">Tipo</dt>
+            <dd class="col-sm-7">{{ solicitud.tipo|default:"—" }}</dd>
+            <dt class="col-sm-5">Estado</dt>
+            <dd class="col-sm-7">
+              <span class="badge bg-{% if solicitud.estado == 'APROBADA' %}success{% elif solicitud.estado == 'RECHAZADA' %}danger{% else %}warning{% endif %}">
+                {{ solicitud.estado }}
+              </span>
+            </dd>
+            <dt class="col-sm-5">Fecha</dt>
+            <dd class="col-sm-7">{{ solicitud.fecha_resolucion|date:"d/m/Y H:i"|default:"—" }}</dd>
+          </dl>
+          <a href="{% url 'dashboard_director' %}" class="btn btn-primary mt-2">
+            <i class="fas fa-home me-1"></i>Ir al panel
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

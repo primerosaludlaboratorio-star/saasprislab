@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Buscar Paciente{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2><i class="fas fa-search"></i> Buscar Paciente</h2>
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Nombre, teléfono o email..." value="{{ busqueda }}">
+                    <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i> Buscar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for paciente in pacientes %}
+                    <tr>
+                        <td>{{ paciente.id }}</td>
+                        <td>{{ paciente.nombre_completo }}</td>
+                        <td>{{ paciente.telefono }}</td>
+                        <td>{{ paciente.email }}</td>
+                        <td>
+                            <a href="{% url 'recepcion:agendar_cita' %}?paciente={{ paciente.id }}" class="btn btn-sm btn-primary">Agendar Cita</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted">No se encontraron pacientes</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

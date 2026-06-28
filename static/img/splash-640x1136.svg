@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="1136" viewBox="0 0 640 1136">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0F172A"/>
+      <stop offset="1" stop-color="#FFFFFF"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="640" height="1136" fill="url(#g)"/>
+  <circle cx="320" cy="420" r="120" fill="#D9230F" opacity="0.92"/>
+  <text x="320" y="610" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="48" fill="#0F172A" font-weight="800">
+    PRISLAB
+  </text>
+  <text x="320" y="660" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="20" fill="#334155">
+    Pris‑Valle 2030
+  </text>
+</svg>
+

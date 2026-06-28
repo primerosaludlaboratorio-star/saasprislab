@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ recurso.titulo }} - Recursos de Bienestar{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'bienestar:recursos_lista' %}">Recursos</a></li>
+            <li class="breadcrumb-item active">{{ recurso.titulo }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow">
+                {% if recurso.imagen %}
+                <img src="{{ recurso.imagen.url }}" class="card-img-top" alt="{{ recurso.titulo }}">
+                {% endif %}
+                <div class="card-body">
+                    <span class="badge badge-primary">{{ recurso.get_categoria_display }}</span>
+                    <h2 class="mt-3">{{ recurso.titulo }}</h2>
+                    <p class="text-muted"><i class="fas fa-calendar"></i> {{ recurso.fecha_publicacion|date:"d/m/Y" }}</p>
+                    <hr>
+                    <div class="mt-4" style="line-height: 1.8;">
+                        {{ recurso.contenido|linebreaks }}
+                    </div>
+                    
+                    {% if recurso.video_url %}
+                    <div class="mt-4">
+                        <h4>Video Relacionado</h4>
+                        <div class="embed-responsive embed-responsive-16by9">
+                            <iframe class="embed-responsive-item" src="{{ recurso.video_url }}" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow mb-3">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-bookmark"></i> Guardar Recurso
+                </div>
+                <div class="card-body text-center">
+                    <button class="btn btn-outline-primary btn-block">
+                        <i class="fas fa-star"></i> Agregar a Favoritos
+                    </button>
+                    <button class="btn btn-outline-success btn-block">
+                        <i class="fas fa-share-alt"></i> Compartir
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-heart"></i> También te Puede Interesar
+                </div>
+                <div class="card-body p-0">
+                    {% for relacionado in recursos_relacionados %}
+                    <a href="#" class="list-group-item list-group-item-action" onclick="alert('Función en desarrollo'); return false;">
+                        <strong>{{ relacionado.titulo }}</strong><br>
+                        <small class="text-muted">{{ relacionado.get_categoria_display }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

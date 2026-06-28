@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Centro de Notificaciones — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">
+        <i class="fas fa-bell text-warning me-2"></i>Centro de Notificaciones
+        {% if total_no_leidas %}
+          <span class="badge bg-danger ms-2">{{ total_no_leidas }}</span>
+        {% endif %}
+      </h2>
+      <small class="text-muted">Alertas y mensajes del sistema</small>
+    </div>
+    <div class="d-flex gap-2">
+      {% if total_no_leidas %}
+      <button id="btn-marcar-todas" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-check-double me-1"></i>Marcar todas como leídas
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-body py-2">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label form-label-sm fw-semibold">Tipo</label>
+          <select name="tipo" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for val, lbl in tipos %}<option value="{{ val }}" {% if request.GET.tipo == val %}selected{% endif %}>{{ lbl }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label form-label-sm fw-semibold">Módulo</label>
+          <select name="modulo" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for val, lbl in modulos %}<option value="{{ val }}" {% if request.GET.modulo == val %}selected{% endif %}>{{ lbl }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <div class="form-check mt-3">
+            <input type="checkbox" name="no_leidas" value="1" class="form-check-input" id="chk-no-leidas"
+              {% if request.GET.no_leidas == '1' %}checked{% endif %}>
+            <label class="form-check-label" for="chk-no-leidas">Solo no leídas</label>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary btn-sm w-100">
+            <i class="fas fa-filter me-1"></i>Filtrar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Lista de notificaciones -->
+  <div class="card shadow-sm">
+    <div class="list-group list-group-flush">
+      {% for n in notificaciones %}
+      <div class="list-group-item list-group-item-action {% if not n.leida %}border-start border-4 border-primary{% endif %} notif-item"
+           data-id="{{ n.pk }}" style="cursor:pointer;">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="d-flex gap-3 align-items-start flex-grow-1">
+            <!-- Icono por tipo -->
+            <div class="mt-1">
+              {% if n.tipo == 'CRITICO' %}
+                <span class="badge bg-danger p-2"><i class="fas fa-exclamation-circle"></i></span>
+              {% elif n.tipo == 'ALERTA' %}
+                <span class="badge bg-warning text-dark p-2"><i class="fas fa-exclamation-triangle"></i></span>
+              {% elif n.tipo == 'EXITO' %}
+                <span class="badge bg-success p-2"><i class="fas fa-check-circle"></i></span>
+              {% elif n.tipo == 'SISTEMA' %}
+                <span class="badge bg-secondary p-2"><i class="fas fa-cog"></i></span>
+              {% else %}
+                <span class="badge bg-info p-2"><i class="fas fa-info-circle"></i></span>
+              {% endif %}
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between">
+                <h6 class="mb-1 {% if not n.leida %}fw-bold{% endif %}">{{ n.titulo }}</h6>
+                <small class="text-muted ms-3 text-nowrap">{{ n.creada|date:"d/m/Y H:i" }}</small>
+              </div>
+              <p class="mb-1 text-muted" style="font-size:.875rem;">{{ n.mensaje|truncatechars:150 }}</p>
+              <div class="d-flex gap-2">
+                <span class="badge bg-light text-dark border">{{ n.get_modulo_display }}</span>
+                {% if not n.leida %}<span class="badge bg-primary">No leída</span>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="list-group-item text-center py-5 text-muted">
+        <i class="fas fa-bell-slash fa-3x mb-3 d-block"></i>
+        No hay notificaciones para mostrar.
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  {% if notificaciones.has_other_pages %}
+  <nav class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+      {% if notificaciones.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ notificaciones.previous_page_number }}">‹ Anterior</a></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">{{ notificaciones.number }} / {{ notificaciones.paginator.num_pages }}</span></li>
+      {% if notificaciones.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ notificaciones.next_page_number }}">Siguiente ›</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+
+<script>
+document.querySelectorAll('.notif-item').forEach(el => {
+  el.addEventListener('click', function() {
+    const id = this.dataset.id;
+    fetch(`/notificaciones/${id}/leer/`, {method:'POST', headers:{'X-CSRFToken': '{{ csrf_token }}'}})
+      .then(() => {
+        this.classList.remove('border-start', 'border-4', 'border-primary');
+        const badge = this.querySelector('.badge.bg-primary');
+        if (badge) badge.remove();
+        const title = this.querySelector('h6');
+        if (title) title.classList.remove('fw-bold');
+      });
+    const enlace = "{{ n.enlace|default:'' }}";
+    if (enlace) window.location.href = enlace;
+  });
+});
+
+const btnTodas = document.getElementById('btn-marcar-todas');
+if (btnTodas) {
+  btnTodas.addEventListener('click', function() {
+    fetch('/notificaciones/marcar-todas/', {method:'POST', headers:{'X-CSRFToken': '{{ csrf_token }}'}})
+      .then(r => r.json())
+      .then(d => { if(d.ok) location.reload(); });
+  });
+}
+</script>
+{% endblock %}

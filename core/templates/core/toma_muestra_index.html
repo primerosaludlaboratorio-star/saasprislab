@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Toma de Muestra — Sala de Espera | PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+  .sala-espera-row { transition: background .15s; }
+  .sala-espera-row:hover { background: #f8f0ff; }
+  .badge-urgente { background:#fff3cd; color:#856404; border:1px solid #ffc107; }
+  .badge-stat    { background:#f8d7da; color:#842029; border:1px solid #f5c2c7; }
+  .badge-rutina  { background:#d1ecf1; color:#0c5460; border:1px solid #bee5eb; }
+  .tiempo-espera { font-size:.75rem; color:#6c757d; }
+  .btn-cubiculo {
+    background: linear-gradient(135deg,#7b2bdb,#5a1fb5);
+    color:#fff; border:none; border-radius:8px;
+    padding:6px 16px; font-size:.85rem; font-weight:600;
+    transition: transform .1s, box-shadow .1s;
+  }
+  .btn-cubiculo:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(123,43,219,.4); color:#fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+    <div>
+      <h4 class="fw-bold mb-0">
+        <i class="fas fa-door-open text-primary me-2"></i>Sala de Espera — Toma de Muestra
+      </h4>
+      <small class="text-muted">Órdenes pagadas pendientes de pasar a cubículo.</small>
+    </div>
+    <div class="d-flex gap-2">
+      <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2" style="font-size:.85rem;">
+        <i class="fas fa-clock me-1"></i>{{ ordenes|length }} en espera
+      </span>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'lista_trabajo_lab' %}">
+        <i class="fas fa-clipboard-check me-1"></i>Lista de Trabajo
+      </a>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width:130px;">Folio</th>
+              <th>Paciente</th>
+              <th>Estudios</th>
+              <th style="width:130px;">Fecha / Hora</th>
+              <th style="width:160px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for o in ordenes %}
+            <tr class="sala-espera-row">
+              <td>
+                <span class="fw-bold text-primary">{{ o.folio_orden|default:o.id }}</span>
+                {% if o.tipo_servicio == 'URGENTE' or o.tipo_servicio == 'STAT' %}
+                <span class="badge badge-{{ o.tipo_servicio|lower }} ms-1" style="font-size:.65rem;">
+                  {{ o.tipo_servicio }}
+                </span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="fw-semibold">{{ o.paciente.nombre_completo }}</div>
+                <small class="text-muted">
+                  {% if o.paciente.fecha_nacimiento %}{{ o.paciente.fecha_nacimiento|date:"d/m/Y" }}{% endif %}
+                  {% if o.paciente.sexo %} · {{ o.paciente.sexo }}{% endif %}
+                </small>
+              </td>
+              <td>
+                {% for det in o.detalles.all|slice:":3" %}
+                  <span class="badge bg-light text-dark border me-1" style="font-size:.7rem;">
+                    {{ det.display_nombre|default:"Estudio" }}
+                  </span>
+                {% endfor %}
+                {% if o.detalles.count > 3 %}
+                  <span class="text-muted small">+{{ o.detalles.count|add:"-3" }} más</span>
+                {% endif %}
+              </td>
+              <td>
+                <div style="font-size:.85rem;">{{ o.fecha_creacion|date:"d/m H:i" }}</div>
+                <div class="tiempo-espera" id="timer-{{ o.id }}"
+                     data-desde="{{ o.fecha_creacion|date:'c' }}"></div>
+              </td>
+              <td class="text-end">
+                <a href="{% url 'laboratorio:preparacion_toma' o.id %}"
+                   class="btn btn-cubiculo">
+                  <i class="fas fa-door-open me-1"></i>Entrar a Cubículo
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-5">
+                <i class="fas fa-check-circle fa-2x mb-2 d-block text-success opacity-50"></i>
+                No hay órdenes pendientes de toma de muestra.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Mostrar tiempo de espera en tiempo real
+document.querySelectorAll('[id^="timer-"]').forEach(function(el) {
+  var desde = new Date(el.dataset.desde);
+  function actualizar() {
+    var diff = Math.floor((new Date() - desde) / 1000);
+    var m = Math.floor(diff / 60);
+    var s = diff % 60;
+    el.textContent = 'Espera: ' + m + 'm ' + (s < 10 ? '0' : '') + s + 's';
+    if (m >= 30) el.style.color = '#dc3545';
+    else if (m >= 15) el.style.color = '#fd7e14';
+  }
+  actualizar();
+  setInterval(actualizar, 1000);
+});
+</script>
+{% endblock %}

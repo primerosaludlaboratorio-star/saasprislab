@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Logs de Auditoría - PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="bi bi-journal-text"></i> Logs de Auditoría</h2>
+            <p class="text-muted">Registro completo de acciones sensibles del sistema.</p>
+        </div>
+    </div>
+    <!-- Filtros -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-2">
+                <div class="col-md-3">
+                    <select name="accion" class="form-select form-select-sm">
+                        <option value="">Todas las acciones</option>
+                        <option value="LOGIN">Login</option>
+                        <option value="LOGOUT">Logout</option>
+                        <option value="2FA_ACTIVADO">2FA Activado</option>
+                        <option value="ACCESO_ADMIN">Acceso Admin</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="severidad" class="form-select form-select-sm">
+                        <option value="">Todas las severidades</option>
+                        <option value="INFO">Info</option>
+                        <option value="WARNING">Advertencia</option>
+                        <option value="CRITICAL">Crítico</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="fecha_desde" class="form-control form-control-sm" value="{{ request.GET.fecha_desde }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Filtrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body p-0">
+            {% if logs %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr><th>Fecha/Hora</th><th>Usuario</th><th>Acción</th><th>Descripción</th><th>Severidad</th><th>IP</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td><small class="text-muted">{{ log.fecha_hora|date:"d/m/y H:i:s" }}</small></td>
+                            <td><strong>{{ log.usuario.username }}</strong></td>
+                            <td><span class="badge bg-secondary">{{ log.get_accion_display }}</span></td>
+                            <td><small>{{ log.descripcion|truncatechars:60 }}</small></td>
+                            <td><span class="badge bg-{% if log.severidad == 'CRITICAL' %}danger{% elif log.severidad == 'WARNING' %}warning text-dark{% else %}info{% endif %}">{{ log.severidad }}</span></td>
+                            <td><code>{{ log.ip_address|default:"-" }}</code></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-journal-x" style="font-size: 3rem; color: #ccc;"></i>
+                <p class="text-muted mt-3">No hay logs de auditoría para los filtros seleccionados</p>
+            </div>
+            {% endif %}
+        </div>
+        {% if is_paginated %}
+        <div class="card-footer">
+            <nav>
+                <ul class="pagination pagination-sm mb-0 justify-content-center">
+                    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>{% endif %}
+                    <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+                    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>{% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

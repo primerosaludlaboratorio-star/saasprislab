@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load math_filters %}
+
+{% block title %}Resultado Corte de Caja - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+    }
+    
+    .resultado-card {
+        max-width: 800px;
+        margin: 2rem auto;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        background: white;
+    }
+    
+    .resultado-header {
+        {% if estado == 'CUADRADO' %}
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        {% elif estado == 'SOBRANTE' %}
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        {% else %}
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        {% endif %}
+        color: white;
+        padding: 2rem;
+        border-radius: 20px 20px 0 0;
+        text-align: center;
+    }
+    
+    .resultado-header i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+    
+    .diferencia-display {
+        font-size: 3rem;
+        font-weight: 900;
+        margin: 1rem 0;
+    }
+    
+    .tabla-comparacion {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+    }
+    
+    .tabla-comparacion table {
+        width: 100%;
+    }
+    
+    .tabla-comparacion td, .tabla-comparacion th {
+        padding: 0.75rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .tabla-comparacion tr:last-child td, .tabla-comparacion tr:last-child th {
+        border-bottom: none;
+    }
+    
+    .monto-sistema {
+        color: #0d6efd;
+        font-weight: 700;
+    }
+    
+    .monto-declarado {
+        color: #198754;
+        font-weight: 700;
+    }
+    
+    .monto-diferencia {
+        {% if estado == 'CUADRADO' %}
+        color: #28a745;
+        {% elif estado == 'SOBRANTE' %}
+        color: #ffc107;
+        {% else %}
+        color: #dc3545;
+        {% endif %}
+        font-weight: 900;
+        font-size: 1.3rem;
+    }
+    
+    .sello-forense {
+        background: #e9ecef;
+        border: 2px dashed #6c757d;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1.5rem 0;
+        text-align: center;
+        font-family: 'Courier New', monospace;
+    }
+    
+    .btn-imprimir {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-size: 1.2rem;
+        font-weight: 700;
+        padding: 1rem 2rem;
+        border-radius: 50px;
+        border: none;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="resultado-card">
+        <div class="resultado-header">
+            {% if estado == 'CUADRADO' %}
+                <i class="fas fa-check-circle"></i>
+                <h1>✅ ¡CAJA CUADRADA!</h1>
+                <p class="mb-0">Diferencia dentro del margen de tolerancia</p>
+            {% elif estado == 'SOBRANTE' %}
+                <i class="fas fa-exclamation-triangle"></i>
+                <h1>⚠️ HAY SOBRANTE</h1>
+                <p class="mb-0">Tienes más dinero del esperado</p>
+            {% else %}
+                <i class="fas fa-times-circle"></i>
+                <h1>❌ HAY FALTANTE</h1>
+                <p class="mb-0">Tienes menos dinero del esperado</p>
+            {% endif %}
+            
+            <div class="diferencia-display">
+                {% if diferencia_total > 0 %}
+                    +${{ diferencia_total|floatformat:2 }}
+                {% elif diferencia_total < 0 %}
+                    -${{ diferencia_total|abs|floatformat:2 }}
+                {% else %}
+                    $0.00
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card-body p-4">
+            <!-- Tabla Comparativa -->
+            <h4 class="mb-3">
+                <i class="fas fa-balance-scale me-2"></i>
+                Comparación Sistema vs Declarado
+            </h4>
+            
+            <div class="tabla-comparacion">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Concepto</th>
+                            <th class="text-end">Sistema</th>
+                            <th class="text-end">Declarado</th>
+                            <th class="text-end">Diferencia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>💵 Efectivo</strong></td>
+                            <td class="text-end monto-sistema">${{ sistema_efectivo|floatformat:2 }}</td>
+                            <td class="text-end monto-declarado">${{ declarado_efectivo|floatformat:2 }}</td>
+                            <td class="text-end monto-diferencia">
+                                {% if diferencia_efectivo > 0 %}+{% endif %}${{ diferencia_efectivo|floatformat:2 }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>💳 Tarjetas</strong></td>
+                            <td class="text-end monto-sistema">${{ sistema_tarjeta|floatformat:2 }}</td>
+                            <td class="text-end monto-declarado">${{ declarado_tarjeta|floatformat:2 }}</td>
+                            <td class="text-end monto-diferencia">
+                                {% if diferencia_tarjeta > 0 %}+{% endif %}${{ diferencia_tarjeta|floatformat:2 }}
+                            </td>
+                        </tr>
+                        {% if declarado_transferencia > 0 %}
+                        <tr>
+                            <td><strong>🏦 Transferencias</strong></td>
+                            <td class="text-end monto-sistema">$0.00</td>
+                            <td class="text-end monto-declarado">${{ declarado_transferencia|floatformat:2 }}</td>
+                            <td class="text-end monto-diferencia">+${{ declarado_transferencia|floatformat:2 }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr style="border-top: 2px solid #dee2e6;">
+                            <td><strong>TOTAL</strong></td>
+                            <td class="text-end monto-sistema"><strong>${{ sistema_total|floatformat:2 }}</strong></td>
+                            <td class="text-end monto-declarado"><strong>${{ declarado_total|floatformat:2 }}</strong></td>
+                            <td class="text-end monto-diferencia">
+                                <strong>
+                                    {% if diferencia_total > 0 %}+{% endif %}${{ diferencia_total|floatformat:2 }}
+                                </strong>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Observaciones -->
+            {% if observaciones %}
+            <div class="alert alert-info">
+                <h6><i class="fas fa-comment me-2"></i>Observaciones del Cajero:</h6>
+                <p class="mb-0">{{ observaciones }}</p>
+            </div>
+            {% endif %}
+            
+            <!-- Estadísticas del Turno -->
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h3 class="text-primary">{{ total_ventas }}</h3>
+                            <small>Ventas Realizadas</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h3 class="text-success">${{ sistema_total|floatformat:2 }}</h3>
+                            <small>Total Vendido</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h3 class="text-info">{{ fecha_corte|date:"H:i" }}</h3>
+                            <small>Hora del Corte</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sello Forense -->
+            <div class="sello-forense">
+                <small>DOCUMENTO INMUTABLE | CORTE #{{ corte_id }}</small><br>
+                <small>Fecha: {{ fecha_corte|date:"d/m/Y H:i:s" }}</small><br>
+                <small>Hash: {{ corte_id|stringformat:"08d" }}-{{ fecha_corte|date:"YmdHis" }}</small>
+            </div>
+            
+            <!-- Botones de Acción -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <button class="btn btn-imprimir w-100" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>
+                        Imprimir Ticket
+                    </button>
+                </div>
+                <div class="col-md-6">
+                    <a href="{% url 'home' %}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-home me-2"></i>
+                        Ir al Dashboard
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Recomendaciones según Estado -->
+            <div class="alert alert-{{ nivel_alerta }} mt-4">
+                {% if estado == 'CUADRADO' %}
+                    <strong>✅ Excelente trabajo.</strong> La caja está cuadrada. Puedes cerrar el turno con tranquilidad.
+                {% elif estado == 'SOBRANTE' %}
+                    <strong>⚠️ Atención:</strong> Tienes ${{ diferencia_total|floatformat:2 }} de más. 
+                    Verifica si hubo algún error en el cambio entregado a los clientes o si olvidaste registrar alguna devolución.
+                {% else %}
+                    <strong>❌ Faltante Detectado:</strong> Faltan ${{ diferencia_total|abs|floatformat:2 }}. 
+                    Revisa las ventas del turno y verifica que todos los pagos se registraron correctamente. 
+                    Este faltante puede descontarse de tu siguiente nómina según políticas de la empresa.
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-print después de 2 segundos (opcional)
+// setTimeout(() => window.print(), 2000);
+</script>
+{% endblock %}
