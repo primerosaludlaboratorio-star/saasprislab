@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Lista de Trabajo - Médico{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-user-md"></i> Lista de Trabajo Médico</h2>
+            <p class="text-muted">Pacientes listos para consulta - {{ hoy|date:"d/m/Y" }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'consultorio:consulta_sin_cita' %}" class="btn btn-success me-2">
+                <i class="fas fa-user-plus"></i> Nueva Consulta Sin Cita
+            </a>
+            <a href="{% url 'consultorio:dashboard_consultorio' %}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for cita in citas %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card {% if cita.estado == 'EN_CURSO' %}border-danger{% elif cita.signos_vitales %}border-success{% else %}border-warning{% endif %}">
+                <div class="card-header {% if cita.estado == 'EN_CURSO' %}bg-danger text-white{% elif cita.signos_vitales %}bg-success text-white{% else %}bg-warning{% endif %}">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock"></i> {{ cita.hora_cita }}
+                        {% if cita.estado == 'EN_CURSO' %}
+                            <span class="badge bg-light text-danger float-end">En Consulta</span>
+                        {% elif cita.signos_vitales %}
+                            <span class="badge bg-light text-success float-end">✓ Listo</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark float-end">⚠️ Sin Signos</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-title"><strong>{{ cita.paciente.nombre_completo }}</strong></h6>
+                    <p class="card-text mb-2">
+                        <small class="text-muted">
+                            <i class="fas fa-user"></i> {{ cita.paciente.edad }} años | {{ cita.paciente.get_sexo_display }}
+                        </small>
+                    </p>
+                    <p class="card-text mb-2">
+                        <strong>Motivo:</strong><br>
+                        {{ cita.motivo|truncatewords:10 }}
+                    </p>
+                    
+                    {% if cita.signos_vitales %}
+                    <div class="alert alert-info py-2 px-3 mb-2">
+                        <small>
+                            <strong>PA:</strong> {{ cita.signos_vitales.presion_arterial }} | 
+                            <strong>FC:</strong> {{ cita.signos_vitales.frecuencia_cardiaca }} | 
+                            <strong>Temp:</strong> {{ cita.signos_vitales.temperatura }}°C
+                        </small>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'consultorio:nueva_consulta_soap' cita.id %}" class="btn {% if cita.estado == 'EN_CURSO' %}btn-danger{% else %}btn-primary{% endif %}">
+                            <i class="fas fa-notes-medical"></i> 
+                            {% if cita.estado == 'EN_CURSO' %}Continuar Consulta{% else %}Iniciar Consulta{% endif %}
+                        </a>
+                        <a href="{% url 'consultorio:historial_clinico_paciente' cita.paciente.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-history"></i> Ver Historial
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle fa-3x mb-3"></i>
+                <h5>No hay pacientes en lista de espera</h5>
+                <p class="mb-0">Los pacientes aparecerán aquí cuando hagan check-in en recepción</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

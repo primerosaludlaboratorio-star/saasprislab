@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Importar Contactos - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'marketing:lista_contactos' %}">Contactos</a></li>
+            <li class="breadcrumb-item active">Importar</li>
+        </ol>
+    </nav>
+    
+    <h2><i class="fas fa-file-import text-success"></i> Importar Contactos</h2>
+    
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label>Archivo CSV</label>
+                            <input type="file" name="archivo" class="form-control" accept=".csv" required>
+                            <small class="form-text text-muted">El archivo debe ser CSV con formato: nombre, email, telefono, segmento</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Segmento</label>
+                            <select name="segmento" class="form-control">
+                                <option value="pacientes">Pacientes</option>
+                                <option value="medicos">Médicos</option>
+                                <option value="empresas">Empresas</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><input type="checkbox" name="actualizar_existentes"> Actualizar contactos existentes</label>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-upload"></i> Importar Contactos
+                            </button>
+                            <a href="{% url 'marketing:lista_contactos' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-info-circle"></i> Formato del CSV
+                </div>
+                <div class="card-body">
+                    <p class="small"><strong>Columnas requeridas:</strong></p>
+                    <pre class="small bg-light p-2 rounded">nombre,email,telefono,segmento
+Juan Pérez,juan@example.com,5551234567,pacientes
+María López,maria@example.com,5559876543,medicos</pre>
+                    
+                    <p class="small mt-3"><strong>Notas:</strong></p>
+                    <ul class="small mb-0">
+                        <li>Primera fila: encabezados</li>
+                        <li>Email debe ser único</li>
+                        <li>Teléfono: 10 dígitos</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card shadow mt-3">
+                <div class="card-body text-center">
+                    <i class="fas fa-download fa-2x text-primary mb-2"></i>
+                    <p class="mb-2 small">¿No tienes plantilla?</p>
+                    <a href="/media/plantillas/contactos_plantilla.csv" class="btn btn-sm btn-outline-primary" download>
+                        <i class="fas fa-file-csv"></i> Descargar Plantilla
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

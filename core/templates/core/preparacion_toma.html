@@ -1,0 +1,981 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Cubículo — {{ orden.folio_orden|default:orden.id }} | PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+/* PRIS: acceso desde sidebar — sin orbe flotante */
+
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.cubiculo-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.25rem;
+  align-items: start;
+}
+@media (max-width: 960px) { .cubiculo-grid { grid-template-columns: 1fr; } }
+
+/* ── Tubos ──────────────────────────────────────────────────────────────── */
+.tubos-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.tubo-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.tubo-num  { font-size: .65rem; font-weight: 700; color: #6c757d; }
+.tubo-body {
+  width: 30px; height: 72px;
+  border-radius: 4px 4px 15px 15px;
+  border: 2px solid rgba(0,0,0,.18);
+  position: relative;
+}
+.tubo-cap  {
+  width: 26px; height: 12px;
+  border-radius: 4px 4px 0 0;
+  margin: 0 auto 2px;
+}
+.tubo-label { font-size: .72rem; font-weight: 700; }
+.tubo-sub   { font-size: .6rem; color: #6c757d; text-align: center; max-width: 60px; line-height: 1.2; }
+.tubo-estudios { font-size: .58rem; color: #374151; text-align: center; max-width: 72px; line-height: 1.3; }
+.tubo-arrow { color: #9ca3af; align-self: center; font-size: 1.1rem; }
+
+/* ── Checklist Items ────────────────────────────────────────────────────── */
+.chk-item {
+  position: relative;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+  padding: 14px 14px 10px;
+  transition: border-color .3s, background .3s, transform .15s;
+  overflow: hidden;
+}
+.chk-item.checked {
+  border-color: #10b981;
+  background: #f0fdf4;
+  transform: scale(1.01);
+}
+.chk-item.alerta {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+.chk-item-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.chk-icono {
+  width: 32px; height: 32px; flex-shrink: 0;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .95rem;
+  background: #e5e7eb;
+  transition: background .3s, color .3s;
+}
+.chk-item.checked .chk-icono  { background: #10b981; color: #fff; }
+.chk-item.alerta  .chk-icono  { background: #f59e0b; color: #fff; }
+.chk-label { font-weight: 700; font-size: .9rem; color: #1f2937; flex: 1; }
+.chk-guia {
+  font-size: .72rem;
+  color: #6b7280;
+  background: #fff;
+  border-left: 3px solid #d1d5db;
+  padding: 4px 8px;
+  margin-top: 8px;
+  border-radius: 0 4px 4px 0;
+  font-style: italic;
+}
+.chk-item.checked .chk-guia { border-left-color: #10b981; }
+.chk-status {
+  font-size: .65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: #e5e7eb;
+  color: #6b7280;
+  transition: background .3s, color .3s;
+}
+.chk-item.checked .chk-status { background: #d1fae5; color: #065f46; }
+.chk-manual-btn {
+  font-size: .65rem;
+  border: 1px dashed #d1d5db;
+  background: transparent;
+  color: #9ca3af;
+  border-radius: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: color .2s, border-color .2s;
+  margin-top: 4px;
+}
+.chk-manual-btn:hover { color: #374151; border-color: #6b7280; }
+
+/* ── Animación de marcado automático ────────────────────────────────────── */
+@keyframes flash-check {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,.7); }
+  40%  { box-shadow: 0 0 0 14px rgba(16,185,129,.0); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,.0); }
+}
+.chk-item.ia-flash {
+  animation: flash-check .6s ease-out;
+}
+@keyframes bounce-icon {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.4); }
+}
+.chk-item.ia-flash .chk-icono {
+  animation: bounce-icon .4s ease;
+}
+
+/* ── Alerta PRIS ────────────────────────────────────────────────────────── */
+@keyframes alerta-slide {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.pris-alert-box {
+  position: fixed;
+  top: 80px; right: 20px;
+  background: #fff;
+  border-left: 4px solid #10b981;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+  padding: 12px 16px;
+  max-width: 300px;
+  z-index: 9999;
+  animation: alerta-slide .35s ease-out;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.pris-alert-box.warning { border-left-color: #f59e0b; }
+.pris-alert-icon { font-size: 1.3rem; }
+.pris-alert-text { font-size: .8rem; line-height: 1.4; }
+.pris-alert-title { font-weight: 700; color: #065f46; margin-bottom: 2px; }
+.pris-alert-box.warning .pris-alert-title { color: #92400e; }
+
+/* ── Escucha activa status ──────────────────────────────────────────────── */
+.escucha-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f3f0ff;
+  border: 1px solid #e0d7ff;
+}
+.escucha-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #6366f1;
+  flex-shrink: 0;
+}
+.escucha-dot.activo { animation: pulse-dot 1.2s ease-in-out infinite; }
+.escucha-dot.inactivo { background: #9ca3af; animation: none; }
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%     { opacity: .4; transform: scale(.7); }
+}
+.escucha-texto { font-size: .78rem; color: #4338ca; font-weight: 600; flex: 1; }
+.escucha-fallback { font-size: .65rem; color: #9ca3af; }
+
+/* ── Live transcript ────────────────────────────────────────────────────── */
+#live-transcript {
+  min-height: 60px;
+  max-height: 120px;
+  overflow-y: auto;
+  font-size: .78rem;
+  color: #374151;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 10px;
+  line-height: 1.5;
+}
+.transcript-interim { color: #9ca3af; font-style: italic; }
+.transcript-final   { color: #111827; }
+
+/* ── Cronómetro ─────────────────────────────────────────────────────────── */
+#cronometro {
+  font-size: 3.2rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  font-variant-numeric: tabular-nums;
+  color: #1e40af;
+  text-align: center;
+}
+#cronometro.urgente { color: #dc2626; }
+
+/* ── Grabación ──────────────────────────────────────────────────────────── */
+.rec-badge {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: .75rem;
+  font-weight: 700;
+}
+.rec-badge.visible { display: flex; }
+.rec-dot { width:8px; height:8px; border-radius:50%; background:#dc2626; animation:pulse-rec 1s infinite; }
+@keyframes pulse-rec { 0%,100%{opacity:1}50%{opacity:.2} }
+
+/* ── Progress bar checklist ─────────────────────────────────────────────── */
+.checklist-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+.checklist-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg,#10b981,#34d399);
+  border-radius: 3px;
+  transition: width .5s ease;
+}
+
+/* ── Botón INICIAR ──────────────────────────────────────────────────────── */
+#btn-iniciar {
+  background: linear-gradient(135deg,#7c3aed,#4f46e5);
+  color: #fff; border: none; border-radius: 14px;
+  font-size: 1.05rem; font-weight: 700;
+  padding: 15px 0; width: 100%;
+  box-shadow: 0 4px 18px rgba(124,58,237,.4);
+  transition: transform .15s, box-shadow .15s;
+}
+#btn-iniciar:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(124,58,237,.5); }
+#btn-iniciar:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── Botón FINALIZAR ────────────────────────────────────────────────────── */
+#btn-finalizar {
+  display: none;
+  background: linear-gradient(135deg,#059669,#047857);
+  color: #fff; border: none; border-radius: 14px;
+  font-size: 1rem; font-weight: 700;
+  padding: 16px 0; width: 100%;
+  box-shadow: 0 4px 16px rgba(5,150,105,.4);
+  transition: transform .15s;
+}
+#btn-finalizar.visible { display: block; }
+#btn-finalizar:not(:disabled):hover { transform: translateY(-1px); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  {# ── Breadcrumb + Folio ─────────────────────────────────────────────────── #}
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{% url 'toma_muestra_index' %}"><i class="fas fa-door-open me-1"></i>Sala de Espera</a>
+      </li>
+      <li class="breadcrumb-item active fw-bold">
+        Cubículo — {{ orden.folio_orden|default:orden.id }}
+      </li>
+    </ol>
+  </nav>
+
+  <div class="cubiculo-grid">
+
+    {# ═══════════════════════════════════════════════ COLUMNA IZQUIERDA #}
+    <div class="d-flex flex-column gap-3">
+
+      {# ── 1. Datos del Paciente ─────────────────────────────────────── #}
+      <div class="card border-0 shadow-sm p-3">
+        <div class="d-flex gap-3 align-items-center">
+          <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+               style="width:48px;height:48px;">
+            <i class="fas fa-user text-primary"></i>
+          </div>
+          <div class="flex-1">
+            <h5 class="fw-bold mb-0">{{ paciente.nombre_completo }}</h5>
+            <div class="text-muted small">
+              {% if paciente.fecha_nacimiento %}{{ paciente.fecha_nacimiento|date:"d/m/Y" }} &nbsp;·&nbsp; {% endif %}
+              {% if paciente.sexo %}{{ paciente.sexo }} &nbsp;·&nbsp; {% endif %}
+              Folio: <strong class="text-primary">{{ orden.folio_orden|default:orden.id }}</strong>
+            </div>
+            {% if orden.diagnostico %}<div class="mt-1">
+              <span class="badge bg-info bg-opacity-10 text-info border">{{ orden.diagnostico }}</span>
+            </div>{% endif %}
+          </div>
+          {% if orden.tipo_servicio and orden.tipo_servicio != 'RUTINA' %}
+          <span class="badge {% if orden.tipo_servicio == 'STAT' %}bg-danger{% else %}bg-warning text-dark{% endif %} fs-6">
+            {{ orden.tipo_servicio }}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+
+      {# ── 2. Guía de Tubos ──────────────────────────────────────────── #}
+      {% if tubos_guia %}
+      <div class="card border-0 shadow-sm p-3">
+        <h6 class="fw-bold mb-3 small text-uppercase text-muted tracking-wide">
+          <i class="fas fa-vials text-primary me-2"></i>Orden de Extracción (CLSI GP41)
+        </h6>
+        <div class="tubos-row">
+          {% for tubo in tubos_guia %}
+          <div class="tubo-wrap">
+            <span class="tubo-num">{{ forloop.counter }}</span>
+            <div class="tubo-cap" style="background:{{ tubo.hex }};"></div>
+            <div class="tubo-body"
+                 style="background:linear-gradient(180deg,{{ tubo.hex }}44 0%,#fff 100%);border-color:{{ tubo.hex }};">
+            </div>
+            <span class="tubo-label" style="color:{{ tubo.hex }};">{{ tubo.label }}</span>
+            <span class="tubo-sub">{{ tubo.subtitulo }}</span>
+            <span class="tubo-estudios">{{ tubo.estudios|join:", " }}</span>
+          </div>
+          {% if not forloop.last %}<span class="tubo-arrow">→</span>{% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── 3. Checklist Autónomo por Escucha Activa ──────────────────── #}
+      <div class="card border-0 shadow-sm p-3" id="checklist-card">
+        <div class="d-flex align-items-center justify-content-between mb-1">
+          <h6 class="fw-bold mb-0 small text-uppercase text-muted">
+            <i class="fas fa-shield-alt text-success me-2"></i>Checklist de Bioseguridad
+          </h6>
+          <div class="d-flex align-items-center gap-2">
+            <span id="chk-contador" class="text-muted small">0 / 6</span>
+            <div class="checklist-progress" style="width:80px;">
+              <div class="checklist-progress-bar" id="chk-progress-bar" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-muted small mb-3">
+          <i class="fas fa-shield-alt text-success me-1"></i>
+          <strong>PRIS-Shadow:</strong> pulse <strong>INICIAR TOMA</strong> para grabar desde el primer segundo.
+          La IA escucha en segundo plano (NLP local, sin costo) y marca checks al detectar confirmaciones.
+          <strong>Finalizar</strong> solo se habilita cuando los 6 puntos estén cubiertos (IA o manual durante la grabación).
+        </p>
+
+        <div class="d-flex flex-column gap-2" id="checklist-items">
+
+          {# CONSENTIMIENTO #}
+          <div class="chk-item {% if consentimiento_firmado %}checked{% endif %}"
+               id="chk-CONSENTIMIENTO" data-intent="CONSENTIMIENTO">
+            <div class="chk-item-header" onclick="toggleManual('CONSENTIMIENTO')">
+              <div class="chk-icono">
+                <i class="fas fa-file-signature"></i>
+              </div>
+              <span class="chk-label">Consentimiento Firmado</span>
+              <span class="chk-status" id="st-CONSENTIMIENTO">
+                {% if consentimiento_firmado %}✓ Digital{% else %}Pendiente{% endif %}
+              </span>
+            </div>
+            <div class="chk-guia">
+              "¿Ya firmó el documento de consentimiento que le entregaron?"
+            </div>
+            {% if not consentimiento_firmado %}
+            <button class="chk-manual-btn" onclick="marcarManual('CONSENTIMIENTO', event)">
+              ✏️ Marcar manualmente
+            </button>
+            {% endif %}
+          </div>
+
+          {# IDENTIDAD #}
+          <div class="chk-item" id="chk-IDENTIDAD" data-intent="IDENTIDAD">
+            <div class="chk-item-header" onclick="toggleManual('IDENTIDAD')">
+              <div class="chk-icono"><i class="fas fa-id-card"></i></div>
+              <span class="chk-label">Identidad Verificada</span>
+              <span class="chk-status" id="st-IDENTIDAD">Pendiente</span>
+            </div>
+            <div class="chk-guia">
+              "Confirme por favor su nombre completo y fecha de nacimiento"
+            </div>
+            <button class="chk-manual-btn" onclick="marcarManual('IDENTIDAD', event)">
+              ✏️ Marcar manualmente
+            </button>
+          </div>
+
+          {# AYUNO #}
+          <div class="chk-item" id="chk-AYUNO" data-intent="AYUNO">
+            <div class="chk-item-header" onclick="toggleManual('AYUNO')">
+              <div class="chk-icono"><i class="fas fa-utensils"></i></div>
+              <span class="chk-label">Ayuno Confirmado</span>
+              <span class="chk-status" id="st-AYUNO">Pendiente</span>
+            </div>
+            <div class="chk-guia">
+              "¿Viene usted en ayuno? ¿Cuántas horas lleva sin comer o beber?"
+            </div>
+            <button class="chk-manual-btn" onclick="marcarManual('AYUNO', event)">
+              ✏️ Marcar manualmente
+            </button>
+          </div>
+
+          {# MEDICAMENTOS #}
+          <div class="chk-item" id="chk-MEDICAMENTOS" data-intent="MEDICAMENTOS">
+            <div class="chk-item-header" onclick="toggleManual('MEDICAMENTOS')">
+              <div class="chk-icono"><i class="fas fa-pills"></i></div>
+              <span class="chk-label">Medicamentos Registrados</span>
+              <span class="chk-status" id="st-MEDICAMENTOS">Pendiente</span>
+            </div>
+            <div class="chk-guia">
+              Pregunte por medicamentos, anticoagulantes, antibióticos recientes o suplementos (correlación con estudios).
+            </div>
+            <button class="chk-manual-btn" onclick="marcarManual('MEDICAMENTOS', event)">
+              ✏️ Marcar manualmente
+            </button>
+          </div>
+
+          {# SÍNTOMAS — correlación clínica #}
+          <div class="chk-item" id="chk-SINTOMAS" data-intent="SINTOMAS">
+            <div class="chk-item-header" onclick="toggleManual('SINTOMAS')">
+              <div class="chk-icono"><i class="fas fa-heartbeat"></i></div>
+              <span class="chk-label">Síntomas / motivo de estudios</span>
+              <span class="chk-status" id="st-SINTOMAS">Pendiente</span>
+            </div>
+            <div class="chk-guia">
+              "¿Fiebre, dolor, mareo, náuseas o motivo de la orden que debamos correlacionar con sus pruebas?"
+            </div>
+            <button class="chk-manual-btn" onclick="marcarManual('SINTOMAS', event)">
+              ✏️ Marcar manualmente
+            </button>
+          </div>
+
+          {# PADECIMIENTOS — crónicos #}
+          <div class="chk-item" id="chk-PADECIMIENTOS" data-intent="PADECIMIENTOS">
+            <div class="chk-item-header" onclick="toggleManual('PADECIMIENTOS')">
+              <div class="chk-icono"><i class="fas fa-notes-medical"></i></div>
+              <span class="chk-label">Padecimientos / antecedentes</span>
+              <span class="chk-status" id="st-PADECIMIENTOS">Pendiente</span>
+            </div>
+            <div class="chk-guia">
+              "¿Diabetes, hipertensión, renal, tiroides u otra condición que afecte la interpretación?"
+            </div>
+            <button class="chk-manual-btn" onclick="marcarManual('PADECIMIENTOS', event)">
+              ✏️ Marcar manualmente
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>{# /col izquierda #}
+
+    {# ═══════════════════════════════════════════════ COLUMNA DERECHA #}
+    <div class="d-flex flex-column gap-3">
+
+      {# ── Estado de Escucha Activa ──────────────────────────────────── #}
+      <div class="card border-0 shadow-sm p-3">
+        <div class="escucha-bar mb-2" id="escucha-bar">
+          <div class="escucha-dot inactivo" id="escucha-dot"></div>
+          <span class="escucha-texto" id="escucha-texto">Esperando inicio...</span>
+          <span class="rec-badge ms-auto" id="rec-badge">
+            <span class="rec-dot"></span>REC
+          </span>
+        </div>
+        <div id="live-transcript">
+          <span class="text-muted" style="font-size:.75rem;font-style:italic;">
+            La transcripción en tiempo real aparecerá aquí al iniciar la toma...
+          </span>
+        </div>
+        <div class="text-muted small mt-2" id="nlp-status"></div>
+      </div>
+
+      {# ── Cronómetro ───────────────────────────────────────────────── #}
+      <div class="card border-0 shadow-sm p-3 text-center">
+        <div class="text-muted small mb-1" id="cron-label">Tiempo en Cubículo</div>
+        <div id="cronometro">00:00</div>
+        <div class="text-muted small mt-1" id="cron-sub">—</div>
+      </div>
+
+      {# ── Fase: Preparación (antes de INICIAR) ─────────────────────── #}
+      <div id="fase-prep">
+        <button id="btn-iniciar" onclick="iniciarToma()">
+          <i class="fas fa-microphone me-2"></i>INICIAR TOMA &amp; GRABACIÓN
+        </button>
+        <div class="text-center text-muted small mt-2" id="hint-iniciar">
+          Inicia sin condiciones — PRIS-Shadow escucha y llena el checklist automáticamente.
+        </div>
+      </div>
+
+      {# ── Fase: Extracción activa ───────────────────────────────────── #}
+      <div id="fase-extrac" style="display:none;">
+        <button type="button" id="btn-finalizar" class="visible" disabled onclick="finalizarToma()"
+                title="Complete los 6 puntos del checklist (automático o manual durante la grabación)">
+          <i class="fas fa-check-circle me-2"></i>Finalizar Extracción y Guardar
+        </button>
+        <div class="text-center text-danger small mt-2 fw-semibold" id="hint-finalizar">
+          Complete el checklist para habilitar el cierre y la punción conforme a protocolo.
+        </div>
+        <div class="alert alert-light border small mt-2 mb-0">
+          <i class="fas fa-lock text-primary me-1"></i>
+          Audio cifrado AES-256. Acceso exclusivo
+          <strong>Director QC</strong> bajo motivo documentado.
+        </div>
+      </div>
+
+    </div>{# /col derecha #}
+
+  </div>{# /grid #}
+
+</div>{# /container #}
+
+{# ── Toast de alerta PRIS (se inserta dinámicamente) ─────────────────────── #}
+<div id="pris-alerts-container"
+     style="position:fixed;top:72px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:300px;">
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN
+═══════════════════════════════════════════════════════════════════════════ */
+const ORDEN_ID          = {{ orden.id }};
+const CSRF              = '{{ csrf_token }}';
+const URL_INICIAR       = '{% url "laboratorio:api_iniciar_toma" orden.id %}';
+const URL_FINALIZAR     = '{% url "laboratorio:api_finalizar_toma" orden.id %}';
+const URL_NLP           = '/pris/api/checklist-nlp/';
+const YA_INICIADA       = {{ ya_iniciada|yesno:"true,false" }};
+
+// Intents que ya vienen marcados del servidor (ej. consentimiento firmado digitalmente)
+const INTENTS_INICIALES = {
+  {% if consentimiento_firmado %}"CONSENTIMIENTO": true,{% endif %}
+};
+
+// Estado de la sesión
+let intentsConfirmados  = new Set(Object.keys(INTENTS_INICIALES).filter(k => INTENTS_INICIALES[k]));
+let cronometroInterval  = null;
+let segundos            = 0;
+let grabacionActiva     = false;
+let mediaRecorder       = null;
+let audioChunks         = [];
+let recognition         = null;
+let transcriptAcumulado = '';
+let nlpDebounceTimer    = null;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHECKLIST — Marcado automático y manual
+═══════════════════════════════════════════════════════════════════════════ */
+const TOTAL_ITEMS = 6;
+
+function puedeMarcarManual(intentId) {
+  if (grabacionActiva) return true;
+  if (intentId === 'CONSENTIMIENTO') {
+    const el = document.getElementById('chk-CONSENTIMIENTO');
+    if (el && el.classList.contains('checked')) return true;
+  }
+  mostrarToast(
+    'Grabación no iniciada',
+    'Pulse INICIAR TOMA para capturar audio y permitir checklist (o consentimiento ya registrado en sistema).',
+    'warning'
+  );
+  return false;
+}
+
+function marcarIntent(intentId, fuente) {
+  if (intentsConfirmados.has(intentId)) return; // ya marcado
+  intentsConfirmados.add(intentId);
+
+  const el = document.getElementById('chk-' + intentId);
+  const st = document.getElementById('st-' + intentId);
+  if (!el) return;
+
+  el.classList.add('checked');
+  el.classList.remove('alerta');
+
+  if (fuente === 'ia') {
+    el.classList.add('ia-flash');
+    setTimeout(() => el.classList.remove('ia-flash'), 700);
+    if (st) st.textContent = '✓ PRIS';
+    mostrarToast('¡' + el.querySelector('.chk-label').textContent + '!', '✅ detectado por PRIS-Shadow', 'ok');
+  } else if (fuente === 'servidor') {
+    if (st) st.textContent = '✓ Sistema';
+  } else {
+    if (st) st.textContent = '✓ Manual';
+  }
+
+  // Ocultar botón de marcado manual
+  const btn = el.querySelector('.chk-manual-btn');
+  if (btn) btn.style.display = 'none';
+
+  actualizarProgreso();
+  actualizarBotonFinalizar();
+}
+
+function toggleManual(intentId) {
+  if (!grabacionActiva) {
+    if (puedeMarcarManual(intentId)) marcarManual(intentId, null);
+    return;
+  }
+  if (!intentsConfirmados.has(intentId)) marcarManual(intentId, null);
+}
+
+function marcarManual(intentId, event) {
+  if (event) event.stopPropagation();
+  if (!puedeMarcarManual(intentId)) return;
+  marcarIntent(intentId, 'manual');
+}
+
+function actualizarProgreso() {
+  const n = intentsConfirmados.size;
+  document.getElementById('chk-contador').textContent = n + ' / ' + TOTAL_ITEMS;
+  document.getElementById('chk-progress-bar').style.width = (n / TOTAL_ITEMS * 100) + '%';
+}
+
+/** Bloqueo al FINAL: solo se puede cerrar la sesión con los 6 protocolos cubiertos. */
+function actualizarBotonFinalizar() {
+  const btn = document.getElementById('btn-finalizar');
+  const hint = document.getElementById('hint-finalizar');
+  if (!btn) return;
+  const listo = intentsConfirmados.size >= TOTAL_ITEMS;
+  btn.disabled = !listo;
+  if (hint) {
+    hint.style.display = listo ? 'none' : 'block';
+    hint.textContent = listo
+      ? ''
+      : `Faltan ${TOTAL_ITEMS - intentsConfirmados.size} punto(s) del checklist — no cierre hasta correlacionar ayuno, identidad, consentimiento, medicamentos, síntomas y antecedentes.`;
+  }
+}
+
+function mostrarAlerta(intentId, mensaje) {
+  const el = document.getElementById('chk-' + intentId);
+  if (el && !intentsConfirmados.has(intentId)) {
+    el.classList.add('alerta');
+    const st = document.getElementById('st-' + intentId);
+    if (st) st.textContent = '⚠️ Revisar';
+  }
+  mostrarToast('Atención', mensaje, 'warning');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOAST / NOTIFICACIÓN PRIS
+═══════════════════════════════════════════════════════════════════════════ */
+function mostrarToast(titulo, texto, tipo) {
+  const container = document.getElementById('pris-alerts-container');
+  const div = document.createElement('div');
+  div.className = 'pris-alert-box' + (tipo === 'warning' ? ' warning' : '');
+  div.innerHTML = `
+    <div class="pris-alert-icon">${tipo === 'ok' ? '🟢' : '🟡'}</div>
+    <div class="pris-alert-text">
+      <div class="pris-alert-title">${titulo}</div>
+      <div>${texto}</div>
+    </div>
+  `;
+  container.appendChild(div);
+  setTimeout(() => { if (div.parentNode) div.parentNode.removeChild(div); }, 4000);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WEB SPEECH API — Transcripción en tiempo real (manos libres)
+═══════════════════════════════════════════════════════════════════════════ */
+function iniciarWebSpeech() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    // Fallback: el flebotomista marca manualmente
+    document.getElementById('escucha-texto').textContent = 'Marcado manual (navegador sin soporte)';
+    document.getElementById('escucha-dot').className = 'escucha-dot inactivo';
+    actualizarModoChecklist(false);
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang              = 'es-MX';
+  recognition.continuous        = true;
+  recognition.interimResults    = true;
+  recognition.maxAlternatives   = 1;
+
+  recognition.onstart = () => {
+    document.getElementById('escucha-dot').className = 'escucha-dot activo';
+    document.getElementById('escucha-texto').textContent = 'PRIS escuchando...';
+  };
+
+  recognition.onresult = (event) => {
+    const liveEl = document.getElementById('live-transcript');
+    let interimText = '';
+    let nuevoFinal  = '';
+
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const result = event.results[i];
+      if (result.isFinal) {
+        nuevoFinal += result[0].transcript + ' ';
+      } else {
+        interimText += result[0].transcript;
+      }
+    }
+
+    if (nuevoFinal) {
+      transcriptAcumulado += nuevoFinal;
+      // Disparar análisis NLP con debounce de 1.5s
+      clearTimeout(nlpDebounceTimer);
+      nlpDebounceTimer = setTimeout(() => analizarConNLP(nuevoFinal), 600);
+    }
+
+    // Actualizar display
+    liveEl.innerHTML =
+      '<span class="transcript-final">' + escapeHtml(transcriptAcumulado.slice(-400)) + '</span>' +
+      (interimText ? '<span class="transcript-interim"> ' + escapeHtml(interimText) + '</span>' : '');
+    liveEl.scrollTop = liveEl.scrollHeight;
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error === 'not-allowed') {
+      document.getElementById('escucha-texto').textContent = 'Micrófono denegado — marcar manualmente';
+      document.getElementById('escucha-dot').className = 'escucha-dot inactivo';
+    } else if (e.error !== 'aborted') {
+      // Reiniciar automáticamente en otros errores
+      setTimeout(() => { if (grabacionActiva) recognition.start(); }, 1000);
+    }
+  };
+
+  recognition.onend = () => {
+    // Reinicio automático mientras la toma esté activa
+    if (grabacionActiva) {
+      setTimeout(() => recognition.start(), 300);
+    }
+  };
+
+  recognition.start();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NLP BACKEND — Detección de intents
+═══════════════════════════════════════════════════════════════════════════ */
+async function analizarConNLP(texto) {
+  if (!texto || texto.length < 5) return;
+
+  const st = document.getElementById('nlp-status');
+  if (st) st.textContent = '🔍 Analizando...';
+
+  try {
+    const res = await fetch(URL_NLP, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({
+        texto: texto,
+        orden_id: ORDEN_ID,
+        usar_gemini: false,
+      }),
+    });
+
+    if (!res.ok) return;
+    const data = await res.json();
+
+    // Marcar intents detectados automáticamente
+    (data.intents_detectados || []).forEach(intentId => {
+      marcarIntent(intentId, 'ia');
+    });
+
+    // Mostrar alertas de negación
+    (data.alertas || []).forEach(alerta => {
+      mostrarAlerta(alerta.intent, alerta.mensaje);
+    });
+
+    if (st) {
+      st.textContent = data.total_detectados > 0
+        ? `✅ ${data.total_detectados} protocolo(s) confirmado(s)`
+        : '';
+    }
+  } catch (e) {
+    // NLP backend no disponible — el flebotomista puede marcar manualmente
+    if (st) st.textContent = '';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CAJA NEGRA — MediaRecorder (audio paralelo, sin afectar el NLP)
+═══════════════════════════════════════════════════════════════════════════ */
+async function iniciarGrabacionAudio() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+    audioChunks   = [];
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.start(5000);
+    document.getElementById('rec-badge').classList.add('visible');
+  } catch (e) {
+    console.warn('[Caja Negra] Audio no disponible:', e.message);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CRONÓMETRO
+═══════════════════════════════════════════════════════════════════════════ */
+function iniciarCronometro() {
+  segundos = 0;
+  clearInterval(cronometroInterval);
+  const el = document.getElementById('cronometro');
+  cronometroInterval = setInterval(() => {
+    segundos++;
+    const m = Math.floor(segundos / 60);
+    const s = segundos % 60;
+    el.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    if (segundos > 900) el.classList.add('urgente');
+    document.getElementById('cron-sub').textContent = segundos > 60 ? m + ' min transcurridos' : '';
+  }, 1000);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INICIAR TOMA
+═══════════════════════════════════════════════════════════════════════════ */
+async function iniciarToma() {
+  const btn = document.getElementById('btn-iniciar');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Iniciando...';
+
+  try {
+    const res = await fetch(URL_INICIAR, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({
+        identidad_verificada:  intentsConfirmados.has('IDENTIDAD'),
+        ayuno_confirmado:      intentsConfirmados.has('AYUNO'),
+        consentimiento_firmado: intentsConfirmados.has('CONSENTIMIENTO'),
+      }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'error');
+  } catch (e) {
+    // No bloquear si el backend falla — registramos al finalizar
+    console.warn('api_iniciar_toma falló:', e.message);
+  }
+
+  // Activar estado de extracción
+  grabacionActiva = true;
+  document.getElementById('fase-prep').style.display   = 'none';
+  document.getElementById('fase-extrac').style.display = 'block';
+  document.getElementById('checklist-card').style.opacity = '0.85';
+  actualizarBotonFinalizar();
+
+  // Lanzar las tres pistas en paralelo (audio desde el primer segundo — entrevista completa)
+  iniciarCronometro();
+  iniciarWebSpeech();
+  await iniciarGrabacionAudio();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FINALIZAR TOMA
+═══════════════════════════════════════════════════════════════════════════ */
+function checklistFinalPayload() {
+  const keys = ['CONSENTIMIENTO','IDENTIDAD','AYUNO','MEDICAMENTOS','SINTOMAS','PADECIMIENTOS'];
+  const o = {};
+  keys.forEach(k => { o[k] = intentsConfirmados.has(k); });
+  return o;
+}
+
+async function finalizarToma() {
+  if (intentsConfirmados.size < TOTAL_ITEMS) {
+    alert(
+      'No puede finalizar: faltan puntos del checklist de bioseguridad y correlación clínica.\n\n' +
+      'Complete los 6 ítems (PRIS-Shadow o manual durante la grabación) antes de la punción.'
+    );
+    return;
+  }
+
+  const btn = document.getElementById('btn-finalizar');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
+
+  // Detener todo
+  grabacionActiva = false;
+  clearInterval(cronometroInterval);
+  if (recognition) { try { recognition.abort(); } catch(e) {} }
+
+  // Detener MediaRecorder y obtener audio
+  let audiob64 = '';
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    await new Promise(resolve => {
+      mediaRecorder.onstop = resolve;
+      mediaRecorder.stop();
+      mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    });
+  }
+  if (audioChunks.length > 0) {
+    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+    audiob64 = await new Promise(r => {
+      const fr = new FileReader();
+      fr.onloadend = () => r(fr.result.split(',')[1]);
+      fr.readAsDataURL(blob);
+    });
+  }
+
+  try {
+    const res = await fetch(URL_FINALIZAR, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({
+        audio_b64:     audiob64,
+        transcripcion: transcriptAcumulado,
+        notas_ia:      generarNotasIA(),
+        checklist_final: checklistFinalPayload(),
+      }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      btn.innerHTML = '<i class="fas fa-check me-2"></i>¡Enviado a Laboratorio!';
+      btn.style.background = '#059669';
+      setTimeout(() => { window.location.href = data.redirect_url || '/laboratorio/lista-trabajo/'; }, 1200);
+    } else {
+      throw new Error(data.error || 'error del servidor');
+    }
+  } catch (e) {
+    alert('Error al finalizar: ' + e.message);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Finalizar Extracción y Guardar';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NOTAS AUTOMÁTICAS PRIS
+═══════════════════════════════════════════════════════════════════════════ */
+function generarNotasIA() {
+  const confirmados = [...intentsConfirmados];
+  const labels = {
+    IDENTIDAD:      'Identidad verificada',
+    AYUNO:          'Ayuno / alimentación',
+    CONSENTIMIENTO: 'Consentimiento',
+    MEDICAMENTOS:   'Medicamentos / tratamiento',
+    SINTOMAS:       'Síntomas / motivo estudios',
+    PADECIMIENTOS:  'Padecimientos crónicos',
+  };
+  const resumen = confirmados.map(id => '✓ ' + (labels[id] || id)).join(' | ');
+  return `PRIS-Shadow checklist: ${resumen}. Duración: ${segundos}s. Transcripción: ${transcriptAcumulado.slice(0,800)}`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILIDADES
+═══════════════════════════════════════════════════════════════════════════ */
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function actualizarModoChecklist(esIA) {
+  // Si no hay soporte de speech, convertir botones manuales a estilo primario
+  if (!esIA) {
+    document.querySelectorAll('.chk-manual-btn').forEach(b => {
+      b.style.borderStyle = 'solid';
+      b.style.color = '#374151';
+    });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INICIALIZACIÓN
+═══════════════════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function() {
+  /* Estados precargados desde servidor (ej. consentimiento digital) — sin pasar por marcarIntent (evita return por duplicado) */
+  intentsConfirmados.forEach(id => {
+    const el = document.getElementById('chk-' + id);
+    if (!el) return;
+    el.classList.add('checked');
+    const st = document.getElementById('st-' + id);
+    if (st) st.textContent = (id === 'CONSENTIMIENTO') ? '✓ Digital' : '✓ Sistema';
+    const mb = el.querySelector('.chk-manual-btn');
+    if (mb) mb.style.display = 'none';
+  });
+  actualizarProgreso();
+  actualizarBotonFinalizar();
+
+  if (YA_INICIADA) {
+    grabacionActiva = true;
+    document.getElementById('fase-prep').style.display   = 'none';
+    document.getElementById('fase-extrac').style.display = 'block';
+    iniciarCronometro();
+    iniciarWebSpeech();
+    iniciarGrabacionAudio();
+    document.getElementById('rec-badge').classList.add('visible');
+    actualizarBotonFinalizar();
+  }
+});
+</script>
+{% endblock %}

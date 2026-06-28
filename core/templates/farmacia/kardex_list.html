@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Kardex - Historial de Movimientos - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card-kardex {
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .table-kardex {
+        font-size: 0.9rem;
+    }
+    
+    .table-kardex thead th {
+        background-color: #212529;
+        color: white;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        vertical-align: middle;
+    }
+    
+    .row-entrada {
+        background-color: rgba(25, 135, 84, 0.05);
+    }
+    
+    .row-salida {
+        background-color: rgba(220, 53, 69, 0.05);
+    }
+    
+    .badge-tipo {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.8rem;
+        font-weight: 600;
+    }
+    
+    .folio-badge {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+        color: #0d6efd;
+    }
+    
+    .stock-highlight {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #198754;
+    }
+    
+    .filtros-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .filtros-card .form-label {
+        color: white;
+        font-weight: 600;
+    }
+    
+    .filtros-card .form-control,
+    .filtros-card .form-select {
+        border: 2px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.1);
+        color: white;
+    }
+    
+    .filtros-card .form-control::placeholder {
+        color: rgba(255,255,255,0.7);
+    }
+    
+    .filtros-card .form-control:focus,
+    .filtros-card .form-select:focus {
+        background: rgba(255,255,255,0.2);
+        border-color: white;
+        color: white;
+    }
+    
+    .pagination .page-link {
+        color: #667eea;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5 pt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-list-alt text-primary me-2"></i>
+                        Kardex - Historial de Movimientos
+                    </h2>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-shield-alt me-1"></i> 
+                        Trazabilidad forense completa | 
+                        <strong>Inmutable</strong> según ISO 15189
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'farmacia:dashboard_alertas' %}" class="btn btn-warning">
+                        <i class="fas fa-exclamation-triangle me-1"></i> Ver Alertas
+                    </a>
+                    <a href="{% url 'farmacia:crear_movimiento' %}" class="btn btn-success">
+                        <i class="fas fa-plus me-1"></i> Crear Movimiento Manual
+                    </a>
+                    <a href="{% url 'farmacia:reporte_valorizacion' %}" class="btn btn-info">
+                        <i class="fas fa-chart-line me-1"></i> Valorización
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-card">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">
+                    <i class="fas fa-box me-1"></i> Producto
+                </label>
+                <input type="text" name="producto" class="form-control" placeholder="Buscar producto..." value="{{ request.GET.producto }}">
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">
+                    <i class="fas fa-tag me-1"></i> Tipo de Movimiento
+                </label>
+                <select name="tipo" class="form-select">
+                    <option value="">Todos</option>
+                    {% for tipo_valor, tipo_nombre in tipos_movimiento %}
+                    <option value="{{ tipo_valor }}" {% if request.GET.tipo == tipo_valor %}selected{% endif %}>
+                        {{ tipo_nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">
+                    <i class="far fa-calendar me-1"></i> Desde
+                </label>
+                <input type="date" name="fecha_desde" class="form-control" value="{{ request.GET.fecha_desde }}">
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">
+                    <i class="far fa-calendar me-1"></i> Hasta
+                </label>
+                <input type="date" name="fecha_hasta" class="form-control" value="{{ request.GET.fecha_hasta }}">
+            </div>
+            
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-light me-2">
+                    <i class="fas fa-search me-1"></i> Filtrar
+                </button>
+                <a href="{% url 'farmacia:kardex_list' %}" class="btn btn-outline-light">
+                    <i class="fas fa-redo me-1"></i> Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabla de Movimientos -->
+    <div class="card card-kardex">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-database me-2"></i>
+                Registros del Kardex
+                {% if page_obj %}
+                <span class="badge bg-primary float-end">
+                    Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }}
+                </span>
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-kardex table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 10%;">Folio</th>
+                            <th style="width: 12%;">Fecha/Hora</th>
+                            <th style="width: 20%;">Producto</th>
+                            <th style="width: 8%;">Lote</th>
+                            <th style="width: 15%;">Tipo</th>
+                            <th style="width: 7%;" class="text-center">Cantidad</th>
+                            <th style="width: 7%;" class="text-end">Stock Antes</th>
+                            <th style="width: 7%;" class="text-end">Stock Después</th>
+                            <th style="width: 7%;" class="text-end">Costo Unit.</th>
+                            <th style="width: 7%;">Usuario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mov in movimientos %}
+                        <tr class="{% if mov.es_entrada %}row-entrada{% else %}row-salida{% endif %}">
+                            <td>
+                                <span class="folio-badge">{{ mov.folio }}</span>
+                            </td>
+                            <td>
+                                <small>
+                                    {{ mov.fecha_movimiento|date:"d/m/Y" }}<br>
+                                    <strong>{{ mov.fecha_movimiento|date:"H:i:s" }}</strong>
+                                </small>
+                            </td>
+                            <td>
+                                <strong>{{ mov.producto.nombre }}</strong>
+                                {% if mov.producto.codigo_barras %}
+                                <br><small class="text-muted">{{ mov.producto.codigo_barras }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if mov.lote %}
+                                <span class="badge bg-secondary">{{ mov.lote.numero_lote }}</span>
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-tipo {% if mov.es_entrada %}bg-success{% else %}bg-danger{% endif %}">
+                                    {% if mov.es_entrada %}
+                                        <i class="fas fa-arrow-down me-1"></i>
+                                    {% else %}
+                                        <i class="fas fa-arrow-up me-1"></i>
+                                    {% endif %}
+                                    {{ mov.get_tipo_movimiento_display }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <strong>{{ mov.cantidad }}</strong>
+                            </td>
+                            <td class="text-end">
+                                {{ mov.stock_anterior }}
+                            </td>
+                            <td class="text-end">
+                                <span class="stock-highlight">{{ mov.stock_resultante }}</span>
+                            </td>
+                            <td class="text-end">
+                                ${{ mov.costo_unitario|floatformat:2 }}
+                            </td>
+                            <td>
+                                <small>{{ mov.usuario_responsable.username }}</small>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center py-5">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <p class="text-muted mb-0">No hay movimientos que coincidan con los filtros</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Paginación -->
+        {% if is_paginated %}
+        <div class="card-footer">
+            <nav aria-label="Navegación de páginas">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.producto %}&producto={{ request.GET.producto }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.fecha_desde %}&fecha_desde={{ request.GET.fecha_desde }}{% endif %}{% if request.GET.fecha_hasta %}&fecha_hasta={{ request.GET.fecha_hasta }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.producto %}&producto={{ request.GET.producto }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.fecha_desde %}&fecha_desde={{ request.GET.fecha_desde }}{% endif %}{% if request.GET.fecha_hasta %}&fecha_hasta={{ request.GET.fecha_hasta }}{% endif %}">
+                            <i class="fas fa-angle-left"></i> Anterior
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.producto %}&producto={{ request.GET.producto }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.fecha_desde %}&fecha_desde={{ request.GET.fecha_desde }}{% endif %}{% if request.GET.fecha_hasta %}&fecha_hasta={{ request.GET.fecha_hasta }}{% endif %}">
+                            Siguiente <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.producto %}&producto={{ request.GET.producto }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.fecha_desde %}&fecha_desde={{ request.GET.fecha_desde }}{% endif %}{% if request.GET.fecha_hasta %}&fecha_hasta={{ request.GET.fecha_hasta }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Leyenda -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h6><i class="fas fa-info-circle me-2"></i> Sobre el Kardex</h6>
+                <ul class="mb-0">
+                    <li><strong>Verde</strong> = Entradas (compras, devoluciones, ajustes positivos)</li>
+                    <li><strong>Rojo</strong> = Salidas (ventas, mermas, ajustes negativos)</li>
+                    <li><strong>Stock Resultante</strong> = Stock después del movimiento (calculado automáticamente)</li>
+                    <li><strong>Inmutable</strong> = Los movimientos NO se pueden editar una vez creados</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Resaltar fila al hacer hover
+document.querySelectorAll('.table-kardex tbody tr').forEach(row => {
+    row.addEventListener('mouseenter', function() {
+        this.style.transform = 'scale(1.01)';
+        this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+        this.style.transition = 'all 0.2s';
+    });
+    
+    row.addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+        this.style.boxShadow = 'none';
+    });
+});
+</script>
+{% endblock %}

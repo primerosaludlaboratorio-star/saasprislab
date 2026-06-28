@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Semáforo de Caducidad — Farmacia{% endblock %}
+
+{% block extra_css %}
+<style>
+    .semaforo-card { border-radius: 12px; border: none; }
+    .badge-critico { background: #dc3545; font-size: .85rem; }
+    .badge-alerta { background: #ffc107; color: #333; font-size: .85rem; }
+    .badge-normal { background: #28a745; font-size: .85rem; }
+    .stat-number { font-size: 2.5rem; font-weight: 700; line-height: 1; }
+    .table-semaforo th { font-size: .8rem; text-transform: uppercase; letter-spacing: .5px; color: #6c757d; }
+    .row-critico { border-left: 4px solid #dc3545; }
+    .row-alerta { border-left: 4px solid #ffc107; }
+    .dias-badge { font-weight: 600; min-width: 50px; display: inline-block; text-align: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">Semáforo de Caducidad</h4>
+            <small class="text-muted">Fecha: {{ fecha_hoy|date:"d/M/Y" }} &mdash; {{ total_lotes }} lotes activos</small>
+        </div>
+        <a href="{% url 'farmacia:dashboard_stock_critico' %}" class="btn btn-outline-secondary btn-sm">
+            Stock Crítico
+        </a>
+    </div>
+
+    {% if count_vencidos > 0 %}
+    <!-- ALERTA VENCIDOS -->
+    <div class="alert alert-danger d-flex align-items-center mb-3 border-0 shadow-sm" role="alert" style="border-left:6px solid #6f0000 !important;">
+        <i class="bi bi-exclamation-octagon-fill me-3" style="font-size:1.8rem"></i>
+        <div>
+            <strong class="d-block">⚠️ ACCIÓN INMEDIATA REQUERIDA: {{ count_vencidos }} lote(s) YA VENCIDO(S) con stock en inventario</strong>
+            <span class="small">Estos productos NO pueden venderse. Realice la baja por merma de inmediato para mantener el cumplimiento COFEPRIS.</span>
+        </div>
+    </div>
+    <div class="table-responsive mb-4">
+        <table class="table table-sm table-danger align-middle">
+            <thead><tr><th>Producto</th><th>Lote</th><th class="text-center">Caducó</th><th class="text-center">Unidades</th><th>Acción</th></tr></thead>
+            <tbody>
+            {% for lote in lotes_vencidos %}
+            <tr class="fw-bold">
+                <td>{{ lote.producto.nombre }}</td>
+                <td>{{ lote.numero_lote }}</td>
+                <td class="text-center text-danger">{{ lote.fecha_caducidad|date:"d/m/Y" }}</td>
+                <td class="text-center">{{ lote.cantidad }}</td>
+                <td><a href="{% url 'farmacia:crear_movimiento' %}?lote={{ lote.id }}&tipo=MERMA" class="btn btn-danger btn-sm">Dar de baja</a></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card semaforo-card bg-danger text-white shadow-sm">
+                <div class="card-body text-center">
+                    <div class="stat-number">{{ count_criticos }}</div>
+                    <div class="mt-1">Lotes Críticos (&lt;30 días)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card semaforo-card bg-warning shadow-sm">
+                <div class="card-body text-center">
+                    <div class="stat-number text-dark">{{ count_alerta }}</div>
+                    <div class="mt-1 text-dark">Lotes en Alerta (30-90 días)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card semaforo-card bg-success text-white shadow-sm">
+                <div class="card-body text-center">
+                    <div class="stat-number">{{ count_normales }}</div>
+                    <div class="mt-1">Lotes Normales (&gt;90 días)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card semaforo-card bg-dark text-white shadow-sm">
+                <div class="card-body text-center">
+                    <div class="stat-number">${{ valor_en_riesgo|floatformat:0 }}</div>
+                    <div class="mt-1">Valor en Riesgo (Críticos)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla Críticos -->
+    {% if lotes_criticos %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <strong>CRÍTICOS — Caduca en menos de 30 días</strong>
+            <span class="badge bg-light text-danger">{{ count_criticos }} lotes</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-semaforo mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Producto</th>
+                            <th>Lote</th>
+                            <th class="text-center">Cantidad</th>
+                            <th class="text-center">Caduca</th>
+                            <th class="text-center">Días Restantes</th>
+                            <th class="text-end">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lote in lotes_criticos %}
+                        <tr class="row-critico">
+                            <td><strong>{{ lote.producto.nombre }}</strong></td>
+                            <td><code>{{ lote.numero_lote }}</code></td>
+                            <td class="text-center">{{ lote.cantidad }}</td>
+                            <td class="text-center">{{ lote.fecha_caducidad|date:"d/m/Y" }}</td>
+                            <td class="text-center">
+                                {% widthratio lote.fecha_caducidad|timeuntil:"" 1 1 as dias %}
+                                <span class="badge badge-critico dias-badge">{{ lote.fecha_caducidad|timeuntil }}</span>
+                            </td>
+                            <td class="text-end">${{ lote.costo_adquisicion|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tabla Alerta -->
+    {% if lotes_alerta %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-warning d-flex justify-content-between align-items-center">
+            <strong class="text-dark">ALERTA — Caduca en 30 a 90 días</strong>
+            <span class="badge bg-dark">{{ count_alerta }} lotes</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-semaforo mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Producto</th>
+                            <th>Lote</th>
+                            <th class="text-center">Cantidad</th>
+                            <th class="text-center">Caduca</th>
+                            <th class="text-center">Días Restantes</th>
+                            <th class="text-end">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lote in lotes_alerta %}
+                        <tr class="row-alerta">
+                            <td>{{ lote.producto.nombre }}</td>
+                            <td><code>{{ lote.numero_lote }}</code></td>
+                            <td class="text-center">{{ lote.cantidad }}</td>
+                            <td class="text-center">{{ lote.fecha_caducidad|date:"d/m/Y" }}</td>
+                            <td class="text-center">
+                                <span class="badge badge-alerta dias-badge">{{ lote.fecha_caducidad|timeuntil }}</span>
+                            </td>
+                            <td class="text-end">${{ lote.costo_adquisicion|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not lotes_criticos and not lotes_alerta %}
+    <div class="alert alert-success text-center py-5">
+        <h5>Todo en orden</h5>
+        <p class="mb-0">No hay lotes próximos a caducar. El inventario está sano.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

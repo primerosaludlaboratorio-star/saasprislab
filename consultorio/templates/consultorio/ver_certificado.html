@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Certificado Médico - {{ certificado.folio_certificado }}{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    .no-print { display: none !important; }
+    .card { box-shadow: none !important; border: 1px solid #dee2e6 !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="max-width:800px;">
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <div>
+            <h2 class="mb-0"><i class="fas fa-file-medical text-success"></i> Certificado Médico</h2>
+            <p class="text-muted mb-0">Folio: {{ certificado.folio_certificado }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-outline-primary">
+                <i class="fas fa-print"></i> Imprimir
+            </button>
+            <a href="javascript:history.back()" class="btn btn-outline-secondary no-print">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <div class="text-center mb-4">
+                <h4 class="fw-bold text-uppercase">Certificado Médico</h4>
+                <p class="text-muted">{{ certificado.empresa.nombre|default:"PRISLAB" }}</p>
+            </div>
+
+            <hr>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <p><strong>Paciente:</strong> {{ certificado.paciente.nombre_completo }}</p>
+                    <p><strong>Edad:</strong> {{ certificado.paciente.edad|default:"—" }} años</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Médico:</strong> Dr(a). {{ certificado.medico.nombre_completo }}</p>
+                    <p><strong>Cédula:</strong> {{ certificado.medico.cedula_profesional|default:"—" }}</p>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <p><strong>Tipo:</strong> {{ certificado.get_tipo_certificado_display|default:certificado.tipo_certificado }}</p>
+                </div>
+                <div class="col-md-3">
+                    <p><strong>Fecha Inicio:</strong> {{ certificado.fecha_inicio|date:"d/m/Y"|default:"—" }}</p>
+                </div>
+                <div class="col-md-3">
+                    <p><strong>Fecha Fin:</strong> {{ certificado.fecha_fin|date:"d/m/Y"|default:"—" }}</p>
+                </div>
+                {% if certificado.dias_incapacidad %}
+                <div class="col-md-3">
+                    <p><strong>Días de incapacidad:</strong> {{ certificado.dias_incapacidad }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if certificado.diagnostico %}
+            <div class="mb-3">
+                <strong>Diagnóstico:</strong>
+                <p>{{ certificado.diagnostico }}</p>
+            </div>
+            {% endif %}
+
+            {% if certificado.descripcion %}
+            <div class="mb-3">
+                <strong>Descripción:</strong>
+                <p>{{ certificado.descripcion }}</p>
+            </div>
+            {% endif %}
+
+            <hr>
+
+            <div class="row mt-4">
+                <div class="col-md-6 text-center">
+                    <p class="mb-0">_______________________________</p>
+                    <p class="text-muted small">Firma del Médico</p>
+                    <p><strong>Dr(a). {{ certificado.medico.nombre_completo }}</strong></p>
+                    <p class="text-muted small">Céd. Prof. {{ certificado.medico.cedula_profesional|default:"—" }}</p>
+                </div>
+                <div class="col-md-6 text-center">
+                    <p class="mb-0">Fecha de expedición:</p>
+                    <p><strong>{{ certificado.fecha_emision|date:"d/m/Y H:i"|default:"—" }}</strong></p>
+                </div>
+            </div>
+            <hr class="mt-4">
+            <p class="small text-muted text-center mb-0">Documento confidencial. Impreso el {% now "d/m/Y H:i" %}. Folio: {{ certificado.folio_certificado }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

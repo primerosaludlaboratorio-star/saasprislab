@@ -1,0 +1,305 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% block title %}Planes PRISLAB — Elige tu Plan{% endblock %}
+
+{% block content %}
+<style>
+:root {
+  --plan-glow: 0 0 40px rgba(59,130,246,0.25);
+  --card-bg: rgba(15,23,42,0.85);
+  --border-subtle: rgba(255,255,255,0.08);
+}
+
+.plans-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  padding: 4rem 0 2rem;
+  position: relative;
+  overflow: hidden;
+}
+.plans-hero::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(59,130,246,0.15) 0%, transparent 70%);
+}
+.hero-badge {
+  display:inline-flex;
+  align-items:center;
+  gap:.5rem;
+  background:rgba(59,130,246,.15);
+  border:1px solid rgba(59,130,246,.3);
+  color:#93c5fd;
+  padding:.35rem 1rem;
+  border-radius:99px;
+  font-size:.8rem;
+  font-weight:600;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.plans-grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px,1fr));
+  gap:1.5rem;
+  padding:2rem 0 4rem;
+}
+.plan-card {
+  background: var(--card-bg);
+  border:1px solid var(--border-subtle);
+  border-radius:20px;
+  padding:2rem;
+  position:relative;
+  transition: transform .3s ease, box-shadow .3s ease;
+  backdrop-filter:blur(12px);
+}
+.plan-card:hover {
+  transform:translateY(-6px);
+  box-shadow: var(--plan-glow);
+}
+.plan-card.featured {
+  border-color:rgba(59,130,246,.5);
+  background:linear-gradient(160deg,rgba(30,58,138,.4) 0%,rgba(15,23,42,.9) 100%);
+  box-shadow: var(--plan-glow);
+}
+.plan-card.featured::before {
+  content:'⭐ MÁS POPULAR';
+  position:absolute;
+  top:-1px; left:50%; transform:translateX(-50%);
+  background:linear-gradient(90deg,#3b82f6,#06b6d4);
+  color:#fff;
+  font-size:.65rem;
+  font-weight:700;
+  letter-spacing:.1em;
+  padding:.3rem 1.2rem;
+  border-radius:0 0 10px 10px;
+}
+.plan-name {
+  font-size:1.1rem;
+  font-weight:700;
+  color:#f1f5f9;
+  margin-bottom:.25rem;
+}
+.plan-price {
+  font-size:2.8rem;
+  font-weight:800;
+  background:linear-gradient(135deg,#60a5fa,#34d399);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  line-height:1.1;
+  margin:.75rem 0;
+}
+.plan-price span {
+  font-size:1rem;
+  font-weight:400;
+  -webkit-text-fill-color:#94a3b8;
+  color:#94a3b8;
+}
+.plan-desc {
+  font-size:.85rem;
+  color:#94a3b8;
+  margin-bottom:1.5rem;
+  line-height:1.6;
+}
+.plan-features {
+  list-style:none;
+  padding:0;
+  margin:0 0 1.75rem;
+  display:flex;
+  flex-direction:column;
+  gap:.6rem;
+}
+.plan-features li {
+  display:flex;
+  align-items:center;
+  gap:.6rem;
+  font-size:.875rem;
+  color:#cbd5e1;
+}
+.plan-features li .icon-check { color:#34d399; flex-shrink:0; }
+.plan-features li .icon-x     { color:#6b7280; flex-shrink:0; }
+.plan-features li.disabled    { color:#4b5563; }
+.divider-plan {
+  border:none;
+  border-top:1px solid var(--border-subtle);
+  margin:1.25rem 0;
+}
+.btn-plan {
+  display:block;
+  width:100%;
+  text-align:center;
+  padding:.8rem;
+  border-radius:12px;
+  font-weight:600;
+  font-size:.9rem;
+  transition:all .25s ease;
+  text-decoration:none;
+  cursor:pointer;
+  border:none;
+}
+.btn-plan-primary {
+  background:linear-gradient(135deg,#3b82f6,#2563eb);
+  color:#fff;
+  box-shadow:0 4px 15px rgba(59,130,246,.35);
+}
+.btn-plan-primary:hover {
+  transform:translateY(-2px);
+  box-shadow:0 6px 25px rgba(59,130,246,.5);
+  color:#fff;
+}
+.btn-plan-ghost {
+  background:transparent;
+  color:#94a3b8;
+  border:1px solid rgba(255,255,255,.15);
+}
+.btn-plan-ghost:hover {
+  background:rgba(255,255,255,.08);
+  color:#f1f5f9;
+}
+.garantia-row {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:2rem;
+  padding:2rem;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--border-subtle);
+  border-radius:16px;
+  margin-bottom:3rem;
+}
+.garantia-item {
+  display:flex;
+  align-items:center;
+  gap:.6rem;
+  font-size:.85rem;
+  color:#94a3b8;
+}
+.garantia-item i { color:#34d399; font-size:1.1rem; }
+</style>
+
+<div class="plans-hero">
+  <div class="container text-center position-relative">
+    <div class="hero-badge mb-3"><i class="bi bi-stars"></i> SaaS Multi-Tenant</div>
+    <h1 class="fw-bold text-white" style="font-size:clamp(2rem,5vw,3rem)">
+      Planes que escalan<br>
+      <span style="background:linear-gradient(135deg,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">
+        contigo
+      </span>
+    </h1>
+    <p class="text-secondary mt-2 mb-0" style="max-width:500px;margin:auto">
+      Sin contratos. Sin sorpresas. Cancela cuando quieras.
+    </p>
+  </div>
+</div>
+
+<div class="container">
+  {% if not planes %}
+  <!-- Planes por defecto si no hay datos en BD -->
+  {% with planes_demo='' %}
+  <div class="plans-grid mt-4">
+
+    <!-- Plan Básico -->
+    <div class="plan-card">
+      <div class="plan-name">🔬 Básico</div>
+      <div class="plan-price">$2,499<span>/mes</span></div>
+      <p class="plan-desc">Ideal para clínicas y laboratorios en crecimiento.</p>
+      <hr class="divider-plan">
+      <ul class="plan-features">
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Hasta 5 usuarios</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Laboratorio LIMS completo</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Farmacia PDV</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Consultorio médico</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Soporte por email</li>
+        <li class="disabled"><i class="bi bi-x-circle icon-x"></i> IA PRIS / DeepSeek</li>
+        <li class="disabled"><i class="bi bi-x-circle icon-x"></i> Kioscos IoT</li>
+        <li class="disabled"><i class="bi bi-x-circle icon-x"></i> API de integración</li>
+      </ul>
+      <a href="#contacto" class="btn-plan btn-plan-ghost">Comenzar gratis 14 días</a>
+    </div>
+
+    <!-- Plan Pro (featured) -->
+    <div class="plan-card featured">
+      <div class="plan-name">🚀 Pro</div>
+      <div class="plan-price">$5,999<span>/mes</span></div>
+      <p class="plan-desc">Para laboratorios con alto volumen y equipos completos.</p>
+      <hr class="divider-plan">
+      <ul class="plan-features">
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Hasta 20 usuarios</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Laboratorio LIMS completo</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Farmacia PDV + Inventario</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Consultorio + Agenda</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> IA PRIS + DeepSeek</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Director War Room</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Soporte prioritario 24/7</li>
+        <li class="disabled"><i class="bi bi-x-circle icon-x"></i> Kioscos IoT</li>
+      </ul>
+      <a href="#contacto" class="btn-plan btn-plan-primary">Activar Pro</a>
+    </div>
+
+    <!-- Plan Enterprise -->
+    <div class="plan-card">
+      <div class="plan-name">🏥 Enterprise</div>
+      <div class="plan-price">$12,999<span>/mes</span></div>
+      <p class="plan-desc">Para cadenas de laboratorios y hospitales multi-sede.</p>
+      <hr class="divider-plan">
+      <ul class="plan-features">
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Usuarios ilimitados</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Multi-sede / Multi-empresa</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> IA PRIS + Vision + DeepSeek</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Kioscos IoT</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> API de integración</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> SLA 99.9% garantizado</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Onboarding dedicado</li>
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Soporte 24/7 + Slack privado</li>
+      </ul>
+      <a href="#contacto" class="btn-plan btn-plan-ghost">Contactar ventas</a>
+    </div>
+
+  </div>
+  {% endwith %}
+  {% else %}
+  <!-- Planes reales desde BD -->
+  <div class="plans-grid mt-4">
+    {% for plan in planes %}
+    <div class="plan-card {% if forloop.counter == 2 %}featured{% endif %}">
+      <div class="plan-name">{{ plan.nombre }}</div>
+      <div class="plan-price">${{ plan.precio_mensual|floatformat:0 }}<span>/mes</span></div>
+      <hr class="divider-plan">
+      <ul class="plan-features">
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Hasta {{ plan.max_usuarios }} usuarios</li>
+        {% if plan.incluye_iot %}
+        <li><i class="bi bi-check-circle-fill icon-check"></i> Kioscos IoT incluidos</li>
+        {% else %}
+        <li class="disabled"><i class="bi bi-x-circle icon-x"></i> Kioscos IoT</li>
+        {% endif %}
+        {% if plan.incluye_api %}
+        <li><i class="bi bi-check-circle-fill icon-check"></i> API de integración</li>
+        {% else %}
+        <li class="disabled"><i class="bi bi-x-circle icon-x"></i> API de integración</li>
+        {% endif %}
+      </ul>
+      <a href="#contacto" class="btn-plan {% if forloop.counter == 2 %}btn-plan-primary{% else %}btn-plan-ghost{% endif %}">
+        Activar {{ plan.nombre }}
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Garantías -->
+  <div class="garantia-row">
+    <div class="garantia-item"><i class="bi bi-shield-check"></i> Sin contratos de permanencia</div>
+    <div class="garantia-item"><i class="bi bi-arrow-counterclockwise"></i> 14 días de prueba gratis</div>
+    <div class="garantia-item"><i class="bi bi-headset"></i> Soporte en español</div>
+    <div class="garantia-item"><i class="bi bi-lock-fill"></i> Datos 100% tuyos</div>
+  </div>
+
+  <!-- CTA Contacto -->
+  <div id="contacto" class="text-center pb-5">
+    <h3 class="text-white fw-bold mb-2">¿Tienes dudas?</h3>
+    <p class="text-secondary mb-4">Nuestro equipo te ayuda a elegir el plan correcto.</p>
+    <a href="mailto:ventas@prislab.mx" class="btn btn-primary btn-lg rounded-3 px-5">
+      <i class="bi bi-envelope me-2"></i>Contactar a ventas
+    </a>
+  </div>
+</div>
+{% endblock %}

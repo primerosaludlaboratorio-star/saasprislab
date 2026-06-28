@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+  <!-- Encabezado -->
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h5 class="fw-bold mb-1"><i class="bi bi-file-earmark-text me-2"></i>{{ titulo }}</h5>
+      <small class="text-muted">
+        Área: <strong>{{ vale.area_solicitante }}</strong> |
+        Solicitó: <strong>{{ vale.solicitado_por.get_full_name|default:vale.solicitado_por.username }}</strong> |
+        Fecha: {{ vale.fecha_solicitud|date:"d/m/Y H:i" }}
+      </small>
+    </div>
+    <div>
+      {% if vale.estado == 'ENTREGADO' %}<span class="badge bg-success fs-6">Entregado</span>
+      {% elif vale.estado == 'APROBADO' %}<span class="badge bg-info text-dark fs-6">Aprobado</span>
+      {% elif vale.estado == 'PENDIENTE' %}<span class="badge bg-warning text-dark fs-6">Pendiente</span>
+      {% elif vale.estado == 'RECHAZADO' %}<span class="badge bg-danger fs-6">Rechazado</span>
+      {% elif vale.estado == 'CANCELADO' %}<span class="badge bg-dark fs-6">Cancelado</span>
+      {% else %}<span class="badge bg-secondary fs-6">{{ vale.get_estado_display }}</span>{% endif %}
+    </div>
+  </div>
+
+  <!-- Líneas de artículos -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-light py-2 fw-semibold">Artículos Solicitados</div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Artículo</th><th class="text-end">Solicitado</th>
+            <th class="text-end">Entregado</th><th>Lote Entregado</th><th>Observaciones</th></tr>
+          </thead>
+          <tbody>
+            {% for l in lineas %}
+            <tr>
+              <td>{{ l.insumo.nombre }}<br><small class="text-muted">{{ l.insumo.get_categoria_display }}</small></td>
+              <td class="text-end">{{ l.cantidad_solicitada }} {{ l.insumo.unidad_medida }}</td>
+              <td class="text-end {% if l.cantidad_entregada > 0 %}text-success fw-semibold{% else %}text-muted{% endif %}">
+                {{ l.cantidad_entregada|floatformat:2 }}
+              </td>
+              <td>{% if l.lote_entregado %}<code>Lote {{ l.lote_entregado.pk }}</code>{% else %}—{% endif %}</td>
+              <td class="text-muted small">{{ l.observaciones|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-3">Sin líneas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% if vale.observaciones %}
+  <div class="alert alert-light border mb-3">
+    <strong>Observaciones:</strong> {{ vale.observaciones }}
+  </div>
+  {% endif %}
+  {% if vale.razon_rechazo %}
+  <div class="alert alert-danger mb-3">
+    <strong>Razón de Rechazo:</strong> {{ vale.razon_rechazo }}
+  </div>
+  {% endif %}
+
+  <!-- Acciones según estado -->
+  <div class="d-flex flex-wrap gap-2">
+
+    {% if vale.estado == 'BORRADOR' %}
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="accion" value="enviar">
+      <button type="submit" class="btn btn-warning">
+        <i class="bi bi-send me-1"></i>Enviar a Aprobación
+      </button>
+    </form>
+    {% endif %}
+
+    {% if vale.estado == 'PENDIENTE' %}
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="accion" value="aprobar">
+      <button type="submit" class="btn btn-success">
+        <i class="bi bi-check-circle me-1"></i>Aprobar
+      </button>
+    </form>
+    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalRechazar">
+      <i class="bi bi-x-circle me-1"></i>Rechazar
+    </button>
+    {% endif %}
+
+    {% if vale.estado == 'APROBADO' %}
+    <form method="post" onsubmit="return confirm('¿Confirmar entrega y descontar stock FEFO?')">{% csrf_token %}
+      <input type="hidden" name="accion" value="entregar">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-bag-check me-1"></i>Marcar como Entregado (descuenta stock)
+      </button>
+    </form>
+    {% endif %}
+
+    <a href="{% url 'inventario:lista_vales' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Volver
+    </a>
+  </div>
+</div>
+
+<!-- Modal Rechazar -->
+<div class="modal fade" id="modalRechazar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="accion" value="rechazar">
+        <div class="modal-header">
+          <h5 class="modal-title">Rechazar Vale {{ vale.folio }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label fw-semibold">Razón de Rechazo *</label>
+          <textarea name="razon_rechazo" class="form-control" rows="3" required placeholder="Explica el motivo del rechazo…"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger">Confirmar Rechazo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

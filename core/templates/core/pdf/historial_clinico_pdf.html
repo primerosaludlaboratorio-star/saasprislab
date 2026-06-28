@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Historial Clínico — {{ paciente.nombre_completo }}</title>
+<style>
+  @page {
+    size: Letter;
+    margin: 1.8cm 1.5cm 2cm 1.5cm;
+    @bottom-center {
+      content: "Página " counter(page) " de " counter(pages) " — PRISLAB v5 — Documento generado el {{ fecha_reporte|date:'d/m/Y H:i' }}";
+      font-size: 8pt; color: #666;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 9pt; color: #222; line-height: 1.45; }
+
+  /* ── Encabezado ── */
+  .header { display: flex; justify-content: space-between; align-items: flex-start;
+            border-bottom: 3px solid #0ea5e9; padding-bottom: 10px; margin-bottom: 14px; }
+  .header-left h1 { font-size: 18pt; color: #0ea5e9; font-weight: 800; }
+  .header-left p  { font-size: 8pt; color: #666; }
+  .header-right   { text-align: right; font-size: 8pt; color: #555; }
+
+  /* ── Ficha del paciente ── */
+  .ficha { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px;
+           padding: 10px 14px; margin-bottom: 14px; }
+  .ficha h2 { font-size: 12pt; color: #0369a1; margin-bottom: 6px; }
+  .ficha-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 16px; }
+  .ficha-item label { font-weight: 700; font-size: 7.5pt; color: #555; display: block; }
+  .ficha-item span  { font-size: 9pt; }
+
+  /* ── Secciones ── */
+  .section { margin-bottom: 16px; }
+  .section-title { font-size: 10pt; font-weight: 700; color: #fff; background: #0369a1;
+                   padding: 5px 10px; border-radius: 4px 4px 0 0; }
+  .section-body { border: 1px solid #bae6fd; border-top: none; padding: 10px;
+                  border-radius: 0 0 4px 4px; }
+
+  /* ── Estadísticas ── */
+  .stats-row { display: flex; gap: 12px; margin-bottom: 14px; }
+  .stat-card { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0;
+               border-radius: 6px; padding: 8px; text-align: center; }
+  .stat-card .num { font-size: 18pt; font-weight: 800; color: #0ea5e9; }
+  .stat-card .lbl { font-size: 7.5pt; color: #666; }
+
+  /* ── Tabla ── */
+  table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+  th { background: #e0f2fe; color: #0369a1; font-weight: 700;
+       padding: 5px 8px; text-align: left; border: 1px solid #bae6fd; }
+  td { padding: 4px 8px; border: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8fafc; }
+
+  /* ── Timeline ── */
+  .event { border-left: 3px solid #0ea5e9; padding: 6px 10px 6px 12px;
+           margin-bottom: 8px; background: #f8fafc; border-radius: 0 4px 4px 0; page-break-inside: avoid; }
+  .event.lab    { border-left-color: #0891b2; }
+  .event.consulta{ border-left-color: #7c3aed; }
+  .event.receta { border-left-color: #059669; }
+  .event-date   { font-size: 7.5pt; color: #666; }
+  .event-title  { font-weight: 700; font-size: 9pt; }
+  .event-detail { font-size: 8.5pt; color: #444; margin-top: 2px; }
+
+  /* ── Alertas ── */
+  .alerta { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 4px;
+            padding: 6px 10px; margin-bottom: 6px; font-size: 8.5pt; color: #b91c1c; }
+
+  /* ── Firma ── */
+  .firma { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;
+           display: flex; justify-content: space-between; font-size: 8pt; color: #777; }
+  .watermark { position: fixed; bottom: 40%; left: 20%; font-size: 60pt; color: #00000008;
+               transform: rotate(-30deg); font-weight: 900; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div class="watermark">PRISLAB</div>
+
+<!-- ENCABEZADO -->
+<div class="header">
+  <div class="header-left">
+    <h1>PRISLAB</h1>
+    <p>{% if empresa %}{{ empresa.nombre }}{% endif %}</p>
+    <p>Historial Clínico Completo — Documento Confidencial</p>
+  </div>
+  <div class="header-right">
+    <p><strong>Generado:</strong> {{ fecha_reporte|date:"d/m/Y H:i" }}</p>
+    <p><strong>Por:</strong> {{ generado_por }}</p>
+    {% if empresa %}<p>{{ empresa.telefono|default:"" }}</p>{% endif %}
+  </div>
+</div>
+
+<!-- FICHA DEL PACIENTE -->
+<div class="ficha">
+  <h2>Datos del Paciente</h2>
+  <div class="ficha-grid">
+    <div class="ficha-item"><label>Nombre completo</label><span>{{ paciente.nombre_completo }}</span></div>
+    <div class="ficha-item"><label>Fecha de nacimiento</label><span>{{ paciente.fecha_nacimiento|date:"d/m/Y"|default:"—" }}</span></div>
+    <div class="ficha-item"><label>Edad</label><span>{{ paciente.edad|default:"—" }} años</span></div>
+    <div class="ficha-item"><label>Sexo</label><span>{{ paciente.get_sexo_display|default:"—" }}</span></div>
+    <div class="ficha-item"><label>Teléfono</label><span>{{ paciente.telefono|default:"—" }}</span></div>
+    <div class="ficha-item"><label>Historia Clínica</label><span>{{ paciente.historia_clinica|default:"—" }}</span></div>
+    <div class="ficha-item"><label>CURP</label><span>{{ paciente.curp|default:"—" }}</span></div>
+    <div class="ficha-item"><label>Tipo de sangre</label><span>{{ paciente.tipo_sangre|default:"—" }}</span></div>
+    <div class="ficha-item"><label>Alergias</label><span>{{ paciente.alergias|default:"Sin registro"|truncatechars:60 }}</span></div>
+  </div>
+</div>
+
+<!-- ESTADÍSTICAS -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="num">{{ estadisticas.total_consultas|default:0 }}</div>
+    <div class="lbl">Consultas</div>
+  </div>
+  <div class="stat-card">
+    <div class="num">{{ estadisticas.total_ordenes|default:0 }}</div>
+    <div class="lbl">Órdenes de Lab.</div>
+  </div>
+  <div class="stat-card">
+    <div class="num">{{ estadisticas.total_recetas|default:0 }}</div>
+    <div class="lbl">Recetas</div>
+  </div>
+  <div class="stat-card">
+    <div class="num">{{ timeline|length }}</div>
+    <div class="lbl">Eventos totales</div>
+  </div>
+</div>
+
+<!-- ALERTAS CRÍTICAS -->
+{% if alertas %}
+<div class="section">
+  <div class="section-title">⚠ Alertas Clínicas</div>
+  <div class="section-body">
+    {% for alerta in alertas %}
+    <div class="alerta">{{ alerta.mensaje|default:alerta }}</div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- TIMELINE DE EVENTOS -->
+<div class="section">
+  <div class="section-title">Historial Cronológico</div>
+  <div class="section-body">
+    {% if timeline %}
+      {% for evento in timeline %}
+      <div class="event {{ evento.tipo|lower }}">
+        <div class="event-date">{{ evento.fecha|date:"d/m/Y H:i"|default:"—" }} — {{ evento.tipo|default:"Evento" }}</div>
+        <div class="event-title">{{ evento.titulo|default:"Sin título" }}</div>
+        {% if evento.descripcion %}
+        <div class="event-detail">{{ evento.descripcion|truncatechars:200 }}</div>
+        {% endif %}
+        {% if evento.medico %}
+        <div class="event-detail">Médico: {{ evento.medico }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <p style="color:#666; font-style:italic;">Sin eventos registrados.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ÓRDENES DE LABORATORIO -->
+{% if ordenes %}
+<div class="section">
+  <div class="section-title">Órdenes de Laboratorio</div>
+  <div class="section-body">
+    <table>
+      <thead>
+        <tr>
+          <th>Folio</th><th>Fecha</th><th>Estudios</th><th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for orden in ordenes %}
+        <tr>
+          <td>{{ orden.folio|default:orden.pk }}</td>
+          <td>{{ orden.fecha_creacion|date:"d/m/Y" }}</td>
+          <td>{{ orden.detalles.count }} estudio(s)</td>
+          <td>{{ orden.get_estado_display|default:orden.estado }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- RECETAS -->
+{% if recetas %}
+<div class="section">
+  <div class="section-title">Recetas Emitidas</div>
+  <div class="section-body">
+    <table>
+      <thead>
+        <tr>
+          <th>Folio</th><th>Fecha</th><th>Médico</th><th>Diagnóstico</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for receta in recetas %}
+        <tr>
+          <td>{{ receta.folio_receta|default:receta.pk }}</td>
+          <td>{{ receta.fecha_emision|date:"d/m/Y"|default:"—" }}</td>
+          <td>{{ receta.medico|default:"—" }}</td>
+          <td>{{ receta.diagnostico|default:"—"|truncatechars:80 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- FIRMA -->
+<div class="firma">
+  <div>Documento confidencial — Uso exclusivo del personal médico autorizado</div>
+  <div>PRISLAB v5.0 © {{ fecha_reporte|date:"Y" }} — {{ empresa.nombre|default:"" }}</div>
+</div>
+
+</body>
+</html>

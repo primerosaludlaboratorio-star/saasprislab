@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h5 class="mb-0 fw-bold"><i class="bi bi-bell me-2 text-danger"></i>{{ titulo }}</h5>
+      {% if pendientes > 0 %}
+      <span class="badge bg-danger">{{ pendientes }} sin resolver</span>
+      {% else %}
+      <span class="badge bg-success">Todo resuelto</span>
+      {% endif %}
+    </div>
+    <a href="{% url 'inventario:lista_traspasos' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Traspasos
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-dark">
+            <tr><th>Nivel</th><th>Tipo</th><th>Título</th><th>Detalle</th>
+            <th>Estado</th><th>Fecha</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for n in notificaciones %}
+            <tr class="{% if not n.resuelta and n.nivel == 'CRITICO' %}table-danger{% elif not n.resuelta and n.nivel == 'ADVERTENCIA' %}table-warning{% elif n.resuelta %}text-muted{% endif %}">
+              <td>
+                {% if n.nivel == 'CRITICO' %}<span class="badge bg-danger">🔴 Crítico</span>
+                {% elif n.nivel == 'ADVERTENCIA' %}<span class="badge bg-warning text-dark">⚠ Alerta</span>
+                {% else %}<span class="badge bg-info text-dark">ℹ Info</span>{% endif %}
+              </td>
+              <td class="small">{{ n.get_tipo_display }}</td>
+              <td class="fw-semibold">{{ n.titulo|truncatechars:60 }}</td>
+              <td class="small text-muted">{{ n.detalle|truncatechars:80 }}</td>
+              <td>{% if n.resuelta %}<span class="badge bg-success">Resuelta</span>
+              {% else %}<span class="badge bg-secondary">Pendiente</span>{% endif %}</td>
+              <td class="small text-muted">{{ n.generada_en|date:"d/m/Y H:i" }}</td>
+              <td>
+                {% if not n.resuelta %}
+                <button type="button" class="btn btn-sm btn-success py-0 px-2"
+                        data-bs-toggle="modal" data-bs-target="#modalResolver{{ n.pk }}">
+                  <i class="bi bi-check"></i>
+                </button>
+                {% endif %}
+                {% if n.oc %}<a href="{% url 'inventario:detalle_oc' n.oc.pk %}" class="btn btn-sm btn-outline-primary py-0 px-2"><i class="bi bi-cart"></i></a>{% endif %}
+                {% if n.traspaso %}<a href="{% url 'inventario:detalle_traspaso' n.traspaso.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2"><i class="bi bi-truck"></i></a>{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-4">Sin notificaciones.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modales resolver -->
+{% for n in notificaciones %}
+{% if not n.resuelta %}
+<div class="modal fade" id="modalResolver{{ n.pk }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{% url 'inventario:resolver_notificacion' n.pk %}">{% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Resolver: {{ n.titulo|truncatechars:50 }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small">{{ n.detalle|linebreaksbr }}</div>
+          <label class="form-label fw-semibold">Notas de Resolución</label>
+          <textarea name="notas" class="form-control" rows="3" placeholder="Acción tomada…"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Marcar como Resuelta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

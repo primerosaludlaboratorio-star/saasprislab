@@ -1,0 +1,36 @@
+{
+  "name": "prislab_saas",
+  "version": "1.0.0",
+  "description": "**Sistema de Gestión Integral para Clínicas, Laboratorios y Farmacias**",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "node --check tools/run_omni_suite.mjs",
+    "omni:local": "node tools/run_omni_suite.mjs --target local",
+    "omni:cloud": "node tools/run_omni_suite.mjs --target cloud",
+    "omni:both": "node tools/run_omni_suite.mjs --target both",
+    "human:ui": "node tools/run_human_ui_audit.mjs",
+    "human:ui:local": "node tools/run_human_ui_audit.mjs --target local",
+    "human:ui:cloud": "node tools/run_human_ui_audit.mjs --target cloud",
+    "agent:audit": "node tools/run_ai_agent_audit.mjs",
+    "agent:local": "node tools/run_ai_agent_audit.mjs --target local",
+    "agent:cloud": "node tools/run_ai_agent_audit.mjs --target cloud",
+    "agent:headless": "node tools/run_ai_agent_audit.mjs --headless"
+  },
+  "dependencies": {
+    "playwright": "^1.45.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/primerosaludlaboratorio-star/PRISLAB_SaaS.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/primerosaludlaboratorio-star/PRISLAB_SaaS/issues"
+  },
+  "homepage": "https://github.com/primerosaludlaboratorio-star/PRISLAB_SaaS#readme"
+}

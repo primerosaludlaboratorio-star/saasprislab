@@ -1,0 +1,288 @@
+{% extends "base_generic.html" %}
+{% load static %}
+
+{% block title %}Dashboard de Auditoría{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kpi-card {
+        border-radius: 10px;
+        transition: transform 0.2s;
+    }
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    .severity-critical { color: #dc3545; font-weight: bold; }
+    .severity-warning { color: #ffc107; font-weight: bold; }
+    .severity-info { color: #17a2b8; }
+    .log-row:hover { background-color: #f8f9fa; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-shield-alt text-primary"></i> Dashboard de Auditoría
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Monitoreo de seguridad y eventos del sistema
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'seguridad:logs_auditoria' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-list"></i> Ver Todos los Logs
+                    </a>
+                    <a href="{% url 'seguridad:configuracion_2fa' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-cog"></i> Configuración
+                    </a>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="card kpi-card text-center border-primary">
+                        <div class="card-body">
+                            <i class="fas fa-clipboard-list fa-2x text-primary mb-2"></i>
+                            <h2 class="mb-0">{{ total_logs_7dias }}</h2>
+                            <p class="text-muted mb-0">Eventos (7 días)</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card kpi-card text-center border-danger">
+                        <div class="card-body">
+                            <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
+                            <h2 class="mb-0 text-danger">{{ logs_criticos|length }}</h2>
+                            <p class="text-muted mb-0">Eventos Críticos</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card kpi-card text-center border-warning">
+                        <div class="card-body">
+                            <i class="fas fa-ban fa-2x text-warning mb-2"></i>
+                            <h2 class="mb-0 text-warning">{{ intentos_fallidos|length }}</h2>
+                            <p class="text-muted mb-0">Intentos Fallidos (24h)</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card kpi-card text-center border-info">
+                        <div class="card-body">
+                            <i class="fas fa-desktop fa-2x text-info mb-2"></i>
+                            <h2 class="mb-0 text-info">{{ sesiones_sospechosas|length }}</h2>
+                            <p class="text-muted mb-0">Sesiones Sospechosas</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alertas Críticas -->
+            {% if logs_criticos %}
+            <div class="alert alert-danger">
+                <h5 class="alert-heading">
+                    <i class="fas fa-exclamation-circle"></i> Eventos Críticos Recientes
+                </h5>
+                <p class="mb-0">
+                    Se detectaron <strong>{{ logs_criticos|length }}</strong> evento(s) crítico(s) en los últimos 7 días.
+                    <a href="{% url 'seguridad:logs_auditoria' %}?severidad=CRITICAL" class="alert-link">Ver detalles</a>
+                </p>
+            </div>
+            {% endif %}
+
+            <div class="row">
+                <!-- Eventos Recientes -->
+                <div class="col-lg-8 mb-4">
+                    <div class="card">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-history"></i> Eventos Recientes
+                            </h5>
+                            <span class="badge bg-secondary">Últimas 50 acciones</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                                <table class="table table-hover table-sm mb-0">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th style="width: 140px;">Fecha/Hora</th>
+                                            <th style="width: 120px;">Usuario</th>
+                                            <th>Acción</th>
+                                            <th style="width: 120px;">IP</th>
+                                            <th style="width: 100px;">Severidad</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for log in logs_recientes %}
+                                        <tr class="log-row">
+                                            <td class="small">{{ log.fecha_hora|date:"d/m/Y H:i:s" }}</td>
+                                            <td>
+                                                <i class="fas fa-user-circle"></i>
+                                                {{ log.usuario.username|default:"Sistema" }}
+                                            </td>
+                                            <td>
+                                                <span class="small">{{ log.get_accion_display }}</span>
+                                                {% if log.descripcion %}
+                                                <br><small class="text-muted">{{ log.descripcion|truncatewords:10 }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td class="small">
+                                                <code>{{ log.ip_address|default:"-" }}</code>
+                                            </td>
+                                            <td>
+                                                {% if log.severidad == 'CRITICAL' %}
+                                                <span class="badge bg-danger">CRÍTICO</span>
+                                                {% elif log.severidad == 'WARNING' %}
+                                                <span class="badge bg-warning text-dark">ALERTA</span>
+                                                {% elif log.severidad == 'INFO' %}
+                                                <span class="badge bg-info">INFO</span>
+                                                {% else %}
+                                                <span class="badge bg-secondary">{{ log.get_severidad_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-4">
+                                                <i class="fas fa-inbox fa-2x mb-2"></i>
+                                                <p class="mb-0">No hay eventos registrados</p>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel Lateral -->
+                <div class="col-lg-4">
+                    <!-- Top Acciones -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-chart-bar"></i> Acciones Más Frecuentes
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if stats_por_accion %}
+                                {% for stat in stats_por_accion|slice:":5" %}
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <small>{{ stat.accion }}</small>
+                                        <small class="fw-bold">{{ stat.total }}</small>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar" 
+                                             style="width: {% widthratio stat.total stats_por_accion.0.total 100 %}%">
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted small mb-0">No hay datos disponibles</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Intentos Fallidos por IP -->
+                    {% if intentos_fallidos %}
+                    <div class="card mb-3">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-map-marker-alt"></i> IPs con Intentos Fallidos
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group list-group-flush">
+                                {% for intento in intentos_fallidos|slice:":5" %}
+                                <div class="list-group-item px-0 py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <code class="small">{{ intento.ip_address }}</code>
+                                        <span class="badge bg-danger">{{ intento.total }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Sesiones Sospechosas -->
+                    {% if sesiones_sospechosas %}
+                    <div class="card mb-3 border-danger">
+                        <div class="card-header bg-danger text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-exclamation-triangle"></i> Sesiones Sospechosas
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% for sesion in sesiones_sospechosas %}
+                            <div class="mb-2 pb-2 border-bottom">
+                                <div class="d-flex justify-content-between">
+                                    <strong class="small">{{ sesion.usuario.username }}</strong>
+                                    <small class="text-muted">{{ sesion.fecha_inicio|timesince }} atrás</small>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-globe"></i> {{ sesion.ip_address }}
+                                </small>
+                            </div>
+                            {% endfor %}
+                            <a href="{% url 'seguridad:sesiones_activas' %}" class="btn btn-sm btn-outline-danger w-100 mt-2">
+                                Ver Todas las Sesiones
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Estadísticas del Sistema -->
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-info-circle"></i> Estadísticas Generales
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2">
+                                    <i class="fas fa-calendar-week text-primary"></i>
+                                    <strong>Eventos (7 días):</strong> {{ total_logs_7dias }}
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-calendar-alt text-info"></i>
+                                    <strong>Eventos (30 días):</strong> {{ total_logs_30dias }}
+                                </li>
+                                <li class="mb-0">
+                                    <i class="fas fa-clock text-secondary"></i>
+                                    <strong>Última actualización:</strong> {{ now|date:"H:i:s" }}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh cada 30 segundos
+setInterval(() => {
+    location.reload();
+}, 30000);
+
+// Agregar indicador de actualización automática
+const now = new Date().toLocaleTimeString('es-MX');
+console.log(`Dashboard actualizado: ${now}`);
+</script>
+{% endblock %}

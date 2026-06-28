@@ -1,0 +1,32 @@
+{% extends 'pacientes/portal/dashboard.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Mis Recetas Médicas</h2>
+    
+    {% if recetas %}
+        {% for receta in recetas %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <div class="d-flex justify-content-between">
+                    <strong>{{ receta.fecha_prescripcion|date:"d/m/Y" }}</strong>
+                    <span class="badge bg-primary">Dr. {{ receta.medico.nombre_completo }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <h6>Medicamentos:</h6>
+                <pre class="bg-light p-3 rounded">{{ receta.medicamentos }}</pre>
+                {% if receta.indicaciones %}
+                <h6 class="mt-3">Indicaciones:</h6>
+                <p>{{ receta.indicaciones }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No tienes recetas registradas
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

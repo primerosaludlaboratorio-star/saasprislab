@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard de Campañas - {{ empresa.nombre }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css">
+<style>
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        transition: transform 0.3s;
+    }
+    .metric-card:hover {
+        transform: translateY(-10px);
+    }
+    .metric-value {
+        font-size: 3rem;
+        font-weight: bold;
+    }
+    .chart-container {
+        position: relative;
+        height: 350px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-chart-line"></i> Dashboard de Campañas</h2>
+            <p class="text-muted">Métricas y análisis de tus campañas de marketing</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'marketing:crear_campana' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nueva Campaña
+            </a>
+        </div>
+    </div>
+
+    <!-- Métricas Principales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="metric-card shadow">
+                <i class="fas fa-bullhorn fa-2x mb-3"></i>
+                <div class="metric-value">{{ total_campanas }}</div>
+                <p class="mb-0">Campañas Totales</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card shadow" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                <i class="fas fa-check-circle fa-2x mb-3"></i>
+                <div class="metric-value">{{ campanas_activas }}</div>
+                <p class="mb-0">Activas</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card shadow" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="fas fa-paper-plane fa-2x mb-3"></i>
+                <div class="metric-value">0</div>
+                <p class="mb-0">Enviadas Hoy</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card shadow" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <i class="fas fa-percentage fa-2x mb-3"></i>
+                <div class="metric-value">0%</div>
+                <p class="mb-0">Tasa de Conversión</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="row mb-4">
+        <!-- Gráfica de Envíos -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Rendimiento por Campaña</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartRendimiento"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfica de Conversiones -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Canales de Comunicación</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartCanales"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Campañas Recientes -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Campañas Recientes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Campaña</th>
+                                    <th>Segmento</th>
+                                    <th>Canal</th>
+                                    <th>Estado</th>
+                                    <th>Fecha</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for campana in campanas %}
+                                <tr>
+                                    <td><strong>{{ campana.nombre|default:campana.segmento }}</strong></td>
+                                    <td><span class="badge bg-secondary">{{ campana.segmento }}</span></td>
+                                    <td>
+                                        {% if campana.canal_comunicacion == 'whatsapp' %}
+                                            <i class="fab fa-whatsapp text-success"></i> WhatsApp
+                                        {% elif campana.canal_comunicacion == 'email' %}
+                                            <i class="fas fa-envelope text-info"></i> Email
+                                        {% else %}
+                                            {{ campana.canal_comunicacion }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if campana.activa %}
+                                            <span class="badge bg-success">Activa</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactiva</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ campana.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">
+                                        No hay campañas registradas
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfica de Rendimiento
+    const ctxRendimiento = document.getElementById('chartRendimiento').getContext('2d');
+    new Chart(ctxRendimiento, {
+        type: 'bar',
+        data: {
+            labels: {{ campanas_data|safe|default:"[]" }}.map(c => c.nombre).slice(0, 5),
+            datasets: [{
+                label: 'Enviados',
+                data: [120, 95, 80, 65, 45],
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2
+            }, {
+                label: 'Conversiones',
+                data: [85, 70, 55, 40, 30],
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Gráfica de Canales
+    const ctxCanales = document.getElementById('chartCanales').getContext('2d');
+    new Chart(ctxCanales, {
+        type: 'doughnut',
+        data: {
+            labels: ['WhatsApp', 'Email', 'SMS'],
+            datasets: [{
+                data: [65, 25, 10],
+                backgroundColor: [
+                    'rgba(37, 211, 102, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 206, 86, 0.8)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,86 @@
+﻿{% extends 'base.html' %}
+{% block title %}Editar Analito — LIMS{% endblock %}
+{% block content %}
+<div class="container mt-4" style="margin-top:70px;">
+  <div class="card shadow-sm">
+    <div class="card-header bg-dark text-white fw-bold">
+      <i class="fas fa-edit me-1"></i> Editar Analito: {{ analito.nombre }}
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="fw-bold small">Nombre / Descripción *</label>
+            <input type="text" name="nombre" value="{{ analito.nombre }}" class="form-control" required>
+          </div>
+          <div class="col-md-3">
+            <label class="fw-bold small">Abreviatura *</label>
+            <input type="text" name="abreviatura" value="{{ analito.abreviatura }}" class="form-control" required>
+          </div>
+          <div class="col-md-3">
+            <label class="fw-bold small">Departamento</label>
+            <input type="text" name="departamento" value="{{ analito.departamento }}" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="fw-bold small">Tipo de muestra</label>
+            <input type="text" name="tipo_muestra" value="{{ analito.tipo_muestra }}" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="fw-bold small">Unidades</label>
+            <input type="text" name="unidades" value="{{ analito.unidades }}" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="fw-bold small">Decimales</label>
+            <input type="number" name="decimales" value="{{ analito.decimales }}" class="form-control" min="0" max="8">
+          </div>
+          <div class="col-md-2">
+            <label class="fw-bold small">Tipo resultado</label>
+            <select name="tipo_resultado" class="form-select">
+              {% for val, label in tipo_resultado_choices %}
+              <option value="{{ val }}" {% if val == analito.tipo_resultado %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="fw-bold small">Metodología</label>
+            <textarea name="metodologia" class="form-control" rows="2">{{ analito.metodologia }}</textarea>
+          </div>
+          <div class="col-12">
+            <label class="fw-bold small">Fórmula de cálculo (Parametros.csv / motor interno)</label>
+            <textarea name="formula" class="form-control font-monospace small" rows="3"
+                      placeholder="Si hay texto aquí, el sistema marca el analito como calculado (es_calculado).">{{ analito.formula }}</textarea>
+            <div class="form-text">Referencia otros analitos o variables según el motor que implementes. HL7: no esperar OBX del equipo.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="fw-bold small">Indicaciones para el paciente</label>
+            <textarea name="indicaciones" class="form-control" rows="2">{{ analito.indicaciones }}</textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="fw-bold small">Notas técnicas</label>
+            <textarea name="notas" class="form-control" rows="2">{{ analito.notas }}</textarea>
+          </div>
+          <div class="col-md-4">
+            <label class="fw-bold small">Vendible individualmente (catálogo / precios)</label>
+            <select name="es_vendible_individualmente" class="form-select">
+              <option value="1" {% if analito.es_vendible_individualmente %}selected{% endif %}>Sí — aparece en venta y listas de precio</option>
+              <option value="0" {% if not analito.es_vendible_individualmente %}selected{% endif %}>No — solo perfiles/paquetes o uso interno</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="fw-bold small">Estado</label>
+            <select name="activo" class="form-select">
+              <option value="1" {% if analito.activo %}selected{% endif %}>Activo</option>
+              <option value="0" {% if not analito.activo %}selected{% endif %}>Inactivo</option>
+            </select>
+          </div>
+        </div>
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Guardar cambios</button>
+          <a href="{% url 'lims_analito_detalle' analito.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

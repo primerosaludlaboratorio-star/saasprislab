@@ -1,0 +1,33 @@
+{% extends 'pacientes/portal/dashboard.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Mis Consultas Médicas</h2>
+    
+    {% if consultas %}
+        {% for consulta in consultas %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <div class="d-flex justify-content-between">
+                    <strong>{{ consulta.fecha_consulta|date:"d \d\e F \d\e Y" }}</strong>
+                    <span class="badge bg-primary">Dr. {{ consulta.medico.nombre_completo }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <p><strong>Motivo:</strong> {{ consulta.motivo_consulta }}</p>
+                {% if consulta.diagnostico_cie10 %}
+                <p><strong>Diagnóstico:</strong> {{ consulta.diagnostico_cie10 }}</p>
+                {% endif %}
+                {% if consulta.plan_tratamiento %}
+                <p><strong>Tratamiento:</strong> {{ consulta.plan_tratamiento|truncatewords:50 }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No tienes consultas registradas
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

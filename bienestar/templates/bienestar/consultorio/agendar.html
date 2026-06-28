@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Agendar Consulta de Bienestar - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-calendar-check text-info"></i> Agendar Consulta de Bienestar</h2>
+    <p class="text-muted">Programa una sesión con nuestro equipo de bienestar</p>
+    
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label>Tipo de Consulta</label>
+                            <select class="form-control" name="tipo_consulta">
+                                <option value="psicologia">Psicología</option>
+                                <option value="nutricion">Nutrición</option>
+                                <option value="coaching">Coaching de Vida</option>
+                                <option value="mindfulness">Mindfulness</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Fecha Preferida</label>
+                            <input type="date" class="form-control" name="fecha" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Horario Preferido</label>
+                            <select class="form-control" name="horario">
+                                <option value="09:00">09:00 AM</option>
+                                <option value="10:00">10:00 AM</option>
+                                <option value="11:00">11:00 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="14:00">02:00 PM</option>
+                                <option value="15:00">03:00 PM</option>
+                                <option value="16:00">04:00 PM</option>
+                                <option value="17:00">05:00 PM</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Motivo de la Consulta</label>
+                            <textarea class="form-control" name="motivo" rows="4" placeholder="Cuéntanos brevemente..."></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Modalidad</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="modalidad" value="presencial" checked>
+                                <label class="form-check-label">Presencial</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="modalidad" value="virtual">
+                                <label class="form-check-label">Virtual (Videollamada)</label>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-info btn-lg">
+                                <i class="fas fa-calendar-check"></i> Agendar Cita
+                            </button>
+                            <a href="{% url 'bienestar:dashboard_bienestar' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow mb-3">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-users"></i> Nuestros Especialistas
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Dra. Ana García</strong><br>
+                        <small class="text-muted">Psicóloga Clínica</small>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Lic. Carlos Méndez</strong><br>
+                        <small class="text-muted">Nutriólogo</small>
+                    </div>
+                    <div>
+                        <strong>Lic. Laura Pérez</strong><br>
+                        <small class="text-muted">Coach Certificada</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-info-circle"></i> Información
+                </div>
+                <div class="card-body">
+                    <p class="small mb-2"><strong>Duración:</strong> 50 minutos</p>
+                    <p class="small mb-2"><strong>Costo:</strong> $500 MXN</p>
+                    <p class="small mb-0"><strong>Nota:</strong> Las citas se confirman en 24 hrs.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

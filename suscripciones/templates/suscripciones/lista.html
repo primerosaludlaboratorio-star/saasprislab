@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Suscripciones — PRISLAB{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <h2 class="fw-bold mb-4"><i class="bi bi-building me-2 text-primary"></i>Suscripciones Activas</h2>
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>Empresa</th><th>Plan</th><th>Estado</th><th>Inicio</th></tr></thead>
+      <tbody>
+        {% for s in suscripciones %}
+        <tr><td>{{ s.empresa }}</td><td>{{ s.plan.nombre }}</td><td><span class="badge bg-success">{{ s.estado }}</span></td><td>{{ s.fecha_inicio|date:"d/m/Y" }}</td></tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-center text-muted">No hay suscripciones.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

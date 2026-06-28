@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Facturación 4.0{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="mb-1">Facturación 4.0 (SAT)</h2>
+      <div class="text-muted">Entrada del módulo. Aquí conectaremos PAC/SDK y timbrado.</div>
+    </div>
+    <div class="d-flex gap-2">
+      <!-- TEMPORAL: corte_dia no existe en core.views - pendiente de implementar en módulo finanzas -->
+      <!-- <a class="btn btn-outline-secondary" href="{% url 'corte_dia' %}">
+        <i class="bi bi-calculator"></i> Corte de Caja
+      </a> -->
+      <a class="btn btn-outline-secondary" href="{% url 'lista_ventas_farmacia' %}">
+        <i class="bi bi-clock-history"></i> Ventas
+      </a>
+    </div>
+  </div>
+
+  <div class="alert alert-info mt-3">
+    <strong>Objetivo:</strong> emitir CFDI 4.0 usando los Datos Fiscales del paciente. Este botón ya habilita el acceso.
+  </div>
+
+  <div class="card shadow-sm mt-3">
+    <div class="card-body">
+      <h5 class="mb-2">Siguiente integración</h5>
+      <ul class="mb-0">
+        <li>Selector de venta/orden a facturar</li>
+        <li>Validación SAT (RFC, régimen, uso CFDI, CP)</li>
+        <li>Timbrado con PAC y PDF/XML</li>
+        <li>Envío por correo al paciente</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

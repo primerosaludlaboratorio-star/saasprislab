@@ -1,0 +1,412 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Devoluciones y Auditoría - {{ empresa }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    body { background-color: #f8f9fa; }
+    .card { border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .btn-danger { background-color: #dc3545; }
+    .fixed-bottom { z-index: 1000; }
+    @media print { .firma-autor, footer, .fixed-bottom { display: none !important; } }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid p-4" style="margin-top: 70px;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold text-danger"><i class="bi bi-arrow-counterclockwise"></i> DEVOLUCIONES Y AUDITORÍA</h2>
+                <small class="text-muted">{{ empresa }}</small>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <!-- FILTRO DE FECHA -->
+                <form method="get" class="d-flex align-items-center gap-2" id="filtro-fecha-form">
+                    <div class="input-group" style="width: 200px;">
+                        <span class="input-group-text bg-danger text-white">
+                            <i class="bi bi-calendar3"></i>
+                        </span>
+                        <input type="date" 
+                               name="fecha" 
+                               id="filtro-fecha" 
+                               class="form-control" 
+                               value="{{ fecha_seleccionada_str|default:'' }}"
+                               style="border-color: #D9230F; color: #D9230F; font-weight: bold;"
+                               onchange="document.getElementById('filtro-fecha-form').submit();">
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetearFecha()" title="Ver fecha de hoy">
+                        <i class="bi bi-arrow-clockwise"></i> HOY
+                    </button>
+                </form>
+                <a href="{% url 'pdv_farmacia' %}" class="btn btn-dark fw-bold">
+                    <i class="bi bi-arrow-left"></i> VOLVER AL PDV
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Búsqueda de Venta -->
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-danger text-white fw-bold">
+                        <i class="bi bi-search"></i> BUSCAR VENTA PARA DEVOLUCIÓN
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-danger text-white"><i class="bi bi-receipt"></i></span>
+                            <input type="text" id="busqueda-venta" class="form-control" placeholder="Folio o ID de venta (ej: POS-000123)">
+                            <button class="btn btn-danger fw-bold" onclick="buscarVenta()">
+                                <i class="bi bi-search"></i> BUSCAR
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de Venta -->
+            <div class="col-md-12 d-none" id="card-venta">
+                <div class="card border-danger">
+                    <div class="card-header bg-light fw-bold">
+                        <i class="bi bi-info-circle"></i> INFORMACIÓN DE LA VENTA
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Folio:</strong> <span id="venta-folio"></span><br>
+                                <strong>Fecha:</strong> <span id="venta-fecha"></span><br>
+                                <strong>Cliente:</strong> <span id="venta-cliente"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Total:</strong> <span class="text-danger fw-bold fs-4" id="venta-total"></span><br>
+                                <strong>Cajero Original:</strong> <span id="venta-cajero"></span>
+                            </div>
+                        </div>
+                        <hr>
+                        <h6 class="fw-bold mb-3">Productos Vendidos:</h6>
+                        <div id="lista-productos" class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Lote</th>
+                                        <th>Cantidad</th>
+                                        <th>Precio Unit.</th>
+                                        <th>Subtotal</th>
+                                        <th>Devolver</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-productos"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario de Devolución -->
+            <div class="col-md-12 d-none" id="card-formulario">
+                <div class="card border-warning">
+                    <div class="card-header bg-warning text-dark fw-bold">
+                        <i class="bi bi-exclamation-triangle"></i> REGISTRAR DEVOLUCIÓN (AUDITORÍA)
+                    </div>
+                    <div class="card-body">
+                        <form id="form-devolucion">
+                            <input type="hidden" id="venta-id">
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Tipo de Devolución:</label>
+                                <select class="form-select" id="tipo-devolucion" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="PARCIAL">Devolución Parcial</option>
+                                    <option value="TOTAL">Devolución Total</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Monto a Reembolsar ($):</label>
+                                <input type="number" step="0.01" class="form-control form-control-lg" id="monto-reembolsado" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Motivo del Error / Razón de Devolución:</label>
+                                <textarea class="form-control" id="motivo-error" rows="3" placeholder="Ej: Entregó Paracetamol 500mg en vez de 750mg" required></textarea>
+                                <small class="text-muted">Este campo es crítico para la auditoría. Describe exactamente qué error se cometió.</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Acción con el Stock:</label>
+                                <select class="form-select" id="accion-stock" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="RETORNO_ALMACEN">Retorno al Almacén (Reutilizable)</option>
+                                    <option value="MERMA_DESECHO">Merma / Desecho (No Reutilizable)</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Observaciones Adicionales:</label>
+                                <textarea class="form-control" id="observaciones" rows="2" placeholder="Información adicional sobre la devolución"></textarea>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="bi bi-shield-check"></i> <strong>Auditoría Automática:</strong><br>
+                                • Error cometido por: <span id="usuario-error" class="fw-bold"></span><br>
+                                • Devolución autorizada por: <span id="usuario-autoriza" class="fw-bold"></span>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-danger btn-lg fw-bold">
+                                    <i class="bi bi-check-circle"></i> PROCESAR DEVOLUCIÓN
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HISTORIAL DE DEVOLUCIONES -->
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white fw-bold">
+                    <i class="bi bi-clock-history"></i> HISTORIAL DE DEVOLUCIONES - {% if fecha_seleccionada %}{{ fecha_seleccionada|date:"d/m/Y" }}{% else %}{{ fecha_seleccionada }}{% endif %}
+                </div>
+                <div class="card-body">
+                    {% if devoluciones %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>FECHA/HORA</th>
+                                    <th>FOLIO VENTA</th>
+                                    <th>CLIENTE</th>
+                                    <th>MONTO REEMBOLSADO</th>
+                                    <th>TIPO</th>
+                                    <th>MOTIVO</th>
+                                    <th>USUARIO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dev in devoluciones %}
+                                <tr>
+                                    <td>{{ dev.fecha_devolucion|date:"d/m/Y H:i" }}</td>
+                                    <td class="fw-bold">{{ dev.venta_original.folio_operacion|default:"N/A" }}</td>
+                                    <td>{{ dev.venta_original.paciente_nombre|default:"PÚBLICO GENERAL" }}</td>
+                                    <td class="text-danger fw-bold">$ {{ dev.monto_reembolsado|floatformat:2 }}</td>
+                                    <td><span class="badge bg-{% if dev.tipo_devolucion == 'TOTAL' %}danger{% else %}warning{% endif %}">{{ dev.get_tipo_devolucion_display }}</span></td>
+                                    <td><small>{{ dev.motivo_error|truncatewords:10 }}</small></td>
+                                    <td>{{ dev.usuario_autorizo.get_full_name|default:dev.usuario_autorizo.username|default:"N/A" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                        <p class="mt-3">No hay devoluciones registradas para esta fecha.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="fixed-bottom bg-dark text-white text-center py-1 firma-autor" style="font-size: 11px;">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <span>© 2026 <strong>PRIMERO SALUD LABORATORIO</strong> | Sistema de Auditoría de Devoluciones</span>
+            <span>Desarrollado por <strong>Jonathan Ibarra</strong> | V 2.0</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let ventaActual = null;
+        let productosSeleccionados = [];
+
+        function buscarVenta() {
+            const busqueda = document.getElementById('busqueda-venta').value.trim();
+            if (!busqueda) {
+                Swal.fire('Error', 'Ingrese un folio o ID de venta', 'error');
+                return;
+            }
+
+            fetch(`/farmacia/devoluciones/buscar/?busqueda=${encodeURIComponent(busqueda)}`, {
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    ventaActual = data.venta;
+                    mostrarVenta(data.venta);
+                } else {
+                    Swal.fire('Error', data.mensaje || 'Venta no encontrada', 'error');
+                }
+            })
+            .catch(err => {
+                Swal.fire('Error', 'Error al buscar la venta', 'error');
+            });
+        }
+
+        function mostrarVenta(venta) {
+            document.getElementById('venta-folio').textContent = venta.folio;
+            document.getElementById('venta-fecha').textContent = venta.fecha;
+            document.getElementById('venta-cliente').textContent = venta.cliente;
+            document.getElementById('venta-total').textContent = `$${venta.total.toFixed(2)}`;
+            document.getElementById('venta-cajero').textContent = venta.cajero_original;
+            document.getElementById('venta-id').value = venta.id;
+            document.getElementById('usuario-error').textContent = venta.cajero_original;
+            document.getElementById('usuario-autoriza').textContent = '{{ user.get_full_name|default:user.username }}';
+
+            const tbody = document.getElementById('tbody-productos');
+            tbody.innerHTML = '';
+            productosSeleccionados = [];
+
+            venta.detalles.forEach(detalle => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${detalle.producto}</td>
+                    <td><small>${detalle.lote}</small></td>
+                    <td>${detalle.cantidad}</td>
+                    <td>$${detalle.precio_unitario.toFixed(2)}</td>
+                    <td>$${detalle.subtotal.toFixed(2)}</td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="0" max="${detalle.cantidad}" 
+                               value="0" 
+                               onchange="actualizarProductosDevolucion(${detalle.id}, this.value, ${detalle.cantidad}, ${detalle.precio_unitario})">
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('card-venta').classList.remove('d-none');
+            document.getElementById('card-formulario').classList.remove('d-none');
+            document.getElementById('monto-reembolsado').value = venta.total.toFixed(2);
+        }
+
+        function actualizarProductosDevolucion(detalleId, cantidad, maxCantidad, precioUnitario) {
+            cantidad = Math.min(Math.max(0, parseInt(cantidad) || 0), maxCantidad);
+            
+            const index = productosSeleccionados.findIndex(p => p.detalle_id === detalleId);
+            if (cantidad > 0) {
+                if (index >= 0) {
+                    productosSeleccionados[index].cantidad = cantidad;
+                } else {
+                    productosSeleccionados.push({
+                        detalle_id: detalleId,
+                        cantidad: cantidad
+                    });
+                }
+            } else {
+                if (index >= 0) {
+                    productosSeleccionados.splice(index, 1);
+                }
+            }
+
+            // Recalcular monto total
+            let montoTotal = 0;
+            productosSeleccionados.forEach(p => {
+                const detalle = ventaActual.detalles.find(d => d.id === p.detalle_id);
+                if (detalle) {
+                    montoTotal += detalle.precio_unitario * p.cantidad;
+                }
+            });
+            document.getElementById('monto-reembolsado').value = montoTotal.toFixed(2);
+        }
+
+        document.getElementById('form-devolucion').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const data = {
+                venta_id: document.getElementById('venta-id').value,
+                tipo_devolucion: document.getElementById('tipo-devolucion').value,
+                monto_reembolsado: parseFloat(document.getElementById('monto-reembolsado').value),
+                motivo_error: document.getElementById('motivo-error').value,
+                accion_stock: document.getElementById('accion-stock').value,
+                observaciones: document.getElementById('observaciones').value,
+                productos_devueltos: productosSeleccionados
+            };
+
+            Swal.fire({
+                title: '¿Confirmar Devolución?',
+                text: 'Esta acción registrará la devolución con auditoría completa. ¿Desea continuar?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, Procesar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/farmacia/devoluciones/procesar/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(data)
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            Swal.fire('Éxito', data.mensaje, 'success').then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', data.mensaje, 'error');
+                        }
+                    });
+                }
+            });
+        });
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Permitir buscar con Enter
+        document.getElementById('busqueda-venta').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                buscarVenta();
+            }
+        });
+        
+        // Persistencia de fecha seleccionada
+        document.addEventListener('DOMContentLoaded', function() {
+            const fechaInput = document.getElementById('filtro-fecha');
+            const fechaGuardada = localStorage.getItem('fechaFiltroDevoluciones');
+            
+            if (fechaGuardada && !new URLSearchParams(window.location.search).get('fecha')) {
+                fechaInput.value = fechaGuardada;
+                if (fechaInput.value !== '{{ fecha_seleccionada_str|default:"" }}') {
+                    window.location.href = window.location.pathname + '?fecha=' + fechaGuardada;
+                }
+            } else if (!fechaInput.value) {
+                const hoy = new Date().toISOString().split('T')[0];
+                fechaInput.value = hoy;
+            }
+            
+            fechaInput.addEventListener('change', function() {
+                localStorage.setItem('fechaFiltroDevoluciones', this.value);
+            });
+        });
+        
+        function resetearFecha() {
+            const hoy = new Date().toISOString().split('T')[0];
+            localStorage.setItem('fechaFiltroDevoluciones', hoy);
+            window.location.href = window.location.pathname;
+        }
+    </script>
+{% endblock %}

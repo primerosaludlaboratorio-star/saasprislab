@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cerebro Prislab - Chat Experto{% endblock %}
+
+{% block extra_css %}
+<style>
+  .chat-shell{ max-width: 1200px; margin:0 auto; padding: 18px; }
+  .chat-card{
+    background: var(--bg-glass);
+    border: var(--border-glass);
+    box-shadow: var(--shadow-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: var(--radius-lg);
+  }
+  .chat-header{
+    display:flex; align-items:center; justify-content:space-between; gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .chat-title{ font-weight: 900; letter-spacing: -0.4px; }
+  .chat-body{
+    height: calc(100vh - 260px);
+    min-height: 420px;
+    overflow:auto;
+    padding: 14px 16px;
+  }
+  .bubble{
+    max-width: 82%;
+    padding: 12px 14px;
+    border-radius: 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+    white-space: pre-wrap;
+  }
+  .bubble.user{
+    margin-left:auto;
+    background: rgba(217,35,15,0.10);
+    border: 1px solid rgba(217,35,15,0.20);
+  }
+  .bubble.bot{
+    margin-right:auto;
+    background: rgba(255,255,255,0.75);
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .bubble .meta{
+    font-size: 12px;
+    opacity: 0.7;
+    margin-top: 8px;
+  }
+  .chat-footer{
+    padding: 12px 16px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }
+  .input-row{
+    display:flex; gap: 10px; align-items: center;
+  }
+  .mic-btn{
+    width: 44px; height: 44px;
+    border-radius: 14px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--bg-glass);
+    border: var(--border-glass);
+    box-shadow: var(--shadow-glass);
+    cursor:pointer;
+    transition: all .2s ease;
+  }
+  .mic-btn:hover{ transform: translateY(-1px); box-shadow: 0 0 20px rgba(217,35,15,0.18); border-color: rgba(217,35,15,0.25); }
+  .mic-btn.recording{ border-color: rgba(217,35,15,0.6); box-shadow: 0 0 22px rgba(217,35,15,0.35); }
+  .ask-input{
+    flex: 1;
+    height: 44px;
+    border-radius: 14px;
+    border: 1px solid rgba(0,0,0,0.12);
+    padding: 0 12px;
+    outline: none;
+  }
+  .ask-input:focus{
+    border-color: rgba(217,35,15,0.45);
+    box-shadow: 0 0 0 3px rgba(217,35,15,0.10);
+  }
+  @media (max-width: 768px){
+    .chat-shell{ padding: 10px; }
+    .chat-body{ height: calc(100vh - 240px); }
+    .bubble{ max-width: 92%; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3" style="margin-top: 70px;">
+  <div class="chat-shell">
+    <div class="chat-card">
+      <div class="chat-header">
+        <div>
+          <div class="chat-title"><i class="bi bi-cpu"></i> Cerebro Prislab</div>
+          <div class="text-muted small">RAG · Respuestas con citas desde PDFs cargados</div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <label class="small text-muted m-0">Fuente de Verdad</label>
+          <select class="form-select form-select-sm" id="selectCategoria" style="min-width: 220px;">
+            {% for value,label in categorias %}
+              <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="chat-body" id="chatBody">
+        <div class="bubble bot">
+          Soy el Asistente Experto de Prislab. Pregúntame y responderé solo con base en los documentos cargados.
+          <div class="meta">Tip: “¿Ayuno para Perfil Hepático?”</div>
+        </div>
+      </div>
+
+      <div class="chat-footer">
+        <div class="input-row">
+          <div class="mic-btn" id="micBtn" title="Dictar (Web Speech API)">
+            <i class="bi bi-mic"></i>
+          </div>
+          <input id="askInput" class="ask-input" placeholder="Escribe o dicta tu pregunta..." />
+          <button class="btn btn-primary-profesional btn-profesional neon-hover" id="sendBtn">
+            <i class="bi bi-send"></i> Enviar
+          </button>
+        </div>
+        <div class="small text-muted mt-2" id="speechHint" style="display:none;">
+          Dictando… vuelve a tocar el micrófono para detener.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const chatBody = document.getElementById('chatBody');
+  const askInput = document.getElementById('askInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const selectCategoria = document.getElementById('selectCategoria');
+  const micBtn = document.getElementById('micBtn');
+  const speechHint = document.getElementById('speechHint');
+
+  function addBubble(role, text, fuentes=[]) {
+    const div = document.createElement('div');
+    div.className = `bubble ${role}`;
+    div.textContent = text;
+
+    if (fuentes && fuentes.length) {
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = fuentes.join(' | ');
+      div.appendChild(meta);
+    }
+
+    chatBody.appendChild(div);
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+
+  async function preguntar() {
+    const pregunta = askInput.value.trim();
+    if (!pregunta) return;
+    const categoria = selectCategoria.value;
+
+    addBubble('user', pregunta);
+    askInput.value = '';
+    sendBtn.disabled = true;
+
+    try {
+      const resp = await fetch('/api/cerebro/preguntar/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ pregunta, categoria }),
+        credentials: 'same-origin'
+      });
+      
+      if (!resp.ok) {
+        if (resp.status === 404) {
+          addBubble('bot', 'Error 404: La ruta /api/cerebro/preguntar/ no fue encontrada. Por favor, contacta al administrador.');
+        } else if (resp.status === 302 || resp.status === 401 || resp.status === 403) {
+          addBubble('bot', 'Error de autenticación: Por favor, recarga la página e inicia sesión nuevamente.');
+        } else {
+          const errorText = await resp.text();
+          addBubble('bot', `Error ${resp.status}: ${errorText.substring(0, 200)}`);
+        }
+        return;
+      }
+      
+      const data = await resp.json();
+      if (data.status !== 'success') {
+        addBubble('bot', `Error: ${data.mensaje || 'No se pudo procesar la pregunta.'}`);
+      } else {
+        addBubble('bot', data.respuesta || '', data.fuentes || []);
+      }
+    } catch (e) {
+      addBubble('bot', `Error de conexión: ${e.message || e}`);
+    } finally {
+      sendBtn.disabled = false;
+      askInput.focus();
+    }
+  }
+
+  sendBtn.addEventListener('click', preguntar);
+  askInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') preguntar();
+  });
+
+  // Web Speech API (dictado)
+  let recognition = null;
+  let recording = false;
+
+  function initSpeech() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return null;
+
+    const rec = new SpeechRecognition();
+    rec.lang = 'es-MX';
+    rec.interimResults = true;
+    rec.continuous = false;
+
+    rec.onresult = (event) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      askInput.value = transcript;
+    };
+    rec.onend = () => {
+      recording = false;
+      micBtn.classList.remove('recording');
+      speechHint.style.display = 'none';
+    };
+    return rec;
+  }
+
+  recognition = initSpeech();
+  micBtn.addEventListener('click', () => {
+    if (!recognition) {
+      Swal.fire('No disponible', 'Tu navegador no soporta Web Speech API.', 'info');
+      return;
+    }
+    if (recording) {
+      recognition.stop();
+      return;
+    }
+    recording = true;
+    micBtn.classList.add('recording');
+    speechHint.style.display = 'block';
+    recognition.start();
+  });
+</script>
+{% endblock %}
+

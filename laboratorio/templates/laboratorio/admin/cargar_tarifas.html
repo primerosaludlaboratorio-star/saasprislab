@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cargar Tarifas de Laboratorio{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-upload"></i> Cargar Tarifas de Laboratorio
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Instrucciones:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Seleccione el archivo CSV con las tarifas</li>
+                            <li>El archivo debe tener las columnas: Tipo, Código, Abreviatura, Descripción, Importe</li>
+                            <li>Los estudios existentes con el mismo código se actualizarán</li>
+                        </ul>
+                    </div>
+
+                    <form id="formCargarTarifas" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="archivo">
+                                <i class="fas fa-file-csv"></i> Archivo CSV de Tarifas
+                            </label>
+                            <input type="file" 
+                                   class="form-control-file" 
+                                   id="archivo" 
+                                   name="archivo" 
+                                   accept=".csv"
+                                   required>
+                            <small class="form-text text-muted">
+                                Formato: CSV (archivo de texto separado por comas)
+                            </small>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg btn-block" id="btnCargar">
+                                <i class="fas fa-cloud-upload-alt"></i> Cargar Tarifas
+                            </button>
+                        </div>
+                    </form>
+
+                    <div id="resultado" style="display: none;" class="mt-4">
+                        <!-- Aquí se mostrará el resultado -->
+                    </div>
+
+                    <div id="loading" style="display: none;" class="text-center mt-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Cargando...</span>
+                        </div>
+                        <p class="mt-2">Procesando tarifas...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <a href="{% url 'admin:index' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver al Admin
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('formCargarTarifas').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const btnCargar = document.getElementById('btnCargar');
+    const loading = document.getElementById('loading');
+    const resultado = document.getElementById('resultado');
+    
+    // Mostrar loading
+    btnCargar.disabled = true;
+    loading.style.display = 'block';
+    resultado.style.display = 'none';
+    
+    try {
+        const response = await fetch('{% url "laboratorio:cargar_tarifas_csv" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        });
+        
+        const data = await response.json();
+        
+        // Ocultar loading
+        loading.style.display = 'none';
+        btnCargar.disabled = false;
+        
+        // Mostrar resultado
+        resultado.style.display = 'block';
+        
+        if (data.ok) {
+            resultado.innerHTML = `
+                <div class="alert alert-success">
+                    <h4><i class="fas fa-check-circle"></i> ${data.mensaje}</h4>
+                    <hr>
+                    <h5>Resumen:</h5>
+                    <ul>
+                        <li><strong>Categorías creadas:</strong> ${data.resumen.categorias_creadas}</li>
+                        <li><strong>Estudios creados:</strong> ${data.resumen.estudios_creados}</li>
+                        <li><strong>Estudios actualizados:</strong> ${data.resumen.estudios_actualizados}</li>
+                        <li><strong>Errores:</strong> ${data.resumen.errores}</li>
+                        <li><strong>Total de estudios en BD:</strong> ${data.resumen.total_estudios}</li>
+                        <li><strong>Total de categorías en BD:</strong> ${data.resumen.total_categorias}</li>
+                    </ul>
+                </div>
+            `;
+        } else {
+            resultado.innerHTML = `
+                <div class="alert alert-danger">
+                    <h4><i class="fas fa-exclamation-circle"></i> Error</h4>
+                    <p>${data.mensaje}</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        loading.style.display = 'none';
+        btnCargar.disabled = false;
+        resultado.style.display = 'block';
+        resultado.innerHTML = `
+            <div class="alert alert-danger">
+                <h4><i class="fas fa-exclamation-circle"></i> Error de conexión</h4>
+                <p>${error.message}</p>
+            </div>
+        `;
+    }
+});
+</script>
+{% endblock %}

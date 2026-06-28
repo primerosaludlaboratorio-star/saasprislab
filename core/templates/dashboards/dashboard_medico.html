@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+/* ==============================================================================
+   DASHBOARD MÉDICO - PERSONALIZADO
+   ============================================================================== */
+
+.dashboard-medico {
+    padding: 2rem 1rem;
+}
+
+.widget-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s;
+}
+
+.widget-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.widget-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.widget-stat {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+}
+
+.alert-critico {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.lista-pacientes {
+    list-style: none;
+    padding: 0;
+}
+
+.lista-pacientes li {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.lista-pacientes li:hover {
+    background: #f8f9fa;
+}
+
+.badge-priority {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-medico">
+    
+    <!-- ==================================================================
+         HEADER: SALUDO PERSONALIZADO
+         ================================================================== -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>
+                <i class="fas fa-stethoscope text-primary me-2"></i>
+                Bienvenido, Dr./Dra. {{ request.user.get_full_name }}
+            </h2>
+            <p class="text-muted">
+                <i class="fas fa-calendar-day me-2"></i>
+                {% now "l, j de F de Y" %} • 
+                <i class="fas fa-clock ms-2 me-2"></i>
+                {% now "H:i" %}
+            </p>
+        </div>
+    </div>
+    
+    <!-- ==================================================================
+         WIDGETS: ESTADÍSTICAS RÁPIDAS
+         ================================================================== -->
+    <div class="row">
+        
+        <!-- Widget: Pacientes en Espera -->
+        <div class="col-lg-3 col-md-6">
+            <div class="widget-card">
+                <div class="widget-header">
+                    <div>
+                        <h6 class="text-muted mb-0">En Espera</h6>
+                        <div class="widget-stat text-warning">{{ pacientes_en_espera|default:0 }}</div>
+                    </div>
+                    <div class="widget-icon" style="background: #fff3cd;">
+                        <i class="fas fa-users text-warning"></i>
+                    </div>
+                </div>
+                <a href="{% url 'consultorio:lista_trabajo_medico' %}" class="btn btn-sm btn-outline-warning w-100">
+                    <i class="fas fa-eye me-2"></i>Ver Lista
+                </a>
+            </div>
+        </div>
+        
+        <!-- Widget: Citas de Hoy -->
+        <div class="col-lg-3 col-md-6">
+            <div class="widget-card">
+                <div class="widget-header">
+                    <div>
+                        <h6 class="text-muted mb-0">Citas Hoy</h6>
+                        <div class="widget-stat text-info">{{ citas_hoy|default:0 }}</div>
+                    </div>
+                    <div class="widget-icon" style="background: #d1ecf1;">
+                        <i class="fas fa-calendar-check text-info"></i>
+                    </div>
+                </div>
+                <a href="{% url 'consultorio:agenda_medico' %}" class="btn btn-sm btn-outline-info w-100">
+                    <i class="fas fa-calendar-alt me-2"></i>Ver Agenda
+                </a>
+            </div>
+        </div>
+        
+        <!-- Widget: Consultas Completadas Hoy -->
+        <div class="col-lg-3 col-md-6">
+            <div class="widget-card">
+                <div class="widget-header">
+                    <div>
+                        <h6 class="text-muted mb-0">Completadas</h6>
+                        <div class="widget-stat text-success">{{ consultas_completadas|default:0 }}</div>
+                    </div>
+                    <div class="widget-icon" style="background: #d4edda;">
+                        <i class="fas fa-check-circle text-success"></i>
+                    </div>
+                </div>
+                <a href="{% url 'consultorio:lista_trabajo_medico' %}" class="btn btn-sm btn-outline-success w-100">
+                    <i class="fas fa-history me-2"></i>Ver Historial
+                </a>
+            </div>
+        </div>
+        
+        <!-- Widget: Resultados de Lab Recientes -->
+        <div class="col-lg-3 col-md-6">
+            <div class="widget-card">
+                <div class="widget-header">
+                    <div>
+                        <h6 class="text-muted mb-0">Labs Recibidos</h6>
+                        <div class="widget-stat text-primary">{{ labs_recientes|default:0 }}</div>
+                    </div>
+                    <div class="widget-icon" style="background: #cfe2ff;">
+                        <i class="fas fa-microscope text-primary"></i>
+                    </div>
+                </div>
+                <a href="{% url 'consulta_ordenes' %}" class="btn btn-sm btn-outline-primary w-100" title="Consulta de órdenes de laboratorio">
+                    <i class="fas fa-flask me-2"></i>Ver Resultados
+                </a>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- ==================================================================
+         ALERTA: RESULTADOS CRÍTICOS (SI LOS HAY)
+         ================================================================== -->
+    {% if resultados_criticos %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-critico" role="alert">
+                <h5 class="alert-heading">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    ⚠️ ATENCIÓN: {{ resultados_criticos|length }} Resultado(s) Crítico(s)
+                </h5>
+                <hr>
+                <ul class="mb-0">
+                    {% for resultado in resultados_criticos %}
+                    <li>
+                        <strong>{{ resultado.paciente.nombre_completo }}</strong>: 
+                        {{ resultado.descripcion }}
+                        <a href="{{ resultado.url }}" class="text-white text-decoration-underline ms-2">Ver Detalle</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- ==================================================================
+         SECCIÓN: PACIENTES DE HOY
+         ================================================================== -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="widget-card">
+                <div class="widget-header">
+                    <h5>
+                        <i class="fas fa-users text-primary me-2"></i>
+                        Mis Pacientes de Hoy
+                    </h5>
+                    <a href="{% url 'consultorio:nueva_consulta' %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus me-2"></i>Nueva Consulta
+                    </a>
+                </div>
+                
+                {% if pacientes_hoy %}
+                <ul class="lista-pacientes">
+                    {% for paciente in pacientes_hoy %}
+                    <li>
+                        <div>
+                            <strong>{{ paciente.nombre_completo }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>
+                                {{ paciente.hora_cita|default:"Sin hora" }}
+                                {% if paciente.motivo %}
+                                | {{ paciente.motivo|truncatewords:5 }}
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div>
+                            {% if paciente.urgente %}
+                            <span class="badge badge-priority bg-danger me-2">URGENTE</span>
+                            {% endif %}
+                            <a href="{% url 'consulta_medica' paciente.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-user-md me-1"></i>Atender
+                            </a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-3">No hay pacientes pendientes</p>
+                    <a href="{% url 'consultorio:nueva_consulta' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Crear Nueva Consulta
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- ==================================================================
+             SIDEBAR: ACCESOS RÁPIDOS
+             ================================================================== -->
+        <div class="col-lg-4">
+            <!-- Accesos Rápidos -->
+            <div class="widget-card">
+                <h5>
+                    <i class="fas fa-bolt text-warning me-2"></i>
+                    Accesos Rápidos
+                </h5>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'consultorio:nueva_consulta' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-notes-medical me-2"></i>Nueva Consulta
+                    </a>
+                    <a href="{% url 'consultorio:agenda_medico' %}" class="btn btn-outline-info">
+                        <i class="fas fa-calendar-alt me-2"></i>Ver Mi Agenda
+                    </a>
+                    <a href="{% url 'buscar_paciente' %}" class="btn btn-outline-success">
+                        <i class="fas fa-search me-2"></i>Buscar Paciente
+                    </a>
+                    <a href="{% url 'recepcion_lab' %}" class="btn btn-outline-warning" title="Recepción / crear orden de laboratorio">
+                        <i class="fas fa-flask me-2"></i>Solicitar Lab
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Recordatorios -->
+            <div class="widget-card mt-3">
+                <h5>
+                    <i class="fas fa-bell text-info me-2"></i>
+                    Recordatorios
+                </h5>
+                {% if recordatorios %}
+                <ul class="list-group list-group-flush">
+                    {% for recordatorio in recordatorios %}
+                    <li class="list-group-item">
+                        <small class="text-muted">{{ recordatorio.fecha|date:"H:i" }}</small>
+                        <br>
+                        {{ recordatorio.mensaje }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted text-center py-3">
+                    <i class="fas fa-check-circle text-success"></i><br>
+                    Sin recordatorios pendientes
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

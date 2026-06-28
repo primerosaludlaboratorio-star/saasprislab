@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Archivos de {{ paciente.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-folder-open"></i> Archivo Clínico: {{ paciente.nombre_completo }}</h2>
+            <p class="text-muted">Radiografías, tomografías, documentos externos, fotos de evolución</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalSubirArchivo">
+                <i class="fas fa-upload"></i> Subir Archivo
+            </button>
+            <a href="{% url 'consultorio:historial_clinico_paciente' paciente.id %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Historial
+            </a>
+        </div>
+    </div>
+
+    <!-- Archivos por tipo -->
+    {% if tipos_archivo %}
+        {% for tipo, archivos_tipo in tipos_archivo.items %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="fas fa-folder"></i> {{ tipo }} 
+                    <span class="badge bg-primary">{{ archivos_tipo|length }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% for archivo in archivos_tipo %}
+                    <div class="col-md-4 col-lg-3">
+                        <div class="card h-100 border">
+                            <div class="card-body text-center p-3">
+                                {% if archivo.es_imagen %}
+                                    <img src="{{ archivo.archivo.url }}" class="img-fluid rounded mb-2"
+                                         style="max-height: 150px; object-fit: cover;"
+                                         alt="{{ archivo.titulo }}">
+                                {% elif archivo.es_pdf %}
+                                    <div class="py-3">
+                                        <i class="fas fa-file-pdf fa-3x text-danger"></i>
+                                    </div>
+                                {% else %}
+                                    <div class="py-3">
+                                        <i class="fas fa-file fa-3x text-secondary"></i>
+                                    </div>
+                                {% endif %}
+                                <h6 class="card-title mb-1">{{ archivo.titulo }}</h6>
+                                {% if archivo.origen %}
+                                    <small class="text-muted d-block">{{ archivo.origen }}</small>
+                                {% endif %}
+                                {% if archivo.fecha_documento %}
+                                    <small class="text-muted d-block">{{ archivo.fecha_documento|date:"d/m/Y" }}</small>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer bg-white d-flex justify-content-between">
+                                <a href="{{ archivo.archivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> Ver
+                                </a>
+                                <a href="{{ archivo.archivo.url }}" download class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <button class="btn btn-sm btn-outline-danger btn-eliminar-archivo"
+                                        data-archivo-id="{{ archivo.id }}"
+                                        data-nombre="{{ archivo.titulo }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No hay archivos adjuntos</h4>
+            <p class="text-muted">Sube radiografías, tomografías o documentos de otros lugares</p>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalSubirArchivo">
+                <i class="fas fa-upload"></i> Subir Primer Archivo
+            </button>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal Subir Archivo -->
+<div class="modal fade" id="modalSubirArchivo" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-upload"></i> Subir Archivo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formSubirArchivo" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="paciente_id" value="{{ paciente.id }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tipo de Archivo *</label>
+                        <select class="form-select" name="tipo" required>
+                            {% for value, label in tipo_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Título *</label>
+                        <input type="text" class="form-control" name="titulo" required
+                               placeholder="Ej: Rayos X de tórax, Tomografía abdominal">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Institución de Origen</label>
+                        <input type="text" class="form-control" name="origen"
+                               placeholder="Ej: Hospital ABC, Lab XYZ">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Fecha del Documento</label>
+                        <input type="date" class="form-control" name="fecha_documento">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Notas Adicionales</label>
+                        <textarea class="form-control" name="descripcion" rows="2"
+                                  placeholder="Observaciones sobre el archivo"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Archivo *</label>
+                        <input type="file" class="form-control" name="archivo" required
+                               accept="image/*,.pdf,.doc,.docx,.dicom">
+                        <small class="text-muted">Formatos: Imágenes, PDF, documentos</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubir">
+                        <i class="fas fa-upload"></i> Subir
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('formSubirArchivo').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSubir');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...';
+    
+    try {
+        const formData = new FormData(this);
+        const response = await fetch('{% url "consultorio:api_subir_archivo" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        const data = await response.json();
+        
+        if (data.ok) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (err) {
+        alert('Error de conexion: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-upload"></i> Subir';
+    }
+});
+
+// Eliminar archivo
+document.querySelectorAll('.btn-eliminar-archivo').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        const id = this.dataset.archivoId;
+        const nombre = this.dataset.nombre;
+        
+        if (!confirm(`¿Eliminar "${nombre}"?`)) return;
+        
+        try {
+            const response = await fetch(`/consultorio/api/eliminar-archivo/${id}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+            if (data.ok) location.reload();
+            else alert('Error: ' + data.error);
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    });
+});
+</script>
+{% endblock %}

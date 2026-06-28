@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard Unificado - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="bi bi-speedometer2"></i> Dashboard Unificado - KPIs del Sistema
+            </h2>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label">Fecha Desde</label>
+                    <input type="date" name="fecha_inicio" class="form-control" value="{{ fecha_inicio }}">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Fecha Hasta</label>
+                    <input type="date" name="fecha_fin" class="form-control" value="{{ fecha_fin }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    {% if alertas %}
+    <div class="row mb-4">
+        <div class="col-12">
+            {% for alerta in alertas %}
+            <div class="alert alert-{{ alerta.tipo }} alert-dismissible fade show" role="alert">
+                <strong>{{ alerta.modulo }}:</strong> {{ alerta.mensaje }}
+                {% if alerta.accion %}<br><small>{{ alerta.accion }}</small>{% endif %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- KPIs Principales -->
+    <div class="row mb-4">
+        <!-- Farmacia -->
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Total Ventas</h5>
+                    <h2>${{ total_ventas|floatformat:2 }}</h2>
+                    <small>Utilidad: ${{ utilidad_bruta|floatformat:2 }} ({{ margen_bruto|floatformat:1 }}%)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-success h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Compras</h5>
+                    <h2>${{ total_compras|floatformat:2 }}</h2>
+                    <small>Total del período</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Laboratorio -->
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-info h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Órdenes Lab</h5>
+                    <h2>{{ total_ordenes_lab }}</h2>
+                    <small>{{ ordenes_validadas }} validadas ({{ tasa_validacion|floatformat:1 }}%)</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CRM -->
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-warning h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Pipeline CRM</h5>
+                    <h2>${{ valor_pipeline|floatformat:2 }}</h2>
+                    <small>{{ oportunidades_abiertas }} oportunidades</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Segunda Fila de KPIs -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-dark h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Nómina</h5>
+                    <h2>${{ total_pagado_nomina|floatformat:2 }}</h2>
+                    <small>{{ total_nominas }} nóminas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-secondary h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Pólizas</h5>
+                    <h2>{{ total_polizas }}</h2>
+                    <small>Autorizadas</small>
+                </div>
+            </div>
+        </div>
+        {% if marketing_available %}
+        <div class="col-md-3 mb-3">
+            <div class="card text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body">
+                    <h5 class="card-title">Marketing</h5>
+                    <h2>${{ total_ventas_cupon|floatformat:2 }}</h2>
+                    <small>{{ cantidad_cupones_usados }} cupones ({{ porcentaje_ventas_marketing|floatformat:1 }}%)</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-danger h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Operaciones</h5>
+                    <h2>{{ total_operaciones }}</h2>
+                    <small>Trazadas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Tendencia: Ventas vs Compras (Últimos 7 Días)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficaVentasCompras" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Operaciones por Módulo</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficaOperacionesModulo" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Resumen de Transferencias</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total:</strong> {{ total_transferencias }}</p>
+                    <p><strong>Completadas:</strong> {{ transferencias_completadas }}</p>
+                    <p><strong>Tasa de Completitud:</strong> {{ tasa_completitud_transferencias|floatformat:1 }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Gráfica Ventas vs Compras
+    const datosVentasCompras = {{ ultimos_7_dias|safe }};
+    const ctx1 = document.getElementById('graficaVentasCompras').getContext('2d');
+    new Chart(ctx1, {
+        type: 'line',
+        data: {
+            labels: datosVentasCompras.map(d => d.fecha),
+            datasets: [
+                {
+                    label: 'Ventas ($)',
+                    data: datosVentasCompras.map(d => d.ventas),
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Compras ($)',
+                    data: datosVentasCompras.map(d => d.compras),
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Utilidad ($)',
+                    data: datosVentasCompras.map(d => d.utilidad),
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Gráfica Operaciones por Módulo
+    const datosOperaciones = {{ datos_operaciones_modulo|safe }};
+    const ctx2 = document.getElementById('graficaOperacionesModulo').getContext('2d');
+    new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: datosOperaciones.labels,
+            datasets: [{
+                data: datosOperaciones.valores,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 206, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(153, 102, 255, 0.8)',
+                    'rgba(255, 159, 64, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Generar Cupón - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'marketing:lista_cupones' %}">Cupones</a></li>
+            <li class="breadcrumb-item active">Generar Nuevo</li>
+        </ol>
+    </nav>
+    
+    <h2><i class="fas fa-ticket-alt text-warning"></i> Generar Nuevo Cupón</h2>
+    
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-magic"></i> Generar Cupón
+                            </button>
+                            <a href="{% url 'marketing:lista_cupones' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-info-circle"></i> Información
+                </div>
+                <div class="card-body">
+                    <p class="small"><strong>Tipos de cupones:</strong></p>
+                    <ul class="small">
+                        <li><strong>Porcentaje:</strong> % de descuento</li>
+                        <li><strong>Monto Fijo:</strong> Cantidad específica</li>
+                        <li><strong>2x1:</strong> Paga 1, lleva 2</li>
+                    </ul>
+                    <p class="small"><strong>Tips:</strong></p>
+                    <ul class="small mb-0">
+                        <li>Códigos cortos y memorables</li>
+                        <li>Define límite de usos</li>
+                        <li>Establece vigencia clara</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

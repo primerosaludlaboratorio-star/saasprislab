@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestión de Analizadores — Dirección{% endblock %}
+
+{% block extra_css %}
+<style>
+    body { background: #f0f2f5; }
+    .equipo-card {
+        background: white; border-radius: 10px; padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 16px;
+        border-left: 5px solid #003366; transition: all 0.2s;
+    }
+    .equipo-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+    .equipo-card.inactivo { border-left-color: #adb5bd; opacity: 0.7; }
+    .badge-protocolo { font-size: 11px; padding: 4px 10px; border-radius: 20px; }
+    .badge-hl7 { background: #0066cc; color: white; }
+    .badge-astm { background: #28a745; color: white; }
+    .badge-serial { background: #fd7e14; color: white; }
+    .badge-manual { background: #6c757d; color: white; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .status-dot.activo { background: #28a745; box-shadow: 0 0 6px #28a745; }
+    .status-dot.inactivo { background: #adb5bd; }
+    .mapeo-table { font-size: 13px; }
+    .mapeo-table th { background: #003366; color: white; font-size: 11px; text-transform: uppercase; }
+    .nota-protocolo { background: #e8f4fd; border-left: 4px solid #0066cc; padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 13px; margin-top: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1" style="color:#003366;font-weight:800;">
+                <i class="bi bi-cpu me-2"></i>Gestión de Analizadores
+            </h2>
+            <p class="text-muted mb-0">Registro y configuración de equipos de laboratorio. Interfaz HL7/ASTM disponible cuando se provean protocolos del fabricante.</p>
+        </div>
+        <button class="btn btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#modalNuevoEquipo">
+            <i class="bi bi-plus-circle me-1"></i> Registrar Equipo
+        </button>
+    </div>
+
+    <!-- Aviso interfaz -->
+    <div class="nota-protocolo mb-4">
+        <i class="bi bi-info-circle-fill text-primary me-2"></i>
+        <strong>Sistema Dual:</strong> Los analizadores funcionan en <strong>modo manual</strong> (captura directa en pantalla) y en <strong>modo interfazado</strong> (HL7/ASTM automático). Para activar la interfaz, se requiere el protocolo de comunicación del fabricante. Mientras tanto, <strong>todas las funciones de captura, validación y reportes están 100% operativas en modo manual.</strong>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm">
+                <div class="card-body">
+                    <div style="font-size:2rem;font-weight:900;color:#003366;">{{ equipos.count }}</div>
+                    <small class="text-muted">Total Equipos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm">
+                <div class="card-body">
+                    <div style="font-size:2rem;font-weight:900;color:#28a745;">{{ equipos_activos }}</div>
+                    <small class="text-muted">Activos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm">
+                <div class="card-body">
+                    <div style="font-size:2rem;font-weight:900;color:#0066cc;">{{ equipos_interfazados }}</div>
+                    <small class="text-muted">Interfazados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm">
+                <div class="card-body">
+                    <div style="font-size:2rem;font-weight:900;color:#fd7e14;">{{ total_mapeos }}</div>
+                    <small class="text-muted">Parámetros Mapeados</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de equipos -->
+    {% for equipo in equipos %}
+    <div class="equipo-card {% if not equipo.activo %}inactivo{% endif %}">
+        <div class="row align-items-start">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="status-dot {% if equipo.activo %}activo{% else %}inactivo{% endif %}"></span>
+                    <h5 class="mb-0 fw-bold">{{ equipo.nombre }}</h5>
+                    <span class="ms-2 badge badge-protocolo badge-{% if equipo.protocolo == 'HL7' %}hl7{% elif equipo.protocolo == 'ASTM' %}astm{% else %}serial{% endif %}">
+                        {{ equipo.protocolo }}
+                    </span>
+                    {% if not equipo.activo %}<span class="badge bg-secondary ms-2">INACTIVO</span>{% endif %}
+                </div>
+                {% if equipo.marca %}<div class="text-muted mb-1"><i class="bi bi-building me-1"></i>{{ equipo.marca }}</div>{% endif %}
+                {% if equipo.ip_address %}
+                <div class="text-muted mb-1">
+                    <i class="bi bi-hdd-network me-1"></i>{{ equipo.ip_address }}:{{ equipo.puerto|default:'9100' }}
+                    <button class="btn btn-xs btn-outline-secondary ms-2" style="font-size:10px;padding:1px 6px;"
+                            onclick="probarConexion('{{ equipo.ip_address }}', {{ equipo.puerto|default:9100 }}, this)">
+                        Probar TCP/IP
+                    </button>
+                </div>
+                {% else %}
+                <div class="text-muted mb-1"><i class="bi bi-keyboard me-1"></i>Modo Manual (sin IP configurada)</div>
+                {% endif %}
+                {% if equipo.notas %}<small class="text-muted fst-italic">{{ equipo.notas }}</small>{% endif %}
+            </div>
+            <div class="col-md-4">
+                <div class="small text-muted mb-1"><strong>Parámetros mapeados:</strong></div>
+                {% if equipo.mapeos_codigos.exists %}
+                <div class="d-flex flex-wrap gap-1">
+                    {% for mapeo in equipo.mapeos_codigos.all|slice:":8" %}
+                    <span class="badge bg-light text-dark border" style="font-size:10px;">
+                        {{ mapeo.codigo_equipo }} → {{ mapeo.parametro.nombre|truncatechars:15 }}
+                    </span>
+                    {% endfor %}
+                    {% if equipo.mapeos_codigos.count > 8 %}
+                    <span class="badge bg-secondary" style="font-size:10px;">+{{ equipo.mapeos_codigos.count|add:"-8" }} más</span>
+                    {% endif %}
+                </div>
+                {% else %}
+                <span class="text-muted small"><i class="bi bi-exclamation-circle me-1"></i>Sin mapeos de códigos configurados</span>
+                {% endif %}
+            </div>
+            <div class="col-md-2 text-end">
+                <div class="d-flex flex-column gap-2">
+                    <button class="btn btn-sm btn-outline-primary" onclick="abrirMapeos({{ equipo.id }})">
+                        <i class="bi bi-arrow-left-right"></i> Mapeos
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="editarEquipo({{ equipo.id }})">
+                        <i class="bi bi-pencil"></i> Editar
+                    </button>
+                    <button class="btn btn-sm btn-outline-{% if equipo.activo %}danger{% else %}success{% endif %}"
+                            onclick="toggleEquipo({{ equipo.id }}, {% if equipo.activo %}false{% else %}true{% endif %})">
+                        {% if equipo.activo %}<i class="bi bi-pause-circle"></i> Pausar{% else %}<i class="bi bi-play-circle"></i> Activar{% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-5">
+        <i class="bi bi-cpu display-1 text-muted opacity-50"></i>
+        <p class="mt-3 text-muted fs-5">No hay equipos registrados.</p>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoEquipo">
+            <i class="bi bi-plus-circle me-1"></i> Registrar primer equipo
+        </button>
+    </div>
+    {% endfor %}
+
+    <!-- Sección de mapeos por código -->
+    <div class="card mt-4 border-0 shadow-sm">
+        <div class="card-header" style="background:#003366;color:white;">
+            <h6 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>Mapeos de Códigos de Parámetros</h6>
+        </div>
+        <div class="card-body p-0">
+            <p class="p-3 text-muted small mb-0">
+                Los mapeos conectan el código interno del equipo (ej: <code>WBC</code>, <code>HGB</code>) con el parámetro del sistema.
+                Esto es necesario para la integración HL7/ASTM. En modo manual, los resultados se asocian automáticamente por nombre.
+            </p>
+            <div class="table-responsive">
+                <table class="table table-sm mapeo-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Equipo</th><th>Código Equipo</th><th>→ Parámetro Sistema</th>
+                            <th>Factor Conversión</th><th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mapeo in mapeos %}
+                        <tr>
+                            <td>{{ mapeo.equipo.nombre|truncatechars:25 }}</td>
+                            <td><code class="bg-light px-2 py-1 rounded">{{ mapeo.codigo_equipo }}</code></td>
+                            <td>{{ mapeo.parametro.nombre }}</td>
+                            <td>{{ mapeo.factor_conversion|default:"1.0" }}</td>
+                            <td>
+                                <button class="btn btn-xs btn-outline-danger" style="font-size:10px;padding:1px 6px;"
+                                        onclick="eliminarMapeo({{ mapeo.id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center text-muted py-3">No hay mapeos configurados.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Nuevo Equipo -->
+<div class="modal fade" id="modalNuevoEquipo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#003366;color:white;">
+                <h5 class="modal-title"><i class="bi bi-cpu me-2"></i>Registrar Equipo de Laboratorio</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'director_analizadores_crear' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Nombre del Equipo *</label>
+                            <input type="text" name="nombre" class="form-control" placeholder="ej: Mindray BC-6000 Plus" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Marca</label>
+                            <input type="text" name="marca" class="form-control" placeholder="Mindray, Roche, Abbott...">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Modelo</label>
+                            <input type="text" name="modelo" class="form-control" placeholder="BC-6000 Plus">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Protocolo de Comunicación</label>
+                            <select name="protocolo" class="form-select">
+                                <option value="MANUAL">Manual (sin interfaz)</option>
+                                <option value="ASTM">ASTM E1394 (TCP/IP o Serial)</option>
+                                <option value="HL7">HL7 v2.x (TCP/IP)</option>
+                                <option value="SERIAL">Serial RS232 (COM Port)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">IP del Equipo</label>
+                            <input type="text" name="ip_address" class="form-control" placeholder="192.168.1.100"
+                                   pattern="^(\d{1,3}\.){3}\d{1,3}$">
+                            <div class="form-text">Solo para integración TCP/IP. Dejar vacío si es modo manual o serial.</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Puerto TCP</label>
+                            <input type="number" name="puerto" class="form-control" placeholder="9100" min="1" max="65535">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Puerto COM (Serial)</label>
+                            <input type="text" name="puerto_com" class="form-control" placeholder="COM3 o /dev/ttyUSB0">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Notas de Configuración</label>
+                            <textarea name="notas" class="form-control" rows="3"
+                                      placeholder="Ej: Requiere firmware v2.3+. Protocolo: ASTM bidireccional. Pendiente protocolo del fabricante para integración automática."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <div class="nota-protocolo">
+                                <i class="bi bi-lightbulb-fill text-warning me-1"></i>
+                                <strong>Nota:</strong> Para activar la integración automática (resultados directos), necesita el documento de protocolo de comunicación del fabricante. Mientras, el equipo operará en <strong>modo manual</strong> — completamente funcional para captura, validación y reportes.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold">
+                        <i class="bi bi-check-circle me-1"></i> Registrar Equipo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Mapeos de Códigos -->
+<div class="modal fade" id="modalMapeos" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#0066cc;color:white;">
+                <h5 class="modal-title"><i class="bi bi-arrow-left-right me-2"></i>Mapeos de Códigos — <span id="mapeo-equipo-nombre">Equipo</span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modal-mapeos-body">
+                <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+async function probarConexion(ip, puerto, btn) {
+    btn.disabled = true; btn.textContent = 'Probando...';
+    try {
+        const r = await fetch(`/director/analizadores/probar-conexion/`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRFToken':csrfToken},
+            body: JSON.stringify({ip, puerto})
+        });
+        const d = await r.json();
+        if (d.ok) { btn.textContent = '✅ Conectado'; btn.classList.remove('btn-outline-secondary'); btn.classList.add('btn-outline-success'); }
+        else { btn.textContent = '❌ Sin respuesta'; btn.classList.add('btn-outline-danger'); }
+    } catch { btn.textContent = '❌ Error'; }
+    btn.disabled = false;
+}
+
+async function toggleEquipo(equipoId, activar) {
+    if (!confirm(activar ? '¿Activar este equipo?' : '¿Pausar este equipo?')) return;
+    const r = await fetch(`/director/analizadores/${equipoId}/toggle/`, {
+        method: 'POST', headers: {'X-CSRFToken': csrfToken}
+    });
+    if (r.ok) location.reload();
+    else alert('Error al cambiar estado.');
+}
+
+async function abrirMapeos(equipoId) {
+    document.getElementById('modal-mapeos-body').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+    const modal = new bootstrap.Modal(document.getElementById('modalMapeos'));
+    modal.show();
+    const r = await fetch(`/director/analizadores/${equipoId}/mapeos/`);
+    const html = await r.text();
+    document.getElementById('modal-mapeos-body').innerHTML = html;
+}
+
+function editarEquipo(equipoId) {
+    window.location.href = `/director/analizadores/${equipoId}/editar/`;
+}
+
+async function eliminarMapeo(mapeoId) {
+    if (!confirm('¿Eliminar este mapeo?')) return;
+    const r = await fetch(`/director/analizadores/mapeo/${mapeoId}/eliminar/`, {
+        method: 'POST', headers: {'X-CSRFToken': csrfToken}
+    });
+    if (r.ok) location.reload();
+    else alert('Error al eliminar mapeo.');
+}
+</script>
+{% endblock %}

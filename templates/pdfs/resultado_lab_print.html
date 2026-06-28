@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultados {{ orden.folio_orden|default:orden.id }}</title>
+    <style>
+        @page { size: Letter; margin: 1.2cm; }
+        body { font-family: 'Times New Roman', Georgia, serif; font-size: 10.5pt; color: #111; }
+        .header {
+            display: flex; align-items: flex-start; justify-content: space-between;
+            border-bottom: 3px solid {{ empresa.color_primario|default:'#003366' }};
+            padding-bottom: 10px; margin-bottom: 14px;
+        }
+        .logo-img { max-height: 64px; max-width: 140px; object-fit: contain; }
+        .logo-fallback {
+            min-width: 120px; min-height: 56px; border: 2px dashed #cbd5e1;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 9pt; font-weight: 700; color: #475569; text-align: center;
+            padding: 6px; background: #f8fafc;
+        }
+        .empresa-block { flex: 1; padding: 0 16px; text-align: center; }
+        .empresa-nombre { font-size: 13pt; font-weight: 700; color: {{ empresa.color_primario|default:'#003366' }}; }
+        .empresa-meta { font-size: 8.5pt; color: #444; margin-top: 4px; }
+        .folio-block { text-align: right; font-size: 9pt; }
+        .patient { margin-bottom: 12px; font-size: 9.5pt; }
+        .patient table { width: 100%; border-collapse: collapse; }
+        .patient td { padding: 3px 6px; border: 1px solid #e5e7eb; }
+        .lbl { font-weight: 700; background: #f1f5f9; width: 22%; }
+        table.resultados { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        table.resultados th {
+            background: #003366; color: #fff; padding: 6px; font-size: 9pt; text-align: left;
+        }
+        table.resultados td { padding: 5px 6px; border: 1px solid #e5e7eb; font-size: 9.5pt; }
+        tr.critico td { background: #fff1f2; font-weight: 700; color: #7f1d1d; }
+        .qr-wrap { margin-top: 18px; text-align: center; }
+        .qr-wrap img { width: 100px; height: 100px; }
+        .foot { margin-top: 12px; font-size: 8pt; color: #64748b; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div style="width:22%;">
+            {% if empresa_logo_uri %}
+            <img class="logo-img" src="{{ empresa_logo_uri }}" alt="Logo">
+            {% else %}
+            <div class="logo-fallback">{{ empresa.nombre|truncatewords:4|default:"LABORATORIO" }}</div>
+            {% endif %}
+        </div>
+        <div class="empresa-block">
+            <div class="empresa-nombre">{{ empresa.nombre|default:"Laboratorio clínico" }}</div>
+            <div class="empresa-meta">
+                {% if empresa.rfc %}RFC: {{ empresa.rfc }}<br>{% endif %}
+                {% if empresa.direccion %}{{ empresa.direccion }}<br>{% endif %}
+                {% if empresa.telefono %}Tel: {{ empresa.telefono }}{% endif %}
+            </div>
+        </div>
+        <div class="folio-block">
+            <strong>Folio:</strong> {{ orden.folio_orden|default:orden.id }}<br>
+            <strong>Fecha:</strong> {{ fecha_generacion|date:"d/m/Y H:i" }}
+        </div>
+    </div>
+
+    <div class="patient">
+        <table>
+            <tr>
+                <td class="lbl">Paciente</td>
+                <td>{{ paciente_nombre_display|default:"—" }}</td>
+                <td class="lbl">Edad</td>
+                <td>{% if paciente_edad_display %}{{ paciente_edad_display }} años{% else %}—{% endif %}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Sexo</td>
+                <td>{{ paciente_sexo_display|default:"—" }}</td>
+                <td class="lbl">Orden</td>
+                <td>#{{ orden.id }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <table class="resultados">
+        <thead>
+            <tr>
+                <th>Parámetro</th>
+                <th>Resultado</th>
+                <th>Unidades</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in resultados %}
+            <tr class="{% if r.es_critico %}critico{% endif %}">
+                <td>{{ r.analito.nombre|default:"—" }}</td>
+                <td>{{ r.valor|default:"—" }}</td>
+                <td>{{ r.analito.unidades|default:"" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3">Sin resultados registrados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if qr_code %}
+    <div class="qr-wrap">
+        <p style="font-size:9pt;margin-bottom:4px;">Validación / consulta</p>
+        <img src="data:image/png;base64,{{ qr_code }}" alt="QR">
+    </div>
+    {% endif %}
+
+    <div class="foot">
+        Generado {{ fecha_generacion|date:"d/m/Y H:i" }} — documento con fines clínicos.
+    </div>
+</body>
+</html>

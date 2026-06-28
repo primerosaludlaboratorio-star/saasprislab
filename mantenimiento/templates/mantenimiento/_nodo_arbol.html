@@ -1,0 +1,70 @@
+{% load static %}
+{% with bg="bg-primary" icon="bi-question-circle" %}
+{% if nodo.tipo_nodo == "ACCION" %}
+  {% with bg="bg-success" icon="bi-tools" %}
+{% elif nodo.tipo_nodo == "ESCALAMIENTO" %}
+  {% with bg="bg-danger" icon="bi-arrow-up-circle" %}
+{% elif nodo.tipo_nodo == "SOLUCIONADO" %}
+  {% with bg="bg-success" icon="bi-check-circle" %}
+{% endif %}
+
+<div class="nodo-wrap ms-{{ nivel }}0" style="margin-left:{{ nivel }}rem">
+  {% if nodo.condicion_de_padre %}
+    <div class="text-muted small mb-1 ps-2">
+      <i class="bi bi-arrow-return-right me-1"></i>
+      <em>Si: <strong>{{ nodo.condicion_de_padre }}</strong></em>
+    </div>
+  {% endif %}
+  <div class="card mb-2 border-0 shadow-sm">
+    <div class="card-header py-2 px-3 d-flex justify-content-between align-items-center
+        {% if nodo.tipo_nodo == 'PREGUNTA' %}bg-primary bg-opacity-10 text-primary
+        {% elif nodo.tipo_nodo == 'ACCION' %}bg-success bg-opacity-10 text-success
+        {% elif nodo.tipo_nodo == 'ESCALAMIENTO' %}bg-danger bg-opacity-10 text-danger
+        {% else %}bg-success bg-opacity-10 text-success{% endif %}">
+      <span class="fw-semibold small">
+        <i class="bi
+          {% if nodo.tipo_nodo == 'PREGUNTA' %}bi-question-circle
+          {% elif nodo.tipo_nodo == 'ACCION' %}bi-tools
+          {% elif nodo.tipo_nodo == 'ESCALAMIENTO' %}bi-arrow-up-circle
+          {% else %}bi-check-circle{% endif %} me-1"></i>
+        {{ nodo.get_tipo_nodo_display }}
+      </span>
+      {% if nodo.nivel_requerido != 'TODOS' %}
+        <span class="badge bg-secondary small">{{ nodo.get_nivel_requerido_display }}</span>
+      {% endif %}
+      <form method="post" class="d-inline ms-2"
+            onsubmit="return confirm('¿Eliminar este nodo y todos sus hijos?')">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="eliminar_nodo">
+        <input type="hidden" name="nodo_id" value="{{ nodo.pk }}">
+        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Eliminar nodo">
+          <i class="bi bi-x"></i>
+        </button>
+      </form>
+    </div>
+    <div class="card-body py-2 px-3">
+      <p class="mb-1 small">{{ nodo.texto }}</p>
+      {% if nodo.lleva_a_procedimiento %}
+        <div class="mt-1">
+          <span class="badge bg-info text-dark">
+            <i class="bi bi-list-task me-1"></i>{{ nodo.lleva_a_procedimiento.titulo|truncatechars:50 }}
+          </span>
+        </div>
+      {% endif %}
+      {% if nodo.nivel_escalamiento %}
+        <div class="mt-1">
+          <span class="badge bg-danger">
+            Escala a: {{ nodo.get_nivel_escalamiento_display }}
+          </span>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% with hijos=nodo.get_hijos_ordenados siguiente_nivel=nivel|add:1 %}
+    {% for hijo in hijos %}
+      {% include "mantenimiento/_nodo_arbol.html" with nodo=hijo nivel=siguiente_nivel %}
+    {% endfor %}
+  {% endwith %}
+</div>
+{% endwith %}

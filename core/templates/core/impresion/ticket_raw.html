@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        :root {
+            --ticket-width: 80mm;
+        }
+        @page {
+            size: var(--ticket-width) auto;
+            margin: 0;
+        }
+        body {
+            width: var(--ticket-width);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 9pt;
+            padding: 5mm;
+            box-sizing: border-box;
+            margin: 0;
+        }
+        .text-center { text-align: center; }
+        .bold { font-weight: bold; }
+        .divider { border-top: 1px dashed #000; margin: 2mm 0; }
+        table { width: 100%; border-collapse: collapse; }
+        .total-section { font-size: 11pt; margin-top: 3mm; }
+    </style>
+</head>
+<body>
+    <div class="text-center">
+        <span class="bold" style="font-size: 12pt;">{{ empresa.nombre|upper }}</span><br>
+        {% if orden.sucursal %}
+        <span>Sucursal: {{ orden.sucursal.nombre }}</span><br>
+        {% endif %}
+        {% if empresa.telefono %}
+        <span>Tel: {{ empresa.telefono }}</span><br>
+        {% endif %}
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+        <span>Folio: {{ orden.folio_orden|default:orden.id }}</span><br>
+        <span>Fecha: {{ orden.fecha_creacion|date:"d/m/Y H:i" }}</span><br>
+        <span>Paciente: {{ orden.paciente.nombre_completo|upper }}</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <table class="bold">
+        <thead>
+            <tr>
+                <th align="left">ESTUDIO</th>
+                <th align="right">PRECIO</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detalle in detalles %}
+            <tr>
+                <td>{{ detalle.display_nombre|truncatechars:20 }}</td>
+                <td align="right">${{ detalle.precio_momento|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <div class="total-section">
+        <table class="bold">
+            <tr><td>TOTAL:</td><td align="right">${{ orden.total|floatformat:2 }}</td></tr>
+            <tr><td>PAGADO:</td><td align="right">${{ orden.anticipo|floatformat:2 }}</td></tr>
+            {% if saldo_pendiente > 0 %}
+            <tr style="color: red;"><td>SALDO:</td><td align="right">${{ saldo_pendiente|floatformat:2 }}</td></tr>
+            {% endif %}
+        </table>
+    </div>
+
+    {% if orden.token_acceso %}
+    <div class="divider"></div>
+    <div class="text-center">
+        <span style="font-size: 7pt;">CONSULTE SUS RESULTADOS:</span><br>
+        <span class="bold" style="font-size: 8pt;">FOLIO: {{ orden.folio_orden|default:orden.id }}</span>
+    </div>
+    {% endif %}
+
+    <div class="divider"></div>
+    <div class="text-center">
+        <p>*** GRACIAS POR SU PREFERENCIA ***</p>
+        {% if empresa.direccion %}
+        <p style="font-size: 8pt;">{{ empresa.direccion|truncatechars:40 }}</p>
+        {% endif %}
+    </div>
+</body>
+</html>

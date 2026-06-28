@@ -1,0 +1,373 @@
+bienestar\management\commands\poblar_recursos.py:29:                 'descripcion': 'Estrategias simples para comenzar a ahorrar sin sentir que te privas de todo.',
+bienestar\views.py:43:         "Respira, todo va a estar bien. 🌊",
+bienestar\views.py:505:         # Integración pendiente cuando se complete la Fase de Bienestar/RRHH.
+consultorio\models.py:104:     """Nota médica / historia clínica (placeholder inicial)."""
+consultorio\models.py:771:         help_text="Monto cobrado por recepción pendiente de entregar al médico"
+consultorio\models.py:833:         ('PENDIENTE', 'Pendiente'),
+consultorio\models.py:968:         ('PENDIENTE', 'Pendiente de entrega'),
+consultorio\models.py:1001:         max_length=15, choices=ESTADO_CHOICES, default='PENDIENTE'
+consultorio\models.py:1057:         ('PENDIENTE', 'Pendiente'),
+consultorio\models.py:1150:         max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE',
+consultorio\pdf_views.py:469:             elements.append(Paragraph("<i>Transcripción pendiente de procesamiento</i>", 
+consultorio\views.py:128:         'pendientes': citas.filter(estado='PENDIENTE').count(),
+consultorio\views.py:248:                     cedula_profesional=getattr(request.user, 'cedula_profesional', 'PENDIENTE'),
+consultorio\views.py:1716:     El médico solo habla una vez → la IA clasifica todo.
+consultorio\views.py:3012:         'pendientes': citas.filter(estado='PENDIENTE').count(),
+consultorio\views.py:3468:         candidatas = citas_qs.filter(estado__in=['PENDIENTE', 'CONFIRMADA', 'EN_SALA', 'EN_CURSO'])
+consultorio\views.py:3471:         'PENDIENTE': 'secondary',
+consultorio\views.py:3630:         estado__in=['PENDIENTE', 'PARCIAL'],
+consultorio\views.py:3782:                 estado='PENDIENTE',
+consultorio\views.py:3887:         estado__in=['PENDIENTE', 'PARCIAL'],
+consultorio\views.py:3951:             estado='PENDIENTE',
+consultorio\views.py:3958:             estado='PENDIENTE',
+consultorio\views.py:3985:         pendientes=Count('id', filter=Q(estado='PENDIENTE')),
+consultorio\views.py:3988:         criticas=Count('id', filter=Q(severidad='CRITICA', estado='PENDIENTE')),
+consultorio\views.py:4018:         if nuevo_estado in ['PENDIENTE', 'EN_REPARACION', 'SOLUCIONADO']:
+consultorio\views.py:4095:             estado='PENDIENTE',
+consultorio\views.py:4196:     if incidencia.estado == 'PENDIENTE':
+consultorio\views.py:4515:             estado__in=['PENDIENTE', 'EN_REPARACION'],
+consultorio\views.py:4533:             estado__in=['PENDIENTE', 'EN_REPARACION'],
+consultorio\views.py:4546:         estado__in=['PENDIENTE', 'EN_REPARACION']
+consultorio\views_integracion_lab.py:89:                 estado_pago='PENDIENTE',
+contabilidad\management\commands\reconciliar_facturas_pendientes.py:10:         "Devuelve a PENDIENTE las facturas en FACTURANDO con timbrado_intento_en > 5 minutos "
+contabilidad\management\commands\reconciliar_facturas_pendientes.py:40:             estado="PENDIENTE",
+contabilidad\models.py:142:         ('PENDIENTE', 'Pendiente de timbrar'),
+contabilidad\services\timbrado_cfdi.py:168:             if factura.estado not in ('BORRADOR', 'PENDIENTE', 'ERROR'):
+contabilidad\views.py:143:         'borradores': facturas.filter(Q(estado='BORRADOR') | Q(estado='PENDIENTE')).count(),
+core\agent\pris_tools_operativos.py:258:                 estado_pago="PENDIENTE",
+core\agent\pris_tools_operativos.py:292:                 f"Total: ${float(total):,.2f}. Estado: pendiente de pago."
+core\consumers.py:266:                 # Canal privado pendiente: usar channel_layer.send(channel_name, msg) con el channel_name del destinatario especifico.
+core\management\commands\audit_dump_code_markers.py:2: Vuelca marcadores TODO / FIXME / HACK / XXX a docs/audit/TODO_CODE_SCAN.txt
+core\management\commands\audit_dump_code_markers.py:3: para gobernanza §7 (visibilidad sin revisión manual de todo el árbol).
+core\management\commands\audit_dump_code_markers.py:21: # Solo comentarios explícitos (#, //, <!--, /*) para no confundir con la palabra española "todo".
+core\management\commands\audit_dump_code_markers.py:24: _PAT_HASH_OTHER = re.compile(r'#\s*(FIXME|HACK|XXX)s?\b', re.IGNORECASE)
+core\management\commands\audit_dump_code_markers.py:26: _PAT_SLASH_OTHER = re.compile(r'//\s*(FIXME|HACK|XXX)s?\b', re.IGNORECASE)
+core\management\commands\audit_dump_code_markers.py:28: _PAT_HTML_OTHER = re.compile(r'<!--\s*(FIXME|HACK|XXX)s?\b', re.IGNORECASE)
+core\management\commands\audit_dump_code_markers.py:30: _PAT_CSS_OTHER = re.compile(r'/\*\s*(FIXME|HACK|XXX)s?\b', re.IGNORECASE)
+core\management\commands\audit_system.py:161:                     f'{len(pending)} pendiente(s)'
+core\management\commands\check_placeholder_resultados_lims.py:2: Auditoría rápida: detecta ResultadoParametro aún ligados al analito placeholder core.0058.
+core\management\commands\check_placeholder_resultados_lims.py:30:             self.stdout.write(self.style.SUCCESS('No existe analito placeholder; catálogo limpio.'))
+core\management\commands\check_placeholder_resultados_lims.py:35:             self.stdout.write(self.style.SUCCESS('Sin ResultadoParametro en placeholder 0058.'))
+core\management\commands\check_placeholder_resultados_lims.py:40:                 f'⚠ Hay {n} resultado(s) ligados al placeholder {PLACEHOLDER_CODIGO!r}. '
+core\management\commands\crear_grupos_roles.py:106:                     # Acceso a todo (se configurará manualmente)
+core\management\commands\estres_ventas_farmacia.py:169:                         estado='PENDIENTE',
+core\management\commands\generar_data_operativa_v150.py:142:             'Se requieren ≥2 analitos activos (no calculados, sin placeholder 0058). '
+core\management\commands\limpiar_temporales.py:99:         # ── 2. Opcional: huérfanos en todo MEDIA_ROOT ─────────────────
+core\management\commands\omni_audit.py:129:     """Mapea recursivamente todo el proyecto."""
+core\management\commands\omni_audit.py:455:     TODO_PATTERN = re.compile(r'\b(TODO|FIXME|HACK|PENDIENTE|XXX)\b', re.IGNORECASE)
+core\management\commands\omni_audit.py:469:             # Marcadores de deuda en línea (patrón AST: TODO|FIXME|…)
+core\management\commands\omni_audit.py:975:                                        'NO_DESPLEGADA', 'Migración pendiente — ejecutar makemigrations'))
+core\management\commands\remap_placeholder_resultados.py:2: Remapea ResultadoParametro aún ligados al analito placeholder de core.0058.
+core\management\commands\remap_placeholder_resultados.py:6: por orden y alinea cada fila placeholder con el analito correspondiente.
+core\management\commands\remap_placeholder_resultados.py:13: Código placeholder: __PRISLAB_MIG_0058__
+core\management\commands\remap_placeholder_resultados.py:35:     """Expande un DetalleOrden a analitos concretos (excluye placeholder)."""
+core\management\commands\remap_placeholder_resultados.py:66:         'Remapea ResultadoParametro del placeholder 0058 (__PRISLAB_MIG_0058__) '
+core\management\commands\remap_placeholder_resultados.py:83:             '--delete-placeholder-if-unused',
+core\management\commands\remap_placeholder_resultados.py:86:                 'Si ningún ResultadoParametro ni DetalleOrden referencia el placeholder, '
+core\management\commands\remap_placeholder_resultados.py:87:                 'elimina el registro lims.Analito placeholder (usar con precaución).'
+core\management\commands\remap_placeholder_resultados.py:116:             self.stdout.write(self.style.SUCCESS('No hay ResultadoParametro en el placeholder.'))
+core\management\commands\remap_placeholder_resultados.py:140:                 skipped.append((oid, 'sin analitos reales en DetalleOrden (solo placeholder o vacío)'))
+core\management\commands\remap_placeholder_resultados.py:146:                         f'conteo RP placeholder={len(rps)} vs analitos inferidos={len(targets)} '
+core\management\commands\remap_placeholder_resultados.py:225:                     f'Placeholder analito pk={ph.pk} aún referenciado '
+core\management\commands\remap_placeholder_resultados.py:231:             self.stdout.write(f'[dry-run] Se eliminaría lims.Analito placeholder pk={ph.pk}')
+core\management\commands\remap_placeholder_resultados.py:234:         self.stdout.write(self.style.SUCCESS(f'Eliminado lims.Analito placeholder pk={ph.pk}'))
+core\management\commands\resolver_incidencias.py:138:                 estado__in=['PENDIENTE', 'EN_REPARACION'],
+core\management\commands\resolver_incidencias.py:170:                 estado__in=['PENDIENTE', 'EN_REPARACION'],
+core\management\commands\resolver_incidencias.py:189:             estado__in=['PENDIENTE', 'EN_REPARACION'],
+core\management\commands\resolver_incidencias.py:207:             estado__in=['PENDIENTE', 'EN_REPARACION'],
+core\management\commands\resolver_incidencias.py:225:             estado__in=['PENDIENTE', 'EN_REPARACION']
+core\management\commands\seed_grupos_permisos.py:144:         'all_view_perms': True,  # Flag especial: asigna solo permisos 'view' de todo
+core\management\commands\sentinel_reporte_semanal.py:96:     Normaliza URL (quita query, reemplaza IDs por placeholder) y devuelve
+core\management\commands\setup_demo_total.py:525:             estado='PENDIENTE',
+core\management\commands\setup_demo_v75.py:5: con dos DetalleOrden + ResultadoParametro por analito (valor placeholder para captura en UI).
+core\management\commands\setup_roles.py:269:         # Tienen autorizacion gerencial, estan arriba de todo el personal,
+core\management\commands\simular_flujo_completo.py:697:                                 'estado': 'PENDIENTE',
+core\management\commands\simular_ventas_farmacia.py:8: - Medir tiempo total y reportar errores sin detener todo el proceso
+core\management\commands\war_room_stress_test.py:213:         # 3 órdenes con saldo pendiente
+core\middleware\empresa.py:80:             # Nota: superusuarios ven todo (empresa=None → no hay filtro ORM).
+core\middleware\empresa.py:127:     Si no hay empresa o ConfiguracionModulos, activa todo (modo legacy).
+core\middleware\mantenimiento.py:16:   - GET requests  → lectura permitida en todo momento
+core\middleware\performance.py:152:                         estado='PENDIENTE',
+core\middleware\seguridad.py:10: NOM-024-SSA3-2012 / HIPAA: Todo acceso a datos clínicos queda registrado con
+core\middleware\seguridad.py:165:     NOM-024-SSA3-2012: Todo acceso queda firmado con usuario + IP + timestamp.
+core\middleware\sentinel.py:596:             mensaje_detalle = "Detectamos un inconveniente menor. Todo estara listo en un momento."
+core\middleware\sentinel.py:765:                 estado='PENDIENTE',
+core\mixins.py:56:         # Superuser tiene acceso a todo
+core\models\clinico.py:21:         ('PENDIENTE', 'Pendiente'),
+core\models\clinico.py:40:     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE')
+core\models\expediente_blindaje.py:51:         ('PRELIMINAR', 'Preliminar — Pendiente de firma'),
+core\models\expediente_blindaje.py:316:         ('PRE_SELLADA', 'Pre-sellada — Pendiente de PIN'),
+core\models\expediente_blindaje.py:488:         Marca la nota como pre-sellada, pendiente de confirmación con PIN.
+core\models\expediente_blindaje.py:693:             estado='PENDIENTE'
+core\models\finanzas.py:46:     # Nota: Todo lo superior a limite_amarillo es Zona Roja (requiere autorización Director)
+core\models\ia_config.py:95:         (ESTADO_PROPUESTA, '⏳ Propuesta — Pendiente de revisión QFB'),
+core\models\laboratorio.py:226:             ('IA_BORRADOR', 'Sugerencia IA (pendiente aprobación clínica)'),
+core\models\laboratorio.py:357:         ('PENDIENTE_PAGO', 'Pendiente de Pago'),
+core\models\laboratorio.py:375:         ('PENDIENTE', 'Pendiente'),
+core\models\laboratorio.py:429:     estado_pago = models.CharField(max_length=10, choices=ESTADO_PAGO_CHOICES, default='PENDIENTE', verbose_name="Estado de Pago")
+core\models\laboratorio.py:433:                                   help_text="Orden confirmada con saldo pendiente registrado")
+core\models\laboratorio.py:465:     drive_sync_pending = models.BooleanField(default=False, verbose_name="Sincronización Pendiente", help_text="True si el archivo aún no se ha sincronizado a Drive")
+core\models\laboratorio.py:466:     drive_status = models.CharField(max_length=20, choices=[('PENDIENTE', 'Pendiente'), ('SINCRONIZADO', 'Sincronizado'), ('ERROR', 'Error')], default='PENDIENTE', verbose_name="Estado de Sincronización")
+core\models\laboratorio.py:473:         ('PENDIENTE_TOMA', 'Pendiente de Toma de Muestra'),
+core\models\laboratorio.py:552:                 # pendiente el PDF no se genera hasta liquidar (Portero en extracción).
+core\models\laboratorio.py:616:         ('PENDIENTE_TOMA', 'Pendiente de Toma'),
+core\models\laboratorio.py:645:         ('PENDIENTE', 'Pendiente de Cobro'),
+core\models\laboratorio.py:657:     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE', verbose_name="Estado")
+core\models\operaciones.py:216:         ('PENDIENTE', 'Pendiente'),
+core\models\operaciones.py:224:     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE', verbose_name="Estado")
+core\models\operaciones.py:263:         ('PENDIENTE', 'Pendiente de Revisión'),
+core\models\operaciones.py:273:     estado_revision = models.CharField(max_length=20, choices=ESTADO_REVISION_CHOICES, default='PENDIENTE', verbose_name="Estado de Revisión")
+core\models\operaciones.py:304:         ('PENDIENTE', 'Pendiente'),
+core\models\operaciones.py:342:     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE', verbose_name="Estado")
+core\models\operaciones.py:650:         ('PENDIENTE',  'Pendiente de entrega'),
+core\models\operaciones.py:814:         (ESTADO_SUBIDO,     '🔴 Subido — pendiente de indexar'),
+core\models\pris.py:14:     Estado PENDIENTE = esperando confirmación humana.
+core\models\pris.py:20:     ESTADO_PENDIENTE   = 'PENDIENTE'
+core\models\pris.py:26:         (ESTADO_PENDIENTE,  'Pendiente de confirmación'),
+core\models\rrhh.py:263:         ('PENDIENTE', 'Pendiente'),
+core\models\rrhh.py:273:     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE', verbose_name="Estado")
+core\models\rrhh.py:342:     Actúa como encabezado de todo el proceso de pago.
+core\models\rrhh.py:498:         ('PENDIENTE',  'Pendiente'),
+core\models\rrhh.py:506:     estado     = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='PENDIENTE')
+core\models\rrhh.py:535:         if self.estado != 'PENDIENTE' and not self.fecha_resolucion:
+core\models\ventas.py:65:     drive_sync_pending = models.BooleanField(default=False, verbose_name="Sincronización Pendiente", help_text="True si el archivo aún no se ha sincronizado a Drive")
+core\models\ventas.py:66:     drive_status = models.CharField(max_length=20, choices=[('PENDIENTE', 'Pendiente'), ('SINCRONIZADO', 'Sincronizado'), ('ERROR', 'Error')], default='PENDIENTE', verbose_name="Estado de Sincronización")
+core\models\ventas.py:230:             ('PENDIENTE', 'Pendiente'),
+core\models\ventas.py:744:     """Facturación 4.0 (SAT) - placeholder."""
+core\models\ventas.py:846:         ('PENDIENTE', 'Pendiente de Cobro'),
+core\models\ventas.py:864:     saldo_pendiente = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Saldo Pendiente')
+core\models\ventas.py:870:     estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='PENDIENTE')
+core\models\ventas.py:891:         return self.estado == 'PENDIENTE' and self.fecha_vencimiento < timezone.now().date()
+core\services\ia_clinical_governance.py:7: # ResultadoParametro.metodo_captura — sugerencia IA pendiente de validación formal en captura
+core\services\interpretacion_ia.py:57:             valor='Pendiente'
+core\services\lims\orden_recepcion_service.py:209:                         estado='PENDIENTE',
+core\services\lims\orden_recepcion_service.py:297:                     estado_pago = 'PENDIENTE'
+core\services\lims\resultados_lims_service.py:114:                                 'Hay resultados ligados al analito placeholder de la migración 0058. '
+core\services\lims\resultados_lims_service.py:528:                             'ResultadosLimsService: validación sin PDF por saldo pendiente orden=%s saldo=%s',
+core\services\lims\resultados_lims_service.py:575:                                 'estado': 'PENDIENTE',
+core\services\motor_reportes_lab.py:53:     """Candado financiero intrínseco: no se genera PDF oficial con saldo pendiente."""
+core\services\motor_reportes_lab.py:431:                 .exclude(valor='Pendiente')
+core\services\motor_reportes_lab.py:454:             valor = 'Pendiente'
+core\services\motor_reportes_lab.py:460:                 valor = _safe_str(resultado.valor, 'Pendiente')
+core\services\motor_reportes_lab.py:463:                     valor = _safe_str(detalle.resultado, 'Pendiente')
+core\services\motor_reportes_lab.py:578:     ).exclude(valor='').exclude(valor='Pendiente').select_related(
+core\services\motor_reportes_lab.py:1202:             valor = 'Pendiente'
+core\services\motor_reportes_lab.py:1206:                 valor = _safe_str(res.valor, 'Pendiente')
+core\services\motor_reportes_lab.py:1209:                     valor = _safe_str(detalle.resultado, 'Pendiente')
+core\services\ocr_documental.py:9: Nunca bloquea el flujo operativo. Todo es informativo.
+core\services\ocr_documental.py:125:         # Por ahora, marcamos como "pendiente de verificación" sin bloquear.
+core\services\ocr_documental.py:129:             'badge': 'PENDIENTE',
+core\services\validador_ia.py:11:     # Returns: list[dict] con alertas o lista vacia si todo OK
+core\signals.py:126:                             # Este lote no es suficiente, usar todo y pasar al siguiente
+core\templatetags\tenant_tags.py:49:         # Superusuario siempre ve todo
+core\tests_e2e.py:373:                 '#selectPaciente, select[name*="paciente"], input[placeholder*="paciente" i]',
+core\tests_e2e.py:727:                 'input[type="search"], input[placeholder*="buscar" i], input[name*="buscar"], #buscarProducto',
+core\tests_e2e_playwright.py:232:                 # Intentar encontrar por placeholder
+core\tests_e2e_playwright.py:233:                 buscar_input = self.page.locator('input[placeholder*="buscar" i]').first()
+core\utils\candado_financiero.py:5: cuando una OrdenDeServicio presenta saldo pendiente.
+core\utils\candado_financiero.py:24:     mientras la orden tenga saldo pendiente (staff, paciente u orquestadores).
+core\utils\candado_financiero.py:30:             f"PDF bloqueado: saldo pendiente ${saldo_pendiente:.2f}"
+core\utils\candado_financiero.py:36:     "RESULTADOS RETENIDOS: Esta orden presenta un saldo pendiente. "
+core\utils\candado_financiero.py:43:     """Devuelve el saldo pendiente de una OrdenDeServicio."""
+core\utils\candado_financiero.py:61:     abrir/imprimir el PDF cuando hay saldo pendiente.
+core\utils\candado_financiero.py:91:     <div class="saldo">Saldo pendiente: ${saldo:.2f}</div>
+core\utils\estandares_industriales.py:7: # NOTA: Modelo TrazabilidadOperacion pendiente de migración. Descomentar la importación cuando exista en DB.
+core\utils\lims_tokens_v75.py:250:                     estado='PENDIENTE',
+core\utils\lims_tokens_v75.py:258:                         estado='PENDIENTE',
+core\utils\rh_utils.py:75:             estado='PENDIENTE',
+core\utils\rh_utils.py:103:                 # Asignación de curso desde Academy pendiente cuando se active MARKETING_ACADEMY_ENABLED.
+core\views\asistencia.py:48:         estado='PENDIENTE'
+core\views\autenticacion_2fa.py:139:     El usuario ya está autenticado parcialmente (en sesión pendiente).
+core\views\autorizaciones.py:51:             estado='PENDIENTE'
+core\views\autorizaciones.py:120:         estado='PENDIENTE'
+core\views\autorizaciones.py:139:     if solicitud.estado != 'PENDIENTE':
+core\views\autorizaciones.py:191:         if solicitud.estado != 'PENDIENTE':
+core\views\autorizaciones.py:246:         if solicitud.estado != 'PENDIENTE':
+core\views\bienestar_mejorado.py:64:         'suicidio', 'matar', 'morir', 'acabar con todo', 'desaparecer',
+core\views\bienestar_mejorado.py:70:         'no puedo dormir', 'no como', 'no tengo ganas', 'todo está mal',
+core\views\blindaje_expediente.py:7: 1. Pre-sellar nota (marcar como pendiente de firma)
+core\views\blindaje_expediente.py:38: # 1. PRE-SELLAR NOTA (Marcar como pendiente de firma)
+core\views\blindaje_expediente.py:45:     Marca una nota como 'pre-sellada', pendiente de confirmación con PIN.
+core\views\buzon.py:53:             estado='PENDIENTE'
+core\views\buzon.py:81:             estado='PENDIENTE'
+core\views\buzon.py:110:                 estado='PENDIENTE'
+core\views\buzon.py:141:     Body JSON: { estado: 'PENDIENTE'|'EN_REVISION'|'RESUELTO'|'DESCARTADO', notas_resolucion?: str }
+core\views\buzon.py:224:             'sentimiento_display': q.get_sentimiento_ia_display() if q.sentimiento_ia else 'Pendiente',
+core\views\buzon.py:226:             'categoria_display': q.get_categoria_ia_display() if q.categoria_ia else 'Pendiente',
+core\views\consulta_ordenes.py:205:         .exclude(valor='').exclude(valor__isnull=True).exclude(valor='Pendiente')
+core\views\consulta_ordenes.py:217:             tiene_res = bool(rt) and rt != 'Pendiente'
+core\views\contabilidad.py:154:     # NOTA: pendiente de migracion - Modelo PolizaContable no migrado aún
+core\views\contabilidad.py:163:     # NOTA: pendiente de migracion - Modelo CatalogoCuenta no migrado aún
+core\views\cuentas_por_cobrar.py:55:     pendientes = cuentas.filter(estado='PENDIENTE')
+core\views\cuentas_por_cobrar.py:121:             return JsonResponse({'status': 'error', 'mensaje': 'Monto excede el saldo pendiente'}, status=400)
+core\views\cuentas_por_cobrar.py:213:                 estado='PENDIENTE',
+core\views\cuentas_por_cobrar.py:249:         cuentas_pendientes=Count('cuentas', filter=Q(cuentas__estado__in=['PENDIENTE', 'VENCIDO'])),
+core\views\cuentas_por_cobrar.py:250:         saldo_total=Sum('cuentas__saldo_pendiente', filter=Q(cuentas__estado__in=['PENDIENTE', 'PARCIAL', 'VENCIDO'])),
+core\views\director.py:224:         estado='PENDIENTE'
+core\views\director.py:236:         estado='PENDIENTE'
+core\views\entrega_resultados.py:287:                 "motivo": f"Saldo pendiente ${saldo:.2f} — no se envía correo hasta liquidar",
+core\views\entrega_resultados.py:381:             "CANDADO: resultados_publicos — saldo pendiente, portal sin datos — orden %s token=%s",
+core\views\entrega_resultados.py:391:                 "Tu reporte está listo, pero detectamos un saldo pendiente. "
+core\views\entrega_resultados.py:498:             "CANDADO: resultados_publicos_pdf — saldo pendiente — orden %s",
+core\views\entrega_resultados.py:502:             "Resultados retenidos por saldo pendiente. Acude a recepción.",
+core\views\entrega_resultados.py:531:             "Resultados retenidos por saldo pendiente.",
+core\views\excepciones_lab.py:274:             detalle.estado_procesamiento = 'PENDIENTE_TOMA'  # Reiniciar a pendiente de toma
+core\views\excepciones_lab.py:513:             ).exclude(valor='').exclude(valor__isnull=True).exclude(valor='Pendiente').exists()
+core\views\excepciones_lab.py:516:             tiene_resultados = bool(res_txt) and res_txt != 'Pendiente'
+core\views\excepciones_lab.py:573:             'tiene_resultado': bool(d.resultado and d.resultado.strip() and d.resultado != 'Pendiente'),
+core\views\farmacia.py:567:     elif filtro_actual == 'pendiente':
+core\views\farmacia.py:568:         ventas_query = ventas_query.filter(estado='PENDIENTE')
+core\views\general.py:213:         # Si TODO falla, devolver respuesta exitosa para no bloquear el frontend
+core\views\ia_dashboard.py:150:                 estado='PENDIENTE',
+core\views\ia_dashboard.py:263:             empresa=empresa, estado='PENDIENTE'
+core\views\ia_dashboard.py:323:         # 6. Si todo bien
+core\views\incidencias.py:71:             estado_revision='PENDIENTE'
+core\views\incidencias.py:106:     filtro_estado = request.GET.get('estado', 'PENDIENTE')
+core\views\incidencias.py:130:         'pendientes': IncidenciaOperativa.objects.filter(empresa=empresa, estado_revision='PENDIENTE').count(),
+core\views\laboratorio.py:396:         estado_pago = getattr(orden, 'estado_pago', 'PENDIENTE')
+core\views\laboratorio.py:398:             'PENDIENTE': {'icono': '🔴', 'clase': 'danger', 'texto': 'Debe'},
+core\views\laboratorio.py:406:             'PENDIENTE_PAGO': {'icono': '⚪', 'clase': 'secondary', 'texto': 'Pendiente'},
+core\views\laboratorio.py:407:             'PAGADO': {'icono': '⚪', 'clase': 'secondary', 'texto': 'Pendiente Toma'},
+core\views\laboratorio.py:460:     # Calcular saldo pendiente
+core\views\laboratorio.py:1551:             estado='PENDIENTE'
+core\views\laboratorio.py:1600:             estado='PENDIENTE'  # Solo cargar si está pendiente
+core\views\laboratorio.py:1690:         - Si no se proporcionan montos multimodales, se asume todo efectivo
+core\views\laboratorio.py:1788:         # Si no se proporcionaron montos multimodales, asumir que todo es efectivo
+core\views\laboratorio.py:1808:                     estado_pago = 'PENDIENTE'
+core\views\laboratorio.py:2550:             orden.estado_pago = 'PENDIENTE'
+core\views\laboratorio.py:2738:             orden.estado_pago = 'PENDIENTE'
+core\views\laboratorio_reportes.py:52:             "CANDADO: intento de imprimir resultados con saldo pendiente — orden %s usuario %s",
+core\views\laboratorio_reportes.py:140:                 'mensaje': 'Saldo pendiente: no se genera PDF hasta liquidar la orden.',
+core\views\maquila.py:23:         # requiere_maquila=True  # Campo pendiente de agregar al modelo OrdenDeServicio.
+core\views\medico.py:984:                 estado='PENDIENTE',
+core\views\monitor_produccion.py:128:     'pendiente': {
+core\views\monitor_produccion.py:264:     # Solo órdenes de los últimos 7 días (evitar cargar todo el histórico)
+core\views\monitor_produccion.py:528:                     "PDF automático omitido: saldo pendiente en orden %s",
+core\views\onboarding.py:8: se revierte todo y NO quedan registros huérfanos en la DB.
+core\views\onboarding.py:64:         'nombre':     'Plan Enterprise (Todo incluido)',
+core\views\paciente_detalle.py:135:         # 6. AGREGAR TODO AL CONTEXTO
+core\views\paciente_detalle.py:282:                  'PENDIENTE' if orden.estado in ['PENDIENTE_PAGO', 'PAGADO'] else \
+core\views\paciente_detalle.py:323:             'color_badge': 'danger' if estado == 'CRITICO' else 'warning' if estado == 'PENDIENTE' else 'success',
+core\views\paciente_detalle.py:333:                  'PENDIENTE' if estudio.estado in ['BORRADOR'] else \
+core\views\pris_ia.py:272: - Eres proactivo: si el usuario dice "crea una orden", preguntas el paciente, los estudios, y lo haces todo.
+core\views\pris_ia.py:816:             estado__in=["PENDIENTE", "EN_REPARACION"]
+core\views\pris_ia.py:931:             estado__in=["PENDIENTE", "EN_REPARACION"]
+core\views\pris_ia.py:961:         return "Pendiente de confirmación del usuario"
+core\views\pris_ia.py:982:         return f"{resultado.get('total', 0)} orden(es) pendiente(s)"
+core\views\pris_ia.py:1141:             # Confirmación pendiente: registrar AccionPRIS PENDIENTE y detener ciclo
+core\views\pris_ia.py:1558:     """Confirma y ejecuta una AccionPRIS pendiente delegando en el motor del Jarvis."""
+core\views\pris_ia.py:1572:         # No confirmar en caso de fallo — la acción queda PENDIENTE para reintento o rechazo manual
+core\views\pris_ia.py:1575:             'error': 'La acción no pudo ejecutarse. Permanece pendiente.',
+core\views\pris_ia.py:1583:     """Rechaza una AccionPRIS pendiente."""
+core\views\pris_jarvis.py:4: Arquitectura Copiloto: PRIS procesa voz/texto → crea AccionPRIS (PENDIENTE)
+core\views\pris_jarvis.py:10:     2. Crea AccionPRIS con estado PENDIENTE y payload JSON
+core\views\pris_jarvis.py:55:     """Crea un registro AccionPRIS con estado PENDIENTE."""
+core\views\pris_jarvis.py:89:     Retorna payload + AccionPRIS PENDIENTE para confirmación en frontend.
+core\views\pris_jarvis.py:147:         'status': 'pendiente',
+core\views\pris_jarvis.py:216:         'status': 'pendiente',
+core\views\pris_jarvis.py:266:         'status': 'pendiente',
+core\views\pris_jarvis.py:321:         'status': 'pendiente',
+core\views\pris_jarvis.py:376:         'status': 'pendiente',
+core\views\pris_jarvis.py:446:     elif any(kw in consulta for kw in ('sin validar', 'pendiente', 'validar')):
+core\views\pris_jarvis.py:543:         'status': 'pendiente',
+core\views\pris_jarvis.py:659:         return JsonResponse({'status': 'error', 'mensaje': 'Acción no está pendiente'}, status=400)
+core\views\ranking.py:124:         'incidencias_pendientes': incidencias.filter(estado_revision='PENDIENTE').count(),
+core\views\reporte_friccion.py:141:                 estado='PENDIENTE',
+core\views\reporte_friccion.py:245:         estado='PENDIENTE'
+core\views\reporte_friccion.py:274:             estado='PENDIENTE'
+core\views\reportes_financieros.py:143:     # CatalogoCuenta y MovimientoContable no migrados aún (pendiente)
+core\views\voice.py:194:     # Verificación biométrica real via WebAuthn pendiente de integración con librería py_webauthn.
+farmacia\forms.py:47:             'placeholder': 'Ej: FACT-12345',
+farmacia\forms.py:69:             'placeholder': 'Notas adicionales sobre la compra...'
+farmacia\forms.py:98:             'data-placeholder': 'Buscar producto...'
+farmacia\forms.py:108:             'placeholder': 'Ej: Bayer, Pfizer, GENERICO',
+farmacia\forms.py:122:             'placeholder': '0.00'
+farmacia\forms.py:136:             'placeholder': '0.00'
+farmacia\forms.py:147:             'placeholder': 'Ej: LOTE-2026-001',
+farmacia\forms.py:214:             'placeholder': '0.00',
+farmacia\forms.py:231:             'placeholder': '0.00'
+farmacia\forms.py:246:             'placeholder': '0.00'
+farmacia\forms.py:258:             'placeholder': 'Ej: Hubo un reembolso de $50 que explica la diferencia...'
+farmacia\forms.py:362:             'placeholder': 'Describe detalladamente el motivo del ajuste...'
+farmacia\services\alertas.py:256:             estado='PENDIENTE'
+farmacia\views\__init__.py:462:         # Sin lote vigente = todo está vencido
+farmacia\views\__init__.py:649:                         # 2. CREAR MOVIMIENTO EN KARDEX (ESTO ACTUALIZA TODO)
+ia\forms.py:62:             'placeholder': 'Ejemplo: ¿Cómo se diagnostica la diabetes tipo 2?'
+ia\forms.py:73:             'placeholder': 'Paciente masculino, 45 años, diabético...'
+ia\views.py:426:     PLACEHOLDER: Se activará cuando se configuren las APIs.
+ia\views.py:471:     PLACEHOLDER: Se activará cuando se configuren las APIs.
+ia\views.py:630:     PLACEHOLDER: Se activará cuando se configuren las APIs.
+ia\views.py:653:     # Stub activo. Implementar con Gemini cuando se activen las APIs de IA clinica.
+ia\views.py:660:     PLACEHOLDER: Se activará cuando se configuren las APIs.
+ia\views.py:670:     # Stub activo. Implementar con Gemini cuando se activen las APIs de IA clinica.
+inventario\management\commands\auditar_bom_consumo_reactivo.py:4: Detecta concentración sospechosa en un mismo lims.Analito (p. ej. todo apuntando al PK 1
+inventario\models.py:329:         ('CUARENTENA', 'En Cuarentena (Pendiente de QC)'),
+inventario\models.py:861:     Flujo: BORRADOR → PENDIENTE → APROBADO → ENTREGADO
+inventario\models.py:868:         ('PENDIENTE', 'Pendiente de Aprobación'),
+inventario\models.py:982:         ('PENDIENTE_DIRECTOR',     'Pendiente de Aprobación del Director'),
+inventario\signals.py:361:                 pendiente = float(linea.cantidad_solicitada)
+inventario\signals.py:370:                     if pendiente <= 0:
+inventario\signals.py:372:                     a_dar = min(float(lote.cantidad_actual), pendiente)
+inventario\signals.py:375:                     pendiente -= a_dar
+inventario\signals.py:380:                 if pendiente > 0:
+inventario\signals.py:383:                         linea.insumo.nombre, instance.folio, pendiente
+inventario\views.py:334:             messages.success(request, f'Lote {lote.numero_lote} creado en CUARENTENA. Pendiente de liberación técnica (QC).')
+inventario\views_generales.py:4: Flujo: BORRADOR → PENDIENTE → APROBADO → ENTREGADO (con descuento automático FEFO)
+inventario\views_generales.py:47:         .filter(empresa=empresa, estado='PENDIENTE')
+inventario\views_generales.py:290:             vale.estado = 'PENDIENTE'
+inventario\views_generales.py:294:         elif accion == 'aprobar' and vale.estado == 'PENDIENTE':
+inventario\views_generales.py:301:         elif accion == 'rechazar' and vale.estado == 'PENDIENTE':
+inventario\views_generales.py:313:                     pendiente = float(linea.cantidad_solicitada) - float(linea.cantidad_entregada)
+inventario\views_generales.py:314:                     if pendiente <= 0:
+inventario\views_generales.py:323:                         if pendiente <= 0:
+inventario\views_generales.py:325:                         a_dar = min(float(lote.cantidad_actual), pendiente)
+inventario\views_generales.py:328:                         pendiente -= a_dar
+inventario\views_generales.py:333:                     if pendiente > 0:
+inventario\views_generales.py:334:                         errores.append(f'{linea.insumo.nombre}: faltaron {pendiente:.2f} unidades')
+iot\models.py:75:     Representa una verificación pendiente o completada en un kiosco.
+iot\models.py:77:     ESTADO_PENDIENTE = 'PENDIENTE'
+iot\models.py:82:         (ESTADO_PENDIENTE, 'Pendiente de Confirmación'),
+iot\views.py:76:             kiosco=kiosco, estado='PENDIENTE',
+iot\views.py:82:             kiosco=kiosco, estado='PENDIENTE'
+iot\views.py:101:         verificacion = VerificacionKiosco.objects.get(id=verificacion_id, estado='PENDIENTE')
+iot\views.py:116:         verificacion = VerificacionKiosco.objects.get(id=verificacion_id, estado='PENDIENTE')
+laboratorio\management\commands\simular_laboratorio_completo.py:5: - Diferentes estados de análisis (PENDIENTE, EN_PROCESO, VALIDADO)
+laboratorio\management\commands\simular_laboratorio_completo.py:221:                     # Dejar pendiente (sin resultados)
+laboratorio\management\commands\simular_laboratorio_completo.py:329:             self.stdout.write(f"   PENDIENTE: {pendientes_real} ({pendientes_real/total_ordenes_bd*100:.1f}%)")
+laboratorio\models.py:656:     """Control de calidad para Levey-Jennings (placeholder en app laboratorio)."""
+laboratorio\models.py:670:     """Envío a laboratorio externo (maquila) con guía de rastreo (placeholder)."""
+laboratorio\models.py:683:     """Bitácora de mantenimiento de equipos (placeholder)."""
+laboratorio\models.py:817:     ESTADO_ANALISIS_PENDIENTE = 'PENDIENTE'
+laboratorio\models.py:821:         (ESTADO_ANALISIS_PENDIENTE, 'Pendiente'),
+laboratorio\models.py:846:     IA_STATUS_PENDIENTE = 'PENDIENTE'
+laboratorio\models.py:850:         (IA_STATUS_PENDIENTE, 'Pendiente'),
+laboratorio\models.py:1444:     Principio: La verdad original nunca se pierde. Todo cambio es rastreado.
+laboratorio\models.py:1697:         ('RECIBIDO', 'Recibido — Pendiente mapeo'),
+laboratorio\models.py:1698:         ('MAPEADO', 'Mapeado — Pendiente QC'),
+laboratorio\models.py:1781:             ('PENDIENTE', 'Pendiente revisión QC'),
+laboratorio\models.py:1784:         default='PENDIENTE',
+laboratorio\services\escudo_clinico_lims.py:69:     medico = 'Pendiente — contactar médico tratante'
+laboratorio\services\unificacion.py:221:             estado_pago='PENDIENTE',
+laboratorio\views\__init__.py:106:                     estado_pago='PENDIENTE',
+laboratorio\views\imprimir_zpl.py:166:             estados_previos_ok = {'PENDIENTE_PAGO', 'PAGADO', 'EN_ESPERA', 'PENDIENTE'}
+logistica\models.py:28:     ESTATUS_PENDIENTE = "PENDIENTE"
+logistica\models.py:33:         (ESTATUS_PENDIENTE, "Pendiente"),
+middleware_local\agente_laboratorio.py:246:             # Cola de reintentos pendiente: usar celery.retry o persistir en tabla ResultadoHL7 con estado PENDIENTE_REINTENTO.
+middleware_local\agente_laboratorio.py:341:                         # Reinicio automático pendiente: llamar a _ejecutar_driver(equipo_config) tras registrar el fallo.
+middleware_local\drivers\norma_icon.py:188:         # Consumir todo lo que hay (el equipo suele cerrar conexión tras enviar + recibir ACK)
+pacientes\admin.py:68:             return format_html('<span class="badge bg-warning">⏸ Pendiente</span>')
+pacientes\admin.py:127:             'PENDIENTE': 'warning',
+pacientes\portal_models.py:89:     ESTADO_PENDIENTE = 'PENDIENTE'
+pacientes\portal_models.py:94:         (ESTADO_PENDIENTE, 'Pendiente'),
+recepcion\forms.py:36:             'nombres': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre(s)'}),
+recepcion\forms.py:37:             'apellido_paterno': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apellido Paterno'}),
+recepcion\forms.py:38:             'apellido_materno': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apellido Materno'}),
+recepcion\forms.py:41:             'telefono': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(55) 1234-5678'}),
+recepcion\forms.py:42:             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'email@ejemplo.com'}),
+recepcion\forms.py:68:             'motivo': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Motivo de la consulta'}),
+recepcion\views.py:38:     citas_pendientes = citas_hoy.filter(estado='PENDIENTE').count()
+recepcion\views.py:41:     proximas_citas = citas_hoy.filter(estado='PENDIENTE').order_by('hora_cita')[:5]
+recepcion\views.py:225:     pacientes_espera = qs.filter(estado__in=['PENDIENTE', 'CONFIRMADA', 'EN_SALA']).select_related('paciente', 'medico').order_by('hora_cita')
+reglas_negocio\validadores.py:63:         errores.append('❌ La orden no está pagada completamente. Saldo pendiente.')
+seguridad\models.py:90:     ESTADO_PENDIENTE = 'PENDIENTE'
+seguridad\models.py:95:         (ESTADO_PENDIENTE, 'Pendiente'),

@@ -1,0 +1,527 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cotización Flash - {{ empresa.nombre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* UI Móvil - Responsive para Tablets/Móviles */
+    .cotizacion-flash-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .cotizacion-flash-container {
+            padding: 0.5rem;
+        }
+    }
+    
+    .flash-card {
+        background: var(--bg-glass);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--shadow-glass);
+    }
+    
+    .flash-input {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1.1rem;
+        border: 2px solid #e0e0e0;
+        border-radius: var(--radius-md);
+        transition: all 0.3s ease;
+    }
+    
+    .flash-input:focus {
+        border-color: var(--empresa-color-primario, #D9230F);
+        box-shadow: 0 0 0 3px rgba(217, 35, 15, 0.1);
+        outline: none;
+    }
+    
+    .flash-btn {
+        width: 100%;
+        padding: 1.2rem;
+        font-size: 1.2rem;
+        font-weight: 700;
+        border-radius: var(--radius-md);
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 1050; /* Siempre visible sobre overlays/teclado */
+    }
+
+    /* Compatibilidad "btn-block" (Bootstrap 5) */
+    .btn-block {
+        display: block;
+        width: 100%;
+    }
+
+    .mb-20 {
+        margin-bottom: 20px !important;
+    }
+    
+    .flash-btn-whatsapp {
+        background: #25D366;
+        color: white;
+        border: none;
+    }
+    
+    .flash-btn-whatsapp:hover {
+        background: #20BA5A;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+    }
+    
+    .flash-btn-orden {
+        background: var(--empresa-color-primario, #D9230F);
+        color: white;
+        border: none;
+    }
+    
+    .flash-btn-orden:hover {
+        background: #B81D0C;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(217, 35, 15, 0.4);
+    }
+    
+    .total-neon {
+        font-size: 3rem;
+        font-weight: 900;
+        color: var(--empresa-color-primario, #D9230F);
+        text-align: center;
+        text-shadow: 0 0 20px rgba(217, 35, 15, 0.5);
+        animation: pulse-neon 2s infinite;
+    }
+    
+    @keyframes pulse-neon {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; }
+    }
+    
+    .estudio-item {
+        background: white;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        border-radius: var(--radius-md);
+        border-left: 4px solid var(--empresa-color-primario, #D9230F);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .autocomplete-dropdown {
+        position: absolute;
+        width: 100%;
+        max-height: 300px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: var(--radius-md);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        display: none;
+    }
+    
+    .autocomplete-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .autocomplete-item:hover {
+        background: #f8f9fa;
+    }
+    
+    .badge-perfil {
+        background: #17a2b8;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px; padding-bottom: 100px;">
+    <div class="cotizacion-flash-container">
+        <div class="text-center mb-4">
+            <h2>
+                <i class="bi bi-lightning-charge-fill"></i> Cotización Flash
+            </h2>
+            <p class="text-muted">Búsqueda rápida para tablets y móviles</p>
+        </div>
+
+        <!-- Paso 1: Selección de Paciente -->
+        <div class="flash-card">
+            <h5 class="mb-3"><i class="bi bi-person-badge"></i> Paciente</h5>
+            <div class="position-relative">
+                <input type="text" 
+                       id="input-buscar-paciente" 
+                       class="flash-input" 
+                       placeholder="Buscar o crear paciente..."
+                       autocomplete="off">
+                <div id="dropdown-pacientes" class="autocomplete-dropdown"></div>
+            </div>
+            <div id="paciente-seleccionado" class="mt-3" style="display: none;">
+                <div class="alert alert-info">
+                    <strong id="paciente-nombre"></strong><br>
+                    <small id="paciente-telefono"></small>
+                    <button class="btn btn-sm btn-outline-secondary float-end" onclick="limpiarPaciente()">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paso 2: Búsqueda de Estudios -->
+        <div class="flash-card">
+            <h5 class="mb-3"><i class="bi bi-search"></i> Buscar Estudios</h5>
+            <div class="position-relative">
+                <input type="text" 
+                       id="input-buscar-estudios" 
+                       class="flash-input" 
+                       placeholder="Escriba el nombre del estudio (ej: Biometría, Química General)..."
+                       autocomplete="off">
+                <div id="dropdown-estudios" class="autocomplete-dropdown"></div>
+            </div>
+            <div id="lista-estudios" class="mt-3"></div>
+        </div>
+
+        <!-- Paso 3: Total y Acciones -->
+        <div class="flash-card">
+            <h5 class="mb-3"><i class="bi bi-calculator"></i> Total</h5>
+            <div class="total-neon" id="total-cotizacion">$0.00</div>
+            
+            <div class="mt-4">
+                <button class="flash-btn flash-btn-whatsapp btn-block mb-20" id="btn-whatsapp" onclick="enviarWhatsApp()" disabled>
+                    <i class="bi bi-whatsapp"></i> Enviar por WhatsApp
+                </button>
+                <button class="flash-btn flash-btn-orden btn-block mb-20" id="btn-orden" onclick="convertirAOrden()" disabled>
+                    <i class="bi bi-arrow-right-circle"></i> Convertir a Orden
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let pacienteSeleccionado = null;
+let estudiosSeleccionados = [];
+let timeoutBuscarPaciente = null;
+let timeoutBuscarEstudios = null;
+
+// Buscar Paciente
+document.getElementById('input-buscar-paciente').addEventListener('input', function(e) {
+    clearTimeout(timeoutBuscarPaciente);
+    const query = e.target.value.trim();
+    
+    if (query.length < 2) {
+        document.getElementById('dropdown-pacientes').style.display = 'none';
+        return;
+    }
+    
+    timeoutBuscarPaciente = setTimeout(() => {
+        buscarPaciente(query);
+    }, 300);
+});
+
+function buscarPaciente(query) {
+    fetch('{% url "api_buscar_paciente_cotizacion" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ query: query })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            mostrarPacientes(data.pacientes);
+        }
+    });
+}
+
+function mostrarPacientes(pacientes) {
+    const dropdown = document.getElementById('dropdown-pacientes');
+    
+    if (pacientes.length === 0) {
+        dropdown.innerHTML = `
+            <div class="autocomplete-item" onclick="crearPacienteRapido()">
+                <i class="bi bi-plus-circle"></i> Crear paciente: "${document.getElementById('input-buscar-paciente').value}"
+            </div>
+        `;
+    } else {
+        dropdown.innerHTML = pacientes.map(p => `
+            <div class="autocomplete-item" onclick="seleccionarPaciente(${p.id}, '${p.nombre}', '${p.telefono || ''}')">
+                <strong>${p.nombre}</strong><br>
+                <small>${p.telefono || 'Sin teléfono'}</small>
+            </div>
+        `).join('');
+    }
+    
+    dropdown.style.display = 'block';
+}
+
+function seleccionarPaciente(id, nombre, telefono) {
+    pacienteSeleccionado = { id, nombre, telefono };
+    document.getElementById('paciente-nombre').textContent = nombre;
+    document.getElementById('paciente-telefono').textContent = telefono || 'Sin teléfono';
+    document.getElementById('paciente-seleccionado').style.display = 'block';
+    document.getElementById('dropdown-pacientes').style.display = 'none';
+    document.getElementById('input-buscar-paciente').value = '';
+    actualizarBotones();
+}
+
+function limpiarPaciente() {
+    pacienteSeleccionado = null;
+    document.getElementById('paciente-seleccionado').style.display = 'none';
+    actualizarBotones();
+}
+
+function crearPacienteRapido() {
+    const nombre = document.getElementById('input-buscar-paciente').value.trim();
+    Swal.fire({
+        title: 'Crear Paciente Rápido',
+        html: `
+            <input id="swal-nombre" class="swal2-input" placeholder="Nombre completo" value="${nombre}">
+            <input id="swal-telefono" class="swal2-input" placeholder="Teléfono">
+            <input id="swal-email" class="swal2-input" type="email" placeholder="Email (opcional)">
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Crear',
+        preConfirm: () => {
+            return {
+                nombre_completo: document.getElementById('swal-nombre').value,
+                telefono: document.getElementById('swal-telefono').value,
+                email: document.getElementById('swal-email').value
+            };
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('{% url "api_crear_paciente_rapido" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(result.value)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    seleccionarPaciente(
+                        data.paciente.id,
+                        data.paciente.nombre_completo || data.paciente.nombre,
+                        data.paciente.telefono
+                    );
+                    Swal.fire('¡Paciente creado!', '', 'success');
+                }
+            });
+        }
+    });
+}
+
+// Buscar Estudios
+document.getElementById('input-buscar-estudios').addEventListener('input', function(e) {
+    clearTimeout(timeoutBuscarEstudios);
+    const query = e.target.value.trim();
+    
+    if (query.length < 2) {
+        document.getElementById('dropdown-estudios').style.display = 'none';
+        return;
+    }
+    
+    timeoutBuscarEstudios = setTimeout(() => {
+        buscarEstudios(query);
+    }, 300);
+});
+
+function buscarEstudios(query) {
+    fetch('{% url "api_buscar_estudios_cotizacion" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ query: query })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            mostrarEstudios(data.estudios, data.perfiles);
+        }
+    });
+}
+
+function mostrarEstudios(estudios, perfiles) {
+    const dropdown = document.getElementById('dropdown-estudios');
+    let html = '';
+    
+    estudios.forEach(e => {
+        html += `
+            <div class="autocomplete-item" onclick="agregarEstudio(${e.id}, '${e.nombre.replace(/'/g, "\\'")}', ${e.precio}, 'estudio')">
+                <span class="badge bg-secondary me-1">${e.codigo || ''}</span>
+                <strong>${e.nombre}</strong> <span class="badge bg-primary">$${parseFloat(e.precio).toFixed(2)}</span><br>
+                <small>${e.seccion || ''}</small>
+            </div>
+        `;
+    });
+    
+    perfiles.forEach(p => {
+        html += `
+            <div class="autocomplete-item" onclick="agregarEstudio(${p.id}, '${p.nombre}', ${p.precio}, 'perfil')">
+                <strong>${p.nombre}</strong> <span class="badge-perfil">Perfil</span> <span class="badge bg-primary">$${p.precio.toFixed(2)}</span><br>
+                <small>${p.pruebas_incluidas} pruebas incluidas</small>
+            </div>
+        `;
+    });
+    
+    dropdown.innerHTML = html;
+    dropdown.style.display = 'block';
+}
+
+function agregarEstudio(id, nombre, precio, tipo) {
+    // Evitar duplicados
+    if (estudiosSeleccionados.some(e => e.id === id && e.tipo === tipo)) {
+        Swal.fire('Ya agregado', 'Este estudio ya está en la lista', 'info');
+        return;
+    }
+    
+    estudiosSeleccionados.push({
+        id: id,
+        nombre: nombre,
+        precio: precio,
+        tipo: tipo,
+        cantidad: 1
+    });
+    
+    actualizarListaEstudios();
+    document.getElementById('dropdown-estudios').style.display = 'none';
+    document.getElementById('input-buscar-estudios').value = '';
+}
+
+function actualizarListaEstudios() {
+    const lista = document.getElementById('lista-estudios');
+    
+    if (estudiosSeleccionados.length === 0) {
+        lista.innerHTML = '';
+        return;
+    }
+    
+    lista.innerHTML = estudiosSeleccionados.map((e, index) => `
+        <div class="estudio-item">
+            <div>
+                <strong>${e.nombre}</strong> ${e.tipo === 'perfil' ? '<span class="badge-perfil">Perfil</span>' : ''}<br>
+                <small>$${e.precio.toFixed(2)} x ${e.cantidad}</small>
+            </div>
+            <button class="btn btn-sm btn-danger" onclick="eliminarEstudio(${index})">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `).join('');
+    
+    calcularTotal();
+}
+
+function eliminarEstudio(index) {
+    estudiosSeleccionados.splice(index, 1);
+    actualizarListaEstudios();
+}
+
+function calcularTotal() {
+    const total = estudiosSeleccionados.reduce((sum, e) => sum + (e.precio * e.cantidad), 0);
+    document.getElementById('total-cotizacion').textContent = `$${total.toFixed(2)}`;
+    actualizarBotones();
+}
+
+function actualizarBotones() {
+    const puedeEnviar = pacienteSeleccionado && estudiosSeleccionados.length > 0;
+    document.getElementById('btn-whatsapp').disabled = !puedeEnviar;
+    document.getElementById('btn-orden').disabled = !puedeEnviar;
+}
+
+function enviarWhatsApp() {
+    if (!pacienteSeleccionado || estudiosSeleccionados.length === 0) {
+        Swal.fire('Error', 'Seleccione paciente y estudios', 'error');
+        return;
+    }
+    
+    const total = estudiosSeleccionados.reduce((sum, e) => sum + (e.precio * e.cantidad), 0);
+    
+    fetch('{% url "api_enviar_whatsapp_cotizacion" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            paciente_nombre: pacienteSeleccionado.nombre,
+            paciente_telefono: pacienteSeleccionado.telefono,
+            estudios: estudiosSeleccionados.map(e => ({
+                nombre: e.nombre,
+                precio: e.precio * e.cantidad
+            })),
+            total: total
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Abrir WhatsApp Web
+            window.open(data.enlace_whatsapp, '_blank');
+            Swal.fire('¡Enviado!', 'WhatsApp Web abierto', 'success');
+        } else {
+            Swal.fire('Error', data.mensaje, 'error');
+        }
+    });
+}
+
+function convertirAOrden() {
+    if (!pacienteSeleccionado || estudiosSeleccionados.length === 0) {
+        Swal.fire('Error', 'Seleccione paciente y estudios', 'error');
+        return;
+    }
+    
+    const estudiosIds = estudiosSeleccionados.filter(e => e.tipo === 'estudio').map(e => e.id);
+    const perfilesIds = estudiosSeleccionados.filter(e => e.tipo === 'perfil').map(e => e.id);
+    
+    fetch('{% url "convertir_cotizacion_orden" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            paciente_id: pacienteSeleccionado.id,
+            estudios_ids: estudiosIds,
+            perfiles_ids: perfilesIds
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            window.location.href = data.redirect_url;
+        } else {
+            Swal.fire('Error', data.mensaje, 'error');
+        }
+    });
+}
+
+// Cerrar dropdowns al hacer clic fuera
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#input-buscar-paciente') && !e.target.closest('#dropdown-pacientes')) {
+        document.getElementById('dropdown-pacientes').style.display = 'none';
+    }
+    if (!e.target.closest('#input-buscar-estudios') && !e.target.closest('#dropdown-estudios')) {
+        document.getElementById('dropdown-estudios').style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

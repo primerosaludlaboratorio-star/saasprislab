@@ -1,0 +1,116 @@
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+
+Found 38 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: channels, corsheaders, django_extensions, humanize, messages, pwa, staticfiles, storages
+  Apply all migrations: academia, admin, auth, bienestar, consultorio, contabilidad, contenttypes, core, farmacia, ia, inventario, iot, laboratorio, lims, logistica, mantenimiento, marketing, pacientes, reglas_negocio, seguridad, sessions
+Running pre-migrate handlers for application admin
+Running pre-migrate handlers for application auth
+Running pre-migrate handlers for application contenttypes
+Running pre-migrate handlers for application sessions
+Running pre-migrate handlers for application django_extensions
+Running pre-migrate handlers for application core
+Running pre-migrate handlers for application farmacia
+Running pre-migrate handlers for application pacientes
+Running pre-migrate handlers for application laboratorio
+Running pre-migrate handlers for application lims
+Running pre-migrate handlers for application seguridad
+Running pre-migrate handlers for application iot
+Running pre-migrate handlers for application ia
+Running pre-migrate handlers for application reglas_negocio
+Running pre-migrate handlers for application marketing
+Running pre-migrate handlers for application academia
+Running pre-migrate handlers for application recepcion
+Running pre-migrate handlers for application enfermeria
+Running pre-migrate handlers for application consultorio
+Running pre-migrate handlers for application logistica
+Running pre-migrate handlers for application inventario
+Running pre-migrate handlers for application mantenimiento
+Running pre-migrate handlers for application bienestar
+Running pre-migrate handlers for application contabilidad
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying lims.0001_initial... OK (0.046s)
+  Applying lims.0002_perfillims_id_perfil_legacy... OK (0.013s)
+  Applying lims.0003_lims_v75_costos_y_legacy... OK (0.081s)
+  Applying lims.0004_analito_formula_es_calculado... OK (0.051s)
+  Applying lims.0005_analito_codigo_rastreo_iso... OK (0.059s)
+  Applying lims.0006_escudo_clinico_v114... OK (0.060s)
+  Applying lims.0007_forense_acceso_cofepris... OK (0.088s)
+  Applying pacientes.0001_initial... OK (0.005s)
+  Applying consultorio.0001_initial... OK (0.012s)
+  Applying contenttypes.0001_initial... OK (0.004s)
+  Applying contenttypes.0002_remove_content_type_name... OK (0.023s)
+  Applying auth.0001_initial... OK (0.015s)
+  Applying auth.0002_alter_permission_name_max_length... OK (0.007s)
+  Applying auth.0003_alter_user_email_max_length... OK (0.007s)
+  Applying auth.0004_alter_user_username_opts... OK (0.007s)
+  Applying auth.0005_alter_user_last_login_null... OK (0.006s)
+  Applying auth.0006_require_contenttypes_0002... OK (0.001s)
+  Applying auth.0007_alter_validators_add_error_messages... OK (0.009s)
+  Applying auth.0008_alter_user_username_max_length... OK (0.006s)
+  Applying auth.0009_alter_user_last_name_max_length... OK (0.007s)
+  Applying auth.0010_alter_group_name_max_length... OK (0.008s)
+  Applying auth.0011_update_proxy_permissions... OK (0.024s)
+  Applying auth.0012_alter_user_first_name_max_length... OK (0.006s)
+  Applying core.0001_initial... OK (6.552s)
+  Applying laboratorio.0001_initial... OK (2.074s)
+  Applying laboratorio.0002_historialresultados_and_more... OK (0.397s)
+  Applying core.0002_agregar_campos_laboratorio... OK (0.828s)
+  Applying core.0003_migrar_datos_laboratorio...
+================================================================================
+MIGRACION FORENSE DE DATOS - LABORATORIO A CORE
+================================================================================
+Total de ordenes a procesar: 0
+
+
+================================================================================
+RESUMEN DE MIGRACI├ôN
+================================================================================
+Total procesadas: 0/0
+├ôrdenes actualizadas: 0
+├ôrdenes creadas (nuevas): 0
+================================================================================
+
+ OK (0.169s)
+  Applying core.0004_agregar_medico_origen_unificacion... OK (0.281s)
+  Applying core.0005_citamedica_signosvitales_historiaclinica_and_more... OK (1.168s)
+  Applying core.0006_estudioimagen_plantillaestudioimagen_and_more... OK (1.295s)
+  Applying core.0007_ordendeservicio_archivo_resultado_and_more... OK (0.363s)
+  Applying core.0008_actualizar_rutas_drive_bloque1... OK (0.576s)
+  Applying core.0009_add_movimiento_caja... OK (0.198s)
+  Applying core.0010_consultorio_isla_independiente... OK (0.286s)
+  Applying core.0011_add_pin_precio_neto... OK (0.106s)
+  Applying core.0012_pushsubscription... OK (0.203s)
+  Applying core.0013_paciente_uuid... OK (0.513s)
+  Applying core.0014_voiceauditlog... OK (0.234s)
+  Applying core.0015_mensajeinterno_audio_fields... OK (0.481s)
+  Applying core.0016_convenio_cuentaporcobrar_notacredito... OK (1.003s)
+  Applying core.0017_consentimientoinformado... OK (0.476s)
+  Applying core.0018_paciente_nombres_apellidos... OK (0.400s)
+  Applying core.0019_producto_stock_minimo... OK (0.137s)
+  Applying core.0020_medico_empresa_activo... OK (0.419s)
+  Applying core.0021_change_parametro_unique_to_abreviatura... OK (1.217s)
+  Applying core.0022_detalleventa_costo_unitario_momento... OK (0.046s)
+  Applying core.0023_orden_paciente_snapshot_ciclo5... OK (0.581s)
+  Applying core.0024_performance_indexes... OK (1.902s)
+  Applying core.0025_alter_venta_options_and_more... OK (4.116s)
+  Applying core.0026_signosvitales_nullable_optional... OK (1.278s)
+  Applying core.0027_clinical_data_protection... OK (6.283s)
+  Applying core.0028_bitacora_entrega_resultados... OK (0.205s)
+  Applying core.0029_notificacion_sistema... OK (0.201s)
+  Applying core.0030_nomina_periodo_recibo... OK (0.371s)
+  Applying core.0031_documentocapacitacion_capsulasabiduria_and_more... OK (1.955s)
+  Applying core.0032_remove_paciente_core_pacien_nombre__3dc2ec_idx_and_more... OK (0.460s)
+  Applying core.0033_remove_paciente_core_pacien_nombre__3dc2ec_idx_and_more... OK (0.369s)
+  Applying core.0034_estudio_venta_individual... OK (0.037s)
+  Applying core.0035_descuentos_inapam... OK (0.410s)
+  Applying core.0036_remove_estudio_aplica_descuento_inapam_and_more... OK (0.445s)
+  Applying core.0037_orden_empresa_fk... OK (0.179s)
+  Applying core.0038_usuario_mfa_activo_usuario_totp_secret_and_more... OK (1.834s)
+  Applying core.0039_add_lote_perf_indexes... OK (0.044s)
+  Applying core.0040_add_clinico_perf_indexes... OK (1.226s)
+  Applying core.0041_alter_historiaclinica_numero_expediente_and_more... OK (0.970s)
+  Applying consultorio.0002_initial...

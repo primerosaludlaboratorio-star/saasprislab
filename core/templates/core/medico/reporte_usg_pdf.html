@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: Arial, sans-serif; font-size: 11pt; margin: 2cm; color: #212529; }
+  h1 { font-size: 16pt; color: #0d6efd; margin-bottom: 4px; }
+  .empresa { font-size: 9pt; color: #6c757d; margin-bottom: 20px; }
+  .seccion { margin-bottom: 18px; }
+  .seccion h3 { font-size: 12pt; color: #0d6efd; border-bottom: 1px solid #dee2e6; padding-bottom: 4px; margin-bottom: 8px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .campo { margin-bottom: 6px; }
+  .label { font-weight: bold; font-size: 9pt; color: #6c757d; text-transform: uppercase; }
+  .valor { font-size: 11pt; }
+  .footer { margin-top: 40px; font-size: 8pt; color: #adb5bd; border-top: 1px solid #dee2e6; padding-top: 8px; }
+  @media print { body { margin: 1cm; } }
+</style>
+</head>
+<body>
+  <h1>Reporte de Ultrasonido</h1>
+  <div class="empresa">{{ empresa.nombre|default:"PRISLAB" }}</div>
+
+  <div class="seccion">
+    <h3>Datos del Paciente</h3>
+    <div class="grid">
+      <div class="campo"><div class="label">Paciente</div><div class="valor">{{ reporte.paciente }}</div></div>
+      <div class="campo"><div class="label">Médico</div><div class="valor">{{ reporte.medico|default:"–" }}</div></div>
+      <div class="campo"><div class="label">Tipo de estudio</div><div class="valor">{{ reporte.get_tipo_display }}</div></div>
+      <div class="campo"><div class="label">Fecha del estudio</div><div class="valor">{{ reporte.fecha_estudio|date:"d \d\e F \d\e Y H:i" }}</div></div>
+      {% if reporte.semanas_gestacion %}
+      <div class="campo"><div class="label">Semanas de gestación</div><div class="valor">{{ reporte.semanas_gestacion }} semanas</div></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="seccion">
+    <h3>Hallazgos</h3>
+    <p>{{ reporte.hallazgos }}</p>
+  </div>
+
+  <div class="seccion">
+    <h3>Conclusión / Diagnóstico</h3>
+    <p>{{ reporte.conclusion }}</p>
+  </div>
+
+  {% if reporte.recomendaciones %}
+  <div class="seccion">
+    <h3>Recomendaciones</h3>
+    <p>{{ reporte.recomendaciones }}</p>
+  </div>
+  {% endif %}
+
+  <div class="footer">
+    Reporte generado el {% now "d/m/Y H:i" %} por el sistema PRISLAB v5.0.
+    Estado: {{ reporte.get_estado_display }}.
+    Este documento es confidencial y de uso médico exclusivo.
+  </div>
+</body>
+</html>

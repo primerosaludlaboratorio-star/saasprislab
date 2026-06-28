@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}Lista de Triage{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h2><i class="fas fa-list"></i> Pacientes Pendientes de Triage</h2>
+    <div class="row">
+        {% for cita in pacientes %}
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5>{{ cita.paciente.nombre_completo }}</h5>
+                    <p class="mb-1"><i class="fas fa-clock"></i> {{ cita.hora_cita|time:"H:i" }}</p>
+                    <p class="mb-2">Dr. {{ cita.medico }}</p>
+                    <a href="{% url 'enfermeria:capturar_signos_vitales' cita.id %}" class="btn btn-primary">
+                        <i class="fas fa-heartbeat"></i> Capturar Signos
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center text-muted">No hay pacientes pendientes</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

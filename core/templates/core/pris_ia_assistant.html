@@ -1,0 +1,785 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}PRIS IA - Asistente{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ============================================================
+   PRIS IA ASSISTANT - Interfaz estilo Gemini
+   ============================================================ */
+:root {
+    --ia-bg: #131314;
+    --ia-surface: #1e1f20;
+    --ia-card: #282a2c;
+    --ia-text: #e3e3e3;
+    --ia-text-dim: #9aa0a6;
+    --ia-accent: #8ab4f8;
+    --ia-accent-glow: rgba(138, 180, 248, 0.3);
+    --ia-user-bg: #2b3245;
+    --ia-pris-bg: transparent;
+    --ia-green: #81c995;
+    --ia-red: #f28b82;
+    --ia-purple: #c58af9;
+}
+
+.pris-ia-wrapper {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 1060;
+    background: var(--ia-bg);
+    font-family: 'Google Sans', 'Segoe UI', Roboto, sans-serif;
+    color: var(--ia-text);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.ia-header {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+}
+.ia-header .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.ia-header .logo-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ia-accent), var(--ia-purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .9rem;
+}
+.ia-header h6 {
+    margin: 0;
+    font-weight: 500;
+    color: var(--ia-text);
+}
+.ia-header .subtitle {
+    font-size: .7rem;
+    color: var(--ia-text-dim);
+}
+.ia-header .btn-close-ia {
+    background: none;
+    border: none;
+    color: var(--ia-text-dim);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background .2s;
+}
+.ia-header .btn-close-ia:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* Conversation area */
+.ia-conversation {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* Welcome */
+.ia-welcome {
+    text-align: center;
+    padding: 60px 20px;
+}
+.ia-welcome .orb {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ia-accent), var(--ia-purple), var(--ia-green));
+    margin: 0 auto 24px;
+    animation: orb-breathe 4s ease-in-out infinite;
+}
+@keyframes orb-breathe {
+    0%, 100% { transform: scale(1); opacity: .8; }
+    50% { transform: scale(1.08); opacity: 1; }
+}
+.ia-welcome h3 {
+    font-weight: 400;
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+.ia-welcome p {
+    color: var(--ia-text-dim);
+    font-size: .95rem;
+    max-width: 400px;
+    margin: 0 auto;
+}
+.ia-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 24px;
+}
+.ia-suggestion {
+    padding: 8px 16px;
+    background: var(--ia-card);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    color: var(--ia-text-dim);
+    font-size: .85rem;
+    cursor: pointer;
+    transition: all .2s;
+}
+.ia-suggestion:hover {
+    border-color: var(--ia-accent);
+    color: var(--ia-accent);
+    background: rgba(138, 180, 248, 0.08);
+}
+
+/* Messages */
+.ia-msg {
+    margin-bottom: 24px;
+    animation: msg-in .3s ease;
+}
+@keyframes msg-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.ia-msg-user {
+    display: flex;
+    justify-content: flex-end;
+}
+.ia-msg-user .msg-content {
+    background: var(--ia-user-bg);
+    padding: 12px 18px;
+    border-radius: 20px 20px 4px 20px;
+    max-width: 80%;
+    line-height: 1.5;
+    font-size: .95rem;
+}
+.ia-msg-pris {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+.ia-msg-pris .pris-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ia-accent), var(--ia-purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .7rem;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+.ia-msg-pris .msg-content {
+    line-height: 1.6;
+    font-size: .95rem;
+    color: var(--ia-text);
+    max-width: 90%;
+}
+
+/* Thinking indicator */
+.ia-thinking {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 24px;
+}
+.ia-thinking .dots {
+    display: flex;
+    gap: 4px;
+}
+.ia-thinking .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ia-accent);
+    animation: think-bounce .6s ease-in-out infinite;
+}
+.ia-thinking .dot:nth-child(2) { animation-delay: .1s; }
+.ia-thinking .dot:nth-child(3) { animation-delay: .2s; }
+@keyframes think-bounce {
+    0%, 100% { opacity: .3; transform: translateY(0); }
+    50% { opacity: 1; transform: translateY(-4px); }
+}
+
+/* Input area */
+.ia-input-area {
+    padding: 16px 20px 24px;
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+    flex-shrink: 0;
+}
+.ia-input-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--ia-surface);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 28px;
+    padding: 4px 8px 4px 20px;
+    transition: border-color .2s;
+}
+.ia-input-container:focus-within {
+    border-color: var(--ia-accent);
+}
+.ia-input-container input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--ia-text);
+    font-size: .95rem;
+    padding: 10px 0;
+}
+.ia-input-container input::placeholder {
+    color: var(--ia-text-dim);
+}
+.ia-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .2s;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+.ia-btn-mic {
+    background: none;
+    color: var(--ia-text-dim);
+}
+.ia-btn-mic:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--ia-text);
+}
+.ia-btn-mic.listening {
+    background: var(--ia-red) !important;
+    color: #fff !important;
+    animation: mic-pulse 1.2s infinite;
+}
+@keyframes mic-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(242, 139, 130, 0.4); }
+    50% { box-shadow: 0 0 0 12px rgba(242, 139, 130, 0); }
+}
+.ia-btn-send {
+    background: var(--ia-accent);
+    color: var(--ia-bg);
+}
+.ia-btn-send:hover {
+    background: #aecbfa;
+}
+.ia-btn-send:disabled {
+    opacity: .3;
+    cursor: default;
+}
+
+/* Speaking indicator */
+.ia-speaking {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: rgba(138, 180, 248, 0.12);
+    border-radius: 16px;
+    font-size: .8rem;
+    color: var(--ia-accent);
+    margin-bottom: 8px;
+    width: fit-content;
+}
+.ia-speaking.active { display: inline-flex; }
+.ia-speaking .wave {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    height: 16px;
+}
+.ia-speaking .wave span {
+    display: block;
+    width: 3px;
+    height: 8px;
+    background: var(--ia-accent);
+    border-radius: 2px;
+    animation: wave-bar .8s ease-in-out infinite;
+}
+.ia-speaking .wave span:nth-child(2) { animation-delay: .1s; height: 14px; }
+.ia-speaking .wave span:nth-child(3) { animation-delay: .2s; }
+.ia-speaking .wave span:nth-child(4) { animation-delay: .3s; height: 12px; }
+@keyframes wave-bar {
+    0%, 100% { transform: scaleY(.5); }
+    50% { transform: scaleY(1.2); }
+}
+
+/* Recording banner */
+.ia-recording-banner {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px;
+    color: var(--ia-red);
+    font-size: .85rem;
+    font-weight: 500;
+}
+.ia-recording-banner.active { display: flex; }
+.ia-recording-banner .rec-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--ia-red);
+    animation: mic-pulse 1.2s infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .ia-conversation { padding: 12px; }
+    .ia-msg-user .msg-content { max-width: 90%; }
+    .ia-welcome { padding: 30px 16px; }
+    .ia-welcome h3 { font-size: 1.2rem; }
+    .ia-suggestions { gap: 6px; }
+    .ia-suggestion { font-size: .78rem; padding: 6px 12px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pris-ia-wrapper" id="prisIA">
+    <!-- Header -->
+    <div class="ia-header">
+        <div class="logo">
+            <div class="logo-icon"><i class="fas fa-brain"></i></div>
+            <div>
+                <h6>PRIS IA</h6>
+                <div class="subtitle">Asistente Inteligente de PRISLAB</div>
+            </div>
+        </div>
+        <button class="btn-close-ia" onclick="window.location.href='/'"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Conversation -->
+    <div class="ia-conversation" id="iaConversation">
+        <div class="ia-welcome" id="iaWelcome">
+            <div class="orb"></div>
+            <h3>Hola {{ request.user.first_name|default:request.user.username }}, soy PRIS</h3>
+            <p>Tu asistente de laboratorio clinico. Preguntame lo que necesites, por texto o por voz.</p>
+            <div class="ia-suggestions">
+                <div class="ia-suggestion" data-msg="necesito crear una orden de laboratorio">Crear orden de lab</div>
+                <div class="ia-suggestion" data-msg="busca al paciente García">Buscar paciente</div>
+                <div class="ia-suggestion" data-msg="dame los KPIs de hoy">KPIs del día</div>
+                <div class="ia-suggestion" data-msg="cuántas órdenes hay hoy?">Órdenes hoy</div>
+                <div class="ia-suggestion" data-msg="cotiza biometría hemática y química sanguínea">Cotizar estudios</div>
+                <div class="ia-suggestion" data-msg="cómo interpreto una hemoglobina de 10 g/dL?">Interpretar lab</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Speaking indicator -->
+    <div style="text-align:center;">
+        <div class="ia-speaking" id="iaSpeaking">
+            <div class="wave"><span></span><span></span><span></span><span></span></div>
+            PRIS esta hablando...
+            <button onclick="stopSpeaking()" style="background:none;border:none;color:var(--ia-accent);cursor:pointer;font-size:.8rem;"><i class="fas fa-stop"></i></button>
+        </div>
+    </div>
+
+    <!-- Recording banner -->
+    <div class="ia-recording-banner" id="iaRecBanner">
+        <div class="rec-dot"></div>
+        <span>Escuchando... <span id="iaRecTimer">0:00</span></span>
+    </div>
+
+    <!-- Input -->
+    <div class="ia-input-area">
+        <div id="iaImgPreviewWrapper" style="display:none;padding:6px 0 4px;">
+            <img id="iaImgPreview" src="" alt="imagen adjunta" style="max-height:100px;border-radius:8px;margin-bottom:4px;">
+            <button onclick="clearImgPreview()" style="background:rgba(242,139,130,.2);border:1px solid #f28b82;color:#f28b82;border-radius:8px;font-size:.75rem;padding:3px 10px;cursor:pointer;margin-left:8px;">
+                <i class="fas fa-times"></i> Quitar
+            </button>
+        </div>
+        <div class="ia-input-container">
+            <input type="text" id="iaInput" placeholder="Habla, escribe o adjunta imagen para OCR..." autocomplete="off">
+            <label for="iaFileInput" class="ia-btn ia-btn-mic" style="cursor:pointer;" title="Adjuntar imagen (OCR)">
+                <i class="fas fa-camera"></i>
+            </label>
+            <input type="file" id="iaFileInput" accept="image/*" capture="environment" style="display:none">
+            <button class="ia-btn ia-btn-mic" id="iaBtnMic" title="Hablar (Ctrl+Shift+M)"><i class="fas fa-microphone"></i></button>
+            <button class="ia-btn ia-btn-send" id="iaBtnSend" title="Enviar" disabled><i class="fas fa-arrow-up"></i></button>
+        </div>
+        <div style="text-align:center;font-size:.72rem;color:var(--ia-text-dim);margin-top:6px;">
+            PRIS-Jarvis v5.0 &nbsp;|&nbsp; Ctrl+Shift+M = micrófono &nbsp;|&nbsp; Acceso irrestricto con confirmación humana
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+    const CSRF = '{{ csrf_token }}';
+    let historial = [];  // {rol: 'user'|'model', texto: '...'}
+    let isProcessing = false;
+    let recognition = null;
+    let isListening = false;
+    let recTimer = null;
+    let recStart = null;
+    let synth = window.speechSynthesis;
+    let currentUtterance = null;
+
+    // DOM
+    const conversation = document.getElementById('iaConversation');
+    const welcome = document.getElementById('iaWelcome');
+    const input = document.getElementById('iaInput');
+    const btnSend = document.getElementById('iaBtnSend');
+    const btnMic = document.getElementById('iaBtnMic');
+    const speakingDiv = document.getElementById('iaSpeaking');
+    const recBanner = document.getElementById('iaRecBanner');
+    const recTimerSpan = document.getElementById('iaRecTimer');
+
+    // ============================================================
+    // SUGGESTIONS
+    // ============================================================
+    document.querySelectorAll('.ia-suggestion').forEach(el => {
+        el.addEventListener('click', () => {
+            const msg = el.dataset.msg;
+            input.value = msg;
+            sendMessage();
+        });
+    });
+
+    // ============================================================
+    // SEND MESSAGE
+    // ============================================================
+    function sendMessage(override) {
+        const text = (override || input.value).trim();
+        if (!text && !pendingImageB64) return;
+        if (isProcessing) return;
+
+        input.value = '';
+        btnSend.disabled = true;
+        isProcessing = true;
+
+        if (welcome) welcome.style.display = 'none';
+
+        appendMsg('user', text + (pendingImageB64 ? ' [imagen adjunta]' : ''));
+        historial.push({ rol: 'user', texto: text || 'analiza esta imagen' });
+
+        const thinkId = showThinking();
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+        const payload = {
+            mensaje: text || 'Analiza esta imagen y extrae los datos importantes.',
+            historial: historial.slice(-14),
+            contexto_pagina: window.location.pathname,
+        };
+        if (pendingImageB64) {
+            payload.imagen_b64 = pendingImageB64;
+            pendingImageB64 = '';
+            clearImgPreview();
+        }
+
+        fetch('/ia/asistente/chat/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+        })
+        .then(r => r.json())
+        .then(data => {
+            clearTimeout(timeoutId);
+            removeThinking(thinkId);
+            const respuesta = data.respuesta || data.mensaje || 'No obtuve respuesta.';
+            const tools = data.herramientas_ejecutadas || [];
+            appendMsg('pris', respuesta, tools);
+            historial.push({ rol: 'model', texto: respuesta });
+            speakText(respuesta);
+            isProcessing = false;
+        })
+        .catch(err => {
+            clearTimeout(timeoutId);
+            removeThinking(thinkId);
+            if (err.name === 'AbortError') {
+                appendMsg('pris', 'La consulta tardó demasiado. Intenta con una pregunta más corta.', []);
+            } else {
+                appendMsg('pris', 'Tuve un problema de conexión. Intenta de nuevo.', []);
+            }
+            isProcessing = false;
+            console.error('PRIS-IA error:', err);
+        });
+    }
+
+    btnSend.addEventListener('click', () => sendMessage());
+    input.addEventListener('keypress', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+    input.addEventListener('input', () => {
+        btnSend.disabled = !input.value.trim() && !pendingImageB64;
+    });
+
+    // ── Imagen adjunta ────────────────────────────────────────────────────
+    let pendingImageB64 = '';
+    const fileInput = document.getElementById('iaFileInput');
+    fileInput.addEventListener('change', function() {
+        const file = fileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            pendingImageB64 = e.target.result;
+            document.getElementById('iaImgPreview').src = pendingImageB64;
+            document.getElementById('iaImgPreviewWrapper').style.display = 'block';
+            btnSend.disabled = false;
+        };
+        reader.readAsDataURL(file);
+        fileInput.value = '';
+    });
+    window.clearImgPreview = function() {
+        pendingImageB64 = '';
+        document.getElementById('iaImgPreviewWrapper').style.display = 'none';
+        document.getElementById('iaImgPreview').src = '';
+        btnSend.disabled = !input.value.trim();
+    };
+
+    // ============================================================
+    // APPEND MESSAGES
+    // ============================================================
+    function appendMsg(role, text, tools) {
+        const div = document.createElement('div');
+        if (role === 'user') {
+            div.className = 'ia-msg ia-msg-user';
+            div.innerHTML = `<div class="msg-content">${escapeHtml(text)}</div>`;
+        } else {
+            // Tool badges
+            let toolsHtml = '';
+            if (tools && tools.length > 0) {
+                toolsHtml = `<div style="margin-bottom:8px;display:flex;flex-wrap:wrap;gap:4px;">` +
+                    tools.map(t => `<span style="background:rgba(138,180,248,.15);color:#8ab4f8;border-radius:10px;padding:2px 8px;font-size:.72rem;"><i class="fas fa-bolt" style="margin-right:3px;"></i>${t.herramienta}</span>`).join('') +
+                    `</div>`;
+            }
+            // Detectar si PRIS pide confirmación → agregar botones
+            let confirmHtml = '';
+            if (text.includes('Confirmas') || text.includes('confirmas') || (text.includes('sí') && text.includes('proceder'))) {
+                const id = 'icard-' + Date.now();
+                confirmHtml = `<div style="background:#1e2535;border:1px solid #4f6a9a;border-radius:12px;padding:12px;margin-top:10px;">
+                    <div style="font-size:.8rem;opacity:.7;margin-bottom:6px;">PRIS propone esta acción:</div>
+                    <div style="display:flex;gap:8px;margin-top:8px;">
+                        <button id="${id}-si" style="flex:1;background:#27ae60;border:none;color:#fff;padding:9px;border-radius:8px;font-weight:600;font-size:.85rem;cursor:pointer;">
+                            <i class="fas fa-check me-1"></i>Sí, confirmo
+                        </button>
+                        <button id="${id}-no" style="flex:1;background:rgba(242,139,130,.15);border:1px solid #f28b82;color:#f28b82;padding:9px;border-radius:8px;font-weight:600;font-size:.85rem;cursor:pointer;">
+                            <i class="fas fa-times me-1"></i>Cancelar
+                        </button>
+                    </div>
+                </div>`;
+                setTimeout(function() {
+                    const si = document.getElementById(id + '-si');
+                    const no = document.getElementById(id + '-no');
+                    if (si) si.addEventListener('click', function() {
+                        si.disabled = true; no.disabled = true;
+                        si.textContent = 'Confirmado...';
+                        input.value = 'sí, confirmo, procede';
+                        sendMessage();
+                    });
+                    if (no) no.addEventListener('click', function() {
+                        si.disabled = true; no.disabled = true;
+                        no.textContent = 'Cancelado';
+                        appendMsg('user', 'No, cancela la operación.');
+                        historial.push({rol:'user', texto:'No, cancela la operación.'});
+                        appendMsg('pris', 'Entendido, operación cancelada. ¿En qué más te ayudo?', []);
+                    });
+                }, 100);
+            }
+            div.className = 'ia-msg ia-msg-pris';
+            div.innerHTML = `
+                <div class="pris-avatar"><i class="fas fa-brain"></i></div>
+                <div class="msg-content">${toolsHtml}${escapeHtml(text)}${confirmHtml}</div>`;
+        }
+        conversation.appendChild(div);
+        conversation.scrollTop = conversation.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML.replace(/\n/g, '<br>');
+    }
+
+    function showThinking() {
+        const id = 'think-' + Date.now();
+        const div = document.createElement('div');
+        div.className = 'ia-thinking';
+        div.id = id;
+        div.innerHTML = `
+            <div class="pris-avatar" style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--ia-accent),var(--ia-purple));display:flex;align-items:center;justify-content:center;font-size:.7rem;flex-shrink:0;">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                <span id="${id}-label" style="font-size:.75rem;color:#9aa0a6;font-style:italic;">PRIS esta pensando...</span>
+            </div>`;
+        conversation.appendChild(div);
+        conversation.scrollTop = conversation.scrollHeight;
+        // Mensajes progresivos para que el usuario sepa que no se colgó
+        const msgs = [
+            'PRIS esta pensando...',
+            'Consultando la inteligencia artificial...',
+            'Analizando tu pregunta...',
+            'Casi listo, un momento...',
+            'Preparando respuesta...',
+        ];
+        let step = 0;
+        div._thinkTimer = setInterval(() => {
+            step++;
+            const label = document.getElementById(id + '-label');
+            if (label && step < msgs.length) label.textContent = msgs[step];
+        }, 1500);
+        return id;
+    }
+
+    function removeThinking(id) {
+        const el = document.getElementById(id);
+        if (el) {
+            if (el._thinkTimer) clearInterval(el._thinkTimer);
+            el.remove();
+        }
+    }
+
+    // ============================================================
+    // SPEECH SYNTHESIS (PRIS habla)
+    // ============================================================
+    function speakText(text) {
+        if (!synth) return;
+        synth.cancel();  // Cancelar cualquier habla anterior
+
+        currentUtterance = new SpeechSynthesisUtterance(text);
+        currentUtterance.lang = 'es-MX';
+        currentUtterance.rate = 1.05;
+        currentUtterance.pitch = 1.0;
+
+        // Buscar voz en espanol
+        const voices = synth.getVoices();
+        const esVoice = voices.find(v => v.lang.startsWith('es') && v.name.includes('female'))
+            || voices.find(v => v.lang.startsWith('es-MX'))
+            || voices.find(v => v.lang.startsWith('es'));
+        if (esVoice) currentUtterance.voice = esVoice;
+
+        currentUtterance.onstart = () => speakingDiv.classList.add('active');
+        currentUtterance.onend = () => speakingDiv.classList.remove('active');
+        currentUtterance.onerror = () => speakingDiv.classList.remove('active');
+
+        synth.speak(currentUtterance);
+    }
+
+    window.stopSpeaking = function() {
+        if (synth) synth.cancel();
+        speakingDiv.classList.remove('active');
+    };
+
+    // Pre-cargar voces
+    if (synth) {
+        synth.getVoices();
+        synth.onvoiceschanged = () => synth.getVoices();
+    }
+
+    // ============================================================
+    // SPEECH RECOGNITION (usuario habla)
+    // ============================================================
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRec) {
+        recognition = new SpeechRec();
+        recognition.lang = 'es-MX';
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+            isListening = true;
+            btnMic.classList.add('listening');
+            recBanner.classList.add('active');
+            recStart = Date.now();
+            recTimer = setInterval(() => {
+                const s = Math.floor((Date.now() - recStart) / 1000);
+                recTimerSpan.textContent = Math.floor(s/60) + ':' + (s%60).toString().padStart(2,'0');
+            }, 500);
+        };
+
+        recognition.onresult = (e) => {
+            let transcript = '';
+            for (let i = 0; i < e.results.length; i++) {
+                transcript = e.results[i][0].transcript;
+            }
+            input.value = transcript;
+            btnSend.disabled = !transcript.trim();
+
+            // Si es resultado final, enviar automaticamente
+            if (e.results[e.results.length - 1].isFinal) {
+                setTimeout(() => {
+                    if (input.value.trim()) sendMessage();
+                }, 300);
+            }
+        };
+
+        recognition.onerror = (e) => {
+            console.error('Speech error:', e.error);
+            stopListening();
+            if (e.error === 'not-allowed') {
+                appendMsg('pris', 'Necesito permisos de microfono para escucharte. Habilitalos en la configuracion del navegador.');
+            }
+        };
+
+        recognition.onend = () => stopListening();
+    }
+
+    function startListening() {
+        if (!recognition || isListening || isProcessing) return;
+        // Stop speaking if PRIS is talking
+        if (synth) synth.cancel();
+        speakingDiv.classList.remove('active');
+        try { recognition.start(); } catch(e) { console.error(e); }
+    }
+
+    function stopListening() {
+        isListening = false;
+        btnMic.classList.remove('listening');
+        recBanner.classList.remove('active');
+        if (recTimer) { clearInterval(recTimer); recTimer = null; }
+        try { if (recognition) recognition.stop(); } catch(e) {}
+    }
+
+    btnMic.addEventListener('click', () => {
+        if (isListening) {
+            stopListening();
+            // Enviar lo que se haya transcrito
+            if (input.value.trim()) setTimeout(sendMessage, 200);
+        } else {
+            startListening();
+        }
+    });
+
+    // ============================================================
+    // KEYBOARD SHORTCUT: Space bar to start listening when input empty
+    // ============================================================
+    document.addEventListener('keydown', (e) => {
+        // Ctrl+Shift+M = toggle mic
+        if (e.ctrlKey && e.shiftKey && e.key === 'M') {
+            e.preventDefault();
+            if (isListening) stopListening();
+            else startListening();
+        }
+    });
+
+})();
+</script>
+{% endblock %}

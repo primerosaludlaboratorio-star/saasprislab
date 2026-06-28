@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Perfiles LIMS{% endblock %}
+{% block extra_css %}
+<style>
+body { background: #f4f6f9; }
+.lims-header { background: linear-gradient(135deg, #154360 0%, #1f618d 100%); }
+.table-lims th { background: #1f618d; color: #fff; position: sticky; top: 0; z-index: 5; }
+.table-lims td { vertical-align: middle; font-size: 0.9rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top:70px;">
+  <div class="lims-header rounded-3 p-4 mb-3 text-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <h3 class="m-0 fw-bold"><i class="fas fa-layer-group me-2"></i>Ventana B — Perfiles LIMS</h3>
+      <small class="opacity-75">Nivel 2 · Lista compacta · <span id="lims-perf-total">{{ total }}</span> perfiles · visibles: <span id="lims-perf-vis">{{ total }}</span></small>
+    </div>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <input type="search" id="lims-perf-filtro" class="form-control form-control-sm" style="min-width:220px;"
+             placeholder="Filtrar por nombre o código…" autocomplete="off" aria-label="Buscar perfil">
+      <a href="{% url 'lims_perfil_nuevo' %}" class="btn btn-success btn-sm">
+        <i class="fas fa-plus me-1"></i>Nuevo Perfil
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive" style="max-height: calc(100vh - 220px);">
+      <table class="table table-hover table-sm table-lims mb-0" id="tabla-perfiles-lims">
+        <thead>
+          <tr>
+            <th style="width:18%">Código / legacy</th>
+            <th>Nombre</th>
+            <th style="width:28%">Descripción</th>
+            <th style="width:8%" class="text-center">Analitos</th>
+            <th style="width:10%" class="text-center">Estado</th>
+            <th style="width:12%"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for perfil in perfiles %}
+          <tr class="lims-fila-perfil"
+              data-busqueda="{{ perfil.nombre|default:''|escape }} {{ perfil.id_perfil_legacy|default:''|escape }} {{ perfil.id_examen_legacy|default:''|escape }}">
+            <td><code class="small text-break">{{ perfil.id_perfil_legacy|default:"—" }}</code></td>
+            <td class="fw-semibold">{{ perfil.nombre }}</td>
+            <td><small class="text-muted">{{ perfil.descripcion|default:"—"|truncatechars:90 }}</small></td>
+            <td class="text-center"><span class="badge bg-primary">{{ perfil.num_analitos }}</span></td>
+            <td class="text-center">
+              {% if perfil.activo %}<span class="badge bg-success">Activo</span>{% else %}<span class="badge bg-danger">Inactivo</span>{% endif %}
+            </td>
+            <td>
+              <a href="{% url 'lims_perfil_detalle' perfil.pk %}" class="btn btn-sm btn-outline-primary py-0">
+                <i class="fas fa-edit"></i> Composición
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center py-5 text-muted">
+              <i class="fas fa-layer-group fa-2x opacity-25 d-block mb-2"></i>
+              No hay perfiles creados aún.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function() {
+  var inp = document.getElementById('lims-perf-filtro');
+  var vis = document.getElementById('lims-perf-vis');
+  if (!inp || !vis) return;
+  var filas = document.querySelectorAll('tr.lims-fila-perfil');
+  function aplicar() {
+    var q = inp.value.trim().toLowerCase();
+    var n = 0;
+    filas.forEach(function(tr) {
+      var hay = !q || (tr.getAttribute('data-busqueda') || '').toLowerCase().indexOf(q) !== -1;
+      tr.style.display = hay ? '' : 'none';
+      if (hay) n++;
+    });
+    vis.textContent = String(n);
+  }
+  inp.addEventListener('input', aplicar);
+  inp.addEventListener('search', aplicar);
+})();
+</script>
+{% endblock %}

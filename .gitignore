@@ -1,0 +1,172 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+.venv-gate/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media
+/staticfiles
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Secrets and keys
+secrets.json
+credentials.json
+credentials/
+credentials/*.json
+service-account-key.json
+service-account*.json
+*.pem
+*.key
+gdrive_credentials.json
+env_produccion.txt
+*.env.production
+*.prod.env
+*_credentials.json
+*_secret.json
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# QA/Audit reports (generated locally, not needed in production)
+*_REPORT.md
+!docs/audit/GUARDIAN_360_REPORT.md
+*_REPORTE.md
+AUDITORIA_*.md
+CICLO*_*.md
+QA_*.md
+REPORTE_*.md
+!docs/audit/REPORTE_PERIMETRO_SEGURIDAD_Y_CIERRE_v75.md
+PENDIENTES_*.md
+GUIA_OPERACIONES_*.md
+INFRASTRUCTURE_*.md
+LABORATORIO_QA_*.md
+MODEL_INTEGRITY_*.md
+
+# Temporary test/fix scripts (root only, not __init__.py)
+/_*.py
+
+# Cursor IDE (.cursorignore versionado para que otras herramientas / IDE puedan leerlo)
+.cursorignore
+!.cursorignore
+.cursor/
+
+# Temporary debug/deploy artifacts
+debug_*.html
+deploy_logs*.json
+diag_logs.json
+temp_*.json
+urls_check.txt
+test_PDF_*.pdf
+test_screenshots*/
+
+# Node (auditorías E2E / tooling local)
+node_modules/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Google Cloud
+.gcloudignore
+app.yaml.local
+
+# --- PRISLAB v7.5: bitacora docs/audit/ (versionar siempre; acceso IDE/Git/Cascade) ---
+# No agregar regla "docs/" sin "!docs/audit/" o se bloqueara la bitacora maestra.
+# (Actualmente docs/ no esta ignorado; esta nota es preventiva.)
+
+# IMPORTANT: DO NOT IGNORE THESE FILES FOR DEPLOYMENT
+!tarifas.csv
+!inventario.csv
+!Productos-farmacia-2026-02-10-10-31.csv
+!inventario_prislab.xlsx
+
+# Auditorias y capturas automaticas (generadas por scripts, no son codigo)
+auditoria_e2e_*/
+auditoria_ui_*/
+capturas_auditoria_*/
+diagnostico_*/
+diagnostico_omni_*/
+diagnostico_pdv_*/
+test_pris_ai_*/
+verificacion_pdv_*/
+REPORTE_OMNI_QA.md
+REPORTE_GEMINI_PRIME.md
+
+# Screenshots y capturas individuales en la raiz
+/*.png
+/*.webp
+/*.jpg
+
+# Logs y reportes generados automaticamente
+auditoria_estudios_*.txt
+e2e_run_*.txt
+e2e_verify_*.txt
+*_run1.txt
+*_run2.txt
+reporte_*.json
+v2_report.json
+e2e_360_reporte.json
+test_output*.txt
+test_boost*.txt
+
+# Artefactos manuales / deploy temporales
+prislab_deploy_payload.zip
+temp_create_admin_remote.py
+screenshots_e2e/
+
+# HTML de inspeccion temporales
+inspeccion_*.html
+manual_*.html
+login_*.html
+v3_test*.html
+tools/last_runs/
+tools/last_suite*.json
+diagnostico_omni_*/

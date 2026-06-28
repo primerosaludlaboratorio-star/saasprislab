@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2"></i>{{ titulo }}</h5>
+    <a href="{% url 'inventario:crear_insumo_general' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>Nuevo Artículo
+    </a>
+  </div>
+  <form class="row g-2 mb-3">
+    <div class="col-sm-5"><input type="text" name="q" value="{{ q }}" placeholder="Buscar…" class="form-control form-control-sm"></div>
+    <div class="col-sm-4">
+      <select name="categoria" class="form-select form-select-sm">
+        <option value="">— Todas las categorías —</option>
+        {% for val, lbl in categoria_choices %}
+        <option value="{{ val }}" {% if cat == val %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-sm-3"><button class="btn btn-sm btn-secondary w-100">Filtrar</button></div>
+  </form>
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-dark">
+            <tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Área</th>
+            <th class="text-end">Stock</th><th class="text-end">Mín.</th><th class="text-center">Acciones</th></tr>
+          </thead>
+          <tbody>
+            {% for i in insumos %}
+            <tr>
+              <td><code>{{ i.codigo_interno }}</code></td>
+              <td>{{ i.nombre }}</td>
+              <td><span class="badge bg-secondary">{{ i.get_categoria_display }}</span></td>
+              <td class="text-muted small">{{ i.area_principal }}</td>
+              <td class="text-end fw-semibold {% if i.stock_total == 0 %}text-danger{% elif i.stock_total <= i.stock_minimo %}text-warning{% else %}text-success{% endif %}">
+                {{ i.stock_total|floatformat:1 }} {{ i.unidad_medida }}
+              </td>
+              <td class="text-end text-muted">{{ i.stock_minimo }}</td>
+              <td class="text-center">
+                <a href="{% url 'inventario:editar_insumo_general' i.pk %}" class="btn btn-sm btn-outline-primary py-0 px-2"><i class="bi bi-pencil"></i></a>
+                <a href="{% url 'inventario:crear_lote_general' %}?insumo={{ i.pk }}" class="btn btn-sm btn-outline-success py-0 px-2"><i class="bi bi-plus"></i></a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-4">Sin artículos. <a href="{% url 'inventario:crear_insumo_general' %}">Crear</a>.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

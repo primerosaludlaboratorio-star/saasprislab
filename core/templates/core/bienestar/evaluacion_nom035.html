@@ -1,0 +1,62 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% block title %}Evaluacion NOM-035 - PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,rgba(39,174,96,.2),rgba(46,204,113,.1));display:flex;align-items:center;justify-content:center;">
+      <i class="fas fa-clipboard-check" style="color:#27ae60;font-size:1.2rem;"></i>
+    </div>
+    <div>
+      <h1 class="mb-0" style="font-size:1.5rem;font-weight:700;color:#d4d9e8;">Evaluación NOM-035</h1>
+      <p class="mb-0" style="color:#7a8099;font-size:.85rem;">Cuestionario de factores de riesgo psicosocial — Periodo {{ periodo }}</p>
+    </div>
+  </div>
+  {% if ya_completo %}
+  <div class="alert" style="background:rgba(39,174,96,.12);border:1px solid rgba(39,174,96,.3);border-radius:12px;color:#2ecc71;">
+    <i class="fas fa-check-circle me-2"></i> Ya completaste la evaluación de este periodo.
+  </div>
+  {% else %}
+  <form method="post" class="bienestar-card">
+    {% csrf_token %}
+    {% for item in cuestionario %}
+    <div class="mb-3 p-3" style="background:rgba(255,255,255,.03);border-radius:10px;border:1px solid rgba(255,255,255,.06);">
+      <label class="form-label text-white-50" style="font-size:.8rem;font-weight:600;letter-spacing:.05em;">{{ item.categoria|upper }}</label>
+      <p class="mb-2" style="color:#d4d9e8;">{{ forloop.counter }}. {{ item.texto }}</p>
+      <div class="d-flex gap-2">
+        {% for v in "12345" %}
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="item_{{ item.id }}" value="{{ v }}" id="item{{ item.id }}_{{ v }}" {% if v == "3" %}checked{% endif %}>
+          <label class="form-check-label" style="color:#7a8099;" for="item{{ item.id }}_{{ v }}">{{ v }}</label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn-pris-confirmar mt-3">
+      <i class="fas fa-paper-plane me-2"></i> Enviar Evaluación
+    </button>
+  </form>
+  {% endif %}
+  {% if evaluaciones_previas %}
+  <div class="mt-4">
+    <h5 style="color:#d4d9e8;">Historial de Evaluaciones</h5>
+    <div class="tabla-resultados-lims">
+      <table class="table table-dark table-sm mb-0">
+        <thead><tr><th>Periodo</th><th>Score</th><th>Nivel de Riesgo</th><th>Estado</th></tr></thead>
+        <tbody>
+        {% for ev in evaluaciones_previas %}
+        <tr>
+          <td>{{ ev.periodo }}</td>
+          <td>{{ ev.score_total }}</td>
+          <td>{{ ev.get_nivel_riesgo_display }}</td>
+          <td>{% if ev.completada %}<span class="badge-normal">Completa</span>{% else %}<span class="badge-bajo">Incompleta</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

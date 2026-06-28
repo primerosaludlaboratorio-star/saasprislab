@@ -1,0 +1,74 @@
+Operations to perform:
+  Synchronize unmigrated apps: channels, corsheaders, django_extensions, humanize, messages, pwa, staticfiles, storages
+  Apply all migrations: academia, admin, auth, bienestar, consultorio, contabilidad, contenttypes, core, farmacia, ia, inventario, iot, laboratorio, lims, logistica, mantenimiento, marketing, pacientes, reglas_negocio, seguridad, sessions
+Running pre-migrate handlers for application admin
+Running pre-migrate handlers for application auth
+Running pre-migrate handlers for application contenttypes
+Running pre-migrate handlers for application sessions
+Running pre-migrate handlers for application django_extensions
+Running pre-migrate handlers for application core
+Running pre-migrate handlers for application farmacia
+Running pre-migrate handlers for application pacientes
+Running pre-migrate handlers for application laboratorio
+Running pre-migrate handlers for application lims
+Running pre-migrate handlers for application seguridad
+Running pre-migrate handlers for application iot
+Running pre-migrate handlers for application ia
+Running pre-migrate handlers for application reglas_negocio
+Running pre-migrate handlers for application marketing
+Running pre-migrate handlers for application academia
+Running pre-migrate handlers for application recepcion
+Running pre-migrate handlers for application enfermeria
+Running pre-migrate handlers for application consultorio
+Running pre-migrate handlers for application logistica
+Running pre-migrate handlers for application inventario
+Running pre-migrate handlers for application mantenimiento
+Running pre-migrate handlers for application bienestar
+Running pre-migrate handlers for application contabilidad
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contabilidad.0011_facturacfdi_empresa_not_null... OK (0.686s)
+  Applying contabilidad.0012_catalogo_cuentas_polizas... OK (2.827s)
+  Applying iot.0005_kiosco_empresa... OK (0.696s)
+  Applying mantenimiento.0005_fix_ticket_nullable_fields... OK (1.201s)
+Running post-migrate handlers for application admin
+Running post-migrate handlers for application auth
+Running post-migrate handlers for application contenttypes
+Running post-migrate handlers for application sessions
+Running post-migrate handlers for application django_extensions
+Running post-migrate handlers for application core
+Running post-migrate handlers for application farmacia
+Running post-migrate handlers for application pacientes
+Running post-migrate handlers for application laboratorio
+Running post-migrate handlers for application lims
+Running post-migrate handlers for application seguridad
+Running post-migrate handlers for application iot
+Running post-migrate handlers for application ia
+Running post-migrate handlers for application reglas_negocio
+Running post-migrate handlers for application marketing
+Running post-migrate handlers for application academia
+Running post-migrate handlers for application recepcion
+Running post-migrate handlers for application enfermeria
+Running post-migrate handlers for application consultorio
+Running post-migrate handlers for application logistica
+Running post-migrate handlers for application inventario
+Running post-migrate handlers for application mantenimiento
+Running post-migrate handlers for application bienestar
+Running post-migrate handlers for application contabilidad
+Adding content type 'contabilidad | cuentacontable'
+Adding content type 'contabilidad | poliza'
+Adding content type 'contabilidad | asientocontable'
+Adding permission 'Permission object (1004)'
+Adding permission 'Permission object (1005)'
+Adding permission 'Permission object (1006)'
+Adding permission 'Permission object (1007)'
+Adding permission 'Permission object (1008)'
+Adding permission 'Permission object (1009)'
+Adding permission 'Permission object (1010)'
+Adding permission 'Permission object (1011)'
+Adding permission 'Permission object (1012)'
+Adding permission 'Permission object (1013)'
+Adding permission 'Permission object (1014)'
+Adding permission 'Permission object (1015)'

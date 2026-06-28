@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}Control de Asistencia — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-user-clock text-primary me-2"></i>Control de Asistencia</h2>
+      <small class="text-muted">{{ hoy|date:"l d \d\e F \d\e Y" }}</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'registro_asistencia' %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-list me-1"></i>Ver registros
+      </a>
+      <a href="{% url 'horarios_trabajo' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-calendar-alt me-1"></i>Horarios
+      </a>
+      <a href="{% url 'incidencias_asistencia' %}" class="btn btn-outline-warning btn-sm">
+        <i class="fas fa-exclamation-triangle me-1"></i>Incidencias
+      </a>
+    </div>
+  </div>
+
+  <!-- KPIs del día -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="display-5 fw-bold text-success">{{ asistencias_hoy }}</div>
+          <div class="text-muted small">Asistencias hoy</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="display-5 fw-bold text-danger">{{ faltas_hoy }}</div>
+          <div class="text-muted small">Ausencias hoy</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="display-5 fw-bold text-warning">{{ incidencias_pendientes|length }}</div>
+          <div class="text-muted small">Incidencias pendientes</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <a href="{% url 'registrar_entrada_salida' %}" class="btn btn-success btn-lg w-100">
+            <i class="fas fa-fingerprint me-1"></i>Registrar
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Registros recientes -->
+    <div class="col-md-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-semibold">
+          <i class="fas fa-history text-primary me-2"></i>Registros recientes
+        </div>
+        <div class="card-body p-0">
+          {% if registros_recientes %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light">
+                <tr><th>Empleado</th><th>Tipo</th><th>Fecha/Hora</th><th>Método</th></tr>
+              </thead>
+              <tbody>
+                {% for r in registros_recientes %}
+                <tr>
+                  <td>{{ r.empleado.usuario.get_full_name|default:r.empleado.usuario.username }}</td>
+                  <td>
+                    {% if r.tipo_registro == 'ENTRADA' %}
+                      <span class="badge bg-success">Entrada</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Salida</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ r.fecha_hora|date:"d/m H:i" }}</td>
+                  <td><span class="text-muted small">{{ r.metodo_registro|default:"–" }}</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="fas fa-user-clock fa-2x mb-2"></i><br>Sin registros hoy
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-footer bg-white text-end">
+          <a href="{% url 'registro_asistencia' %}" class="btn btn-outline-primary btn-sm">Ver todos</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Incidencias pendientes -->
+    <div class="col-md-5">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-semibold">
+          <i class="fas fa-exclamation-circle text-warning me-2"></i>Incidencias pendientes
+        </div>
+        <div class="card-body p-0">
+          {% if incidencias_pendientes %}
+          <ul class="list-group list-group-flush">
+            {% for inc in incidencias_pendientes %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-semibold small">{{ inc.empleado.usuario.get_full_name }}</div>
+                <div class="text-muted" style="font-size:.75rem">{{ inc.get_tipo_display }} · {{ inc.fecha_inicio|date:"d/m/Y" }}</div>
+              </div>
+              <form method="post" action="{% url 'autorizar_incidencia' inc.id %}" class="d-flex gap-1">
+                {% csrf_token %}
+                <button name="accion" value="AUTORIZADA" class="btn btn-success btn-sm">✓</button>
+                <button name="accion" value="RECHAZADA"  class="btn btn-danger btn-sm">✗</button>
+              </form>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <div class="text-center py-4 text-muted">
+            <i class="fas fa-check-circle fa-2x text-success mb-2"></i><br>Sin incidencias pendientes
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-footer bg-white text-end">
+          <a href="{% url 'crear_incidencia' %}" class="btn btn-warning btn-sm">+ Nueva incidencia</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

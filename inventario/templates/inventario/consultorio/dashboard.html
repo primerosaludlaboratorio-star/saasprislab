@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Inventario Consultorio — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="bi bi-bandaid me-2 text-danger"></i>{{ titulo }}</h4>
+      <small class="text-muted">Gasas · Jeringas · EPP · Soluciones</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'inventario:registrar_salida_consultorio' %}" class="btn btn-danger btn-sm">
+        <i class="bi bi-arrow-down-circle me-1"></i>Registrar Consumo
+      </a>
+      <a href="{% url 'inventario:crear_lote_consultorio' %}" class="btn btn-outline-success btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>Nuevo Lote
+      </a>
+      <a href="{% url 'inventario:crear_insumo_consultorio' %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-clipboard-plus me-1"></i>Nuevo Insumo
+      </a>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="fs-2 fw-bold text-primary">{{ total_insumos }}</div>
+          <div class="text-muted small">Insumos en catálogo</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card border-0 shadow-sm h-100 {% if criticos %}border-danger{% endif %}">
+        <div class="card-body text-center">
+          <div class="fs-2 fw-bold text-danger">{{ criticos|length }}</div>
+          <div class="text-muted small">Stock crítico / agotado</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card border-0 shadow-sm h-100 {% if por_caducar %}border-warning{% endif %}">
+        <div class="card-body text-center">
+          <div class="fs-2 fw-bold text-warning">{{ por_caducar|length }}</div>
+          <div class="text-muted small">Lotes por caducar (30 d)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Stock Crítico -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-danger text-white py-2">
+          <i class="bi bi-exclamation-triangle me-1"></i>Stock Crítico
+        </div>
+        <div class="card-body p-0">
+          {% if criticos %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light"><tr><th>Insumo</th><th>Tipo</th><th class="text-end">Stock</th><th class="text-end">Mín.</th></tr></thead>
+              <tbody>
+                {% for i in criticos %}
+                <tr>
+                  <td><a href="{% url 'inventario:editar_insumo_consultorio' i.pk %}">{{ i.nombre }}</a></td>
+                  <td><span class="badge bg-secondary">{{ i.get_tipo_display }}</span></td>
+                  <td class="text-end {% if i.stock_total == 0 %}text-danger fw-bold{% else %}text-warning{% endif %}">{{ i.stock_total }}</td>
+                  <td class="text-end text-muted">{{ i.stock_minimo }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center text-success py-4"><i class="bi bi-check-circle fs-3"></i><br>Sin alertas de stock</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Por caducar -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-warning text-dark py-2">
+          <i class="bi bi-clock me-1"></i>Por Caducar (próximos 30 días)
+        </div>
+        <div class="card-body p-0">
+          {% if por_caducar %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light"><tr><th>Insumo</th><th>Lote</th><th>Caducidad</th><th class="text-end">Disponible</th></tr></thead>
+              <tbody>
+                {% for l in por_caducar %}
+                <tr>
+                  <td>{{ l.insumo.nombre }}</td>
+                  <td>{{ l.numero_lote|default:"S/L" }}</td>
+                  <td>{{ l.fecha_caducidad|date:"d/m/Y" }}</td>
+                  <td class="text-end text-warning fw-semibold">{{ l.cantidad_actual }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center text-success py-4"><i class="bi bi-check-circle fs-3"></i><br>Sin lotes próximos a caducar</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Últimos consumos -->
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light py-2 d-flex justify-content-between">
+          <span><i class="bi bi-arrow-down-circle me-1"></i>Últimos Consumos Registrados</span>
+          <a href="{% url 'inventario:lista_salidas_consultorio' %}" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light"><tr><th>Fecha</th><th>Insumo</th><th>Motivo</th><th class="text-end">Cantidad</th><th>Registró</th></tr></thead>
+              <tbody>
+                {% for s in ultimas_salidas %}
+                <tr>
+                  <td>{{ s.fecha|date:"d/m H:i" }}</td>
+                  <td>{{ s.lote.insumo.nombre }}</td>
+                  <td>{{ s.motivo|truncatechars:40 }}</td>
+                  <td class="text-end">{{ s.cantidad }}</td>
+                  <td>{{ s.registrado_por.get_full_name|default:s.registrado_por.username }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-3">Sin consumos registrados</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

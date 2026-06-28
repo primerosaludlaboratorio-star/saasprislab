@@ -1,0 +1,45 @@
+Creating test database for alias 'default'...
+
+Found 52 test(s).
+
+================================================================================
+MIGRACION FORENSE DE DATOS - LABORATORIO A CORE
+================================================================================
+Total de ordenes a procesar: 0
+
+
+================================================================================
+RESUMEN DE MIGRACIËN
+================================================================================
+Total procesadas: 0/0
+Ërdenes actualizadas: 0
+Ërdenes creadas (nuevas): 0
+================================================================================
+
+System check identified no issues (0 silenced).
+.............WARNING Acceso denegado por rol. Usuario: cajero_cxc_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+.WARNING Acceso denegado por rol. Usuario: cajero_cxc_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+.WARNING Acceso denegado por rol. Usuario: cajero_cxc_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+.WARNING Acceso denegado por rol. Usuario: cajero_cxc_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+..WARNING Acceso denegado por rol. Usuario: cajero_cxc_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+..WARNING Acceso denegado por rol. Usuario: cajero_role_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+..WARNING Acceso denegado por rol. Usuario: cajero_role_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+.WARNING [CAJA-v1.14] Venta #1: empresa sin sucursales; no se puede crear MovimientoCaja (sucursal_id NOT NULL).
+WARNING MovimientoCaja omitido: empresa sin sucursal venta_id=1 empresa_id=1
+......WARNING [CAJA-v1.14] Venta #1: empresa sin sucursales; no se puede crear MovimientoCaja (sucursal_id NOT NULL).
+WARNING MovimientoCaja omitido: empresa sin sucursal venta_id=1 empresa_id=1
+.WARNING [CAJA-v1.14] Venta #1: empresa sin sucursales; no se puede crear MovimientoCaja (sucursal_id NOT NULL).
+WARNING MovimientoCaja omitido: empresa sin sucursal venta_id=1 empresa_id=1
+............WARNING {"event": "PRISLAB_PERF_THRESHOLD", "http_method": "POST", "http_path": "/director/analizadores/probar-conexion/", "http_status": 200, "elapsed_ms": 3008.61, "query_count": 1, "threshold_queries": 50, "threshold_latency_ms": 800, "user": "dir_conn"}
+WARNING [SLOW] POST /director/analizadores/probar-conexion/ \u2192 200 | 3009ms | queries=1 | User: dir_conn
+WARNING SENTINEL LATENCY: POST /director/analizadores/probar-conexion/ tardo 3.01s (slow #1)
+...WARNING [CAJA-v1.14] Venta #1: empresa sin sucursales; no se puede crear MovimientoCaja (sucursal_id NOT NULL).
+WARNING MovimientoCaja omitido: empresa sin sucursal venta_id=1 empresa_id=1
+..WARNING Timbrado concurrente: lock nowait rechazado factura_id=1 empresa=1
+..s..
+----------------------------------------------------------------------
+Ran 52 tests in 94.571s
+
+OK (skipped=1)
+Destroying test database for alias 'default'...
+

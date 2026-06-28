@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Base de Contactos - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-address-book text-info"></i> Base de Contactos</h2>
+            <p class="text-muted">Gestión de contactos para campañas</p>
+        </div>
+        <div class="col-md-4 text-right">
+            <a href="{% url 'marketing:importar_contactos' %}" class="btn btn-success">
+                <i class="fas fa-file-import"></i> Importar
+            </a>
+            <a href="#" class="btn btn-info">
+                <i class="fas fa-plus"></i> Nuevo Contacto
+            </a>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <input type="text" class="form-control" placeholder="Buscar por nombre, email o teléfono..." id="searchContactos">
+        </div>
+        <div class="col-md-6">
+            <select class="form-control" id="filterSegmento">
+                <option value="">Todos los segmentos</option>
+                <option value="pacientes">Pacientes</option>
+                <option value="medicos">Médicos</option>
+                <option value="empresas">Empresas</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-users"></i> Todos los Contactos ({{ total_contactos }})
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAll"></th>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                    <th>Teléfono</th>
+                                    <th>Segmento</th>
+                                    <th>Última Campaña</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for contacto in contactos %}
+                                <tr>
+                                    <td><input type="checkbox" class="contact-select"></td>
+                                    <td><strong>{{ contacto.nombre }}</strong></td>
+                                    <td>{{ contacto.email }}</td>
+                                    <td>{{ contacto.telefono }}</td>
+                                    <td><span class="badge badge-secondary">{{ contacto.segmento }}</span></td>
+                                    <td>{{ contacto.ultima_campana|date:"d/m/Y"|default:"N/A" }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary" onclick="editarContacto({{ contacto.id }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-5">
+                                        <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                                        No hay contactos registrados.<br>
+                                        <a href="{% url 'marketing:importar_contactos' %}" class="btn btn-success mt-3">Importar Contactos</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

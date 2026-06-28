@@ -1,0 +1,60 @@
+{% extends 'core/base_public.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Auto-Facturación de Pacientes</h2>
+    <p>Por favor, ingresa los datos fiscales para el ticket: <b>{{ ticket_id }}</b></p>
+    <form id="autofacturaForm">
+        <input type="hidden" id="ticket" name="ticket" value="{{ ticket_id }}">
+        <div class="mb-3">
+            <label>RFC</label>
+            <input type="text" class="form-control" id="rfc" required>
+        </div>
+        <div class="mb-3">
+            <label>Razón Social</label>
+            <input type="text" class="form-control" id="razon_social" required>
+        </div>
+        <div class="mb-3">
+            <label>Código Postal</label>
+            <input type="text" class="form-control" id="cp" required>
+        </div>
+        <div class="mb-3">
+            <label>Régimen Fiscal (ej. 616)</label>
+            <input type="text" class="form-control" id="regimen" required>
+        </div>
+        <div class="mb-3">
+            <label>Uso CFDI (ej. S01)</label>
+            <input type="text" class="form-control" id="uso" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Generar Factura</button>
+    </form>
+    <div id="resultado" class="mt-3"></div>
+</div>
+
+<script>
+document.getElementById('autofacturaForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const data = {
+        ticket: document.getElementById('ticket').value,
+        rfc: document.getElementById('rfc').value,
+        razon_social: document.getElementById('razon_social').value,
+        cp: document.getElementById('cp').value,
+        regimen: document.getElementById('regimen').value,
+        uso: document.getElementById('uso').value
+    };
+    
+    fetch('/contabilidad/api/autofactura/generar/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.error) {
+            document.getElementById('resultado').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+        } else {
+            document.getElementById('resultado').innerHTML = `<div class="alert alert-success">${data.mensaje}</div>`;
+        }
+    });
+});
+</script>
+{% endblock %}

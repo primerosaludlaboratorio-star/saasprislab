@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}🔒 Torre de Control - PRISLAB Master{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: #0a0e27;
+        color: #fff;
+    }
+    
+    .master-container {
+        min-height: 100vh;
+        padding: 2rem 0;
+        background: linear-gradient(135deg, #0a0e27 0%, #1a1d3a 100%);
+    }
+    
+    .header-master {
+        text-align: center;
+        padding: 2rem 0;
+        border-bottom: 2px solid #00d4ff;
+        margin-bottom: 2rem;
+    }
+    
+    .header-master h1 {
+        font-size: 3rem;
+        font-weight: bold;
+        color: #00d4ff;
+        text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        margin-bottom: 0.5rem;
+    }
+    
+    .header-master .subtitle {
+        color: #ff006e;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+    
+    .seccion-privada {
+        background: linear-gradient(135deg, #ff006e 0%, #8338ec 100%);
+        border: 3px solid #00d4ff;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+        position: relative;
+    }
+    
+    .seccion-privada::before {
+        content: "🔒 ACCESO RESTRINGIDO";
+        position: absolute;
+        top: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #0a0e27;
+        padding: 0.5rem 1.5rem;
+        border: 2px solid #00d4ff;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: #00d4ff;
+    }
+    
+    .kpi-master {
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .kpi-master-value {
+        font-size: 3rem;
+        font-weight: bold;
+        margin: 0;
+    }
+    
+    .kpi-master-label {
+        font-size: 1rem;
+        opacity: 0.8;
+        margin-top: 0.5rem;
+    }
+    
+    .utilidad-positiva {
+        color: #00ff88;
+    }
+    
+    .utilidad-negativa {
+        color: #ff006e;
+    }
+    
+    .seccion-operativa {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .comparativa-areas {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+    
+    .area-card {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        padding: 1.5rem;
+        border-left: 4px solid #00d4ff;
+    }
+    
+    .area-card.farmacia {
+        border-left-color: #ff006e;
+    }
+    
+    .area-card h4 {
+        margin-bottom: 1rem;
+        color: #00d4ff;
+    }
+    
+    .area-card.farmacia h4 {
+        color: #ff006e;
+    }
+    
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .stat-row:last-child {
+        border-bottom: none;
+        font-weight: bold;
+        color: #00ff88;
+    }
+    
+    .variacion-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: bold;
+    }
+    
+    .variacion-positiva-badge {
+        background: rgba(0, 255, 136, 0.2);
+        color: #00ff88;
+        border: 1px solid #00ff88;
+    }
+    
+    .variacion-negativa-badge {
+        background: rgba(255, 0, 110, 0.2);
+        color: #ff006e;
+        border: 1px solid #ff006e;
+    }
+    
+    .proyeccion-box {
+        background: rgba(0, 212, 255, 0.1);
+        border: 2px dashed #00d4ff;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+        text-align: center;
+    }
+    
+    .audit-footer {
+        text-align: center;
+        padding: 1rem;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.9rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="master-container">
+    <div class="container">
+        <div class="header-master">
+            <h1>
+                <i class="bi bi-shield-lock-fill"></i> TORRE DE CONTROL
+            </h1>
+            <p class="subtitle">PRISLAB Master Dashboard - God Mode</p>
+            <small style="color: rgba(255,255,255,0.6);">
+                Sesión: {{ usuario_corte }} | {{ fecha_corte|date:"d/m/Y H:i:s" }}
+            </small>
+        </div>
+        
+        <!-- ============================================================ -->
+        <!-- SECCIÓN PRIVADA: LA VERDAD ABSOLUTA DEL NEGOCIO -->
+        <!-- ============================================================ -->
+        {% if request.user.is_superuser %}
+        <div class="seccion-privada">
+            <h2 class="text-center mb-4" style="color: white; margin-top: 1rem;">
+                RENTABILIDAD REAL
+            </h2>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="kpi-master">
+                        <p class="kpi-master-value" style="color: #00d4ff;">
+                            ${{ ingreso_total|floatformat:2 }}
+                        </p>
+                        <p class="kpi-master-label">Ingreso Total</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-master">
+                        <p class="kpi-master-value" style="color: #ff006e;">
+                            ${{ costo_total|floatformat:2 }}
+                        </p>
+                        <p class="kpi-master-label">Costo Total</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-master">
+                        <p class="kpi-master-value" style="color: #ffd60a;">
+                            ${{ devoluciones|floatformat:2 }}
+                        </p>
+                        <p class="kpi-master-label">Devoluciones</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-master">
+                        <p class="kpi-master-value {% if utilidad_neta >= 0 %}utilidad-positiva{% else %}utilidad-negativa{% endif %}">
+                            ${{ utilidad_neta|floatformat:2 }}
+                        </p>
+                        <p class="kpi-master-label">
+                            UTILIDAD NETA<br>
+                            <small>({{ margen_utilidad|floatformat:1 }}% margen)</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PROYECCIÓN -->
+            <div class="proyeccion-box">
+                <h5 style="color: #00d4ff; margin-bottom: 1rem;">
+                    <i class="bi bi-graph-up-arrow"></i> Proyección vs Ayer
+                </h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <p class="mb-1"><strong>Utilidad Ayer:</strong></p>
+                        <p class="h4">${{ utilidad_ayer|floatformat:2 }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1"><strong>Variación:</strong></p>
+                        <p class="h4 {% if variacion_utilidad >= 0 %}utilidad-positiva{% else %}utilidad-negativa{% endif %}">
+                            {% if variacion_utilidad >= 0 %}+{% endif %}${{ variacion_utilidad|floatformat:2 }}
+                        </p>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1"><strong>% Cambio:</strong></p>
+                        <p class="h4">
+                            <span class="{% if variacion_porcentaje >= 0 %}variacion-positiva-badge{% else %}variacion-negativa-badge{% endif %}">
+                                {% if variacion_porcentaje >= 0 %}+{% endif %}{{ variacion_porcentaje|floatformat:1 }}%
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- ============================================================ -->
+        <!-- SECCIÓN OPERATIVA: COMPARATIVA DE RENDIMIENTO -->
+        <!-- ============================================================ -->
+        <div class="seccion-operativa">
+            <h3 class="text-center mb-4" style="color: #00d4ff;">
+                <i class="bi bi-pie-chart-fill"></i> Rendimiento por Área
+            </h3>
+            
+            <div class="comparativa-areas">
+                <!-- LABORATORIO -->
+                <div class="area-card">
+                    <h4>
+                        <i class="bi bi-hospital"></i> LABORATORIO
+                    </h4>
+                    <div class="stat-row">
+                        <span>Ingresos:</span>
+                        <span>${{ lab_ingresos|floatformat:2 }}</span>
+                    </div>
+                    {% if request.user.is_superuser %}
+                    <div class="stat-row">
+                        <span>Costos:</span>
+                        <span>${{ lab_costos|floatformat:2 }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Utilidad:</span>
+                        <span class="{% if lab_utilidad >= 0 %}utilidad-positiva{% else %}utilidad-negativa{% endif %}">
+                            ${{ lab_utilidad|floatformat:2 }}
+                        </span>
+                    </div>
+                    {% endif %}
+                    <hr style="border-color: rgba(255,255,255,0.2);">
+                    <div class="stat-row">
+                        <span><i class="bi bi-people"></i> Pacientes:</span>
+                        <span>{{ pacientes_lab }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span><i class="bi bi-check-circle"></i> Completadas:</span>
+                        <span>{{ ordenes_completadas }}</span>
+                    </div>
+                </div>
+                
+                <!-- FARMACIA -->
+                <div class="area-card farmacia">
+                    <h4>
+                        <i class="bi bi-capsule"></i> FARMACIA
+                    </h4>
+                    <div class="stat-row">
+                        <span>Ingresos:</span>
+                        <span>${{ farmacia_ingresos|floatformat:2 }}</span>
+                    </div>
+                    {% if request.user.is_superuser %}
+                    <div class="stat-row">
+                        <span>Costos:</span>
+                        <span>${{ farmacia_costos|floatformat:2 }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Utilidad:</span>
+                        <span class="{% if farmacia_utilidad >= 0 %}utilidad-positiva{% else %}utilidad-negativa{% endif %}">
+                            ${{ farmacia_utilidad|floatformat:2 }}
+                        </span>
+                    </div>
+                    {% endif %}
+                    <hr style="border-color: rgba(255,255,255,0.2);">
+                    <div class="stat-row">
+                        <span><i class="bi bi-people"></i> Clientes:</span>
+                        <span>{{ clientes_farmacia }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-light btn-lg">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+        
+        <div class="audit-footer">
+            <i class="bi bi-eye-fill"></i> Acceso registrado en log de auditoría<br>
+            Sistema PRISLAB v5.0 - Arquitectura Financiera Segregada
+        </div>
+    </div>
+</div>
+{% endblock %}

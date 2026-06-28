@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Caja Laboratorio - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .caja-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    
+    .caja-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .kpi-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .kpi-card.humanista {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .kpi-value {
+        font-size: 3rem;
+        font-weight: bold;
+        margin: 0;
+    }
+    
+    .kpi-label {
+        font-size: 1rem;
+        opacity: 0.9;
+        margin-top: 0.5rem;
+    }
+    
+    .comparativa {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-top: 1rem;
+    }
+    
+    .variacion-positiva {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .variacion-negativa {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .header-operativo {
+        text-align: center;
+        color: white;
+        margin-bottom: 2rem;
+    }
+    
+    .header-operativo h1 {
+        font-size: 2.5rem;
+        font-weight: bold;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .estudios-top {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .estudios-top li {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background: #f8f9fa;
+        border-left: 4px solid #667eea;
+        border-radius: 5px;
+        display: flex;
+        justify-content: space-between;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="caja-container">
+    <div class="container">
+        <div class="header-operativo">
+            <h1>
+                <i class="bi bi-hospital"></i> CAJA LABORATORIO
+            </h1>
+            <p class="lead">Vista Operativa - {{ sucursal }}</p>
+            <small>Corte: {{ fecha_corte|date:"d/m/Y H:i" }} | Operador: {{ usuario_corte }}</small>
+        </div>
+        
+        <!-- KPIs HUMANISTAS -->
+        <div class="row">
+            <div class="col-md-4">
+                <div class="kpi-card humanista">
+                    <p class="kpi-value">{{ pacientes_atendidos }}</p>
+                    <p class="kpi-label">
+                        <i class="bi bi-people-fill"></i> Pacientes Atendidos
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kpi-card humanista">
+                    <p class="kpi-value">{{ ordenes_completadas }}</p>
+                    <p class="kpi-label">
+                        <i class="bi bi-check-circle-fill"></i> Órdenes Completadas
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kpi-card humanista">
+                    <p class="kpi-value">{{ ordenes_pendientes }}</p>
+                    <p class="kpi-label">
+                        <i class="bi bi-hourglass-split"></i> Órdenes Pendientes
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- INGRESOS DEL DÍA -->
+        <div class="caja-card">
+            <h3 class="text-center mb-4">
+                <i class="bi bi-cash-stack"></i> Ingresos del Día
+            </h3>
+            <div class="kpi-card">
+                <p class="kpi-value">${{ ingresos_dia|floatformat:2 }}</p>
+                <p class="kpi-label">MXN</p>
+            </div>
+            
+            <div class="comparativa">
+                <span>Comparativa con Ayer:</span>
+                <span class="{% if variacion_ingreso >= 0 %}variacion-positiva{% else %}variacion-negativa{% endif %}">
+                    {% if variacion_ingreso >= 0 %}
+                        <i class="bi bi-arrow-up-circle"></i> +${{ variacion_ingreso|floatformat:2 }}
+                    {% else %}
+                        <i class="bi bi-arrow-down-circle"></i> ${{ variacion_ingreso|floatformat:2 }}
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        
+        <!-- ESTUDIOS MÁS SOLICITADOS -->
+        <div class="caja-card">
+            <h4 class="mb-3">
+                <i class="bi bi-bar-chart-fill"></i> Estudios Más Solicitados
+            </h4>
+            <ul class="estudios-top">
+                {% for estudio in estudios_top %}
+                <li>
+                    <span>{{ estudio.estudio__nombre }}</span>
+                    <span class="badge bg-primary">{{ estudio.cantidad }}</span>
+                </li>
+                {% empty %}
+                <li class="text-center text-muted">No hay datos disponibles</li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{% url 'dashboard' %}" class="btn btn-light btn-lg">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

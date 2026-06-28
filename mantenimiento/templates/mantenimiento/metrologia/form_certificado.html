@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3" style="max-width:720px">
+  <h5 class="fw-bold mb-3"><i class="bi bi-shield-check me-2"></i>{{ titulo }}</h5>
+
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+
+        {% if not expediente %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Equipo *</label>
+          <select name="expediente" class="form-select" required>
+            <option value="">— Seleccionar equipo —</option>
+            {% for exp in expedientes %}
+            <option value="{{ exp.pk }}">{{ exp.equipo.nombre }} ({{ exp.empresa.nombre }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% else %}
+        <input type="hidden" name="expediente" value="{{ expediente.pk }}">
+        <div class="alert alert-info py-2 small mb-3">
+          <i class="bi bi-info-circle me-1"></i>
+          Equipo: <strong>{{ expediente.equipo.nombre }}</strong>
+        </div>
+        {% endif %}
+
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold">Tipo de Certificado *</label>
+            <select name="tipo" class="form-select" required>
+              {% for val, lbl in tipo_choices %}
+              <option value="{{ val }}">{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold">N° / Folio del Certificado</label>
+            <input type="text" name="numero_certificado" class="form-control" placeholder="Ej: CAL-2026-001">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Laboratorio / Entidad Emisora</label>
+            <input type="text" name="laboratorio_emisor" class="form-control" placeholder="Nombre del laboratorio acreditado">
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold">Fecha de Emisión *</label>
+            <input type="date" name="fecha_emision" class="form-control" required>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold">Fecha de Vencimiento *</label>
+            <input type="date" name="fecha_vencimiento" class="form-control" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Archivo PDF del Certificado</label>
+            <input type="file" name="archivo_pdf" accept=".pdf" class="form-control">
+            <div class="form-text">Formato PDF. Quedará en el repositorio legal de la empresa.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Observaciones</label>
+            <textarea name="observaciones" rows="2" class="form-control"></textarea>
+          </div>
+        </div>
+
+      </div>
+      <div class="card-footer d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-save me-1"></i>Guardar Certificado
+        </button>
+        <a href="{% url 'mantenimiento:lista_certificados' %}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

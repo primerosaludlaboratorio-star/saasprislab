@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ curso.titulo }} - Academia{% endblock %}
+
+{% block extra_css %}
+<style>
+    .academia-layout {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        gap: 1rem;
+    }
+    @media (max-width: 992px) {
+        .academia-layout { grid-template-columns: 1fr; }
+    }
+    .video-item {
+        cursor: pointer;
+        border-left: 4px solid transparent;
+        transition: all .15s ease;
+    }
+    .video-item.active {
+        background: #eff6ff;
+        border-left-color: #2563eb;
+    }
+    .player-shell {
+        background: #111827;
+        color: #fff;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+    .player-stage {
+        position: relative;
+        aspect-ratio: 16 / 9;
+        background: #000;
+    }
+    .player-watermark {
+        position: absolute;
+        z-index: 2;
+        pointer-events: none;
+        font-size: .75rem;
+        font-weight: 600;
+        color: rgba(255,255,255,.42);
+        text-shadow: 0 1px 2px rgba(0,0,0,.5);
+        user-select: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <div class="text-uppercase text-muted small">Academia</div>
+            <h1 class="h3 mb-0">{{ curso.titulo }}</h1>
+            <p class="text-muted mb-0">{{ curso.descripcion|default:"Sin descripción" }}</p>
+        </div>
+        <a href="{% url 'academia:dashboard' %}" class="btn btn-outline-secondary">Volver</a>
+    </div>
+
+    <div class="academia-layout">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Videos</h2>
+                <div class="list-group list-group-flush">
+                    {% for video in videos %}
+                    <button
+                        type="button"
+                        class="list-group-item list-group-item-action video-item {% if current_video and video.id == current_video.id %}active{% endif %}"
+                        data-video-id="{{ video.id }}"
+                        data-video-title="{{ video.titulo }}"
+                    >
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">{{ video.orden }}. {{ video.titulo }}</div>
+                                {% if video.duracion_segundos %}
+                                <div class="small text-muted">{{ video.duracion_segundos }} seg</div>
+                                {% endif %}
+                            </div>
+                            <i class="fas fa-play-circle text-primary"></i>
+                        </div>
+                    </button>
+                    {% empty %}
+                    <div class="text-muted small">No hay videos cargados para este curso.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="player-shell shadow-sm">
+            <div class="p-3 border-bottom border-light border-opacity-10 d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-uppercase small text-white-50">Reproductor protegido</div>
+                    <h2 class="h6 mb-0" id="academia-current-title">
+                        {% if current_video %}{{ current_video.titulo }}{% else %}Selecciona un video{% endif %}
+                    </h2>
+                </div>
+                <span class="badge bg-info text-dark">Bunny Stream</span>
+            </div>
+
+            <div class="p-3">
+                <div id="academia-player-container" class="player-stage rounded-3 overflow-hidden">
+                    <div class="d-flex align-items-center justify-content-center h-100 text-white-50">
+                        Cargando reproductor...
+                    </div>
+                    <div class="player-watermark" id="academia-watermark">{{ request.user.get_full_name|default:request.user.username }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.ACADEMIA_PLAYER_CONFIG = {
+        apiBaseUrl: "/academia/api",
+        initialVideoId: {% if current_video %}{{ current_video.id }}{% else %}null{% endif %},
+        userLabel: "{{ request.user.get_full_name|default:request.user.username|escapejs }}",
+        csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    };
+</script>
+<script src="{% static 'academia/player.js' %}"></script>
+{% endblock %}

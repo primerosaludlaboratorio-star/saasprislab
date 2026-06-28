@@ -1,0 +1,46 @@
+[Unit]
+Description=PRISLAB SaaS — Gunicorn WSGI Server
+Documentation=https://github.com/tu-usuario/prislab
+After=network.target postgresql.service redis-server.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=prislab
+Group=prislab
+WorkingDirectory=/opt/prislab
+
+# Cargar variables de entorno desde .env
+EnvironmentFile=/opt/prislab/.env
+
+# Arrancar Gunicorn directamente
+ExecStart=/opt/prislab/.venv/bin/gunicorn config.wsgi:application \
+    --bind 127.0.0.1:8000 \
+    --workers 4 \
+    --threads 4 \
+    --worker-class gthread \
+    --worker-tmp-dir /tmp \
+    --timeout 300 \
+    --graceful-timeout 30 \
+    --keep-alive 5 \
+    --max-requests 1000 \
+    --max-requests-jitter 50 \
+    --access-logfile - \
+    --error-logfile - \
+    --log-level info \
+    --capture-output
+
+ExecReload=/bin/kill -s HUP $MAINPID
+
+# Reiniciar en fallos (no en paradas manuales)
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30
+
+# Logs
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=prislab-gunicorn
+
+[Install]
+WantedBy=multi-user.target

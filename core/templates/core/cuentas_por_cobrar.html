@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}Cuentas por Cobrar{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold mb-0"><i class="fas fa-file-invoice-dollar text-primary me-2"></i>Cuentas por Cobrar</h4>
+    <a href="{% url 'convenios_lista' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-handshake me-1"></i>Convenios
+    </a>
+  </div>
+
+  <!-- Metricas -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm" style="border-left:4px solid #ffc107!important;">
+        <div class="card-body text-center py-3">
+          <div class="text-warning fw-bold" style="font-size:1.8rem;">${{ total_pendiente|floatformat:2 }}</div>
+          <div class="text-muted" style="font-size:.85rem;">Pendiente de Cobro ({{ count_pendientes }})</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm" style="border-left:4px solid #dc3545!important;">
+        <div class="card-body text-center py-3">
+          <div class="text-danger fw-bold" style="font-size:1.8rem;">${{ total_vencido|floatformat:2 }}</div>
+          <div class="text-muted" style="font-size:.85rem;">Vencido ({{ count_vencidas }})</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm" style="border-left:4px solid #0d6efd!important;">
+        <div class="card-body text-center py-3">
+          <div class="text-primary fw-bold" style="font-size:1.8rem;">${{ total_parcial|floatformat:2 }}</div>
+          <div class="text-muted" style="font-size:.85rem;">Pago Parcial</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-auto">
+          <select name="estado" class="form-select form-select-sm">
+            <option value="">Todos los estados</option>
+            <option value="PENDIENTE" {% if filtro == 'PENDIENTE' %}selected{% endif %}>Pendiente</option>
+            <option value="PARCIAL" {% if filtro == 'PARCIAL' %}selected{% endif %}>Pago Parcial</option>
+            <option value="VENCIDO" {% if filtro == 'VENCIDO' %}selected{% endif %}>Vencido</option>
+            <option value="COBRADO" {% if filtro == 'COBRADO' %}selected{% endif %}>Cobrado</option>
+          </select>
+        </div>
+        <div class="col-auto">
+          <select name="convenio" class="form-select form-select-sm">
+            <option value="">Todos los convenios</option>
+            {% for c in convenios %}
+            <option value="{{ c.id }}" {% if filtro_convenio == c.id|stringformat:"d" %}selected{% endif %}>{{ c.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-filter me-1"></i>Filtrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0" style="font-size:.88rem;">
+        <thead class="table-dark">
+          <tr>
+            <th>Folio</th>
+            <th>Convenio</th>
+            <th>Concepto</th>
+            <th class="text-end">Total</th>
+            <th class="text-end">Pagado</th>
+            <th class="text-end">Saldo</th>
+            <th>Vencimiento</th>
+            <th>Estado</th>
+            <th class="text-center">Accion</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cxc in cuentas %}
+          <tr>
+            <td class="fw-bold">{{ cxc.folio }}</td>
+            <td>{{ cxc.convenio.nombre }}</td>
+            <td class="text-truncate" style="max-width:250px;">{{ cxc.concepto }}</td>
+            <td class="text-end">${{ cxc.monto_total|floatformat:2 }}</td>
+            <td class="text-end text-success">${{ cxc.monto_pagado|floatformat:2 }}</td>
+            <td class="text-end fw-bold {% if cxc.estado == 'VENCIDO' %}text-danger{% endif %}">${{ cxc.saldo_pendiente|floatformat:2 }}</td>
+            <td>{{ cxc.fecha_vencimiento|date:"d/m/Y" }}</td>
+            <td>
+              {% if cxc.estado == 'PENDIENTE' %}<span class="badge bg-warning text-dark">Pendiente</span>
+              {% elif cxc.estado == 'PARCIAL' %}<span class="badge bg-info">Parcial</span>
+              {% elif cxc.estado == 'VENCIDO' %}<span class="badge bg-danger">Vencido</span>
+              {% elif cxc.estado == 'COBRADO' %}<span class="badge bg-success">Cobrado</span>
+              {% else %}<span class="badge bg-secondary">{{ cxc.estado }}</span>{% endif %}
+            </td>
+            <td class="text-center">
+              {% if cxc.estado != 'COBRADO' and cxc.estado != 'CANCELADO' %}
+              <button class="btn btn-sm btn-outline-success" onclick="registrarPago({{ cxc.id }}, '{{ cxc.folio }}', {{ cxc.saldo_pendiente }})">
+                <i class="fas fa-dollar-sign"></i> Pagar
+              </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" class="text-center text-muted py-4">Sin cuentas por cobrar</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Pago -->
+<div class="modal fade" id="modalPago" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="fas fa-cash-register me-2"></i>Registrar Pago</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">Folio: <strong id="pagoFolio"></strong></p>
+        <p class="mb-3">Saldo pendiente: <strong id="pagoSaldo"></strong></p>
+        <div class="mb-3">
+          <label class="form-label fw-bold">Monto a pagar</label>
+          <input type="number" class="form-control" id="pagoMonto" step="0.01" min="0.01">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-bold">Metodo de pago</label>
+          <select class="form-select" id="pagoMetodo">
+            <option value="TRANSFERENCIA">Transferencia</option>
+            <option value="CHEQUE">Cheque</option>
+            <option value="DEPOSITO">Deposito</option>
+            <option value="EFECTIVO">Efectivo</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Referencia</label>
+          <input type="text" class="form-control" id="pagoReferencia" placeholder="Num. transferencia, cheque, etc.">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-success" id="btnConfirmarPago"><i class="fas fa-check me-1"></i>Confirmar Pago</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let cuentaIdActual = null;
+function getCookie(n){const v=`; ${document.cookie}`;const p=v.split(`; ${n}=`);if(p.length===2)return p.pop().split(';').shift();}
+
+function registrarPago(id, folio, saldo) {
+  cuentaIdActual = id;
+  document.getElementById('pagoFolio').textContent = folio;
+  document.getElementById('pagoSaldo').textContent = '$' + parseFloat(saldo).toFixed(2);
+  document.getElementById('pagoMonto').value = saldo;
+  document.getElementById('pagoMonto').max = saldo;
+  new bootstrap.Modal(document.getElementById('modalPago')).show();
+}
+
+document.getElementById('btnConfirmarPago').addEventListener('click', async () => {
+  const monto = parseFloat(document.getElementById('pagoMonto').value);
+  if (!monto || monto <= 0) return Swal.fire('Error', 'Ingresa un monto valido', 'error');
+
+  try {
+    const resp = await fetch('{% url "api_pago_cxc" %}', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
+      body: JSON.stringify({
+        cuenta_id: cuentaIdActual,
+        monto: monto,
+        metodo_pago: document.getElementById('pagoMetodo').value,
+        referencia: document.getElementById('pagoReferencia').value,
+      })
+    });
+    const data = await resp.json();
+    if (data.status === 'success') {
+      Swal.fire('Pago registrado', data.mensaje, 'success').then(() => location.reload());
+    } else {
+      Swal.fire('Error', data.mensaje, 'error');
+    }
+  } catch(e) {
+    Swal.fire('Error', 'Error de red: ' + e.message, 'error');
+  }
+});
+</script>
+{% endblock %}

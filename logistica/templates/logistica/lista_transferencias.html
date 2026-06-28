@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Transferencias de Inventario{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-arrow-left-right"></i> Transferencias de Inventario</h2>
+        <a href="{% url 'logistica:crear_transferencia' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nueva Transferencia
+        </a>
+    </div>
+    
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ stats.total }}</h3>
+                    <small class="text-muted">Total</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ stats.borradores }}</h3>
+                    <small class="text-muted">Borradores</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info">{{ stats.en_transito }}</h3>
+                    <small class="text-muted">En Tránsito</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ stats.completadas }}</h3>
+                    <small class="text-muted">Completadas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Folio</th>
+                        <th>Origen</th>
+                        <th>Destino</th>
+                        <th>Items</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trans in transferencias %}
+                    <tr>
+                        <td><strong>{{ trans.folio }}</strong></td>
+                        <td>{{ trans.sucursal_origen.nombre }}</td>
+                        <td>{{ trans.sucursal_destino.nombre }}</td>
+                        <td>{{ trans.total_items }}</td>
+                        <td><span class="badge bg-{{ trans.estado|lower }}">{{ trans.get_estado_display }}</span></td>
+                        <td>{{ trans.fecha_creacion|date:"d/m/Y" }}</td>
+                        <td>
+                            <a href="{% url 'logistica:detalle_transferencia' trans.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

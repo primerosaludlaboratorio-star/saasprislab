@@ -1,0 +1,256 @@
+"""
+Vista del Buzón de la Verdad - Quejas, Sugerencias y Felicitaciones.
+"""
+import json
+import logging
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse, Http404
+from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+from django.db import DatabaseError
+
+from core.models import BuzonQuejas, Empresa
+from core.decorators import role_required
+
+logger = logging.getLogger('core')
+
+
+def _resolver_empresa_publica(request):
+    """
+    Resuelve la empresa para vistas públicas (sin autenticación).
+    Orden de prioridad:
+    1. Parámetro explícito ?empresa=<id>
+    2. request.empresa_actual (inyectado por middleware si el usuario está autenticado)
+    Retorna None si no se puede resolver.
+    """
+    # 1. Parámetro explícito
+    empresa_id = request.GET.get('empresa') or request.POST.get('empresa')
+    if empresa_id:
+        try:
+            return Empresa.objects.get(id=int(empresa_id), activa=True)
+        except (ValueError, Empresa.DoesNotExist):
+            pass
+
+    # 2. Middleware de identidad (usuario autenticado)
+    empresa = getattr(request, 'empresa_actual', None)
+    if empresa:
+        return empresa
+
+    return None
+
+
+def tu_opinion(request):
+    """
+    Vista pública para que pacientes y empleados dejen quejas/sugerencias.
+    URL: /tu-opinion/?empresa=<id>
+    """
+    empresa = _resolver_empresa_publica(request)
+
+    if request.method == 'POST':
+        tipo = request.POST.get('tipo', 'QUEJA')
+        mensaje = request.POST.get('mensaje', '').strip()
+        nombre = request.POST.get('nombre', '').strip()
+        contacto = request.POST.get('contacto', '').strip()
+        anonimo = request.POST.get('anonimo', 'false') == 'true'
+
+        if not mensaje:
+            return render(request, 'core/tu_opinion.html', {
+                'empresa': empresa,
+                'error': 'El mensaje es obligatorio'
+            })
+
+        if not empresa:
+            return render(request, 'core/tu_opinion.html', {
+                'empresa': None,
+                'error': 'No se pudo identificar la empresa. Use el enlace proporcionado por su clínica.'
+            })
+
+        BuzonQuejas.objects.create(
+            empresa=empresa,
+            tipo=tipo,
+            mensaje=mensaje,
+            nombre_remitente=nombre if not anonimo else None,
+            contacto=contacto if not anonimo else None,
+            anonimo=anonimo,
+            estado='PENDIENTE'
+        )
+
+        return render(request, 'core/tu_opinion.html', {
+            'empresa': empresa,
+            'exito': True
+        })
+
+    return render(request, 'core/tu_opinion.html', {
+        'empresa': empresa
+    })
+
+
+@login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE')
+def buzon_kanban(request):
+    """Panel Kanban mejorado para gestión de reportes de fricción."""
+    empresa = getattr(request.user, 'empresa', None)
+    
+    if not empresa:
+        from django.contrib import messages
+        messages.error(request, 'Usuario no tiene empresa asignada.')
+        from django.shortcuts import redirect
+        return redirect('home')
+    
+    try:
+        # Obtener quejas agrupadas por estado
+        quejas_nuevas = BuzonQuejas.objects.filter(
+            empresa=empresa,
+            estado='PENDIENTE'
+        ).order_by('-fecha_creacion')
+        
+        quejas_investigando = BuzonQuejas.objects.filter(
+            empresa=empresa,
+            estado='EN_REVISION'
+        ).order_by('-fecha_creacion')
+        
+        quejas_resueltas = BuzonQuejas.objects.filter(
+            empresa=empresa,
+            estado='RESUELTO'
+        ).order_by('-fecha_resolucion')[:20]
+        
+        quejas_descartadas = BuzonQuejas.objects.filter(
+            empresa=empresa,
+            estado='DESCARTADO'
+        ).order_by('-fecha_creacion')[:10]
+        
+        # Estadísticas
+        total_quejas = BuzonQuejas.objects.filter(empresa=empresa).count()
+        quejas_criticas = BuzonQuejas.objects.filter(empresa=empresa, sentimiento_ia='CRITICO').count()
+        quejas_sin_analizar = BuzonQuejas.objects.filter(empresa=empresa, analizado_ia=False).count()
+        
+        # Agrupar por categoría IA (usa CATEGORIA_CHOICES del modelo)
+        por_categoria = {}
+        for categoria, _ in BuzonQuejas.CATEGORIA_CHOICES:
+            por_categoria[categoria] = BuzonQuejas.objects.filter(
+                empresa=empresa,
+                categoria_ia=categoria,
+                estado='PENDIENTE'
+            ).count()
+    except DatabaseError as e:
+        logger.error(f"Error en buzon_kanban: {str(e)}", exc_info=True)
+        quejas_nuevas = BuzonQuejas.objects.none()
+        quejas_investigando = BuzonQuejas.objects.none()
+        quejas_resueltas = BuzonQuejas.objects.none()
+        quejas_descartadas = BuzonQuejas.objects.none()
+        total_quejas = 0
+        quejas_criticas = 0
+        quejas_sin_analizar = 0
+        por_categoria = {}
+    
+    return render(request, 'core/buzon_kanban.html', {
+        'empresa': empresa,
+        'quejas_nuevas': quejas_nuevas,
+        'quejas_investigando': quejas_investigando,
+        'quejas_resueltas': quejas_resueltas,
+        'quejas_descartadas': quejas_descartadas,
+        'total_quejas': total_quejas,
+        'quejas_criticas': quejas_criticas,
+        'quejas_sin_analizar': quejas_sin_analizar,
+        'por_categoria': por_categoria,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_cambiar_estado_queja(request, queja_id):
+    """
+    API para cambiar el estado de una queja (drag & drop en Kanban).
+    Body JSON: { estado: 'PENDIENTE'|'EN_REVISION'|'RESUELTO'|'DESCARTADO', notas_resolucion?: str }
+    """
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}, status=403)
+    
+    try:
+        queja = get_object_or_404(BuzonQuejas, id=queja_id, empresa=empresa)
+        data = json.loads(request.body)
+        nuevo_estado = data.get('estado', queja.estado)
+        notas = data.get('notas_resolucion', '')
+        
+        if nuevo_estado not in [e[0] for e in BuzonQuejas.ESTADO_CHOICES]:
+            return JsonResponse({'status': 'error', 'mensaje': 'Estado inválido'}, status=400)
+        
+        estado_anterior = queja.estado
+        queja.estado = nuevo_estado
+        notas_seguimiento = data.get('notas_seguimiento', '')
+        
+        if nuevo_estado == 'RESUELTO':
+            queja.fecha_resolucion = timezone.now()
+            queja.fecha_cierre = timezone.now()
+            queja.resuelto_por = request.user
+            if notas:
+                queja.notas_resolucion = notas
+        elif nuevo_estado == 'EN_REVISION':
+            if notas_seguimiento:
+                queja.notas_seguimiento = notas_seguimiento
+        else:
+            if estado_anterior == 'RESUELTO' and nuevo_estado != 'RESUELTO':
+                queja.fecha_resolucion = None
+                queja.fecha_cierre = None
+                queja.resuelto_por = None
+        
+        if notas_seguimiento:
+            queja.notas_seguimiento = notas_seguimiento
+        
+        queja.save()
+        
+        return JsonResponse({
+            'status': 'success',
+            'mensaje': f'Queja movida a {queja.get_estado_display()}',
+            'queja_id': queja.id,
+            'estado': queja.estado
+        })
+        
+    except Http404:
+        return JsonResponse({'status': 'error', 'mensaje': 'Queja no encontrada'}, status=404)
+    except (DatabaseError, json.JSONDecodeError) as e:
+        logging.getLogger(__name__).exception("Error inesperado en api_cambiar_estado_queja (buzon.py)")
+        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_obtener_quejas(request):
+    """API para obtener quejas agrupadas por estado (para refrescar Kanban)."""
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse({'status': 'error', 'quejas': [], 'mensaje': 'Usuario sin empresa asignada'}, status=403)
+    estado = request.GET.get('estado', None)
+    
+    queryset = BuzonQuejas.objects.filter(empresa=empresa)
+    if estado:
+        queryset = queryset.filter(estado=estado)
+    
+    quejas = queryset.order_by('-fecha_creacion')[:50]
+    
+    resultados = []
+    for q in quejas:
+        resultados.append({
+            'id': q.id,
+            'tipo': q.tipo,
+            'tipo_display': q.get_tipo_display(),
+            'mensaje': q.mensaje[:200] + '...' if len(q.mensaje) > 200 else q.mensaje,
+            'nombre': q.nombre_remitente if not q.anonimo else 'Anónimo',
+            'anonimo': q.anonimo,
+            'estado': q.estado,
+            'estado_display': q.get_estado_display(),
+            'fecha_creacion': q.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+            'contacto': q.contacto if not q.anonimo else None,
+            # Campos de análisis IA
+            'sentimiento_ia': q.sentimiento_ia,
+            'sentimiento_display': q.get_sentimiento_ia_display() if q.sentimiento_ia else 'Pendiente',
+            'categoria_ia': q.categoria_ia,
+            'categoria_display': q.get_categoria_ia_display() if q.categoria_ia else 'Pendiente',
+            'resumen_causa': q.resumen_causa,
+            'plan_accion_sugerido': q.plan_accion_sugerido,
+            'analizado_ia': q.analizado_ia,
+        })
+    
+    return JsonResponse({'status': 'success', 'quejas': resultados})

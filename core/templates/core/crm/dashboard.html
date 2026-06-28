@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load static humanize %}
+{% block title %}CRM — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-funnel-dollar text-primary me-2"></i>CRM — Prospectos</h2>
+      <small class="text-muted">Gestión comercial y embudo de ventas</small>
+    </div>
+    <a href="{% url 'crm_crear_prospecto' %}" class="btn btn-primary">
+      <i class="fas fa-plus me-1"></i>Nuevo Prospecto
+    </a>
+  </div>
+
+  <!-- KPIs — estados es lista de (estado, etiqueta, count) -->
+  <div class="row g-3 mb-4">
+    {% for estado, etiqueta, count in estados %}
+    <div class="col-md-2">
+      <a href="{% url 'crm_lista_prospectos' %}?estado={{ estado }}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center h-100">
+          <div class="card-body py-3">
+            <div class="h3 fw-bold text-primary">{{ count }}</div>
+            <div class="small text-muted">{{ etiqueta }}</div>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="row g-4">
+    <!-- Próximos contactos -->
+    <div class="col-md-7">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-bold d-flex justify-content-between">
+          <span><i class="fas fa-clock text-warning me-2"></i>Próximos Seguimientos</span>
+          <a href="{% url 'crm_lista_prospectos' %}" class="btn btn-sm btn-outline-primary">Ver todos</a>
+        </div>
+        <div class="list-group list-group-flush">
+          {% for p in proximos %}
+          <a href="{% url 'crm_detalle_prospecto' p.pk %}" class="list-group-item list-group-item-action">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>{{ p.nombre }}</strong>
+                <small class="text-muted d-block">{{ p.servicio_interes|truncatechars:60 }}</small>
+              </div>
+              <div class="text-end">
+                <span class="badge bg-warning text-dark">{{ p.fecha_proximo_contacto|date:"d/m/Y" }}</span>
+                <small class="d-block text-muted">{{ p.get_origen_display }}</small>
+              </div>
+            </div>
+          </a>
+          {% empty %}
+          <div class="list-group-item text-muted text-center py-3">
+            No hay seguimientos pendientes en los próximos 3 días. ✅
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Pipeline de valor -->
+    <div class="col-md-5">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-white fw-bold">
+          <i class="fas fa-dollar-sign text-success me-2"></i>Pipeline de Valor
+        </div>
+        <div class="card-body d-flex flex-column justify-content-center align-items-center">
+          <div class="display-4 fw-bold text-success">${{ valor_pipeline|floatformat:2|intcomma }}</div>
+          <p class="text-muted mt-2">Valor estimado en prospectos activos (Interesados + Cotizados)</p>
+          <a href="{% url 'crm_lista_prospectos' %}?estado=INTERESADO" class="btn btn-outline-success mt-3">
+            Ver pipeline detallado →
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

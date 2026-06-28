@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Configuración del Sistema — Interruptores{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+  <div class="d-flex align-items-center mb-4 gap-3">
+    <div class="bg-primary rounded-3 p-3 d-flex align-items-center justify-content-center" style="width:52px;height:52px">
+      <i class="bi bi-toggles text-white fs-4"></i>
+    </div>
+    <div>
+      <h1 class="h4 mb-0 fw-bold">Configuración del Sistema</h1>
+      <p class="text-muted small mb-0">Activa o desactiva funcionalidades avanzadas sin tocar código</p>
+    </div>
+    <span class="badge bg-primary-subtle text-primary ms-auto px-3 py-2 fs-6">
+      <i class="bi bi-shield-check me-1"></i>Solo Director &amp; Admin
+    </span>
+  </div>
+
+  <!-- Aviso filosófico -->
+  <div class="alert alert-info border-0 rounded-3 mb-4" role="alert">
+    <i class="bi bi-lightbulb-fill me-2"></i>
+    <strong>Filosofía del sistema:</strong> Cada interruptor invita a operar
+    <em>lo más apegado posible</em> a los estándares (ISO 15189, NOM-024, NOM-035),
+    pero <strong>nunca bloquea la operación</strong>. Los laboratorios en crecimiento
+    pueden ir activando capacidades a su ritmo.
+  </div>
+
+  {% for categoria, flags in por_categoria.items %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-light border-0 py-3">
+      <h5 class="mb-0 fw-semibold">
+        {% if categoria == 'LABORATORIO' %}<i class="bi bi-flask me-2 text-primary"></i>
+        {% elif categoria == 'SEGURIDAD' %}<i class="bi bi-shield-lock me-2 text-danger"></i>
+        {% else %}<i class="bi bi-gear me-2 text-secondary"></i>
+        {% endif %}
+        {{ categoria|title }}
+      </h5>
+    </div>
+    <div class="card-body p-0">
+      {% for flag in flags %}
+      <div class="d-flex align-items-center px-4 py-3 border-bottom flag-row" id="row-{{ flag.codigo }}">
+        <div class="flex-grow-1 me-3">
+          <div class="fw-semibold">{{ flag.nombre }}</div>
+          <div class="text-muted small mt-1">{{ flag.descripcion }}</div>
+        </div>
+        <div class="d-flex align-items-center gap-3 flex-shrink-0">
+          {% if flag.activo %}
+            <span class="badge bg-success-subtle text-success px-2 py-1">
+              <i class="bi bi-check-circle-fill me-1"></i>Activo
+            </span>
+          {% else %}
+            <span class="badge bg-secondary-subtle text-secondary px-2 py-1">
+              <i class="bi bi-dash-circle me-1"></i>Inactivo
+            </span>
+          {% endif %}
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input flag-toggle" type="checkbox"
+                   id="flag-{{ flag.codigo }}"
+                   data-codigo="{{ flag.codigo }}"
+                   {% if flag.activo %}checked{% endif %}
+                   role="switch"
+                   style="width:2.5em;height:1.4em;cursor:pointer">
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+
+<!-- Toast de confirmación -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="flagToast" class="toast align-items-center border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body fw-semibold" id="flagToastMsg">Cambio guardado</div>
+      <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.flag-toggle').forEach(toggle => {
+  toggle.addEventListener('change', async function() {
+    const codigo = this.dataset.codigo;
+    const activo = this.checked;
+    const row = document.getElementById('row-' + codigo);
+
+    try {
+      const resp = await fetch(`/configuracion/flags/${codigo}/toggle/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({ activo }),
+      });
+      const data = await resp.json();
+
+      if (data.ok) {
+        // Actualizar badge
+        const badge = row.querySelector('.badge');
+        if (activo) {
+          badge.className = 'badge bg-success-subtle text-success px-2 py-1';
+          badge.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Activo';
+        } else {
+          badge.className = 'badge bg-secondary-subtle text-secondary px-2 py-1';
+          badge.innerHTML = '<i class="bi bi-dash-circle me-1"></i>Inactivo';
+        }
+        showToast(data.mensaje, 'success');
+      } else {
+        this.checked = !activo; // revertir
+        showToast(data.error || 'Error al guardar', 'danger');
+      }
+    } catch (e) {
+      this.checked = !activo;
+      showToast('Error de conexión', 'danger');
+    }
+  });
+});
+
+function showToast(msg, tipo) {
+  const toast = document.getElementById('flagToast');
+  const msgEl = document.getElementById('flagToastMsg');
+  toast.className = `toast align-items-center border-0 text-bg-${tipo}`;
+  msgEl.textContent = msg;
+  const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+  bsToast.show();
+}
+
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+</script>
+{% endblock %}

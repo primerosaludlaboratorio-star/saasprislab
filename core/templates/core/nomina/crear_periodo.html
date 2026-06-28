@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Nuevo Período de Nómina — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:700px">
+  <div class="d-flex align-items-center mb-4 gap-3">
+    <a href="{% url 'nomina_dashboard' %}" class="btn btn-outline-secondary btn-sm">← Regresar</a>
+    <h3 class="fw-bold mb-0">Nuevo Período de Nómina</h3>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-4">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Nombre del período <span class="text-danger">*</span></label>
+            <input type="text" name="nombre" class="form-control" placeholder="Ej: Quincena 1 — Febrero 2026" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Frecuencia</label>
+            <select name="frecuencia" class="form-select">
+              <option value="QUINCENAL">Quincenal</option>
+              <option value="SEMANAL">Semanal</option>
+              <option value="MENSUAL">Mensual</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Fecha inicio <span class="text-danger">*</span></label>
+            <input type="date" name="fecha_inicio" class="form-control" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Fecha fin <span class="text-danger">*</span></label>
+            <input type="date" name="fecha_fin" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Fecha de pago</label>
+            <input type="date" name="fecha_pago" class="form-control">
+          </div>
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input type="checkbox" name="auto_empleados" value="1" class="form-check-input" id="chkAutoEmpleados" checked>
+              <label class="form-check-label" for="chkAutoEmpleados">
+                Generar recibos automáticamente para los <strong>{{ empleados_count }}</strong> empleados activos
+              </label>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Observaciones</label>
+            <textarea name="observaciones" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="col-12 d-flex gap-2 justify-content-end">
+            <a href="{% url 'nomina_dashboard' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-success px-4">
+              <i class="fas fa-plus me-1"></i>Crear Período
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

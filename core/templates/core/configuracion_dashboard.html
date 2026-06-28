@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Configuración{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="mb-1">Configuración</h2>
+      <div class="text-muted">Panel maestro (frontend) para administrar el sistema sin depender de /admin.</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'admin:index' %}" target="_blank">
+      <i class="bi bi-person-gear"></i> Admin Django
+    </a>
+  </div>
+
+  <div class="row g-3 mt-2">
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-journal-text"></i> Catálogo de Estudios</h5>
+          <p class="text-muted">CRUD de estudios (por ahora enlaza al listado existente).</p>
+          <a class="btn btn-primary" href="{% url 'lista_estudios' %}">Abrir</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-shield-lock"></i> Usuarios y Permisos</h5>
+          <p class="text-muted">Gestión de usuarios, roles y accesos (placeholder).</p>
+          <a class="btn btn-outline-primary" href="{% url 'admin:core_usuario_changelist' %}" target="_blank">Abrir (Admin)</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-printer"></i> Impresoras</h5>
+          <p class="text-muted">Configuración de impresoras térmicas y PDF. Usa el navegador del sistema operativo para gestionar impresoras.</p>
+          <button class="btn btn-outline-primary" type="button" onclick="probarImpresion()">
+            <i class="bi bi-printer me-1"></i>Probar impresión
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-people"></i> Gestión de Usuarios</h5>
+          <p class="text-muted">Alta, baja y modificación de usuarios del sistema con control de roles.</p>
+          <a class="btn btn-outline-primary" href="{% url 'gestionar_usuarios' %}">Gestionar Usuarios</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-tags"></i> Tarifas y Convenios</h5>
+          <p class="text-muted">Configura tarifas de precios y convenios con empresas.</p>
+          <a class="btn btn-outline-primary" href="{% url 'catalogo_convenios' %}">Convenios</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ═══════════════════════════════════════════════════════════════════════ #}
+  {# PANEL DE GOBERNANZA DE IA — Solo Director / Admin                      #}
+  {# ═══════════════════════════════════════════════════════════════════════ #}
+  {% if request.user.rol == 'DIRECTOR' or request.user.rol == 'ADMIN' or request.user.is_superuser %}
+  <hr class="my-4">
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <i class="fas fa-brain text-purple fs-4"></i>
+    <div>
+      <h4 class="mb-0">Gobernanza de IA — PRIS-Fuel</h4>
+      <small class="text-muted">Credenciales, consumo mensual y modo de operación de la IA.</small>
+    </div>
+  </div>
+
+  <div class="row g-3">
+
+    {# ── Widget de Consumo ── #}
+    <div class="col-lg-5">
+      <div class="card shadow-sm border-0 h-100" style="border-left: 4px solid #8e44ad !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0"><i class="fas fa-tachometer-alt me-1 text-purple"></i> Consumo IA del Mes</h6>
+            {% if ia_consumo %}
+            <span class="badge {% if ia_consumo.fuente == 'BYOK' %}bg-success{% else %}bg-secondary{% endif %}">
+              {% if ia_consumo.fuente == 'BYOK' %}🔑 BYOK — Ilimitado{% else %}🔗 Key Maestra PRISLAB{% endif %}
+            </span>
+            {% endif %}
+          </div>
+
+          {% if ia_consumo %}
+          {% with p=ia_consumo.porcentaje %}
+          <div class="mb-2">
+            <div class="d-flex justify-content-between small text-muted mb-1">
+              <span>{{ ia_consumo.tokens_usados|default:0 }} tokens usados</span>
+              <span>{{ ia_consumo.tokens_limite|default:50000 }} contratados</span>
+            </div>
+            <div class="progress" style="height:14px; border-radius:7px;">
+              <div id="barra-consumo-ia"
+                   class="progress-bar {% if p >= 90 %}bg-danger{% elif p >= 80 %}bg-warning{% else %}bg-success{% endif %}"
+                   role="progressbar"
+                   style="width: {{ p|default:0 }}%"
+                   aria-valuenow="{{ p }}"
+                   aria-valuemin="0" aria-valuemax="100">
+                {{ p }}%
+              </div>
+            </div>
+          </div>
+          <div class="row text-center g-1 mt-1">
+            <div class="col-6">
+              <div class="bg-light rounded p-2">
+                <div class="fw-bold text-success small">{{ ia_consumo.tokens_restantes|default:0 }}</div>
+                <div class="text-muted" style="font-size:.7rem;">Tokens disponibles</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="bg-light rounded p-2">
+                <div class="fw-bold text-primary small">{{ ia_cache.tokens_ahorrados_total|default:0 }}</div>
+                <div class="text-muted" style="font-size:.7rem;">Ahorrados por caché</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="bg-light rounded p-2">
+                <div class="fw-bold small">{{ ia_cache.reglas_aprobadas|default:0 }}</div>
+                <div class="text-muted" style="font-size:.7rem;">Reglas activas</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="bg-light rounded p-2">
+                <div class="fw-bold text-warning small">{{ ia_cache.reglas_pendientes|default:0 }}</div>
+                <div class="text-muted" style="font-size:.7rem;">Pendientes QFB</div>
+              </div>
+            </div>
+          </div>
+          {% endwith %}
+          {% else %}
+          <p class="text-muted small">Sin datos de consumo este mes.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# ── Modo de Consumo ── #}
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <h6 class="mb-3"><i class="fas fa-sliders-h me-1"></i> Modo de Consumo IA</h6>
+          <div class="d-grid gap-2" id="modo-ia-btns">
+            {% for val, label in modo_ia_choices %}
+            <button class="btn btn-sm {% if modo_ia == val %}btn-primary{% else %}btn-outline-secondary{% endif %} text-start"
+                    onclick="cambiarModoIA('{{ val }}')"
+                    data-modo="{{ val }}">
+              {{ label }}
+            </button>
+            {% endfor %}
+          </div>
+          <div id="modo-ia-feedback" class="mt-2 small text-muted"></div>
+          <hr class="my-3">
+          <div class="small text-muted">
+            <strong>Aprendizaje:</strong> IA activa, guarda reglas para el caché.<br>
+            <strong>Producción:</strong> IA completa con caché activo.<br>
+            <strong>Ahorro Extremo:</strong> Solo RAG local + checklist. Bloquea IA generativa.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ── BYOK / Drive ── #}
+    <div class="col-lg-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <h6 class="mb-3"><i class="fas fa-key me-1"></i> BYOK / Drive</h6>
+          <div class="mb-2">
+            <span class="badge {% if tiene_byok %}bg-success{% else %}bg-secondary{% endif %} w-100 py-2">
+              {% if tiene_byok %}✅ API Key Propia configurada{% else %}⚙️ Usando Key Maestra PRISLAB{% endif %}
+            </span>
+          </div>
+          <div class="mb-3">
+            <span class="badge {% if tiene_drive %}bg-success{% else %}bg-secondary{% endif %} w-100 py-2">
+              {% if tiene_drive %}✅ Drive Propio configurado{% else %}☁️ Storage Central PRISLAB{% endif %}
+            </span>
+          </div>
+          <button class="btn btn-sm btn-outline-primary w-100" data-bs-toggle="collapse" data-bs-target="#panel-byok">
+            <i class="fas fa-edit me-1"></i> Configurar credenciales
+          </button>
+          <div class="collapse mt-3" id="panel-byok">
+            <div class="mb-2">
+              <label class="form-label small fw-bold">API Key Gemini (BYOK)</label>
+              <input type="password" id="inp-byok-key" class="form-control form-control-sm"
+                     placeholder="AIza...">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold">Google Drive Folder ID</label>
+              <input type="text" id="inp-drive-folder" class="form-control form-control-sm"
+                     value="{{ empresa.drive_folder_id|default:'' }}"
+                     placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74...">
+            </div>
+            <button class="btn btn-sm btn-success w-100" onclick="guardarBYOK()">
+              <i class="fas fa-save me-1"></i> Guardar cifrado
+            </button>
+            <div id="byok-feedback" class="mt-2 small"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ── Reglas Locales (link al admin) ── #}
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-body py-2">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+              <i class="fas fa-database me-1 text-primary"></i>
+              <strong>Caché de Reglas Locales</strong>
+              <span class="text-muted small ms-2">
+                {{ ia_cache.reglas_aprobadas|default:0 }} activas ·
+                {{ ia_cache.reglas_pendientes|default:0 }} pendientes de aprobación QFB ·
+                {{ ia_cache.total_usos_cache|default:0 }} consultas servidas desde caché
+              </span>
+            </div>
+            <div class="d-flex gap-2">
+              <a href="{% url 'admin:core_reglalocalia_changelist' %}" class="btn btn-sm btn-outline-warning" target="_blank">
+                <i class="fas fa-check-double me-1"></i> Aprobar Reglas (QFB)
+              </a>
+              <a href="{% url 'admin:core_usorecursosia_changelist' %}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                <i class="fas fa-chart-bar me-1"></i> Log de Uso IA
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function probarImpresion() {
+    const w = window.open('', '_blank', 'width=400,height=300');
+    w.document.write('<html><head><title>Prueba de Impresion PRISLAB</title></head><body><h2>PRISLAB</h2><p>Prueba de impresion correcta.</p><p>Fecha: ' + new Date().toLocaleString() + '<\/p><script>window.print();window.close();<\/script><\/body><\/html>');
+    w.document.close();
+}
+
+// ── Cambiar modo IA ──────────────────────────────────────────────────────────
+function cambiarModoIA(modo) {
+    fetch('{% url "api_cambiar_modo_ia" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+        body: JSON.stringify({modo}),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            document.querySelectorAll('#modo-ia-btns button').forEach(btn => {
+                btn.className = btn.dataset.modo === modo
+                    ? 'btn btn-sm btn-primary text-start'
+                    : 'btn btn-sm btn-outline-secondary text-start';
+            });
+            document.getElementById('modo-ia-feedback').textContent = `✅ Modo cambiado a: ${modo}`;
+        } else {
+            document.getElementById('modo-ia-feedback').textContent = '❌ Error: ' + (data.error || 'desconocido');
+        }
+    })
+    .catch(() => { document.getElementById('modo-ia-feedback').textContent = '❌ Sin conexión'; });
+}
+
+// ── Guardar BYOK ─────────────────────────────────────────────────────────────
+function guardarBYOK() {
+    const api_key     = document.getElementById('inp-byok-key').value.trim();
+    const drive_folder = document.getElementById('inp-drive-folder').value.trim();
+    fetch('{% url "api_guardar_byok" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+        body: JSON.stringify({api_key, drive_folder_id: drive_folder}),
+    })
+    .then(r => r.json())
+    .then(data => {
+        const fb = document.getElementById('byok-feedback');
+        if (data.ok) {
+            fb.innerHTML = `<span class="text-success">✅ Credenciales guardadas con cifrado Fernet.</span>`;
+            document.getElementById('inp-byok-key').value = '';
+        } else {
+            fb.innerHTML = `<span class="text-danger">❌ ${data.error}</span>`;
+        }
+    });
+}
+
+// ── Helper CSRF ───────────────────────────────────────────────────────────────
+function getCookie(name) {
+    const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return v ? v.pop() : '';
+}
+</script>
+{% endblock %}
+

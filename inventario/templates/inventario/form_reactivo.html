@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3" style="max-width:900px">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'inventario:lista_reactivos' %}" class="btn btn-sm btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h2 class="mb-0 fw-bold text-primary"><i class="bi bi-flask me-2"></i>{{ titulo }}</h2>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+
+          <!-- Identificación -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Código Interno <span class="text-danger">*</span></label>
+            <input type="text" name="codigo_interno" class="form-control"
+                   value="{{ reactivo.codigo_interno|default:'' }}" required maxlength="50"
+                   placeholder="Ej. GLUC-001">
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Nombre del Reactivo <span class="text-danger">*</span></label>
+            <input type="text" name="nombre" class="form-control"
+                   value="{{ reactivo.nombre|default:'' }}" required maxlength="200"
+                   placeholder="Ej. Reactivo de Glucosa Roche">
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">Descripción</label>
+            <textarea name="descripcion" class="form-control" rows="2"
+                      placeholder="Descripción técnica, uso, método…">{{ reactivo.descripcion|default:'' }}</textarea>
+          </div>
+
+          <!-- Clasificación -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Tipo <span class="text-danger">*</span></label>
+            <select name="tipo" class="form-select" required>
+              {% for val, lbl in tipo_choices %}
+                <option value="{{ val }}" {% if reactivo.tipo == val %}selected{% endif %}>{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Unidad de Medida <span class="text-danger">*</span></label>
+            <select name="unidad_medida" class="form-select" required>
+              {% for val, lbl in unidad_choices %}
+                <option value="{{ val }}" {% if reactivo.unidad_medida == val %}selected{% endif %}>{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Fabricante</label>
+            <input type="text" name="fabricante" class="form-control"
+                   value="{{ reactivo.fabricante|default:'' }}" placeholder="Roche, Mindray, Beckman…">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Referencia del Fabricante</label>
+            <input type="text" name="referencia_fabricante" class="form-control"
+                   value="{{ reactivo.referencia_fabricante|default:'' }}" placeholder="Cat. / REF del proveedor">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Temperatura de Almacenamiento</label>
+            <input type="text" name="temperatura_almacenamiento" class="form-control"
+                   value="{{ reactivo.temperatura_almacenamiento|default:'' }}" placeholder="Ej. 2-8°C, 15-25°C">
+          </div>
+
+          <!-- Stock -->
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Stock Mínimo</label>
+            <input type="number" name="stock_minimo" class="form-control" step="0.001" min="0"
+                   value="{{ reactivo.stock_minimo|default:'0' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Stock Máximo</label>
+            <input type="number" name="stock_maximo" class="form-control" step="0.001" min="0"
+                   value="{{ reactivo.stock_maximo|default:'' }}" placeholder="Opcional">
+          </div>
+
+          <!-- Flags -->
+          <div class="col-md-3 d-flex align-items-center">
+            <div class="form-check form-switch mt-3">
+              <input class="form-check-input" type="checkbox" name="requiere_cadena_frio" id="cadena_frio"
+                     {% if reactivo.requiere_cadena_frio %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="cadena_frio">
+                <i class="bi bi-snow2 text-info me-1"></i>Cadena de Frío
+              </label>
+            </div>
+          </div>
+          {% if reactivo %}
+          <div class="col-md-3 d-flex align-items-center">
+            <div class="form-check form-switch mt-3">
+              <input class="form-check-input" type="checkbox" name="activo" id="activo"
+                     {% if reactivo.activo %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="activo">Activo</label>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">Notas internas</label>
+            <textarea name="notas" class="form-control" rows="2"
+                      placeholder="Observaciones adicionales…">{{ reactivo.notas|default:'' }}</textarea>
+          </div>
+
+          <!-- Botones -->
+          <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+            <a href="{% url 'inventario:lista_reactivos' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-save me-1"></i>{{ accion }}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

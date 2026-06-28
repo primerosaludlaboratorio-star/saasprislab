@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Métodos Analíticos{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <h2 class="mb-4"><i class="fas fa-flask me-2"></i>Métodos Analíticos</h2>
+  <div class="card shadow-sm">
+    <div class="card-header bg-white">
+      <span class="fw-semibold">Métodos registrados en estudios de laboratorio</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Método</th><th class="text-end">Estudios asociados</th></tr>
+          </thead>
+          <tbody>
+            {% for m in metodos %}
+            <tr>
+              <td>{{ m.metodo }}</td>
+              <td class="text-end"><span class="badge bg-primary">{{ m.num_estudios }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="2" class="text-center text-muted py-4">Sin métodos registrados</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

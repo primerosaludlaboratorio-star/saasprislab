@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Resultados OCR - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .estudio-card {
+        border-left: 4px solid #3498db;
+        transition: all 0.2s;
+    }
+    .estudio-card:hover {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    .confidence-bar {
+        height: 8px;
+        border-radius: 4px;
+        background-color: #ecf0f1;
+        overflow: hidden;
+    }
+    .confidence-fill {
+        height: 100%;
+        transition: width 0.5s ease-in-out;
+    }
+    .confidence-high { background-color: #2ecc71; }
+    .confidence-medium { background-color: #f39c12; }
+    .confidence-low { background-color: #e74c3c; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'ia:dashboard' %}">Dashboard IA</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'ia:procesar_receta' %}">Procesar Receta</a></li>
+            <li class="breadcrumb-item active">Resultados</li>
+        </ol>
+    </nav>
+    
+    <!-- Título y Resumen -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-check-circle text-success"></i> Procesamiento Completado</h2>
+            <p class="text-muted">Resultados del análisis OCR - {{ cotizacion.fecha_creacion|date:"d/m/Y H:i" }}</p>
+        </div>
+        <div class="col-md-4 text-right">
+            <div class="card bg-primary text-white">
+                <div class="card-body p-3">
+                    <h6 class="mb-0">Total Estimado</h6>
+                    <h2 class="mb-0">${{ cotizacion.total_calculado }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Texto Extraído -->
+        <div class="col-md-5">
+            <div class="card shadow mb-3">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-file-alt"></i> Texto Extraído (OCR)
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap; font-family: monospace; font-size: 0.9em;">
+                    {{ cotizacion.texto_extraido }}
+                </div>
+            </div>
+            
+            <!-- Imagen Original -->
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <i class="fas fa-image"></i> Imagen Original
+                </div>
+                <div class="card-body text-center">
+                    <img src="{{ cotizacion.imagen_receta.url }}" alt="Receta" class="img-fluid" style="max-height: 300px; border-radius: 10px;">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Estudios Detectados -->
+        <div class="col-md-7">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-flask"></i> Estudios Detectados ({{ estudios|length }})</span>
+                    <span class="badge badge-light">Confianza: {{ cotizacion.confianza_promedio|floatformat:0 }}%</span>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    {% if estudios %}
+                        {% for estudio in estudios %}
+                        <div class="card estudio-card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h5 class="mb-1">{{ estudio.nombre }}</h5>
+                                        <p class="mb-0 text-primary"><strong>${{ estudio.precio }}</strong></p>
+                                    </div>
+                                    <div class="text-right">
+                                        <small class="text-muted d-block">Confianza</small>
+                                        <strong class="{% if estudio.confianza >= 0.8 %}text-success{% elif estudio.confianza >= 0.6 %}text-warning{% else %}text-danger{% endif %}">
+                                            {{ estudio.confianza|floatformat:0 }}%
+                                        </strong>
+                                    </div>
+                                </div>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill {% if estudio.confianza >= 0.8 %}confidence-high{% elif estudio.confianza >= 0.6 %}confidence-medium{% else %}confidence-low{% endif %}" 
+                                         style="width: {{ estudio.confianza|floatformat:0 }}%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <!-- Resumen -->
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <strong>Total de Estudios:</strong> {{ estudios|length }}
+                                    </div>
+                                    <div class="col-6 text-right">
+                                        <strong>Total:</strong> <span class="text-primary">${{ cotizacion.total_calculado }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                            <h5>No se detectaron estudios</h5>
+                            <p class="text-muted">El OCR no pudo identificar estudios de laboratorio en el texto extraído.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Acciones -->
+            <div class="card shadow mt-3">
+                <div class="card-body">
+                    {% if puede_crear_orden and estudios %}
+                    <h5 class="mb-3"><i class="fas fa-clipboard-check"></i> Siguiente Paso</h5>
+                    <p class="text-muted">Selecciona un paciente para crear la orden de laboratorio con estos estudios:</p>
+                    
+                    <form id="formCrearOrden">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label>Buscar Paciente</label>
+                            <input type="text" class="form-control" id="buscarPaciente" placeholder="Nombre, teléfono o CURP...">
+                            <input type="hidden" id="pacienteId" name="paciente_id">
+                        </div>
+                        <div id="resultadosPaciente" class="list-group mb-3"></div>
+                        
+                        <button type="submit" class="btn btn-success btn-lg btn-block" id="btnCrearOrden" disabled>
+                            <i class="fas fa-plus-circle"></i> Crear Orden de Laboratorio
+                        </button>
+                    </form>
+                    {% elif cotizacion.orden_asociada %}
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-check-circle"></i> Orden ya creada</h5>
+                        <p class="mb-0">Esta cotización ya fue convertida en la orden <strong>{{ cotizacion.orden_asociada.folio }}</strong></p>
+                        <a href="{% url 'recepcion_lab' %}?folio={{ cotizacion.orden_asociada.folio }}" class="btn btn-primary mt-2">
+                            <i class="fas fa-external-link-alt"></i> Ver Orden
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle"></i> No hay estudios detectados para crear una orden.
+                    </div>
+                    {% endif %}
+                    
+                    <a href="{% url 'ia:procesar_receta' %}" class="btn btn-outline-primary btn-block mt-2">
+                        <i class="fas fa-redo"></i> Procesar Otra Receta
+                    </a>
+                    <a href="{% url 'ia:dashboard' %}" class="btn btn-outline-secondary btn-block">
+                        <i class="fas fa-home"></i> Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Búsqueda de pacientes
+const buscarPacienteInput = document.getElementById('buscarPaciente');
+const resultadosPaciente = document.getElementById('resultadosPaciente');
+const pacienteIdInput = document.getElementById('pacienteId');
+const btnCrearOrden = document.getElementById('btnCrearOrden');
+
+let timeoutBusqueda;
+
+buscarPacienteInput.addEventListener('input', function() {
+    clearTimeout(timeoutBusqueda);
+    const termino = this.value.trim();
+    
+    if (termino.length < 3) {
+        resultadosPaciente.innerHTML = '';
+        return;
+    }
+    
+    timeoutBusqueda = setTimeout(() => {
+        fetch(`/api/pacientes/buscar/?q=${encodeURIComponent(termino)}`)
+            .then(response => response.json())
+            .then(data => {
+                resultadosPaciente.innerHTML = '';
+                
+                if (data.pacientes && data.pacientes.length > 0) {
+                    data.pacientes.forEach(paciente => {
+                        const item = document.createElement('a');
+                        item.href = '#';
+                        item.className = 'list-group-item list-group-item-action';
+                        item.innerHTML = `
+                            <div class="d-flex justify-content-between">
+                                <span><strong>${paciente.nombre_completo}</strong></span>
+                                <span class="text-muted">${paciente.telefono || ''}</span>
+                            </div>
+                            <small class="text-muted">${paciente.curp || paciente.fecha_nacimiento || ''}</small>
+                        `;
+                        item.onclick = (e) => {
+                            e.preventDefault();
+                            seleccionarPaciente(paciente);
+                        };
+                        resultadosPaciente.appendChild(item);
+                    });
+                } else {
+                    resultadosPaciente.innerHTML = '<div class="list-group-item text-muted">No se encontraron pacientes</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error en búsqueda:', error);
+                resultadosPaciente.innerHTML = '<div class="list-group-item text-danger">Error en la búsqueda</div>';
+            });
+    }, 300);
+});
+
+function seleccionarPaciente(paciente) {
+    buscarPacienteInput.value = paciente.nombre_completo;
+    pacienteIdInput.value = paciente.id;
+    resultadosPaciente.innerHTML = '';
+    btnCrearOrden.disabled = false;
+}
+
+// Crear orden desde OCR
+document.getElementById('formCrearOrden').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const pacienteId = pacienteIdInput.value;
+    if (!pacienteId) {
+        alert('Por favor, selecciona un paciente.');
+        return;
+    }
+    
+    btnCrearOrden.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando orden...';
+    btnCrearOrden.disabled = true;
+    
+    fetch('{% url 'ia:crear_orden_desde_ocr' cotizacion.pk %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            paciente_id: pacienteId,
+            estudios: {{ estudios|safe }}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`✓ Orden creada exitosamente: ${data.folio}`);
+            window.location.href = '/laboratorio/recepcion/?folio=' + data.folio;
+        } else {
+            alert('Error: ' + data.error);
+            btnCrearOrden.innerHTML = '<i class="fas fa-plus-circle"></i> Crear Orden de Laboratorio';
+            btnCrearOrden.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al crear la orden. Intenta nuevamente.');
+        btnCrearOrden.innerHTML = '<i class="fas fa-plus-circle"></i> Crear Orden de Laboratorio';
+        btnCrearOrden.disabled = false;
+    });
+});
+</script>
+{% endblock %}

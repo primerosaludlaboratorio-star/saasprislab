@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-0 fw-bold text-primary"><i class="bi bi-cpu me-2"></i>{{ titulo }}</h2>
+      <small class="text-muted">Gemelos Digitales — CMMS V8.2</small>
+    </div>
+    <a href="{% url 'mantenimiento:crear_expediente' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>Registrar Equipo
+    </a>
+  </div>
+
+  <div class="row g-3">
+    {% for exp in expedientes %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header d-flex justify-content-between align-items-center
+            {% if exp.en_servicio %}bg-success bg-opacity-10{% else %}bg-secondary bg-opacity-10{% endif %}">
+          <span class="fw-semibold">
+            <i class="bi bi-cpu me-1 {% if exp.en_servicio %}text-success{% else %}text-secondary{% endif %}"></i>
+            {{ exp.equipo.nombre }}
+          </span>
+          <span class="badge {% if exp.en_servicio %}bg-success{% else %}bg-secondary{% endif %}">
+            {% if exp.en_servicio %}Activo{% else %}Fuera de Servicio{% endif %}
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="row g-2 small">
+            <div class="col-6 text-muted">Fabricante</div>
+            <div class="col-6 fw-semibold">{{ exp.fabricante|default:"—" }}</div>
+            <div class="col-6 text-muted">N° Serie</div>
+            <div class="col-6"><code>{{ exp.numero_serie|default:"—" }}</code></div>
+            <div class="col-6 text-muted">Silo Refacciones</div>
+            <div class="col-6">
+              <span class="badge
+                {% if exp.silo_refacciones == 'LAB' %}bg-primary
+                {% elif exp.silo_refacciones == 'CONSULTORIO' %}bg-info text-dark
+                {% else %}bg-secondary{% endif %}">
+                {{ exp.get_silo_refacciones_display }}
+              </span>
+            </div>
+            <div class="col-6 text-muted">Garantía hasta</div>
+            <div class="col-6">
+              {% if exp.garantia_hasta %}
+                {% if exp.garantia_hasta < today %}
+                  <span class="text-danger">{{ exp.garantia_hasta|date:"d/m/Y" }}</span>
+                {% else %}
+                  {{ exp.garantia_hasta|date:"d/m/Y" }}
+                {% endif %}
+              {% else %}—{% endif %}
+            </div>
+            <div class="col-6 text-muted">Tickets abiertos</div>
+            <div class="col-6">
+              {% if exp.total_tickets > 0 %}
+                <span class="badge bg-warning text-dark">{{ exp.total_tickets }}</span>
+              {% else %}
+                <span class="text-success">0</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="card-footer bg-transparent d-flex gap-2">
+          <a href="{% url 'mantenimiento:detalle_expediente' exp.pk %}"
+             class="btn btn-sm btn-outline-primary flex-fill">
+            <i class="bi bi-eye me-1"></i>Ver
+          </a>
+          <a href="{% url 'mantenimiento:diagnostico_inicio' exp.pk %}"
+             class="btn btn-sm btn-outline-warning flex-fill">
+            <i class="bi bi-stethoscope me-1"></i>Diagnóstico
+          </a>
+          <a href="{% url 'mantenimiento:qr_equipo' exp.qr_uid %}"
+             class="btn btn-sm btn-outline-secondary" target="_blank" title="Ver QR">
+            <i class="bi bi-qr-code"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center text-muted py-5">
+      <i class="bi bi-cpu display-4 opacity-25 d-block mb-2"></i>
+      No hay equipos registrados. <a href="{% url 'mantenimiento:crear_expediente' %}">Registrar el primero</a>.
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

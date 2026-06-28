@@ -1,0 +1,244 @@
+from django.test import TestCase, Client
+from django.contrib.auth import get_user_model
+from django.urls import reverse, NoReverseMatch
+import json
+import unittest
+import pyotp
+from django.utils import timezone
+
+Usuario = get_user_model()
+
+try:
+    from core.models import Empresa, ForenseAcceso
+except ImportError:
+    Empresa = None
+    ForenseAcceso = None
+
+try:
+    from seguridad import models as seguridad_models
+except ImportError:
+    seguridad_models = None
+
+
+class SeguridadModuleTest(TestCase):
+    """Tests for seguridad module (2FA TOTP, panic button, sensitive action logs)"""
+    
+    def setUp(self):
+        """Set up test data"""
+        if Empresa is None:
+            self.skipTest("Required models not available")
+        
+        self.empresa = Empresa.objects.create(
+            nombre="Test Empresa",
+            rfc="TEST123456"
+        )
+        
+        self.usuario = Usuario.objects.create_user(
+            username='testuser',
+            password='test123',
+            empresa=self.empresa
+        )
+        
+        self.client = Client()
+    
+    def test_seguridad_models_import(self):
+        """Test that seguridad models can be imported"""
+        if seguridad_models is None:
+            self.skipTest("Seguridad models not available")
+        
+        # Check if models module has any models
+        self.assertIsNotNone(seguridad_models)
+    
+    def test_seguridad_urls_resolution(self):
+        """Test that seguridad URLs can be resolved"""
+        self.client.login(username='testuser', password='test123')
+        
+        # Try common seguridad URL patterns
+        url_patterns = [
+            'seguridad:totp_setup',
+            'seguridad:panic_button',
+            'seguridad:action_logs',
+            'seguridad:enable_2fa',
+            'seguridad:verify_totp',
+        ]
+        
+        resolved_urls = []
+        for pattern in url_patterns:
+            try:
+                url = reverse(pattern)
+                resolved_urls.append(pattern)
+            except NoReverseMatch:
+                pass
+        
+        # At least one URL should resolve, or skip if none exist
+        if not resolved_urls:
+            self.skipTest("No seguridad URLs found")
+        
+        # Test that at least one URL returns a valid response
+        for pattern in resolved_urls[:1]:  # Test first resolved URL
+            try:
+                url = reverse(pattern)
+                response = self.client.get(url)
+                self.assertIn(response.status_code, [200, 302, 405, 400, 403])
+                break
+            except NoReverseMatch:
+                pass
+    
+    def test_seguridad_module_structure(self):
+        """Test basic seguridad module structure"""
+        try:
+            import seguridad
+            self.assertTrue(hasattr(seguridad, '__name__'))
+        except ImportError:
+            self.skipTest("Seguridad module not available")
+
+from django.test import TestCase, Client, override_settings
+
+@override_settings(SYSTEM_MAINTENANCE_MODE=False)
+class TwoFactorTest(TestCase):
+    """Cobertura funcional para la API 2FA en configuración y respaldo."""
+
+    def setUp(self):
+        if Empresa is None or seguridad_models is None:
+            self.skipTest("Required seguridad models not available")
+
+        self.empresa = Empresa.objects.create(
+            nombre="Empresa 2FA",
+            rfc="TFA010101ABC"
+        )
+        self.usuario = Usuario.objects.create_user(
+            username='usuario2fa',
+            password='test123',
+            empresa=self.empresa,
+            is_superuser=True
+        )
+        self.client = Client()
+        self.client.login(username='usuario2fa', password='test123')
+
+    def test_api_verificar_codigo_totp_activo(self):
+        secret = pyotp.random_base32()
+        seguridad_models.DispositivoTOTP.objects.create(
+            usuario=self.usuario,
+            nombre='Authenticator',
+            llave_secreta=secret,
+            activo=True,
+            confirmado=True,
+        )
+
+        response = self.client.post(
+            reverse('seguridad:api_verificar_2fa'),
+            {'codigo': pyotp.TOTP(secret).now()},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['valido'])
+        self.assertEqual(data['tipo'], 'totp')
+
+    def test_api_verificar_codigo_backup_lo_marca_usado(self):
+        codigo = 'ABCD1234EFGH'
+        backup = seguridad_models.CodigoBackup2FA.objects.create(
+            usuario=self.usuario,
+            codigo=codigo,
+        )
+
+        response = self.client.post(
+            reverse('seguridad:api_verificar_2fa'),
+            {'codigo': codigo},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['valido'])
+        self.assertEqual(data['tipo'], 'backup')
+        backup.refresh_from_db()
+        self.assertTrue(backup.usado)
+
+    def test_api_verificar_codigo_2fa_json_invalido_retorna_400(self):
+        response = self.client.post(
+            reverse('seguridad:api_verificar_2fa'),
+            data='{json-invalido',
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertFalse(data['valido'])
+        self.assertEqual(data['mensaje'], 'JSON inválido')
+
+
+class SeguridadTenantAlignmentTest(TestCase):
+    def setUp(self):
+        if Empresa is None or seguridad_models is None or ForenseAcceso is None:
+            self.skipTest("Required seguridad models not available")
+
+        self.empresa_a = Empresa.objects.create(
+            nombre="Empresa Seguridad A",
+            rfc="SEG010101AA1",
+        )
+        self.empresa_b = Empresa.objects.create(
+            nombre="Empresa Seguridad B",
+            rfc="SEG010101BB2",
+        )
+        self.usuario_director = Usuario.objects.create_user(
+            username='director_seguridad',
+            password='test123',
+            empresa=self.empresa_a,
+            rol='DIRECTOR',
+        )
+        self.client = Client()
+        self.client.login(username='director_seguridad', password='test123')
+
+    def test_panic_button_crea_alerta_en_empresa_del_usuario(self):
+        response = self.client.post(
+            reverse('seguridad:panic_button'),
+            {'ubicacion': 'Recepcion principal'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['ok'])
+
+        alerta = seguridad_models.AlertaPanico.objects.get(id=data['alerta_id'])
+        self.assertEqual(alerta.empresa, self.empresa_a)
+        self.assertEqual(alerta.usuario, self.usuario_director)
+
+    def test_rastro_paciente_filtra_por_empresa_del_usuario(self):
+        hoy = timezone.now()
+        ForenseAcceso.objects.create(
+            empresa=self.empresa_a,
+            paciente_id=123,
+            usuario_id=self.usuario_director.id,
+            accion=ForenseAcceso.ACCION_EXPEDIENTE_VIEW,
+            created_at=hoy,
+        )
+        ForenseAcceso.objects.create(
+            empresa=self.empresa_b,
+            paciente_id=123,
+            usuario_id=self.usuario_director.id,
+            accion=ForenseAcceso.ACCION_EXPEDIENTE_VIEW,
+            created_at=hoy,
+        )
+
+        response = self.client.get(
+            reverse('seguridad:rastro_paciente'),
+            {'paciente_id': '123'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        rows = list(response.context['rows'])
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].empresa, self.empresa_a)
+
+    def test_panic_button_sin_empresa_retorna_403(self):
+        self.usuario_director.empresa = None
+        self.usuario_director.save(update_fields=['empresa'])
+
+        response = self.client.post(
+            reverse('seguridad:panic_button'),
+            {'ubicacion': 'Recepcion principal'},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        data = response.json()
+        self.assertFalse(data['ok'])

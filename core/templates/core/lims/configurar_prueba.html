@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} | PRISLAB LIMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .config-header {
+        background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+        color: white;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border-radius: 8px;
+    }
+    .form-label { font-weight: 600; color: #2c3e50; margin-bottom: 0.5rem; }
+    .required-field::after { content: " *"; color: #e74c3c; }
+    .param-table th { font-size: .8rem; background: #2c3e50; color: #fff; }
+    .param-table td { font-size: .85rem; vertical-align: middle; }
+    .param-table tr:hover { background: rgba(52,152,219,.06); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3">
+    {# Header #}
+    <div class="config-header">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h4 class="mb-0"><i class="fas fa-cog me-2"></i>{{ titulo }}</h4>
+            </div>
+            <div class="col-md-6 text-end d-flex gap-2 justify-content-end flex-wrap">
+                {% if es_edicion %}
+                  <a href="{% url 'lista_parametros' %}?estudio={{ estudio.id }}"
+                     class="btn btn-light btn-sm fw-bold">
+                    <i class="bi bi-sliders2 me-1"></i>Ver Parámetros ({{ estudio.parametros.count }})
+                  </a>
+                  <a href="{% url 'nuevo_parametro_estudio' estudio.id %}"
+                     class="btn btn-success btn-sm fw-bold">
+                    <i class="bi bi-plus-circle-fill me-1"></i>Nuevo Parámetro
+                  </a>
+                  {% if request.user.is_staff or request.user.is_superuser %}
+                  <button type="button" class="btn btn-outline-danger btn-sm"
+                          onclick="confirmarEliminarEstudio('{{ estudio.id }}', '{{ estudio.nombre|escapejs }}')">
+                    <i class="fas fa-trash me-1"></i>Eliminar
+                  </button>
+                  {% endif %}
+                {% endif %}
+                <a href="{% url 'lista_pruebas' %}" class="btn btn-light btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Volver
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" id="form-estudio">
+        {% csrf_token %}
+
+        <div class="row g-3">
+          {# ─── COLUMNA IZQ: Datos Básicos ─────────────────────────── #}
+          <div class="col-lg-6">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-primary text-white py-2">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información Básica</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label required-field">{{ form.codigo.label }}</label>
+                            {{ form.codigo }}
+                            {% if form.codigo.errors %}<div class="text-danger small">{{ form.codigo.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.abreviatura.label }}</label>
+                            {{ form.abreviatura }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label required-field">{{ form.nombre.label }}</label>
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}<div class="text-danger small">{{ form.nombre.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.seccion.label }}</label>
+                            {{ form.seccion }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label required-field">{{ form.precio.label }}</label>
+                            {{ form.precio }}
+                            {% if form.precio.errors %}<div class="text-danger small">{{ form.precio.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.dias_entrega.label }}</label>
+                            {{ form.dias_entrega }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-success text-white py-2">
+                    <h6 class="mb-0"><i class="fas fa-vial me-2"></i>Muestras y Logística</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.muestra_requerida.label }}</label>
+                            {{ form.muestra_requerida }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.volumen_muestra.label }}</label>
+                            {{ form.volumen_muestra }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.tubo_color.label }}</label>
+                            {{ form.tubo_color }}
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">{{ form.indicaciones.label }}</label>
+                            {{ form.indicaciones }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+          </div>
+
+          {# ─── COLUMNA DER: Técnico + Opciones ────────────────────── #}
+          <div class="col-lg-6">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-info text-white py-2">
+                    <h6 class="mb-0"><i class="fas fa-microscope me-2"></i>Configuración Técnica</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.metodologia.label }}</label>
+                            {{ form.metodologia }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.equipo_asignado.label }}</label>
+                            {{ form.equipo_asignado }}
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">{{ form.descripcion_interna.label }}</label>
+                            {{ form.descripcion_interna }}
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                {{ form.activo }}
+                                <label class="form-check-label" for="{{ form.activo.id_for_label }}">{{ form.activo.label }}</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                {{ form.es_perfil }}
+                                <label class="form-check-label" for="{{ form.es_perfil.id_for_label }}">{{ form.es_perfil.label }}</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                {{ form.requiere_autorizacion }}
+                                <label class="form-check-label" for="{{ form.requiere_autorizacion.id_for_label }}">{{ form.requiere_autorizacion.label }}</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# ─── Tabla de Parámetros (solo lectura, link al módulo v6) ── #}
+            {% if es_edicion %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-dark text-white py-2 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-sliders2 me-1"></i>Parámetros del Estudio</h6>
+                    <a href="{% url 'nuevo_parametro_estudio' estudio.id %}"
+                       class="btn btn-sm btn-success py-0 px-2">
+                       <i class="bi bi-plus-lg"></i> Agregar
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm table-bordered param-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Parámetro</th>
+                                <th>Unidad</th>
+                                <th>Tipo</th>
+                                <th class="text-center">Ord.</th>
+                                <th class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-params-estudio">
+                            <tr><td colspan="5" class="text-center text-muted py-3">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            {# Botones de Acción #}
+            <div class="card shadow-sm mb-3">
+                <div class="card-body py-2 d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn btn-primary px-4 fw-bold" id="btn-guardar-estudio">
+                        <i class="fas fa-save me-1"></i>Guardar Estudio
+                    </button>
+                    <a href="{% url 'lista_pruebas' %}" class="btn btn-secondary px-4">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </a>
+                </div>
+            </div>
+          </div>
+        </div>{# /row #}
+
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validación del formulario de estudio (solo datos básicos, SIN formsets)
+    var form = document.getElementById('form-estudio');
+    form.addEventListener('submit', function(e) {
+        var codigo = document.querySelector('[name="codigo"]');
+        var nombre = document.querySelector('[name="nombre"]');
+        if (!codigo.value.trim()) { e.preventDefault(); alert('El código del estudio es obligatorio'); codigo.focus(); return; }
+        if (!nombre.value.trim()) { e.preventDefault(); alert('El nombre del estudio es obligatorio'); nombre.focus(); return; }
+        var btn = document.getElementById('btn-guardar-estudio');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Guardando...';
+    });
+
+    {% if es_edicion %}
+    // Cargar parámetros vía AJAX (módulo v6.0 independiente)
+    fetch("{% url 'api_parametros_estudio' estudio.id %}", {credentials:'same-origin'})
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            var tbody = document.getElementById('tbody-params-estudio');
+            var params = data.parametros || [];
+            if (!params.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3"><i class="bi bi-inbox me-1"></i>Sin parámetros. Haz clic en "Agregar" para crear el primero.</td></tr>';
+                return;
+            }
+            var html = '';
+            params.forEach(function(p){
+                var tipoBadge = {NUMERICO:'primary',TEXTO:'secondary',TEXTO_PREDEFINIDO:'warning',POSITIVO_NEGATIVO:'info',PRESENTE_AUSENTE:'info'}[p.tipo_dato] || 'light';
+                html += '<tr>'
+                    + '<td><strong>' + p.nombre + '</strong></td>'
+                    + '<td>' + (p.unidad || '—') + '</td>'
+                    + '<td><span class="badge bg-' + tipoBadge + '" style="font-size:.75rem">' + p.tipo_dato + '</span></td>'
+                    + '<td class="text-center">' + p.orden + '</td>'
+                    + '<td class="text-center"><a href="/lims/parametros/' + p.id + '/editar/" class="btn btn-outline-primary btn-sm py-0 px-1"><i class="bi bi-pencil-fill"></i></a></td>'
+                    + '</tr>';
+            });
+            tbody.innerHTML = html;
+        })
+        .catch(function(e){
+            document.getElementById('tbody-params-estudio').innerHTML = '<tr><td colspan="5" class="text-danger text-center">Error al cargar parámetros</td></tr>';
+        });
+    {% endif %}
+});
+
+function confirmarEliminarEstudio(estudioId, estudioNombre) {
+    if (!confirm('ELIMINAR ESTUDIO: "' + estudioNombre + '"\n\nSe desactivará (Soft Delete).\nParámetros y resultados históricos quedan intactos.\n\n¿Confirmar?')) return;
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/lims/estudios/' + estudioId + '/eliminar/';
+    form.innerHTML = '<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">';
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+{% endblock %}

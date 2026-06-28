@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Lista de Espera{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2><i class="fas fa-clock"></i> Sala de Espera</h2>
+    
+    <!-- Pacientes en Espera -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-hourglass-half"></i> En Espera</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for cita in pacientes_espera %}
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>{{ cita.paciente.nombre_completo }}</h5>
+                            {# FIX CONTRATO UI: hora_cita; badge sin bg-{{ estado }} (guiones rompen clases CSS) #}
+                            <p class="mb-1"><i class="fas fa-clock"></i> {{ cita.hora_cita|time:"H:i" }}</p>
+                            <p class="mb-2"><strong>Dr. {{ cita.medico.nombre_completo }}</strong></p>
+                            <span class="badge bg-warning text-dark">{{ cita.get_estado_display }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center text-muted">No hay pacientes en espera</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Pacientes en Consulta -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-user-md"></i> En Consulta</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for cita in pacientes_consulta %}
+                <div class="col-md-6 mb-3">
+                    <div class="card border-info">
+                        <div class="card-body">
+                            <h5>{{ cita.paciente.nombre_completo }}</h5>
+                            <p class="mb-2"><strong>Con: Dr. {{ cita.medico.nombre_completo }}</strong></p>
+                            <span class="badge bg-info">En Consulta</span>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center text-muted">No hay consultas activas</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

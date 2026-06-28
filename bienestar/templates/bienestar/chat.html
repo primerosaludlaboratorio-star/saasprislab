@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}Bienestar — Chat con PRIS{% endblock %}
+
+{% block extra_css %}
+<style>
+.chat-container{height:440px;overflow-y:auto;display:flex;flex-direction:column;gap:.75rem;padding:1rem;}
+.msg-usuario{align-self:flex-end;background:#0d6efd;color:#fff;border-radius:18px 18px 4px 18px;padding:.6rem 1rem;max-width:75%;font-size:.9rem;}
+.msg-pris{align-self:flex-start;background:#f1f3f5;color:#212529;border-radius:18px 18px 18px 4px;padding:.6rem 1rem;max-width:75%;font-size:.9rem;}
+.privacidad-badge{font-size:.7rem;background:#e9f7ef;color:#198754;border-radius:12px;padding:.2rem .7rem;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:700px">
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex align-items-center gap-2 py-3">
+      <i class="fas fa-heart text-danger"></i>
+      <div>
+        <div class="fw-bold">Bienestar — Chat con PRIS</div>
+        <span class="privacidad-badge"><i class="fas fa-lock me-1"></i>Conversación completamente privada</span>
+      </div>
+    </div>
+
+    <!-- Historial de mensajes -->
+    <div class="chat-container" id="chat-container">
+      {% if not conversaciones %}
+      <div class="text-center text-muted py-4">
+        <i class="fas fa-heart fa-2x text-danger mb-2"></i>
+        <p class="mb-0">Hola, soy PRIS 💙<br>Estoy aquí para escucharte. ¿Cómo te sientes hoy?</p>
+      </div>
+      {% else %}
+        {% for conv in conversaciones %}
+          {% if conv.rol == 'USUARIO' %}
+          <div class="msg-usuario">{{ conv.mensaje }}</div>
+          {% else %}
+          <div class="msg-pris">{{ conv.mensaje }}</div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    </div>
+
+    <!-- Input de mensaje -->
+    <div class="card-footer bg-white">
+      <div class="input-group">
+        <textarea id="msg-input" class="form-control" rows="2"
+                  placeholder="Escribe cómo te sientes..." style="resize:none;"></textarea>
+        <button id="btn-enviar" class="btn btn-primary">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+      <small class="text-muted mt-1 d-block">
+        <i class="fas fa-shield-alt me-1"></i>
+        Solo tú puedes ver esta conversación. PRIS protege tu privacidad.
+      </small>
+    </div>
+  </div>
+
+  <div class="mt-3 text-center">
+    <small class="text-muted">
+      En caso de emergencia llama al <strong>800 911 2000</strong> (Línea de la Vida - México)
+    </small>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const container = document.getElementById('chat-container');
+  const input     = document.getElementById('msg-input');
+  const btn       = document.getElementById('btn-enviar');
+
+  container.scrollTop = container.scrollHeight;
+
+  function addMsg(texto, tipo){
+    const div = document.createElement('div');
+    div.className = tipo === 'usuario' ? 'msg-usuario' : 'msg-pris';
+    div.textContent = texto;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  async function enviar(){
+    const msg = input.value.trim();
+    if(!msg) return;
+    addMsg(msg, 'usuario');
+    input.value = '';
+    btn.disabled = true;
+
+    try {
+      const r = await fetch('{% url "enviar_mensaje_bienestar" %}', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+        body: JSON.stringify({mensaje: msg})
+      });
+      const data = await r.json();
+      if(data.status === 'success'){
+        addMsg(data.respuesta, 'pris');
+        if(data.nivel_riesgo === 'CRITICO'){
+          const alerta = document.createElement('div');
+          alerta.className = 'alert alert-danger text-center mt-2 small';
+          alerta.innerHTML = '<i class="fas fa-phone me-1"></i>Línea de la Vida: <strong>800 911 2000</strong>';
+          container.appendChild(alerta);
+        }
+      }
+    } catch(e){
+      addMsg('⚠️ Error de conexión. Intenta de nuevo.', 'pris');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  btn.addEventListener('click', enviar);
+  input.addEventListener('keydown', e => {
+    if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); enviar(); }
+  });
+})();
+</script>
+{% endblock %}

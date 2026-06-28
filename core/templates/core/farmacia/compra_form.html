@@ -1,0 +1,436 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Registrar Compra - {{ empresa.nombre|default:"PRISLAB" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .compra-container {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin-bottom: 20px;
+    }
+    .producto-item {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background-color: #f8f9fa;
+        transition: all 0.3s;
+    }
+    .producto-item:hover {
+        border-color: #667eea;
+        background-color: #f0f4ff;
+    }
+    .btn-remove-producto {
+        margin-top: 10px;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 0.9rem;
+    }
+    .total-compra {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #28a745;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top: 70px;">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="fw-bold text-primary">
+                    <i class="bi bi-cart-plus"></i> Registrar Compra de Mercancía
+                </h2>
+                <a href="{% url 'pdv_farmacia' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver al POS
+                </a>
+            </div>
+
+            <form method="post" id="formCompra" action="{% url 'registrar_compra' %}">
+                {% csrf_token %}
+                
+                <div class="compra-container">
+                    <h4 class="mb-4">Información de la Compra</h4>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="proveedor_id" class="form-label">
+                                Proveedor <span class="text-danger">*</span>
+                            </label>
+                            <select name="proveedor_id" id="proveedor_id" class="form-select" required>
+                                <option value="">Seleccione un proveedor</option>
+                                {% for proveedor in proveedores %}
+                                <option value="{{ proveedor.id }}">{{ proveedor.nombre_empresa }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="fecha_compra" class="form-label">
+                                Fecha de Compra <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" name="fecha_compra" id="fecha_compra" class="form-control" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="folio_factura" class="form-label">
+                                Folio de Factura
+                            </label>
+                            <input type="text" name="folio_factura" id="folio_factura" class="form-control" 
+                                   placeholder="Opcional">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="btnAgregarProducto" class="form-label d-block">&nbsp;</label>
+                            <button type="button" class="btn btn-success w-100" id="btnAgregarProducto">
+                                <i class="bi bi-plus-circle"></i> Agregar Producto
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="observaciones" class="form-label">Observaciones</label>
+                        <textarea name="observaciones" id="observaciones" class="form-control" rows="2" 
+                                  placeholder="Notas adicionales sobre la compra"></textarea>
+                    </div>
+                </div>
+
+                <!-- Sección de Productos -->
+                <div class="compra-container">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="mb-0">Productos de la Compra</h4>
+                        <span class="badge bg-primary" id="contador-productos">0 productos</span>
+                    </div>
+                    
+                    <div id="contenedor-productos">
+                        <!-- Los productos se agregarán dinámicamente aquí -->
+                    </div>
+                    
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold">Total de la Compra:</span>
+                            <span class="total-compra" id="total-compra">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="{% url 'pdv_farmacia' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg" id="btnGuardarCompra">
+                        <i class="bi bi-save"></i> Guardar Compra y Actualizar Inventario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para buscar productos -->
+<div class="modal fade" id="modalBuscarProducto" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Buscar Producto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="inputBuscarProducto" 
+                           placeholder="Buscar por nombre, código de barras o sustancia activa...">
+                </div>
+                <div id="resultados-busqueda" style="max-height: 400px; overflow-y: auto;">
+                    <p class="text-muted text-center">Escriba al menos 2 caracteres para buscar</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let contadorProductos = 0;
+let productosAgregados = [];
+
+// Inicializar fecha de hoy si no está definida
+document.addEventListener('DOMContentLoaded', function() {
+    const fechaInput = document.getElementById('fecha_compra');
+    if (fechaInput && !fechaInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        fechaInput.value = today;
+    }
+    
+    // Event listener para búsqueda de productos
+    const inputBuscar = document.getElementById('inputBuscarProducto');
+    let timeoutBusqueda = null;
+    
+    inputBuscar.addEventListener('input', function() {
+        clearTimeout(timeoutBusqueda);
+        const termino = this.value.trim();
+        
+        if (termino.length < 2) {
+            document.getElementById('resultados-busqueda').innerHTML = 
+                '<p class="text-muted text-center">Escriba al menos 2 caracteres para buscar</p>';
+            return;
+        }
+        
+        timeoutBusqueda = setTimeout(() => {
+            buscarProductos(termino);
+        }, 300);
+    });
+});
+
+function buscarProductos(termino) {
+    fetch(`{% url 'api_buscar_productos_compra' %}?q=${encodeURIComponent(termino)}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const contenedor = document.getElementById('resultados-busqueda');
+        
+        if (data.productos && data.productos.length > 0) {
+            let html = '<div class="list-group">';
+            data.productos.forEach(producto => {
+                html += `
+                    <a href="#" class="list-group-item list-group-item-action" 
+                       onclick="seleccionarProducto(${producto.id}, '${producto.nombre.replace(/'/g, "\\'")}', 
+                       '${producto.codigo_barras}', ${producto.precio_compra_actual}, ${producto.stock_actual}); return false;">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${producto.nombre}</h6>
+                            <small>Código: ${producto.codigo_barras}</small>
+                        </div>
+                        <p class="mb-1 small text-muted">
+                            ${producto.sustancia_activa ? 'Sustancia: ' + producto.sustancia_activa + ' | ' : ''}
+                            ${producto.marca_laboratorio ? 'Lab: ' + producto.marca_laboratorio + ' | ' : ''}
+                            Stock: ${producto.stock_actual} | Precio Compra: $${producto.precio_compra_actual}
+                        </p>
+                    </a>
+                `;
+            });
+            html += '</div>';
+            contenedor.innerHTML = html;
+        } else {
+            contenedor.innerHTML = '<p class="text-muted text-center">No se encontraron productos</p>';
+        }
+    })
+    .catch(error => {
+        console.error('Error al buscar productos:', error);
+        document.getElementById('resultados-busqueda').innerHTML = 
+            '<p class="text-danger text-center">Error al buscar productos</p>';
+    });
+}
+
+function seleccionarProducto(productoId, nombre, codigoBarras, precioCompra, stockActual) {
+    // Cerrar modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalBuscarProducto'));
+    modal.hide();
+    
+    // Agregar producto a la lista
+    agregarProducto(productoId, nombre, codigoBarras, precioCompra, stockActual);
+}
+
+function agregarProducto(productoId, nombre, codigoBarras, precioCompra = 0, stockActual = 0) {
+    const contenedor = document.getElementById('contenedor-productos');
+    const index = contadorProductos++;
+    
+    const productoItem = document.createElement('div');
+    productoItem.className = 'producto-item';
+    productoItem.id = `producto-item-${index}`;
+    productoItem.innerHTML = `
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label">Producto</label>
+                <input type="text" class="form-control" value="${nombre}" readonly>
+                <input type="hidden" name="productos[${index}][producto_id]" value="${productoId}">
+                <small class="text-muted">Código: ${codigoBarras} | Stock actual: ${stockActual}</small>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Cantidad <span class="text-danger">*</span></label>
+                <input type="number" name="productos[${index}][cantidad]" 
+                       class="form-control cantidad-input" min="1" value="1" required 
+                       onchange="calcularTotal()">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Costo Unitario <span class="text-danger">*</span></label>
+                <input type="number" name="productos[${index}][costo_unitario]" 
+                       class="form-control costo-input" step="0.01" min="0" 
+                       value="${precioCompra}" required onchange="calcularTotal()">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Lote</label>
+                <input type="text" name="productos[${index}][numero_lote]" 
+                       class="form-control" placeholder="Opcional">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Caducidad</label>
+                <input type="date" name="productos[${index}][fecha_caducidad]" 
+                       class="form-control">
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-4">
+                <label class="form-label">Fabricación</label>
+                <input type="date" name="productos[${index}][fecha_fabricacion]" 
+                       class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Subtotal</label>
+                <input type="text" class="form-control subtotal-input" readonly value="$0.00">
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <button type="button" class="btn btn-danger btn-sm btn-remove-producto" 
+                        onclick="eliminarProducto(${index})">
+                    <i class="bi bi-trash"></i> Eliminar
+                </button>
+            </div>
+        </div>
+    `;
+    
+    contenedor.appendChild(productoItem);
+    productosAgregados.push(index);
+    actualizarContador();
+    calcularTotal();
+    
+    // Limpiar búsqueda
+    document.getElementById('inputBuscarProducto').value = '';
+    document.getElementById('resultados-busqueda').innerHTML = 
+        '<p class="text-muted text-center">Escriba al menos 2 caracteres para buscar</p>';
+}
+
+function eliminarProducto(index) {
+    const item = document.getElementById(`producto-item-${index}`);
+    if (item) {
+        item.remove();
+        productosAgregados = productosAgregados.filter(i => i !== index);
+        actualizarContador();
+        calcularTotal();
+    }
+}
+
+function actualizarContador() {
+    const contador = document.getElementById('contador-productos');
+    const cantidad = productosAgregados.length;
+    contador.textContent = `${cantidad} producto${cantidad !== 1 ? 's' : ''}`;
+}
+
+function calcularTotal() {
+    let total = 0;
+    
+    productosAgregados.forEach(index => {
+        const cantidadInput = document.querySelector(`#producto-item-${index} .cantidad-input`);
+        const costoInput = document.querySelector(`#producto-item-${index} .costo-input`);
+        const subtotalInput = document.querySelector(`#producto-item-${index} .subtotal-input`);
+        
+        if (cantidadInput && costoInput && subtotalInput) {
+            const cantidad = parseFloat(cantidadInput.value) || 0;
+            const costo = parseFloat(costoInput.value) || 0;
+            const subtotal = cantidad * costo;
+            
+            subtotalInput.value = `$${subtotal.toFixed(2)}`;
+            total += subtotal;
+        }
+    });
+    
+    document.getElementById('total-compra').textContent = `$${total.toFixed(2)}`;
+}
+
+// Event listener para botón agregar producto
+document.getElementById('btnAgregarProducto').addEventListener('click', function() {
+    const modal = new bootstrap.Modal(document.getElementById('modalBuscarProducto'));
+    modal.show();
+});
+
+// Manejo del formulario
+document.getElementById('formCompra').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (productosAgregados.length === 0) {
+        Swal.fire('Error', 'Debe agregar al menos un producto', 'error');
+        return;
+    }
+    
+    const proveedorId = document.getElementById('proveedor_id').value;
+    if (!proveedorId) {
+        Swal.fire('Error', 'Debe seleccionar un proveedor', 'error');
+        return;
+    }
+    
+    // Construir datos del formulario
+    const formData = new FormData(this);
+    const productos = [];
+    
+    productosAgregados.forEach(index => {
+        const productoId = formData.get(`productos[${index}][producto_id]`);
+        const cantidad = formData.get(`productos[${index}][cantidad]`);
+        const costoUnitario = formData.get(`productos[${index}][costo_unitario]`);
+        const numeroLote = formData.get(`productos[${index}][numero_lote]`);
+        const fechaCaducidad = formData.get(`productos[${index}][fecha_caducidad]`);
+        const fechaFabricacion = formData.get(`productos[${index}][fecha_fabricacion]`);
+        
+        if (productoId && cantidad && costoUnitario) {
+            productos.push({
+                producto_id: productoId,
+                cantidad: parseInt(cantidad),
+                costo_unitario: parseFloat(costoUnitario),
+                numero_lote: numeroLote || null,
+                fecha_caducidad: fechaCaducidad || null,
+                fecha_fabricacion: fechaFabricacion || null
+            });
+        }
+    });
+    
+    const datos = {
+        proveedor_id: proveedorId,
+        fecha_compra: formData.get('fecha_compra'),
+        folio_factura: formData.get('folio_factura') || '',
+        observaciones: formData.get('observaciones') || '',
+        productos: productos
+    };
+    
+    // Deshabilitar botón
+    const btnGuardar = document.getElementById('btnGuardarCompra');
+    btnGuardar.disabled = true;
+    btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+    
+    fetch('{% url "registrar_compra" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(datos)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Compra Registrada',
+                text: data.mensaje,
+                confirmButtonText: 'Aceptar'
+            }).then(() => {
+                window.location.href = '{% url "pdv_farmacia" %}';
+            });
+        } else {
+            Swal.fire('Error', data.mensaje || 'Error al registrar la compra', 'error');
+            btnGuardar.disabled = false;
+            btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar Compra y Actualizar Inventario';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error', 'Error de conexión al guardar la compra', 'error');
+        btnGuardar.disabled = false;
+        btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar Compra y Actualizar Inventario';
+    });
+});
+</script>
+{% endblock %}

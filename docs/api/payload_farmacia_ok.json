@@ -1,0 +1,30 @@
+{
+  "_qa_producto_id": "Sustituir el numero en items[0].producto_id (y coherente con precio/stock).",
+  "_qa_totales": "Si cambias cantidad o precio_unitario, alinea subtotal/iva por linea y total_final/pagos; el script redteam recalcula al generar el cobro imposible.",
+  "cliente": "QA Jonathan — PDV payload plantilla",
+  "paciente_id": null,
+  "subtotal": 348.28,
+  "iva_total": 55.72,
+  "redondeo": 0.0,
+  "total_final": 404.0,
+  "descuento_aplicado": 0,
+  "descuento_porcentaje": 0,
+  "total_original": 404.0,
+  "items": [
+    {
+      "producto_id": 11111,
+      "cantidad": 2,
+      "precio_unitario": 174.14,
+      "subtotal": 348.28,
+      "iva_item": 55.72
+    }
+  ],
+  "pagos": {
+    "efectivo": 404.0,
+    "tarjeta": 0,
+    "transferencia": 0
+  },
+  "efectivo_recibido": 500.0,
+  "cambio_entregado": 96.0,
+  "referencia_pago": "E2E-PAYLOAD-PLANTILLA"
+}

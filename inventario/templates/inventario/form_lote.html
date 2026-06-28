@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3" style="max-width:750px">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'inventario:lista_lotes' %}" class="btn btn-sm btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h2 class="mb-0 fw-bold text-primary"><i class="bi bi-plus-circle me-2"></i>{{ titulo }}</h2>
+  </div>
+
+  <div class="alert alert-info d-flex align-items-start gap-2">
+    <i class="bi bi-shield-exclamation fs-5 mt-1"></i>
+    <div>
+      <strong>Regla de Cuarentena ISO 15189</strong><br>
+      Todo lote nuevo entra automáticamente en estado <strong>CUARENTENA</strong>.
+      Solo personal autorizado puede liberarlo tras verificar el Certificado de Análisis del fabricante.
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">Reactivo <span class="text-danger">*</span></label>
+            <select name="reactivo" class="form-select" required>
+              <option value="">— Seleccionar reactivo —</option>
+              {% for r in reactivos %}
+                <option value="{{ r.pk }}">{{ r.get_tipo_display }} — {{ r.nombre }} ({{ r.unidad_medida }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Número de Lote <span class="text-danger">*</span></label>
+            <input type="text" name="numero_lote" class="form-control" required maxlength="100"
+                   placeholder="Tal como aparece en el empaque">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Fecha de Caducidad <span class="text-danger">*</span></label>
+            <input type="date" name="fecha_caducidad" class="form-control" required>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Cantidad Inicial <span class="text-danger">*</span></label>
+            <input type="number" name="cantidad_inicial" class="form-control" required step="0.001" min="0.001"
+                   placeholder="Cantidad recibida">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Precio Unitario de Compra ($)</label>
+            <input type="number" name="precio_unitario_compra" class="form-control" step="0.01" min="0"
+                   placeholder="Costo por unidad (opcional)">
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">Observaciones QC</label>
+            <textarea name="observaciones_qc" class="form-control" rows="2"
+                      placeholder="Condiciones de recepción, número de certificado de análisis, temperatura de llegada…"></textarea>
+          </div>
+
+          <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+            <a href="{% url 'inventario:lista_lotes' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-success">
+              <i class="bi bi-save me-1"></i>Registrar Lote (→ Cuarentena)
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

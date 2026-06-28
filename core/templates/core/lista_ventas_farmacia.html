@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Lista de Ventas - Farmacia{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-primary mb-0">
+                <i class="bi bi-cart-check"></i> LISTA DE VENTAS - FARMACIA
+            </h2>
+            <p class="text-muted-profesional mb-0">Historial completo de transacciones</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'pdv_farmacia' %}" class="btn btn-principal">
+                <i class="bi bi-plus-circle"></i> NUEVA VENTA
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros Rápidos -->
+    <div class="filter-buttons mb-4">
+        <a href="?filtro=todos" class="btn btn-outline-secondary filter-btn {% if filtro_actual == 'todos' %}active{% endif %}">
+            <i class="bi bi-list-ul"></i> TODOS
+        </a>
+        <a href="?filtro=hoy" class="btn btn-outline-secondary filter-btn {% if filtro_actual == 'hoy' %}active{% endif %}">
+            <i class="bi bi-calendar-day"></i> HOY
+        </a>
+        <a href="?filtro=pendiente" class="btn btn-outline-secondary filter-btn {% if filtro_actual == 'pendiente' %}active{% endif %}">
+            <i class="bi bi-clock"></i> PENDIENTES
+        </a>
+        <a href="?filtro=completadas" class="btn btn-outline-secondary filter-btn {% if filtro_actual == 'completadas' %}active{% endif %}">
+            <i class="bi bi-check-circle"></i> COMPLETADAS
+        </a>
+        <a href="?filtro=canceladas" class="btn btn-outline-danger filter-btn {% if filtro_actual == 'canceladas' %}active{% endif %}">
+            <i class="bi bi-x-circle"></i> CANCELADAS
+        </a>
+    </div>
+
+    <!-- Tabla de Ventas con Glassmorphism -->
+    <div class="worklist-container">
+        {% if ventas %}
+        <div class="table-responsive">
+            <table class="table table-profesional">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">FOLIO</th>
+                        <th style="width: 20%;">CLIENTE</th>
+                        <th style="width: 15%;">PRODUCTOS</th>
+                        <th style="width: 12%;">FECHA/HORA</th>
+                        <th style="width: 12%;">MÉTODO PAGO</th>
+                        <th style="width: 10%;">ESTADO</th>
+                        <th style="width: 10%;" class="text-end">TOTAL</th>
+                        <th style="width: 11%;" class="text-center">ACCIÓN</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for venta in ventas %}
+                    <tr class="neon-hover">
+                        <td class="fw-bold mono-num">
+                            {{ venta.folio_operacion|default:venta.id }}
+                        </td>
+                        <td>
+                            <strong>{{ venta.paciente_nombre|default:"PÚBLICO GENERAL" }}</strong>
+                            {% if venta.paciente %}
+                            <br><small class="text-muted-profesional">{{ venta.paciente.nombre_completo }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>{{ venta.detalles.count }} producto{{ venta.detalles.count|pluralize }}</small>
+                        </td>
+                        <td>
+                            <small>{{ venta.fecha|date:"H:i" }}</small><br>
+                            <small class="text-muted-profesional">{{ venta.fecha|date:"d/m/Y" }}</small>
+                        </td>
+                        <td>
+                            {% for pago in venta.pagos.all %}
+                                <span class="badge bg-secondary mb-1">{{ pago.get_metodo_display }}</span><br>
+                            {% empty %}
+                                <span class="text-muted-profesional">N/A</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if venta.estado == 'COMPLETADA' %}
+                                <span class="estado-badge completado">Completada</span>
+                            {% elif venta.estado == 'PENDIENTE' %}
+                                <span class="estado-badge pendiente">Pendiente</span>
+                            {% else %}
+                                <span class="estado-badge cancelado">Cancelada</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-bold text-primary mono-num">
+                            ${{ venta.total|floatformat:2 }}
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex flex-column gap-1">
+                                <a href="{% url 'imprimir_ticket' venta.id %}" class="btn btn-sm btn-outline-secondary fw-bold neon-hover" target="_blank">
+                                    <i class="bi bi-printer"></i> Reimprimir
+                                </a>
+                                {% if venta.estado == 'COMPLETADA' %}
+                                <button class="btn btn-sm btn-outline-secondary fw-bold neon-hover" onclick="procesarDevolucion({{ venta.id }})">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Devolución
+                                </button>
+                                {% endif %}
+                                {% for f in venta.facturas_cfdi.all %}
+                                <div class="border-top pt-1 mt-1 text-start" style="max-width: 200px; margin-left: auto; margin-right: auto;">
+                                    <small class="text-muted d-block">CFDI {{ f.folio_interno|truncatechars:14 }}</small>
+                                    {% if f.estado == 'TIMBRADO' %}
+                                    <span class="badge bg-success" style="font-size:9px;">TIMBRADA</span>
+                                    {% elif f.estado == 'ERROR' %}
+                                    <span class="badge bg-danger" style="font-size:9px;">ERROR</span>
+                                    {% elif f.estado == 'FACTURANDO' %}
+                                    <span class="badge bg-warning text-dark" style="font-size:9px;">FACTURANDO</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary" style="font-size:9px;">BORRADOR</span>
+                                    {% endif %}
+                                    <div class="d-flex flex-wrap gap-1 mt-1 justify-content-center">
+                                        {% if f.estado == 'BORRADOR' or f.estado == 'PENDIENTE' or f.estado == 'ERROR' %}
+                                        <form method="post" action="{% url 'contabilidad:timbrar_factura' f.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                            <button type="submit" class="btn btn-sm btn-danger py-0 px-1" style="font-size:9px;" data-prislab-requires-online="1">Timbrar</button>
+                                        </form>
+                                        {% endif %}
+                                        {% if f.estado == 'TIMBRADO' %}
+                                        <a href="{% url 'contabilidad:descargar_pdf' f.id %}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary py-0 px-1" style="font-size:9px;">PDF</a>
+                                        <a href="{% url 'contabilidad:descargar_xml' f.id %}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size:9px;">XML</a>
+                                        {% endif %}
+                                    </div>
+                                    {% if f.estado == 'ERROR' and f.ultimo_error_pac %}
+                                    <small class="text-danger d-block" style="font-size:8px;white-space:pre-wrap;">{{ f.ultimo_error_pac|truncatechars:180 }}</small>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+            <h5 class="mt-3 text-muted">No hay ventas registradas</h5>
+            <p class="text-muted-profesional">Todas las ventas aparecerán aquí.</p>
+            <a href="{% url 'pdv_farmacia' %}" class="btn btn-principal mt-3">
+                <i class="bi bi-plus-circle"></i> Crear Nueva Venta
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function procesarDevolucion(ventaId) {
+        window.location.href = `/farmacia/devoluciones/buscar/?venta_id=${ventaId}`;
+    }
+</script>
+{% endblock %}

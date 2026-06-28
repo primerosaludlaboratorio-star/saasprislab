@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Catálogo de Cuentas</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f7fa; }
+    .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; }
+    h1 { color: #1F4E79; }
+    .btn { padding: 8px 12px; background: #1F4E79; color: #fff; text-decoration: none; border-radius: 4px; }
+    form { margin: 12px 0; }
+    input[type="text"] { padding: 6px; width: 220px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+    th { background: #1F4E79; color: #fff; }
+    .pagination { margin-top: 16px; }
+    .pagination a { margin: 0 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Catálogo de Cuentas</h1>
+    <a class="btn" href="{% url 'contabilidad:crear_cuenta' %}">+ Nueva cuenta</a>
+    <a class="btn" href="{% url 'contabilidad:dashboard_contabilidad' %}">Dashboard</a>
+    <form method="get">
+      <input type="text" name="q" value="{{ q }}" placeholder="Buscar código o nombre">
+      <button type="submit">Buscar</button>
+    </form>
+    <table>
+      <tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>Naturaleza</th><th>Activa</th></tr>
+      {% for c in page_obj %}
+      <tr>
+        <td>{{ c.codigo }}</td>
+        <td>{{ c.nombre }}</td>
+        <td>{{ c.get_tipo_display }}</td>
+        <td>{{ c.naturaleza }}</td>
+        <td>{{ c.activa|yesno:"Sí,No" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5">No hay cuentas registradas.</td></tr>
+      {% endfor %}
+    </table>
+    <div class="pagination">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">Anterior</a>{% endif %}
+      Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}">Siguiente</a>{% endif %}
+    </div>
+  </div>
+</body>
+</html>

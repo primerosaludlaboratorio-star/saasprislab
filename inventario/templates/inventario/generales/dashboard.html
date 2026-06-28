@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Inventario Generales — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="bi bi-clipboard2-check me-2 text-teal"></i>{{ titulo }}</h4>
+      <small class="text-muted">Papelería · Limpieza · Informática · Infraestructura</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'inventario:crear_vale' %}" class="btn btn-warning btn-sm">
+        <i class="bi bi-file-earmark-plus me-1"></i>Nuevo Vale
+      </a>
+      <a href="{% url 'inventario:crear_lote_general' %}" class="btn btn-outline-success btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>Registrar Entrada
+      </a>
+      <a href="{% url 'inventario:crear_insumo_general' %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-clipboard-plus me-1"></i>Nuevo Artículo
+      </a>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="fs-2 fw-bold text-primary">{{ total_insumos }}</div>
+          <div class="text-muted small">Artículos en catálogo</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card border-0 shadow-sm h-100 {% if criticos %}border-danger{% endif %}">
+        <div class="card-body text-center">
+          <div class="fs-2 fw-bold text-danger">{{ criticos|length }}</div>
+          <div class="text-muted small">Stock crítico</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card border-0 shadow-sm h-100 {% if vales_pendientes %}border-warning{% endif %}">
+        <div class="card-body text-center">
+          <div class="fs-2 fw-bold text-warning">{{ vales_pendientes|length }}</div>
+          <div class="text-muted small">Vales pendientes de aprobación</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Vales Pendientes -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-warning text-dark py-2 d-flex justify-content-between">
+          <span><i class="bi bi-hourglass me-1"></i>Vales Pendientes de Aprobación</span>
+          <a href="{% url 'inventario:lista_vales' %}?estado=PENDIENTE" class="btn btn-sm btn-outline-dark py-0">Ver todos</a>
+        </div>
+        <div class="card-body p-0">
+          {% if vales_pendientes %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light"><tr><th>Folio</th><th>Área</th><th>Artículos</th><th>Solicitó</th><th></th></tr></thead>
+              <tbody>
+                {% for v in vales_pendientes %}
+                <tr>
+                  <td><a href="{% url 'inventario:detalle_vale' v.pk %}"><strong>{{ v.folio }}</strong></a></td>
+                  <td><span class="badge bg-secondary">{{ v.area_solicitante }}</span></td>
+                  <td>{{ v.total_lineas }}</td>
+                  <td class="text-muted small">{{ v.solicitado_por.get_full_name|default:v.solicitado_por.username }}</td>
+                  <td>
+                    <a href="{% url 'inventario:detalle_vale' v.pk %}" class="btn btn-xs btn-warning btn-sm py-0 px-2">Revisar</a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center text-success py-4"><i class="bi bi-check-circle fs-3"></i><br>Sin vales pendientes</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Stock Crítico -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-danger text-white py-2">
+          <i class="bi bi-exclamation-triangle me-1"></i>Stock Crítico
+        </div>
+        <div class="card-body p-0">
+          {% if criticos %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light"><tr><th>Artículo</th><th>Categoría</th><th class="text-end">Stock</th><th class="text-end">Mín.</th></tr></thead>
+              <tbody>
+                {% for i in criticos %}
+                <tr>
+                  <td>{{ i.nombre }}</td>
+                  <td><span class="badge bg-secondary">{{ i.get_categoria_display }}</span></td>
+                  <td class="text-end {% if i.stock_total == 0 %}text-danger fw-bold{% else %}text-warning{% endif %}">{{ i.stock_total }}</td>
+                  <td class="text-end text-muted">{{ i.stock_minimo }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center text-success py-4"><i class="bi bi-check-circle fs-3"></i><br>Sin alertas de stock</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Vales Recientes -->
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light py-2 d-flex justify-content-between">
+          <span><i class="bi bi-clock-history me-1"></i>Vales Recientes</span>
+          <a href="{% url 'inventario:lista_vales' %}" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light"><tr><th>Folio</th><th>Área</th><th>Estado</th><th>Solicitó</th><th>Fecha</th></tr></thead>
+              <tbody>
+                {% for v in vales_recientes %}
+                <tr>
+                  <td><a href="{% url 'inventario:detalle_vale' v.pk %}">{{ v.folio }}</a></td>
+                  <td>{{ v.area_solicitante }}</td>
+                  <td>
+                    {% if v.estado == 'ENTREGADO' %}<span class="badge bg-success">Entregado</span>
+                    {% elif v.estado == 'APROBADO' %}<span class="badge bg-info text-dark">Aprobado</span>
+                    {% elif v.estado == 'PENDIENTE' %}<span class="badge bg-warning text-dark">Pendiente</span>
+                    {% elif v.estado == 'RECHAZADO' %}<span class="badge bg-danger">Rechazado</span>
+                    {% else %}<span class="badge bg-secondary">{{ v.get_estado_display }}</span>{% endif %}
+                  </td>
+                  <td class="text-muted small">{{ v.solicitado_por.get_full_name|default:v.solicitado_por.username }}</td>
+                  <td class="text-muted small">{{ v.fecha_solicitud|date:"d/m/Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-3">Sin vales.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

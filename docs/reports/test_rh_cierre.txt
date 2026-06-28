@@ -1,0 +1,42 @@
+Using existing test database for alias 'default'...
+
+Found 25 test(s).
+
+================================================================================
+MIGRACION FORENSE DE DATOS - LABORATORIO A CORE
+================================================================================
+Total de ordenes a procesar: 0
+
+
+================================================================================
+RESUMEN DE MIGRACIËN
+================================================================================
+Total procesadas: 0/0
+Ërdenes actualizadas: 0
+Ërdenes creadas (nuevas): 0
+================================================================================
+
+System check identified no issues (0 silenced).
+......WARNING Acceso denegado por rol. Usuario: nom_caj, Rol: CAJERO, Requeridos: {'ADMIN', 'DIRECTOR', 'GERENTE'}
+.WARNING Acceso denegado por rol. Usuario: nom_caj, Rol: CAJERO, Requeridos: {'ADMIN', 'DIRECTOR', 'GERENTE'}
+..ERROR SENTINEL captura [MEDIA] PermissionDenied en GET /nomina/: Usuario no tiene empresa asignada.
+WARNING SENTINEL REPAIR [Permisos]: sin_emp recibi¾ 403 en /nomina/ sin empresa asignada. No se regenera sesi¾n automßtica.
+ERROR SENTINEL: Sin empresa en contexto; no se crea incidencia (multi-tenant: prohibido Empresa.objects.first()).
+ERROR Service Unavailable: /nomina/
+.ERROR SENTINEL captura [MEDIA] PermissionDenied en GET /nomina/periodos/: Usuario no tiene empresa asignada.
+WARNING SENTINEL REPAIR [Permisos]: sin_emp recibi¾ 403 en /nomina/periodos/ sin empresa asignada. No se regenera sesi¾n automßtica.
+ERROR SENTINEL: Sin empresa en contexto; no se crea incidencia (multi-tenant: prohibido Empresa.objects.first()).
+ERROR Service Unavailable: /nomina/periodos/
+.WARNING Acceso denegado por rol. Usuario: pdf_caj, Rol: CAJERO, Requeridos: {'RH', 'ADMIN', 'DIRECTOR', 'GERENTE'}
+.ERROR SENTINEL captura [ALTA] KeyError en GET /rh/evaluaciones/1/pdf/: ''
+INFO SENTINEL: Incidencia #1 creada - [ALTA] KeyError en /rh/evaluaciones/1/pdf/
+INFO [AUDIT] CREATE IncidenciaSentinel #1 por 
+WARNING SENTINEL: Sin API key de Gemini, generando anßlisis offline
+INFO SENTINEL: Incidencia #1 enriquecida con analisis IA
+ERROR Service Unavailable: /rh/evaluaciones/1/pdf/
+.WARNING Acceso denegado por rol. Usuario: rh_cajero, Rol: CAJERO, Requeridos: {'RH', 'ADMIN', 'DIRECTOR', 'GERENTE'}
+.WARNING Acceso denegado por rol. Usuario: rh_cajero, Rol: CAJERO, Requeridos: {'RH', 'ADMIN', 'DIRECTOR', 'GERENTE'}
+.WARNING Acceso denegado por rol. Usuario: rh_cajero, Rol: CAJERO, Requeridos: {'RH', 'ADMIN', 'DIRECTOR', 'GERENTE'}
+.WARNING Acceso denegado por rol. Usuario: rh_cajero, Rol: CAJERO, Requeridos: {'RH', 'ADMIN', 'DIRECTOR', 'GERENTE'}
+.WARNING Acceso denegado por rol. Usuario: rh_cajero, Rol: CAJERO, Requeridos: {'RH', 'ADMIN', 'DIRECTOR', 'GERENTE'}
+.WARNING Acceso denegado por rol. Usuario: rh_cajero, Rol: CAJERO, Requeridos: {'RH', 'ADMIN', 'DIRECTOR', 'GERENTE'}

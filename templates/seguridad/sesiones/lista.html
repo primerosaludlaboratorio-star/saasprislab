@@ -1,0 +1,231 @@
+{% extends "base_generic.html" %}
+{% load static %}
+
+{% block title %}Sesiones Activas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .session-card {
+        transition: all 0.2s;
+    }
+    .session-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .session-current {
+        border-left: 4px solid #28a745;
+    }
+    .session-suspicious {
+        border-left: 4px solid #dc3545;
+    }
+    .device-icon {
+        font-size: 2.5rem;
+        opacity: 0.7;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-desktop"></i> Sesiones Activas
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Administra tus dispositivos conectados
+                    </p>
+                </div>
+                <a href="{% url 'seguridad:configuracion_2fa' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver a Seguridad
+                </a>
+            </div>
+
+            <!-- Resumen -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h2 class="text-primary mb-0">{{ total_sesiones }}</h2>
+                            <small class="text-muted">Sesión(es) Activa(s)</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h2 class="text-success mb-0">1</h2>
+                            <small class="text-muted">Sesión Actual</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h2 class="text-warning mb-0">{{ sesiones_sospechosas }}</h2>
+                            <small class="text-muted">Sesión(es) Sospechosa(s)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerta si hay múltiples sesiones -->
+            {% if total_sesiones > 1 %}
+            <div class="alert alert-info d-flex justify-content-between align-items-center">
+                <span>
+                    <i class="fas fa-info-circle"></i>
+                    Detectamos {{ total_sesiones }} sesiones activas. Si no reconoces alguna, ciérrala inmediatamente.
+                </span>
+                <form method="post" action="{% url 'seguridad:cerrar_todas_las_sesiones' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm"
+                            onclick="return confirm('¿Cerrar TODAS las demás sesiones? Esta acción no se puede deshacer.')">
+                        <i class="fas fa-power-off"></i> Cerrar Todas las Demás
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Lista de Sesiones -->
+            <div class="row">
+                {% for sesion in sesiones %}
+                <div class="col-md-6 mb-3">
+                    <div class="card session-card {% if sesion.session_key == session_key_actual %}session-current{% elif sesion.es_sospechosa %}session-suspicious{% endif %} h-100">
+                        <div class="card-body">
+                            <div class="d-flex">
+                                <!-- Icono del dispositivo -->
+                                <div class="me-3 text-center" style="min-width: 60px;">
+                                    {% if 'Mobile' in sesion.user_agent or 'Android' in sesion.user_agent or 'iPhone' in sesion.user_agent %}
+                                        <i class="fas fa-mobile-alt device-icon text-primary"></i>
+                                    {% elif 'Tablet' in sesion.user_agent or 'iPad' in sesion.user_agent %}
+                                        <i class="fas fa-tablet-alt device-icon text-info"></i>
+                                    {% else %}
+                                        <i class="fas fa-laptop device-icon text-secondary"></i>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Información de la sesión -->
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title mb-2">
+                                        {{ sesion.dispositivo_tipo|default:"Dispositivo Desconocido" }}
+                                        {% if sesion.session_key == session_key_actual %}
+                                        <span class="badge bg-success">ESTA SESIÓN</span>
+                                        {% endif %}
+                                        {% if sesion.es_sospechosa %}
+                                        <span class="badge bg-danger">SOSPECHOSA</span>
+                                        {% endif %}
+                                    </h5>
+
+                                    <div class="mb-2">
+                                        <p class="mb-1">
+                                            <i class="fas fa-globe text-muted"></i>
+                                            <strong>IP:</strong> {{ sesion.ip_address }}
+                                        </p>
+                                        <p class="mb-1">
+                                            <i class="fas fa-browser text-muted"></i>
+                                            <strong>Navegador:</strong> {{ sesion.navegador|default:"Desconocido" }}
+                                        </p>
+                                        <p class="mb-1">
+                                            <i class="fas fa-laptop text-muted"></i>
+                                            <strong>Sistema:</strong> {{ sesion.sistema_operativo|default:"Desconocido" }}
+                                        </p>
+                                        <p class="mb-1">
+                                            <i class="fas fa-map-marker-alt text-muted"></i>
+                                            <strong>Ubicación:</strong> {{ sesion.ubicacion_geografica|default:"No disponible" }}
+                                        </p>
+                                    </div>
+
+                                    <div class="small text-muted">
+                                        <i class="fas fa-clock"></i>
+                                        <strong>Inicio:</strong> {{ sesion.fecha_inicio|date:"d/m/Y H:i" }}
+                                        <br>
+                                        <i class="fas fa-history"></i>
+                                        <strong>Última actividad:</strong> {{ sesion.fecha_ultima_actividad|timesince }} atrás
+                                    </div>
+
+                                    {% if sesion.es_sospechosa %}
+                                    <div class="alert alert-danger mt-2 mb-0">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <strong>Razón:</strong> {{ sesion.motivo_sospecha }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Botón de acción -->
+                                {% if sesion.session_key != session_key_actual %}
+                                <div class="ms-2">
+                                    <form method="post" action="{% url 'seguridad:cerrar_sesion_remota' sesion.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" 
+                                                class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('¿Cerrar esta sesión?')"
+                                                data-bs-toggle="tooltip"
+                                                title="Cerrar sesión">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light small text-muted">
+                            <i class="fas fa-fingerprint"></i>
+                            Sesión ID: {{ sesion.session_key|slice:":8" }}...{{ sesion.session_key|slice:"-8:" }}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-info-circle fa-3x mb-3"></i>
+                        <h5>No hay sesiones activas</h5>
+                        <p class="mb-0">Inicia sesión en otro dispositivo para verlo aquí.</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Información adicional -->
+            <div class="card mt-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-question-circle text-info"></i>
+                        ¿Qué son las sesiones activas?
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">
+                        Cada vez que inicias sesión en PRISLAB desde un dispositivo (computadora, teléfono, tablet),
+                        se crea una sesión activa. Aquí puedes ver todos los dispositivos desde donde tu cuenta
+                        está actualmente conectada.
+                    </p>
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-shield-alt"></i>
+                        <strong>Recomendación de seguridad:</strong> Si ves una sesión que no reconoces, ciérrala
+                        inmediatamente y cambia tu contraseña. Una sesión sospechosa podría indicar un acceso
+                        no autorizado a tu cuenta.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Activar tooltips de Bootstrap
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+});
+
+// Auto-refresh cada 60 segundos
+setTimeout(() => {
+    location.reload();
+}, 60000);
+</script>
+{% endblock %}

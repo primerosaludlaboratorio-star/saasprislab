@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Convenios y Tarifas Especiales - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top: 70px;">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="fw-bold text-primary mb-0"><i class="bi bi-building"></i> CONVENIOS Y TARIFAS ESPECIALES</h2>
+    <div class="d-flex gap-2">
+      <a href="{% url 'catalogo_medicos' %}" class="btn btn-outline-primary fw-bold">
+        <i class="bi bi-person-badge"></i> Médicos
+      </a>
+      <a href="{% url 'lista_estudios' %}" class="btn btn-outline-secondary fw-bold">
+        <i class="bi bi-arrow-left"></i> Volver a Catálogos
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-light">
+      <strong>Crear Convenio</strong>
+    </div>
+    <div class="card-body">
+      <form method="post" class="row g-2">
+        {% csrf_token %}
+        <div class="col-md-4">
+          <label class="form-label">Nombre</label>
+          <input name="nombre" class="form-control" required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Tipo</label>
+          <select name="tipo" class="form-select">
+            <option value="MEDICO">Médico</option>
+            <option value="EMPRESA">Empresa</option>
+            <option value="MIXTO">Mixto</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">% Descuento (fallback)</label>
+          <input name="descuento_porcentaje" class="form-control" value="0">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Médico (opcional)</label>
+          <select name="medico_id" class="form-select">
+            <option value="">—</option>
+            {% for m in medicos %}
+              <option value="{{ m.id }}">{{ m.nombre_completo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Empresa/Cliente (CRM) (opcional)</label>
+          <select name="cliente_crm_id" class="form-select">
+            <option value="">—</option>
+            {% for c in clientes %}
+              <option value="{{ c.id }}">{{ c.nombre_completo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 d-flex justify-content-end">
+          <button class="btn btn-primary fw-bold" type="submit">
+            <i class="bi bi-plus-circle"></i> Crear
+          </button>
+        </div>
+      </form>
+      <small class="text-muted d-block mt-2">
+        Puedes usar % descuento como fallback y luego definir precios específicos por estudio dentro del convenio.
+      </small>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-dark text-white">
+      <strong>Convenios</strong>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>% Desc</th>
+              <th>Médico</th>
+              <th>Empresa/Cliente</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in convenios %}
+              <tr>
+                <td class="fw-bold">{{ c.nombre }}</td>
+                <td>{{ c.get_tipo_display }}</td>
+                <td>{{ c.descuento_porcentaje }}%</td>
+                <td>{{ c.medico.nombre_completo|default:"—" }}</td>
+                <td>{{ c.cliente_crm.nombre_completo|default:"—" }}</td>
+                <td>
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'convenio_precios' c.id %}">
+                    <i class="bi bi-tag"></i> Precios por estudio
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6" class="text-center text-muted py-4">Sin convenios registrados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

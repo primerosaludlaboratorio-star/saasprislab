@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cupones y Descuentos - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-ticket-alt text-warning"></i> Cupones y Descuentos</h2>
+            <p class="text-muted">Gestión de promociones y códigos de descuento</p>
+        </div>
+        <div class="col-md-4 text-right">
+            <a href="{% url 'marketing:generar_cupon' %}" class="btn btn-warning">
+                <i class="fas fa-plus"></i> Generar Cupón
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-list"></i> Cupones Disponibles
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Tipo</th>
+                                    <th>Descuento</th>
+                                    <th>Válido Desde</th>
+                                    <th>Válido Hasta</th>
+                                    <th>Usos</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cupon in cupones %}
+                                <tr>
+                                    <td><code>{{ cupon.codigo }}</code></td>
+                                    <td>{{ cupon.get_tipo_display }}</td>
+                                    <td><strong>{{ cupon.valor }}{% if cupon.tipo == 'PORCENTAJE' %}%{% else %} MXN{% endif %}</strong></td>
+                                    <td>{{ cupon.fecha_inicio|date:"d/m/Y" }}</td>
+                                    <td>{{ cupon.fecha_fin|date:"d/m/Y" }}</td>
+                                    <td>{{ cupon.usos_actuales }} / {{ cupon.usos_maximos }}</td>
+                                    <td>
+                                        {% if cupon.activo %}
+                                        <span class="badge badge-success">Activo</span>
+                                        {% else %}
+                                        <span class="badge badge-secondary">Inactivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" onclick="copiarCodigo('{{ cupon.codigo }}')">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-5">
+                                        <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                                        No hay cupones generados.<br>
+                                        <a href="{% url 'marketing:generar_cupon' %}" class="btn btn-warning mt-3">Generar Primer Cupón</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copiarCodigo(codigo) {
+    navigator.clipboard.writeText(codigo).then(() => {
+        alert(`Código ${codigo} copiado al portapapeles`);
+    });
+}
+</script>
+{% endblock %}

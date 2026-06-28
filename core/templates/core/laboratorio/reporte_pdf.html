@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultados de Laboratorio - {{ orden.folio_orden }}</title>
+    <style>
+        /* ============================================
+           PRISLAB - REPORTE DE RESULTADOS PDF
+           Diseño Clean Medical Design
+           ============================================ */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #000;
+        }
+        
+        /* Cabecera con logo y datos empresa */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .header-logo {
+            width: 180px;
+        }
+        
+        .header-logo img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .header-empresa {
+            text-align: right;
+            font-size: 9pt;
+        }
+        
+        .header-empresa h1 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .header-empresa p {
+            margin: 2px 0;
+            color: #333;
+        }
+        
+        /* Información del paciente */
+        .info-paciente {
+            border: 1px solid #000;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #f8f8f8;
+        }
+        
+        .info-paciente table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .info-paciente td {
+            padding: 4px 8px;
+            font-size: 10pt;
+        }
+        
+        .info-paciente td:first-child {
+            font-weight: bold;
+            width: 20%;
+        }
+        
+        .info-paciente td:nth-child(2) {
+            width: 30%;
+        }
+        
+        .info-paciente td:nth-child(3) {
+            font-weight: bold;
+            width: 20%;
+        }
+        
+        .info-paciente td:nth-child(4) {
+            width: 30%;
+        }
+        
+        /* Título de sección */
+        .seccion-titulo {
+            font-size: 12pt;
+            font-weight: bold;
+            margin: 15px 0 8px 0;
+            padding: 5px;
+            background-color: #e0e0e0;
+            border-left: 4px solid #000;
+        }
+        
+        /* Tabla de resultados */
+        .tabla-resultados {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 9pt;
+        }
+        
+        .tabla-resultados thead {
+            background-color: #333;
+            color: white;
+        }
+        
+        .tabla-resultados th {
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #000;
+        }
+        
+        .tabla-resultados td {
+            padding: 6px 8px;
+            border: 1px solid #ccc;
+            vertical-align: top;
+        }
+        
+        .tabla-resultados tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        /* Columnas específicas */
+        .col-parametro {
+            width: 30%;
+        }
+        
+        .col-resultado {
+            width: 15%;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .col-unidad {
+            width: 12%;
+            text-align: center;
+        }
+        
+        .col-referencia {
+            width: 28%;
+            font-size: 8pt;
+            color: #555;
+        }
+        
+        .col-estado {
+            width: 15%;
+            text-align: center;
+            font-size: 8pt;
+        }
+        
+        /* Estados de resultado */
+        .resultado-normal {
+            color: #000;
+        }
+        
+        .resultado-alto {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        
+        .resultado-bajo {
+            color: #1976d2;
+            font-weight: bold;
+        }
+        
+        .resultado-panico {
+            color: #d32f2f;
+            font-weight: bold;
+            background-color: #ffebee;
+        }
+        
+        .resultado-pendiente {
+            color: #999;
+            font-style: italic;
+        }
+        
+        /* Sección de firmas */
+        .firmas {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .firma-box {
+            width: 45%;
+            text-align: center;
+        }
+        
+        .firma-linea {
+            border-top: 1px solid #000;
+            margin-top: 50px;
+            padding-top: 5px;
+            font-size: 9pt;
+        }
+        
+        /* Footer */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 8pt;
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding-top: 5px;
+        }
+        
+        /* Notas importantes */
+        .notas {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-left: 3px solid #333;
+            font-size: 8pt;
+        }
+        
+        .notas h4 {
+            font-size: 9pt;
+            margin-bottom: 5px;
+        }
+        
+        /* Avoid page breaks inside tables */
+        .tabla-resultados {
+            page-break-inside: avoid;
+        }
+        
+        .seccion-estudio {
+            page-break-inside: avoid;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Cabecera -->
+    <div class="header">
+        <div class="header-logo">
+            <!-- Logo PRISLAB a color -->
+            {% comment %}
+            <img src="{{ base_url }}static/img/logo_prislab.png" alt="PRISLAB">
+            {% endcomment %}
+            <h2 style="color: #0066cc;">PRISLAB</h2>
+            <p style="font-size: 8pt; color: #666;">Innovación para tu crecimiento</p>
+        </div>
+        <div class="header-empresa">
+            <h1>{{ empresa.nombre }}</h1>
+            {% if empresa.rfc %}
+            <p><strong>RFC:</strong> {{ empresa.rfc }}</p>
+            {% endif %}
+            {% if empresa.telefono %}
+            <p><strong>Tel:</strong> {{ empresa.telefono }}</p>
+            {% endif %}
+            <p><strong>Fecha de Impresión:</strong> {{ fecha_impresion|date:"d/m/Y H:i" }}</p>
+        </div>
+    </div>
+
+    <!-- Información del Paciente -->
+    <div class="info-paciente">
+        <table>
+            <tr>
+                <td>Paciente:</td>
+                <td><strong>{{ paciente.nombre_completo|upper }}</strong></td>
+                <td>Folio:</td>
+                <td><strong>{{ orden.folio_orden }}</strong></td>
+            </tr>
+            <tr>
+                <td>Edad:</td>
+                <td>{{ edad_paciente }}</td>
+                <td>Sexo:</td>
+                <td>{% if paciente.sexo == 'M' %}MASCULINO{% elif paciente.sexo == 'F' %}FEMENINO{% else %}{{ paciente.sexo }}{% endif %}</td>
+            </tr>
+            <tr>
+                <td>Fecha Orden:</td>
+                <td>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                <td>Médico:</td>
+                <td>{{ orden.medico_solicitante|default:"No especificado" }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Resultados por Estudio -->
+    {% for item in estudios_resultados %}
+    <div class="seccion-estudio">
+        <div class="seccion-titulo">
+            {{ item.estudio.nombre|upper }}
+        </div>
+        
+        <table class="tabla-resultados">
+            <thead>
+                <tr>
+                    <th class="col-parametro">PARÁMETRO</th>
+                    <th class="col-resultado">RESULTADO</th>
+                    <th class="col-unidad">UNIDAD</th>
+                    <th class="col-referencia">VALORES DE REFERENCIA</th>
+                    <th class="col-estado">ESTADO</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dato in item.resultados %}
+                <tr>
+                    <td class="col-parametro">{{ dato.parametro.nombre }}</td>
+                    <td class="col-resultado 
+                        {% if dato.estado == 'normal' %}resultado-normal
+                        {% elif dato.estado == 'alto' %}resultado-alto
+                        {% elif dato.estado == 'bajo' %}resultado-bajo
+                        {% elif dato.estado == 'panico' %}resultado-panico
+                        {% else %}resultado-pendiente{% endif %}">
+                        {% if dato.resultado %}
+                            {{ dato.resultado.valor }}
+                        {% else %}
+                            Pendiente
+                        {% endif %}
+                    </td>
+                    <td class="col-unidad">{{ dato.parametro.unidad|default:"-" }}</td>
+                    <td class="col-referencia">
+                        {% if dato.rango %}
+                            {% if dato.rango.valor_min and dato.rango.valor_max %}
+                                {{ dato.rango.valor_min }} - {{ dato.rango.valor_max }}
+                            {% elif dato.rango.texto_referencia %}
+                                {{ dato.rango.texto_referencia }}
+                            {% else %}
+                                Ver interpretación médica
+                            {% endif %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="col-estado">
+                        {% if dato.estado == 'normal' %}
+                            <span style="color: green;">●</span> Normal
+                        {% elif dato.estado == 'alto' %}
+                            <span style="color: red;">▲</span> Alto
+                        {% elif dato.estado == 'bajo' %}
+                            <span style="color: blue;">▼</span> Bajo
+                        {% elif dato.estado == 'panico' %}
+                            <span style="color: red;">⚠</span> CRÍTICO
+                        {% else %}
+                            <span style="color: gray;">○</span> Pendiente
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% empty %}
+    <p style="text-align: center; color: #999; margin: 30px 0;">
+        No hay resultados disponibles para esta orden.
+    </p>
+    {% endfor %}
+
+    <!-- Notas Importantes -->
+    <div class="notas">
+        <h4>NOTAS IMPORTANTES:</h4>
+        <p>• Los resultados de este estudio deben ser interpretados por un médico.</p>
+        <p>• Los valores de referencia pueden variar según el laboratorio y la metodología utilizada.</p>
+        <p>• Los resultados marcados como "CRÍTICO" requieren atención médica inmediata.</p>
+        <p>• Este documento es válido únicamente con firma y sello del laboratorio.</p>
+    </div>
+
+    <!-- Firmas -->
+    <div class="firmas">
+        <div class="firma-box">
+            <div class="firma-linea">
+                <p><strong>Q.F.B. ELABORÓ</strong></p>
+                <p style="font-size: 8pt; color: #666;">Químico Farmacobiólogo</p>
+            </div>
+        </div>
+        <div class="firma-box">
+            <div class="firma-linea">
+                <p><strong>Q.F.B. AUTORIZÓ</strong></p>
+                <p style="font-size: 8pt; color: #666;">Responsable Sanitario</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Generado por PRISLAB v5.0 | Innovación para tu crecimiento | www.prislab.com</p>
+        <p>Este documento fue generado electrónicamente y es válido sin firma autógrafa</p>
+    </div>
+
+</body>
+</html>

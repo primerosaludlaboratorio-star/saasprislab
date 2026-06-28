@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}Capturar Signos Vitales{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2><i class="fas fa-heartbeat"></i> Capturar Signos Vitales</h2>
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <h5>{{ cita.paciente.nombre_completo }}</h5>
+            <p>Fecha: {{ cita.fecha|date:"d/m/Y" }} - {{ cita.hora|time:"H:i" }}</p>
+        </div>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <div class="card shadow-sm">
+            <div class="card-body">
+                {{ form.as_p }}
+            </div>
+        </div>
+        <div class="mt-3">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
+            <a href="{% url 'enfermeria:lista_pacientes_triage' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

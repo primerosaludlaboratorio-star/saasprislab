@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+  <!-- Encabezado -->
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h5 class="fw-bold mb-1"><i class="bi bi-arrow-left-right me-2"></i>{{ titulo }}</h5>
+      <small class="text-muted">
+        <strong>{{ traspaso.empresa_origen.nombre }}</strong>
+        <i class="bi bi-arrow-right mx-2"></i>
+        <strong>{{ traspaso.empresa_destino.nombre }}</strong>
+        &nbsp;|&nbsp;Silo: <strong>{{ traspaso.get_silo_display }}</strong>
+        &nbsp;|&nbsp;{{ traspaso.fecha_solicitud|date:"d/m/Y H:i" }}
+      </small>
+    </div>
+    <div>
+      {% if traspaso.estado == 'EN_TRANSITO' %}<span class="badge bg-warning text-dark fs-6">En Tránsito 🚚</span>
+      {% elif traspaso.estado == 'RECIBIDO' %}<span class="badge bg-success fs-6">Recibido ✓</span>
+      {% elif traspaso.estado == 'RECHAZADO' %}<span class="badge bg-danger fs-6">Rechazado</span>
+      {% elif traspaso.estado == 'CANCELADO' %}<span class="badge bg-dark fs-6">Cancelado</span>
+      {% else %}<span class="badge bg-secondary fs-6">{{ traspaso.get_estado_display }}</span>{% endif %}
+    </div>
+  </div>
+
+  <!-- Info general -->
+  <div class="row g-2 mb-3">
+    <div class="col-sm-6">
+      <div class="card border-0 bg-light p-3">
+        <div class="row g-1 small">
+          <div class="col-5 text-muted fw-semibold">Solicitó:</div>
+          <div class="col-7">{{ traspaso.solicitado_por.get_full_name|default:traspaso.solicitado_por.username }}</div>
+          <div class="col-5 text-muted fw-semibold">Despachó:</div>
+          <div class="col-7">{{ traspaso.despachado_por.username|default:"—" }}</div>
+          <div class="col-5 text-muted fw-semibold">Receptor:</div>
+          <div class="col-7">{{ traspaso.receptor.username|default:"—" }}</div>
+          <div class="col-5 text-muted fw-semibold">Motivo:</div>
+          <div class="col-7">{{ traspaso.motivo }}</div>
+        </div>
+      </div>
+    </div>
+    {% if traspaso.razon_rechazo %}
+    <div class="col-sm-6">
+      <div class="alert alert-danger mb-0 h-100">
+        <strong>Razón de Rechazo:</strong><br>{{ traspaso.razon_rechazo }}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Líneas -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-light fw-semibold py-2">Artículos del Traspaso</div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Artículo</th><th>Lote</th><th class="text-end">Enviado</th>
+            <th class="text-end">Recibido</th><th>Diferencia</th></tr>
+          </thead>
+          <tbody>
+            {% for l in lineas %}
+            <tr>
+              <td>{{ l.nombre_articulo_snapshot }}</td>
+              <td><code>{{ l.numero_lote_snapshot|default:"S/L" }}</code></td>
+              <td class="text-end">{{ l.cantidad_enviada|floatformat:2 }}</td>
+              <td class="text-end {% if l.cantidad_recibida > 0 %}text-success{% else %}text-muted{% endif %}">
+                {{ l.cantidad_recibida|floatformat:2 }}
+              </td>
+              <td>
+                {% if l.cantidad_recibida > 0 %}
+                  {% with diff=l.cantidad_recibida|floatformat:2 %}
+                    {% if l.cantidad_recibida == l.cantidad_enviada %}
+                    <span class="text-success"><i class="bi bi-check-circle"></i> Exacto</span>
+                    {% elif l.cantidad_recibida < l.cantidad_enviada %}
+                    <span class="text-warning"><i class="bi bi-exclamation-triangle"></i> Menos</span>
+                    {% else %}
+                    <span class="text-info"><i class="bi bi-plus-circle"></i> Más</span>
+                    {% endif %}
+                  {% endwith %}
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Acciones según estado y rol -->
+
+  {% if traspaso.estado == 'BORRADOR' and es_origen %}
+  <div class="card border-warning border-2 shadow-sm mb-3">
+    <div class="card-body">
+      <h6 class="fw-bold mb-2"><i class="bi bi-truck me-2"></i>Despachar Traspaso</h6>
+      <p class="text-muted small mb-2">Al despachar, el stock se descontará del silo origen.</p>
+      <form method="post" onsubmit="return confirm('¿Despachar el traspaso {{ traspaso.folio }}? El stock saldrá de este almacén.')">{% csrf_token %}
+        <input type="hidden" name="accion" value="despachar">
+        <button type="submit" class="btn btn-warning">
+          <i class="bi bi-truck me-1"></i>Despachar — Marcar En Tránsito
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if traspaso.estado == 'EN_TRANSITO' and es_destino %}
+  <!-- Recepción con PIN -->
+  <div class="card border-success border-2 shadow-sm mb-3">
+    <div class="card-header bg-success text-white fw-semibold py-2">
+      <i class="bi bi-shield-lock me-2"></i>Confirmar Recepción — Firma con PIN
+    </div>
+    <div class="card-body">
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="accion" value="recibir">
+        <div class="alert alert-info py-2 small mb-3">
+          <i class="bi bi-info-circle me-1"></i>
+          Verifica las cantidades y firma con tu PIN (contraseña). El stock ingresará al silo.
+          Si hay discrepancias, se genera una alerta automática al Director.
+        </div>
+
+        <!-- Captura de cantidades reales recibidas -->
+        <div class="table-responsive mb-3">
+          <table class="table table-sm table-bordered">
+            <thead class="table-light">
+              <tr><th>Artículo</th><th>Enviado</th><th>Cantidad Real Recibida</th></tr>
+            </thead>
+            <tbody>
+              {% for l in lineas %}
+              <tr>
+                <td>{{ l.nombre_articulo_snapshot }}<br><small class="text-muted">{{ l.numero_lote_snapshot|default:"S/L" }}</small></td>
+                <td class="text-end">{{ l.cantidad_enviada|floatformat:2 }}</td>
+                <td>
+                  <input type="number" name="recibido_{{ l.pk }}" step="0.01" min="0"
+                         value="{{ l.cantidad_enviada|floatformat:2 }}"
+                         class="form-control form-control-sm" style="width:120px">
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Firma PIN -->
+        <div class="row g-3 align-items-end">
+          <div class="col-sm-4">
+            <label class="form-label fw-semibold">Tu Usuario *</label>
+            <input type="text" name="receptor_username" value="{{ request.user.username }}" readonly class="form-control bg-light">
+          </div>
+          <div class="col-sm-4">
+            <label class="form-label fw-semibold">🔐 PIN (contraseña) *</label>
+            <input type="password" name="pin_receptor" required class="form-control" placeholder="Ingresa tu contraseña">
+          </div>
+          <div class="col-sm-4">
+            <button type="submit" class="btn btn-success w-100"
+                    onclick="return confirm('¿Confirmar recepción con tu firma digital?')">
+              <i class="bi bi-check-circle me-1"></i>Confirmar Recepción
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Rechazar -->
+  <div class="card border-danger mb-3">
+    <div class="card-body py-2">
+      <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalRechazar">
+        <i class="bi bi-x-circle me-1"></i>Rechazar Traspaso (regresa stock al origen)
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
+  <a href="{% url 'inventario:lista_traspasos' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Volver
+  </a>
+</div>
+
+<!-- Modal Rechazo -->
+<div class="modal fade" id="modalRechazar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="accion" value="rechazar">
+        <div class="modal-header">
+          <h5 class="modal-title">Rechazar Traspaso {{ traspaso.folio }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-warning py-2 small">
+            El stock regresará automáticamente al almacén de <strong>{{ traspaso.empresa_origen.nombre }}</strong>.
+          </div>
+          <label class="form-label fw-semibold">Razón del Rechazo *</label>
+          <textarea name="razon_rechazo" class="form-control" rows="3" required
+                    placeholder="Artículos dañados, cantidad incorrecta, error de despacho…"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger">Confirmar Rechazo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Ajustes de Inventario - {{ empresa.nombre|default:"PRISLAB" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    body { background-color: #f4f6f9; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4" style="padding-top: 10px;">
+    <div class="mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center">
+        <h5 class="text-danger fw-bold m-0">AJUSTES Y MERMAS</h5>
+        <a href="{% url 'pdv_farmacia' %}" class="btn btn-outline-dark btn-sm fw-bold">
+            <i class="bi bi-house-door"></i> IR A INICIO
+        </a>
+    </div>
+    <div class="card border-danger shadow">
+        <div class="card-header bg-danger text-white d-flex justify-content-between">
+            <h5 class="fw-bold mb-0"><i class="bi bi-trash"></i> REGISTRO DE MERMAS Y AJUSTES</h5>
+            <small>PRIMERO SALUD LABORATORIO</small>
+        </div>
+        <div class="card-body bg-light">
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <label class="fw-bold">Buscar Producto (Lote específico):</label>
+                    <select id="select-lote" class="form-control" onchange="actualizarInfo()">
+                        <option value="">-- Selecciona el Lote Afectado --</option>
+                        {% for p in productos %}
+                            {% for l in p.lotes.all %}
+                                {% if l.cantidad > 0 %}
+                                <option value="{{ l.id }}" data-stock="{{ l.cantidad }}" data-prod="{{ p.nombre }}">
+                                    {{ p.nombre }} - Lote: {{ l.numero_lote }} (Cad: {{ l.fecha_caducidad|date:"d/m/Y" }}) - Stock: {{ l.cantidad }}
+                                </option>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-4">
+                    <label class="fw-bold text-danger">Cantidad a retirar:</label>
+                    <input type="number" id="cantidad" class="form-control" min="1" value="1">
+                    <small class="text-muted">Disponible: <span id="stock-disp">0</span></small>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="fw-bold">Motivo del Ajuste:</label>
+                    <select id="motivo" class="form-select">
+                        <option value="MERMA">Merma (Rotura/Daño)</option>
+                        <option value="CADUCIDAD">Caducidad Vencida</option>
+                        <option value="USO_INTERNO">Uso Interno (Laboratorio)</option>
+                        <option value="ROBO">Robo / Faltante</option>
+                        <option value="CORRECCION">Error de Dedo</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-4">
+                    <label class="fw-bold">Observaciones:</label>
+                    <input type="text" id="obs" class="form-control" placeholder="Ej: Se cayó la caja...">
+                </div>
+
+                <div class="col-12 mt-4">
+                    <button class="btn btn-danger w-100 py-2 fw-bold" onclick="aplicarAjuste()">
+                        CONFIRMAR BAJA DEL INVENTARIO
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Inicializar Select2 o búsqueda simple si se desea luego
+    function actualizarInfo() {
+        const opt = document.getElementById('select-lote').selectedOptions[0];
+        if(opt.value) {
+            document.getElementById('stock-disp').innerText = opt.dataset.stock;
+        }
+    }
+
+    function aplicarAjuste() {
+        const loteId = document.getElementById('select-lote').value;
+        const cant = document.getElementById('cantidad').value;
+        const tipo = document.getElementById('motivo').value;
+        const obs = document.getElementById('obs').value.trim();
+
+        if(!loteId) return Swal.fire('Error', 'Selecciona un lote', 'error');
+        if(!obs) return Swal.fire('Atención', 'Debes escribir una observación para justificar la baja', 'warning');
+
+        let formData = new FormData();
+        formData.append('lote_id', loteId);
+        formData.append('cantidad', cant);
+        formData.append('tipo', tipo);
+        formData.append('observacion', obs);
+
+        fetch('', {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            body: formData
+        })
+        .then(r => r.json())
+        .then(res => {
+            if(res.status === 'success') {
+                Swal.fire('Ajustado', 'El inventario ha sido actualizado', 'success')
+                .then(() => location.reload());
+            } else {
+                Swal.fire('Error', res.mensaje, 'error');
+            }
+        });
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<style>
+    body { padding-bottom: 50px; }
+    
+    @media print {
+        .firma-autor, footer, .fixed-bottom { display: none !important; }
+        body { padding-bottom: 0 !important; }
+    }
+</style>
+
+<footer class="fixed-bottom bg-light text-dark text-center py-2 shadow-lg border-top firma-autor" style="z-index: 1000;">
+    <div class="container-fluid d-flex justify-content-between align-items-center" style="font-size: 12px;">
+        <span class="text-muted">
+            <i class="bi bi-building"></i> PRIMERO SALUD LABORATORIO
+        </span>
+        <span>
+            Arquitectura y Desarrollo: 
+            <strong class="text-primary text-uppercase fw-bold">
+                JONATHAN ALONSO SAMOS SANCHEZ
+            </strong>
+        </span>
+    </div>
+</footer>
+{% endblock %}

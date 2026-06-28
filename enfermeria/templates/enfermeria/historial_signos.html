@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}Historial de Signos{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2><i class="fas fa-history"></i> Historial de Signos Vitales</h2>
+    <h4>{{ paciente.nombre_completo }}</h4>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Peso</th>
+                    <th>Presión</th>
+                    <th>Temp</th>
+                    <th>FC</th>
+                    <th>SatO2</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for signo in signos %}
+                <tr>
+                    <td>{{ signo.fecha_registro|date:"d/m/Y" }}</td>
+                    <td>{{ signo.peso }} kg</td>
+                    <td>{{ signo.presion_arterial_sistolica }}/{{ signo.presion_arterial_diastolica }}</td>
+                    <td>{{ signo.temperatura }}°C</td>
+                    <td>{{ signo.frecuencia_cardiaca }} lpm</td>
+                    <td>{{ signo.saturacion_oxigeno }}%</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted">No hay registros</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

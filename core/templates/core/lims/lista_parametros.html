@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Parámetros LIMS — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 py-2" style="font-size:12px;">
+
+  {# ── Encabezado ──────────────────────────────────────────────────────────── #}
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <div>
+      <h5 class="mb-0 fw-bold">
+        <i class="bi bi-sliders2 text-primary me-1"></i>Parámetros de Estudios
+      </h5>
+      <small class="text-muted">{{ total }} parámetro{{ total|pluralize }} encontrado{{ total|pluralize }}</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'lista_pruebas' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-flask me-1"></i>Ver Estudios
+      </a>
+      <a href="{% url 'nuevo_parametro' %}" class="btn btn-sm btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Nuevo Parámetro
+      </a>
+    </div>
+  </div>
+
+  {# ── Filtros ─────────────────────────────────────────────────────────────── #}
+  <form method="get" class="row g-2 mb-2 align-items-end">
+    <div class="col-auto">
+      <label class="form-label mb-0">Búsqueda</label>
+      <input type="text" name="q" value="{{ busqueda }}" class="form-control form-control-sm"
+             placeholder="Nombre / abreviatura / LOINC…" style="width:220px;">
+    </div>
+    <div class="col-auto">
+      <label class="form-label mb-0">Sección</label>
+      <select name="seccion" class="form-select form-select-sm" style="width:160px;">
+        <option value="">— Todas —</option>
+        {% for s in secciones %}
+          <option value="{{ s.id }}" {% if seccion_actual == s.id|stringformat:"s" %}selected{% endif %}>{{ s.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label mb-0">Estudio</label>
+      <select name="estudio" class="form-select form-select-sm" style="width:180px;">
+        <option value="">— Todos —</option>
+        {% for e in estudios %}
+          <option value="{{ e.id }}" {% if estudio_actual == e.id|stringformat:"s" %}selected{% endif %}>{{ e.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label mb-0">Estado</label>
+      <select name="estado" class="form-select form-select-sm">
+        <option value="activos" {% if estado_actual == 'activos' %}selected{% endif %}>Activos</option>
+        <option value="inactivos" {% if estado_actual == 'inactivos' %}selected{% endif %}>Inactivos</option>
+        <option value="todos" {% if estado_actual == 'todos' %}selected{% endif %}>Todos</option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-sm btn-primary">
+        <i class="bi bi-funnel-fill"></i> Filtrar
+      </button>
+      <a href="{% url 'lista_parametros' %}" class="btn btn-sm btn-outline-secondary ms-1">
+        <i class="bi bi-x-lg"></i>
+      </a>
+    </div>
+  </form>
+
+  {# ── Tabla ───────────────────────────────────────────────────────────────── #}
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover table-sm align-middle mb-0"
+           style="font-size:11.5px;">
+      <thead class="table-dark">
+        <tr>
+          <th style="width:40px;" class="text-center">#</th>
+          <th>Sección / Estudio</th>
+          <th>Parámetro</th>
+          <th>Abreviatura</th>
+          <th>Unidad</th>
+          <th>Tipo de Dato</th>
+          <th class="text-center">Ord.</th>
+          <th class="text-center">Rangos</th>
+          <th class="text-center">Estado</th>
+          <th class="text-center" style="width:100px;">Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in parametros %}
+        <tr class="{% if not p.activo %}table-secondary text-muted{% endif %}">
+          <td class="text-center">{{ forloop.counter }}</td>
+          <td>
+            <span class="badge bg-info text-dark" style="font-size:10px;">
+              {{ p.estudio.seccion.nombre|default:"Sin sección" }}
+            </span><br>
+            <small class="fw-semibold">{{ p.estudio.nombre }}</small>
+          </td>
+          <td>
+            <strong>{{ p.nombre }}</strong>
+            {% if p.titulo %}<br><small class="text-muted">Título: {{ p.titulo }}</small>{% endif %}
+            {% if p.critico %}<span class="badge bg-danger ms-1" style="font-size:9px;">CRÍTICO</span>{% endif %}
+          </td>
+          <td><code>{{ p.abreviatura|default:"—" }}</code></td>
+          <td>{{ p.unidad|default:"—" }}</td>
+          <td>
+            {% if p.tipo_dato == 'NUMERICO' %}
+              <span class="badge bg-primary" style="font-size:10px;">Numérico</span>
+            {% elif p.tipo_dato == 'TEXTO' %}
+              <span class="badge bg-secondary" style="font-size:10px;">Texto</span>
+            {% elif p.tipo_dato == 'TEXTO_PREDEFINIDO' %}
+              <span class="badge bg-warning text-dark" style="font-size:10px;">Predefinido</span>
+            {% else %}
+              <span class="badge bg-light text-dark" style="font-size:10px;">{{ p.tipo_dato }}</span>
+            {% endif %}
+          </td>
+          <td class="text-center">{{ p.orden_impresion }}</td>
+          <td class="text-center">
+            <span class="badge bg-{{ p.rangos_referencia.count|yesno:'success,danger' }}"
+                  style="font-size:10px;">
+              {{ p.rangos_referencia.filter.count|default_if_none:"0" }}
+            </span>
+          </td>
+          <td class="text-center">
+            {% if p.activo %}
+              <span class="badge bg-success" style="font-size:10px;">Activo</span>
+            {% else %}
+              <span class="badge bg-secondary" style="font-size:10px;">Inactivo</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {# Solo el botón EDITAR en el listado (sin Eliminar/Duplicar) #}
+            <a href="{% url 'editar_parametro' parametro_id=p.id %}"
+               class="btn btn-xs btn-outline-primary py-0 px-1"
+               title="Editar parámetro">
+              <i class="bi bi-pencil-fill"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="10" class="text-center text-muted py-4">
+            <i class="bi bi-inbox fs-4 d-block mb-1"></i>
+            No se encontraron parámetros con los filtros seleccionados.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<style>
+.btn-xs { font-size:11px; line-height:1.2; }
+</style>
+{% endblock %}

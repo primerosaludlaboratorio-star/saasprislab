@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nueva Entrada - Diario Emocional{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1000px;">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="bi bi-journal-text text-success"></i> Nueva Entrada en tu Diario</h2>
+                    <p class="text-muted">Escribe cómo te sientes hoy. La IA analizará tu sentimiento.</p>
+                </div>
+                <a href="{% url 'bienestar:diario_emocional' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+            </div>
+            
+            <!-- PROMPT DEL DÍA -->
+            <div class="prompt-diario mb-4">
+                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #fff9e6 0%, #ffeb99 100%);">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start">
+                            <div class="flex-grow-1">
+                                <h5 class="mb-2"><i class="bi bi-lightbulb-fill text-warning"></i> 💭 Pregunta para reflexionar:</h5>
+                                <p class="fs-5 mb-0" id="prompt-texto" style="color: #664d03; font-weight: 500;">
+                                    "¿Qué cosa pequeña te hizo sonreír hoy?"
+                                </p>
+                            </div>
+                            <button class="btn btn-sm btn-outline-warning" onclick="cambiarPrompt()">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Formulario -->
+                <div class="col-md-8">
+                    <div class="card shadow">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="bi bi-pencil"></i> ¿Cómo te sientes hoy?</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" id="form-diario">
+                                {% csrf_token %}
+                                
+                                <!-- Selección rápida de emociones -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Selecciona tu emoción principal:</label>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% for emocion in emociones %}
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-outline-secondary emocion-btn"
+                                            data-emocion="{{ emocion.nombre }}"
+                                            style="border-color: {{ emocion.color }};"
+                                        >
+                                            <span style="font-size: 1.5rem;">{{ emocion.emoji }}</span><br>
+                                            <small>{{ emocion.nombre }}</small>
+                                        </button>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <!-- Área de texto -->
+                                <div class="mb-3">
+                                    <label for="contenido" class="form-label fw-bold">
+                                        Escribe sobre tu día:
+                                    </label>
+                                    <textarea 
+                                        class="form-control" 
+                                        id="contenido" 
+                                        name="contenido" 
+                                        rows="10" 
+                                        placeholder="Puedes escribir lo que quieras: cómo te sientes, qué te pasó hoy, qué te preocupa, qué te hace feliz...
+
+Tu entrada es completamente privada y confidencial. Solo tú puedes verla."
+                                        required
+                                        style="font-size: 1.1rem; line-height: 1.8;"
+                                    ></textarea>
+                                    <small class="text-muted">
+                                        <i class="bi bi-shield-lock"></i> 
+                                        Esta entrada es 100% privada. Solo tú puedes verla.
+                                    </small>
+                                </div>
+
+                                <!-- Botones -->
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-success btn-lg px-5">
+                                        <i class="bi bi-save"></i> Guardar Entrada
+                                    </button>
+                                    <a href="{% url 'bienestar:diario_emocional' %}" class="btn btn-outline-secondary">
+                                        Cancelar
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar con consejos -->
+                <div class="col-md-4">
+                    <!-- Consejos -->
+                    <div class="card shadow mb-3">
+                        <div class="card-header bg-info text-white">
+                            <i class="bi bi-lightbulb"></i> Preguntas para reflexionar
+                        </div>
+                        <div class="card-body">
+                            <ul class="small mb-0">
+                                <li>¿Cómo te sientes en este momento?</li>
+                                <li>¿Qué fue lo mejor de tu día?</li>
+                                <li>¿Algo te preocupa o te causa ansiedad?</li>
+                                <li>¿Dormiste bien anoche?</li>
+                                <li>¿Hiciste ejercicio hoy?</li>
+                                <li>¿Cómo fue tu alimentación?</li>
+                                <li>¿Tuviste momentos de paz?</li>
+                                <li>¿Algo te hizo sonreír?</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Beneficios -->
+                    <div class="card shadow">
+                        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <i class="bi bi-stars"></i> Beneficios del Diario
+                        </div>
+                        <div class="card-body small">
+                            <ul class="mb-0">
+                                <li>Identifica patrones emocionales</li>
+                                <li>Reduce estrés y ansiedad</li>
+                                <li>Mejora autoconocimiento</li>
+                                <li>Procesa emociones difíciles</li>
+                                <li>Aumenta gratitud y positividad</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.emocion-btn {
+    transition: all 0.3s ease;
+}
+.emocion-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.emocion-btn.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const emocionesBtns = document.querySelectorAll('.emocion-btn');
+    const textarea = document.getElementById('contenido');
+    
+    // Seleccionar emoción
+    emocionesBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Quitar selección previa
+            emocionesBtns.forEach(b => b.classList.remove('selected'));
+            
+            // Seleccionar esta
+            this.classList.add('selected');
+            
+            // Agregar al texto
+            const emocion = this.dataset.emocion;
+            const currentText = textarea.value.trim();
+            
+            if (!currentText.startsWith('Hoy me siento')) {
+                textarea.value = `Hoy me siento ${emocion.toLowerCase()}. ${currentText}`;
+            }
+            
+            textarea.focus();
+        });
+    });
+    
+    // ========== PROMPTS DIARIOS ==========
+    const prompts = [
+        "¿Qué cosa pequeña te hizo sonreír hoy?",
+        "¿Por qué estás agradecido/a en este momento?",
+        "¿Qué te gustaría decirle a alguien que amas?",
+        "¿Cuál fue tu mayor logro hoy, por pequeño que sea?",
+        "¿Qué te está preocupando ahora mismo?",
+        "¿Cómo te sientes con tu cuerpo hoy?",
+        "¿Qué necesitas para sentirte mejor?",
+        "¿Qué aprendiste hoy sobre ti mismo/a?",
+        "¿Qué emoción ha sido la más fuerte hoy?",
+        "Si hoy fuera un color, ¿cuál sería y por qué?",
+        "¿Qué te hubiera gustado hacer diferente hoy?",
+        "¿Qué te hace sentir seguro/a y en paz?",
+        "¿Cuál es tu mayor miedo ahora mismo?",
+        "¿Qué te gustaría perdonarte?",
+        "¿Cómo te trataste a ti mismo/a hoy?",
+        "¿Qué sueño o meta te motiva?",
+        "¿Qué momento del día fue el más difícil?",
+        "¿Qué te hubiera gustado escuchar hoy?",
+        "¿Qué parte de ti necesita más amor?",
+        "¿Cómo te imaginas mañana?"
+    ];
+    
+    // Seleccionar prompt basado en el día
+    const hoy = new Date();
+    const indiceDia = hoy.getDate() % prompts.length;
+    document.getElementById('prompt-texto').textContent = prompts[indiceDia];
+});
+
+// Función para cambiar prompt
+function cambiarPrompt() {
+    const prompts = [
+        "¿Qué cosa pequeña te hizo sonreír hoy?",
+        "¿Por qué estás agradecido/a en este momento?",
+        "¿Qué te gustaría decirle a alguien que amas?",
+        "¿Cuál fue tu mayor logro hoy, por pequeño que sea?",
+        "¿Qué te está preocupando ahora mismo?",
+        "¿Cómo te sientes con tu cuerpo hoy?",
+        "¿Qué necesitas para sentirte mejor?",
+        "¿Qué aprendiste hoy sobre ti mismo/a?",
+        "¿Qué emoción ha sido la más fuerte hoy?",
+        "Si hoy fuera un color, ¿cuál sería y por qué?",
+        "¿Qué te hubiera gustado hacer diferente hoy?",
+        "¿Qué te hace sentir seguro/a y en paz?",
+        "¿Cuál es tu mayor miedo ahora mismo?",
+        "¿Qué te gustaría perdonarte?",
+        "¿Cómo te trataste a ti mismo/a hoy?",
+        "¿Qué sueño o meta te motiva?",
+        "¿Qué momento del día fue el más difícil?",
+        "¿Qué te hubiera gustado escuchar hoy?",
+        "¿Qué parte de ti necesita más amor?",
+        "¿Cómo te imaginas mañana?"
+    ];
+    
+    const indiceAleatorio = Math.floor(Math.random() * prompts.length);
+    document.getElementById('prompt-texto').textContent = prompts[indiceAleatorio];
+}
+</script>
+{% endblock %}

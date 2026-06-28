@@ -1,0 +1,5 @@
+fix: agregar redirect /favicon.ico para eliminar 404 en produccion
+
+El browser solicita /favicon.ico aunque el HTML ya incluye link rel=icon.
+Sin URL registrada Django retornaba 404 como error en consola JS.
+Se anade redirect permanente al icono SVG existente en urls.py.

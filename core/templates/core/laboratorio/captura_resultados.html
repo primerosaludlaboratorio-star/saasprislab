@@ -1,0 +1,657 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Captura de Resultados - {{ orden.folio_orden|default:orden.id }} | PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Paleta de Colores Industrial */
+    :root {
+        --color-normal: #28a745;
+        --color-fuera-rango: #ffc107;
+        --color-critico: #dc3545;
+        --color-border-focus: #007bff;
+    }
+    
+    /* Header del Paciente */
+    .patient-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .patient-info {
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+    
+    .badge-pago {
+        font-size: 1rem;
+        padding: 8px 16px;
+        border-radius: 20px;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+    
+    /* Barra de Herramientas IA */
+    .toolbar-ai {
+        background: #f8f9fa;
+        border: 2px dashed #007bff;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .btn-ai {
+        font-size: 1.1rem;
+        padding: 12px 24px;
+        margin: 5px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-ai:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .btn-voice {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+    }
+    
+    .btn-voice.listening {
+        animation: pulse-voice 1s infinite;
+        background: #dc3545;
+    }
+    
+    @keyframes pulse-voice {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    
+    .btn-ocr {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        border: none;
+        color: white;
+    }
+    
+    /* Tabla de Resultados (Estilo Excel) */
+    .results-table {
+        width: 100%;
+        background: white;
+        border-collapse: separate;
+        border-spacing: 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .results-table thead {
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        color: white;
+    }
+    
+    .results-table th {
+        padding: 15px 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .results-table tbody tr {
+        border-bottom: 1px solid #e9ecef;
+        transition: background 0.2s ease;
+    }
+    
+    .results-table tbody tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .results-table td {
+        padding: 12px 10px;
+        vertical-align: middle;
+    }
+    
+    /* Inputs de Captura */
+    .input-resultado {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2px solid #ced4da;
+        border-radius: 6px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .input-resultado:focus {
+        outline: none;
+        border-color: var(--color-border-focus);
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+    }
+    
+    /* Estados de Validación (dual class: CSS original + JS) */
+    .input-resultado.normal,
+    .input-resultado.valor-normal {
+        border-color: var(--color-normal);
+        background: #d4edda;
+    }
+    
+    .input-resultado.fuera-rango,
+    .input-resultado.valor-alerta {
+        border-color: var(--color-fuera-rango);
+        background: #fff3cd;
+    }
+    
+    .input-resultado.critico,
+    .input-resultado.valor-critico {
+        border-color: var(--color-critico);
+        background: #f8d7da;
+        animation: flash-critico 1s infinite;
+    }
+    
+    @keyframes flash-critico {
+        0%, 100% { background: #f8d7da; }
+        50% { background: #dc3545; color: white; }
+    }
+    
+    /* Iconos de Estado */
+    .status-icon {
+        font-size: 1.3rem;
+        margin-left: 8px;
+    }
+    
+    .icon-check {
+        color: var(--color-normal);
+    }
+    
+    .icon-warning {
+        color: var(--color-fuera-rango);
+    }
+    
+    .icon-danger {
+        color: var(--color-critico);
+        animation: pulse 1s infinite;
+    }
+    
+    /* Columna de Referencia */
+    .col-referencia {
+        font-size: 0.9rem;
+        color: #6c757d;
+        font-style: italic;
+    }
+    
+    .badge-estudio {
+        background: #007bff;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 10px;
+    }
+    
+    /* Botones de Acción */
+    .btn-guardar {
+        font-size: 1.2rem;
+        padding: 15px 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .btn-guardar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    
+    /* Voice Recognition Status */
+    .voice-status {
+        display: none;
+        background: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        margin-top: 10px;
+        text-align: center;
+        font-weight: 600;
+    }
+    
+    .voice-status.active {
+        display: block;
+        animation: pulse 1s infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header del Paciente -->
+    <div class="patient-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h3 class="mb-2">
+                    <i class="fas fa-user-circle me-2"></i>
+                    {{ paciente.nombre_completo }}
+                </h3>
+                <div class="patient-info">
+                    <span class="me-4">
+                        <i class="fas fa-birthday-cake me-1"></i>
+                        {% if edad_paciente %}{{ edad_paciente }} años{% else %}Edad no registrada{% endif %}
+                    </span>
+                    <span class="me-4">
+                        <i class="fas fa-{% if sexo_paciente == 'M' %}mars{% elif sexo_paciente == 'F' %}venus{% else %}genderless{% endif %} me-1"></i>
+                        {{ paciente.get_sexo_display|default:"No especificado" }}
+                    </span>
+                    <span>
+                        <i class="fas fa-barcode me-1"></i>
+                        Orden: <strong>{{ orden.folio_orden|default:orden.id }}</strong>
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if orden.estado == 'PAGADO' %}
+                    <span class="badge badge-pago bg-success">
+                        <i class="fas fa-check-circle me-1"></i>PAGADO
+                    </span>
+                {% elif orden.estado == 'EN_PROCESO' %}
+                    <span class="badge badge-pago bg-warning">
+                        <i class="fas fa-spinner fa-spin me-1"></i>EN PROCESO
+                    </span>
+                {% else %}
+                    <span class="badge badge-pago bg-danger">
+                        <i class="fas fa-lock me-1"></i>PENDIENTE PAGO
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra de Herramientas IA -->
+    <div class="toolbar-ai">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5 class="mb-2">
+                    <i class="fas fa-robot me-2 text-primary"></i>
+                    Herramientas de IA - Captura Inteligente
+                </h5>
+                <button type="button" class="btn btn-ai btn-voice" id="btn-voice" onclick="activarDictado()">
+                    <i class="fas fa-microphone me-2"></i>
+                    <span id="voice-text">Dictar Resultados</span>
+                </button>
+                <button type="button" class="btn btn-ai btn-ocr" id="btn-ocr" onclick="activarOCR()">
+                    <i class="fas fa-camera me-2"></i>
+                    Escanear Reporte
+                </button>
+                <div class="voice-status" id="voice-status">
+                    🎤 Escuchando... Di: "Glucosa 100"
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="text-muted">
+                    <i class="fas fa-flask me-1"></i>
+                    {{ total_parametros }} parámetros
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de Captura -->
+    <form method="POST" id="form-captura">
+        {% csrf_token %}
+        
+        {% for item in estudios_con_parametros %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="badge-estudio">
+                    <i class="fas fa-flask me-2"></i>
+                    {{ item.estudio.nombre }}
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 5%">#</th>
+                                <th style="width: 30%">Parámetro</th>
+                                <th style="width: 15%">Unidad</th>
+                                <th style="width: 20%">Resultado</th>
+                                <th style="width: 25%">Rango de Referencia</th>
+                                <th style="width: 5%">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for param_data in item.parametros %}
+                            <tr>
+                                <td class="text-center">{{ forloop.counter }}</td>
+                                <td>
+                                    <strong>{{ param_data.parametro.nombre }}</strong>
+                                </td>
+                                <td class="text-center">
+                                    {{ param_data.parametro.unidad|default:"-" }}
+                                </td>
+                                <td>
+                                    <input 
+                                        type="text" 
+                                        name="parametro_{{ param_data.parametro.id }}"
+                                        id="input_{{ param_data.parametro.id }}"
+                                        class="input-resultado result-input"
+                                        value="{{ param_data.valor_previo }}"
+                                        data-parametro-id="{{ param_data.parametro.id }}"
+                                        data-parametro-nombre="{{ param_data.parametro.nombre }}"
+                                        data-tipo="{{ param_data.parametro.tipo_dato }}"
+                                        {% if param_data.rango %}
+                                        data-min="{% if param_data.rango.valor_minimo != None %}{{ param_data.rango.valor_minimo|floatformat:2 }}{% endif %}"
+                                        data-max="{% if param_data.rango.valor_maximo != None %}{{ param_data.rango.valor_maximo|floatformat:2 }}{% endif %}"
+                                        data-panico-min="{{ param_data.rango.panico_minimo|default:'' }}"
+                                        data-panico-max="{{ param_data.rango.panico_maximo|default:'' }}"
+                                        {% endif %}
+                                        placeholder="Ingrese valor..."
+                                        autocomplete="off"
+                                    />
+                                </td>
+                                <td class="col-referencia">
+                                    {% if param_data.rango %}
+                                        {% if param_data.rango.valor_minimo != None or param_data.rango.valor_maximo != None %}
+                                            {% if param_data.rango.valor_minimo != None %}{{ param_data.rango.valor_minimo|floatformat:2 }}{% else %}-{% endif %}
+                                            -
+                                            {% if param_data.rango.valor_maximo != None %}{{ param_data.rango.valor_maximo|floatformat:2 }}{% else %}-{% endif %}
+                                            {{ param_data.parametro.unidad|default:"" }}
+                                        {% elif param_data.rango.texto_referencia %}
+                                            {{ param_data.rango.texto_referencia }}
+                                        {% else %}
+                                            <span class="text-muted">Sin rango definido</span>
+                                        {% endif %}
+                                        
+                                        {% if param_data.rango.panico_minimo != None or param_data.rango.panico_maximo != None %}
+                                            <br>
+                                            <small class="text-danger">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                                Pánico: 
+                                                {% if param_data.rango.panico_minimo != None %}&lt;{{ param_data.rango.panico_minimo }}{% endif %}
+                                                {% if param_data.rango.panico_minimo != None and param_data.rango.panico_maximo != None %} o {% endif %}
+                                                {% if param_data.rango.panico_maximo != None %}&gt;{{ param_data.rango.panico_maximo }}{% endif %}
+                                            </small>
+                                        {% endif %}
+                                    {% elif param_data.ref_min != None or param_data.ref_max != None or param_data.ref_texto %}
+                                        {% if param_data.ref_min != None %}{{ param_data.ref_min|floatformat:2 }}{% else %}-{% endif %}
+                                        -
+                                        {% if param_data.ref_max != None %}{{ param_data.ref_max|floatformat:2 }}{% else %}-{% endif %}
+                                        {% if param_data.ref_texto %}{{ param_data.ref_texto }}{% endif %}
+                                    {% else %}
+                                        <span class="text-muted">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Sin rango para {{ sexo_paciente }}/{{ edad_paciente }} años
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <span class="status-icon" id="status_{{ param_data.parametro.id }}"></span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            No hay estudios con parámetros configurados para esta orden.
+        </div>
+        {% endfor %}
+
+        <!-- Botones de Acción -->
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <button type="submit" name="accion" value="guardar"
+                        id="btn-guardar-resultados"
+                        class="btn btn-primary btn-guardar"
+                        onclick="activarSpinner(this, 'Guardando...')">
+                    <i class="fas fa-save me-2" id="icon-guardar"></i>
+                    Guardar Resultados
+                </button>
+                <button type="submit" name="accion" value="guardar_y_validar"
+                        id="btn-guardar-validar"
+                        class="btn btn-success btn-guardar ms-3"
+                        onclick="activarSpinner(this, 'Validando...')">
+                    <i class="fas fa-check-double me-2" id="icon-validar"></i>
+                    Guardar y Validar
+                </button>
+                <a href="{% url 'imprimir_resultados' orden.id %}" class="btn btn-secondary btn-guardar ms-3" target="_blank" title="Ver/Imprimir PDF">
+                    <i class="fas fa-print me-2"></i>
+                    Imprimir PDF
+                </a>
+                <a href="{% url 'lista_trabajo_lab' %}" class="btn btn-outline-secondary btn-guardar ms-3">
+                    <i class="fas fa-times me-2"></i>
+                    Cancelar
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+<!-- Modal de Notificación de Valor Crítico (ISO 15189) -->
+<div class="modal fade" id="modalNotificacionPanico" tabindex="-1" aria-labelledby="modalNotificacionPanicoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalNotificacionPanicoLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>VALOR CRÍTICO DETECTADO - ISO 15189
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <strong>⚠️ Requisito ISO 15189:</strong> Debes registrar la notificación al médico tratante.
+                    Sin este registro, el laboratorio NO cumple con la norma internacional.
+                </div>
+                
+                <div class="alert alert-danger" id="valor-critico-info">
+                    <strong>Parámetro:</strong> <span id="parametro-critico-nombre"></span><br>
+                    <strong>Valor Detectado:</strong> <span id="parametro-critico-valor"></span><br>
+                    <strong>Rango de Pánico:</strong> <span id="parametro-critico-rango"></span>
+                </div>
+                
+                <form id="formNotificacionPanico">
+                    {% csrf_token %}
+                    <input type="hidden" id="resultado_id_panico" name="resultado_id">
+                    <input type="hidden" id="parametro_id_panico" name="parametro_id">
+                    <input type="hidden" id="valor_critico_panico" name="valor_critico">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="medico_notificado" class="form-label">
+                                Médico Notificado <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="medico_notificado" name="medico_notificado" required placeholder="Ej: Dr. Juan Pérez">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="cargo_receptor" class="form-label">Cargo del Receptor</label>
+                            <input type="text" class="form-control" id="cargo_receptor" name="cargo_receptor" placeholder="Ej: Médico Tratante, Residente">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="medio_notificacion" class="form-label">
+                                Medio de Notificación <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="medio_notificacion" name="medio_notificacion" required>
+                                <option value="">Seleccione...</option>
+                                <option value="TELEFONO">Teléfono</option>
+                                <option value="WHATSAPP">WhatsApp</option>
+                                <option value="EMAIL">Correo Electrónico</option>
+                                <option value="PRESENCIAL">Presencial</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="numero_contacto" class="form-label">Número de Contacto</label>
+                            <input type="text" class="form-control" id="numero_contacto" name="numero_contacto" placeholder="Teléfono o correo">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="observaciones_notificacion" class="form-label">Observaciones</label>
+                        <textarea class="form-control" id="observaciones_notificacion" name="observaciones" rows="3" placeholder="Ej: Médico indicó que revisará al paciente de inmediato"></textarea>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="confirmacion_recepcion" name="confirmacion_recepcion">
+                        <label class="form-check-label" for="confirmacion_recepcion">
+                            El receptor confirmó que recibió y entendió la información
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" onclick="guardarNotificacionPanico()">
+                    <i class="fas fa-check me-1"></i> Registrar Notificación
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="{% static 'js/laboratorio_ai.js' %}"></script>
+<script>
+// ========== VALIDACION EN TIEMPO REAL AL ESCRIBIR ==========
+document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.input-resultado').forEach(function(input){
+        // Validar al escribir (input) y al salir del campo (blur)
+        input.addEventListener('input', function(){ validarInput(this); });
+        input.addEventListener('blur', function(){ validarInput(this); });
+        
+        // Enter navega al siguiente input
+        input.addEventListener('keydown', function(e){
+            if(e.key === 'Enter'){
+                e.preventDefault();
+                const inputs = Array.from(document.querySelectorAll('.input-resultado'));
+                const idx = inputs.indexOf(this);
+                if(idx >= 0 && idx < inputs.length - 1){
+                    inputs[idx + 1].focus();
+                    inputs[idx + 1].select();
+                }
+            }
+        });
+        
+        // Si ya tiene valor al cargar, validar
+        if(input.value.trim()) validarInput(input);
+    });
+});
+
+// Función para abrir el modal de notificación de pánico
+function abrirModalPanico(parametroId, parametroNombre, valor, rangoPanico) {
+    document.getElementById('parametro_id_panico').value = parametroId;
+    document.getElementById('valor_critico_panico').value = valor;
+    document.getElementById('parametro-critico-nombre').textContent = parametroNombre;
+    document.getElementById('parametro-critico-valor').textContent = valor;
+    document.getElementById('parametro-critico-rango').textContent = rangoPanico;
+    
+    // Resetear formulario
+    document.getElementById('formNotificacionPanico').reset();
+    document.getElementById('parametro_id_panico').value = parametroId;
+    document.getElementById('valor_critico_panico').value = valor;
+    
+    // Abrir modal
+    var modal = new bootstrap.Modal(document.getElementById('modalNotificacionPanico'));
+    modal.show();
+}
+
+// Spinner en botones de submit — evita doble envío con internet lento
+function activarSpinner(btn, textoEspera) {
+    // Deshabilitar todos los botones de submit para prevenir doble envío
+    document.querySelectorAll('button[type="submit"]').forEach(b => {
+        b.disabled = true;
+    });
+    // Mostrar spinner en el botón presionado
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>${textoEspera}`;
+}
+
+// Función para guardar la notificación de pánico
+function guardarNotificacionPanico() {
+    const form = document.getElementById('formNotificacionPanico');
+    if (!form) return;
+    const formData = new FormData(form);
+    const ordenId = {{ orden.id }};
+    
+    // Validar campos obligatorios
+    if (!formData.get('medico_notificado') || !formData.get('medio_notificacion')) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Campos Requeridos',
+            text: 'Debe completar al menos el nombre del médico y el medio de notificación',
+            confirmButtonText: 'Entendido'
+        });
+        return;
+    }
+    
+    // Enviar a servidor
+    fetch("{% url 'laboratorio:notificacion_panico' orden.id %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Notificación Registrada',
+                text: 'La notificación de valor crítico ha sido registrada correctamente en cumplimiento con ISO 15189',
+                confirmButtonText: 'Entendido',
+                timer: 3000
+            });
+            
+            // Cerrar modal
+            var modal = bootstrap.Modal.getInstance(document.getElementById('modalNotificacionPanico'));
+            modal.hide();
+            
+            // Marcar el input como notificado
+            const parametroId = formData.get('parametro_id');
+            const input = document.getElementById('input_' + parametroId);
+            if (input) {
+                input.dataset.notificado = 'true';
+                // Agregar badge de notificado
+                const statusIcon = document.getElementById('status_' + parametroId);
+                if (statusIcon) {
+                    statusIcon.innerHTML += ' <i class="fas fa-bell text-info" title="Notificación registrada"></i>';
+                }
+            }
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.error || 'No se pudo registrar la notificación',
+                confirmButtonText: 'Entendido'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de Conexión',
+            text: 'No se pudo conectar con el servidor',
+            confirmButtonText: 'Entendido'
+        });
+    });
+}
+</script>
+{% endblock %}

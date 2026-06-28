@@ -1,0 +1,53 @@
+Using existing test database for alias 'default'...
+
+Found 48 test(s).
+
+================================================================================
+MIGRACION FORENSE DE DATOS - LABORATORIO A CORE
+================================================================================
+Total de ordenes a procesar: 0
+
+
+================================================================================
+RESUMEN DE MIGRACIËN
+================================================================================
+Total procesadas: 0/0
+Ërdenes actualizadas: 0
+Ërdenes creadas (nuevas): 0
+================================================================================
+
+System check identified no issues (0 silenced).
+..........WARNING [CAJA-v1.14] Venta #1: empresa sin sucursales; no se puede crear MovimientoCaja (sucursal_id NOT NULL).
+WARNING MovimientoCaja omitido: empresa sin sucursal venta_id=1 empresa_id=1
+.WARNING Acceso denegado por rol. Usuario: sin_empresa, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+WARNING SENTINEL REPAIR [Permisos]: sin_empresa recibi¾ 403 en /contabilidad/dashboard/ sin empresa asignada. No se regenera sesi¾n automßtica.
+.........WARNING [CAJA-v1.14] Venta #1: empresa sin sucursales; no se puede crear MovimientoCaja (sucursal_id NOT NULL).
+WARNING MovimientoCaja omitido: empresa sin sucursal venta_id=1 empresa_id=1
+....WARNING Acceso denegado por rol. Usuario: cajero_finanzas_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+...ERROR SENTINEL captura [MEDIA] TemplateDoesNotExist en GET /contabilidad/facturas/: base_generic.html
+INFO SENTINEL: Incidencia #1 creada - [MEDIA] TemplateDoesNotExist en /contabilidad/facturas/
+INFO [AUDIT] CREATE IncidenciaSentinel #1 por 
+WARNING SENTINEL: Sin API key de Gemini, generando anßlisis offline
+INFO SENTINEL: Incidencia #1 enriquecida con analisis IA
+INFO SENTINEL REPAIR [TemplateNotFound]: Autoreparando /contabilidad/facturas/
+...WARNING Acceso denegado por rol. Usuario: cajero_cxc_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+.WARNING Acceso denegado por rol. Usuario: cajero_cxc_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+.WARNING Acceso denegado por rol. Usuario: cajero_cxc_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+.WARNING Acceso denegado por rol. Usuario: cajero_cxc_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+..WARNING Acceso denegado por rol. Usuario: cajero_cxc_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+..WARNING Acceso denegado por rol. Usuario: cajero_role_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+..WARNING Acceso denegado por rol. Usuario: cajero_role_test, Rol: CAJERO, Requeridos: {'GERENTE', 'DIRECTOR', 'ADMIN', 'FINANZAS'}
+.WARNING TENANT_SHADOW_UNSCOPED_QUERY modelo=Venta request_anon_or_sin_usuario=/facturacion/autofactura/
+INFO autofactura_publica: folio no encontrado ù folio=VTA-99999999-XXXX ip=127.0.0.1
+.WARNING autofactura_publica: rate limit exceeded for IP 127.0.0.1
+WARNING autofactura_publica: rate limit exceeded for IP 127.0.0.1
+.WARNING [CAJA-v1.14] Venta #1: empresa sin sucursales; no se puede crear MovimientoCaja (sucursal_id NOT NULL).
+WARNING MovimientoCaja omitido: empresa sin sucursal venta_id=1 empresa_id=5
+WARNING autofactura_publica: rate limit exceeded for IP 127.0.0.1
+......
+----------------------------------------------------------------------
+Ran 48 tests in 39.915s
+
+OK
+Preserving test database for alias 'default'...
+

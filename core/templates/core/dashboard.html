@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard Financiero - {{ empresa.nombre|default:"PRISLAB" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Homologación Pris-Valle 2030: evitar layout legacy, usar glass + variables */
+    .page-shell { padding-top: 10px; padding-bottom: 90px; }
+    @media print {
+        .no-print { display: none !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid page-shell">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-0">TABLERO DIRECTIVO</h3>
+            <small class="text-muted">Reporte en tiempo real | {{ empresa }}</small>
+        </div>
+        <div class="d-flex gap-2 no-print">
+            {% if puede_ver_ia_negocios %}
+            <button onclick="consultarIANegocios()" class="btn btn-primary-profesional btn-profesional neon-hover fw-bold" id="btn-ia-negocios">
+                <i class="bi bi-robot"></i> CONSULTAR IA DE NEGOCIOS
+            </button>
+            {% endif %}
+            <a href="{% url 'pdv_farmacia' %}" class="btn btn-outline-secondary btn-profesional fw-bold">
+                <i class="bi bi-shop"></i> IR AL MOSTRADOR
+            </a>
+        </div>
+    </div>
+
+    <!-- FILTROS DE FECHA -->
+    <form method="get" class="row g-3 mb-4 card card-profesional align-items-end">
+        <div class="col-md-3">
+            <label class="form-label fw-bold">Desde:</label>
+            <input type="date" name="fecha_inicio" class="form-control" value="{{ fecha_inicio|default:'' }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-bold">Hasta:</label>
+            <input type="date" name="fecha_fin" class="form-control" value="{{ fecha_fin|default:'' }}">
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary-profesional btn-profesional neon-hover fw-bold w-100">
+                <i class="bi bi-filter"></i> FILTRAR RESULTADOS
+            </button>
+        </div>
+        <div class="col-md-2">
+            <a href="?fecha_inicio={% now 'Y-m-d' %}&fecha_fin={% now 'Y-m-d' %}" class="btn btn-outline-secondary w-100">
+                VER HOY
+            </a>
+        </div>
+    </form>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow border-0 border-start border-5 border-primary h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase fw-bold">Ventas de este Mes</h6>
+                    <h2 class="display-6 fw-bold text-primary mb-0">$ {{ venta_mensual|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow border-0 border-start border-5 border-warning h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase fw-bold">💰 Ganancia del Día</h6>
+                    <h2 class="display-6 fw-bold text-warning mb-0">$ {{ ganancia_hoy|floatformat:2 }}</h2>
+                    <small class="text-muted"><i class="bi bi-calendar-day"></i> Utilidad neta de hoy</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow border-0 border-start border-5 border-success h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase fw-bold">Utilidad Bruta Histórica</h6>
+                    <h2 class="display-6 fw-bold text-success mb-0">$ {{ utilidad_total|floatformat:2 }}</h2>
+                    <small class="text-muted"><i class="bi bi-graph-up"></i> (Ventas - Costo Compra)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-8">
+            <div class="card shadow border-0">
+                <div class="card-header bg-white fw-bold py-3">
+                    <i class="bi bi-bar-chart-line"></i> TENDENCIA DE VENTAS (ÚLTIMOS 7 DÍAS)
+                </div>
+                <div class="card-body">
+                    <canvas id="chartDias" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow border-0">
+                <div class="card-header bg-white fw-bold py-3">
+                    <i class="bi bi-pie-chart"></i> VENTAS POR CATEGORÍA
+                </div>
+                <div class="card-body">
+                    <canvas id="chartCat" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // 1. Gráfico de Barras (Días)
+    new Chart(document.getElementById('chartDias'), {
+        type: 'bar',
+        data: {
+            labels: {{ labels_dias|safe }},
+            datasets: [{
+                label: 'Venta del Día ($)',
+                data: {{ datos_dias|safe }},
+                backgroundColor: '#0d6efd',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: {display: false} },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // 2. Gráfico de Dona (Categorías)
+    new Chart(document.getElementById('chartCat'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ labels_cat|safe }},
+            datasets: [{
+                data: {{ data_cat|safe }},
+                backgroundColor: ['#198754', '#ffc107', '#0dcaf0', '#dc3545', '#6c757d'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '70%',
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+</script>
+
+<style>
+    body { padding-bottom: 50px; }
+    
+    @media print {
+        .firma-autor, footer, .fixed-bottom { display: none !important; }
+        body { padding-bottom: 0 !important; }
+    }
+</style>
+
+<footer class="fixed-bottom bg-light text-dark text-center py-2 shadow-lg border-top firma-autor" style="z-index: 1000;">
+    <div class="container-fluid d-flex justify-content-between align-items-center" style="font-size: 12px;">
+        <span class="text-muted">
+            <i class="bi bi-building"></i> PRIMERO SALUD LABORATORIO
+        </span>
+        <span>
+            Arquitectura y Desarrollo: 
+            <strong class="text-primary text-uppercase fw-bold">
+                JONATHAN ALONSO SAMOS SANCHEZ
+            </strong>
+        </span>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+{% if puede_ver_ia_negocios %}
+<script>
+    // ==============================================================================
+    // FUNCIÓN PARA CONSULTAR IA DE NEGOCIOS
+    // ==============================================================================
+    function consultarIANegocios() {
+        // Preparar datos del contexto actual
+        const datosContexto = {
+            fecha_inicio: '{{ fecha_inicio }}',
+            fecha_fin: '{{ fecha_fin }}',
+            empresa: {
+                id: {{ empresa.id }},
+                nombre: '{{ empresa.nombre }}'
+            },
+            nivel_ia: '{{ nivel_ia }}'
+        };
+        
+        // Mostrar modal de carga
+        Swal.fire({
+            title: '🤖 Consultando IA de Negocios',
+            html: 'Analizando datos financieros y operativos...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // Enviar datos a la API de IA (aquí se implementará la conexión real)
+        fetch('/api/ia/consultar-negocios/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(datosContexto)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                Swal.fire({
+                    title: '💡 Análisis de IA',
+                    html: `
+                        <div class="text-start">
+                            <h5 class="mb-3">${data.titulo || 'Análisis Completo'}</h5>
+                            <div class="mb-3">
+                                ${data.analisis || 'No se pudo generar el análisis.'}
+                            </div>
+                            ${data.recomendaciones ? `
+                                <div class="alert alert-info">
+                                    <strong>Recomendaciones:</strong><br>
+                                    ${data.recomendaciones}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `,
+                    icon: 'info',
+                    width: '800px',
+                    confirmButtonText: 'Cerrar'
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: data.mensaje || 'No se pudo consultar la IA',
+                    icon: 'error'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                title: 'Error de Conexión',
+                text: 'No se pudo conectar con el servicio de IA. Por favor, intente más tarde.',
+                icon: 'error'
+            });
+        });
+    }
+    
+    // Función auxiliar para obtener CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endif %}
+{% endblock %}

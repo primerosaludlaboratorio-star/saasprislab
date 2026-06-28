@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Reporte Fiscal Mensual{% endblock %}
+
+{% block content %}
+<div class="container py-3" style="max-width:900px;">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0"><i class="fas fa-chart-pie text-primary me-2"></i>Reporte Fiscal Mensual</h4>
+    <form method="get" class="d-flex gap-2">
+      <select name="mes" class="form-select form-select-sm" style="width:auto;">
+        {% for m in "123456789" %}<option value="{{ forloop.counter }}" {% if mes == forloop.counter %}selected{% endif %}>{{ forloop.counter }}</option>{% endfor %}
+        <option value="10" {% if mes == 10 %}selected{% endif %}>10</option>
+        <option value="11" {% if mes == 11 %}selected{% endif %}>11</option>
+        <option value="12" {% if mes == 12 %}selected{% endif %}>12</option>
+      </select>
+      <input type="number" name="anio" class="form-control form-control-sm" style="width:90px;" value="{{ anio }}">
+      <button class="btn btn-primary btn-sm">Ver</button>
+    </form>
+  </div>
+
+  <!-- Resumen -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm text-center py-3" style="border-top:4px solid #198754!important;">
+        <div class="text-success fw-bold" style="font-size:1.6rem;">${{ ingreso_bruto|floatformat:2 }}</div>
+        <div class="text-muted" style="font-size:.85rem;">Ingreso Bruto</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm text-center py-3" style="border-top:4px solid #dc3545!important;">
+        <div class="text-danger fw-bold" style="font-size:1.6rem;">${{ total_gastos|floatformat:2 }}</div>
+        <div class="text-muted" style="font-size:.85rem;">Egresos</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm text-center py-3" style="border-top:4px solid #0d6efd!important;">
+        <div class="text-primary fw-bold" style="font-size:1.6rem;">${{ ingreso_neto|floatformat:2 }}</div>
+        <div class="text-muted" style="font-size:.85rem;">Ingreso Neto</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Desglose -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-dark text-white fw-bold"><i class="fas fa-list me-2"></i>Desglose</div>
+    <div class="card-body p-0">
+      <table class="table table-sm mb-0" style="font-size:.9rem;">
+        <tbody>
+          <tr class="table-success">
+            <td class="ps-3"><i class="fas fa-flask text-success me-2"></i>Ordenes de Laboratorio</td>
+            <td class="text-center">{{ count_ordenes }}</td>
+            <td class="text-end pe-3 fw-bold">${{ total_ordenes|floatformat:2 }}</td>
+          </tr>
+          <tr class="table-success">
+            <td class="ps-3"><i class="fas fa-pills text-success me-2"></i>Ventas de Farmacia</td>
+            <td class="text-center">{{ count_ventas }}</td>
+            <td class="text-end pe-3 fw-bold">${{ total_ventas|floatformat:2 }}</td>
+          </tr>
+          <tr class="table-danger">
+            <td class="ps-3"><i class="fas fa-minus-circle text-danger me-2"></i>Gastos Operativos</td>
+            <td class="text-center">-</td>
+            <td class="text-end pe-3 fw-bold">-${{ total_gastos|floatformat:2 }}</td>
+          </tr>
+          <tr class="table-warning">
+            <td class="ps-3"><i class="fas fa-file-invoice text-warning me-2"></i>Cuentas por Cobrar emitidas</td>
+            <td class="text-center">-</td>
+            <td class="text-end pe-3 fw-bold">${{ total_cxc|floatformat:2 }}</td>
+          </tr>
+          <tr class="table-info">
+            <td class="ps-3"><i class="fas fa-receipt text-info me-2"></i>Notas de Credito</td>
+            <td class="text-center">-</td>
+            <td class="text-end pe-3 fw-bold">-${{ total_notas_credito|floatformat:2 }}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="table-dark">
+            <td class="ps-3 fw-bold" colspan="2">INGRESO NETO DEL MES</td>
+            <td class="text-end pe-3 fw-bold" style="font-size:1.1rem;">${{ ingreso_neto|floatformat:2 }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

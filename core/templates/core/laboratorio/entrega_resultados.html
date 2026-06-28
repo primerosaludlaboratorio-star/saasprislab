@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Entrega de Resultados - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="bi bi-envelope-check"></i> Entrega de Resultados</h2>
+        </div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Buscar por folio o paciente</label>
+                    <input type="text" name="busqueda" class="form-control" value="{{ busqueda }}" placeholder="Folio o nombre del paciente">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Últimos días</label>
+                    <select name="dias" class="form-select">
+                        <option value="7" {% if dias == 7 %}selected{% endif %}>7 días</option>
+                        <option value="30" {% if dias == 30 %}selected{% endif %}>30 días</option>
+                        <option value="60" {% if dias == 60 %}selected{% endif %}>60 días</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Acciones masivas -->
+    <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap gap-2 align-items-center justify-content-between">
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="toggleSeleccion(true)">Seleccionar todo</button>
+                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="toggleSeleccion(false)">Limpiar</button>
+            </div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <button class="btn btn-primary btn-sm fw-bold" type="button" onclick="enviarEmailMasivo()">
+                    <i class="bi bi-send"></i> Enviar Email (1 clic)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de órdenes -->
+    <div class="card">
+        <div class="card-body">
+            {% if items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width:40px;"><input type="checkbox" id="chkAll" onclick="toggleSeleccion(this.checked)"></th>
+                            <th>Folio</th>
+                            <th>Paciente</th>
+                            <th>Fecha</th>
+                            <th>Validado</th>
+                            <th style="text-align: center;">📧 Email</th>
+                            <th style="text-align: center;">📱 WhatsApp</th>
+                            <th style="text-align: center;">📄 PDF</th>
+                            <th style="text-align: center;">👁️ Leído</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for it in items %}
+                        {% with orden=it.orden bit=it.bitacora %}
+                        <tr>
+                            <td>
+                                <input class="form-check-input chkOrden" type="checkbox" value="{{ orden.id }}">
+                            </td>
+                            <td><strong>{{ orden.folio_orden|default:orden.id }}</strong></td>
+                            <td>{{ orden.paciente.nombre_completo }}</td>
+                            <td>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if bit and bit.fecha_validado %}
+                                    <span class="badge bg-success">{{ bit.fecha_validado|date:"H:i" }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">—</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                {% if it.email_enviado %}
+                                    <i class="bi bi-check-circle-fill text-success fs-5" title="Email enviado: {{ bit.fecha_enviado_mail|date:"d/m H:i" }}"></i>
+                                    <br><small class="text-muted">{{ bit.fecha_enviado_mail|date:"H:i" }}</small>
+                                {% else %}
+                                    {% if orden.paciente.email %}
+                                        <i class="bi bi-x-circle-fill text-warning fs-5" title="Pendiente: {{ orden.paciente.email }}"></i>
+                                    {% else %}
+                                        <i class="bi bi-dash-circle text-secondary fs-5" title="Sin email"></i>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                {% if it.whatsapp_enviado %}
+                                    <i class="bi bi-check-circle-fill text-success fs-5" title="WhatsApp enviado: {{ bit.fecha_whatsapp_enviado|date:"d/m H:i" }}"></i>
+                                    <br><small class="text-muted">{{ bit.fecha_whatsapp_enviado|date:"H:i" }}</small>
+                                {% else %}
+                                    {% if it.whatsapp_link %}
+                                        <i class="bi bi-x-circle-fill text-warning fs-5" title="Pendiente"></i>
+                                    {% else %}
+                                        <i class="bi bi-dash-circle text-secondary fs-5" title="Sin teléfono"></i>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                {% if it.pdf_generado %}
+                                    <i class="bi bi-file-pdf-fill text-danger fs-5" title="PDF disponible"></i>
+                                {% else %}
+                                    <i class="bi bi-dash-circle text-secondary fs-5" title="No disponible"></i>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                {% if it.leido_paciente %}
+                                    <i class="bi bi-eye-fill text-info fs-5" title="Leído: {{ bit.fecha_leido_paciente|date:"d/m H:i" }}"></i>
+                                    <br><small class="text-muted">{{ bit.fecha_leido_paciente|date:"d/m H:i" }}</small>
+                                {% else %}
+                                    <i class="bi bi-eye-slash text-secondary fs-5" title="No leído"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'imprimir_resultados_pdf' orden.id %}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                    <i class="bi bi-file-pdf"></i> Ver PDF
+                                </a>
+                                <a href="{{ it.link_publico }}" class="btn btn-sm btn-outline-dark" target="_blank" title="Link para paciente (mide Leído)">
+                                    <i class="bi bi-link-45deg"></i> Link
+                                </a>
+                                {% if it.whatsapp_link %}
+                                    <a href="{{ it.whatsapp_link }}" class="btn btn-sm btn-outline-success" target="_blank" onclick="marcarWhatsAppEnviado({{ orden.id }})">
+                                        <i class="bi bi-whatsapp"></i> WhatsApp
+                                    </a>
+                                {% endif %}
+                                <a href="{% url 'marcar_entregado' orden.id %}" class="btn btn-sm btn-success">
+                                    <i class="bi bi-check-circle"></i> Entregado
+                                </a>
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                <p class="text-muted mt-3">No hay resultados listos para entregar</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleSeleccion(val) {
+    const checks = document.querySelectorAll('.chkOrden');
+    checks.forEach(chk => chk.checked = !!val);
+    const chkAll = document.getElementById('chkAll');
+    if (chkAll) chkAll.checked = !!val;
+}
+
+async function enviarEmailMasivo() {
+    const seleccionadas = Array.from(document.querySelectorAll('.chkOrden:checked')).map(c => parseInt(c.value));
+    if (!seleccionadas.length) {
+        alert('Selecciona al menos una orden.');
+        return;
+    }
+
+    const csrftokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    const csrftoken = csrftokenEl ? csrftokenEl.value : '';
+
+    const res = await fetch('{% url "api_enviar_email_masivo_resultados" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ ordenes: seleccionadas })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+        alert(data.error || 'No se pudo enviar.');
+        return;
+    }
+
+    alert(`Envío completado. Enviados: ${data.resumen.enviados} | Omitidos: ${data.resumen.omitidos} | Errores: ${data.resumen.errores}`);
+    window.location.reload();
+}
+
+function marcarWhatsAppEnviado(ordenId) {
+    // No bloquear la apertura del link; solo marcar timestamp en background
+    const csrftokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    const csrftoken = csrftokenEl ? csrftokenEl.value : '';
+    fetch(`/laboratorio/entrega-resultados/${ordenId}/whatsapp-enviado/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    }).catch(()=>{});
+}
+</script>
+{% endblock %}

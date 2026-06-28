@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Corte de Caja - Farmacia PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+    }
+    
+    .corte-card {
+        max-width: 600px;
+        margin: 3rem auto;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        background: white;
+    }
+    
+    .corte-header {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 20px 20px 0 0;
+        text-align: center;
+    }
+    
+    .corte-header h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+    }
+    
+    .turno-info {
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .campo-ciego {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: 3px solid #dee2e6;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+    }
+    
+    .campo-ciego label {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        display: block;
+    }
+    
+    .campo-ciego input[type="number"] {
+        font-size: 2rem;
+        font-weight: 700;
+        text-align: center;
+        height: 80px;
+        border: 3px solid #667eea;
+        border-radius: 10px;
+        background: white;
+    }
+    
+    .campo-ciego input[type="number"]:focus {
+        box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        border-color: #667eea;
+    }
+    
+    .advertencia-ciego {
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1.5rem 0;
+    }
+    
+    .advertencia-ciego i {
+        font-size: 1.5rem;
+        color: #ffc107;
+    }
+    
+    .btn-realizar-corte {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        color: white;
+        font-size: 1.3rem;
+        font-weight: 700;
+        padding: 1.2rem;
+        border-radius: 50px;
+        width: 100%;
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        transition: all 0.3s;
+    }
+    
+    .btn-realizar-corte:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(40, 167, 69, 0.5);
+    }
+    
+    .btn-realizar-corte:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+    }
+    
+    .checkbox-responsabilidad {
+        background: #fee;
+        border: 2px solid #dc3545;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .checkbox-responsabilidad label {
+        color: #dc3545;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="corte-card">
+        <div class="corte-header">
+            <i class="fas fa-cash-register fa-3x mb-3"></i>
+            <h1>Corte de Caja</h1>
+            <p class="mb-0">Arqueo Ciego | Sistema PRISLAB</p>
+            
+            <div class="turno-info">
+                <div class="row">
+                    <div class="col-6">
+                        <small>Turno Inicio</small>
+                        <div><strong>{{ turno_inicio|date:"d/m/Y H:i" }}</strong></div>
+                    </div>
+                    <div class="col-6">
+                        <small>Ventas Realizadas</small>
+                        <div><strong>{{ ventas_turno_count }}</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-body p-4">
+            <!-- Advertencia de Arqueo Ciego -->
+            <div class="advertencia-ciego">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-eye-slash me-3"></i>
+                    <div>
+                        <strong>ARQUEO CIEGO ACTIVADO</strong>
+                        <p class="mb-0">NO veras cuánto espera el sistema. Solo ingresa el dinero REAL que tienes en mano.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <form method="POST" id="form-corte">
+                {% csrf_token %}
+                
+                <!-- Campo Principal: Efectivo -->
+                <div class="campo-ciego">
+                    <label for="{{ form.efectivo_declarado.id_for_label }}">
+                        💵 {{ form.efectivo_declarado.label }}
+                    </label>
+                    {{ form.efectivo_declarado }}
+                    <small class="form-text text-muted d-block mt-2">
+                        {{ form.efectivo_declarado.help_text }}
+                    </small>
+                </div>
+                
+                <!-- Campos Secundarios -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            💳 {{ form.tarjeta_declarada.label }}
+                        </label>
+                        {{ form.tarjeta_declarada }}
+                        <small class="form-text text-muted">{{ form.tarjeta_declarada.help_text }}</small>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            🏦 {{ form.transferencia_declarada.label }}
+                        </label>
+                        {{ form.transferencia_declarada }}
+                        <small class="form-text text-muted">{{ form.transferencia_declarada.help_text }}</small>
+                    </div>
+                </div>
+                
+                <!-- Observaciones -->
+                <div class="mb-3">
+                    <label class="form-label">
+                        <i class="fas fa-comment me-1"></i> {{ form.observaciones_corte.label }}
+                    </label>
+                    {{ form.observaciones_corte }}
+                    <small class="form-text text-muted">{{ form.observaciones_corte.help_text }}</small>
+                </div>
+                
+                <!-- Checkbox de Responsabilidad -->
+                <div class="checkbox-responsabilidad">
+                    <div class="form-check">
+                        {{ form.acepto_responsabilidad }}
+                        <label class="form-check-label" for="{{ form.acepto_responsabilidad.id_for_label }}">
+                            {{ form.acepto_responsabilidad.label }}
+                        </label>
+                        <br>
+                        <small class="text-muted">{{ form.acepto_responsabilidad.help_text }}</small>
+                    </div>
+                </div>
+                
+                <!-- Botón de Envío -->
+                <button type="submit" class="btn-realizar-corte" id="btn-submit">
+                    <i class="fas fa-check-circle me-2"></i>
+                    REALIZAR CORTE DE CAJA
+                </button>
+                
+                <div class="text-center mt-3">
+                    <a href="{% url 'pdv_farmacia' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Volver al POS
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Deshabilitar botón submit si no acepta responsabilidad
+document.getElementById('{{ form.acepto_responsabilidad.id_for_label }}').addEventListener('change', function() {
+    document.getElementById('btn-submit').disabled = !this.checked;
+});
+
+// Auto-formatear montos
+function formatearMonto(input) {
+    let valor = parseFloat(input.value) || 0;
+    input.value = valor.toFixed(2);
+}
+
+document.querySelectorAll('input[type="number"]').forEach(input => {
+    input.addEventListener('blur', function() {
+        formatearMonto(this);
+    });
+});
+
+// Confirmación antes de enviar
+document.getElementById('form-corte').addEventListener('submit', function(e) {
+    const efectivo = parseFloat(document.getElementById('{{ form.efectivo_declarado.id_for_label }}').value) || 0;
+    const tarjeta = parseFloat(document.getElementById('{{ form.tarjeta_declarada.id_for_label }}').value) || 0;
+    const transferencia = parseFloat(document.getElementById('{{ form.transferencia_declarada.id_for_label }}').value) || 0;
+    const total = efectivo + tarjeta + transferencia;
+    
+    if (total === 0) {
+        e.preventDefault();
+        Swal.fire({
+            icon: 'error',
+            title: 'Montos en Cero',
+            text: 'Debes declarar al menos un monto mayor a cero'
+        });
+        return false;
+    }
+    
+    e.preventDefault();
+    
+    Swal.fire({
+        title: '¿Confirmar Corte de Caja?',
+        html: `
+            <div class="text-start">
+                <p><strong>Total Declarado:</strong> $${total.toFixed(2)}</p>
+                <ul>
+                    <li>Efectivo: $${efectivo.toFixed(2)}</li>
+                    <li>Tarjeta: $${tarjeta.toFixed(2)}</li>
+                    <li>Transferencia: $${transferencia.toFixed(2)}</li>
+                </ul>
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>IMPORTANTE:</strong> El corte de caja es un documento INMUTABLE. 
+                    No podrá editarse una vez confirmado.
+                </div>
+            </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, Confirmar Corte',
+        cancelButtonText: 'Revisar Montos'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Mostrar loader
+            Swal.fire({
+                title: 'Procesando Corte...',
+                html: 'Calculando diferencias y generando reporte',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Enviar formulario
+            e.target.submit();
+        }
+    });
+});
+</script>
+{% endblock %}

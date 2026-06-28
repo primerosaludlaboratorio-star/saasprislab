@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}2FA Activado — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 480px;">
+  <div class="card border-0 shadow rounded-4 text-center">
+    <div class="card-body p-5">
+      <div class="mb-4">
+        <div class="d-inline-flex align-items-center justify-content-center rounded-circle"
+             style="width: 80px; height: 80px; background: rgba(40,167,69,0.12);">
+          <i class="bi bi-shield-check-fill text-success" style="font-size: 2.5rem;"></i>
+        </div>
+      </div>
+      <h4 class="fw-bold">¡2FA activado correctamente!</h4>
+      <p class="text-muted">Tu cuenta ahora requiere código de autenticación en cada inicio de sesión. Guarda tu app autenticadora en un lugar seguro.</p>
+      <a href="/" class="btn btn-success rounded-3 px-4">
+        <i class="bi bi-house-fill me-2"></i> Ir al inicio
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

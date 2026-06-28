@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        @page {
+            size: 38mm 25mm;
+            margin: 0;
+        }
+        body {
+            font-family: 'Arial Narrow', sans-serif;
+            margin: 0;
+            padding: 1mm;
+            width: 38mm;
+            height: 25mm;
+            overflow: hidden;
+        }
+        .header {
+            font-size: 6pt;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 0.1mm solid #000;
+        }
+        .paciente {
+            font-size: 7pt;
+            font-weight: bold;
+            display: block;
+            margin: 1mm 0;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .detalle {
+            font-size: 6pt;
+            display: flex;
+            justify-content: space-between;
+        }
+        .barcode-box {
+            text-align: center;
+            margin-top: -1mm;
+        }
+        svg {
+            width: 34mm;
+            height: 10mm;
+        }
+    </style>
+</head>
+<body onload="window.print()">
+    {% for detalle in detalles %}
+    <div style="page-break-after: always;">
+        <div class="header">
+            <span>{{ orden.folio_orden|default:orden.id }}</span>
+            <span>{{ orden.fecha_creacion|date:"d/m/y" }}</span>
+        </div>
+        <div class="paciente">{{ orden.paciente.nombre_completo|truncatechars:25|upper }}</div>
+        <div class="detalle">
+            <strong>TUBO: {{ detalle.display_muestra|default:"S/N" }}</strong>
+            <span>{{ detalle.display_abreviatura|default:detalle.display_nombre|default:"Estudio"|truncatechars:12 }}</span>
+        </div>
+        <div class="barcode-box">
+            <svg id="barcode-{{ forloop.counter }}"></svg>
+        </div>
+    </div>
+    <script>
+        JsBarcode("#barcode-{{ forloop.counter }}", "{{ orden.folio_orden|default:orden.id }}", {
+            format: "CODE128",
+            width: 1,
+            height: 30,
+            displayValue: false,
+            margin: 0
+        });
+    </script>
+    {% endfor %}
+</body>
+</html>

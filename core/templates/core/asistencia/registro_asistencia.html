@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Registros de Asistencia — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="fas fa-list-check text-primary me-2"></i>Registros de Asistencia</h3>
+    <a href="{% url 'dashboard_asistencia' %}" class="btn btn-outline-secondary btn-sm">← Volver</a>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small">Fecha</label>
+          <input type="date" name="fecha" value="{{ fecha }}" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">Empleado</label>
+          <select name="empleado" class="form-select form-select-sm">
+            <option value="">— Todos —</option>
+            {% for emp in empleados %}
+            <option value="{{ emp.id }}" {% if empleado_filtro == emp.id|stringformat:"s" %}selected{% endif %}>
+              {{ emp.usuario.get_full_name|default:emp.usuario.username }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      {% if page_obj %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Empleado</th><th>Tipo</th><th>Fecha/Hora</th><th>Método</th><th>Sucursal</th></tr>
+          </thead>
+          <tbody>
+            {% for r in page_obj %}
+            <tr>
+              <td>{{ r.empleado.usuario.get_full_name|default:r.empleado.usuario.username }}</td>
+              <td>
+                {% if r.tipo_registro == 'ENTRADA' %}
+                  <span class="badge bg-success">Entrada</span>
+                {% else %}
+                  <span class="badge bg-secondary">Salida</span>
+                {% endif %}
+              </td>
+              <td>{{ r.fecha_hora|date:"d/m/Y H:i" }}</td>
+              <td>{{ r.metodo_registro|default:"–" }}</td>
+              <td>{{ r.sucursal.nombre|default:"–" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <!-- Paginación -->
+      {% if page_obj.has_other_pages %}
+      <div class="d-flex justify-content-center py-3">
+        <nav><ul class="pagination pagination-sm mb-0">
+          {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&fecha={{ fecha }}">‹</a></li>
+          {% endif %}
+          <li class="page-item active"><a class="page-link" href="#">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</a></li>
+          {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&fecha={{ fecha }}">›</a></li>
+          {% endif %}
+        </ul></nav>
+      </div>
+      {% endif %}
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-search fa-2x mb-2"></i><br>Sin registros para los filtros seleccionados
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

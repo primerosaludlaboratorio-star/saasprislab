@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalle de Desempeño - {{ empleado.nombre_completo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .score-card {
+        border-left: 5px solid;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .score-velocidad { border-left-color: #17a2b8; }
+    .score-integridad { border-left-color: #28a745; }
+    .score-satisfaccion { border-left-color: #ffc107; }
+    
+    .incidencia-item {
+        border-left: 3px solid;
+        padding-left: 1rem;
+        margin-bottom: 1rem;
+    }
+    .incidencia-pendiente { border-left-color: #ffc107; }
+    .incidencia-justificada { border-left-color: #28a745; }
+    .incidencia-sancionada { border-left-color: #dc3545; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px;">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <h2>
+                <i class="bi bi-person-badge"></i> Detalle de Desempeño - {{ empleado.nombre_completo }}
+            </h2>
+            <div>
+                <a href="{% url 'ranking_desempeno' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver al Ranking
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Score General -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Score General de Desempeño</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 class="text-primary">{{ score.score_total|floatformat:1 }}</h3>
+                            <p class="text-muted mb-0">Score Total</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-info">{{ score.velocidad|floatformat:1 }}</h3>
+                            <p class="text-muted mb-0">Velocidad</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-success">{{ score.integridad|floatformat:1 }}</h3>
+                            <p class="text-muted mb-0">Integridad</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-warning">{{ score.satisfaccion|floatformat:1 }}</h3>
+                            <p class="text-muted mb-0">Satisfacción</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métricas Detalladas -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card score-card score-velocidad">
+                <h6 class="text-uppercase text-muted">Velocidad</h6>
+                <p class="mb-1"><strong>Volumen:</strong> {{ score.volumen_ordenes }} acciones</p>
+                <p class="mb-1"><strong>Tiempo Promedio:</strong> {{ score.tiempo_promedio|floatformat:1 }} min</p>
+                <p class="mb-0"><strong>Ventas:</strong> {{ score.volumen_ventas }} | <strong>Órdenes Lab:</strong> {{ score.volumen_ordenes_lab }}</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card score-card score-integridad">
+                <h6 class="text-uppercase text-muted">Integridad</h6>
+                <p class="mb-1"><strong>Total Acciones:</strong> {{ score.total_acciones }}</p>
+                <p class="mb-1"><strong>Incidencias:</strong> {{ score.incidencias }}</p>
+                <p class="mb-0"><strong>Ratio:</strong> {{ score.total_acciones|floatformat:0 }}:{{ score.incidencias }}</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card score-card score-satisfaccion">
+                <h6 class="text-uppercase text-muted">Satisfacción</h6>
+                <p class="mb-1"><strong>Felicitaciones:</strong> {{ score.felicitaciones }}</p>
+                <p class="mb-1"><strong>Quejas:</strong> {{ score.quejas }}</p>
+                <p class="mb-0"><strong>Balance:</strong> 
+                    {% if score.felicitaciones > score.quejas %}
+                    <span class="text-success">Positivo</span>
+                    {% elif score.quejas > score.felicitaciones %}
+                    <span class="text-danger">Negativo</span>
+                    {% else %}
+                    <span class="text-muted">Neutral</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fortalezas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Fortalezas Detectadas</h5>
+                </div>
+                <div class="card-body">
+                    {% for fortaleza in score.fortalezas %}
+                    <span class="badge bg-primary me-2 mb-2" style="font-size: 1rem; padding: 0.5rem 1rem;">
+                        <i class="bi bi-star-fill"></i> {{ fortaleza }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de Incidencias -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Historial de Incidencias
+                        <span class="badge bg-danger ms-2">{{ total_incidencias }}</span>
+                        {% if incidencias_pendientes > 0 %}
+                        <span class="badge bg-warning text-dark ms-2">{{ incidencias_pendientes }} Pendientes</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if incidencias %}
+                    {% for mes_key, data_mes in incidencias_por_mes.items %}
+                    <div class="mb-4">
+                        <h6 class="text-muted border-bottom pb-2">
+                            {{ data_mes.nombre }}
+                        </h6>
+                        {% for incidencia in data_mes.incidencias %}
+                        <div class="incidencia-item incidencia-{{ incidencia.estado_revision|lower }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <span class="badge bg-primary">{{ incidencia.get_tipo_incidencia_display }}</span>
+                                    <span class="badge {% if incidencia.estado_revision == 'PENDIENTE' %}bg-warning{% elif incidencia.estado_revision == 'JUSTIFICADA' %}bg-success{% else %}bg-danger{% endif %} ms-2">
+                                        {{ incidencia.get_estado_revision_display }}
+                                    </span>
+                                    {% if incidencia.monto_afectado %}
+                                    <span class="badge bg-info ms-2">${{ incidencia.monto_afectado|floatformat:2 }}</span>
+                                    {% endif %}
+                                    <p class="mt-2 mb-1"><strong>Justificación:</strong> {{ incidencia.justificacion|truncatewords:30 }}</p>
+                                    <small class="text-muted">{{ incidencia.fecha_hora|date:"d/m/Y H:i" }}</small>
+                                    {% if incidencia.revisado_por %}
+                                    <p class="mt-1 mb-0">
+                                        <small><strong>Revisado por:</strong> {{ incidencia.revisado_por.get_full_name }} 
+                                        ({{ incidencia.fecha_revision|date:"d/m/Y H:i" }})</small>
+                                    </p>
+                                    {% if incidencia.comentario_revision %}
+                                    <div class="alert alert-info mt-2 mb-0">
+                                        <strong>Comentario del Director:</strong> {{ incidencia.comentario_revision }}
+                                    </div>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="alert alert-success text-center">
+                        <i class="bi bi-check-circle"></i> Este empleado no tiene incidencias registradas.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Logística · Rutas{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="mb-1">Logística · Mapa de rutas</h2>
+      <div class="text-muted">MVP: listado de rutas y visitas (mapa se integra después).</div>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-1">
+    <div class="col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white"><strong>Rutas</strong></div>
+        <div class="card-body">
+          {% for r in rutas %}
+            <div class="border rounded p-2 mb-2">
+              <div><strong>{{ r.chofer }}</strong> · {{ r.hora_salida|date:"Y-m-d H:i" }}</div>
+              <div class="text-muted small">Vehículo: {{ r.vehiculo|default:"-" }}</div>
+            </div>
+          {% empty %}
+            <div class="text-muted">Sin rutas aún.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white"><strong>Visitas</strong></div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Estatus</th>
+                  <th>Ruta</th>
+                  <th>Geo</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for v in visitas %}
+                  <tr>
+                    <td>{{ v.id }}</td>
+                    <td>{{ v.get_estatus_display }}</td>
+                    <td>{{ v.ruta|default:"-" }}</td>
+                    <td>
+                      {% if v.latitud and v.longitud %}
+                        <span class="badge bg-success">OK</span>
+                      {% else %}
+                        <span class="badge bg-secondary">—</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-end">
+                      <a class="btn btn-sm btn-outline-primary" href="{% url 'logistica:asignar_visita' v.id %}">Asignar</a>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="5" class="text-center text-muted py-4">Sin visitas aún.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

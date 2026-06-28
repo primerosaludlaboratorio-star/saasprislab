@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Validar Acción de PRIS - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check-circle"></i> Validar Acción de PRIS
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Tipo de Acción:</strong>
+                        <span class="badge bg-info">{{ accion.get_tipo_accion_display }}</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Descripción:</strong>
+                        <p class="mt-2">{{ accion.descripcion }}</p>
+                    </div>
+                    
+                    {% if accion.datos_accion %}
+                    <div class="mb-3">
+                        <strong>Datos de la Acción:</strong>
+                        <pre class="bg-light p-3 rounded mt-2" style="max-height: 300px; overflow-y: auto;">{{ accion.datos_accion|pprint }}</pre>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <strong>Solicitado por:</strong>
+                        <p class="mt-2">{{ accion.usuario_solicitante.get_full_name|default:accion.usuario_solicitante.username }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Fecha de Creación:</strong>
+                        <p class="mt-2">{{ accion.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            Al validar esta acción, confirmas que la información procesada por PRIS es correcta.
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Validar Acción
+                            </button>
+                            <a href="{% url 'lista_acciones_pris' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

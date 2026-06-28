@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Logística · Asignar visita{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="mb-1">Asignar visita</h2>
+      <div class="text-muted">Visita #{{ visita.id }} · Estatus: {{ visita.get_estatus_display }}</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'logistica:mapa_rutas' %}">Volver</a>
+  </div>
+
+  <div class="card shadow-sm mt-3">
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label">Dirección</label>
+        <textarea class="form-control" rows="3" disabled>{{ visita.direccion }}</textarea>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Ruta</label>
+          <select class="form-select" name="ruta_id">
+            <option value="">-- Sin ruta --</option>
+            {% for r in rutas %}
+              <option value="{{ r.id }}" {% if visita.ruta and visita.ruta.id == r.id %}selected{% endif %}>
+                {{ r.chofer }} · {{ r.hora_salida|date:"Y-m-d H:i" }} · {{ r.vehiculo|default:"-" }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="btn btn-primary" type="submit">Guardar asignación</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

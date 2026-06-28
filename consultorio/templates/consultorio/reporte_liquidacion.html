@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reporte de Liquidación{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- ENCABEZADO -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-6">
+            <h2 class="mb-1"><i class="fas fa-file-invoice-dollar text-warning"></i> Reporte de Liquidación</h2>
+            <p class="text-muted mb-0">
+                Control de dinero en tránsito entre recepción y consultorio
+            </p>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{% url 'consultorio:cobro_consulta' %}" class="btn btn-outline-success">
+                <i class="fas fa-arrow-left"></i> Volver a Cobros
+            </a>
+        </div>
+    </div>
+
+    <!-- RESUMEN PRINCIPAL -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm {% if total_pendiente > 0 %}bg-danger{% else %}bg-success{% endif %} text-white">
+                <div class="card-body text-center py-4">
+                    <i class="fas fa-hand-holding-usd fa-3x mb-2"></i>
+                    <h2 class="mb-0">${{ total_pendiente|floatformat:0 }}</h2>
+                    <p class="mb-0">
+                        {% if total_pendiente > 0 %}
+                            Recepción le debe al médico
+                        {% else %}
+                            Todo liquidado
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body text-center py-4">
+                    <i class="fas fa-calendar-day fa-3x mb-2"></i>
+                    <h2 class="mb-0">${{ total_dia|floatformat:0 }}</h2>
+                    <p class="mb-0">Cobrado el {{ fecha|date:"d/m/Y" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-info text-white">
+                <div class="card-body text-center py-4">
+                    <i class="fas fa-receipt fa-3x mb-2"></i>
+                    <h2 class="mb-0">{{ vales_pendientes|length }}</h2>
+                    <p class="mb-0">Vales Pendientes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VALES PENDIENTES DE LIQUIDACIÓN -->
+    {% if vales_pendientes %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-exclamation-circle"></i> Vales Pendientes de Entrega</h5>
+            <button class="btn btn-sm btn-light" onclick="window.print()">
+                <i class="fas fa-print"></i> Imprimir Reporte
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Folio Vale</th>
+                            <th>Fecha</th>
+                            <th>Paciente</th>
+                            <th>Consulta</th>
+                            <th>Monto Adeudado</th>
+                            <th>Ya Entregado</th>
+                            <th>Saldo Pendiente</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vale in vales_pendientes %}
+                        <tr>
+                            <td><span class="badge bg-danger">{{ vale.folio_vale }}</span></td>
+                            <td>{{ vale.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            <td><strong>{{ vale.cobro.paciente.nombre_completo }}</strong></td>
+                            <td>{{ vale.cobro.consulta.folio_consulta }}</td>
+                            <td>${{ vale.monto_adeudado|floatformat:0 }}</td>
+                            <td class="text-success">${{ vale.monto_liquidado|floatformat:0 }}</td>
+                            <td><strong class="text-danger">${{ vale.saldo_pendiente|floatformat:0 }}</strong></td>
+                            <td>
+                                {% if vale.estado == 'PENDIENTE' %}
+                                    <span class="badge bg-danger">Pendiente</span>
+                                {% elif vale.estado == 'PARCIAL' %}
+                                    <span class="badge bg-warning text-dark">Parcial</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="table-danger fw-bold">
+                            <td colspan="6" class="text-end">TOTAL PENDIENTE:</td>
+                            <td>${{ total_pendiente|floatformat:0 }}</td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-success text-center py-4">
+        <i class="fas fa-check-circle fa-3x mb-2"></i>
+        <h5>Sin vales pendientes</h5>
+        <p class="mb-0">Todas las liquidaciones están al día.</p>
+    </div>
+    {% endif %}
+
+    <!-- COBROS DEL DÍA SELECCIONADO -->
+    {% if cobros_dia %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-list"></i> Detalle de Cobros del {{ fecha|date:"d/m/Y" }}</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Hora</th>
+                            <th>Folio</th>
+                            <th>Paciente</th>
+                            <th>Concepto</th>
+                            <th>Efectivo</th>
+                            <th>Tarjeta</th>
+                            <th>Transferencia</th>
+                            <th>Total</th>
+                            <th>Cobró</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in cobros_dia %}
+                        <tr>
+                            <td>{{ c.fecha_cobro|time:"H:i" }}</td>
+                            <td><span class="badge bg-secondary">{{ c.consulta.folio_consulta }}</span></td>
+                            <td>{{ c.paciente.nombre_completo }}</td>
+                            <td>{{ c.get_concepto_display }}</td>
+                            <td>{% if c.monto_efectivo > 0 %}${{ c.monto_efectivo|floatformat:0 }}{% else %}-{% endif %}</td>
+                            <td>{% if c.monto_tarjeta > 0 %}${{ c.monto_tarjeta|floatformat:0 }}{% else %}-{% endif %}</td>
+                            <td>{% if c.monto_transferencia > 0 %}${{ c.monto_transferencia|floatformat:0 }}{% else %}-{% endif %}</td>
+                            <td><strong class="text-success">${{ c.monto_total|floatformat:0 }}</strong></td>
+                            <td>
+                                {% if c.cobrado_por == 'RECEPCION' %}
+                                    <span class="badge bg-warning text-dark">Recepción</span>
+                                {% else %}
+                                    <span class="badge bg-success">Médico</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- HISTORIAL DE CAJAS RECIENTES -->
+    {% if cajas_recientes %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="fas fa-history"></i> Últimas 7 Cajas</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Efectivo</th>
+                            <th>Tarjeta</th>
+                            <th>Transferencia</th>
+                            <th>Total General</th>
+                            <th>En Tránsito</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for caja in cajas_recientes %}
+                        <tr {% if caja.fecha == hoy %}class="table-success"{% endif %}>
+                            <td>
+                                <strong>{{ caja.fecha|date:"d/m/Y" }}</strong>
+                                {% if caja.fecha == hoy %}<span class="badge bg-success ms-1">HOY</span>{% endif %}
+                            </td>
+                            <td>${{ caja.total_efectivo|floatformat:0 }}</td>
+                            <td>${{ caja.total_tarjeta|floatformat:0 }}</td>
+                            <td>${{ caja.total_transferencia|floatformat:0 }}</td>
+                            <td><strong>${{ caja.total_general|floatformat:0 }}</strong></td>
+                            <td>
+                                {% if caja.pendiente_liquidar > 0 %}
+                                    <span class="text-danger">${{ caja.pendiente_liquidar|floatformat:0 }}</span>
+                                {% else %}
+                                    <span class="text-success">$0</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {% if caja.estado == 'ABIERTA' %}bg-success{% elif caja.estado == 'CERRADA' %}bg-secondary{% else %}bg-info{% endif %}">
+                                    {{ caja.get_estado_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

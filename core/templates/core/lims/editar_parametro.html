@@ -1,0 +1,548 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+
+{% block extra_head %}
+<style>
+  body { font-size: 12px; }
+  .card-header-lims {
+    background: linear-gradient(135deg, #1565c0, #0d47a1);
+    color: #fff;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 6px 12px;
+  }
+  .form-label { font-size: 11px; font-weight: 600; margin-bottom: 2px; }
+  .form-control, .form-select { font-size: 11.5px; padding: 3px 7px; }
+  .table-rangos th, .table-rangos td { font-size: 11px; padding: 3px 6px; }
+  .badge-version { font-size: 9px; }
+  .btn-accion-rango { font-size: 10px; padding: 1px 5px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-2 py-2">
+
+  {# Breadcrumb #}
+  <nav aria-label="breadcrumb" style="font-size:11px;">
+    <ol class="breadcrumb mb-1">
+      <li class="breadcrumb-item"><a href="{% url 'lista_pruebas' %}">Estudios</a></li>
+      {% if estudio %}
+        <li class="breadcrumb-item">
+          <a href="{% url 'editar_prueba_lims' estudio.id %}">{{ estudio.nombre }}</a>
+        </li>
+      {% endif %}
+      <li class="breadcrumb-item active">{{ titulo }}</li>
+    </ol>
+  </nav>
+
+  <form method="post" id="form-parametro">
+    {% csrf_token %}
+
+    {# ── Layout 2 columnas ───────────────────────────────────────────────── #}
+    <div class="row g-2">
+
+      {# ──────────────────────────── COLUMNA IZQUIERDA ─────────────────────── #}
+      <div class="col-md-6">
+
+        {# CARD: Identificación #}
+        <div class="card mb-2 border-primary">
+          <div class="card-header-lims">
+            <i class="bi bi-tag-fill me-1"></i>IDENTIFICACIÓN
+          </div>
+          <div class="card-body py-2 px-2">
+            <div class="mb-2">
+              <label class="form-label">Estudio al que pertenece <span class="text-danger">*</span></label>
+              <select name="estudio_id" class="form-select" required>
+                {% for e in estudios %}
+                  <option value="{{ e.id }}"
+                    {% if estudio and estudio.id == e.id %}selected{% endif %}
+                    {% if parametro and parametro.estudio_id == e.id %}selected{% endif %}>
+                    {{ e.nombre }}
+                  </option>
+                {% endfor %}
+              </select>
+              <small class="text-muted">No se puede cambiar si hay resultados históricos.</small>
+            </div>
+            <div class="row g-2">
+              <div class="col-8">
+                <label class="form-label">Nombre del Parámetro <span class="text-danger">*</span></label>
+                <input type="text" name="nombre" class="form-control"
+                       value="{{ parametro.nombre|default:'' }}" required maxlength="200">
+              </div>
+              <div class="col-4">
+                <label class="form-label">Abreviatura</label>
+                <input type="text" name="abreviatura" class="form-control"
+                       value="{{ parametro.abreviatura|default:'' }}" maxlength="50">
+              </div>
+            </div>
+            <div class="row g-2 mt-1">
+              <div class="col-8">
+                <label class="form-label">Título (para reporte impreso)</label>
+                <input type="text" name="titulo" class="form-control"
+                       value="{{ parametro.titulo|default:'' }}" maxlength="512"
+                       placeholder="Dejar vacío para usar el nombre">
+              </div>
+              <div class="col-4">
+                <label class="form-label">Clave Hoja Trabajo</label>
+                <input type="text" name="clave_hoja_trabajo" class="form-control"
+                       value="{{ parametro.clave_hoja_trabajo|default:'' }}" maxlength="16">
+              </div>
+            </div>
+            <div class="row g-2 mt-1">
+              <div class="col-5">
+                <label class="form-label">Unidad de Medida</label>
+                <input type="text" name="unidad" class="form-control"
+                       value="{{ parametro.unidad|default:'' }}" maxlength="50"
+                       placeholder="mg/dL, U/L, %…">
+              </div>
+              <div class="col-4">
+                <label class="form-label">Sexo Referencia</label>
+                <select name="sexo" class="form-select">
+                  <option value="I" {% if parametro.sexo == 'I' or not parametro %}selected{% endif %}>Indistinto</option>
+                  <option value="M" {% if parametro.sexo == 'M' %}selected{% endif %}>Masculino</option>
+                  <option value="F" {% if parametro.sexo == 'F' %}selected{% endif %}>Femenino</option>
+                </select>
+              </div>
+              <div class="col-3">
+                <label class="form-label">Ord. Imp.</label>
+                <input type="number" name="orden_impresion" class="form-control text-center"
+                       value="{{ parametro.orden_impresion|default:0 }}" min="0" max="9999">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# CARD: Tipo de dato y referencia #}
+        <div class="card mb-2">
+          <div class="card-header-lims">
+            <i class="bi bi-diagram-3-fill me-1"></i>TIPO DE DATO Y NORMALIDAD
+          </div>
+          <div class="card-body py-2 px-2">
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label">Tipo de Dato</label>
+                <select name="tipo_dato" class="form-select" id="sel-tipo-dato">
+                  {% for val, lbl in parametro.TIPO_DATO_CHOICES|default:"" %}
+                    <option value="{{ val }}" {% if parametro.tipo_dato == val %}selected{% endif %}>{{ lbl }}</option>
+                  {% empty %}
+                    <option value="NUMERICO" {% if not parametro or parametro.tipo_dato == 'NUMERICO' %}selected{% endif %}>Numérico</option>
+                    <option value="TEXTO" {% if parametro.tipo_dato == 'TEXTO' %}selected{% endif %}>Texto Libre</option>
+                    <option value="TEXTO_PREDEFINIDO" {% if parametro.tipo_dato == 'TEXTO_PREDEFINIDO' %}selected{% endif %}>Texto Predefinido</option>
+                    <option value="POSITIVO_NEGATIVO" {% if parametro.tipo_dato == 'POSITIVO_NEGATIVO' %}selected{% endif %}>Positivo/Negativo</option>
+                    <option value="PRESENTE_AUSENTE" {% if parametro.tipo_dato == 'PRESENTE_AUSENTE' %}selected{% endif %}>Presente/Ausente</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Tipo de Normalidad</label>
+                <select name="tipo_referencia" class="form-select" id="sel-tipo-ref">
+                  <option value="RANGO" {% if not parametro or parametro.tipo_referencia == 'RANGO' %}selected{% endif %}>Rango Numérico</option>
+                  <option value="TEXTO_LIBRE" {% if parametro.tipo_referencia == 'TEXTO_LIBRE' %}selected{% endif %}>Texto Libre</option>
+                </select>
+              </div>
+            </div>
+            <div id="bloque-opciones-predefinidas" class="mt-2"
+                 style="{% if parametro.tipo_dato != 'TEXTO_PREDEFINIDO' %}display:none{% endif %}">
+              <label class="form-label">Opciones Predefinidas (separadas por coma)</label>
+              <input type="text" name="opciones_predefinidas" class="form-control"
+                     value="{{ parametro.opciones_predefinidas|default:'' }}"
+                     placeholder="POSITIVO,NEGATIVO,DUDOSO">
+            </div>
+            <div id="bloque-referencia-texto" class="mt-2"
+                 style="{% if parametro.tipo_referencia != 'TEXTO_LIBRE' %}display:none{% endif %}">
+              <label class="form-label">Valor de Normalidad (Texto)</label>
+              <textarea name="referencia_texto" class="form-control" rows="2"
+                        placeholder="Ej: Negativo o &lt; 3.5 mg/dL">{{ parametro.referencia_texto|default:'' }}</textarea>
+            </div>
+            <div class="row g-2 mt-1">
+              <div class="col-4">
+                <label class="form-label">Decimales Reporte</label>
+                <input type="number" name="decimales_reporte" class="form-control text-center"
+                       value="{{ parametro.decimales_reporte|default:2 }}" min="0" max="6">
+              </div>
+              <div class="col-4">
+                <label class="form-label">Imprimir Método</label>
+                <select name="imprimir_metodo" class="form-select">
+                  <option value="0" {% if parametro.imprimir_metodo == 0 %}selected{% endif %}>No imprimir</option>
+                  <option value="1" {% if parametro.imprimir_metodo == 1 %}selected{% endif %}>Solo individual</option>
+                  <option value="2" {% if parametro.imprimir_metodo == 2 %}selected{% endif %}>Solo en perfil</option>
+                  <option value="3" {% if not parametro or parametro.imprimir_metodo == 3 %}selected{% endif %}>Siempre</option>
+                </select>
+              </div>
+              <div class="col-4">
+                <label class="form-label">¿En Negritas?</label>
+                <select name="imprime_en_negritas" class="form-select">
+                  <option value="0" {% if not parametro or parametro.imprime_en_negritas == 0 %}selected{% endif %}>No</option>
+                  <option value="1" {% if parametro.imprime_en_negritas == 1 %}selected{% endif %}>Solo individual</option>
+                  <option value="2" {% if parametro.imprime_en_negritas == 2 %}selected{% endif %}>Solo en perfil</option>
+                  <option value="3" {% if parametro.imprime_en_negritas == 3 %}selected{% endif %}>Siempre</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# CARD: Opciones #}
+        <div class="card mb-2">
+          <div class="card-header-lims">
+            <i class="bi bi-toggles me-1"></i>OPCIONES
+          </div>
+          <div class="card-body py-2 px-2">
+            <div class="row g-2">
+              <div class="col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="critico"
+                         id="chk-critico" {% if parametro.critico %}checked{% endif %}>
+                  <label class="form-check-label" for="chk-critico">
+                    <span class="badge bg-danger" style="font-size:10px;">CRÍTICO</span>
+                    Alertar al médico inmediatamente
+                  </label>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="requiere_confirmacion_manual"
+                         id="chk-conf" {% if parametro.requiere_confirmacion_manual %}checked{% endif %}>
+                  <label class="form-check-label" for="chk-conf">Requiere confirmación manual</label>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="permite_venta_directa"
+                         id="chk-venta" {% if not parametro or parametro.permite_venta_directa %}checked{% endif %}>
+                  <label class="form-check-label" for="chk-venta">Permite venta individual</label>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="es_exento_iva"
+                         id="chk-iva" {% if parametro.es_exento_iva %}checked{% endif %}>
+                  <label class="form-check-label" for="chk-iva">Exento de IVA</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      {# ─────────────────────────── FIN COLUMNA IZQUIERDA ─────────────────── #}
+
+      {# ──────────────────────────── COLUMNA DERECHA ──────────────────────── #}
+      <div class="col-md-6">
+
+        {# CARD: Interfaz / Analizador #}
+        <div class="card mb-2">
+          <div class="card-header-lims">
+            <i class="bi bi-cpu-fill me-1"></i>INTERFAZ Y ANALIZADOR
+          </div>
+          <div class="card-body py-2 px-2">
+            <div class="row g-2">
+              <div class="col-5">
+                <label class="form-label">Código LOINC</label>
+                <input type="text" name="codigo_loinc" class="form-control"
+                       value="{{ parametro.codigo_loinc|default:'' }}" maxlength="20"
+                       placeholder="2345-7">
+              </div>
+              <div class="col-7">
+                <label class="form-label">Código de Interfaz (ASTM/HL7)</label>
+                <input type="text" name="codigo_interfaz" class="form-control"
+                       value="{{ parametro.codigo_interfaz|default:'' }}" maxlength="50"
+                       placeholder="GLU_01">
+              </div>
+            </div>
+            <div class="row g-2 mt-1">
+              <div class="col-6">
+                <label class="form-label">Equipo Origen</label>
+                <input type="text" name="equipo_origen" class="form-control"
+                       value="{{ parametro.equipo_origen|default:'' }}" maxlength="100"
+                       placeholder="Cobas 6000">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Metodología</label>
+                <input type="text" name="metodologia" class="form-control"
+                       value="{{ parametro.metodologia|default:'' }}" maxlength="200">
+              </div>
+            </div>
+            <div class="row g-2 mt-1">
+              <div class="col-4">
+                <label class="form-label">Factor de Conversión</label>
+                <input type="number" name="factor_conversion" class="form-control"
+                       value="{{ parametro.factor_conversion|default:1 }}" step="0.0001">
+              </div>
+              <div class="col-4">
+                <label class="form-label">Valor por Defecto</label>
+                <input type="text" name="valor_default" class="form-control"
+                       value="{{ parametro.valor_default|default:'' }}" maxlength="100">
+              </div>
+              <div class="col-4">
+                <label class="form-label">Fórmula Cálculo</label>
+                <input type="text" name="formula_calculo" class="form-control"
+                       value="{{ parametro.formula_calculo|default:'' }}"
+                       placeholder="param_a / param_b">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# CARD: Tiempos de proceso #}
+        <div class="card mb-2">
+          <div class="card-header-lims">
+            <i class="bi bi-clock-history me-1"></i>TIEMPO DE PROCESO (SLA)
+          </div>
+          <div class="card-body py-2 px-2">
+            <div class="row g-2">
+              <div class="col-4">
+                <label class="form-label">Días</label>
+                <input type="number" name="tiempo_proceso_dias" class="form-control text-center"
+                       value="{{ parametro.tiempo_proceso_dias|default:0 }}" min="0">
+              </div>
+              <div class="col-4">
+                <label class="form-label">Horas</label>
+                <input type="number" name="tiempo_proceso_horas" class="form-control text-center"
+                       value="{{ parametro.tiempo_proceso_horas|default:0 }}" min="0" max="23">
+              </div>
+              <div class="col-4">
+                <label class="form-label">Minutos</label>
+                <input type="number" name="tiempo_proceso_minutos" class="form-control text-center"
+                       value="{{ parametro.tiempo_proceso_minutos|default:0 }}" min="0" max="59">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# CARD: Notas #}
+        <div class="card mb-2">
+          <div class="card-header-lims">
+            <i class="bi bi-chat-left-text-fill me-1"></i>NOTAS Y OBSERVACIONES
+          </div>
+          <div class="card-body py-2 px-2">
+            <div class="mb-2">
+              <label class="form-label">Indicaciones al Paciente</label>
+              <textarea name="indicaciones" class="form-control" rows="2"
+                        placeholder="Ayuno 8h, no tomar medicamentos…">{{ parametro.indicaciones|default:'' }}</textarea>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Notas (visibles en reporte)</label>
+              <textarea name="notas" class="form-control" rows="2">{{ parametro.notas|default:'' }}</textarea>
+            </div>
+            <div>
+              <label class="form-label">
+                Notas Internas
+                <span class="badge bg-warning text-dark" style="font-size:9px;">Solo personal</span>
+              </label>
+              <textarea name="notas_internas" class="form-control" rows="2"
+                        placeholder="No aparece en reportes al paciente">{{ parametro.notas_internas|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
+
+        {# CARD: Botones de acción #}
+        <div class="card mb-2">
+          <div class="card-body py-2 px-2 d-flex gap-2 flex-wrap">
+            <button type="submit" class="btn btn-sm btn-success fw-bold">
+              <i class="bi bi-floppy-fill me-1"></i>GUARDAR PARÁMETRO
+            </button>
+            {% if parametro %}
+              <a href="{% url 'lista_parametros' %}?estudio={{ parametro.estudio_id }}"
+                 class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Regresar
+              </a>
+              {# Soft Delete — solo staff/admin #}
+              {% if request.user.is_staff or request.user.is_superuser %}
+                <button type="button" class="btn btn-sm btn-outline-danger ms-auto"
+                        onclick="confirmarSoftDelete({{ parametro.id }}, '{{ parametro.nombre|escapejs }}')">
+                  <i class="bi bi-eye-slash-fill me-1"></i>Desactivar
+                </button>
+              {% endif %}
+            {% else %}
+              <a href="{% url 'lista_parametros' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Cancelar
+              </a>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+      {# ─────────────────────────── FIN COLUMNA DERECHA ───────────────────── #}
+
+    </div>{# /row #}
+  </form>
+
+  {# ══════════════════════════════════════════════════════════════════════════ #}
+  {# SECCIÓN RANGOS DE REFERENCIA (solo si existe el parámetro)                #}
+  {# ══════════════════════════════════════════════════════════════════════════ #}
+  {% if parametro %}
+  <div class="card mt-1">
+    <div class="card-header-lims d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-bar-chart-fill me-1"></i>RANGOS DE REFERENCIA</span>
+      <div class="d-flex gap-2 align-items-center">
+        <span class="badge bg-warning text-dark" style="font-size:9px;">
+          <i class="bi bi-shield-lock-fill me-1"></i>Candado 2 — Inmutabilidad activa
+        </span>
+        <button class="btn btn-xs btn-light" onclick="abrirModalNuevoRango()">
+          <i class="bi bi-plus-circle-fill me-1"></i>Agregar Rango
+        </button>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="alert alert-info m-2 py-1" style="font-size:10.5px;">
+        <i class="bi bi-info-circle-fill me-1"></i>
+        <strong>Inmutabilidad garantizada:</strong> Al editar un rango, el sistema crea una nueva versión y 
+        preserva el historial. Los resultados entregados <em>antes del cambio</em> nunca se re-evalúan con 
+        los nuevos límites.
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered table-rangos mb-0" id="tabla-rangos">
+          <thead class="table-secondary">
+            <tr>
+              <th>Sexo</th>
+              <th>Edad (años)</th>
+              <th>Mín. Normal</th>
+              <th>Máx. Normal</th>
+              <th>Pánico Mín.</th>
+              <th>Pánico Máx.</th>
+              <th>Texto Ref.</th>
+              <th class="text-center">Ver.</th>
+              <th class="text-center" style="width:80px;">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-rangos">
+            <tr><td colspan="9" class="text-center text-muted py-3">Cargando rangos…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>{# /container-fluid #}
+
+
+{# ── Modal: Nuevo/Editar Rango ───────────────────────────────────────────── #}
+{% if parametro %}
+<div class="modal fade" id="modalRango" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="font-size:12px;">
+      <div class="modal-header py-2">
+        <h6 class="modal-title fw-bold" id="modal-rango-titulo">Rango de Referencia</h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body py-2">
+        <input type="hidden" id="rango-id-editando" value="">
+        <div class="row g-2">
+          <div class="col-4">
+            <label class="form-label">Sexo</label>
+            <select class="form-select form-select-sm" id="rng-sexo">
+              <option value="I">Indistinto</option>
+              <option value="M">Masculino</option>
+              <option value="F">Femenino</option>
+            </select>
+          </div>
+          <div class="col-4">
+            <label class="form-label">Edad Mínima (años)</label>
+            <input type="number" class="form-control form-control-sm" id="rng-edad-min"
+                   placeholder="Sin límite" min="0">
+          </div>
+          <div class="col-4">
+            <label class="form-label">Edad Máxima (años)</label>
+            <input type="number" class="form-control form-control-sm" id="rng-edad-max"
+                   placeholder="Sin límite" min="0">
+          </div>
+          <div class="col-3">
+            <label class="form-label">Mínimo Normal</label>
+            <input type="number" class="form-control form-control-sm" id="rng-val-min" step="any" placeholder="—">
+          </div>
+          <div class="col-3">
+            <label class="form-label">Máximo Normal</label>
+            <input type="number" class="form-control form-control-sm" id="rng-val-max" step="any" placeholder="—">
+          </div>
+          <div class="col-3">
+            <label class="form-label text-danger">Pánico Mínimo</label>
+            <input type="number" class="form-control form-control-sm border-danger" id="rng-panic-min" step="any" placeholder="—">
+          </div>
+          <div class="col-3">
+            <label class="form-label text-danger">Pánico Máximo</label>
+            <input type="number" class="form-control form-control-sm border-danger" id="rng-panic-max" step="any" placeholder="—">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Texto de Referencia (parámetros no numéricos)</label>
+            <input type="text" class="form-control form-control-sm" id="rng-texto-ref"
+                   placeholder="Ej: Negativo, &lt; 3.5 mg/dL">
+          </div>
+        </div>
+        <div class="alert alert-warning mt-2 py-1 mb-0" id="aviso-edicion-rango" style="font-size:10.5px;display:none;">
+          <i class="bi bi-shield-lock-fill me-1"></i>
+          <strong>Candado 2:</strong> Al guardar se creará una <strong>nueva versión</strong> de este rango.
+          La versión actual quedará archivada y los resultados históricos no se re-evaluarán.
+        </div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm btn-primary" onclick="guardarRango()">
+          <i class="bi bi-floppy-fill me-1"></i>Guardar Rango
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Modal Confirmación Soft Delete #}
+<div class="modal fade" id="modalSoftDelete" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="font-size:12px;">
+      <div class="modal-header bg-danger text-white py-2">
+        <h6 class="modal-title fw-bold">
+          <i class="bi bi-eye-slash-fill me-1"></i>Desactivar Parámetro
+        </h6>
+        <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body py-2">
+        <input type="hidden" id="sd-param-id" value="">
+        <p class="mb-2">
+          Estás a punto de desactivar el parámetro <strong id="sd-param-nombre"></strong>.
+        </p>
+        <div class="alert alert-success py-1 mb-2" style="font-size:10.5px;">
+          <i class="bi bi-shield-check-fill me-1"></i>
+          <strong>Candado 1 — Soft Delete:</strong> El parámetro <em>no se borrará</em>.
+          Solo se ocultará del catálogo. Los resultados históricos permanecen intactos.
+        </div>
+        <div>
+          <label class="form-label">Motivo de desactivación <span class="text-danger">*</span></label>
+          <textarea class="form-control" id="sd-motivo" rows="2" placeholder="Ej: Estudio descontinuado, reemplazado por…" required></textarea>
+        </div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm btn-danger" onclick="ejecutarSoftDelete()">
+          <i class="bi bi-eye-slash-fill me-1"></i>Confirmar Desactivación
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'js/lims/parametros.js' %}?v=1.0"></script>
+<script>
+  const PARAMETRO_ID = {{ parametro.id }};
+  const URL_RANGOS   = "{% url 'api_rangos_parametro' parametro.id %}";
+  const URL_SOFT_DEL = "{% url 'api_soft_delete_parametro' parametro.id %}";
+  const CSRF_TOKEN   = "{{ csrf_token }}";
+
+  // UI dinámica: ocultar/mostrar bloques según selección de tipo de dato / tipo referencia
+  document.getElementById('sel-tipo-dato').addEventListener('change', function () {
+    document.getElementById('bloque-opciones-predefinidas').style.display =
+      this.value === 'TEXTO_PREDEFINIDO' ? '' : 'none';
+  });
+  document.getElementById('sel-tipo-ref').addEventListener('change', function () {
+    document.getElementById('bloque-referencia-texto').style.display =
+      this.value === 'TEXTO_LIBRE' ? '' : 'none';
+  });
+
+  // Cargar rangos al abrir la página
+  document.addEventListener('DOMContentLoaded', cargarRangos);
+</script>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Consulta de Órdenes - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+:root { --co-primary: #00838F; --co-dark: #263238; --co-light: #ECEFF1; --co-accent: #00ACC1; }
+body { background: #f0f2f5; font-size: 13px; }
+
+.co-header { background: var(--co-dark); color: #fff; padding: 10px 20px; display: flex; align-items: center; gap: 12px; }
+.co-header h4 { margin: 0; font-weight: 700; }
+.co-header .badge-info { background: var(--co-primary); font-size: 11px; }
+
+/* Filtros */
+.filtros-card { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 14px 18px; margin-bottom: 10px; }
+.filtros-card label { font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; margin-bottom: 2px; }
+.filtros-card .form-control, .filtros-card .form-select { font-size: 12px; height: 32px; padding: 4px 8px; }
+
+/* Tabla */
+.tabla-ordenes { width: 100%; font-size: 12px; border-collapse: collapse; background: #fff; }
+.tabla-ordenes thead { background: var(--co-dark); color: #fff; }
+.tabla-ordenes th { padding: 8px 10px; font-weight: 600; font-size: 11px; text-transform: uppercase; white-space: nowrap; }
+.tabla-ordenes td { padding: 6px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+.tabla-ordenes tbody tr:hover { background: #e0f7fa; cursor: pointer; }
+.tabla-ordenes .folio { color: var(--co-primary); font-weight: 700; }
+.tabla-ordenes .estudios-cell { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Botones de acción */
+.btn-accion { width: 28px; height: 28px; padding: 0; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; border: none; }
+.btn-ver { background: #03A9F4; color: #fff; }
+.btn-editar { background: #FF9800; color: #fff; }
+.btn-ver:hover { background: #0288D1; color: #fff; }
+.btn-editar:hover { background: #F57C00; color: #fff; }
+
+/* Paginación */
+.paginacion { font-size: 12px; }
+.paginacion .page-link { font-size: 12px; padding: 4px 10px; }
+
+/* Toolbar */
+.toolbar-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.toolbar-top .btn { font-size: 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 py-2">
+    <!-- Header -->
+    <div class="co-header mb-3" style="border-radius: 4px;">
+        <i class="fas fa-clipboard-list fa-lg"></i>
+        <h4>Consulta de Órdenes</h4>
+    </div>
+
+    <!-- Filtros -->
+    <form method="get" class="filtros-card" id="formFiltros">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-2 col-6">
+                <label>Fecha Ini:</label>
+                <input type="date" name="fecha_ini" class="form-control" value="{{ filtros.fecha_ini }}">
+            </div>
+            <div class="col-md-2 col-6">
+                <label>Fecha Fin:</label>
+                <input type="date" name="fecha_fin" class="form-control" value="{{ filtros.fecha_fin }}">
+            </div>
+            <div class="col-md-2">
+                <label>Buscar Folio:</label>
+                <input type="text" name="folio" class="form-control" placeholder="Ej: 1260201" value="{{ filtros.folio }}">
+            </div>
+            <div class="col-md-3">
+                <label>Paciente:</label>
+                <input type="text" name="paciente" class="form-control" placeholder="Buscar paciente..." value="{{ filtros.paciente }}">
+            </div>
+            <div class="col-md-3">
+                <label>Cliente:</label>
+                <input type="text" name="cliente" class="form-control" placeholder="Buscar cliente..." value="{{ filtros.cliente }}">
+            </div>
+        </div>
+        <div class="row g-2 align-items-end mt-1">
+            <div class="col-md-3">
+                <label>Médico:</label>
+                <input type="text" name="medico" class="form-control" placeholder="Buscar médico..." value="{{ filtros.medico }}">
+            </div>
+            <div class="col-md-2">
+                <label>Estatus de resultado:</label>
+                <select name="estatus" class="form-select">
+                    <option value="">--Todos--</option>
+                    {% for val, label in estados %}
+                    <option value="{{ val }}" {% if filtros.estatus == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label>Departamento:</label>
+                <select name="departamento" class="form-select">
+                    <option value="">--Seleccionar--</option>
+                    {% for sec in secciones %}
+                    <option value="{{ sec }}" {% if filtros.departamento == sec %}selected{% endif %}>{{ sec }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label>Tipo Orden:</label>
+                <select name="tipo_orden" class="form-select">
+                    <option value="">--Seleccionar--</option>
+                    {% for val, label in tipos_servicio %}
+                    <option value="{{ val }}" {% if filtros.tipo_orden == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-filter"></i> Filtrar</button>
+                <a href="{% url 'recepcion_lab' %}" class="btn btn-sm btn-success"><i class="fas fa-plus"></i> Agregar nueva orden</a>
+            </div>
+        </div>
+    </form>
+
+    <!-- Toolbar -->
+    <div class="toolbar-top">
+        <div>
+            <span class="text-muted">Registros por página:</span>
+            <select id="selPorPagina" class="form-select form-select-sm d-inline-block" style="width:70px;font-size:11px;" onchange="cambiarPorPagina(this.value)">
+                <option value="20" {% if filtros.por_pagina == 20 %}selected{% endif %}>20</option>
+                <option value="50" {% if filtros.por_pagina == 50 %}selected{% endif %}>50</option>
+                <option value="100" {% if filtros.por_pagina == 100 %}selected{% endif %}>100</option>
+            </select>
+        </div>
+        <div class="text-muted" style="font-size:11px;">
+            <input type="text" id="buscarTabla" class="form-control form-control-sm d-inline-block" style="width:200px;font-size:11px;" placeholder="Buscar..." oninput="filtrarTabla(this.value)">
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-responsive" style="border:1px solid #ddd;border-radius:4px;">
+        <table class="tabla-ordenes" id="tablaOrdenes">
+            <thead>
+                <tr>
+                    <th style="width:30px"><input type="checkbox" id="checkAll" onclick="toggleAll(this)"></th>
+                    <th>Orden</th>
+                    <th>Fecha</th>
+                    <th>Paciente</th>
+                    <th>Estudios</th>
+                    <th>Cte</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for orden in page %}
+                <tr ondblclick="window.location='{% url 'detalle_orden_view' orden.id %}'">
+                    <td><input type="checkbox" class="check-orden" value="{{ orden.id }}"></td>
+                    <td class="folio">{{ orden.folio_orden|default:orden.id }}</td>
+                    <td>{{ orden.fecha_creacion|date:"d/m/Y" }}</td>
+                    <td>{{ orden.paciente.nombre_completo }}</td>
+                    <td class="estudios-cell" title="{% for d in orden.detalles.all %}{% if d.analito %}{{ d.analito.abreviatura|default:d.analito.codigo }}{% else %}{{ d.descripcion_linea|truncatechars:16 }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}">
+                        {% for d in orden.detalles.all %}{% if d.analito %}{{ d.analito.abreviatura|default:d.analito.codigo }}{% else %}{{ d.descripcion_linea|truncatechars:12 }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    </td>
+                    <td>{{ orden.tarifa|truncatechars:18 }}</td>
+                    <td class="text-end">${{ orden.total|floatformat:2 }}</td>
+                    <td class="text-center" style="white-space:nowrap;">
+                        <a href="{% url 'detalle_orden_view' orden.id %}" class="btn-accion btn-ver" title="Ver / Editar"><i class="fas fa-eye"></i></a>
+                        <a href="{% url 'detalle_orden_view' orden.id %}" class="btn-accion btn-editar" title="Editar Orden"><i class="fas fa-pencil-alt"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" class="text-center text-muted py-4"><i class="fas fa-inbox"></i> No se encontraron órdenes con estos filtros</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if page.has_other_pages %}
+    <nav class="mt-2 d-flex justify-content-between align-items-center paginacion">
+        <small class="text-muted">Página {{ page.number }} de {{ page.paginator.num_pages }} &mdash; Mostrando del {{ page.start_index }} al {{ page.end_index }} de un total de {{ page.paginator.count }}</small>
+        <ul class="pagination pagination-sm mb-0">
+            {% if page.has_previous %}
+            <li class="page-item"><a class="page-link" href="?{{ query_string }}{% if query_string %}&{% endif %}page={{ page.previous_page_number }}">&laquo;</a></li>
+            {% endif %}
+            {% for num in page.paginator.page_range %}
+                {% if num == page.number %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page.number|add:'-4' and num < page.number|add:'4' %}
+                <li class="page-item"><a class="page-link" href="?{{ query_string }}{% if query_string %}&{% endif %}page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            {% if page.has_next %}
+            <li class="page-item"><a class="page-link" href="?{{ query_string }}{% if query_string %}&{% endif %}page={{ page.next_page_number }}">&raquo;</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function cambiarPorPagina(val) {
+    const params = new URLSearchParams(window.location.search);
+    params.set('por_pagina', val);
+    params.delete('page');
+    window.location.search = params.toString();
+}
+function filtrarTabla(q) {
+    q = q.toLowerCase();
+    document.querySelectorAll('#tablaOrdenes tbody tr').forEach(tr => {
+        tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+function toggleAll(cb) {
+    document.querySelectorAll('.check-orden').forEach(c => c.checked = cb.checked);
+}
+</script>
+{% endblock %}

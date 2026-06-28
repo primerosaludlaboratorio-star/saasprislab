@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Configuración del Consultorio{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-1"><i class="fas fa-cog"></i> Configuración del Consultorio</h2>
+            <p class="text-muted">Personaliza tu "isla independiente" de trabajo</p>
+        </div>
+    </div>
+
+    <form method="POST" action="{% url 'consultorio:configuracion_medico' %}">
+        {% csrf_token %}
+        <div class="row g-4">
+
+            <!-- =============== AGENDA =============== -->
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Agenda de Citas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="agenda_activa" name="agenda_activa"
+                                   {% if config.agenda_activa %}checked{% endif %}>
+                            <label class="form-check-label fw-bold" for="agenda_activa">
+                                Agenda Activa
+                            </label>
+                            <small class="d-block text-muted">Si desactivas esto, trabajarás por orden de llegada</small>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Horario Inicio</label>
+                                <input type="time" class="form-control" name="horario_inicio"
+                                       value="{{ config.horario_inicio|time:'H:i' }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Horario Fin</label>
+                                <input type="time" class="form-control" name="horario_fin"
+                                       value="{{ config.horario_fin|time:'H:i' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Duración Default (minutos)</label>
+                            <input type="number" class="form-control" name="duracion_consulta_default"
+                                   value="{{ config.duracion_consulta_default }}" min="10" max="120">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Días de Atención</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="dias_atencion" value="1"
+                                           id="dia_1" {% if 1 in config.dias_atencion %}checked{% endif %}>
+                                    <label class="form-check-label" for="dia_1">Lun</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="dias_atencion" value="2"
+                                           id="dia_2" {% if 2 in config.dias_atencion %}checked{% endif %}>
+                                    <label class="form-check-label" for="dia_2">Mar</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="dias_atencion" value="3"
+                                           id="dia_3" {% if 3 in config.dias_atencion %}checked{% endif %}>
+                                    <label class="form-check-label" for="dia_3">Mié</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="dias_atencion" value="4"
+                                           id="dia_4" {% if 4 in config.dias_atencion %}checked{% endif %}>
+                                    <label class="form-check-label" for="dia_4">Jue</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="dias_atencion" value="5"
+                                           id="dia_5" {% if 5 in config.dias_atencion %}checked{% endif %}>
+                                    <label class="form-check-label" for="dia_5">Vie</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="dias_atencion" value="6"
+                                           id="dia_6" {% if 6 in config.dias_atencion %}checked{% endif %}>
+                                    <label class="form-check-label" for="dia_6">Sáb</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="dias_atencion" value="0"
+                                           id="dia_0" {% if 0 in config.dias_atencion %}checked{% endif %}>
+                                    <label class="form-check-label" for="dia_0">Dom</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="reserva_online_activa"
+                                   name="reserva_online_activa"
+                                   {% if config.reserva_online_activa %}checked{% endif %}>
+                            <label class="form-check-label" for="reserva_online_activa">
+                                Reserva en Línea 24/7
+                            </label>
+                            <small class="d-block text-muted">Permite que pacientes agenden desde redes sociales</small>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="triaje_precita_activo"
+                                   name="triaje_precita_activo"
+                                   {% if config.triaje_precita_activo %}checked{% endif %}>
+                            <label class="form-check-label" for="triaje_precita_activo">
+                                Triaje Digital Pre-Cita
+                            </label>
+                            <small class="d-block text-muted">Envía formulario al paciente después de agendar</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- =============== COBROS + ESPECIALIDAD =============== -->
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-dollar-sign"></i> Control de Cobros</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Modo de Cobro</label>
+                            <select class="form-select" name="modo_cobro">
+                                <option value="RECEPCION" {% if config.modo_cobro == 'RECEPCION' %}selected{% endif %}>
+                                    Cobro centralizado en recepción
+                                </option>
+                                <option value="MEDICO" {% if config.modo_cobro == 'MEDICO' %}selected{% endif %}>
+                                    Cobro directo por el médico
+                                </option>
+                            </select>
+                            <small class="text-muted">
+                                <strong>Recepción:</strong> Los cobros se centralizan en la caja de la sucursal<br>
+                                <strong>Médico:</strong> El médico cobra sus propias consultas (médico externo/renta)
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Precio Consulta General ($)</label>
+                            <input type="number" class="form-control" name="precio_consulta_default"
+                                   value="{{ config.precio_consulta_default }}" min="0" step="50">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-user-md"></i> Especialidad</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Especialidad Principal</label>
+                            <input type="text" class="form-control" name="especialidad_principal"
+                                   value="{{ config.especialidad_principal }}"
+                                   placeholder="Ej: Médico General, Pediatría, Ginecología">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Subespecialidad (opcional)</label>
+                            <input type="text" class="form-control" name="subespecialidad"
+                                   value="{{ config.subespecialidad }}"
+                                   placeholder="Ej: Cirugía Bariátrica, Neonatología">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fab fa-whatsapp"></i> Comunicación</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="whatsapp_confirmaciones"
+                                   name="whatsapp_confirmaciones"
+                                   {% if config.whatsapp_confirmaciones %}checked{% endif %}>
+                            <label class="form-check-label" for="whatsapp_confirmaciones">
+                                Confirmaciones por WhatsApp
+                            </label>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Teléfono WhatsApp</label>
+                            <input type="tel" class="form-control" name="telefono_whatsapp"
+                                   value="{{ config.telefono_whatsapp }}" placeholder="+52 1 XXX XXX XXXX">
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="marketing_propio"
+                                   name="marketing_propio"
+                                   {% if config.marketing_propio %}checked{% endif %}>
+                            <label class="form-check-label" for="marketing_propio">
+                                Marketing Independiente
+                            </label>
+                            <small class="d-block text-muted">Maneja tus propias campañas y encuestas</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botón guardar -->
+        <div class="row mt-4">
+            <div class="col-12 text-center">
+                <button type="submit" class="btn btn-primary btn-lg px-5">
+                    <i class="fas fa-save"></i> Guardar Configuración
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

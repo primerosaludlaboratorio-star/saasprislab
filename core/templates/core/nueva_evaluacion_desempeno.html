@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nueva Evaluación de Desempeño - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .star-rating {
+        display: flex;
+        gap: 5px;
+        justify-content: center;
+        align-items: center;
+    }
+    .star {
+        font-size: 2rem;
+        color: #ddd;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+    .star:hover,
+    .star.active {
+        color: #ffc107;
+    }
+    .competencia-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: box-shadow 0.2s;
+    }
+    .competencia-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .competencia-soft {
+        border-left: 4px solid #4CAF50;
+    }
+    .competencia-tecnica {
+        border-left: 4px solid #2196F3;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="margin-top: 70px;">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="fw-bold text-primary mb-0"><i class="bi bi-clipboard-check"></i> NUEVA EVALUACIÓN DE DESEMPEÑO</h2>
+            <small class="text-muted">Sistema Buk-Inspired: Evaluación → Diagnóstico → Cura (Academy)</small>
+        </div>
+        <a href="{% url 'matriz_talento' %}" class="btn btn-outline-primary fw-bold">
+            <i class="bi bi-grid-3x3"></i> Ver Matriz 9-Box
+        </a>
+    </div>
+
+    <form id="formEvaluacion" method="POST">
+        {% csrf_token %}
+        
+        <div class="row g-4">
+            <!-- COLUMNA IZQUIERDA: Información General -->
+            <div class="col-md-4">
+                <div class="card shadow border-0">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge"></i> DATOS DE LA EVALUACIÓN</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Empleado a Evaluar</label>
+                            <select name="empleado_id" id="empleado_id" class="form-select" required>
+                                <option value="">Seleccionar empleado...</option>
+                                {% for emp in empleados %}
+                                <option value="{{ emp.id }}" {% if empleado_seleccionado and empleado_seleccionado.id == emp.id %}selected{% endif %}>
+                                    {{ emp.usuario.get_full_name }} - {{ emp.puesto }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Periodo</label>
+                            <input type="text" name="periodo" id="periodo" class="form-control" 
+                                   value="{{ periodo_actual }}" required placeholder="Ej: Q1 2026">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Cumplimiento KPIs (0-100)</label>
+                            <input type="range" 
+                                   class="form-range" 
+                                   min="0" 
+                                   max="100" 
+                                   value="0" 
+                                   id="slider_kpis"
+                                   oninput="document.getElementById('valor_kpis').textContent = this.value + '%'">
+                            <div class="d-flex justify-content-between">
+                                <span>0%</span>
+                                <span class="badge bg-success" id="valor_kpis" style="font-size: 1rem;">0%</span>
+                                <span>100%</span>
+                            </div>
+                            <input type="hidden" name="cumplimiento_kpis" id="cumplimiento_kpis" value="0">
+                            <small class="text-muted">Ventas, Errores, Métricas Objetivas</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Observaciones del Evaluador</label>
+                            <textarea name="observaciones_evaluador" id="observaciones_evaluador" 
+                                      class="form-control" rows="4" placeholder="Observaciones adicionales..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUMNA DERECHA: Competencias -->
+            <div class="col-md-8">
+                <div class="card shadow border-0">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-star"></i> EVALUACIÓN DE COMPETENCIAS</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- HABILIDADES BLANDAS (SOFT SKILLS) -->
+                        <h6 class="fw-bold text-success mb-3"><i class="bi bi-heart"></i> Habilidades Blandas (Soft Skills)</h6>
+                        <div id="competencias-blandas">
+                            {% for competencia in competencias %}
+                            {% if competencia.tipo == 'BLANDA' %}
+                            <div class="competencia-card competencia-soft" data-competencia-id="{{ competencia.id }}">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <strong>{{ competencia.nombre }}</strong>
+                                        {% if competencia.descripcion %}
+                                        <br><small class="text-muted">{{ competencia.descripcion }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <span class="badge bg-success">Blanda</span>
+                                </div>
+                                
+                                <div class="star-rating mb-2" data-rating="0">
+                                    {% for i in "12345" %}
+                                    <span class="star" data-value="{{ i }}" onclick="setRating({{ competencia.id }}, {{ i }})">★</span>
+                                    {% endfor %}
+                                </div>
+                                <input type="hidden" name="competencia_{{ competencia.id }}" id="competencia_{{ competencia.id }}" value="0">
+                                <input type="hidden" name="observacion_{{ competencia.id }}" id="observacion_{{ competencia.id }}" value="">
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- KPIS TÉCNICOS (HARD SKILLS) -->
+                        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-gear"></i> KPIs Técnicos (Hard Skills)</h6>
+                        <div id="competencias-tecnicas">
+                            {% for competencia in competencias %}
+                            {% if competencia.tipo == 'TECNICA' %}
+                            <div class="competencia-card competencia-tecnica" data-competencia-id="{{ competencia.id }}">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <strong>{{ competencia.nombre }}</strong>
+                                        {% if competencia.descripcion %}
+                                        <br><small class="text-muted">{{ competencia.descripcion }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <span class="badge bg-primary">Técnica</span>
+                                </div>
+                                
+                                <div class="star-rating mb-2" data-rating="0">
+                                    {% for i in "12345" %}
+                                    <span class="star" data-value="{{ i }}" onclick="setRating({{ competencia.id }}, {{ i }})">★</span>
+                                    {% endfor %}
+                                </div>
+                                <input type="hidden" name="competencia_{{ competencia.id }}" id="competencia_{{ competencia.id }}" value="0">
+                                <input type="hidden" name="observacion_{{ competencia.id }}" id="observacion_{{ competencia.id }}" value="">
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{% url 'lista_evaluaciones_39a' %}" class="btn btn-outline-secondary btn-lg">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg fw-bold">
+                        <i class="bi bi-check-circle"></i> GENERAR EVALUACIÓN Y PDI AUTOMÁTICO
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    function updateRating(competenciaId, rating) {
+        rating = parseInt(rating);
+        
+        // Actualizar input hidden
+        document.getElementById('competencia_' + competenciaId).value = rating;
+        document.getElementById('valor_' + competenciaId).textContent = rating;
+        
+        // Actualizar estrellas visualmente
+        const starsContainer = document.getElementById('stars_' + competenciaId);
+        const stars = starsContainer.querySelectorAll('.star');
+        
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.add('active');
+                star.style.color = '#ffc107';
+            } else {
+                star.classList.remove('active');
+                star.style.color = '#ddd';
+            }
+        });
+        
+        // Actualizar promedio en tiempo real
+        calcularPromedioGeneral();
+    }
+    
+    function calcularPromedioGeneral() {
+        const competencias = document.querySelectorAll('[id^="competencia_"]');
+        let suma = 0;
+        let contador = 0;
+        
+        competencias.forEach(comp => {
+            const valor = parseInt(comp.value) || 0;
+            if (valor > 0) {
+                suma += valor;
+                contador++;
+            }
+        });
+        
+        const promedio = contador > 0 ? (suma / contador).toFixed(1) : '0.0';
+        document.getElementById('promedio-general').textContent = promedio;
+        
+        // Actualizar slider de KPIs si hay valor
+        const sliderKpis = document.getElementById('slider_kpis');
+        if (sliderKpis) {
+            sliderKpis.addEventListener('input', function() {
+                document.getElementById('cumplimiento_kpis').value = this.value;
+            });
+        }
+    }
+    
+    // Inicializar cálculo de promedio
+    document.addEventListener('DOMContentLoaded', function() {
+        calcularPromedioGeneral();
+        
+        // Inicializar slider de KPIs
+        const sliderKpis = document.getElementById('slider_kpis');
+        if (sliderKpis) {
+            sliderKpis.addEventListener('input', function() {
+                document.getElementById('cumplimiento_kpis').value = this.value;
+                document.getElementById('valor_kpis').textContent = this.value + '%';
+            });
+        }
+    });
+
+    document.getElementById('formEvaluacion').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch('{% url "nueva_evaluacion_desempeno" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = '/rh/desempeno/' + data.evaluacion_id + '/';
+            } else {
+                alert('Error: ' + data.mensaje);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Error al procesar la evaluación');
+        });
+    });
+</script>
+{% endblock %}

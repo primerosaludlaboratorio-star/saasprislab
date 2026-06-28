@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard de Pendientes - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card-alerta-roja {
+        border-left: 4px solid #dc3545;
+        background-color: #fff5f5;
+    }
+    .card-alerta-amarilla {
+        border-left: 4px solid #ffc107;
+        background-color: #fffbf0;
+    }
+    .card-alerta-normal {
+        border-left: 4px solid #0d6efd;
+    }
+    .badge-tiempo {
+        font-size: 0.85rem;
+        padding: 0.35rem 0.65rem;
+    }
+    .stats-card {
+        transition: transform 0.2s;
+    }
+    .stats-card:hover {
+        transform: translateY(-2px);
+    }
+    .auto-refresh-indicator {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold">
+                <i class="bi bi-clipboard-data"></i> Dashboard de Pendientes
+            </h2>
+            <p class="text-muted">Monitoreo en tiempo real de tareas pendientes y alertas</p>
+        </div>
+    </div>
+    
+    <!-- Estadísticas Resumidas -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-primary mb-1">{{ stats.total_ordenes_pendientes }}</h3>
+                    <p class="text-muted mb-0 small">Órdenes Pendientes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card shadow-sm border-danger">
+                <div class="card-body text-center">
+                    <h3 class="text-danger mb-1">{{ stats.ordenes_alerta_roja }}</h3>
+                    <p class="text-muted mb-0 small">Alerta Roja (>24h)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card shadow-sm border-warning">
+                <div class="card-body text-center">
+                    <h3 class="text-warning mb-1">{{ stats.ordenes_alerta_amarilla }}</h3>
+                    <p class="text-muted mb-0 small">Alerta Amarilla (>12h)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card shadow-sm border-info">
+                <div class="card-body text-center">
+                    <h3 class="text-info mb-1">{{ stats.folios_sin_validar }}</h3>
+                    <p class="text-muted mb-0 small">Folios Sin Validar</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Órdenes Pendientes de Validación -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0 fw-bold">
+                <i class="bi bi-exclamation-triangle"></i> Órdenes Pendientes de Validación
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if ordenes_con_alerta %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Paciente</th>
+                            <th>Fecha Creación</th>
+                            <th>Tiempo Pendiente</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in ordenes_con_alerta %}
+                        {% with orden=item.orden %}
+                        <tr class="{% if item.alerta_roja %}table-danger{% elif item.alerta_amarilla %}table-warning{% endif %}">
+                            <td><strong>{{ orden.folio_orden|default:orden.id }}</strong></td>
+                            <td>{{ orden.paciente.nombre_completo }}</td>
+                            <td>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <span class="badge {% if item.alerta_roja %}bg-danger{% elif item.alerta_amarilla %}bg-warning{% else %}bg-info{% endif %} badge-tiempo">
+                                    {{ item.horas_pendiente }} horas
+                                </span>
+                            </td>
+                            <td>
+                                {% if item.alerta_roja %}
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-exclamation-circle"></i> URGENTE
+                                    </span>
+                                {% elif item.alerta_amarilla %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-clock-history"></i> ATENCIÓN
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Pendiente</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'captura_resultados' orden.id %}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-pencil"></i> Validar
+                                </a>
+                                <a href="{% url 'imprimir_resultados_pdf' orden.id %}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                    <i class="bi bi-file-pdf"></i> PDF
+                                </a>
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-3">No hay órdenes pendientes de validación</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Cultivos Pendientes de Entrega (Hoy) -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0 fw-bold">
+                <i class="bi bi-flask"></i> Cultivos Pendientes de Entrega (Hoy)
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if cultivos_pendientes %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Paciente</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for orden in cultivos_pendientes %}
+                        <tr>
+                            <td><strong>{{ orden.folio_orden|default:orden.id }}</strong></td>
+                            <td>{{ orden.paciente.nombre_completo }}</td>
+                            <td>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <span class="badge bg-info">{{ orden.get_estado_display }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'entrega_resultados' %}?busqueda={{ orden.folio_orden|default:orden.id }}" class="btn btn-sm btn-success">
+                                    <i class="bi bi-box-arrow-right"></i> Entregar
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-3">No hay cultivos pendientes de entrega hoy</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Folios Sin Validar -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0 fw-bold">
+                <i class="bi bi-file-check"></i> Folios Sin Validar
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if folios_sin_validar %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Paciente</th>
+                            <th>Estudio</th>
+                            <th>Fecha</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalle in folios_sin_validar %}
+                        <tr>
+                            <td><strong>{{ detalle.orden.folio_orden|default:detalle.orden.id }}</strong></td>
+                            <td>{{ detalle.orden.paciente.nombre_completo }}</td>
+                            <td>{% if detalle.descripcion_linea %}{{ detalle.descripcion_linea }}{% elif detalle.analito_id %}{{ detalle.analito.nombre }}{% elif detalle.perfil_lims_id %}{{ detalle.perfil_lims.nombre }}{% elif detalle.paquete_lims_id %}{{ detalle.paquete_lims.nombre }}{% else %}—{% endif %}</td>
+                            <td>{{ detalle.orden.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'captura_resultados' detalle.orden.id %}" class="btn btn-sm btn-warning">
+                                    <i class="bi bi-check-circle"></i> Validar
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-3">No hay folios sin validar</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Indicador de Auto-refresh -->
+<div class="auto-refresh-indicator" id="refresh-indicator">
+    <i class="bi bi-arrow-clockwise"></i> Actualizando cada 30s...
+</div>
+
+<script>
+// Auto-refresh cada 30 segundos
+let refreshInterval = setInterval(() => {
+    // Mostrar indicador de actualización
+    const indicator = document.getElementById('refresh-indicator');
+    if (indicator) {
+        indicator.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Actualizando...';
+        indicator.style.background = 'rgba(13, 110, 253, 0.9)';
+    }
+    
+    // Recargar página
+    window.location.reload();
+}, 30000);
+
+// Actualizar indicador después de 5 segundos
+setTimeout(() => {
+    const indicator = document.getElementById('refresh-indicator');
+    if (indicator) {
+        indicator.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Actualizando cada 30s...';
+        indicator.style.background = 'rgba(0,0,0,0.8)';
+    }
+}, 5000);
+
+// Limpiar intervalo al salir
+window.addEventListener('beforeunload', () => {
+    clearInterval(refreshInterval);
+});
+</script>
+{% endblock %}

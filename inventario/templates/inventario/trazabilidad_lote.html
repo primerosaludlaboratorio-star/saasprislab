@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'inventario:dashboard_reactivos' %}" class="btn btn-sm btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h2 class="mb-0 fw-bold text-primary"><i class="bi bi-search me-2"></i>{{ titulo }}</h2>
+      <small class="text-muted">ISO 15189 §6.6 — Rastrea el uso de cualquier lote hasta la orden del paciente</small>
+    </div>
+  </div>
+
+  <!-- Buscador -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Número de Lote</label>
+          <input type="text" name="lote" class="form-control" value="{{ numero_lote }}"
+                 placeholder="Ej. A2023-045">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Reactivo</label>
+          <select name="reactivo" class="form-select">
+            <option value="">— Todos los reactivos —</option>
+            {% for r in reactivos %}
+              <option value="{{ r.pk }}" {% if reactivo_id == r.pk|stringformat:"s" %}selected{% endif %}>
+                {{ r.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-search me-1"></i>Buscar
+          </button>
+          {% if numero_lote or reactivo_id %}
+            <a href="{% url 'inventario:trazabilidad_lote' %}" class="btn btn-outline-secondary ms-2">
+              <i class="bi bi-x"></i>
+            </a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if lote_obj %}
+  <!-- Resumen del lote encontrado -->
+  <div class="card border-primary border-2 shadow-sm mb-4">
+    <div class="card-header bg-primary text-white fw-bold">
+      <i class="bi bi-layers me-2"></i>Lote: {{ lote_obj.numero_lote }}
+    </div>
+    <div class="card-body">
+      <div class="row text-center">
+        <div class="col">
+          <div class="fw-bold">{{ lote_obj.reactivo.nombre }}</div>
+          <small class="text-muted">Reactivo</small>
+        </div>
+        <div class="col">
+          <div class="fw-bold">{{ lote_obj.fecha_caducidad|date:"d/m/Y" }}</div>
+          <small class="text-muted">Caducidad</small>
+        </div>
+        <div class="col">
+          <div class="fw-bold">{{ lote_obj.cantidad_inicial|floatformat:2 }} {{ lote_obj.reactivo.unidad_medida }}</div>
+          <small class="text-muted">Cantidad inicial</small>
+        </div>
+        <div class="col">
+          <div class="fw-bold text-success">{{ lote_obj.cantidad_actual|floatformat:2 }} {{ lote_obj.reactivo.unidad_medida }}</div>
+          <small class="text-muted">Stock restante</small>
+        </div>
+        <div class="col">
+          <div class="fw-bold text-primary">{{ total }}</div>
+          <small class="text-muted">Usos registrados</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if resultados is not None %}
+  <div class="card border-0 shadow-sm">
+    <div class="card-header fw-semibold bg-light">
+      Historial de Uso
+      {% if total > 0 %}
+        <span class="badge bg-primary ms-2">{{ total }} registros</span>
+      {% endif %}
+    </div>
+    <div class="card-body p-0">
+      {% if resultados %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Fecha</th>
+              <th>Lote</th>
+              <th>Reactivo</th>
+              <th>Orden / Paciente</th>
+              <th>Parámetro</th>
+              <th class="text-end">Cantidad Consumida</th>
+              <th>Validó</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in resultados %}
+            <tr>
+              <td class="small text-muted">{{ s.fecha|date:"d/m/Y H:i" }}</td>
+              <td><code class="small">{{ s.lote.numero_lote }}</code></td>
+              <td class="small">{{ s.lote.reactivo.nombre }}</td>
+              <td>
+                {% if s.orden %}
+                  <strong>{{ s.orden.folio|default:s.orden.pk }}</strong><br>
+                  <small class="text-muted">
+                    {{ s.orden.paciente.nombre|default:'' }}
+                    {{ s.orden.paciente.apellido_paterno|default:'' }}
+                  </small>
+                {% else %}—{% endif %}
+              </td>
+              <td class="small">{{ s.analito.nombre|default:"—" }}</td>
+              <td class="text-end fw-bold text-danger small">
+                −{{ s.cantidad_consumida|floatformat:4 }} {{ s.lote.reactivo.unidad_medida }}
+              </td>
+              <td class="small">{{ s.validado_por.get_full_name|default:s.validado_por.username|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-search display-5 d-block mb-3 opacity-25"></i>
+        <p>No se encontraron usos para los criterios indicados.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if resultados is None %}
+  <div class="text-center text-muted py-5">
+    <i class="bi bi-search display-5 d-block mb-3 opacity-25"></i>
+    <p class="lead">Ingresa un número de lote o selecciona un reactivo para rastrear su uso.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

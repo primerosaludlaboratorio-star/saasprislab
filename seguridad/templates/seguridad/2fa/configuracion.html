@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Seguridad 2FA - PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="bi bi-shield-lock"></i> Autenticación de Dos Factores</h2>
+            <p class="text-muted">Protege tu cuenta con una capa adicional de seguridad.</p>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-phone"></i> Autenticador TOTP</h5>
+                </div>
+                <div class="card-body">
+                    {% if tiene_totp %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle"></i> <strong>2FA Activo</strong> — Tu cuenta está protegida.
+                    </div>
+                    <a href="/seguridad/2fa/" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-shield-x"></i> Desactivar 2FA
+                    </a>
+                    {% else %}
+                    <p class="text-muted">El autenticador TOTP no está configurado.</p>
+                    <a href="{% url 'seguridad:activar_totp' %}" class="btn btn-success">
+                        <i class="bi bi-shield-check"></i> Activar 2FA con Google Authenticator
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-key"></i> Códigos de Respaldo</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Usa estos códigos si pierdes acceso a tu dispositivo.</p>
+                    <a href="{% url 'seguridad:mostrar_codigos_backup' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-list-check"></i> Ver Códigos de Respaldo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

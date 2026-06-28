@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3" style="max-width:1100px">
+  <div class="d-flex align-items-center mb-4 gap-3">
+    <a href="{% url 'mantenimiento:wizard_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h2 class="mb-0 fw-bold text-warning"><i class="bi bi-diagram-3 me-2"></i>{{ titulo }}</h2>
+  </div>
+
+  {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="row g-4">
+
+    <!-- Datos del árbol -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-warning bg-opacity-10 fw-semibold text-warning">
+          <i class="bi bi-exclamation-triangle me-2"></i>Definición de la Falla
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="guardar_arbol">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Síntoma / Falla <span class="text-danger">*</span></label>
+              <input type="text" name="falla_descripcion" class="form-control"
+                     value="{{ arbol.falla_descripcion|default:'' }}" required
+                     placeholder="Ej: Alarma E-023, No aspira muestra, QC fuera de rango">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Código de Error (opcional)</label>
+              <input type="text" name="falla_codigo" class="form-control"
+                     value="{{ arbol.falla_codigo|default:'' }}" placeholder="E-023, ALM-04…">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Equipo (opcional)</label>
+              <select name="expediente" class="form-select">
+                <option value="">— Genérico (todos) —</option>
+                {% for exp in expedientes %}
+                  <option value="{{ exp.pk }}"
+                    {% if arbol.expediente_id == exp.pk %}selected{% endif %}>
+                    {{ exp.equipo.nombre }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <button type="submit" class="btn btn-warning w-100">
+              <i class="bi bi-save me-1"></i>
+              {% if arbol %}Actualizar Árbol{% else %}Crear Árbol{% endif %}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {% if arbol %}
+      <!-- Agregar nodo -->
+      <div class="card border-0 shadow-sm mt-3">
+        <div class="card-header bg-light fw-semibold">
+          <i class="bi bi-plus-circle text-success me-2"></i>Agregar Nodo
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="agregar_nodo">
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Tipo de Nodo</label>
+              <select name="tipo_nodo" class="form-select form-select-sm">
+                {% for val, lbl in tipo_nodo_choices %}
+                  <option value="{{ val }}">{{ lbl }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Nodo Padre (vacío = raíz)</label>
+              <select name="padre_id" class="form-select form-select-sm">
+                <option value="">— Nodo raíz —</option>
+                {% for nodo in arbol.nodos.all %}
+                  <option value="{{ nodo.pk }}">[{{ nodo.get_tipo_nodo_display }}] {{ nodo.texto|truncatechars:50 }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Condición del padre que lleva aquí</label>
+              <input type="text" name="condicion_de_padre" class="form-control form-control-sm"
+                     placeholder="Ej: Sí, No, Error persiste…">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Texto / Pregunta / Instrucción <span class="text-danger">*</span></label>
+              <textarea name="texto" class="form-control form-control-sm" rows="2" required></textarea>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Nivel requerido</label>
+              <select name="nivel_requerido" class="form-select form-select-sm">
+                {% for val, lbl in nivel_choices %}
+                  <option value="{{ val }}">{{ lbl }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Procedimiento a ejecutar (si aplica)</label>
+              <select name="procedimiento_id" class="form-select form-select-sm">
+                <option value="">— Ninguno —</option>
+                {% for proc in procedimientos %}
+                  <option value="{{ proc.pk }}">{{ proc.titulo|truncatechars:60 }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Escalamiento (si tipo=ESCALAMIENTO)</label>
+              <select name="nivel_escalamiento" class="form-select form-select-sm">
+                <option value="">— No aplica —</option>
+                {% for val, lbl in escalamiento_choices %}
+                  <option value="{{ val }}">{{ lbl }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <button type="submit" class="btn btn-success btn-sm w-100">
+              <i class="bi bi-node-plus me-1"></i>Agregar Nodo
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Visualización del árbol -->
+    <div class="col-lg-8">
+      {% if arbol %}
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light fw-semibold">
+          <i class="bi bi-diagram-3 me-2 text-warning"></i>
+          Árbol de Decisión — <span class="text-warning">{{ arbol.falla_descripcion }}</span>
+          {% if arbol.falla_codigo %}<code class="ms-2">({{ arbol.falla_codigo }})</code>{% endif %}
+        </div>
+        <div class="card-body">
+          {% if nodos_raiz %}
+            <div class="arbol-visual">
+              {% for nodo in nodos_raiz %}
+                {% include "mantenimiento/_nodo_arbol.html" with nodo=nodo nivel=0 %}
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center text-muted py-5">
+              <i class="bi bi-diagram-3 display-4 opacity-25 d-block mb-2"></i>
+              Usa el panel izquierdo para agregar el primer nodo (raíz del árbol).
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center text-muted py-5">
+          <i class="bi bi-diagram-3 display-4 opacity-25 d-block mb-2"></i>
+          Primero guarda los datos básicos del árbol, luego podrás agregar nodos.
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Asistente Médico IA - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        height: 500px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        background-color: #f8f9fa;
+        padding: 20px;
+    }
+    .mensaje {
+        max-width: 80%;
+        margin-bottom: 20px;
+        padding: 15px;
+        border-radius: 15px;
+        animation: slideIn 0.3s ease-out;
+    }
+    .mensaje-usuario {
+        background-color: #3498db;
+        color: white;
+        margin-left: auto;
+        text-align: right;
+    }
+    .mensaje-asistente {
+        background-color: white;
+        border: 1px solid #dee2e6;
+        margin-right: auto;
+    }
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .typing-indicator {
+        display: inline-block;
+        padding: 10px;
+    }
+    .typing-indicator span {
+        height: 10px;
+        width: 10px;
+        float: left;
+        margin: 0 2px;
+        background-color: #9E9EA1;
+        display: block;
+        border-radius: 50%;
+        opacity: 0.4;
+        animation: typing 1s infinite;
+    }
+    .typing-indicator span:nth-of-type(2) {
+        animation-delay: 0.2s;
+    }
+    .typing-indicator span:nth-of-type(3) {
+        animation-delay: 0.4s;
+    }
+    @keyframes typing {
+        0%, 60%, 100% { opacity: 0.4; }
+        30% { opacity: 1; }
+    }
+    .pregunta-sugerida {
+        transition: all 0.2s;
+        cursor: pointer;
+        border-left: 4px solid #3498db;
+    }
+    .pregunta-sugerida:hover {
+        background-color: #e3f2fd;
+        border-left-width: 6px;
+        transform: translateX(5px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'ia:dashboard' %}">Dashboard IA</a></li>
+            <li class="breadcrumb-item active">Asistente Médico</li>
+        </ol>
+    </nav>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-user-md text-success"></i> Asistente Médico con Gemini</h2>
+            <p class="text-muted">Consulta diagnósticos, tratamientos y procedimientos médicos basados en IA</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-comments"></i> Chat con Asistente Médico
+                </div>
+                <div class="card-body">
+                    <!-- Chat Container -->
+                    <div class="chat-container" id="chatContainer">
+                        {% if respuesta %}
+                        <!-- Pregunta del usuario -->
+                        <div class="mensaje mensaje-usuario">
+                            <strong>Tú:</strong><br>
+                            {{ pregunta }}
+                        </div>
+                        
+                        <!-- Respuesta del asistente -->
+                        <div class="mensaje mensaje-asistente">
+                            <strong><i class="fas fa-robot text-success"></i> Asistente IA:</strong><br>
+                            {{ respuesta|linebreaks }}
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-user-md fa-4x mb-3 d-block"></i>
+                            <h5>¡Hola! Soy tu asistente médico</h5>
+                            <p>Pregúntame sobre diagnósticos, tratamientos o procedimientos médicos.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Formulario de consulta -->
+                    <form method="post" id="formConsulta" class="mt-3">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label for="{{ form.contexto.id_for_label }}">{{ form.contexto.label }}</label>
+                            {{ form.contexto }}
+                            <small class="form-text text-muted">{{ form.contexto.help_text }}</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.pregunta.id_for_label }}">{{ form.pregunta.label }}</label>
+                            {{ form.pregunta }}
+                            <small class="form-text text-muted">{{ form.pregunta.help_text }}</small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success btn-block" id="btnConsultar">
+                            <i class="fas fa-paper-plane"></i> Consultar
+                        </button>
+                    </form>
+                    
+                    {% if not api_configurada %}
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Modo Demostración:</strong>
+                        Las APIs de Google Cloud no están configuradas. Las respuestas son ejemplos predefinidos.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow mb-3">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-lightbulb"></i> Preguntas Sugeridas
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="#" class="list-group-item pregunta-sugerida" onclick="usarPregunta(event, '¿Cómo se diagnostica la diabetes tipo 2?')">
+                            <strong>Diabetes Tipo 2</strong><br>
+                            <small class="text-muted">¿Cómo se diagnostica?</small>
+                        </a>
+                        <a href="#" class="list-group-item pregunta-sugerida" onclick="usarPregunta(event, '¿Cuál es el tratamiento de primera línea para hipertensión arterial?')">
+                            <strong>Hipertensión</strong><br>
+                            <small class="text-muted">Tratamiento de primera línea</small>
+                        </a>
+                        <a href="#" class="list-group-item pregunta-sugerida" onclick="usarPregunta(event, '¿Qué estudios solicito para un síndrome anémico?')">
+                            <strong>Síndrome Anémico</strong><br>
+                            <small class="text-muted">Estudios a solicitar</small>
+                        </a>
+                        <a href="#" class="list-group-item pregunta-sugerida" onclick="usarPregunta(event, '¿Cuáles son las indicaciones de antibiótico en faringitis?')">
+                            <strong>Faringitis</strong><br>
+                            <small class="text-muted">Indicaciones de antibiótico</small>
+                        </a>
+                        <a href="#" class="list-group-item pregunta-sugerida" onclick="usarPregunta(event, '¿Cómo interpreto una biometría hemática completa?')">
+                            <strong>Biometría Hemática</strong><br>
+                            <small class="text-muted">Interpretación de resultados</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-exclamation-circle"></i> Aviso Importante
+                </div>
+                <div class="card-body">
+                    <p class="small mb-0">
+                        <strong>Este asistente es una herramienta de apoyo educativo y consulta.</strong> 
+                        Las respuestas no sustituyen el juicio clínico profesional ni la evaluación 
+                        integral del paciente. Siempre consulta guías clínicas actualizadas y considera 
+                        el contexto específico de cada caso.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function usarPregunta(event, pregunta) {
+    event.preventDefault();
+    document.querySelector('textarea[name="pregunta"]').value = pregunta;
+    document.querySelector('textarea[name="pregunta"]').focus();
+}
+
+// Scroll automático al final del chat
+const chatContainer = document.getElementById('chatContainer');
+if (chatContainer) {
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+// Animación de carga al enviar
+document.getElementById('formConsulta').addEventListener('submit', function() {
+    const btnConsultar = document.getElementById('btnConsultar');
+    btnConsultar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando a Gemini...';
+    btnConsultar.disabled = true;
+    
+    // Agregar indicador de "escribiendo"
+    const typingIndicator = document.createElement('div');
+    typingIndicator.className = 'mensaje mensaje-asistente';
+    typingIndicator.innerHTML = `
+        <strong><i class="fas fa-robot text-success"></i> Asistente IA:</strong><br>
+        <div class="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    `;
+    chatContainer.appendChild(typingIndicator);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+});
+
+// API para consultas desde JavaScript (usada por Pris)
+window.consultarAsistenteIA = async function(pregunta, contexto = '') {
+    try {
+        const response = await fetch('{% url "ia:api_consultar_asistente" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ pregunta, contexto })
+        });
+        
+        const data = await response.json();
+        return data.success ? data.respuesta : null;
+    } catch (error) {
+        console.error('Error al consultar asistente:', error);
+        return null;
+    }
+};
+</script>
+{% endblock %}

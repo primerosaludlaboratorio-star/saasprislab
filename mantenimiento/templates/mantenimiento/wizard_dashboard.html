@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Wizard Técnico — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-primary mb-0"><i class="bi bi-tools me-2"></i>{{ titulo }}</h2>
+    <div class="d-flex gap-2">
+      <a href="{% url 'mantenimiento:wizard_protocolo_nuevo' %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>Nuevo Protocolo
+      </a>
+      <a href="{% url 'mantenimiento:wizard_arbol_nuevo' %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-diagram-3 me-1"></i>Nuevo Árbol de Diagnóstico
+      </a>
+      <a href="{% url 'mantenimiento:crear_expediente' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-cpu me-1"></i>Registrar Equipo
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Protocolos -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-primary text-white fw-semibold">
+          <i class="bi bi-journal-check me-2"></i>Protocolos de Operación
+          <span class="badge bg-white text-primary ms-2">{{ protocolos|length }}</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush">
+            {% for p in protocolos %}
+            <a href="{% url 'mantenimiento:wizard_protocolo_editar' p.pk %}"
+               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-semibold">{{ p.nombre }}</div>
+                <small class="text-muted">
+                  {{ p.get_tipo_protocolo_display }} &bull;
+                  {% if p.equipo %}{{ p.equipo.equipo.nombre }}{% else %}Global{% endif %}
+                </small>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-secondary">{{ p.total_pasos }} pasos</span>
+                {% if p.bloquea_worklist %}
+                  <span class="badge bg-danger"><i class="bi bi-lock-fill"></i></span>
+                {% endif %}
+                {% if p.activo %}<span class="badge bg-success">Activo</span>
+                {% else %}<span class="badge bg-light text-dark">Inactivo</span>{% endif %}
+              </div>
+            </a>
+            {% empty %}
+            <div class="text-center text-muted py-4">
+              Sin protocolos. <a href="{% url 'mantenimiento:wizard_protocolo_nuevo' %}">Crear uno</a>.
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Árboles de Diagnóstico -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-warning bg-opacity-25 fw-semibold">
+          <i class="bi bi-diagram-3 me-2 text-warning"></i>Árboles de Diagnóstico
+          <span class="badge bg-warning text-dark ms-2">{{ arboles|length }}</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush">
+            {% for a in arboles %}
+            <a href="{% url 'mantenimiento:wizard_arbol_editar' a.pk %}"
+               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-semibold">{{ a.falla_descripcion }}</div>
+                <small class="text-muted">
+                  {% if a.falla_codigo %}<code>{{ a.falla_codigo }}</code> &bull; {% endif %}
+                  {% if a.expediente %}{{ a.expediente.equipo.nombre }}{% else %}Global{% endif %}
+                </small>
+              </div>
+              <span class="badge bg-info text-dark">{{ a.total_nodos }} nodos</span>
+            </a>
+            {% empty %}
+            <div class="text-center text-muted py-4">
+              Sin árboles. <a href="{% url 'mantenimiento:wizard_arbol_nuevo' %}">Crear uno</a>.
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Equipos registrados -->
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light fw-semibold">
+          <i class="bi bi-cpu me-2 text-secondary"></i>Equipos en CMMS ({{ expedientes|length }})
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light">
+                <tr><th>Equipo</th><th>Tipo</th><th>Silo Refacciones</th>
+                    <th>Serie</th><th>Garantía</th><th>Estado</th><th></th></tr>
+              </thead>
+              <tbody>
+                {% for exp in expedientes %}
+                <tr>
+                  <td class="fw-semibold">{{ exp.equipo.nombre }}</td>
+                  <td><small>{{ exp.get_tipo_equipo_display }}</small></td>
+                  <td><span class="badge bg-secondary">{{ exp.get_silo_refacciones_display }}</span></td>
+                  <td><small class="text-muted">{{ exp.numero_serie|default:"—" }}</small></td>
+                  <td>
+                    {% if exp.garantia_hasta %}
+                      <small class="{% if exp.garantia_hasta < hoy|default:'' %}text-danger{% endif %}">
+                        {{ exp.garantia_hasta|date:"d/m/Y" }}
+                      </small>
+                    {% else %}—{% endif %}
+                  </td>
+                  <td>
+                    {% if exp.en_servicio %}<span class="badge bg-success">En servicio</span>
+                    {% else %}<span class="badge bg-secondary">Fuera de servicio</span>{% endif %}
+                  </td>
+                  <td>
+                    <a href="{% url 'mantenimiento:detalle_expediente' exp.pk %}"
+                       class="btn btn-sm btn-outline-primary">Ver</a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-3">Sin equipos registrados.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

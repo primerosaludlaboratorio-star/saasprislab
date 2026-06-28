@@ -1,0 +1,811 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}PRIS-Chat{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ============================================================
+   PRIS-CHAT: INTERFAZ WHATSAPP PREMIUM
+   ============================================================ */
+:root {
+    --chat-bg: #efeae2;
+    --bubble-mine: #d9fdd3;
+    --bubble-theirs: #ffffff;
+    --chat-header: #008069;
+    --sidebar-bg: #ffffff;
+    --sidebar-hover: #f0f2f5;
+    --border: #e9edef;
+    --text-primary: #111b21;
+    --text-secondary: #667781;
+    --green-check: #53bdeb;
+    --recording-red: #ea0038;
+}
+
+/* Ocultar el sidebar y navbar del sistema para fullscreen */
+.pris-chat-wrapper {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 1060;
+    display: flex;
+    background: #d1d7db;
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+}
+
+/* --- SIDEBAR: Lista de contactos (30%) --- */
+.chat-sidebar {
+    width: 30%;
+    min-width: 280px;
+    max-width: 420px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+}
+.chat-sidebar-header {
+    padding: 10px 16px;
+    background: #f0f2f5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 59px;
+}
+.chat-sidebar-header h6 {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.chat-search {
+    padding: 8px;
+    background: #f0f2f5;
+}
+.chat-search input {
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 32px 8px 12px;
+    font-size: .875rem;
+    background: #fff;
+    outline: none;
+}
+.contact-list {
+    flex: 1;
+    overflow-y: auto;
+}
+.contact-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f2f5;
+    transition: background .15s;
+}
+.contact-item:hover, .contact-item.active {
+    background: var(--sidebar-hover);
+}
+.contact-avatar {
+    width: 49px;
+    height: 49px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00a884, #25d366);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-right: 12px;
+}
+.contact-info {
+    flex: 1;
+    min-width: 0;
+}
+.contact-info .name {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: .95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.contact-info .preview {
+    font-size: .8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.contact-meta {
+    text-align: right;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+.contact-meta .time {
+    font-size: .7rem;
+    color: var(--text-secondary);
+}
+.contact-meta .badge-unread {
+    background: #25d366;
+    color: #fff;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .7rem;
+    font-weight: 700;
+    margin-top: 2px;
+}
+
+/* --- PANEL PRINCIPAL: Chat activo (70%) --- */
+.chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--chat-bg);
+    position: relative;
+}
+.chat-main-header {
+    padding: 10px 16px;
+    background: #f0f2f5;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    min-height: 59px;
+}
+.chat-main-header .avatar-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00a884, #25d366);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+.chat-main-header .chat-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: .95rem;
+}
+.chat-main-header .chat-status {
+    font-size: .75rem;
+    color: var(--text-secondary);
+}
+
+/* Mensajes */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 60px;
+    display: flex;
+    flex-direction: column;
+}
+.msg-bubble {
+    max-width: 65%;
+    padding: 6px 8px 2px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    position: relative;
+    word-wrap: break-word;
+    box-shadow: 0 1px .5px rgba(11,20,26,.13);
+}
+.msg-mine {
+    align-self: flex-end;
+    background: var(--bubble-mine);
+    border-top-right-radius: 0;
+}
+.msg-theirs {
+    align-self: flex-start;
+    background: var(--bubble-theirs);
+    border-top-left-radius: 0;
+}
+.msg-text {
+    font-size: .875rem;
+    color: var(--text-primary);
+    line-height: 1.35;
+    margin-bottom: 0;
+}
+.msg-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+    margin-top: 1px;
+}
+.msg-time {
+    font-size: .6875rem;
+    color: var(--text-secondary);
+}
+.msg-check {
+    font-size: .65rem;
+    color: var(--text-secondary);
+}
+.msg-check.read {
+    color: var(--green-check);
+}
+.msg-sender {
+    font-size: .75rem;
+    font-weight: 600;
+    color: #06cf9c;
+    margin-bottom: 1px;
+}
+.msg-audio audio {
+    width: 100%;
+    max-width: 280px;
+    height: 36px;
+}
+
+/* Empty state */
+.chat-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    background: #f0f2f5;
+}
+.chat-empty i {
+    font-size: 4rem;
+    color: #c4ccd0;
+    margin-bottom: 1rem;
+}
+
+/* Footer: Input + Mic */
+.chat-footer {
+    padding: 8px 16px;
+    background: #f0f2f5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.chat-footer input[type=text] {
+    flex: 1;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: .9375rem;
+    outline: none;
+    background: #fff;
+}
+.chat-footer .btn-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background .15s;
+    background: none;
+    color: #54656f;
+}
+.chat-footer .btn-icon:hover {
+    background: #e0e0e0;
+}
+.chat-footer .btn-send {
+    background: #00a884;
+    color: #fff;
+}
+.chat-footer .btn-send:hover {
+    background: #008f72;
+}
+.btn-mic.recording {
+    background: var(--recording-red) !important;
+    color: #fff !important;
+    animation: pulse-rec 1s infinite;
+}
+@keyframes pulse-rec {
+    0%,100% { opacity: 1; }
+    50% { opacity: .6; }
+}
+.recording-indicator {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    color: var(--recording-red);
+    font-weight: 600;
+    font-size: .9rem;
+}
+.recording-indicator .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--recording-red);
+    animation: pulse-rec 1s infinite;
+}
+.recording-indicator.show {
+    display: flex;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .chat-sidebar {
+        width: 100%;
+        max-width: 100%;
+    }
+    .chat-main {
+        display: none;
+    }
+    .pris-chat-wrapper.chat-active .chat-sidebar {
+        display: none;
+    }
+    .pris-chat-wrapper.chat-active .chat-main {
+        display: flex;
+    }
+    .chat-messages {
+        padding: 12px 16px;
+    }
+    .msg-bubble {
+        max-width: 85%;
+    }
+}
+
+/* Back button (mobile) */
+.btn-back-mobile {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    margin-right: 8px;
+    cursor: pointer;
+}
+@media (max-width: 768px) {
+    .btn-back-mobile {
+        display: inline-flex;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pris-chat-wrapper" id="prisChat">
+    <!-- ============================================================
+         SIDEBAR: Lista de Contactos
+         ============================================================ -->
+    <div class="chat-sidebar">
+        <div class="chat-sidebar-header">
+            <h6><i class="fas fa-broadcast-tower me-2"></i>PRIS-Chat</h6>
+            <a href="/" class="btn btn-sm btn-outline-secondary" title="Volver al sistema"><i class="fas fa-times"></i></a>
+        </div>
+        <div class="chat-search">
+            <input type="text" id="searchContacts" placeholder="Buscar o iniciar chat..." autocomplete="off">
+        </div>
+        <div class="contact-list" id="contactList">
+            <!-- Se llena con JS -->
+        </div>
+    </div>
+
+    <!-- ============================================================
+         PANEL PRINCIPAL: Chat Activo
+         ============================================================ -->
+    <div class="chat-main" id="chatMain">
+        <!-- Empty State -->
+        <div class="chat-empty" id="chatEmpty">
+            <i class="fas fa-comments"></i>
+            <h5>PRIS-Chat</h5>
+            <p>Selecciona un contacto para iniciar la conversacion</p>
+        </div>
+
+        <!-- Header (oculto hasta seleccionar) -->
+        <div class="chat-main-header" id="chatHeader" style="display:none;">
+            <button class="btn-back-mobile" id="btnBack"><i class="fas fa-arrow-left"></i></button>
+            <div class="avatar-sm" id="chatAvatar">?</div>
+            <div>
+                <div class="chat-name" id="chatName">--</div>
+                <div class="chat-status" id="chatRole">--</div>
+            </div>
+        </div>
+
+        <!-- Mensajes -->
+        <div class="chat-messages" id="chatMessages" style="display:none;"></div>
+
+        <!-- Footer -->
+        <div class="chat-footer" id="chatFooter" style="display:none;">
+            <input type="text" id="msgInput" placeholder="Escribe un mensaje..." autocomplete="off">
+            <div class="recording-indicator" id="recIndicator">
+                <div class="dot"></div>
+                <span>Grabando... <span id="recTimer">0:00</span></span>
+            </div>
+            <button class="btn-icon btn-mic" id="btnMic" title="Nota de voz"><i class="fas fa-microphone"></i></button>
+            <button class="btn-icon btn-send" id="btnSend" title="Enviar"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+    const CSRF = '{{ csrf_token }}';
+    const MY_ID = {{ request.user.id }};
+    let activeUserId = null;
+    let activeUserName = '';
+    let lastMsgId = 0;
+    let pollTimer = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recStartTime = null;
+    let recTimerInterval = null;
+
+    // DOM
+    const contactList = document.getElementById('contactList');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatEmpty = document.getElementById('chatEmpty');
+    const chatHeader = document.getElementById('chatHeader');
+    const chatFooter = document.getElementById('chatFooter');
+    const chatName = document.getElementById('chatName');
+    const chatRole = document.getElementById('chatRole');
+    const chatAvatar = document.getElementById('chatAvatar');
+    const msgInput = document.getElementById('msgInput');
+    const btnSend = document.getElementById('btnSend');
+    const btnMic = document.getElementById('btnMic');
+    const recIndicator = document.getElementById('recIndicator');
+    const recTimer = document.getElementById('recTimer');
+    const searchInput = document.getElementById('searchContacts');
+    const wrapper = document.getElementById('prisChat');
+
+    // ============================================================
+    // CARGAR CONTACTOS
+    // ============================================================
+    let allContacts = [];
+
+    async function loadContacts() {
+        try {
+            // Cargar conversaciones + todos los usuarios
+            const [convResp, usrResp] = await Promise.all([
+                fetch('/chat/api/conversaciones/').then(r => r.json()),
+                fetch('/chat/api/usuarios/').then(r => r.json()),
+            ]);
+
+            const convMap = {};
+            let totalBadge = 0;
+            if (convResp.status === 'success') {
+                convResp.conversaciones.forEach(c => {
+                    convMap[c.usuario_id] = c;
+                    totalBadge += c.no_leidos || 0;
+                });
+            }
+
+            // Merge: usuarios que tienen conversacion primero, luego los demas
+            const contacts = [];
+            const seenIds = new Set();
+
+            // Primero los que tienen conversacion (ya ordenados por fecha)
+            if (convResp.status === 'success') {
+                convResp.conversaciones.forEach(c => {
+                    contacts.push({
+                        id: c.usuario_id,
+                        nombre: c.nombre,
+                        rol: c.rol || '',
+                        preview: c.ultimo_mensaje || '',
+                        time: c.ultima_fecha || '',
+                        unread: c.no_leidos || 0,
+                        isAudio: c.es_audio || false,
+                    });
+                    seenIds.add(c.usuario_id);
+                });
+            }
+
+            // Despues los que no tienen conversacion
+            if (usrResp.status === 'success') {
+                usrResp.usuarios.forEach(u => {
+                    if (!seenIds.has(u.id)) {
+                        contacts.push({
+                            id: u.id,
+                            nombre: u.nombre,
+                            rol: u.rol || '',
+                            preview: '',
+                            time: '',
+                            unread: 0,
+                            isAudio: false,
+                        });
+                    }
+                });
+            }
+
+            allContacts = contacts;
+            renderContacts(contacts);
+
+            // Badge global
+            const fabBadge = parent.document.getElementById('badgeNoLeidos');
+            if (fabBadge) {
+                if (totalBadge > 0) { fabBadge.textContent = totalBadge; fabBadge.style.display = ''; }
+                else { fabBadge.style.display = 'none'; }
+            }
+        } catch (e) { console.error('Error cargando contactos:', e); }
+    }
+
+    function renderContacts(contacts) {
+        const q = (searchInput.value || '').toLowerCase();
+        const filtered = q ? contacts.filter(c => c.nombre.toLowerCase().includes(q)) : contacts;
+
+        contactList.innerHTML = '';
+        filtered.forEach(c => {
+            const initials = c.nombre.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+            const previewText = c.isAudio ? '<i class="fas fa-microphone me-1"></i>Nota de voz' : (c.preview || '<span style="color:#aaa">Sin mensajes</span>');
+            const unreadBadge = c.unread > 0 ? `<div class="badge-unread">${c.unread}</div>` : '';
+
+            const div = document.createElement('div');
+            div.className = 'contact-item' + (c.id === activeUserId ? ' active' : '');
+            div.innerHTML = `
+                <div class="contact-avatar">${initials}</div>
+                <div class="contact-info">
+                    <div class="name">${c.nombre}</div>
+                    <div class="preview">${previewText}</div>
+                </div>
+                <div class="contact-meta">
+                    <div class="time">${c.time}</div>
+                    ${unreadBadge}
+                </div>`;
+            div.addEventListener('click', () => openChat(c.id, c.nombre, c.rol));
+            contactList.appendChild(div);
+        });
+    }
+
+    searchInput.addEventListener('input', () => renderContacts(allContacts));
+
+    // ============================================================
+    // ABRIR CHAT
+    // ============================================================
+    function openChat(userId, nombre, rol) {
+        activeUserId = userId;
+        activeUserName = nombre;
+        lastMsgId = 0;
+
+        chatName.textContent = nombre;
+        chatRole.textContent = rol || 'Equipo PRISLAB';
+        chatAvatar.textContent = nombre.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+
+        chatEmpty.style.display = 'none';
+        chatHeader.style.display = 'flex';
+        chatMessages.style.display = 'flex';
+        chatMessages.innerHTML = '';
+        chatFooter.style.display = 'flex';
+        wrapper.classList.add('chat-active');
+
+        // Marcar activo en sidebar
+        document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
+        // Cargar mensajes
+        loadMessages(false);
+
+        // Polling cada 3s
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(() => loadMessages(true), 3000);
+    }
+
+    // Back button (mobile)
+    document.getElementById('btnBack').addEventListener('click', () => {
+        wrapper.classList.remove('chat-active');
+        activeUserId = null;
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        loadContacts();
+    });
+
+    // ============================================================
+    // CARGAR MENSAJES
+    // ============================================================
+    async function loadMessages(incremental) {
+        if (!activeUserId) return;
+        const url = incremental
+            ? `/chat/api/mensajes/?destinatario_id=${activeUserId}&after_id=${lastMsgId}`
+            : `/chat/api/mensajes/?destinatario_id=${activeUserId}`;
+
+        try {
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (data.status !== 'success') return;
+
+            if (!incremental) chatMessages.innerHTML = '';
+
+            data.mensajes.forEach(m => {
+                if (m.id > lastMsgId) lastMsgId = m.id;
+                appendMessage(m);
+            });
+
+            if (!incremental || data.mensajes.length > 0) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // Refresh sidebar sin limpiar
+            if (incremental && data.mensajes.length > 0) loadContacts();
+        } catch (e) { console.error('Error cargando mensajes:', e); }
+    }
+
+    function appendMessage(m) {
+        const div = document.createElement('div');
+        div.className = 'msg-bubble ' + (m.es_mio ? 'msg-mine' : 'msg-theirs');
+        div.dataset.id = m.id;
+
+        let content = '';
+        if (!m.es_mio) {
+            content += `<div class="msg-sender">${m.remitente_nombre}</div>`;
+        }
+
+        if (m.tipo === 'audio' && m.audio_url) {
+            content += `<div class="msg-audio"><audio controls preload="none" src="${m.audio_url}"></audio></div>`;
+        } else {
+            content += `<p class="msg-text">${escapeHtml(m.mensaje)}</p>`;
+        }
+
+        // Footer: hora + check
+        const checkIcon = m.es_mio
+            ? (m.leido ? '<i class="fas fa-check-double msg-check read"></i>' : '<i class="fas fa-check msg-check"></i>')
+            : '';
+        content += `<div class="msg-footer"><span class="msg-time">${m.fecha}</span>${checkIcon}</div>`;
+
+        div.innerHTML = content;
+        chatMessages.appendChild(div);
+    }
+
+    function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML.replace(/\n/g, '<br>');
+    }
+
+    // ============================================================
+    // ENVIAR TEXTO
+    // ============================================================
+    function sendText() {
+        const text = msgInput.value.trim();
+        if (!text || !activeUserId) return;
+
+        msgInput.value = '';
+
+        // Optimistic UI
+        const now = new Date();
+        const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+        appendMessage({
+            id: Date.now(),
+            es_mio: true,
+            tipo: 'texto',
+            mensaje: text,
+            fecha: timeStr,
+            leido: false,
+            remitente_nombre: '',
+        });
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        fetch('/chat/api/enviar/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify({ destinatario_id: activeUserId, mensaje: text }),
+        }).then(r => r.json()).then(data => {
+            if (data.status === 'success') lastMsgId = Math.max(lastMsgId, data.mensaje_id);
+        }).catch(e => console.error('Error enviando:', e));
+    }
+
+    btnSend.addEventListener('click', sendText);
+    msgInput.addEventListener('keypress', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); }
+    });
+
+    // ============================================================
+    // GRABAR AUDIO (MediaRecorder API)
+    // ============================================================
+    let isRecording = false;
+
+    btnMic.addEventListener('click', async () => {
+        if (isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    });
+
+    async function startRecording() {
+        if (!activeUserId) return;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioChunks = [];
+
+            // Elegir formato soportado
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                ? 'audio/webm;codecs=opus'
+                : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
+
+            mediaRecorder = mimeType
+                ? new MediaRecorder(stream, { mimeType })
+                : new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                stream.getTracks().forEach(t => t.stop());
+                sendAudio();
+            };
+
+            mediaRecorder.start(100); // chunks cada 100ms
+            isRecording = true;
+            btnMic.classList.add('recording');
+            btnMic.innerHTML = '<i class="fas fa-stop"></i>';
+            msgInput.style.display = 'none';
+            btnSend.style.display = 'none';
+            recIndicator.classList.add('show');
+
+            // Timer
+            recStartTime = Date.now();
+            recTimerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - recStartTime) / 1000);
+                const m = Math.floor(elapsed / 60);
+                const s = elapsed % 60;
+                recTimer.textContent = m + ':' + s.toString().padStart(2, '0');
+            }, 500);
+
+        } catch (err) {
+            alert('No se pudo acceder al microfono. Verifica los permisos del navegador.');
+            console.error('Mic error:', err);
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+        isRecording = false;
+        btnMic.classList.remove('recording');
+        btnMic.innerHTML = '<i class="fas fa-microphone"></i>';
+        msgInput.style.display = '';
+        btnSend.style.display = '';
+        recIndicator.classList.remove('show');
+        if (recTimerInterval) { clearInterval(recTimerInterval); recTimerInterval = null; }
+    }
+
+    function sendAudio() {
+        if (audioChunks.length === 0 || !activeUserId) return;
+
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+        const blob = new Blob(audioChunks, { type: mimeType });
+        audioChunks = [];
+
+        // Optimistic UI
+        const now = new Date();
+        const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+        const tempUrl = URL.createObjectURL(blob);
+        appendMessage({
+            id: Date.now(),
+            es_mio: true,
+            tipo: 'audio',
+            mensaje: '',
+            audio_url: tempUrl,
+            fecha: timeStr,
+            leido: false,
+            remitente_nombre: '',
+        });
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Upload via FormData
+        const fd = new FormData();
+        fd.append('destinatario_id', activeUserId);
+        fd.append('audio', blob, `voz_${Date.now()}.${ext}`);
+
+        fetch('/chat/api/enviar-audio/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF },
+            body: fd,
+        }).then(r => r.json()).then(data => {
+            if (data.status === 'success') lastMsgId = Math.max(lastMsgId, data.mensaje_id);
+        }).catch(e => console.error('Error enviando audio:', e));
+    }
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    loadContacts();
+    // Refresh contactos cada 10s
+    setInterval(loadContacts, 10000);
+})();
+</script>
+{% endblock %}

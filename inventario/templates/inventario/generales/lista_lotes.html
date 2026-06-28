@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — PRISLAB{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0 fw-bold"><i class="bi bi-boxes me-2"></i>{{ titulo }}</h5>
+    <a href="{% url 'inventario:crear_lote_general' %}" class="btn btn-success btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>Registrar Entrada
+    </a>
+  </div>
+  <form class="row g-2 mb-3">
+    <div class="col-sm-5">
+      <select name="insumo" class="form-select form-select-sm">
+        <option value="">— Todos los artículos —</option>
+        {% for i in insumos %}
+        <option value="{{ i.pk }}" {% if insumo_f == i.pk|stringformat:'i' %}selected{% endif %}>{{ i.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-sm-2"><button class="btn btn-sm btn-secondary w-100">Filtrar</button></div>
+  </form>
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-dark">
+            <tr><th>Artículo</th><th>Categoría</th><th class="text-end">Inicial</th>
+            <th class="text-end">Disponible</th><th>Precio Unit.</th>
+            <th>OC Origen</th><th>Recibido</th></tr>
+          </thead>
+          <tbody>
+            {% for lote in lotes %}
+            <tr>
+              <td>{{ lote.insumo.nombre }}</td>
+              <td><span class="badge bg-secondary">{{ lote.insumo.get_categoria_display }}</span></td>
+              <td class="text-end">{{ lote.cantidad_inicial|floatformat:1 }}</td>
+              <td class="text-end fw-semibold {% if lote.cantidad_actual == 0 %}text-danger{% else %}text-success{% endif %}">
+                {{ lote.cantidad_actual|floatformat:1 }}
+              </td>
+              <td>${{ lote.precio_unitario_compra }}</td>
+              <td class="text-muted small">{{ lote.orden_compra.folio|default:"—" }}</td>
+              <td class="text-muted small">{{ lote.fecha_recepcion|date:"d/m/Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-4">Sin entradas registradas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+Using existing test database for alias 'default'...
+
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.019s
+
+OK
+Preserving test database for alias 'default'...
+

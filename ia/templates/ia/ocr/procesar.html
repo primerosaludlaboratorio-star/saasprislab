@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Procesar Receta con OCR - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-zone {
+        border: 3px dashed #3498db;
+        border-radius: 15px;
+        padding: 60px 20px;
+        text-align: center;
+        transition: all 0.3s;
+        cursor: pointer;
+        background-color: #f8f9fa;
+    }
+    .upload-zone:hover {
+        border-color: #2980b9;
+        background-color: #e3f2fd;
+        transform: scale(1.02);
+    }
+    .upload-zone.dragging {
+        border-color: #2ecc71;
+        background-color: #d4edda;
+    }
+    .preview-image {
+        max-width: 100%;
+        max-height: 400px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    .feature-card {
+        border-left: 4px solid #3498db;
+        transition: all 0.2s;
+    }
+    .feature-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'ia:dashboard' %}">Dashboard IA</a></li>
+            <li class="breadcrumb-item active">Procesar Receta (OCR)</li>
+        </ol>
+    </nav>
+    
+    <!-- Título -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-camera text-primary"></i> Procesamiento OCR de Recetas Médicas</h2>
+            <p class="text-muted">Extrae automáticamente estudios de laboratorio desde imágenes de recetas</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Formulario de Carga -->
+        <div class="col-md-7">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-upload"></i> Subir Imagen de Receta
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="formOCR">
+                        {% csrf_token %}
+                        
+                        <!-- Zona de Drop -->
+                        <div class="upload-zone" id="dropZone">
+                            <i class="fas fa-cloud-upload-alt fa-4x text-primary mb-3"></i>
+                            <h5>Arrastra una imagen aquí</h5>
+                            <p class="text-muted">o haz clic para seleccionar</p>
+                            <input type="file" name="{{ form.imagen_receta.name }}" 
+                                   id="{{ form.imagen_receta.id_for_label }}" 
+                                   accept="image/*" 
+                                   class="d-none" required>
+                            <button type="button" class="btn btn-primary mt-3" onclick="document.getElementById('{{ form.imagen_receta.id_for_label }}').click();">
+                                <i class="fas fa-folder-open"></i> Seleccionar Archivo
+                            </button>
+                        </div>
+                        
+                        <!-- Preview de la imagen -->
+                        <div id="previewZone" class="mt-4 text-center d-none">
+                            <h6>Vista Previa:</h6>
+                            <img id="previewImage" class="preview-image mb-3" alt="Vista previa">
+                            <p id="fileName" class="text-muted"></p>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="clearPreview()">
+                                <i class="fas fa-times"></i> Cambiar Imagen
+                            </button>
+                        </div>
+                        
+                        <!-- Botón de Procesar -->
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-success btn-lg btn-block" id="btnProcesar" disabled>
+                                <i class="fas fa-magic"></i> Procesar con OCR
+                            </button>
+                        </div>
+                        
+                        <!-- Ayuda -->
+                        <div class="alert alert-info mt-3">
+                            <strong><i class="fas fa-lightbulb"></i> Consejo:</strong>
+                            Para mejores resultados, asegúrate de que la imagen sea clara, con buena iluminación y que el texto sea legible.
+                        </div>
+                        
+                        {% if not api_configurada %}
+                        <div class="alert alert-warning mt-3">
+                            <strong><i class="fas fa-exclamation-triangle"></i> Modo Demostración:</strong>
+                            Las APIs de Google Cloud no están configuradas. El sistema usará datos de ejemplo.
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Información y Características -->
+        <div class="col-md-5">
+            <div class="card shadow mb-3">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-info-circle"></i> ¿Cómo Funciona?
+                </div>
+                <div class="card-body">
+                    <ol class="mb-0">
+                        <li class="mb-2">Sube una imagen clara de la receta médica</li>
+                        <li class="mb-2">El OCR extrae el texto automáticamente</li>
+                        <li class="mb-2">El sistema detecta estudios de laboratorio</li>
+                        <li class="mb-2">Calcula el costo total estimado</li>
+                        <li>Puedes crear una orden directamente</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-star"></i> Características
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item feature-card">
+                            <h6><i class="fas fa-check-circle text-success"></i> Google Cloud Vision</h6>
+                            <small class="text-muted">OCR de clase mundial con 99% de precisión</small>
+                        </div>
+                        <div class="list-group-item feature-card">
+                            <h6><i class="fas fa-check-circle text-success"></i> Detección Inteligente</h6>
+                            <small class="text-muted">Fuzzy matching para identificar estudios</small>
+                        </div>
+                        <div class="list-group-item feature-card">
+                            <h6><i class="fas fa-check-circle text-success"></i> Cálculo Automático</h6>
+                            <small class="text-muted">Precio total y nivel de confianza</small>
+                        </div>
+                        <div class="list-group-item feature-card">
+                            <h6><i class="fas fa-check-circle text-success"></i> Creación de Órdenes</h6>
+                            <small class="text-muted">Convierte resultados en orden inmediatamente</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('{{ form.imagen_receta.id_for_label }}');
+const previewZone = document.getElementById('previewZone');
+const previewImage = document.getElementById('previewImage');
+const fileName = document.getElementById('fileName');
+const btnProcesar = document.getElementById('btnProcesar');
+
+// Eventos de Drag & Drop
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragging');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragging');
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragging');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        fileInput.files = files;
+        handleFileSelect(files[0]);
+    }
+});
+
+// Evento de cambio en input file
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+        handleFileSelect(e.target.files[0]);
+    }
+});
+
+// Función para manejar la selección de archivo
+function handleFileSelect(file) {
+    if (!file.type.startsWith('image/')) {
+        alert('Por favor, selecciona un archivo de imagen válido.');
+        return;
+    }
+    
+    // Mostrar preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        previewImage.src = e.target.result;
+        fileName.textContent = file.name;
+        previewZone.classList.remove('d-none');
+        dropZone.classList.add('d-none');
+        btnProcesar.disabled = false;
+    };
+    reader.readAsDataURL(file);
+}
+
+// Función para limpiar preview
+function clearPreview() {
+    previewZone.classList.add('d-none');
+    dropZone.classList.remove('d-none');
+    fileInput.value = '';
+    btnProcesar.disabled = true;
+}
+
+// Animación de procesamiento
+document.getElementById('formOCR').addEventListener('submit', () => {
+    btnProcesar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+    btnProcesar.disabled = true;
+});
+</script>
+{% endblock %}

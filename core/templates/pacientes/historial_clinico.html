@@ -1,0 +1,571 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+/* ==============================================================================
+   ESTILOS PERSONALIZADOS PARA TIMELINE VERTICAL
+   ============================================================================== */
+
+.expediente-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.stats-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.stats-card .stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.stats-card .stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.alert-card {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+}
+
+.alert-card.critical {
+    background: #f8d7da;
+    border-left-color: #dc3545;
+}
+
+/* Timeline Vertical */
+.timeline {
+    position: relative;
+    padding-left: 0;
+    list-style: none;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 50px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-event {
+    position: relative;
+    margin-bottom: 2rem;
+    padding-left: 120px;
+}
+
+.timeline-date {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100px;
+    text-align: right;
+    padding-right: 20px;
+}
+
+.timeline-date-day {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #667eea;
+    line-height: 1;
+}
+
+.timeline-date-month {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-transform: uppercase;
+}
+
+.timeline-date-time {
+    font-size: 0.75rem;
+    color: #adb5bd;
+}
+
+.timeline-icon {
+    position: absolute;
+    left: 35px;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 3px solid #667eea;
+    z-index: 2;
+}
+
+.timeline-icon.consulta {
+    border-color: #28a745;
+}
+
+.timeline-icon.laboratorio {
+    border-color: #dc3545;
+}
+
+.timeline-icon.imagen {
+    border-color: #17a2b8;
+}
+
+.timeline-icon.receta {
+    border-color: #007bff;
+}
+
+.timeline-content {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.3s;
+}
+
+.timeline-content:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateX(5px);
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.timeline-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #212529;
+    margin: 0;
+}
+
+.timeline-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+}
+
+.timeline-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.timeline-meta i {
+    margin-right: 0.25rem;
+}
+
+.timeline-resumen {
+    color: #495057;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.timeline-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-sm {
+    font-size: 0.875rem;
+}
+
+/* Badges de Estado */
+.badge.bg-success { background-color: #28a745 !important; }
+.badge.bg-warning { background-color: #ffc107 !important; color: #212529 !important; }
+.badge.bg-danger { background-color: #dc3545 !important; }
+.badge.bg-info { background-color: #17a2b8 !important; }
+.badge.bg-primary { background-color: #007bff !important; }
+.badge.bg-secondary { background-color: #6c757d !important; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .timeline::before {
+        left: 20px;
+    }
+    
+    .timeline-event {
+        padding-left: 60px;
+    }
+    
+    .timeline-date {
+        position: static;
+        text-align: left;
+        margin-bottom: 0.5rem;
+        width: auto;
+        padding-right: 0;
+    }
+    
+    .timeline-icon {
+        left: 5px;
+    }
+}
+
+/* Modo Impresión */
+@media print {
+    .filter-card,
+    .timeline-actions,
+    .btn,
+    .navbar,
+    .sidebar,
+    .island-sidebar {
+        display: none !important;
+    }
+    
+    .timeline-content {
+        box-shadow: none;
+        border: 1px solid #dee2e6;
+    }
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+
+/* Loading State */
+.loading-spinner {
+    text-align: center;
+    padding: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ==============================================================================
+     ENCABEZADO DEL EXPEDIENTE
+     ============================================================================== -->
+<div class="expediente-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 mb-1">
+                <i class="fas fa-user-circle me-2"></i>
+                {{ paciente.nombre_completo }}
+            </h1>
+            <p class="mb-0">
+                {% if paciente.edad %}
+                    <span class="me-3"><i class="fas fa-birthday-cake me-1"></i> {{ paciente.edad }} años</span>
+                {% endif %}
+                {% if paciente.sexo %}
+                    <span class="me-3"><i class="fas fa-venus-mars me-1"></i> {{ paciente.get_sexo_display }}</span>
+                {% endif %}
+                {% if paciente.telefono %}
+                    <span class="me-3"><i class="fas fa-phone me-1"></i> {{ paciente.telefono }}</span>
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'exportar_historial_pdf' paciente.id %}" class="btn btn-light" target="_blank">
+                <i class="fas fa-file-pdf me-1"></i> Exportar Historial
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     PANEL DE ESTADÍSTICAS
+     ============================================================================== -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="stats-card">
+            <div class="stat-number">{{ estadisticas.consultas }}</div>
+            <div class="stat-label">Consultas</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stats-card">
+            <div class="stat-number">{{ estadisticas.laboratorios }}</div>
+            <div class="stat-label">Laboratorios</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stats-card">
+            <div class="stat-number">{{ estadisticas.imagenes }}</div>
+            <div class="stat-label">Imágenes</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stats-card">
+            <div class="stat-number">{{ estadisticas.recetas }}</div>
+            <div class="stat-label">Recetas</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stats-card">
+            <div class="stat-number text-danger">{{ estadisticas.alertas }}</div>
+            <div class="stat-label">Alertas</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stats-card">
+            <div class="stat-number">{{ estadisticas.total_eventos }}</div>
+            <div class="stat-label">Total</div>
+        </div>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     ALERTAS CRÍTICAS
+     ============================================================================== -->
+{% if alertas %}
+<div class="mb-4">
+    <h4 class="mb-3"><i class="fas fa-exclamation-triangle text-warning me-2"></i> Alertas Activas</h4>
+    {% for alerta in alertas %}
+    <div class="alert-card critical">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong><i class="fas {{ alerta.icono }} me-2"></i>{{ alerta.titulo }}</strong>
+                <p class="mb-0 mt-1">{{ alerta.resumen }}</p>
+                <small class="text-muted">{{ alerta.tiempo }}</small>
+            </div>
+            <a href="{{ alerta.url }}" class="btn btn-sm btn-danger">Ver Detalles</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- ==============================================================================
+     FILTROS Y BÚSQUEDA
+     ============================================================================== -->
+<div class="filter-card">
+    <form method="GET" id="filtros-timeline">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Tipo de evento</label>
+                <select name="tipo" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="CONSULTA" {% if filtros_activos.tipo == 'CONSULTA' %}selected{% endif %}>Consultas</option>
+                    <option value="LABORATORIO" {% if filtros_activos.tipo == 'LABORATORIO' %}selected{% endif %}>Laboratorios</option>
+                    <option value="IMAGEN" {% if filtros_activos.tipo == 'IMAGEN' %}selected{% endif %}>Imágenes</option>
+                    <option value="RECETA" {% if filtros_activos.tipo == 'RECETA' %}selected{% endif %}>Recetas</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">Período</label>
+                <select name="periodo" class="form-select">
+                    <option value="7" {% if filtros_activos.periodo == '7' %}selected{% endif %}>Últimos 7 días</option>
+                    <option value="30" {% if filtros_activos.periodo == '30' %}selected{% endif %}>Últimos 30 días</option>
+                    <option value="90" {% if filtros_activos.periodo == '90' %}selected{% endif %}>Últimos 3 meses</option>
+                    <option value="365" {% if filtros_activos.periodo == '365' %}selected{% endif %}>Último año</option>
+                    <option value="all" {% if filtros_activos.periodo == 'all' %}selected{% endif %}>Todo el historial</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">Médico</label>
+                <select name="medico" class="form-select">
+                    <option value="">Todos</option>
+                    {% for medico in medicos %}
+                    <option value="{{ medico.id }}" {% if filtros_activos.medico == medico.id|stringformat:"s" %}selected{% endif %}>
+                        {{ medico.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">Buscar</label>
+                <input type="text" name="q" class="form-control" 
+                       placeholder="Diagnóstico, estudio..." 
+                       value="{{ filtros_activos.busqueda }}">
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-filter me-1"></i> Aplicar filtros
+            </button>
+            <a href="?" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-1"></i> Limpiar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- ==============================================================================
+     TIMELINE CRONOLÓGICO
+     ============================================================================== -->
+<div class="mb-4">
+    <h4 class="mb-3">
+        <i class="fas fa-history me-2"></i> 
+        Historial Clínico
+        <span class="badge bg-secondary">{{ timeline|length }} eventos</span>
+    </h4>
+    
+    {% if timeline %}
+    <div class="timeline">
+        {% for evento in timeline %}
+        <div class="timeline-event">
+            <!-- Fecha y Hora -->
+            <div class="timeline-date">
+                <div class="timeline-date-day">{{ evento.fecha|date:"d" }}</div>
+                <div class="timeline-date-month">{{ evento.fecha|date:"M Y" }}</div>
+                <div class="timeline-date-time">{{ evento.fecha|date:"H:i" }}</div>
+            </div>
+            
+            <!-- Icono con línea conectora -->
+            <div class="timeline-icon {{ evento.tipo|lower }}">
+                <i class="fas {{ evento.icono }}"></i>
+            </div>
+            
+            <!-- Contenido del evento -->
+            <div class="timeline-content">
+                <!-- Encabezado con título y badge de estado -->
+                <div class="timeline-header">
+                    <h5 class="timeline-title">{{ evento.titulo }}</h5>
+                    <span class="badge timeline-badge bg-{{ evento.color_badge }}">
+                        {{ evento.estado }}
+                    </span>
+                </div>
+                
+                <!-- Metadata (médico, folio, etc.) -->
+                <div class="timeline-meta">
+                    <span>
+                        <i class="fas fa-user-md"></i>
+                        {{ evento.doctor.nombre }}
+                    </span>
+                    {% if evento.metadata.folio %}
+                    <span>
+                        <i class="fas fa-barcode"></i>
+                        {{ evento.metadata.folio }}
+                    </span>
+                    {% endif %}
+                    {% if evento.prioridad == 'URGENTE' %}
+                    <span class="badge bg-danger">URGENTE</span>
+                    {% endif %}
+                </div>
+                
+                <!-- Resumen -->
+                <div class="timeline-resumen">
+                    {{ evento.resumen|truncatewords:30 }}
+                </div>
+                
+                <!-- Botones de acción -->
+                <div class="timeline-actions">
+                    {% if 'ver' in evento.acciones %}
+                    <a href="{{ evento.url_detalle }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye me-1"></i> Ver
+                    </a>
+                    {% endif %}
+                    
+                    {% if evento.archivos %}
+                        {% for archivo in evento.archivos %}
+                            {% if archivo.disponible and archivo.url %}
+                            <a href="{{ archivo.url }}" class="btn btn-sm btn-outline-success" target="_blank">
+                                <i class="fas fa-external-link-alt me-1"></i> Ver PDF en Drive
+                            </a>
+                            {% if 'descargar' in evento.acciones %}
+                            <a href="{{ archivo.url }}" class="btn btn-sm btn-outline-secondary" download>
+                                <i class="fas fa-download me-1"></i> Descargar
+                            </a>
+                            {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <span class="badge bg-secondary">Procesando...</span>
+                    {% endif %}
+                    
+                    {% if 'compartir' in evento.acciones and evento.archivos %}
+                    <button class="btn btn-sm btn-outline-info" onclick="compartir('{{ evento.titulo }}')">
+                        <i class="fas fa-share-alt me-1"></i> Compartir
+                    </button>
+                    {% endif %}
+                    
+                    {% if 'imprimir' in evento.acciones %}
+                    <button class="btn btn-sm btn-outline-dark" onclick="window.print()">
+                        <i class="fas fa-print me-1"></i> Imprimir
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="empty-state">
+        <i class="fas fa-folder-open"></i>
+        <h4>No hay eventos registrados</h4>
+        <p>El historial clínico de este paciente está vacío.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Función para compartir
+function compartir(titulo) {
+    if (navigator.share) {
+        navigator.share({
+            title: titulo,
+            text: 'Documento médico de PRISLAB',
+            url: window.location.href
+        }).then(() => {
+            console.log('Compartido exitosamente');
+        }).catch((error) => {
+            console.error('Error al compartir:', error);
+        });
+    } else {
+        // Fallback: copiar al portapapeles
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            alert('Link copiado al portapapeles');
+        });
+    }
+}
+
+// Auto-submit de filtros al cambiar
+document.querySelectorAll('#filtros-timeline select').forEach(select => {
+    select.addEventListener('change', () => {
+        document.getElementById('filtros-timeline').submit();
+    });
+});
+</script>
+{% endblock %}

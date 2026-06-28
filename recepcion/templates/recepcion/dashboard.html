@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Recepción - Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2><i class="fas fa-clinic-medical"></i> Dashboard de Recepción</h2>
+    <p class="text-muted">Gestión de pacientes y citas del día</p>
+
+    <!-- Métricas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ total_citas_hoy }}</h3>
+                    <p class="mb-0">Citas Hoy</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ citas_pendientes }}</h3>
+                    <p class="mb-0">Pendientes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h3 class="text-info">{{ citas_en_proceso }}</h3>
+                    <p class="mb-0">En Proceso</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h3 class="text-success">{{ citas_finalizadas }}</h3>
+                    <p class="mb-0">Finalizadas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <a href="{% url 'recepcion:registrar_paciente' %}" class="card text-center shadow-sm text-decoration-none">
+                <div class="card-body">
+                    <i class="fas fa-user-plus fa-3x text-primary mb-3"></i>
+                    <h5>Registrar Paciente</h5>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'recepcion:buscar_paciente' %}" class="card text-center shadow-sm text-decoration-none">
+                <div class="card-body">
+                    <i class="fas fa-search fa-3x text-success mb-3"></i>
+                    <h5>Buscar Paciente</h5>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'recepcion:agendar_cita' %}" class="card text-center shadow-sm text-decoration-none">
+                <div class="card-body">
+                    <i class="fas fa-calendar-plus fa-3x text-info mb-3"></i>
+                    <h5>Agendar Cita</h5>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'recepcion:lista_espera' %}" class="card text-center shadow-sm text-decoration-none">
+                <div class="card-body">
+                    <i class="fas fa-clock fa-3x text-warning mb-3"></i>
+                    <h5>Lista de Espera</h5>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Próximas Citas -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-calendar-check"></i> Próximas Citas</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Hora</th>
+                            <th>Paciente</th>
+                            <th>Médico</th>
+                            <th>Motivo</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cita in proximas_citas %}
+                        <tr>
+                            {# FIX CONTRATO UI: CitaMedica usa hora_cita / motivo (no hora / tipo) #}
+                            <td><strong>{{ cita.hora_cita|time:"H:i" }}</strong></td>
+                            <td>{{ cita.paciente.nombre_completo }}</td>
+                            <td>{{ cita.medico.nombre_completo }}</td>
+                            <td><span class="badge bg-light text-dark text-truncate d-inline-block" style="max-width:12rem;" title="{{ cita.motivo }}">{{ cita.motivo|truncatechars:40 }}</span></td>
+                            <td><span class="badge bg-warning">{{ cita.get_estado_display }}</span></td>
+                            <td>
+                                <a href="{% url 'recepcion:check_in_paciente' cita.id %}" class="btn btn-sm btn-success">
+                                    <i class="fas fa-check"></i> Check-in
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No hay citas pendientes</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

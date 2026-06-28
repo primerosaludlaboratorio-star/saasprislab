@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Acciones de PRIS - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>
+                <i class="bi bi-robot"></i> Acciones de PRIS - Pendientes de Validación
+            </h2>
+            <p class="text-muted">Revisa y valida las acciones realizadas por PRIS</p>
+        </div>
+    </div>
+    
+    {% if acciones %}
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Solicitado por</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for accion in acciones %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-info">{{ accion.get_tipo_accion_display }}</span>
+                            </td>
+                            <td>{{ accion.descripcion|truncatewords:15 }}</td>
+                            <td>{{ accion.usuario_solicitante.get_full_name|default:accion.usuario_solicitante.username }}</td>
+                            <td>{{ accion.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if accion.pendiente_validacion %}
+                                <span class="badge bg-warning">Pendiente</span>
+                                {% else %}
+                                <span class="badge bg-success">Validado</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if accion.pendiente_validacion %}
+                                <a href="{% url 'validar_accion_pris' accion.id %}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-check-circle"></i> Validar
+                                </a>
+                                {% else %}
+                                <small class="text-muted">
+                                    Validado por: {{ accion.validado_por.get_full_name|default:accion.validado_por.username }}<br>
+                                    {{ accion.fecha_validacion|date:"d/m/Y H:i" }}
+                                </small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> No hay acciones pendientes de validación.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

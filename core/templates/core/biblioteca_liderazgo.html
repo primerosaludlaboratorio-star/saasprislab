@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Biblioteca de Liderazgo - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="bi bi-book"></i> Biblioteca de Liderazgo
+                </h2>
+                <button class="btn btn-success" onclick="abrirModalAgregarLibro()">
+                    <i class="bi bi-plus-circle"></i> Agregar Libro
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-secondary">
+                <div class="card-body">
+                    <h5 class="card-title">Total</h5>
+                    <h2>{{ total }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Por Leer</h5>
+                    <h2>{{ por_leer }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Leyendo</h5>
+                    <h2>{{ leyendo }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Terminados</h5>
+                    <h2>{{ terminados }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Galería de Libros -->
+    <div class="row">
+        {% for libro in libros %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ libro.titulo }}</h5>
+                    <p class="card-text">
+                        <small class="text-muted">Autor: {{ libro.autor }}</small><br>
+                        <small class="text-muted">Agregado: {{ libro.fecha_agregado|date:"d/m/Y" }}</small>
+                    </p>
+                    <p class="card-text">{{ libro.descripcion|truncatewords:20 }}</p>
+                    <div class="mb-3">
+                        <span class="badge 
+                            {% if libro.estado_lectura == 'POR_LEER' %}bg-warning
+                            {% elif libro.estado_lectura == 'LEYENDO' %}bg-info
+                            {% else %}bg-success{% endif %}">
+                            {{ libro.get_estado_lectura_display }}
+                        </span>
+                    </div>
+                    <select class="form-select form-select-sm" onchange="cambiarEstado({{ libro.id }}, this.value)">
+                        <option value="POR_LEER" {% if libro.estado_lectura == 'POR_LEER' %}selected{% endif %}>Por Leer</option>
+                        <option value="LEYENDO" {% if libro.estado_lectura == 'LEYENDO' %}selected{% endif %}>Leyendo</option>
+                        <option value="TERMINADO" {% if libro.estado_lectura == 'TERMINADO' %}selected{% endif %}>Terminado</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No hay libros en la biblioteca aún.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function cambiarEstado(libroId, nuevoEstado) {
+    fetch(`/director/biblioteca/api/cambiar-estado/${libroId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            estado_lectura: nuevoEstado
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Error: ' + data.mensaje);
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('Error al cambiar estado del libro');
+    });
+    }
+    
+    function abrirModalAgregarLibro() {
+        document.getElementById('formLibro').reset();
+        new bootstrap.Modal(document.getElementById('modalAgregarLibro')).show();
+    }
+    
+    document.getElementById('formLibro').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        
+        const response = await fetch('/director/biblioteca/agregar/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        const data = await response.json();
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.mensaje || 'No se pudo agregar el libro'));
+        }
+    });
+</script>
+
+<!-- Modal para Agregar Libro -->
+<div class="modal fade" id="modalAgregarLibro" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-book"></i> Agregar Nuevo Libro</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formLibro">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Título del Libro *</label>
+                        <input type="text" name="titulo" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Autor *</label>
+                        <input type="text" name="autor" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">URL de Portada (Opcional)</label>
+                        <input type="url" name="portada_url" class="form-control" placeholder="https://...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Resumen Ejecutivo *</label>
+                        <textarea name="resumen_ejecutivo" class="form-control" rows="3" required placeholder="Lo que el líder debe aprender de este libro"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Aplicación Práctica</label>
+                        <textarea name="aplicacion_practica" class="form-control" rows="3" placeholder="Cómo aplicar estas enseñanzas en la empresa"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Estado de Lectura</label>
+                        <select name="estado_lectura" class="form-select">
+                            <option value="POR_LEER">Por Leer</option>
+                            <option value="LEYENDO">Leyendo</option>
+                            <option value="TERMINADO">Terminado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Agregar Libro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

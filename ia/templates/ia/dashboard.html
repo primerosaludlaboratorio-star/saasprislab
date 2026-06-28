@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard IA - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        border-left: 4px solid;
+        transition: transform 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    .stat-card.ocr { border-color: #3498db; }
+    .stat-card.voz { border-color: #9b59b6; }
+    .stat-card.gemini { border-color: #e74c3c; }
+    .stat-card.semana { border-color: #2ecc71; }
+    
+    .icon-big {
+        font-size: 3rem;
+        opacity: 0.2;
+        position: absolute;
+        right: 20px;
+        top: 20px;
+    }
+    
+    .recent-item {
+        border-left: 3px solid #3498db;
+        padding-left: 15px;
+        margin-bottom: 15px;
+        transition: all 0.2s;
+    }
+    .recent-item:hover {
+        background-color: #f8f9fa;
+        border-left-width: 5px;
+    }
+    
+    .confidence-badge {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+    }
+    .confidence-high { background-color: #2ecc71; color: white; }
+    .confidence-medium { background-color: #f39c12; color: white; }
+    .confidence-low { background-color: #e74c3c; color: white; }
+    
+    .quick-action-btn {
+        height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-decoration: none;
+        transition: all 0.3s;
+        border-radius: 10px;
+    }
+    .quick-action-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    }
+    .quick-action-btn i {
+        font-size: 3rem;
+        margin-bottom: 10px;
+    }
+    
+    .api-status {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+        animation: pulse 2s infinite;
+    }
+    .api-status.active { background-color: #2ecc71; }
+    .api-status.inactive { background-color: #e74c3c; }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Título Principal -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-brain text-primary"></i> Dashboard de Inteligencia Artificial</h2>
+                    <p class="text-muted">Módulo de IA: OCR, Transcripción de Voz y Asistente Médico con Gemini</p>
+                </div>
+                <div>
+                    <span class="api-status {% if api_configurada %}active{% else %}inactive{% endif %}"></span>
+                    <span class="badge {% if api_configurada %}badge-success{% else %}badge-warning{% endif %}">
+                        Google Cloud APIs: {% if api_configurada %}Activas{% else %}Configuración Pendiente{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estadísticas Principales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card ocr">
+                <div class="card-body position-relative">
+                    <i class="fas fa-camera icon-big"></i>
+                    <h6 class="text-muted">Procesamiento OCR</h6>
+                    <h2>{{ total_ocr }}</h2>
+                    <small>Recetas escaneadas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card voz">
+                <div class="card-body position-relative">
+                    <i class="fas fa-microphone icon-big"></i>
+                    <h6 class="text-muted">Transcripciones</h6>
+                    <h2>{{ total_transcripciones }}</h2>
+                    <small>Audios transcritos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card gemini">
+                <div class="card-body position-relative">
+                    <i class="fas fa-chart-line icon-big"></i>
+                    <h6 class="text-muted">Confianza Promedio</h6>
+                    <h2>{{ promedio_confianza_ocr }}%</h2>
+                    <small>OCR | {{ promedio_confianza_voz }}% Voz</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card semana">
+                <div class="card-body position-relative">
+                    <i class="fas fa-calendar-week icon-big"></i>
+                    <h6 class="text-muted">Esta Semana</h6>
+                    <h2>{{ ocr_semana|add:transcripciones_semana }}</h2>
+                    <small>Procesamiento total</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Acciones Rápidas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5><i class="fas fa-bolt text-warning"></i> Acciones Rápidas</h5>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{% url 'ia:procesar_receta' %}" class="btn btn-primary quick-action-btn w-100">
+                <i class="fas fa-camera"></i>
+                <span>Escanear Receta (OCR)</span>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{% url 'ia:transcribir_audio' %}" class="btn btn-purple quick-action-btn w-100">
+                <i class="fas fa-microphone"></i>
+                <span>Transcribir Audio</span>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{% url 'ia:asistente_medico' %}" class="btn btn-success quick-action-btn w-100">
+                <i class="fas fa-user-md"></i>
+                <span>Asistente Médico</span>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{% url 'admin:ia_cotizacionocr_changelist' %}" class="btn btn-secondary quick-action-btn w-100">
+                <i class="fas fa-history"></i>
+                <span>Ver Historial</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Procesamiento Reciente -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-camera"></i> OCR Recientes
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    {% if ocr_recientes %}
+                        {% for cotizacion in ocr_recientes %}
+                        <div class="recent-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ cotizacion.fecha_creacion|date:"d/m/Y H:i" }}</strong>
+                                    <p class="mb-1 small">{{ cotizacion.estudios_detectados|length }} estudios detectados</p>
+                                    <p class="mb-0 text-muted small">Total: ${{ cotizacion.total_calculado }}</p>
+                                </div>
+                                <div>
+                                    {% if cotizacion.confianza_promedio >= 0.8 %}
+                                    <span class="confidence-badge confidence-high">{{ cotizacion.confianza_promedio|floatformat:0 }}%</span>
+                                    {% elif cotizacion.confianza_promedio >= 0.6 %}
+                                    <span class="confidence-badge confidence-medium">{{ cotizacion.confianza_promedio|floatformat:0 }}%</span>
+                                    {% else %}
+                                    <span class="confidence-badge confidence-low">{{ cotizacion.confianza_promedio|floatformat:0 }}%</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <a href="{% url 'ia:resultados_ocr' cotizacion.pk %}" class="btn btn-sm btn-outline-primary mt-2">
+                                <i class="fas fa-eye"></i> Ver Detalles
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-5">
+                            <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                            Aún no hay procesamiento OCR.<br>
+                            <a href="{% url 'ia:procesar_receta' %}" class="btn btn-primary mt-3">Escanear Primera Receta</a>
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-purple text-white">
+                    <i class="fas fa-microphone"></i> Transcripciones Recientes
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    {% if transcripciones_recientes %}
+                        {% for transcripcion in transcripciones_recientes %}
+                        <div class="recent-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ transcripcion.fecha_creacion|date:"d/m/Y H:i" }}</strong>
+                                    <p class="mb-1 small">Duración: {{ transcripcion.duracion_audio }} seg</p>
+                                    <p class="mb-0 text-muted small">{{ transcripcion.texto_transcrito|truncatewords:15 }}</p>
+                                </div>
+                                <div>
+                                    {% if transcripcion.confianza_transcripcion >= 0.8 %}
+                                    <span class="confidence-badge confidence-high">{{ transcripcion.confianza_transcripcion|floatformat:0 }}%</span>
+                                    {% elif transcripcion.confianza_transcripcion >= 0.6 %}
+                                    <span class="confidence-badge confidence-medium">{{ transcripcion.confianza_transcripcion|floatformat:0 }}%</span>
+                                    {% else %}
+                                    <span class="confidence-badge confidence-low">{{ transcripcion.confianza_transcripcion|floatformat:0 }}%</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <a href="{% url 'ia:resultados_transcripcion' transcripcion.pk %}" class="btn btn-sm btn-outline-purple mt-2">
+                                <i class="fas fa-eye"></i> Ver Detalles
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-5">
+                            <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                            Aún no hay transcripciones.<br>
+                            <a href="{% url 'ia:transcribir_audio' %}" class="btn btn-purple mt-3">Transcribir Primer Audio</a>
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if not api_configurada %}
+    <!-- Alerta de Configuración -->
+    <div class="alert alert-warning mt-4" role="alert">
+        <h5><i class="fas fa-exclamation-triangle"></i> APIs de Google Cloud no configuradas</h5>
+        <p class="mb-0">
+            Para activar el procesamiento OCR y transcripción de audio en tiempo real, 
+            configure las variables de entorno <code>GOOGLE_API_KEY</code>, <code>GOOGLE_CLOUD_PROJECT</code> 
+            y <code>GOOGLE_APPLICATION_CREDENTIALS</code> en <code>config/settings.py</code>.
+        </p>
+        <p class="mb-0 mt-2">
+            <strong>Mientras tanto:</strong> El sistema funcionará con datos de demostración simulados.
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+    .btn-purple {
+        background-color: #9b59b6;
+        border-color: #9b59b6;
+        color: white;
+    }
+    .btn-purple:hover {
+        background-color: #8e44ad;
+        border-color: #8e44ad;
+        color: white;
+    }
+    .bg-purple {
+        background-color: #9b59b6 !important;
+    }
+    .btn-outline-purple {
+        border-color: #9b59b6;
+        color: #9b59b6;
+    }
+    .btn-outline-purple:hover {
+        background-color: #9b59b6;
+        color: white;
+    }
+</style>
+{% endblock %}

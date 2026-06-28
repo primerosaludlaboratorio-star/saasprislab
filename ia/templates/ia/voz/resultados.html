@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Resultados Transcripción - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .entidad-tag {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 15px;
+        margin: 5px;
+        font-size: 0.9em;
+        transition: transform 0.2s;
+    }
+    .entidad-tag:hover {
+        transform: scale(1.05);
+    }
+    .tag-sintomas { background-color: #e74c3c; color: white; }
+    .tag-duracion { background-color: #3498db; color: white; }
+    .tag-antecedentes { background-color: #f39c12; color: white; }
+    .tag-alergias { background-color: #e67e22; color: white; }
+    .tag-medicamentos { background-color: #9b59b6; color: white; }
+    .tag-estudios { background-color: #2ecc71; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'ia:dashboard' %}">Dashboard IA</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'ia:transcribir_audio' %}">Transcribir Audio</a></li>
+            <li class="breadcrumb-item active">Resultados</li>
+        </ol>
+    </nav>
+    
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-check-circle text-success"></i> Transcripción Completada</h2>
+            <p class="text-muted">{{ transcripcion.fecha_creacion|date:"d/m/Y H:i" }}</p>
+        </div>
+        <div class="col-md-4 text-right">
+            <div class="card bg-purple text-white">
+                <div class="card-body p-3">
+                    <h6 class="mb-0">Confianza</h6>
+                    <h2 class="mb-0">{{ transcripcion.confianza_transcripcion|floatformat:0 }}%</h2>
+                    <small>Duración: {{ transcripcion.duracion_audio }} seg</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow mb-3">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-file-alt"></i> Texto Transcrito
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    <p style="white-space: pre-wrap; line-height: 1.8;">{{ transcripcion.texto_transcrito }}</p>
+                </div>
+            </div>
+            
+            {% if transcripcion.audio %}
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <i class="fas fa-headphones"></i> Audio Original
+                </div>
+                <div class="card-body">
+                    <audio controls class="w-100">
+                        <source src="{{ transcripcion.audio.url }}" type="audio/mpeg">
+                        Tu navegador no soporta el elemento de audio.
+                    </audio>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-brain"></i> Entidades Extraídas
+                </div>
+                <div class="card-body">
+                    {% if entidades %}
+                        {% if entidades.sintomas %}
+                        <h6><i class="fas fa-thermometer-half text-danger"></i> Síntomas</h6>
+                        <div class="mb-3">
+                            {% for sintoma in entidades.sintomas %}
+                            <span class="entidad-tag tag-sintomas">{{ sintoma }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        {% if entidades.duracion %}
+                        <h6><i class="fas fa-clock text-primary"></i> Duración</h6>
+                        <div class="mb-3">
+                            <span class="entidad-tag tag-duracion">{{ entidades.duracion }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if entidades.antecedentes %}
+                        <h6><i class="fas fa-history text-warning"></i> Antecedentes</h6>
+                        <div class="mb-3">
+                            {% for antecedente in entidades.antecedentes %}
+                            <span class="entidad-tag tag-antecedentes">{{ antecedente }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        {% if entidades.alergias %}
+                        <h6><i class="fas fa-exclamation-triangle text-danger"></i> Alergias</h6>
+                        <div class="mb-3">
+                            {% for alergia in entidades.alergias %}
+                            <span class="entidad-tag tag-alergias">{{ alergia }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        {% if entidades.medicamentos_actuales %}
+                        <h6><i class="fas fa-pills text-purple"></i> Medicamentos Actuales</h6>
+                        <div class="mb-3">
+                            {% for medicamento in entidades.medicamentos_actuales %}
+                            <span class="entidad-tag tag-medicamentos">{{ medicamento }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        {% if entidades.estudios_solicitados %}
+                        <h6><i class="fas fa-flask text-success"></i> Estudios Solicitados</h6>
+                        <div class="mb-3">
+                            {% for estudio in entidades.estudios_solicitados %}
+                            <span class="entidad-tag tag-estudios">{{ estudio }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted text-center py-5">
+                            <i class="fas fa-info-circle fa-3x mb-3 d-block"></i>
+                            No se extrajeron entidades específicas de esta transcripción.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card shadow mt-3">
+                <div class="card-body">
+                    <h5 class="mb-3"><i class="fas fa-clipboard-check"></i> Siguiente Paso</h5>
+                    
+                    {% if transcripcion.orden_asociada %}
+                    <div class="alert alert-info">
+                        <strong><i class="fas fa-check-circle"></i> Orden asociada:</strong>
+                        <a href="{% url 'recepcion_lab' %}?folio={{ transcripcion.orden_asociada.folio }}" class="btn btn-primary btn-sm ml-2">
+                            Ver Orden {{ transcripcion.orden_asociada.folio }}
+                        </a>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Puedes usar esta transcripción para:</p>
+                    <ul>
+                        <li>Documentar consulta médica</li>
+                        <li>Llenar notas SOAP</li>
+                        <li>Crear orden de laboratorio</li>
+                    </ul>
+                    {% endif %}
+                    
+                    <a href="{% url 'ia:transcribir_audio' %}" class="btn btn-purple btn-block mt-3">
+                        <i class="fas fa-redo"></i> Transcribir Otro Audio
+                    </a>
+                    <a href="{% url 'ia:dashboard' %}" class="btn btn-outline-secondary btn-block">
+                        <i class="fas fa-home"></i> Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+    .bg-purple { background-color: #9b59b6 !important; }
+    .text-purple { color: #9b59b6 !important; }
+    .btn-purple {
+        background-color: #9b59b6;
+        border-color: #9b59b6;
+        color: white;
+    }
+    .btn-purple:hover {
+        background-color: #8e44ad;
+        border-color: #8e44ad;
+        color: white;
+    }
+</style>
+{% endblock %}

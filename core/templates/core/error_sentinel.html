@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRIS Sentinel - Reparando automaticamente</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #e2e8f0;
+            overflow: hidden;
+        }
+
+        /* Particulas de fondo */
+        .bg-particles {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .particle {
+            position: absolute;
+            width: 4px; height: 4px;
+            background: rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            animation: float-up linear infinite;
+        }
+        @keyframes float-up {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
+        .sentinel-card {
+            position: relative;
+            z-index: 10;
+            max-width: 540px;
+            width: 95%;
+            border-radius: 20px;
+            overflow: hidden;
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            box-shadow:
+                0 0 40px rgba(59, 130, 246, 0.1),
+                0 20px 60px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+        }
+
+        /* Header con animacion de escudo */
+        .sentinel-header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #1e40af 100%);
+            background-size: 200% 200%;
+            animation: gradient-shift 3s ease infinite;
+            padding: 36px 28px 28px;
+            text-align: center;
+            position: relative;
+        }
+        @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .shield-icon {
+            font-size: 3.5rem;
+            display: block;
+            margin-bottom: 14px;
+            animation: shield-pulse 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+        }
+        @keyframes shield-pulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3)); }
+            50% { transform: scale(1.08); filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.5)); }
+        }
+
+        .sentinel-header h4 {
+            font-weight: 700;
+            font-size: 1.3rem;
+            margin-bottom: 6px;
+            letter-spacing: -0.02em;
+        }
+        .sentinel-header p {
+            opacity: 0.85;
+            font-size: 0.88rem;
+        }
+
+        /* Body */
+        .sentinel-body {
+            padding: 32px 28px;
+        }
+
+        /* Pasos de reparacion */
+        .repair-steps {
+            margin-bottom: 28px;
+        }
+        .repair-step {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px 0;
+            opacity: 0.4;
+            transition: all 0.5s ease;
+        }
+        .repair-step.active {
+            opacity: 1;
+        }
+        .repair-step.done {
+            opacity: 0.7;
+        }
+        .repair-step .step-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+            background: rgba(59, 130, 246, 0.15);
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            transition: all 0.5s ease;
+        }
+        .repair-step.active .step-icon {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+            animation: step-glow 1.5s ease-in-out infinite;
+        }
+        @keyframes step-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+        }
+        .repair-step.done .step-icon {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: #22c55e;
+        }
+        .repair-step .step-text {
+            font-size: 0.92rem;
+            color: #94a3b8;
+        }
+        .repair-step.active .step-text {
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+        .repair-step.done .step-text {
+            color: #86efac;
+        }
+
+        /* Barra de progreso */
+        .progress-section {
+            margin-bottom: 24px;
+        }
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #22c55e);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            color: #64748b;
+        }
+        .progress-text .time-left {
+            color: #3b82f6;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        /* Mensaje de detalle */
+        .detail-message {
+            text-align: center;
+            padding: 14px 18px;
+            background: rgba(59, 130, 246, 0.08);
+            border-radius: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            margin-bottom: 24px;
+            font-size: 0.88rem;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        /* Botones */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .btn-sentinel {
+            padding: 10px 22px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-sentinel-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+        .btn-sentinel-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+            color: white;
+        }
+        .btn-sentinel-ghost {
+            background: rgba(100, 116, 139, 0.15);
+            color: #94a3b8;
+            border: 1px solid rgba(100, 116, 139, 0.2);
+        }
+        .btn-sentinel-ghost:hover {
+            background: rgba(100, 116, 139, 0.25);
+            color: #e2e8f0;
+        }
+
+        /* Badge de incidencia */
+        .incident-badge {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.78rem;
+            color: #475569;
+        }
+        .incident-badge i {
+            color: #22c55e;
+        }
+
+        @media (max-width: 480px) {
+            .sentinel-card { border-radius: 16px; }
+            .sentinel-header { padding: 28px 20px 22px; }
+            .sentinel-body { padding: 24px 20px; }
+            .action-buttons { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Particulas decorativas -->
+    <div class="bg-particles" id="particles"></div>
+
+    <div class="sentinel-card">
+        <div class="sentinel-header">
+            <i class="bi bi-shield-check shield-icon"></i>
+            <h4>PRIS Sentinel esta reparando</h4>
+            <p>Se detecto un problema y ya estamos trabajando en la solucion</p>
+        </div>
+
+        <div class="sentinel-body">
+            <!-- Pasos de reparacion -->
+            <div class="repair-steps">
+                <div class="repair-step active" id="step1">
+                    <div class="step-icon"><i class="bi bi-search"></i></div>
+                    <div class="step-text">Detectando origen del problema...</div>
+                </div>
+                <div class="repair-step" id="step2">
+                    <div class="step-icon"><i class="bi bi-wrench"></i></div>
+                    <div class="step-text">Aplicando reparacion automatica...</div>
+                </div>
+                <div class="repair-step" id="step3">
+                    <div class="step-icon"><i class="bi bi-check-circle"></i></div>
+                    <div class="step-text">Verificando que todo este correcto...</div>
+                </div>
+                <div class="repair-step" id="step4">
+                    <div class="step-icon"><i class="bi bi-arrow-repeat"></i></div>
+                    <div class="step-text">Recargando pagina automaticamente...</div>
+                </div>
+            </div>
+
+            <!-- Barra de progreso -->
+            <div class="progress-section">
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="progressBar"></div>
+                </div>
+                <div class="progress-text">
+                    <span>Reparacion en progreso</span>
+                    <span class="time-left" id="timeLeft">{{ tiempo_estimado }}s</span>
+                </div>
+            </div>
+
+            <!-- Detalle -->
+            <div class="detail-message">
+                {{ mensaje_detalle }}<br>
+                <small>La pagina se recargara automaticamente en <strong>{{ mensaje_tiempo }}</strong>.</small>
+            </div>
+
+            <!-- Botones -->
+            <div class="action-buttons">
+                <a href="javascript:history.back()" class="btn-sentinel btn-sentinel-ghost">
+                    <i class="bi bi-arrow-left"></i> Regresar
+                </a>
+                <a href="{{ reload_url }}" class="btn-sentinel btn-sentinel-primary" id="btnReload">
+                    <i class="bi bi-arrow-clockwise"></i> Reintentar
+                </a>
+                <a href="{{ safe_url|default:'/' }}" class="btn-sentinel btn-sentinel-ghost">
+                    <i class="bi bi-house"></i> Ir a inicio
+                </a>
+            </div>
+            <div style="text-align:center; margin-top:12px;">
+                <button class="btn-sentinel btn-sentinel-ghost" style="font-size:0.78rem;" onclick="clearInterval(timer);document.getElementById('timeLeft').textContent='pausado';">
+                    <i class="bi bi-pause-circle"></i> Pausar auto-recarga
+                </button>
+            </div>
+
+            <div class="incident-badge">
+                <i class="bi bi-shield-check"></i>
+                Incidencia registrada en PRIS Sentinel &bull; Modulo: <strong>{{ namespace }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== CONFIGURACION =====
+        const TOTAL_SECONDS = {{ tiempo_estimado }};
+        const RELOAD_URL = "{{ reload_url }}";
+        const STEPS = ['step1', 'step2', 'step3', 'step4'];
+
+        let elapsed = 0;
+        const stepDuration = TOTAL_SECONDS / STEPS.length;
+
+        // ===== PARTICULAS DE FONDO =====
+        (function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 20; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDuration = (5 + Math.random() * 10) + 's';
+                p.style.animationDelay = Math.random() * 5 + 's';
+                p.style.width = (2 + Math.random() * 4) + 'px';
+                p.style.height = p.style.width;
+                container.appendChild(p);
+            }
+        })();
+
+        // ===== PROGRESO Y PASOS =====
+        function updateUI() {
+            elapsed++;
+            const pct = Math.min((elapsed / TOTAL_SECONDS) * 100, 100);
+            document.getElementById('progressBar').style.width = pct + '%';
+
+            const remaining = Math.max(TOTAL_SECONDS - elapsed, 0);
+            document.getElementById('timeLeft').textContent = remaining + 's';
+
+            // Activar pasos progresivamente
+            const currentStep = Math.min(Math.floor(elapsed / stepDuration), STEPS.length - 1);
+            STEPS.forEach((id, i) => {
+                const el = document.getElementById(id);
+                if (i < currentStep) {
+                    el.className = 'repair-step done';
+                    el.querySelector('.step-icon i').className = 'bi bi-check-lg';
+                } else if (i === currentStep) {
+                    el.className = 'repair-step active';
+                } else {
+                    el.className = 'repair-step';
+                }
+            });
+
+            if (elapsed >= TOTAL_SECONDS) {
+                clearInterval(timer);
+                // Marcar ultimo paso como done
+                STEPS.forEach(id => {
+                    const el = document.getElementById(id);
+                    el.className = 'repair-step done';
+                    el.querySelector('.step-icon i').className = 'bi bi-check-lg';
+                });
+                // Recargar
+                setTimeout(() => {
+                    window.location.href = RELOAD_URL;
+                }, 500);
+            }
+        }
+
+        const timer = setInterval(updateUI, 1000);
+    </script>
+</body>
+</html>

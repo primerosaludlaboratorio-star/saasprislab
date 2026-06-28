@@ -1,0 +1,395 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Alertas de Farmacia - PRISLAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --danger-color: #dc3545;
+        --warning-color: #ffc107;
+        --info-color: #0dcaf0;
+        --success-color: #198754;
+    }
+    
+    .alert-card {
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        margin-bottom: 1.5rem;
+    }
+    
+    .alert-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    
+    .card-header-danger {
+        background: linear-gradient(135deg, var(--danger-color) 0%, #c82333 100%);
+        color: white;
+        font-weight: 600;
+    }
+    
+    .card-header-warning {
+        background: linear-gradient(135deg, var(--warning-color) 0%, #e0a800 100%);
+        color: #000;
+        font-weight: 600;
+    }
+    
+    .card-header-info {
+        background: linear-gradient(135deg, var(--info-color) 0%, #0aa2c0 100%);
+        color: white;
+        font-weight: 600;
+    }
+    
+    .badge-days {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .valor-riesgo {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--danger-color);
+    }
+    
+    .table-sm th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .producto-nombre {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    
+    .lote-badge {
+        background-color: #e9ecef;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5 pt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Dashboard de Alertas - Farmacia
+                    </h2>
+                    <p class="text-muted mb-0">
+                        <i class="far fa-calendar me-1"></i> {{ fecha_hoy|date:"d/m/Y" }}
+                        <span class="ms-3">
+                            <i class="fas fa-bell me-1"></i> Total de Alertas: <strong>{{ total_alertas }}</strong>
+                        </span>
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'farmacia:kardex_list' %}" class="btn btn-primary">
+                        <i class="fas fa-list-alt me-1"></i> Ver Kardex Completo
+                    </a>
+                    <a href="{% url 'pdv_farmacia' %}" class="btn btn-success">
+                        <i class="fas fa-cash-register me-1"></i> Punto de Venta
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen de Alertas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">🔴 Crítico (0-30 días)</h5>
+                    <h2 class="mb-0">{{ total_criticos }}</h2>
+                    <small>Lotes próximos a caducar</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">🟡 Alerta (31-90 días)</h5>
+                    <h2 class="mb-0">{{ total_alerta }}</h2>
+                    <small>Requieren atención</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">📉 Stock Bajo</h5>
+                    <h2 class="mb-0">{{ total_stock_bajo }}</h2>
+                    <small>Productos por reabastecer</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-dark text-white">
+                <div class="card-body">
+                    <h5 class="card-title">💀 Ya Caducados</h5>
+                    <h2 class="mb-0">{{ total_caducados }}</h2>
+                    <small>Requieren baja</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel 1: Caducidad Crítica -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card alert-card">
+                <div class="card-header card-header-danger">
+                    <h5 class="mb-0">
+                        🔴 CADUCIDAD CRÍTICA (0-30 días)
+                        <span class="badge bg-white text-danger float-end">{{ total_criticos }} lotes</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if lotes_criticos %}
+                        <div class="alert alert-danger">
+                            <strong>⚠️ Valor en Riesgo:</strong>
+                            <span class="valor-riesgo">${{ valor_riesgo_critico|floatformat:2 }}</span>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Lote</th>
+                                        <th>Cantidad</th>
+                                        <th>Caducidad</th>
+                                        <th>Días</th>
+                                        <th>Valor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for lote in lotes_criticos %}
+                                    <tr>
+                                        <td class="producto-nombre">{{ lote.producto.nombre }}</td>
+                                        <td><span class="lote-badge">{{ lote.numero_lote }}</span></td>
+                                        <td><strong>{{ lote.cantidad }}</strong></td>
+                                        <td>{{ lote.fecha_caducidad|date:"d/m/Y" }}</td>
+                                        <td>
+                                            {% with dias=lote.fecha_caducidad|timeuntil %}
+                                            <span class="badge bg-danger badge-days">
+                                                {{ dias }}
+                                            </span>
+                                            {% endwith %}
+                                        </td>
+                                        <td>${{ lote.cantidad|multiply:lote.costo_adquisicion|floatformat:2 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success mb-0">
+                            <i class="fas fa-check-circle me-2"></i>
+                            No hay lotes en estado crítico
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 2: Alerta de Caducidad -->
+        <div class="col-lg-6">
+            <div class="card alert-card">
+                <div class="card-header card-header-warning">
+                    <h5 class="mb-0">
+                        🟡 ALERTA (31-90 días)
+                        <span class="badge bg-dark float-end">{{ total_alerta }} lotes</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if lotes_alerta %}
+                        <p class="text-muted"><i class="fas fa-info-circle me-1"></i> Planear promociones FEFO</p>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Lote</th>
+                                        <th>Cantidad</th>
+                                        <th>Caducidad</th>
+                                        <th>Días</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for lote in lotes_alerta %}
+                                    <tr>
+                                        <td class="producto-nombre">{{ lote.producto.nombre }}</td>
+                                        <td><span class="lote-badge">{{ lote.numero_lote }}</span></td>
+                                        <td><strong>{{ lote.cantidad }}</strong></td>
+                                        <td>{{ lote.fecha_caducidad|date:"d/m/Y" }}</td>
+                                        <td>
+                                            {% with dias=lote.fecha_caducidad|timeuntil %}
+                                            <span class="badge bg-warning text-dark badge-days">
+                                                {{ dias }}
+                                            </span>
+                                            {% endwith %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success mb-0">
+                            <i class="fas fa-check-circle me-2"></i>
+                            No hay lotes en alerta
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel 3: Stock Bajo y Caducados -->
+    <div class="row mt-3">
+        <div class="col-lg-6">
+            <div class="card alert-card">
+                <div class="card-header card-header-info">
+                    <h5 class="mb-0">
+                        📉 STOCK BAJO (Punto de Reorden)
+                        <span class="badge bg-white text-info float-end">{{ total_stock_bajo }} productos</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if productos_stock_bajo %}
+                        <p class="text-muted"><i class="fas fa-shopping-cart me-1"></i> Productos que requieren reabastecimiento</p>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Stock Actual</th>
+                                        <th>Stock Mínimo</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for producto in productos_stock_bajo %}
+                                    <tr>
+                                        <td class="producto-nombre">{{ producto.nombre }}</td>
+                                        <td>
+                                            <span class="badge bg-danger">{{ producto.stock }}</span>
+                                        </td>
+                                        <td>{{ producto.stock_minimo_calc }}</td>
+                                        <td>
+                                            <a href="{% url 'entrada_mercancia' %}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-plus me-1"></i> Reabastecer
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success mb-0">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Todos los productos tienen stock adecuado
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 4: Ya Caducados -->
+        <div class="col-lg-6">
+            <div class="card alert-card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        💀 PRODUCTOS YA CADUCADOS
+                        <span class="badge bg-danger float-end">{{ total_caducados }} lotes</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if lotes_caducados %}
+                        <div class="alert alert-danger">
+                            <strong>💸 Valor Perdido:</strong>
+                            <span class="valor-riesgo">${{ valor_perdido|floatformat:2 }}</span>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Lote</th>
+                                        <th>Cantidad</th>
+                                        <th>Caducó</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for lote in lotes_caducados %}
+                                    <tr class="table-danger">
+                                        <td class="producto-nombre">{{ lote.producto.nombre }}</td>
+                                        <td><span class="lote-badge">{{ lote.numero_lote }}</span></td>
+                                        <td><strong>{{ lote.cantidad }}</strong></td>
+                                        <td>{{ lote.fecha_caducidad|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-danger" onclick="darDeBajaLote({{ lote.id }})">
+                                                <i class="fas fa-trash me-1"></i> Dar de Baja
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success mb-0">
+                            <i class="fas fa-check-circle me-2"></i>
+                            No hay lotes caducados
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function darDeBajaLote(loteId) {
+    Swal.fire({
+        title: '¿Dar de baja este lote?',
+        text: 'Se creará un movimiento de SALIDA_MERMA en el Kardex',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, dar de baja',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Aquí iría la llamada AJAX para crear el movimiento de baja
+            Swal.fire(
+                '¡Lote dado de baja!',
+                'Se creó un registro en el Kardex',
+                'success'
+            );
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,523 @@
+/**
+ * PRISLAB V5.0 - ESTILOS PARA HOJA DE PAPEL
+ * =========================================
+ * CSS compartido entre vista previa HTML y PDF generado
+ * 
+ * OBJETIVO:
+ * Garantizar que el PDF sea visualmente idéntico a la vista en pantalla
+ */
+
+/* ==============================================================================
+   CONFIGURACIÓN DE PÁGINA (SOLO PARA PDF)
+   ============================================================================== */
+
+@page {
+    size: Letter;  /* 8.5 x 11 inches */
+    margin: 0;
+}
+
+/* ==============================================================================
+   HOJA DE PAPEL (CONTENEDOR PRINCIPAL)
+   ============================================================================== */
+
+.paper-sheet {
+    width: 21.59cm;  /* Letter width */
+    min-height: 27.94cm;  /* Letter height */
+    background: white;
+    margin: 0 auto;
+    padding: 2cm;
+    font-family: 'Times New Roman', 'Georgia', serif;
+    color: #212529;
+    position: relative;
+    box-sizing: border-box;
+}
+
+/* Para vista en pantalla (no aplica en PDF) */
+@media screen {
+    .paper-sheet {
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        margin: 20px auto;
+    }
+}
+
+/* ==============================================================================
+   HEADER DEL DOCUMENTO
+   ============================================================================== */
+
+.document-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5cm;
+    padding-bottom: 0.5cm;
+    border-bottom: 2px solid #2c3e50;
+}
+
+.document-logo {
+    max-width: 150px;
+    max-height: 100px;
+}
+
+.document-logo img {
+    max-width: 100%;
+    height: auto;
+}
+
+.document-info {
+    text-align: right;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.document-info h3 {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 0.25rem;
+}
+
+.document-info p {
+    margin: 0;
+    color: #495057;
+}
+
+/* ==============================================================================
+   INFORMACIÓN DEL PACIENTE
+   ============================================================================== */
+
+.patient-info {
+    background: #f8f9fa;
+    padding: 0.5cm;
+    margin-bottom: 1cm;
+    border-left: 4px solid #667eea;
+    border-radius: 4px;
+}
+
+.patient-info p {
+    margin: 0.2rem 0;
+    font-size: 0.95rem;
+}
+
+.patient-info strong {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* ==============================================================================
+   SECCIONES DEL DOCUMENTO
+   ============================================================================== */
+
+.document-section {
+    margin-bottom: 1cm;
+    page-break-inside: avoid;
+}
+
+.document-section h5 {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 0.3cm;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 0.2cm;
+}
+
+.document-section .content {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    color: #212529;
+}
+
+/* ==============================================================================
+   SIGNOS VITALES (GRID)
+   ============================================================================== */
+
+.vitals-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.3cm;
+    margin-bottom: 0.5cm;
+}
+
+.vital-item {
+    background: #f8f9fa;
+    padding: 0.3cm;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.vital-item strong {
+    display: block;
+    color: #6c757d;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-bottom: 0.1cm;
+}
+
+.vital-item .value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #212529;
+}
+
+/* ==============================================================================
+   TABLA DE RESULTADOS DE LABORATORIO
+   ============================================================================== */
+
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1cm;
+    font-size: 0.85rem;
+}
+
+.results-table thead {
+    background: #667eea;
+    color: white;
+}
+
+.results-table thead th {
+    padding: 0.4cm;
+    text-align: left;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+
+.results-table tbody td {
+    padding: 0.3cm 0.4cm;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.results-table tbody tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.results-table tbody tr:hover {
+    background: #f1f3f5;
+}
+
+/* Columnas específicas */
+.results-table .col-parametro {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.results-table .col-resultado {
+    font-weight: bold;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.results-table .col-referencia {
+    color: #6c757d;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.results-table .col-estado {
+    text-align: center;
+}
+
+/* Estados (badges) */
+.badge-normal {
+    background: #d4edda;
+    color: #155724;
+    padding: 0.2cm 0.4cm;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.badge-alto {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 0.2cm 0.4cm;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.badge-bajo {
+    background: #fff3cd;
+    color: #856404;
+    padding: 0.2cm 0.4cm;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.badge-critico {
+    background: #dc3545;
+    color: white;
+    padding: 0.2cm 0.4cm;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+/* ==============================================================================
+   TRATAMIENTO / RECETA
+   ============================================================================== */
+
+.prescription-box {
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    padding: 0.5cm;
+    margin-bottom: 1cm;
+    background: #f8f9ff;
+}
+
+.prescription-box h6 {
+    color: #667eea;
+    font-weight: bold;
+    margin-bottom: 0.3cm;
+    font-size: 0.9rem;
+}
+
+.prescription-box .medication {
+    margin-bottom: 0.3cm;
+    padding-left: 0.5cm;
+}
+
+.prescription-box .medication::before {
+    content: "℞ ";
+    font-size: 1.2rem;
+    color: #667eea;
+    font-weight: bold;
+}
+
+/* ==============================================================================
+   FOOTER DEL DOCUMENTO
+   ============================================================================== */
+
+.document-footer {
+    position: absolute;
+    bottom: 1.5cm;
+    left: 2cm;
+    right: 2cm;
+    border-top: 1px solid #dee2e6;
+    padding-top: 0.5cm;
+}
+
+.signature-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.signature-box {
+    text-align: center;
+    width: 200px;
+}
+
+.signature-image {
+    max-width: 180px;
+    max-height: 60px;
+    margin-bottom: 0.2cm;
+}
+
+.signature-line {
+    border-top: 2px solid #212529;
+    padding-top: 0.3cm;
+}
+
+.signature-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.signature-title {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+/* ==============================================================================
+   QR CODE
+   ============================================================================== */
+
+.qr-container {
+    text-align: center;
+}
+
+.qr-image {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+}
+
+.qr-text {
+    font-size: 0.65rem;
+    color: #6c757d;
+    margin-top: 0.2cm;
+}
+
+/* ==============================================================================
+   METADATOS DEL DOCUMENTO
+   ============================================================================== */
+
+.document-metadata {
+    text-align: right;
+    font-size: 0.7rem;
+    color: #6c757d;
+    margin-top: 0.5cm;
+}
+
+.document-metadata p {
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* ==============================================================================
+   ALERTAS Y AVISOS
+   ============================================================================== */
+
+.alert-box {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 0.4cm;
+    margin-bottom: 0.5cm;
+    border-radius: 4px;
+}
+
+.alert-box.alert-danger {
+    background: #f8d7da;
+    border-left-color: #dc3545;
+}
+
+.alert-box p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #856404;
+}
+
+.alert-box.alert-danger p {
+    color: #721c24;
+}
+
+/* ==============================================================================
+   COMENTARIOS Y OBSERVACIONES
+   ============================================================================== */
+
+.observations-box {
+    background: #e7f3ff;
+    border-left: 4px solid #0056b3;
+    padding: 0.4cm;
+    margin-bottom: 0.5cm;
+    border-radius: 4px;
+}
+
+.observations-box h6 {
+    color: #0056b3;
+    font-weight: bold;
+    margin-bottom: 0.2cm;
+    font-size: 0.85rem;
+}
+
+.observations-box p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #495057;
+    line-height: 1.5;
+}
+
+/* ==============================================================================
+   UTILIDADES
+   ============================================================================== */
+
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.text-muted {
+    color: #6c757d;
+}
+
+.font-weight-bold {
+    font-weight: 600;
+}
+
+.mb-0 {
+    margin-bottom: 0 !important;
+}
+
+.mt-1 {
+    margin-top: 0.25cm;
+}
+
+.mb-1 {
+    margin-bottom: 0.25cm;
+}
+
+/* ==============================================================================
+   EVITAR SALTOS DE PÁGINA INDESEADOS
+   ============================================================================== */
+
+.no-page-break {
+    page-break-inside: avoid;
+}
+
+.page-break-before {
+    page-break-before: always;
+}
+
+.page-break-after {
+    page-break-after: always;
+}
+
+/* ==============================================================================
+   RESPONSIVE (SOLO PARA VISTA EN PANTALLA)
+   ============================================================================== */
+
+@media screen and (max-width: 768px) {
+    .paper-sheet {
+        width: 100%;
+        padding: 1cm;
+    }
+    
+    .document-header {
+        flex-direction: column;
+    }
+    
+    .document-info {
+        text-align: left;
+        margin-top: 0.5cm;
+    }
+    
+    .vitals-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .signature-area {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .signature-box {
+        margin-bottom: 0.5cm;
+    }
+}
+
+/* ==============================================================================
+   IMPRESIÓN (OPTIMIZACIONES ADICIONALES)
+   ============================================================================== */
+
+@media print {
+    .paper-sheet {
+        box-shadow: none;
+        margin: 0;
+        page-break-after: always;
+    }
+    
+    /* Ocultar elementos que no deben imprimirse */
+    .no-print {
+        display: none !important;
+    }
+}

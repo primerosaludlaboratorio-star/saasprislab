@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Finanzas · Registro de Gasto{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="mb-1">Registro de gasto operativo</h2>
+      <div class="text-muted">MVP: captura rápida con evidencia opcional.</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">
+      <i class="bi bi-graph-up"></i> Dashboard financiero
+    </a>
+  </div>
+
+  <div class="card shadow-sm mt-3">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" class="row g-3">
+        {% csrf_token %}
+        <div class="col-md-4">
+          <label class="form-label">Categoría</label>
+          <select class="form-select" name="categoria">
+            {% for key,label in categorias %}
+              <option value="{{ key }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Monto</label>
+          <input class="form-control" name="monto" placeholder="0.00" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Evidencia (foto)</label>
+          <input class="form-control" type="file" name="evidencia_foto" accept="image/*">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Descripción</label>
+          <input class="form-control" name="descripcion" placeholder="Ej. Compra de reactivo / papelería / servicio...">
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary" type="submit">Guardar gasto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mt-3">
+    <div class="card-header bg-white"><strong>Recientes</strong></div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Fecha</th>
+              <th>Categoría</th>
+              <th class="text-end">Monto</th>
+              <th>Usuario</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for g in gastos %}
+              <tr>
+                <td>{{ g.fecha|date:"Y-m-d H:i" }}</td>
+                <td>{{ g.get_categoria_display }}</td>
+                <td class="text-end">{{ g.monto }}</td>
+                <td>{{ g.usuario.get_full_name|default:g.usuario.username|default:"-" }}</td>
+                <td>{{ g.descripcion|default:"-" }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="text-center text-muted py-4">Sin gastos aún.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,259 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es-mx" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - PRISLAB SaaS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --prislab-red: #D9230F;
+            --prislab-dark: #121212;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-light: #f8f9fa;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--prislab-dark);
+            color: var(--text-light);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* Split Screen Design */
+        .login-split {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .login-visuals {
+            flex: 1.2;
+            background: linear-gradient(135deg, rgba(0,0,0,0.8), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80') center/cover no-repeat;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 4rem;
+        }
+
+        .login-visuals::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to right, transparent, var(--prislab-dark));
+        }
+
+        .visual-content {
+            position: relative;
+            z-index: 10;
+            animation: fadeUp 1s ease;
+        }
+
+        .visual-content h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            line-height: 1.1;
+            color: white;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .visual-content p {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            max-width: 500px;
+        }
+
+        .login-form-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--prislab-dark);
+            position: relative;
+            padding: 2rem;
+        }
+
+        /* Ambient Glow */
+        .ambient-glow {
+            position: absolute;
+            width: 40vw;
+            height: 40vw;
+            background: radial-gradient(circle, rgba(217,35,15,0.15) 0%, transparent 60%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glass-card {
+            background: rgba(30, 30, 30, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 460px;
+            z-index: 10;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeScale 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .glass-card h2 {
+            font-weight: 700;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .form-floating {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-control {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white !important;
+            border-radius: 12px;
+        }
+
+        .form-control:focus {
+            background: rgba(255,255,255,0.08);
+            border-color: var(--prislab-red);
+            box-shadow: 0 0 0 0.25rem rgba(217,35,15,0.25);
+        }
+
+        .form-floating label {
+            color: rgba(255,255,255,0.6);
+        }
+
+        .btn-login {
+            background: var(--prislab-red);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            width: 100%;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .btn-login:hover {
+            background: #e63920;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(217,35,15,0.3);
+            color: white;
+        }
+
+        .alert {
+            background: rgba(220,53,69,0.1);
+            border: 1px solid rgba(220,53,69,0.2);
+            color: #ff6b6b;
+            border-radius: 12px;
+        }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeScale {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @media (max-width: 992px) {
+            .login-visuals {
+                display: none;
+            }
+            .ambient-glow {
+                width: 100vw;
+                height: 100vw;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-split">
+        <!-- Visual Side -->
+        <div class="login-visuals">
+            <div class="visual-content">
+                <h1>PRISLAB SaaS</h1>
+                <p>La plataforma operativa de inteligencia artificial diseñada para laboratorios clínicos del futuro.</p>
+                <div class="mt-4">
+                    <span class="badge bg-danger rounded-pill px-3 py-2" style="font-size:0.9rem;">v5.0 Fase III</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Form Side -->
+        <div class="login-form-container">
+            <div class="ambient-glow"></div>
+            
+            <div class="glass-card">
+                <div class="text-center mb-4">
+                    <i class="bi bi-heart-pulse-fill" style="font-size: 3rem; color: var(--prislab-red);"></i>
+                </div>
+                <h2>Bienvenido</h2>
+                
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                {% if form.errors %}
+                    <div class="alert alert-dismissible fade show" role="alert">
+                        <strong><i class="bi bi-exclamation-triangle"></i> Acceso denegado:</strong> Credenciales inválidas o suscripción inactiva.
+                    </div>
+                {% endif %}
+                
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="id_username" name="username" placeholder="Usuario" required autofocus>
+                        <label for="id_username"><i class="bi bi-person"></i> Usuario</label>
+                    </div>
+                    
+                    <div class="form-floating">
+                        <input type="password" class="form-control" id="id_password" name="password" placeholder="Contraseña" required>
+                        <label for="id_password"><i class="bi bi-lock"></i> Contraseña</label>
+                    </div>
+                    
+                    <input type="hidden" name="next" value="{{ next }}">
+                    
+                    <button type="submit" class="btn btn-login">
+                        Ingresar al Sistema <i class="bi bi-arrow-right ms-2"></i>
+                    </button>
+                </form>
+
+                <div class="text-center mt-4">
+                    <p class="text-muted small" style="opacity: 0.6;">Conexión Segura de Extremo a Extremo</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

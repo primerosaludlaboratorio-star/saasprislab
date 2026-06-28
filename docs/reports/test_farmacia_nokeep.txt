@@ -1,0 +1,37 @@
+Creating test database for alias 'default'...
+
+Found 39 test(s).
+
+================================================================================
+MIGRACION FORENSE DE DATOS - LABORATORIO A CORE
+================================================================================
+Total de ordenes a procesar: 0
+
+
+================================================================================
+RESUMEN DE MIGRACI├ôN
+================================================================================
+Total procesadas: 0/0
+├ôrdenes actualizadas: 0
+├ôrdenes creadas (nuevas): 0
+================================================================================
+
+System check identified no issues (0 silenced).
+.....WARNING SENTINEL REPAIR [Permisos]: sin_emp recibi├│ 403 en /farmacia/erp/caja/verificar/ sin empresa asignada. No se regenera sesi├│n autom├ítica.
+.........C:\Users\jonil\AppData\Roaming\Python\Python314\site-packages\django\db\models\fields\__init__.py:1659: RuntimeWarning: DateTimeField Venta.fecha received a naive datetime (2026-06-26 00:00:00) while time zone support is active.
+  warnings.warn(
+.....INFO SENTINEL: Incidencia #1 creada - [MEDIA] Http404 en /farmacia/erp/entrada-express/
+INFO [AUDIT] CREATE IncidenciaSentinel #1 por 
+WARNING SENTINEL: Sin API key de Gemini, generando an├ílisis offline
+INFO SENTINEL: Incidencia #1 enriquecida con analisis IA
+.WARNING SENTINEL REPAIR [Permisos]: sin_emp_expr recibi├│ 403 en /farmacia/erp/entrada-express/ sin empresa asignada. No se regenera sesi├│n autom├ítica.
+.......INFO MovimientoCaja creado venta_id=1 movimiento_id=1 monto=120.00
+...INFO MovimientoCaja creado venta_id=1 movimiento_id=1 monto=80.00
+....INFO MovimientoCaja creado venta_id=1 movimiento_id=1 monto=120.00
+.....
+----------------------------------------------------------------------
+Ran 39 tests in 31.310s
+
+OK
+Destroying test database for alias 'default'...
+

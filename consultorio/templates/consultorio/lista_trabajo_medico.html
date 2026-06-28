@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Lista de Trabajo Médico - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-clipboard-check"></i> Lista de Trabajo Médico
+                    </h4>
+                    <div>
+                        <a href="{% url 'consultorio:nueva_consulta' %}" class="btn btn-success me-2">
+                            <i class="bi bi-plus-circle-fill"></i> Nueva Consulta
+                        </a>
+                        <a href="{% url 'consultorio:dashboard_consultorio' %}" class="btn btn-light btn-sm">
+                            <i class="bi bi-arrow-left"></i> Volver
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Filtro por fecha -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <form method="get" class="d-flex gap-2">
+                                <input type="date" name="fecha" class="form-control" value="{{ fecha_filtro|date:'Y-m-d' }}" required>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i> Filtrar
+                                </button>
+                                {% if fecha_filtro != hoy %}
+                                <a href="{% url 'consultorio:lista_trabajo_medico' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-calendar-day"></i> Hoy
+                                </a>
+                                {% endif %}
+                            </form>
+                        </div>
+                        <div class="col-md-8 text-end">
+                            <span class="badge bg-info fs-6">
+                                <i class="bi bi-calendar3"></i> 
+                                {{ fecha_filtro|date:"l, d F Y" }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Alerta informativa -->
+                    <div class="alert alert-info border-0 mb-4">
+                        <i class="bi bi-info-circle"></i> 
+                        <strong>Nota:</strong> Solo se muestran pacientes con CITAS MÉDICAS agendadas. 
+                        Los pacientes del laboratorio NO aparecen aquí.
+                    </div>
+
+                    <!-- Citas del día -->
+                    <h5 class="mb-3"><i class="bi bi-calendar-check"></i> Citas Médicas del Día</h5>
+                    
+                    {% if citas %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Hora</th>
+                                    <th>Paciente</th>
+                                    <th>Motivo</th>
+                                    <th>Estado</th>
+                                    <th>Signos Vitales</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cita in citas %}
+                                <tr>
+                                    <td><strong>{{ cita.hora_cita|time:"H:i" }}</strong></td>
+                                    <td>
+                                        <i class="bi bi-person-fill"></i>
+                                        {{ cita.paciente.nombre_completo }}
+                                        <br>
+                                        <small class="text-muted">{{ cita.paciente.edad }} años</small>
+                                    </td>
+                                    <td>{{ cita.motivo|truncatewords:10 }}</td>
+                                    <td>
+                                        {% if cita.estado == 'EN_SALA' %}
+                                        <span class="badge bg-warning">🟡 En Sala</span>
+                                        {% elif cita.estado == 'EN_CURSO' %}
+                                        <span class="badge bg-success">🟢 En Curso</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if cita.signos_vitales %}
+                                        <span class="badge bg-success">✓ Capturados</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Pendientes</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'consultorio:nueva_consulta_soap' cita.id %}" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-play-circle"></i> Iniciar Consulta
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-secondary text-center py-4">
+                        <i class="bi bi-calendar-x" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3">No hay citas médicas para este día</h5>
+                        <p class="text-muted mb-3">No se encontraron citas agendadas para {{ fecha_filtro|date:"d/m/Y" }}</p>
+                        <a href="{% url 'consultorio:nueva_consulta' %}" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Crear Nueva Consulta
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <!-- Consultas sin cita previa -->
+                    {% if consultas_sin_cita %}
+                    <hr class="my-4">
+                    <h5 class="mb-3"><i class="bi bi-lightning-charge"></i> Consultas Directas (Sin Cita Previa)</h5>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Hora</th>
+                                    <th>Paciente</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for consulta in consultas_sin_cita %}
+                                <tr>
+                                    <td><strong>{{ consulta.fecha_consulta|time:"H:i" }}</strong></td>
+                                    <td>
+                                        <i class="bi bi-person-fill"></i>
+                                        {{ consulta.paciente.nombre_completo }}
+                                        <br>
+                                        <small class="text-muted">{{ consulta.paciente.edad }} años</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">⚡ Sin Cita</span>
+                                    </td>
+                                    <td>
+                                        {% if consulta.cita_id %}
+                                        <a href="{% url 'consultorio:detalle_consulta' consulta.cita_id %}" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-eye"></i> Ver Consulta
+                                        </a>
+                                        {% else %}
+                                        <a href="{% url 'consultorio:ver_consulta_detalle' consulta.id %}" class="btn btn-info btn-sm">
+                                            <i class="bi bi-journal-text"></i> Ver Consulta
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

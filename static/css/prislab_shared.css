@@ -1,0 +1,1014 @@
+/**
+ * CSS Compartido PRISLAB - Diseño Futurista "Pris-Valle 2030"
+ * Estética Glassmorphism, Elegante e Intuitiva
+ */
+
+/* Importar tipografía moderna */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    /* Paleta de Colores Oficial PRISLAB */
+    --prislab-red: #D9230F;
+    --prislab-red-neon: #FF1744;
+    --prislab-dark: #1a1d29;
+    --prislab-gray: #54565A;
+    --prislab-white: #FFFFFF;
+    
+    /* Fondos Futuristas (Degradados sutiles) */
+    --bg-gradient-primary: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 50%, #dde3ea 100%);
+    --bg-gradient-secondary: linear-gradient(135deg, #e3e8ef 0%, #d1d9e3 100%);
+    --bg-glass: rgba(255, 255, 255, 0.7);
+    --bg-glass-hover: rgba(255, 255, 255, 0.85);
+    
+    /* Colores de Estado (Monocromáticos con acentos) */
+    --estado-pendiente: #6c757d;
+    --estado-proceso: #4a90e2;
+    --estado-completado: #27ae60;
+    --estado-validado: #27ae60;
+    --estado-cancelado: #e74c3c;
+    --estado-pagado: #3498db;
+    
+    /* Sombras Futuristas (Gran radio, baja opacidad) */
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.08);
+    --shadow-glass-hover: 0 12px 48px rgba(0, 0, 0, 0.12);
+    --shadow-float: 0 20px 60px rgba(0, 0, 0, 0.1);
+    --shadow-neon: 0 0 20px rgba(217, 35, 15, 0.3);
+    
+    /* Bordes Ultra-finos */
+    --border-glass: 1px solid rgba(255, 255, 255, 0.18);
+    --border-glass-hover: 1px solid rgba(217, 35, 15, 0.3);
+    
+    /* Bordes Redondeados Suaves */
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    
+    /* Transiciones Suaves */
+    --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+   MODO CLÍNICO (Inputs y bloques sobrios)
+   ============================================ */
+.card-header-clinico {
+    background-color: var(--prislab-dark);
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.card-header-clinico .muted {
+    color: rgba(255, 255, 255, 0.75);
+    font-weight: 600;
+}
+
+.input-clinico,
+.input-clinico.form-control,
+.input-clinico.form-select {
+    border-radius: 2px !important;
+    border: 1px solid #cfd4da !important;
+    box-shadow: var(--shadow-sm);
+}
+
+.input-clinico:focus {
+    border-color: var(--prislab-red) !important;
+    box-shadow: 0 0 0 0.18rem rgba(217, 35, 15, 0.18) !important;
+}
+
+.mono-num {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ============================================
+   TIPOGRAFÍA FUTURISTA (Inter - Premium)
+   ============================================ */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-gradient-primary);
+    color: var(--prislab-dark);
+    font-size: 14px;
+    line-height: 1.7;
+    letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    color: var(--prislab-dark);
+    letter-spacing: -0.02em;
+}
+
+.text-primary {
+    color: var(--prislab-red) !important;
+}
+
+.bg-primary {
+    background: linear-gradient(135deg, var(--prislab-red) 0%, #B71C1C 100%) !important;
+}
+
+/* ============================================
+   TABLAS ULTRA-LIMPIAS (Futuristas)
+   ============================================ */
+.table-profesional {
+    font-size: 14px;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--bg-glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-glass);
+}
+
+.table-profesional thead {
+    background: linear-gradient(135deg, var(--prislab-dark) 0%, #2a2f3d 100%);
+    color: white;
+}
+
+.table-profesional thead th {
+    padding: 16px 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.8px;
+    border: none;
+    font-family: 'Inter', sans-serif;
+}
+
+.table-profesional tbody tr {
+    transition: all var(--transition-fast);
+    background: transparent;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.table-profesional tbody tr:hover {
+    background: var(--bg-glass-hover);
+    transform: translateX(2px);
+    /* Efecto de Iluminación Neón en Rojo Prislab */
+    box-shadow: 0 0 20px rgba(217, 35, 15, 0.3), inset 3px 0 0 var(--prislab-red-neon);
+    border-left: 3px solid var(--prislab-red-neon);
+    transition: all var(--transition-fast);
+}
+
+.table-profesional tbody tr:last-child {
+    border-bottom: none;
+}
+
+.table-profesional tbody td {
+    padding: 16px 20px;
+    vertical-align: middle;
+    border: none;
+    color: var(--prislab-dark);
+}
+
+/* Contenedor de tabla con glassmorphism */
+.table-container {
+    background: var(--bg-glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-glass);
+    padding: 24px;
+    overflow: hidden;
+    border: var(--border-glass);
+    transition: all var(--transition-normal);
+}
+
+.table-container:hover {
+    box-shadow: var(--shadow-glass-hover);
+    border-color: rgba(217, 35, 15, 0.2);
+}
+
+/* ============================================
+   BADGES DE ESTADO (Unificados)
+   ============================================ */
+.estado-badge {
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+
+/* Estados de Laboratorio */
+.estado-badge.validado {
+    background-color: var(--estado-validado);
+    color: white;
+}
+
+.estado-badge.en-proceso {
+    background-color: var(--estado-proceso);
+    color: white;
+}
+
+.estado-badge.pendiente {
+    background-color: var(--estado-pendiente);
+    color: white;
+}
+
+/* Estados de Farmacia */
+.estado-badge.pagado {
+    background-color: var(--estado-pagado);
+    color: #000;
+}
+
+.estado-badge.completado {
+    background-color: var(--estado-completado);
+    color: white;
+}
+
+.estado-badge.cancelado {
+    background-color: var(--estado-cancelado);
+    color: white;
+}
+
+/* ============================================
+   FORMULARIOS PROFESIONALES
+   ============================================ */
+.form-label {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--prislab-dark);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.form-control,
+.form-select {
+    background: var(--bg-glass);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 10px 14px;
+    font-size: 14px;
+    transition: all var(--transition-fast);
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.01em;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--prislab-red);
+    box-shadow: 0 0 0 3px rgba(217, 35, 15, 0.1), var(--shadow-neon);
+    background: rgba(255, 255, 255, 0.9);
+    outline: none;
+}
+
+/* Cards con Glassmorphism (Efecto Cristal) */
+.card-profesional,
+.glass-card {
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: var(--border-glass);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-glass);
+    transition: all var(--transition-normal);
+    overflow: hidden;
+}
+
+.card-profesional:hover,
+.glass-card:hover {
+    box-shadow: var(--shadow-glass-hover);
+    border-color: var(--border-glass-hover);
+    transform: translateY(-2px);
+}
+
+.card-header-profesional {
+    background: linear-gradient(135deg, var(--prislab-red) 0%, #B71C1C 100%);
+    color: white;
+    font-weight: 600;
+    padding: 16px 24px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+/* ============================================
+   EFECTOS DE ILUMINACIÓN NEÓN EN TABLAS
+   ============================================ */
+/* Aplicar a tablas de carrito de compras y resultados */
+.table-carrito tbody tr:hover,
+.table-resultados tbody tr:hover,
+#tabla-carrito tbody tr:hover,
+#tablaEstudios tbody tr:hover {
+    background-color: rgba(217, 35, 15, 0.1) !important;
+    box-shadow: 0 0 25px rgba(217, 35, 15, 0.4), inset 0 0 25px rgba(217, 35, 15, 0.08) !important;
+    border-left: 4px solid var(--prislab-red-neon) !important;
+    transform: translateX(3px);
+    transition: all var(--transition-fast);
+}
+
+/* Efecto neón en números de tablas (monospace) */
+.table-profesional .mono-num:hover,
+.table-carrito .mono-num:hover {
+    color: var(--prislab-red-neon);
+    text-shadow: 0 0 10px rgba(217, 35, 15, 0.5);
+    transition: all var(--transition-fast);
+}
+
+/* ============================================
+   BOTONES FUTURISTAS (Micro-interacciones)
+   ============================================ */
+.btn-profesional {
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    padding: 10px 20px;
+    font-size: 14px;
+    transition: all var(--transition-fast);
+    border: none;
+    letter-spacing: 0.3px;
+    font-family: 'Inter', sans-serif;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-profesional::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s, height 0.4s;
+}
+
+.btn-profesional:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn-profesional:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glass-hover);
+    border-color: var(--prislab-red);
+}
+
+.btn-primary-profesional {
+    background: linear-gradient(135deg, var(--prislab-red) 0%, #B71C1C 100%);
+    color: white;
+    box-shadow: var(--shadow-glass);
+}
+
+.btn-primary-profesional:hover {
+    background: linear-gradient(135deg, #FF1744 0%, var(--prislab-red) 100%);
+    color: white;
+    box-shadow: var(--shadow-neon);
+}
+
+/* ============================================
+   FILTROS Y NAVEGACIÓN
+   ============================================ */
+.filter-buttons {
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.filter-btn {
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 13px;
+    padding: 6px 14px;
+    transition: all 0.2s ease;
+}
+
+.filter-btn.active {
+    background-color: var(--prislab-red);
+    color: white;
+    border-color: var(--prislab-red);
+}
+
+/* ============================================
+   ELIMINACIÓN DE BOTONES CHILLONES
+   ============================================ */
+/* Forzar estilo monocromático en todos los botones */
+.btn-warning,
+.btn-info,
+.btn-success:not(.btn-principal),
+.btn-danger:not(.btn-principal) {
+    background-color: var(--prislab-gray) !important;
+    border-color: var(--prislab-gray) !important;
+    color: white !important;
+}
+
+.btn-warning:hover,
+.btn-info:hover,
+.btn-success:not(.btn-principal):hover,
+.btn-danger:not(.btn-principal):hover {
+    background-color: var(--prislab-dark) !important;
+    border-color: var(--prislab-dark) !important;
+    color: white !important;
+}
+
+/* Botones outline monocromáticos */
+.btn-outline-warning,
+.btn-outline-info,
+.btn-outline-success,
+.btn-outline-danger {
+    border-color: var(--prislab-gray) !important;
+    color: var(--prislab-gray) !important;
+    background: transparent !important;
+}
+
+.btn-outline-warning:hover,
+.btn-outline-info:hover,
+.btn-outline-success:hover,
+.btn-outline-danger:hover {
+    background-color: var(--prislab-gray) !important;
+    border-color: var(--prislab-gray) !important;
+    color: white !important;
+}
+
+/* Botones secundarios en gris */
+.btn-outline-secondary {
+    border-color: var(--prislab-gray) !important;
+    color: var(--prislab-gray) !important;
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--prislab-gray) !important;
+    border-color: var(--prislab-gray) !important;
+    color: white !important;
+}
+
+/* ============================================
+   INDICADORES DE URGENCIA (Laboratorio)
+   ============================================ */
+.urgente {
+    background-color: #fff3cd !important;
+    border-left: 4px solid #dc3545;
+}
+
+.proximo {
+    background-color: #fff8e1 !important;
+    border-left: 4px solid #ffc107;
+}
+
+.a-tiempo {
+    border-left: 4px solid #28a745;
+}
+
+/* ============================================
+   CONTENEDORES DE TRABAJO (Glassmorphism)
+   ============================================ */
+.worklist-container {
+    background: var(--bg-glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-glass);
+    padding: 28px;
+    border: var(--border-glass);
+    transition: all var(--transition-normal);
+}
+
+.worklist-container:hover {
+    box-shadow: var(--shadow-glass-hover);
+}
+
+/* ============================================
+   UTILIDADES
+   ============================================ */
+.text-muted-profesional {
+    color: #6c757d;
+    font-size: 13px;
+}
+
+.fw-semibold {
+    font-weight: 600;
+}
+
+/* Espaciado consistente */
+.mb-section {
+    margin-bottom: 30px;
+}
+
+.p-section {
+    padding: 20px;
+}
+
+/* ============================================
+   SIDEBAR POR ISLAS v2 — "Programa Único"
+   Navegación de 2 Niveles con Aislamiento Visual
+   ============================================ */
+
+/* Variable de acento de isla (se sobreescribe por JS) */
+:root {
+    --island-accent: #D9230F;
+    --island-accent-rgb: 217,35,15;
+    --island-accent-soft: rgba(217,35,15,0.06);
+    --island-rail-width: 72px;
+    --island-panel-width: 228px;
+    --island-total-width: 300px; /* rail + panel */
+}
+
+/* ── Contenedor principal del sidebar por islas ── */
+.island-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    display: flex;
+    z-index: 1050;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* En móvil, ocultar con clase .mobile-hidden */
+.island-sidebar.mobile-hidden {
+    transform: translateX(-100%);
+}
+
+/* En DESKTOP (>=992px), siempre visible sin importar mobile-hidden */
+@media (min-width: 992px) {
+    .island-sidebar.mobile-hidden {
+        transform: translateX(0);
+    }
+}
+
+/* ── NIVEL 1: Rail de Iconos (Selector de Islas) ── */
+.island-rail {
+    width: var(--island-rail-width);
+    min-width: var(--island-rail-width);
+    height: 100%;
+    background: linear-gradient(180deg, #161925 0%, #1a1d29 40%, #14171f 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    gap: 4px;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    z-index: 2;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Scrollbar del rail */
+.island-rail::-webkit-scrollbar { width: 0; }
+
+/* Logo en el rail */
+.island-rail-logo {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    color: var(--prislab-red);
+    font-size: 22px;
+    text-decoration: none;
+    border-radius: 14px;
+    background: rgba(217, 35, 15, 0.1);
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+}
+
+.island-rail-logo:hover {
+    background: rgba(217, 35, 15, 0.22);
+    color: var(--prislab-red-neon);
+    transform: scale(1.06);
+    box-shadow: 0 0 20px rgba(217, 35, 15, 0.25);
+}
+
+/* Botones de isla (Nivel 1) */
+.island-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: transparent;
+    border: 2px solid transparent;
+    border-radius: 14px;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 19px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.island-icon-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    opacity: 0.65;
+    font-family: 'Inter', sans-serif;
+    line-height: 1;
+    transition: opacity 0.3s ease;
+}
+
+.island-icon:hover {
+    color: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.island-icon:hover .island-icon-label {
+    opacity: 1;
+}
+
+.island-icon.active {
+    color: white;
+    background: var(--island-accent);
+    border-color: var(--island-accent);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2),
+                0 0 30px rgba(var(--island-accent-rgb), 0.25);
+    transform: scale(1.02);
+}
+
+.island-icon.active .island-icon-label {
+    opacity: 1;
+}
+
+/* Indicador de actividad (punto pulsante) */
+.island-icon.active::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 7px;
+    height: 7px;
+    background: #FFFFFF;
+    border-radius: 50%;
+    animation: islandPulse 2s infinite;
+}
+
+@keyframes islandPulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50%      { opacity: 1;   transform: scale(1.3); }
+}
+
+/* Botón colapsar al final del rail */
+.island-collapse-btn {
+    color: rgba(255, 255, 255, 0.3) !important;
+    font-size: 14px !important;
+    width: 44px !important;
+    height: 44px !important;
+    flex-shrink: 0;
+}
+
+.island-collapse-btn:hover {
+    color: rgba(255, 255, 255, 0.75) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.island-collapse-btn.active::after {
+    display: none;
+}
+
+/* Spacer flexible */
+.island-rail-spacer {
+    flex: 1;
+}
+
+/* ── NIVEL 2: Panel de Funciones (se expande al seleccionar isla) ── */
+.island-panel {
+    width: 0;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(26, 29, 41, 0.97) 0%, rgba(20, 23, 31, 0.99) 100%);
+    overflow: hidden;
+    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    border-right: 2px solid rgba(var(--island-accent-rgb), 0.2);
+    position: relative;
+}
+
+.island-panel.expanded {
+    width: var(--island-panel-width);
+    border-right-color: rgba(var(--island-accent-rgb), 0.35);
+}
+
+/* Contenido de cada isla (con transición de entrada/salida) */
+.island-content {
+    display: none;
+    flex-direction: column;
+    width: var(--island-panel-width);
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    padding-bottom: 20px;
+}
+
+.island-content.active {
+    display: flex;
+}
+
+/* Scrollbar elegante */
+.island-content::-webkit-scrollbar {
+    width: 3px;
+}
+
+.island-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.island-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+}
+
+.island-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Header de la isla (con acento de color) */
+.island-panel-header {
+    padding: 18px 16px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: linear-gradient(135deg,
+        rgba(var(--island-accent-rgb), 0.12) 0%,
+        transparent 100%);
+    flex-shrink: 0;
+}
+
+.island-panel-header h6 {
+    color: white;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.island-panel-header h6 i {
+    color: var(--island-accent);
+    font-size: 14px;
+}
+
+/* Subtítulo del panel */
+.island-panel-subtitle {
+    display: block;
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.35);
+    margin-top: 4px;
+    letter-spacing: 0.3px;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Grupos de navegación */
+.island-nav-group {
+    padding: 6px 0;
+}
+
+.island-nav-group + .island-nav-group {
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.island-nav-title {
+    padding: 10px 16px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.3);
+    font-family: 'Inter', sans-serif;
+}
+
+/* Items de navegación */
+.island-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.1px;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+    position: relative;
+}
+
+.island-nav-item i {
+    width: 16px;
+    font-size: 13px;
+    opacity: 0.5;
+    text-align: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.island-nav-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: white;
+    border-left-color: var(--island-accent);
+    text-decoration: none;
+    padding-left: 19px;
+}
+
+.island-nav-item:hover i {
+    opacity: 1;
+    color: var(--island-accent);
+}
+
+.island-nav-item.active {
+    background: rgba(var(--island-accent-rgb), 0.15);
+    color: white;
+    border-left-color: var(--island-accent);
+    font-weight: 600;
+}
+
+.island-nav-item.active i {
+    opacity: 1;
+    color: var(--island-accent);
+}
+
+/* ── Transición de contenido al cambiar de isla (fade-in efecto "Programa Único") ── */
+.main-wrapper.island-switching {
+    opacity: 0;
+    transform: translateY(4px);
+}
+
+.main-wrapper {
+    transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.3s ease,
+                transform 0.3s ease,
+                background 0.5s ease;
+}
+
+/* Línea de acento que marca la isla activa en el borde izquierdo del contenido */
+.main-wrapper::before {
+    content: '';
+    position: fixed;
+    top: 63px; /* debajo del header-bar */
+    left: 72px; /* alineado al rail */
+    width: 0;
+    height: calc(100vh - 63px);
+    background: linear-gradient(180deg,
+        rgba(var(--island-accent-rgb), 0.15) 0%,
+        rgba(var(--island-accent-rgb), 0.02) 100%);
+    z-index: -1;
+    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.5s ease;
+    pointer-events: none;
+}
+
+.main-wrapper.island-panel-expanded::before {
+    left: 300px;
+}
+
+/* ── Barra de color contextual (bajo el header) ── */
+.island-header-bar {
+    position: fixed;
+    top: 60px;
+    left: 72px;
+    right: 0;
+    height: 3px;
+    opacity: 0;
+    z-index: 1029;
+    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                background 0.5s ease,
+                opacity 0.5s ease;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(var(--island-accent-rgb), 0.25);
+}
+
+/* Cuando el panel se expande, la barra se recorre (manejado por JS via clase) */
+.island-header-bar.island-panel-expanded {
+    left: 300px;
+}
+
+/* ── Título dinámico de isla en el Navbar (v3: "Programa Único") ── */
+.island-navbar-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--island-accent);
+    margin-left: 16px;
+    padding: 5px 14px 5px 10px;
+    background: rgba(var(--island-accent-rgb), 0.07);
+    border-radius: 999px;
+    border: 1px solid rgba(var(--island-accent-rgb), 0.15);
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: color 0.5s ease,
+                background 0.5s ease,
+                border-color 0.5s ease,
+                opacity 0.5s ease,
+                transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+    letter-spacing: -0.2px;
+    pointer-events: none;
+}
+
+.island-navbar-badge.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.island-navbar-badge i {
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+/* Separador visual "—" entre icono y texto */
+.island-navbar-separator {
+    width: 1px;
+    height: 14px;
+    background: rgba(var(--island-accent-rgb), 0.3);
+    flex-shrink: 0;
+}
+
+/* Punto indicador de isla activa */
+.island-navbar-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--island-accent);
+    flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(var(--island-accent-rgb), 0.5);
+    animation: islandDotPulse 3s infinite;
+}
+
+@keyframes islandDotPulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(var(--island-accent-rgb), 0.3); }
+    50%      { box-shadow: 0 0 14px rgba(var(--island-accent-rgb), 0.6); }
+}
+
+/* ── RESPONSIVE ── */
+
+/* Tablet ≤991px */
+@media (max-width: 991.98px) {
+    .island-panel.expanded {
+        width: 210px;
+    }
+    .island-content {
+        width: 210px;
+    }
+    .island-navbar-badge {
+        display: none;
+    }
+    .island-header-bar {
+        left: 0 !important;
+    }
+    .main-wrapper::before {
+        display: none;
+    }
+}
+
+/* Móvil ≤767px */
+@media (max-width: 767.98px) {
+    .island-sidebar {
+        width: 100vw;
+    }
+    .island-panel.expanded {
+        width: calc(100vw - var(--island-rail-width));
+    }
+    .island-content {
+        width: calc(100vw - var(--island-rail-width));
+    }
+}
+
+/* Impresión: ocultar todo el sidebar */
+@media print {
+    .island-sidebar,
+    .hamburger-btn-island,
+    .sidebar-overlay,
+    .island-navbar-badge,
+    .island-header-bar {
+        display: none !important;
+    }
+    .main-wrapper {
+        margin-left: 0 !important;
+        margin-top: 0 !important;
+    }
+    .main-wrapper::before {
+        display: none !important;
+    }
+    .header-liquido {
+        left: 0 !important;
+    }
+}

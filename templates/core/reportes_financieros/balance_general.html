@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Balance General</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f7fa; }
+    .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; }
+    h1 { color: #1F4E79; }
+    .btn { display: inline-block; padding: 8px 12px; background: #1F4E79; color: #fff; text-decoration: none; border-radius: 4px; }
+    form { margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+    th { background: #1F4E79; color: #fff; }
+    .total { font-weight: bold; background: #eef; }
+    .cuadre { margin-top: 16px; padding: 12px; background: #f0f8ff; border-left: 4px solid #1F4E79; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Balance General</h1>
+    <p>{{ empresa.nombre }} — Fecha de corte: {{ fecha_corte }}</p>
+    <a class="btn" href="{% url 'exportar_excel_balance' %}?fecha_corte={{ fecha_corte }}">Exportar Excel</a>
+    <a class="btn" href="{% url 'reporte_ingresos_egresos' %}">Ingresos/Egresos</a>
+    <form method="get">
+      <label>Fecha de corte:</label>
+      <input type="date" name="fecha_corte" value="{{ fecha_corte }}">
+      <button type="submit">Actualizar</button>
+    </form>
+
+    <h2>Activos</h2>
+    <table>
+      <tr><th>Código</th><th>Cuenta</th><th>Saldo</th></tr>
+      {% for a in activos %}
+      <tr><td>{{ a.codigo }}</td><td>{{ a.nombre }}</td><td>${{ a.saldo }}</td></tr>
+      {% empty %}
+      <tr><td colspan="3">No hay activos registrados.</td></tr>
+      {% endfor %}
+      <tr class="total"><td colspan="2">Total Activos</td><td>${{ total_activos }}</td></tr>
+    </table>
+
+    <h2>Pasivos</h2>
+    <table>
+      <tr><th>Código</th><th>Cuenta</th><th>Saldo</th></tr>
+      {% for p in pasivos %}
+      <tr><td>{{ p.codigo }}</td><td>{{ p.nombre }}</td><td>${{ p.saldo }}</td></tr>
+      {% empty %}
+      <tr><td colspan="3">No hay pasivos registrados.</td></tr>
+      {% endfor %}
+      <tr class="total"><td colspan="2">Total Pasivos</td><td>${{ total_pasivos }}</td></tr>
+    </table>
+
+    <h2>Capital</h2>
+    <table>
+      <tr><th>Código</th><th>Cuenta</th><th>Saldo</th></tr>
+      {% for c in capital %}
+      <tr><td>{{ c.codigo }}</td><td>{{ c.nombre }}</td><td>${{ c.saldo }}</td></tr>
+      {% empty %}
+      <tr><td colspan="3">No hay cuentas de capital registradas.</td></tr>
+      {% endfor %}
+      <tr class="total"><td colspan="2">Utilidad del período</td><td>${{ utilidad }}</td></tr>
+      <tr class="total"><td colspan="2">Total Capital</td><td>${{ total_capital }}</td></tr>
+    </table>
+
+    <div class="cuadre">
+      <strong>Activo = Pasivo + Capital</strong><br>
+      ${{ total_activos }} = ${{ total_pasivos }} + ${{ total_capital }}<br>
+      Diferencia: ${{ total_activos|add:total_pasivos|add:total_capital }}
+    </div>
+  </div>
+</body>
+</html>

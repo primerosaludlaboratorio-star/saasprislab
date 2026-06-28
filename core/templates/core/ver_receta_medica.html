@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Receta {{ receta.folio_receta }} - {{ empresa.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 70px;">
+    <div class="row">
+        <div class="col-12">
+            <div class="card-profesional mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-prescription2"></i> Receta Médica 4.0 - {{ receta.folio_receta }}
+                    </h4>
+                    <div>
+                        <a href="{% url 'consulta_medica' %}" class="btn btn-outline-secondary btn-sm me-2">
+                            <i class="bi bi-arrow-left"></i> Volver
+                        </a>
+                        <a href="{% url 'generar_pdf_receta' receta.id %}" class="btn btn-danger btn-sm" target="_blank">
+                            <i class="bi bi-printer"></i> Imprimir Receta (PDF)
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Datos del Paciente -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Datos del Paciente</h5>
+                            <table class="table table-sm">
+                                <tr><td><strong>Nombre:</strong></td><td>{{ receta.paciente.nombre_completo|default:"Paciente Externo" }}</td></tr>
+                                {% if receta.paciente and receta.paciente.fecha_nacimiento %}
+                                <tr><td><strong>Fecha de Nacimiento:</strong></td><td>{{ receta.paciente.fecha_nacimiento|date:"d/m/Y" }}</td></tr>
+                                {% endif %}
+                                {% if receta.paciente and receta.paciente.telefono %}
+                                <tr><td><strong>Teléfono:</strong></td><td>{{ receta.paciente.telefono }}</td></tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Signos Vitales</h5>
+                            <table class="table table-sm">
+                                {% if receta.presion_arterial_sistolica and receta.presion_arterial_diastolica %}
+                                <tr><td><strong>PA:</strong></td><td>{{ receta.presion_arterial_sistolica }}/{{ receta.presion_arterial_diastolica }} mmHg</td></tr>
+                                {% endif %}
+                                {% if receta.frecuencia_cardiaca %}
+                                <tr><td><strong>FC:</strong></td><td>{{ receta.frecuencia_cardiaca }} lat/min</td></tr>
+                                {% endif %}
+                                {% if receta.frecuencia_respiratoria %}
+                                <tr><td><strong>FR:</strong></td><td>{{ receta.frecuencia_respiratoria }} resp/min</td></tr>
+                                {% endif %}
+                                {% if receta.temperatura %}
+                                <tr><td><strong>Temp:</strong></td><td>{{ receta.temperatura }}°C</td></tr>
+                                {% endif %}
+                                {% if receta.peso and receta.talla %}
+                                <tr><td><strong>Peso/Talla/IMC:</strong></td><td>{{ receta.peso }} kg / {{ receta.talla }} m / {{ receta.imc|floatformat:2|default:"N/A" }}</td></tr>
+                                {% endif %}
+                                {% if receta.saturacion_oxigeno %}
+                                <tr><td><strong>SpO₂:</strong></td><td>{{ receta.saturacion_oxigeno }}%</td></tr>
+                                {% endif %}
+                                {% if receta.glucosa %}
+                                <tr><td><strong>Glucosa:</strong></td><td>{{ receta.glucosa }} mg/dL</td></tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Diagnóstico -->
+                    <div class="card-profesional mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-clipboard-pulse"></i> Diagnóstico</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Principal:</strong> {{ receta.diagnostico_principal }}</p>
+                            {% if receta.diagnostico_secundario %}
+                            <p><strong>Secundario:</strong> {{ receta.diagnostico_secundario }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Indicaciones (IDX) -->
+                    <div class="card-profesional mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-capsule"></i> Indicaciones (IDX)</h5>
+                        </div>
+                        <div class="card-body">
+                            <pre style="white-space: pre-wrap; font-family: 'Inter', sans-serif; font-size: 1rem;">{{ receta.indicaciones }}</pre>
+                        </div>
+                    </div>
+
+                    <!-- Datos del Médico y QR de Validación -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <div class="card-profesional">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="bi bi-person-heart"></i> Datos del Médico</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm">
+                                        <tr><td><strong>Nombre:</strong></td><td>Dr. {{ receta.medico_nombre_completo }}</td></tr>
+                                        <tr><td><strong>Cédula Profesional:</strong></td><td>{{ receta.medico_cedula }}</td></tr>
+                                        <tr><td><strong>Especialidad:</strong></td><td>{{ receta.medico_especialidad }}</td></tr>
+                                        <tr><td><strong>Vigencia de Cédula:</strong></td>
+                                            <td>
+                                                {% if receta.cedula_vigente %}
+                                                <span class="badge bg-success">Vigente</span>
+                                                {% else %}
+                                                <span class="badge bg-danger">Vencida</span>
+                                                {% endif %}
+                                                {% if receta.fecha_vencimiento_cedula %}
+                                                (Vence: {{ receta.fecha_vencimiento_cedula|date:"d/m/Y" }})
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    {% if receta.medico_firma_digital %}
+                                    <div class="mt-3">
+                                        <strong>Firma Digital:</strong><br>
+                                        <img src="{{ receta.medico_firma_digital.url }}" alt="Firma Digital" style="max-width: 250px; border: 1px solid #ccc; padding: 0.5rem;">
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card-profesional">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="bi bi-qr-code-scan"></i> Código QR de Validación</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    {% if receta.qr_verificacion %}
+                                    <img src="data:image/png;base64,{{ receta.qr_verificacion }}" alt="QR Validación" class="qr-validacion mb-3">
+                                    <p class="small text-muted">Escanea este código para verificar la autenticidad de la receta y la vigencia de la cédula profesional.</p>
+                                    <button onclick="verificarQR()" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-check-circle"></i> Verificar QR
+                                    </button>
+                                    {% else %}
+                                    <p class="text-muted">QR no generado</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hash de Verificación -->
+                    {% if receta.hash_verificacion %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-shield-check"></i> 
+                        <strong>Hash SHA-256 de Verificación:</strong> 
+                        <code>{{ receta.hash_verificacion }}</code>
+                    </div>
+                    {% endif %}
+
+                    <!-- Información Adicional -->
+                    <div class="alert alert-secondary">
+                        <small>
+                            <strong>Folio:</strong> {{ receta.folio_receta }} | 
+                            <strong>Fecha de Emisión:</strong> {{ receta.fecha_emision|date:"d/m/Y H:i" }} | 
+                            <strong>Empresa:</strong> {{ empresa.nombre }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function verificarQR() {
+    // Obtener datos del QR (simulado - en producción se escanearía)
+    const qrData = {
+        folio: '{{ receta.folio_receta }}',
+        medico_cedula: '{{ receta.medico_cedula }}',
+        fecha_emision: '{{ receta.fecha_emision.isoformat }}',
+        hash: '{{ receta.hash_verificacion }}'
+    };
+    
+    fetch('{% url "verificar_qr_receta" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            qr_data: JSON.stringify(qrData)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            let mensaje = `<strong>Verificación de Receta</strong><br><br>`;
+            mensaje += `<strong>Autenticidad:</strong> ${data.autentica ? '✅ VERIFICADA' : '❌ NO VERIFICADA'}<br>`;
+            mensaje += `<strong>Cédula Vigente:</strong> ${data.cedula_vigente ? '✅ SÍ' : '❌ NO'}<br>`;
+            mensaje += `<strong>Médico:</strong> ${data.receta.medico}<br>`;
+            mensaje += `<strong>Cédula:</strong> ${data.receta.cedula}<br>`;
+            mensaje += `<strong>Fecha Emisión:</strong> ${new Date(data.receta.fecha_emision).toLocaleString('es-MX')}<br>`;
+            mensaje += `<strong>Paciente:</strong> ${data.receta.paciente}<br>`;
+            mensaje += `<strong>Diagnóstico:</strong> ${data.receta.diagnostico}`;
+            
+            Swal.fire({
+                icon: data.autentica && data.cedula_vigente ? 'success' : 'warning',
+                title: 'Resultado de Verificación',
+                html: mensaje,
+                confirmButtonColor: '#D9230F'
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.mensaje || 'Error al verificar el QR'
+            });
+        }
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al verificar el QR: ' + error.message
+        });
+    });
+}
+</script>
+{% endblock %}

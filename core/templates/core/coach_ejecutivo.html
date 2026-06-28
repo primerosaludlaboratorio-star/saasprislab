@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Coach Ejecutivo - PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-dark text-white d-flex align-items-center">
+                    <i class="fas fa-user-tie me-2"></i>
+                    <h5 class="mb-0">Coach Ejecutivo IA</h5>
+                </div>
+                <div class="card-body d-flex flex-column" style="min-height:500px;">
+                    <div id="coach-chat-box" class="flex-grow-1 overflow-auto mb-3 p-3 bg-light rounded" style="max-height:500px;">
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-comments fa-3x mb-3 opacity-50"></i>
+                            <p>Hola, soy tu Coach Ejecutivo. Pregúntame sobre liderazgo, resolución de conflictos o mejora de procesos.</p>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="coach-input" class="form-control" placeholder="Escribe tu pregunta..." autocomplete="off">
+                        <button id="btn-coach-send" class="btn btn-dark" onclick="enviarPreguntaCoach()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-book-reader me-2"></i>
+                    <span class="fw-bold">Lecturas Recomendadas</span>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for lectura in lecturas_recomendadas %}
+                    <a href="{{ lectura.link }}" class="list-group-item list-group-item-action" target="_blank" rel="noopener">
+                        <div class="fw-bold" style="font-size:.9rem;">{{ lectura.titulo }}</div>
+                        <small class="text-muted">{{ lectura.descripcion }}</small>
+                    </a>
+                    {% empty %}
+                    <div class="list-group-item text-muted">Sin lecturas disponibles</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function enviarPreguntaCoach() {
+    const input = document.getElementById('coach-input');
+    const chatBox = document.getElementById('coach-chat-box');
+    const pregunta = input.value.trim();
+    if (!pregunta) return;
+
+    chatBox.innerHTML += `<div class="mb-2 text-end"><span class="badge bg-dark p-2" style="font-size:.85rem;white-space:normal;text-align:left;">${pregunta}</span></div>`;
+    input.value = '';
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    const loading = document.createElement('div');
+    loading.className = 'mb-2';
+    loading.innerHTML = '<span class="badge bg-secondary p-2"><i class="fas fa-spinner fa-spin"></i> Pensando...</span>';
+    chatBox.appendChild(loading);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    fetch('/director/coach/api/preguntar/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+        body: JSON.stringify({pregunta: pregunta})
+    })
+    .then(r => r.json())
+    .then(data => {
+        loading.remove();
+        const respuesta = data.respuesta || data.error || 'Sin respuesta';
+        chatBox.innerHTML += `<div class="mb-2"><span class="badge bg-info text-dark p-2" style="font-size:.85rem;white-space:normal;text-align:left;">${respuesta}</span></div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    })
+    .catch(err => {
+        loading.remove();
+        chatBox.innerHTML += `<div class="mb-2"><span class="badge bg-danger p-2">Error: ${err.message}</span></div>`;
+    });
+}
+
+document.getElementById('coach-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') enviarPreguntaCoach();
+});
+</script>
+{% endblock %}

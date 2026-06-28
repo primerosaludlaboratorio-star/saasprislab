@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}2FA — No disponible aún{% endblock %}
+{% block content %}
+<div class="container py-5" style="max-width: 480px;">
+  <div class="alert alert-info rounded-4 p-4 text-center">
+    <i class="bi bi-info-circle-fill fs-4 me-2"></i>
+    <strong>2FA en preparación</strong><br>
+    <span class="small">{{ mensaje }}</span>
+  </div>
+  <div class="text-center mt-3">
+    <a href="/" class="btn btn-outline-secondary rounded-3">
+      <i class="bi bi-arrow-left me-1"></i> Volver
+    </a>
+  </div>
+</div>
+{% endblock %}

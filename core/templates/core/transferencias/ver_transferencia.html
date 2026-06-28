@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block title %}Transferencia {{ transferencia.folio }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="max-width:900px;">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'lista_transferencias' %}" class="btn btn-outline-secondary me-3">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h2 class="mb-0"><i class="fas fa-exchange-alt text-primary"></i> {{ transferencia.folio }}</h2>
+            <p class="text-muted mb-0">
+                {{ transferencia.sucursal_origen.nombre|default:"Central" }}
+                <i class="fas fa-arrow-right mx-1"></i>
+                {{ transferencia.sucursal_destino.nombre|default:"?" }}
+            </p>
+        </div>
+        <div class="ms-auto d-flex gap-2">
+            {% if transferencia.estado == 'BORRADOR' %}
+            <form method="post" action="{% url 'enviar_transferencia' transferencia.id %}" onsubmit="return confirm('¿Confirmar envío? Se descontará el stock de la sucursal origen.')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-warning">
+                    <i class="fas fa-paper-plane"></i> Enviar
+                </button>
+            </form>
+            {% elif transferencia.estado in 'EN_TRANSITO ENVIADA' %}
+            <form method="post" action="{% url 'recibir_transferencia' transferencia.id %}" onsubmit="return confirm('¿Confirmar recepción? Se sumará el stock a la sucursal destino.')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-check-circle"></i> Recibir
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted small mb-2">ESTADO</h6>
+                    {% if transferencia.estado == 'BORRADOR' %}<span class="badge bg-secondary fs-6">Borrador</span>
+                    {% elif transferencia.estado == 'EN_TRANSITO' %}<span class="badge bg-warning text-dark fs-6">En Tránsito</span>
+                    {% elif transferencia.estado == 'RECIBIDA' %}<span class="badge bg-info fs-6">Recibida</span>
+                    {% elif transferencia.estado == 'COMPLETADA' %}<span class="badge bg-success fs-6">Completada</span>
+                    {% elif transferencia.estado == 'CANCELADA' %}<span class="badge bg-danger fs-6">Cancelada</span>
+                    {% else %}<span class="badge bg-secondary fs-6">{{ transferencia.estado }}</span>{% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted small mb-1">SOLICITADO POR</h6>
+                    <p class="mb-0">{{ transferencia.solicitado_por.get_full_name|default:transferencia.solicitado_por.username|default:"—" }}</p>
+                    <small class="text-muted">{{ transferencia.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted small mb-1">MOTIVO</h6>
+                    <p class="mb-0 small">{{ transferencia.motivo|default:"Sin especificar" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalles -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+            <h6 class="mb-0"><i class="fas fa-boxes text-primary me-2"></i>Productos ({{ detalles|length }})</h6>
+        </div>
+        <div class="card-body p-0">
+            {% if detalles %}
+            <table class="table mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Producto</th>
+                        <th class="text-center">Solicitado</th>
+                        <th class="text-center">Enviado</th>
+                        <th class="text-center">Recibido</th>
+                        <th>Lote</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for d in detalles %}
+                <tr>
+                    <td>{{ d.producto.nombre }}</td>
+                    <td class="text-center">{{ d.cantidad_solicitada|default:"—" }}</td>
+                    <td class="text-center">{{ d.cantidad_enviada|default:"—" }}</td>
+                    <td class="text-center">
+                        {% if d.cantidad_recibida %}
+                        <span class="text-success fw-bold">{{ d.cantidad_recibida }}</span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td><small class="text-muted">{{ d.lote.numero_lote|default:"—" }}</small></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="text-center py-4 text-muted">
+                <p>No hay productos en esta transferencia.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reportes de Productividad{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-chart-bar"></i> Reportes de Productividad</h2>
+            <p class="text-muted">
+                Estadísticas sobre pacientes, cancelaciones, rentabilidad y rendimiento
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group">
+                <button class="btn btn-outline-primary active" data-periodo="30">Mes</button>
+                <button class="btn btn-outline-primary" data-periodo="90">Trimestre</button>
+                <button class="btn btn-outline-primary" data-periodo="365">Año</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs principales -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                    <h3 class="mb-0">{{ kpis.total_consultas }}</h3>
+                    <small class="text-muted">Consultas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <i class="fas fa-user-plus fa-2x text-success mb-2"></i>
+                    <h3 class="mb-0">{{ kpis.pacientes_nuevos }}</h3>
+                    <small class="text-muted">Nuevos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <i class="fas fa-redo fa-2x text-info mb-2"></i>
+                    <h3 class="mb-0">{{ kpis.pacientes_subsecuentes }}</h3>
+                    <small class="text-muted">Subsecuentes</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
+                    <h3 class="mb-0">{{ kpis.tasa_cancelacion }}%</h3>
+                    <small class="text-muted">Cancelación</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <i class="fas fa-dollar-sign fa-2x text-warning mb-2"></i>
+                    <h3 class="mb-0">${{ kpis.ingresos_totales|floatformat:0 }}</h3>
+                    <small class="text-muted">Ingresos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body py-3">
+                    <i class="fas fa-receipt fa-2x text-secondary mb-2"></i>
+                    <h3 class="mb-0">${{ kpis.ticket_promedio|floatformat:0 }}</h3>
+                    <small class="text-muted">Ticket Promedio</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-chart-line"></i> Consultas e Ingresos por Día</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartConsultasIngresos" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-chart-pie"></i> Top Diagnósticos</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartDiagnosticos" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-clock"></i> Distribución por Hora del Día</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartHoras" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-calendar-week"></i> Consultas por Día de la Semana</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartDiasSemana" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla resumen -->
+    {% if resumen_mensual %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-table"></i> Resumen Mensual</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mes</th>
+                            <th>Consultas</th>
+                            <th>Nuevos</th>
+                            <th>Subsecuentes</th>
+                            <th>Cancelaciones</th>
+                            <th>Ingresos</th>
+                            <th>Ticket Promedio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in resumen_mensual %}
+                        <tr>
+                            <td><strong>{{ r.mes }}</strong></td>
+                            <td>{{ r.consultas }}</td>
+                            <td class="text-success">{{ r.nuevos }}</td>
+                            <td>{{ r.subsecuentes }}</td>
+                            <td class="text-danger">{{ r.cancelaciones }}</td>
+                            <td>${{ r.ingresos|floatformat:0 }}</td>
+                            <td>${{ r.ticket_promedio|floatformat:0 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-chart-bar fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">Sin datos suficientes para reportes</h4>
+        <p class="text-muted">Los reportes se generan automáticamente conforme se finalicen consultas</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Datos inyectados por el contexto de Django
+    const datosChart = {{ datos_charts|safe|default:"{}" }};
+    
+    if (datosChart.consultas_por_dia) {
+        new Chart(document.getElementById('chartConsultasIngresos'), {
+            type: 'bar',
+            data: {
+                labels: datosChart.consultas_por_dia.fechas || [],
+                datasets: [
+                    { label: 'Consultas', data: datosChart.consultas_por_dia.cantidad || [], backgroundColor: '#0d6efd80', borderColor: '#0d6efd', borderWidth: 1 },
+                    { label: 'Ingresos ($)', data: datosChart.consultas_por_dia.ingresos || [], type: 'line', borderColor: '#198754', tension: 0.3, fill: false, yAxisID: 'y1' }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { title: { display: true, text: 'Consultas' } },
+                    y1: { position: 'right', title: { display: true, text: 'Ingresos ($)' }, grid: { drawOnChartArea: false } }
+                }
+            }
+        });
+    }
+    
+    if (datosChart.top_diagnosticos) {
+        new Chart(document.getElementById('chartDiagnosticos'), {
+            type: 'doughnut',
+            data: {
+                labels: datosChart.top_diagnosticos.labels || [],
+                datasets: [{ data: datosChart.top_diagnosticos.data || [], backgroundColor: ['#0d6efd','#198754','#ffc107','#dc3545','#6f42c1','#0dcaf0','#fd7e14','#20c997'] }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
+        });
+    }
+    
+    if (datosChart.horas) {
+        new Chart(document.getElementById('chartHoras'), {
+            type: 'bar',
+            data: {
+                labels: datosChart.horas.labels || [],
+                datasets: [{ label: 'Consultas', data: datosChart.horas.data || [], backgroundColor: '#0dcaf080' }]
+            },
+            options: { responsive: true }
+        });
+    }
+    
+    if (datosChart.dias_semana) {
+        new Chart(document.getElementById('chartDiasSemana'), {
+            type: 'bar',
+            data: {
+                labels: datosChart.dias_semana.labels || ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],
+                datasets: [{ label: 'Consultas', data: datosChart.dias_semana.data || [], backgroundColor: '#ffc10780' }]
+            },
+            options: { responsive: true }
+        });
+    }
+});
+</script>
+{% endblock %}

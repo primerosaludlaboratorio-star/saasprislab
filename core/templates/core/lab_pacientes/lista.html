@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Pacientes — Laboratorio | PRISLAB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  {# ── Encabezado ────────────────────────────────────────────────────── #}
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h4 class="fw-bold mb-0">
+        <i class="fas fa-users text-primary me-2"></i>Pacientes — Historial de Estudios
+      </h4>
+      <small class="text-muted">
+        Busca un paciente para ver su historial de visitas y resultados de laboratorio.
+        El historial clínico (consultas médicas) está disponible en el módulo de Consultorio.
+      </small>
+    </div>
+    <a href="{% url 'recepcion_lab' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus me-1"></i>Nueva Orden
+    </a>
+  </div>
+
+  {# ── Búsqueda ──────────────────────────────────────────────────────── #}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-center">
+        <div class="col-md-8">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0">
+              <i class="fas fa-search text-muted"></i>
+            </span>
+            <input type="text" name="q" value="{{ query }}"
+                   class="form-control border-start-0"
+                   placeholder="Nombre, apellidos o teléfono del paciente…"
+                   autofocus>
+          </div>
+        </div>
+        <div class="col-md-auto">
+          <button type="submit" class="btn btn-primary">Buscar</button>
+          {% if query %}
+          <a href="?" class="btn btn-outline-secondary ms-1">Limpiar</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# ── Tabla de resultados ───────────────────────────────────────────── #}
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+      <span class="fw-semibold text-dark">
+        {% if query %}
+          Resultados para "{{ query }}" — {{ paginator.count }} paciente{{ paginator.count|pluralize }}
+        {% else %}
+          Todos los pacientes ({{ paginator.count }})
+        {% endif %}
+      </span>
+    </div>
+    <div class="card-body p-0">
+      {% if pacientes %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Paciente</th>
+              <th>Edad / Sexo</th>
+              <th>Teléfono</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in pacientes %}
+            <tr>
+              <td>
+                <div class="fw-semibold text-dark">{{ p.nombre_completo }}</div>
+                {% if p.curp %}
+                <small class="text-muted">{{ p.curp }}</small>
+                {% endif %}
+              </td>
+              <td>
+                {% if p.fecha_nacimiento %}
+                  <span class="badge bg-light text-dark border">
+                    {{ p.fecha_nacimiento|timesince|truncatechars:6 }}
+                  </span>
+                {% endif %}
+                {% if p.sexo %}
+                  <span class="badge {% if p.sexo == 'M' %}bg-info{% else %}bg-pink{% endif %} bg-opacity-10 text-dark border ms-1">
+                    {{ p.get_sexo_display|default:p.sexo }}
+                  </span>
+                {% endif %}
+              </td>
+              <td>{{ p.telefono|default:"—" }}</td>
+              <td>
+                <a href="{% url 'laboratorio:historial_paciente' p.id %}"
+                   class="btn btn-sm btn-outline-primary">
+                  <i class="fas fa-flask me-1"></i>Historial de Estudios
+                </a>
+                <a href="{% url 'consulta_ordenes' %}?q={{ p.nombre_completo }}"
+                   class="btn btn-sm btn-outline-secondary ms-1">
+                  <i class="fas fa-search me-1"></i>Órdenes
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {# Paginación #}
+      {% if page_obj.has_other_pages %}
+      <div class="d-flex justify-content-center py-3">
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?q={{ query }}&page={{ page_obj.previous_page_number }}">
+                <i class="fas fa-chevron-left"></i>
+              </a>
+            </li>
+            {% endif %}
+            <li class="page-item active">
+              <span class="page-link">{{ page_obj.number }} / {{ paginator.num_pages }}</span>
+            </li>
+            {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?q={{ query }}&page={{ page_obj.next_page_number }}">
+                <i class="fas fa-chevron-right"></i>
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-user-slash fa-2x mb-3 d-block opacity-30"></i>
+        {% if query %}
+          No se encontraron pacientes con "{{ query }}".
+        {% else %}
+          No hay pacientes registrados aún.
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}Agendar Cita - Consultorio{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="max-width:800px;">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'consultorio:tablero_recepcion' %}" class="btn btn-outline-secondary me-3">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h2 class="mb-0"><i class="fas fa-calendar-plus text-primary"></i> Agendar Cita</h2>
+            <p class="text-muted mb-0">Programar una nueva cita médica</p>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="post" action="{% url 'consultorio:agendar_cita' %}">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Paciente *</label>
+                    <div class="position-relative">
+                        <input type="text" id="paciente-search" name="paciente_nombre" class="form-control"
+                               placeholder="Buscar por nombre, teléfono o folio..."
+                               autocomplete="off"
+                               value="{{ form_data.paciente_nombre|default:'' }}">
+                        <div id="paciente-dropdown" class="list-group position-absolute w-100 shadow-sm z-3 d-none"
+                             style="top:100%;max-height:220px;overflow-y:auto;"></div>
+                    </div>
+                    <input type="hidden" id="paciente_id" name="paciente_id"
+                           value="{{ form_data.paciente_id|default:'' }}" required>
+                    <div id="paciente-seleccionado" class="mt-1 small text-success fw-semibold"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="medico_id" class="form-label fw-bold">Médico</label>
+                    <select name="medico_id" id="medico_id" class="form-select" {% if medicos %}required{% endif %}>
+                        {% if medicos %}
+                        <option value="">— Seleccionar médico —</option>
+                        {% for m in medicos %}
+                        <option value="{{ m.id }}" {% if form_data.medico_id == m.id|stringformat:"d" %}selected{% endif %}>Dr(a). {{ m.nombre_completo }} — {{ m.especialidad|default:"General" }}</option>
+                        {% endfor %}
+                        {% else %}
+                        <option value="">No hay médicos configurados; se creará uno automáticamente</option>
+                        {% endif %}
+                    </select>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label for="fecha_cita" class="form-label fw-bold">Fecha *</label>
+                        <input type="date" name="fecha_cita" id="fecha_cita" class="form-control"
+                               required min="{{ fecha_min }}" max="{{ fecha_max }}"
+                               value="{{ form_data.fecha_cita|default:'' }}">
+                        <div class="form-text">Seleccione una fecha entre hoy y los próximos 365 días.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="hora_cita" class="form-label fw-bold">Hora *</label>
+                        <input type="time" name="hora_cita" id="hora_cita" class="form-control" required value="{{ form_data.hora_cita|default:'' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="duracion" class="form-label fw-bold">Duración (min)</label>
+                        <input type="number" name="duracion" id="duracion" class="form-control" value="{{ form_data.duracion|default:'30' }}" min="10" max="120">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="motivo" class="form-label fw-bold">Motivo de la Cita</label>
+                    <textarea name="motivo" id="motivo" class="form-control" rows="3" placeholder="Descripción breve del motivo...">{{ form_data.motivo|default:'' }}</textarea>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'consultorio:tablero_recepcion' %}" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-calendar-check"></i> Agendar Cita
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    const searchEl = document.getElementById('paciente-search');
+    const hiddenEl = document.getElementById('paciente_id');
+    const dropdown = document.getElementById('paciente-dropdown');
+    const selLabel = document.getElementById('paciente-seleccionado');
+    if(!searchEl) return;
+    let debounce;
+
+    searchEl.addEventListener('input', function(){
+        clearTimeout(debounce);
+        hiddenEl.value = '';
+        selLabel.textContent = '';
+        const q = searchEl.value.trim();
+        if(q.length < 2){ dropdown.classList.add('d-none'); dropdown.innerHTML=''; return; }
+        debounce = setTimeout(function(){
+            fetch('/api/pacientes/buscar/?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => {
+                    dropdown.innerHTML = '';
+                    const items = data.pacientes || data.results || [];
+                    if(!items.length){
+                        dropdown.innerHTML = '<div class="list-group-item text-muted small">Sin resultados</div>';
+                    } else {
+                        items.slice(0,10).forEach(function(p){
+                            const a = document.createElement('a');
+                            a.href = '#';
+                            a.className = 'list-group-item list-group-item-action py-2';
+                            const nombre = p.nombre_completo || p.nombre || '';
+                            a.innerHTML = '<strong>' + nombre + '</strong>'
+                                + '<br><small class="text-muted">'
+                                + (p.telefono||'') + (p.folio ? ' · ' + p.folio : '') + '</small>';
+                            a.addEventListener('click', function(e){
+                                e.preventDefault();
+                                hiddenEl.value = p.id;
+                                searchEl.value = nombre;
+                                selLabel.textContent = '✓ Paciente seleccionado';
+                                dropdown.classList.add('d-none');
+                            });
+                            dropdown.appendChild(a);
+                        });
+                    }
+                    dropdown.classList.remove('d-none');
+                })
+                .catch(function(){ dropdown.classList.add('d-none'); });
+        }, 280);
+    });
+
+    document.addEventListener('click', function(e){
+        if(!searchEl.contains(e.target) && !dropdown.contains(e.target)){
+            dropdown.classList.add('d-none');
+        }
+    });
+
+    if(hiddenEl.value && searchEl.value){
+        selLabel.textContent = '✓ Paciente seleccionado';
+    }
+
+    const fechaEl = document.getElementById('fecha_cita');
+    if (fechaEl) {
+        fechaEl.addEventListener('input', function () {
+            if (!fechaEl.value) return;
+            const min = fechaEl.getAttribute('min');
+            const max = fechaEl.getAttribute('max');
+            if ((min && fechaEl.value < min) || (max && fechaEl.value > max)) {
+                fechaEl.setCustomValidity('La fecha debe estar entre hoy y los próximos 365 días.');
+            } else {
+                fechaEl.setCustomValidity('');
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bienvenido — PRISLAB Kiosco</title>
+  <style>
+    :root { --verde:#28a745; --azul:#2B3A42; --rojo:#D9230F; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body {
+      font-family:'Segoe UI',system-ui,sans-serif;
+      background:var(--azul); min-height:100vh;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .card {
+      background:#fff; border-radius:1.5rem;
+      padding:3rem 2.5rem; max-width:520px; width:90%;
+      text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.4);
+    }
+    .icon { font-size:5rem; margin-bottom:1rem; }
+    h1 { color:var(--azul); font-size:1.8rem; margin-bottom:.5rem; }
+    .folio {
+      display:inline-block; background:#f0f7ff;
+      border:2px solid var(--azul); border-radius:.8rem;
+      padding:.5rem 1.5rem; font-size:1.4rem; font-weight:700;
+      color:var(--azul); margin:1rem 0;
+    }
+    p { color:#555; line-height:1.6; font-size:1rem; }
+    .instrucciones {
+      margin-top:1.5rem; background:#f8f9fa;
+      border-radius:.8rem; padding:1.2rem; text-align:left;
+    }
+    .instrucciones li { margin:.5rem 0; color:#444; }
+    .auto-close { margin-top:2rem; color:#999; font-size:.85rem; }
+    .barra-progreso {
+      height:4px; background:#e9ecef; border-radius:2px; margin-top:.5rem;
+    }
+    .barra-fill {
+      height:4px; background:var(--verde); border-radius:2px;
+      width:100%; animation:shrink 10s linear forwards;
+    }
+    @keyframes shrink { from{width:100%} to{width:0} }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">✅</div>
+    <h1>¡Check-in exitoso!</h1>
+    {% if nombre_paciente %}
+    <p>Bienvenido(a), <strong>{{ nombre_paciente }}</strong></p>
+    {% elif paciente %}
+    <p>Bienvenido(a), <strong>{{ paciente }}</strong></p>
+    {% endif %}
+    <div class="folio">Folio: {{ folio }}</div>
+    {% if check_in_time %}<p style="color:#28a745; font-size:.85rem; margin-top:.4rem;">✔ Registrado a las {{ check_in_time }}</p>{% endif %}
+
+    <div class="instrucciones">
+      <strong>Por favor:</strong>
+      <ol>
+        <li>Tome asiento en la sala de espera</li>
+        <li>Espere a ser llamado(a) por su nombre</li>
+        <li>Tenga a la mano una identificación oficial</li>
+        <li>El personal le indicará el tipo de tubo para su muestra</li>
+      </ol>
+    </div>
+
+    <div class="auto-close">
+      Esta pantalla se cerrará automáticamente en 10 segundos
+      <div class="barra-progreso"><div class="barra-fill"></div></div>
+    </div>
+  </div>
+  <script>
+    setTimeout(() => window.location.href = '/kiosko/', 10000);
+  </script>
+</body>
+</html>
