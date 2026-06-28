@@ -439,3 +439,14 @@ def api_buscar_cliente(request):
     ]
     
     return JsonResponse({'results': results})
+
+
+# ============================================================================
+# AUTOFACTURA PÚBLICA POR FOLIO — /f/<folio>/
+# Acceso sin login (escaneo QR desde ticket de venta)
+# ============================================================================
+def autofactura_por_folio(request, folio):
+    """Redirige el acceso corto /f/<folio>/ al portal de autofacturación."""
+    from django.shortcuts import redirect
+    return redirect(f'/contabilidad/autofactura/?folio={folio}')
+

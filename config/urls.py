@@ -757,6 +757,60 @@ urlpatterns = [
         __import__('core.views.cron_tasks', fromlist=['cron_verify_escudo_clinico']).cron_verify_escudo_clinico,
         name='cron_verify_escudo_clinico',
     ),
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # AUTOFACTURA PÚBLICA — /f/<folio>/ (acceso sin login, escaneo QR)
+    # Commit 682790f — Módulo Multi-Tenant Suscripciones
+    # ══════════════════════════════════════════════════════════════════════════
+    path(
+        'f/<str:folio>/',
+        __import__('contabilidad.views', fromlist=['autofactura_por_folio']).autofactura_por_folio
+        if hasattr(__import__('contabilidad.views', fromlist=['autofactura_por_folio']), 'autofactura_por_folio')
+        else __import__('django.views.generic', fromlist=['RedirectView']).RedirectView.as_view(
+            url='/contabilidad/autofactura/', permanent=False
+        ),
+        name='autofactura_folio',
+    ),
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # SUSCRIPCIONES — rutas públicas del módulo Multi-Tenant
+    # ══════════════════════════════════════════════════════════════════════════
+    path(
+        'suscripciones/',
+        __import__('suscripciones.views', fromlist=['lista_suscripciones']).lista_suscripciones
+        if hasattr(__import__('suscripciones.views', fromlist=['lista_suscripciones']), 'lista_suscripciones')
+        else __import__('django.views.generic', fromlist=['RedirectView']).RedirectView.as_view(
+            url='/admin/suscripciones/', permanent=False
+        ),
+        name='suscripciones_lista',
+    ),
+    path(
+        'suscripciones/planes/',
+        __import__('suscripciones.views', fromlist=['lista_planes']).lista_planes
+        if hasattr(__import__('suscripciones.views', fromlist=['lista_planes']), 'lista_planes')
+        else __import__('django.views.generic', fromlist=['RedirectView']).RedirectView.as_view(
+            url='/admin/suscripciones/plan/', permanent=False
+        ),
+        name='suscripciones_planes',
+    ),
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # INVENTARIO — rutas alias (productos y movimientos → silo-lab)
+    # ══════════════════════════════════════════════════════════════════════════
+    path(
+        'inventario/productos/',
+        __import__('django.views.generic', fromlist=['RedirectView']).RedirectView.as_view(
+            url='/silo-lab/lab/lotes/', permanent=False
+        ),
+        name='inventario_productos_alias',
+    ),
+    path(
+        'inventario/movimientos/',
+        __import__('django.views.generic', fromlist=['RedirectView']).RedirectView.as_view(
+            url='/silo-lab/lab/salidas-tecnicas/', permanent=False
+        ),
+        name='inventario_movimientos_alias',
+    ),
 ]
 
 # Servir archivos media en desarrollo

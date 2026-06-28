@@ -114,7 +114,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     const ctx = document.getElementById('grafica-tendencias').getContext('2d');
     
-    const tendencias = {{ tendencias|safe }};
+    {{ tendencias|json_script:"tendencias-data" }}
+    const tendencias = JSON.parse(document.getElementById('tendencias-data').textContent);
     const labels = tendencias.map(t => t.fecha);
     const valores = tendencias.map(t => t.valor);
     
