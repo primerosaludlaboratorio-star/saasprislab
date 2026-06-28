@@ -31,10 +31,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: pip
 
       # WeasyPrint: el paquete pip en ubuntu-latest suele necesitar GTK/Pango/Cairo del sistema
@@ -53,6 +53,9 @@ jobs:
 
       - name: Django system check
         run: python manage.py check
+
+      - name: Migration check
+        run: python manage.py migrate --check --no-input
 
       - name: Quality Gate — suite ampliada (Guardian, CFDI, Westgard, fórmulas LIMS, inventario FEFO/stock, offline, sandbox, ética IA)
         run: |

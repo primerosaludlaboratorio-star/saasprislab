@@ -25,6 +25,8 @@ if REDIS_URL:
         }
     }
     _cache_logger.info('[CACHE] Backend Redis activo (ubicación omitida en logs por seguridad)')
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+    SESSION_CACHE_ALIAS = 'default'
 else:
     CACHES = {
         'default': {
@@ -33,9 +35,9 @@ else:
         }
     }
     _cache_logger.info('[CACHE] LocMem (desarrollo)')
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 # ── SESIONES ──────────────────────────────────────────────────────────────────
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = int(os.environ.get('SESSION_COOKIE_AGE_SECONDS', str(60 * 60 * 24 * 30)))
 SESSION_SHORT_COOKIE_AGE = int(os.environ.get('SESSION_SHORT_COOKIE_AGE_SECONDS', str(60 * 60 * 10)))
 SESSION_SAVE_EVERY_REQUEST = True

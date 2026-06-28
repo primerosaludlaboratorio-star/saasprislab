@@ -10,7 +10,7 @@ from .base import BASE_DIR, IS_PRODUCTION, _env_bool, _env_int
 
 if os.environ.get('DB_HOST'):
     db_host = os.environ.get('DB_HOST', '')
-    db_conn_max_age = _env_int('DB_CONN_MAX_AGE', 0 if IS_PRODUCTION else 60)
+    db_conn_max_age = _env_int('DB_CONN_MAX_AGE', 60)  # 60s persistent connections (override via env)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',

@@ -56,7 +56,6 @@ pypdf>=4.3.0
 
 # RAG — Motor de Biblioteca de Entrenamiento PRIS-IA
 chromadb>=1.6.0
-numpy>=1.26.0
 
 # Seguridad / Auth
 pyotp==2.9.0
