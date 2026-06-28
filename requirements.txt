@@ -55,7 +55,7 @@ lxml>=5.2.2
 pypdf>=4.3.0
 
 # RAG — Motor de Biblioteca de Entrenamiento PRIS-IA
-chromadb>=0.4.24
+chromadb>=1.6.0
 numpy>=1.26.0
 
 # Seguridad / Auth
@@ -69,7 +69,7 @@ pytz==2024.1
 qrcode[pil]==7.4.2
 six==1.16.0
 user-agents==2.2.0
-zeep==4.2.1
+zeep>=4.3.3
 colorama>=0.4.6
 psutil>=5.9.0
 
