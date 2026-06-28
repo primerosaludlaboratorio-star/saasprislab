@@ -5,12 +5,14 @@ Incluye: Dashboard médico, funciones auxiliares compartidas.
 import json
 import logging
 import os
+from django.core.cache import cache
+from django.db import DatabaseError, OperationalError, connection
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout, get_user_model
 from django.contrib.auth.views import LoginView
 from django.http import HttpResponse, JsonResponse
-from django.db import DatabaseError, OperationalError
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
@@ -21,6 +23,67 @@ from core.models import Empresa, Usuario
 # Logger específico para errores del frontend
 logger_frontend = logging.getLogger('prislab.frontend')
 logger_core = logging.getLogger('core')
+
+
+def _database_is_ready() -> None:
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT 1')
+
+
+def _cache_is_ready() -> None:
+    cache_key = 'prislab-healthcheck'
+    cache.set(cache_key, timezone.now().isoformat(), 5)
+    if not cache.get(cache_key):
+        raise RuntimeError('Cache no responde')
+
+
+def _build_health_payload(component_status: dict[str, str]) -> JsonResponse:
+    overall = 'ok' if all(value == 'ok' for value in component_status.values()) else 'degraded'
+    status_code = 200 if overall == 'ok' else 503
+    return JsonResponse(
+        {
+            'status': overall,
+            'timestamp': timezone.now().isoformat(),
+            'components': component_status,
+        },
+        status=status_code,
+    )
+
+
+@require_http_methods(['GET', 'HEAD'])
+def liveness_view(request):
+    return JsonResponse(
+        {
+            'status': 'alive',
+            'timestamp': timezone.now().isoformat(),
+        },
+        status=200,
+    )
+
+
+@require_http_methods(['GET', 'HEAD'])
+def readiness_view(request):
+    component_status = {}
+    try:
+        _database_is_ready()
+        component_status['database'] = 'ok'
+    except (DatabaseError, OperationalError) as exc:
+        logger_core.error('readiness_view: database no disponible: %s', exc, exc_info=True)
+        component_status['database'] = 'error'
+
+    try:
+        _cache_is_ready()
+        component_status['cache'] = 'ok'
+    except Exception as exc:
+        logger_core.error('readiness_view: cache no disponible: %s', exc, exc_info=True)
+        component_status['cache'] = 'error'
+
+    return _build_health_payload(component_status)
+
+
+@require_http_methods(['GET', 'HEAD'])
+def health_view(request):
+    return readiness_view(request)
 
 
 def home_view(request):

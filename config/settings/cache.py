@@ -38,8 +38,8 @@ else:
     SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 # ── SESIONES ──────────────────────────────────────────────────────────────────
-SESSION_COOKIE_AGE = int(os.environ.get('SESSION_COOKIE_AGE_SECONDS', str(60 * 60 * 24 * 30)))
-SESSION_SHORT_COOKIE_AGE = int(os.environ.get('SESSION_SHORT_COOKIE_AGE_SECONDS', str(60 * 60 * 10)))
+SESSION_COOKIE_AGE = int(os.environ.get('SESSION_COOKIE_AGE_SECONDS', str(60 * 60 * 8)))
+SESSION_SHORT_COOKIE_AGE = int(os.environ.get('SESSION_SHORT_COOKIE_AGE_SECONDS', str(60 * 60)))
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_HTTPONLY = True

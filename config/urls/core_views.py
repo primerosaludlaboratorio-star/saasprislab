@@ -2,7 +2,13 @@ from django.contrib import admin
 from django.urls import path
 from django.views.generic import RedirectView
 from core import views
-from core.views.general import CustomLoginView, service_worker_view
+from core.views.general import (
+    CustomLoginView,
+    service_worker_view,
+    health_view,
+    readiness_view,
+    liveness_view,
+)
 from core.views import autenticacion_2fa as views_2fa
 
 urlpatterns = [
@@ -17,6 +23,9 @@ urlpatterns = [
 
     # PWA — Service Worker con scope completo del dominio (única instancia)
     path('sw.js', service_worker_view, name='service_worker'),
+    path('health/', health_view, name='health'),
+    path('ready/', readiness_view, name='ready'),
+    path('live/', liveness_view, name='live'),
 
     # RUTA PRINCIPAL - Login personalizado
     path('', CustomLoginView.as_view(), name='login_root'),

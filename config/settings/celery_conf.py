@@ -40,4 +40,16 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'core.tasks.notificaciones_tasks.ejecutar_verificaciones_automaticas_todas_empresas',
         'schedule': crontab(hour=7, minute=0),
     },
+    'limpieza-entorno-diaria': {
+        'task': 'core.tasks.maintenance_tasks.ejecutar_limpieza_entorno_prod',
+        'schedule': crontab(hour=2, minute=15),
+    },
+    'backup-nocturno-diario': {
+        'task': 'core.tasks.maintenance_tasks.ejecutar_backup_database',
+        'schedule': crontab(hour=2, minute=45),
+    },
+    'verificacion-escudo-diaria': {
+        'task': 'core.tasks.maintenance_tasks.ejecutar_verificacion_escudo_clinico',
+        'schedule': crontab(hour=4, minute=0),
+    },
 }

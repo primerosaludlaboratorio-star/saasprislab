@@ -1,19 +1,14 @@
-"""
-Tareas Celery del app core (autodiscover_tasks).
-"""
-import logging
+"""Tareas asíncronas Celery de PRISLAB."""
+from .storage_tasks import sincronizar_archivo_drive
+from .maintenance_tasks import (
+    ejecutar_backup_database,
+    ejecutar_limpieza_entorno_prod,
+    ejecutar_verificacion_escudo_clinico,
+)
 
-from celery import shared_task
-
-logger = logging.getLogger(__name__)
-
-
-@shared_task(ignore_result=True, name='core.registrar_rastro_forense_task')
-def registrar_rastro_forense_task(**kwargs):
-    """Persiste un ForenseAcceso desde payload serializable (JSON)."""
-    try:
-        from core.models import ForenseAcceso
-
-        ForenseAcceso.objects.create(**kwargs)
-    except Exception as exc:
-        logger.warning('registrar_rastro_forense_task falló: %s', exc, exc_info=True)
+__all__ = [
+    'sincronizar_archivo_drive',
+    'ejecutar_backup_database',
+    'ejecutar_limpieza_entorno_prod',
+    'ejecutar_verificacion_escudo_clinico',
+]

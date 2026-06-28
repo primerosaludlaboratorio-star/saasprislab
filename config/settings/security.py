@@ -116,8 +116,8 @@ CORS_ALLOW_CREDENTIALS = os.environ.get('CORS_ALLOW_CREDENTIALS', 'False').lower
 # ── SESSION ───────────────────────────────────────────────────────────────────
 # Nota: SESSION_ENGINE va en async_workers.py (decisión de infraestructura DB vs Redis).
 
-SESSION_COOKIE_AGE = int(os.environ.get('SESSION_COOKIE_AGE_SECONDS', str(60 * 60 * 24 * 30)))  # 30 días
-SESSION_SHORT_COOKIE_AGE = int(os.environ.get('SESSION_SHORT_COOKIE_AGE_SECONDS', str(60 * 60 * 10)))  # 10 horas
+SESSION_COOKIE_AGE = int(os.environ.get('SESSION_COOKIE_AGE_SECONDS', str(60 * 60 * 8)))  # 8 horas
+SESSION_SHORT_COOKIE_AGE = int(os.environ.get('SESSION_SHORT_COOKIE_AGE_SECONDS', str(60 * 60)))  # 1 hora
 SESSION_SAVE_EVERY_REQUEST = True          # Renueva la sesión con cada request
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False    # Persistir aunque se cierre el navegador
 SESSION_COOKIE_HTTPONLY = True             # BLINDAJE: No accesible via JS
