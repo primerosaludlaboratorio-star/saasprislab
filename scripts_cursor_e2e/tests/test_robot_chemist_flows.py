@@ -5,6 +5,7 @@ Ubicación: ``scripts_cursor_e2e/`` para validación Cursor independiente de Cas
 """
 from datetime import date
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -50,6 +51,9 @@ class RobotChemistPdfCapturaTests(TestCase):
             estado_pago='PAGADO',
             responsable_ingreso=self.user,
         )
+        
+        # Guardamos en la base de datos sin disparar las validaciones estrictas
+        OrdenDeServicio.objects.filter(id=self.orden.id).update(estado='RESULTADOS_LISTOS')
         self.client = Client()
         self.client.force_login(self.user)
 

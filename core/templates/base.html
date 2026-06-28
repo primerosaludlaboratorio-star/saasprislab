@@ -34,6 +34,9 @@
         :root {
             --prislab-font-primary: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             --prislab-bg-broken-white: #fafafa;
+            --bg-glass: rgba(255, 255, 255, 0.7);
+            --border-glass: rgba(255, 255, 255, 0.2);
+            --text-primary: #333333;
             {% if request.empresa %}
                 {% if request.empresa.color_primario %}
                 --prislab-red: {{ request.empresa.color_primario }};
@@ -43,12 +46,31 @@
                 {% endif %}
             {% endif %}
         }
+        
+        /* Dark Theme Variables */
+        [data-theme="dark"] {
+            --prislab-bg-broken-white: #121212;
+            --bg-glass: rgba(30, 30, 30, 0.7);
+            --border-glass: rgba(255, 255, 255, 0.1);
+            --text-primary: #e0e0e0;
+        }
+        
+        .glass-panel {
+            background: var(--bg-glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
         {% if request.empresa and request.empresa.css_personalizado %}
         {{ request.empresa.css_personalizado|safe }}
         {% endif %}
         body {
             font-family: var(--prislab-font-primary);
             background-color: var(--prislab-bg-broken-white);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         /* Accesibilidad: foco visible para teclado (WCAG 2.4.7) */
         :focus-visible {
@@ -597,6 +619,9 @@
             <span class="d-none align-self-center small me-2 text-warning" id="prislab-outbox-badge-wrap" style="font-weight:600;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="">
                 <i class="bi bi-cloud-arrow-up"></i> <span id="prislab-outbox-num">0</span>
             </span>
+            <a href="#" class="header-action-btn neon-hover" id="darkModeToggle" title="Modo Oscuro" onclick="toggleDarkMode()">
+                <i class="bi bi-moon-stars"></i>
+            </a>
             <a href="{% url 'notificaciones_lista' %}" class="header-action-btn neon-hover position-relative" title="Centro de Notificaciones" id="notificacionesBtn">
                 <i class="bi bi-bell"></i>
                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificacionesBadge" style="display:none; font-size:.6rem;">0</span>
@@ -1894,5 +1919,31 @@
 <!-- Sidebar PIN Script - Fijar sidebar -->
 <script src="{% static 'js/sidebar_pin.js' %}"></script>
 
+    <script src="{% static 'js/voice_commander.js' %}"></script>
+    <script>
+        function toggleDarkMode() {
+            const body = document.documentElement;
+            const currentTheme = body.getAttribute('data-theme');
+            if (currentTheme === 'dark') {
+                body.removeAttribute('data-theme');
+                localStorage.setItem('prislab-theme', 'light');
+                document.getElementById('darkModeToggle').innerHTML = '<i class="bi bi-moon-stars"></i>';
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                localStorage.setItem('prislab-theme', 'dark');
+                document.getElementById('darkModeToggle').innerHTML = '<i class="bi bi-sun"></i>';
+            }
+        }
+        
+        // Cargar tema guardado
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const savedTheme = localStorage.getItem('prislab-theme') || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                const btn = document.getElementById('darkModeToggle');
+                if (btn) btn.innerHTML = '<i class="bi bi-sun"></i>';
+            }
+        });
+    </script>
 </body>
 </html>

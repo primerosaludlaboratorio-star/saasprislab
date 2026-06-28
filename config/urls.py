@@ -676,6 +676,12 @@ urlpatterns = [
     path('consentimiento/<int:orden_id>/guardar/', __import__('core.views.consentimiento_digital', fromlist=['api_guardar_consentimiento']).api_guardar_consentimiento, name='api_guardar_consentimiento'),
     path('consentimiento/pdf/<str:folio>/', __import__('core.views.consentimiento_digital', fromlist=['descargar_pdf_consentimiento']).descargar_pdf_consentimiento, name='descargar_pdf_consentimiento'),
 
+    # =====================================================================
+    # PRISLAB AI (Inteligencia Artificial Embebida)
+    # =====================================================================
+    path('ia/', include('pris_ai_core.urls', namespace='pris_ai_core')),
+
+
     # ══════════════════════════════════════════════════════════════════════════
     # PRISLAB V8.1 — SILO LABORATORIO: Inventario de Reactivos ISO 15189
     # FEFO automático · Cuarentena QC · Dashboard Director · Trazabilidad

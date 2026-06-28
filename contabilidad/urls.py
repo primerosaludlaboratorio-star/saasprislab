@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, views_public
 from core.views import contabilidad as core_contab_views
 
 app_name = 'contabilidad'
@@ -35,4 +35,8 @@ urlpatterns = [
 
     # API clientes
     path('api/clientes/buscar/', views.api_buscar_cliente, name='api_buscar_cliente'),
+
+    # Autofacturación Pública (Kiosco / QR)
+    path('autofactura/', views_public.autofactura_portal, name='autofactura_portal'),
+    path('api/autofactura/generar/', views_public.api_generar_autofactura, name='api_generar_autofactura'),
 ]

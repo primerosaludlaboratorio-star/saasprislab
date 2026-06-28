@@ -236,6 +236,7 @@ INSTALLED_APPS = [
     'mantenimiento', # CMMS V8.2 — Protocolos, Checklists, Diagnóstico, Tickets, TCO, QR
     'bienestar',    # Módulo 'Espacio Seguro' - Diario Emocional y Recursos
     'contabilidad', # Facturación CFDI 4.0 y Contabilidad
+    'suscripciones', # Módulo 1 Fase II: Facturación Multi-Tenant
 
     # Storage local/Drive + PWA
     'storages',

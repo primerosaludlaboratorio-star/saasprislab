@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, views_api
 
 app_name = 'iot'
 
@@ -11,4 +11,5 @@ urlpatterns = [
     path('api/confirmar/<int:verificacion_id>/', views.api_kiosco_confirmar, name='api_confirmar'),
     path('api/rechazar/<int:verificacion_id>/', views.api_kiosco_rechazar, name='api_rechazar'),
     path('api/enviar/', views.api_enviar_a_kiosco, name='api_enviar'),
+    path('api/checkin/<int:kiosco_id>/', views_api.api_kiosco_checkin, name='api_checkin'),
 ]

@@ -150,6 +150,8 @@ INSTALLED_APPS = [
     'seguridad',    # Seguridad física y botón de pánico
     'iot',          # IoT y Kiosco de auto-verificación
     'ia',           # Inteligencia Artificial (OCR y Voz)
+    'pris_ai_core', # Módulo de integración IA embebida (Bloque 3)
+    'suscripciones', # Módulo 1 Fase II: Suscripciones y facturación multi-tenant
     'reglas_negocio',  # Reglas de negocio estrictas
     'marketing',    # Crecimiento, campañas éticas, cupones, academy
     'academia',     # Diplomados / video learning
@@ -189,6 +191,7 @@ MIDDLEWARE = [
     'core.middleware.admin_access.AdminAccessMiddleware',  # Bastión 4: /admin/ por IP y grupo
     'core.middleware.rate_limit.RateLimitMiddleware',  # BLINDAJE R104: Rate limiting
     'core.middleware.EmpresaIdentityMiddleware',  # V6.0: Identidad + set_current_empresa() para TenantManager ORM
+    'core.middleware.suscripciones.SuscripcionMiddleware', # Módulo 1 Fase II: Bloqueo por falta de pago
     'core.middleware.feature_flags.FeatureFlagMiddleware',  # V6.0: Bloqueo HTTP por módulo apagado (403)
     'core.middleware.json_response.JSONResponseMiddleware',  # Asegura respuestas JSON para AJAX
     'core.middleware.actividad_usuario.ActividadUsuarioMiddleware',  # Rastreo de actividad y sugerencias de descanso

@@ -1,6 +1,7 @@
 from datetime import timedelta
 import os
 import tempfile
+import unittest
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
@@ -178,13 +179,6 @@ class AuditoriaFuncionalJunio21Test(TestCase):
         self.assertContains(response, "Mindray Auditoria")
 
     def test_director_analizadores_crear_y_toggle_equipo_global(self):
-        response = self.client.post(
-            reverse("director_analizadores_crear"),
-            {
-                "nombre": "Equipo Auditoria TCP",
-                "marca": "AuditBrand",
-                "ip_address": "192.0.2.10",
-                "puerto": "9100",
         equipo = self._crear_analizador_global()
 
         # POST

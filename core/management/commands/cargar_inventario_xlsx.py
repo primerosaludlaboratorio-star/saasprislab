@@ -354,6 +354,7 @@ class Command(BaseCommand):
                         else:
                             Lote.objects.filter(pk=0).exists()
                             lote_obj = Lote(
+                                empresa=empresa,
                                 producto=producto,
                                 numero_lote=lote_data['numero'],
                                 fecha_caducidad=fecha_cad,

@@ -11,6 +11,7 @@ Objetivo: verificar que cada catch-all:
 """
 import json
 import logging
+import unittest
 from unittest.mock import MagicMock, patch
 
 from django.test import TestCase, RequestFactory
@@ -37,8 +38,8 @@ class TestDispatcherCatchAll(TestCase):
                 'grupos_requeridos': [],
             }
         }
-        with patch('core.agent.pris_tools_operativos.TOOLS_OPERATIVOS', fake_tools):
-            with self.assertLogs('core.views.pris_ia._dispatcher', level='ERROR') as cm:
+        with patch('core.views.pris_ia._dispatcher.TOOLS_OPERATIVOS', fake_tools):
+            with self.assertLogs('core', level='ERROR') as cm:
                 result = _ejecutar_herramienta('boom_tool', {}, self.empresa, self.user)
 
         self.assertIn('error', result)
@@ -49,9 +50,11 @@ class TestDispatcherCatchAll(TestCase):
     def test_herramienta_inexistente_devuelve_error_disponibles(self, mock_rbac):
         from core.views.pris_ia._dispatcher import _ejecutar_herramienta
 
-        result = _ejecutar_herramienta('herramienta_fantasma', {}, self.empresa, self.user)
-        self.assertIn('error', result)
-        self.assertIn('no disponible', result['error'].lower())
+        # Mock __import__ or TOOLS_OPERATIVOS directly in the module
+        with patch('core.views.pris_ia._dispatcher.TOOLS_OPERATIVOS', {}):
+            result = _ejecutar_herramienta('herramienta_fantasma', {}, self.empresa, self.user)
+            self.assertIn('error', result)
+            self.assertIn('no disponible', result['error'].lower())
 
 
 class TestToolsLabCatchAll(TestCase):
@@ -164,3 +167,5 @@ class TestViewsChatCatchAll(TestCase):
         data = json.loads(response.content)
         self.assertIn('respuesta', data)
         self.assertIn('30', data['respuesta'])
+
+import unittest
