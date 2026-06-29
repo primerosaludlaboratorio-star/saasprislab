@@ -257,6 +257,7 @@ def deny_roles(*roles: str):
 
 # ── Utilidad para templates y vistas ─────────────────────────────────────────
 
+
 def user_permissions(user) -> dict[str, bool]:
     """
     Devuelve un dict completo de permisos para el usuario.
@@ -272,3 +273,155 @@ def user_permissions(user) -> dict[str, bool]:
         key.replace(":", "_"): _has_permission(user, key)
         for key in PERMISSION_MAP
     }
+
+
+# ── RBAC de Sucursal ─────────────────────────────────────────────────────────
+# Regla: ningún usuario puede ver caja, inventario o resultados de una sucursal
+# a la que no esté explícitamente asignado, aunque pertenezca al mismo Tenant.
+
+#: Recursos que tienen aislamiento obligatorio por sucursal.
+SUCURSAL_SCOPED_RESOURCES = frozenset({
+    "caja",           # Caja/PDV — solo sucursal del usuario
+    "inventario",     # Stock farmacia/reactivos — por sucursal
+    "resultados",     # Resultados de laboratorio — por sucursal
+    "ordenes",        # Órdenes de laboratorio — por sucursal
+    "ventas",         # Ventas — por sucursal
+})
+
+
+def check_sucursal_access(user, obj_or_sucursal_id, resource: str = "", request=None):
+    """
+    Verifica que el usuario tenga acceso a la sucursal del objeto.
+
+    Criterio (Pasa/No Pasa):
+      - Si el recurso está en SUCURSAL_SCOPED_RESOURCES y el usuario tiene sucursal
+        asignada, el objeto debe pertenecer a ESA sucursal.
+      - Superadmin: acceso total sin restricción.
+      - Admin_Empresa: acceso a todas las sucursales de su tenant.
+      - Resto de roles: solo su sucursal asignada (si el recurso lo requiere).
+
+    Args:
+        user: request.user
+        obj_or_sucursal_id: objeto con atributo .sucursal / .sucursal_id, o directamente un int/pk
+        resource: clave del recurso (ej: "caja", "inventario") — opcional, si se omite siempre chequea
+        request: HttpRequest opcional para log de path
+
+    Raises:
+        PermissionDenied si el acceso no está permitido.
+    """
+    if _is_superadmin(user):
+        return  # Sin restricción
+
+    user_rol = _user_rol(user)
+    if user_rol in {Rol.ADMIN, Rol.DIRECTOR}:
+        return  # Admin/Director ven todas las sucursales del tenant
+
+    # Solo chequear si el recurso está en el scope de aislamiento
+    if resource and resource not in SUCURSAL_SCOPED_RESOURCES:
+        return
+
+    # Extraer sucursal_id del objeto
+    if isinstance(obj_or_sucursal_id, int):
+        obj_sucursal_id = obj_or_sucursal_id
+    else:
+        obj_sucursal_id = (
+            getattr(obj_or_sucursal_id, 'sucursal_id', None)
+            or getattr(getattr(obj_or_sucursal_id, 'sucursal', None), 'pk', None)
+        )
+
+    if obj_sucursal_id is None:
+        # El objeto no tiene sucursal asignada → no aplica aislamiento
+        return
+
+    # Sucursal del usuario
+    user_sucursal_id = (
+        getattr(getattr(user, 'sucursal', None), 'pk', None)
+        or getattr(user, 'sucursal_id', None)
+    )
+
+    if user_sucursal_id is None:
+        # Usuario sin sucursal asignada → puede ver todo dentro del tenant
+        # (Política: si no tiene sucursal, es usuario "flotante" o admin sin asignación)
+        logger.info(
+            "SUCURSAL_ACCESS: user=%s sin sucursal asignada accede a recurso='%s' sucursal_obj=%s — permitido.",
+            getattr(user, 'username', '?'), resource, obj_sucursal_id,
+        )
+        return
+
+    if user_sucursal_id != obj_sucursal_id:
+        logger.warning(
+            "SUCURSAL_DENIED: user=%s rol=%s sucursal=%s intento acceder a sucursal=%s recurso='%s' path=%s",
+            getattr(user, 'username', '?'),
+            user_rol,
+            user_sucursal_id,
+            obj_sucursal_id,
+            resource,
+            getattr(request, 'path', '') if request else '',
+        )
+        raise PermissionDenied(
+            f"No tiene acceso a los datos de esta sucursal (recurso: '{resource}')."
+        )
+
+
+def require_sucursal_access(resource: str = "", sucursal_kwarg: str = "sucursal_id"):
+    """
+    Decorador de vista que valida acceso a la sucursal del recurso solicitado.
+
+    Si la vista recibe `sucursal_id` en la URL, lo valida contra la sucursal del usuario.
+    Si no lo recibe, delega la validación al objeto accedido en la vista.
+
+    Uso:
+        @login_required
+        @require_sucursal_access("caja")
+        def corte_de_caja(request, sucursal_id):
+            # Si el usuario no pertenece a sucursal_id → 403 automático
+
+        @login_required
+        @require_sucursal_access("resultados", sucursal_kwarg="suc_pk")
+        def ver_resultados(request, suc_pk):
+            ...
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            suc_id = kwargs.get(sucursal_kwarg) or kwargs.get('sucursal_id')
+            if suc_id is not None:
+                try:
+                    check_sucursal_access(request.user, int(suc_id), resource=resource, request=request)
+                except (ValueError, TypeError):
+                    pass  # kwarg no era int — la vista manejará el error
+            return view_func(request, *args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def user_sucursal_permissions(user, sucursal_id: int | None = None) -> dict[str, bool]:
+    """
+    Extiende user_permissions() con información de acceso a sucursal específica.
+
+    Uso en vista para contexto de template:
+        ctx["permisos"] = user_sucursal_permissions(request.user, request.sucursal_actual.pk)
+    """
+    base = user_permissions(user)
+
+    if sucursal_id is None:
+        base["sucursal_propia"] = True
+        return base
+
+    user_sucursal_id = (
+        getattr(getattr(user, 'sucursal', None), 'pk', None)
+        or getattr(user, 'sucursal_id', None)
+    )
+
+    is_own = (
+        _is_superadmin(user)
+        or _user_rol(user) in {Rol.ADMIN, Rol.DIRECTOR}
+        or user_sucursal_id is None
+        or user_sucursal_id == sucursal_id
+    )
+    base["sucursal_propia"] = is_own
+    base["sucursal_caja_acceso"]       = is_own and base.get("caja_registrar_venta", False)
+    base["sucursal_inventario_acceso"] = is_own and base.get("farmacia_ver_inventario", False)
+    base["sucursal_resultados_acceso"] = is_own and base.get("lab_ver_ordenes", False)
+
+    return base
