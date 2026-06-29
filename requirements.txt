@@ -65,7 +65,7 @@ pywebpush==1.14.0
 requests>=2.32.3
 python-decouple==3.8
 pytz==2024.1
-qrcode[pil]==7.4.2
+qrcode[pil]==8.2
 six==1.16.0
 user-agents==2.2.0
 zeep>=4.3.3
