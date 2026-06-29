@@ -24,6 +24,12 @@ from .ia_config import (
     ReglaLocalIA,
 )
 
+# KPIs — Panel Ejecutivo (v1.1+)
+from .kpis import (
+    KPI_Snapshot,
+    KPI_MetaAnual,
+)
+
 # Catálogos: Productos, Lab, Convenios
 from .catalogos import (
     Producto,
@@ -225,4 +231,6 @@ __all__ = [
     # bienestar_staff NOM-035 (Migración Maestra activada)
     'EvaluacionNOM035', 'DiarioEmocionalStaff', 'SesionCoachingStaff',
     'AlertaBurnout', 'ProgramaCapacitacion',
+    # kpis — Panel Ejecutivo
+    'KPI_Snapshot', 'KPI_MetaAnual',
 ]
