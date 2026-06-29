@@ -23,6 +23,7 @@ from django.contrib.auth import get_user_model
 
 from laboratorio.models import Estudio, CategoriaExamen
 from core.models import Paciente, OrdenDeServicio, DetalleOrden as CoreDetalleOrden, Medico
+from core.utils.sucursal_helpers import get_user_primary_sucursal
 
 User = get_user_model()
 
@@ -95,6 +96,7 @@ class Command(BaseCommand):
         if not empresa:
             self.stdout.write(self.style.ERROR('[ERROR] El usuario creador no tiene empresa asignada (requerido para ODS).'))
             return
+        sucursal_creador = get_user_primary_sucursal(usuario_creador)
 
         # Obtener médicos o crear uno por defecto
         medicos = list(Medico.objects.all())
@@ -150,7 +152,7 @@ class Command(BaseCommand):
 
                         paciente = Paciente.objects.create(
                             empresa=empresa,
-                            sucursal=getattr(usuario_creador, 'sucursal', None),
+                            sucursal=sucursal_creador,
                             nombres=nombres,
                             apellido_paterno=apellido_p,
                             apellido_materno=apellido_m,
@@ -188,7 +190,7 @@ class Command(BaseCommand):
 
                             orden = OrdenDeServicio.objects.create(
                                 empresa=empresa,
-                                sucursal=getattr(usuario_creador, 'sucursal', None),
+                                sucursal=sucursal_creador,
                                 paciente=core_paciente,
                                 responsable_ingreso=usuario_creador,
                                 total=total_orden,

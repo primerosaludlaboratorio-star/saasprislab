@@ -12,6 +12,7 @@ from decimal import Decimal, InvalidOperation
 import json
 
 from core.models import Producto, Lote
+from core.utils.sucursal_helpers import get_user_primary_sucursal
 from farmacia.models import MovimientoInventario, Proveedor
 from farmacia.forms import RegistrarCompraForm, DetalleCompraForm
 
@@ -79,7 +80,7 @@ def registrar_compra(request):
                         
                         movimiento = MovimientoInventario(
                             empresa=empresa,
-                            sucursal=getattr(request.user, 'sucursal', None),
+                            sucursal=get_user_primary_sucursal(request.user),
                             producto=producto,
                             lote=lote,
                             tipo_movimiento='ENTRADA_COMPRA',
@@ -112,7 +113,7 @@ def registrar_compra(request):
                             'total_valor': str(total_valor),
                             'fecha_compra': fecha_compra_str
                         },
-                        sucursal=getattr(request.user, 'sucursal', None),
+                        sucursal=get_user_primary_sucursal(request.user),
                         ip_address=request.META.get('REMOTE_ADDR'),
                         user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
                     )
@@ -363,7 +364,7 @@ def entrada_express(request):
             
             MovimientoInventario.objects.create(
                 empresa=getattr(request.user, 'empresa', None),
-                sucursal=getattr(request.user, 'sucursal', None),
+                sucursal=get_user_primary_sucursal(request.user),
                 producto=producto,
                 lote=lote,
                 tipo_movimiento='ENTRADA_COMPRA',

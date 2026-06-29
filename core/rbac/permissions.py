@@ -88,6 +88,10 @@ PERMISSION_MAP: dict[str, frozenset[str]] = {
     "ia:usar_basica":            frozenset(Rol.TODOS_TENANT),
     "ia:usar_negocios":          frozenset({Rol.ADMIN, Rol.DIRECTOR, Rol.GERENTE}),
 
+    # Sucursal — permisos de alcance multi-sucursal
+    "tenant:all_branches_view":  frozenset({Rol.ADMIN, Rol.DIRECTOR, Rol.GERENTE}),
+    "tenant:all_branches_manage": frozenset({Rol.ADMIN}),
+
     # CAJA/RECEPCIÓN — explícitamente denegado de endpoints críticos
     # (definición negativa para documentación; el whitelist ya lo excluye)
     # "lab:validar_resultados"  → CAJA y RECEPCION NO aparecen → denegado automático
@@ -135,6 +139,40 @@ def check_permission(user, permission_key: str) -> None:
             permission_key,
         )
         raise PermissionDenied(f"Acceso denegado: se requiere permiso '{permission_key}'.")
+
+
+def check_sucursal_assignment(user, sucursal_id: int | None) -> bool:
+    """
+    Verifica si el usuario tiene asignada la sucursal (M2M Usuario_Sucursal).
+
+    Retorna:
+        True si:
+        - user.is_superuser (bypass total)
+        - tenant:all_branches_view permiso existe y usuario lo tiene
+        - sucursal_id está en las sucursales asignadas del usuario
+
+        False en caso contrario.
+    """
+    if _is_superadmin(user):
+        return True
+
+    if sucursal_id is None:
+        return True  # Sin sucursal específica, no hay restricción
+
+    # Verificar permiso global de vista multi-sucursal
+    if _has_permission(user, "tenant:all_branches_view"):
+        return True
+
+    # Verificar que la sucursal está en las asignaciones M2M del usuario
+    try:
+        user_sucursales = user.sucursales.filter(
+            usuario_sucursal__activa=True,
+            usuario_sucursal__fecha_asignacion__isnull=False,
+        ).values_list('pk', flat=True)
+        return int(sucursal_id) in user_sucursales
+    except Exception:
+        logger.exception("Error inesperado en check_sucursal_assignment")
+        return False
 
 
 # ── Decoradores de vista ──────────────────────────────────────────────────────
@@ -294,11 +332,10 @@ def check_sucursal_access(user, obj_or_sucursal_id, resource: str = "", request=
     Verifica que el usuario tenga acceso a la sucursal del objeto.
 
     Criterio (Pasa/No Pasa):
-      - Si el recurso está en SUCURSAL_SCOPED_RESOURCES y el usuario tiene sucursal
-        asignada, el objeto debe pertenecer a ESA sucursal.
       - Superadmin: acceso total sin restricción.
-      - Admin_Empresa: acceso a todas las sucursales de su tenant.
-      - Resto de roles: solo su sucursal asignada (si el recurso lo requiere).
+      - Admin_Empresa / Director: acceso a todas las sucursales de su tenant.
+      - Resto de roles: la sucursal del objeto debe estar en las asignaciones
+        M2M vigentes del usuario (Usuario_Sucursal).
 
     Args:
         user: request.user
@@ -333,27 +370,12 @@ def check_sucursal_access(user, obj_or_sucursal_id, resource: str = "", request=
         # El objeto no tiene sucursal asignada → no aplica aislamiento
         return
 
-    # Sucursal del usuario
-    user_sucursal_id = (
-        getattr(getattr(user, 'sucursal', None), 'pk', None)
-        or getattr(user, 'sucursal_id', None)
-    )
-
-    if user_sucursal_id is None:
-        # Usuario sin sucursal asignada → puede ver todo dentro del tenant
-        # (Política: si no tiene sucursal, es usuario "flotante" o admin sin asignación)
-        logger.info(
-            "SUCURSAL_ACCESS: user=%s sin sucursal asignada accede a recurso='%s' sucursal_obj=%s — permitido.",
-            getattr(user, 'username', '?'), resource, obj_sucursal_id,
-        )
-        return
-
-    if user_sucursal_id != obj_sucursal_id:
+    # ── Validar contra TODAS las sucursales M2M asignadas al usuario ──
+    if not check_sucursal_assignment(user, obj_sucursal_id):
         logger.warning(
-            "SUCURSAL_DENIED: user=%s rol=%s sucursal=%s intento acceder a sucursal=%s recurso='%s' path=%s",
+            "SUCURSAL_DENIED: user=%s rol=%s intento acceder a sucursal=%s recurso='%s' path=%s",
             getattr(user, 'username', '?'),
             user_rol,
-            user_sucursal_id,
             obj_sucursal_id,
             resource,
             getattr(request, 'path', '') if request else '',
@@ -408,16 +430,10 @@ def user_sucursal_permissions(user, sucursal_id: int | None = None) -> dict[str,
         base["sucursal_propia"] = True
         return base
 
-    user_sucursal_id = (
-        getattr(getattr(user, 'sucursal', None), 'pk', None)
-        or getattr(user, 'sucursal_id', None)
-    )
-
     is_own = (
         _is_superadmin(user)
         or _user_rol(user) in {Rol.ADMIN, Rol.DIRECTOR}
-        or user_sucursal_id is None
-        or user_sucursal_id == sucursal_id
+        or check_sucursal_assignment(user, sucursal_id)
     )
     base["sucursal_propia"] = is_own
     base["sucursal_caja_acceso"]       = is_own and base.get("caja_registrar_venta", False)

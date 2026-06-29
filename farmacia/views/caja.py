@@ -17,6 +17,7 @@ import json
 from core.models import Venta, Pago
 from farmacia.models import AperturaCaja
 from farmacia.forms import CorteCajaFarmaciaForm
+from core.utils.sucursal_helpers import get_user_primary_sucursal
 
 
 @login_required
@@ -29,6 +30,7 @@ def corte_caja_farmacia(request):
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('dashboard')
     usuario = request.user
+    sucursal_usuario = get_user_primary_sucursal(usuario)
     
     if request.method == 'POST':
         form = CorteCajaFarmaciaForm(request.POST)
@@ -110,7 +112,7 @@ def corte_caja_farmacia(request):
                             'estado': estado,
                             'observaciones': observaciones
                         },
-                        sucursal=getattr(usuario, 'sucursal', None),
+                        sucursal=sucursal_usuario,
                         ip_address=request.META.get('REMOTE_ADDR'),
                         user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
                     )
@@ -164,9 +166,11 @@ def verificar_apertura_caja(request):
     empresa = getattr(request.user, 'empresa', None)
     if not empresa:
         return JsonResponse({'success': False, 'error': 'Usuario sin empresa asignada'}, status=403)
+
+    user_sucursal = get_user_primary_sucursal(request.user)
     apertura_activa = AperturaCaja.objects.filter(
         empresa=empresa,
-        sucursal=request.user.sucursal,
+        sucursal=user_sucursal,
         usuario_responsable=request.user,
         activa=True
     ).first()
@@ -197,10 +201,11 @@ def abrir_caja(request):
     empresa = getattr(request.user, 'empresa', None)
     if not empresa:
         return JsonResponse({'success': False, 'error': 'Usuario sin empresa asignada'}, status=403)
+    user_sucursal = get_user_primary_sucursal(request.user)
     
     apertura_activa = AperturaCaja.objects.filter(
         empresa=empresa,
-        sucursal=request.user.sucursal,
+        sucursal=user_sucursal,
         usuario_responsable=request.user,
         activa=True
     ).first()
@@ -229,7 +234,7 @@ def abrir_caja(request):
             
             apertura = AperturaCaja.objects.create(
                 empresa=empresa,
-                sucursal=request.user.sucursal,
+                sucursal=user_sucursal,
                 usuario_responsable=request.user,
                 fondo_efectivo=fondo_efectivo,
                 fondo_vales=fondo_vales,

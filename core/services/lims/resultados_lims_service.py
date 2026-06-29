@@ -11,6 +11,7 @@ from django.utils import timezone
 from core.api_contracts.errors import BusinessApiError
 from core.lims_cart import detalle_orden_etiqueta
 from core.models import AuditLog, DetalleOrden, OrdenDeServicio, ResultadoParametro
+from core.utils.sucursal_helpers import get_request_sucursal
 from core.utils.trazabilidad import registrar_trazabilidad, serializar_modelo
 from lims.models import Analito
 from reglas_negocio.validadores import validar_triple_llave
@@ -370,7 +371,7 @@ class ResultadosLimsService:
                             objeto_id=detalle.id,
                             datos_anterior=datos_anterior,
                             datos_nuevo=datos_nuevo,
-                            sucursal=getattr(actor, 'sucursal', None),
+                            sucursal=get_request_sucursal(request),
                             request=request,
                         )
 

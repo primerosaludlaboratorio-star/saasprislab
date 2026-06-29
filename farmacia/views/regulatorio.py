@@ -14,6 +14,7 @@ import logging
 from core.models import Producto, Lote
 from farmacia.models import RegistroAntibiotico
 from farmacia.forms import GenerarEtiquetasForm
+from core.utils.sucursal_helpers import get_user_primary_sucursal
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +123,7 @@ def reporte_cofepris(request):
             fecha_inicio = fecha_fin - timedelta(days=30)
     
     empresa = getattr(request.user, 'empresa', None)
-    sucursal = getattr(request.user, 'sucursal', None)
+    sucursal = get_user_primary_sucursal(request.user)
     if not empresa:
         return render(request, 'farmacia/antibioticos/reporte_cofepris.html', {
             'registros': [], 'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin, 'total_registros': 0

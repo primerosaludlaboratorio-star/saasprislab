@@ -111,13 +111,16 @@ def registrar_entrada_salida(request):
             observaciones = request.POST.get('observaciones', '').strip()
             
             empleado = get_object_or_404(Empleado, id=empleado_id, empresa=empresa)
-            
+
+            from core.utils.sucursal_helpers import get_user_primary_sucursal
+            user_sucursal = get_user_primary_sucursal(request.user)
+
             registro = RegistroAsistencia.objects.create(
                 empresa=empresa,
                 empleado=empleado,
                 tipo_registro=tipo_registro,
                 metodo_registro='WEB',
-                sucursal=request.user.sucursal,
+                sucursal=user_sucursal,
                 observaciones=observaciones
             )
             

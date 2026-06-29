@@ -85,11 +85,14 @@ def api_crear_paciente_rapido(request):
         return JsonResponse({'status': 'error', 'mensaje': 'Usuario no tiene empresa asignada'}, status=400)
     
     try:
+        from core.utils.sucursal_helpers import get_user_primary_sucursal
+        user_sucursal = get_user_primary_sucursal(request.user)
+
         data = json.loads(request.body)
-        
+
         paciente = Paciente.objects.create(
             empresa=empresa,
-            sucursal=request.user.sucursal,
+            sucursal=user_sucursal,
             nombre_completo=data.get('nombre_completo', ''),
             telefono=data.get('telefono', ''),
             email=data.get('email', ''),

@@ -10,6 +10,7 @@ from django.views.decorators.http import require_http_methods
 
 from core.models import OrdenDeServicio, Paciente
 from marketing.models import CampanaMarketing, CuponMarketing
+from core.utils.sucursal_helpers import get_user_primary_sucursal
 
 
 # Segmentos y canales disponibles para campañas.
@@ -67,7 +68,7 @@ def crear_campana(request):
         else:
             campana = CampanaMarketing.objects.create(
                 empresa=empresa,
-                sucursal=getattr(request.user, "sucursal", None),
+                sucursal=get_user_primary_sucursal(request.user),
                 nombre=nombre,
                 segmento=segmento,
                 mensaje_whatsapp=mensaje,
@@ -180,7 +181,7 @@ def api_crear_campana(request):
     if not empresa:
         return JsonResponse({"ok": False, "error": "Usuario sin empresa asignada."}, status=403)
 
-    sucursal = getattr(request.user, "sucursal", None)
+    sucursal = get_user_primary_sucursal(request.user)
     segmento = (request.POST.get("segmento") or "").strip()
     mensaje = (request.POST.get("mensaje") or "").strip()
 

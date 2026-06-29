@@ -98,46 +98,67 @@ class EmpresaIdentityMiddleware:
             # ── Resolver sucursal del usuario ───────────────────────────────
             sucursal = None
             if empresa and getattr(request, 'user', None) and getattr(request.user, 'is_authenticated', False):
-                # 1. Sucursal asignada al usuario en BD (campo user.sucursal)
-                sucursal = getattr(request.user, 'sucursal', None)
+                user = request.user
 
-                # 2. Override explícito por header (APIs, mobile, Postman)
-                #    X-Sucursal-ID: <pk>  — solo si la sucursal pertenece al mismo tenant
+                # 1. Override explícito por header (APIs, mobile, Postman)
+                #    X-Sucursal-ID: <pk>  — solo si la sucursal pertenece al mismo tenant Y usuario tiene acceso
                 header_suc_id = request.META.get('HTTP_X_SUCURSAL_ID', '').strip()
                 if header_suc_id and header_suc_id.isdigit():
                     try:
                         from core.models import Sucursal as SucursalModel
+                        from core.rbac.permissions import check_sucursal_assignment
+                        header_suc_id_int = int(header_suc_id)
                         suc_from_header = SucursalModel.objects.filter(
-                            pk=int(header_suc_id),
+                            pk=header_suc_id_int,
                             empresa=empresa,
                             activa=True,
                         ).first()
                         if suc_from_header:
-                            sucursal = suc_from_header
-                            logger.debug(
-                                'SUCURSAL_HEADER: user=%s sucursal_id=%s empresa=%s',
-                                getattr(request.user, 'username', '?'),
-                                header_suc_id, empresa.pk,
-                            )
+                            # Validar que el usuario tiene acceso a esta sucursal
+                            if check_sucursal_assignment(user, header_suc_id_int):
+                                sucursal = suc_from_header
+                                logger.debug(
+                                    'SUCURSAL_HEADER: user=%s sucursal_id=%s empresa=%s',
+                                    getattr(user, 'username', '?'),
+                                    header_suc_id, empresa.pk,
+                                )
+                            else:
+                                logger.warning(
+                                    'SUCURSAL_HEADER_DENIED: user=%s sucursal_id=%s — usuario no tiene acceso asignado.',
+                                    getattr(user, 'username', '?'),
+                                    header_suc_id,
+                                )
                         else:
                             logger.warning(
                                 'SUCURSAL_HEADER_INVALID: user=%s sucursal_id=%s '
                                 'no pertenece al tenant empresa=%s o esta inactiva.',
-                                getattr(request.user, 'username', '?'),
+                                getattr(user, 'username', '?'),
                                 header_suc_id, empresa.pk,
                             )
                     except Exception as exc:
                         logger.error('SUCURSAL_HEADER error: %s', exc)
 
-                # Validar que la sucursal pertenezca al mismo tenant
-                if sucursal is not None:
-                    suc_empresa_id = getattr(getattr(sucursal, 'empresa', None), 'pk', None) or getattr(sucursal, 'empresa_id', None)
-                    if suc_empresa_id != empresa.pk:
-                        logger.error(
-                            'SUCURSAL_CROSS_TENANT: user=%s sucursal.empresa=%s != empresa=%s — bloqueado.',
-                            getattr(request.user, 'username', '?'), suc_empresa_id, empresa.pk,
+                # 2. Si no hay header: intentar obtener la primera sucursal asignada del usuario
+                #    (relación M2M Usuario_Sucursal)
+                if sucursal is None:
+                    try:
+                        from core.rbac.permissions import _has_permission
+                        # Si el usuario tiene permiso de ver todas las sucursales,
+                        # se usa un criterio por defecto (primera de la empresa)
+                        if _has_permission(user, "tenant:all_branches_view"):
+                            # Usar la primera sucursal activa de la empresa
+                            sucursal = empresa.sucursales.filter(activa=True).first()
+                        else:
+                            # Obtener la primera sucursal asignada al usuario vía M2M
+                            sucursal = user.sucursales.filter(
+                                usuario_sucursal__activa=True,
+                                activa=True,
+                            ).order_by('usuario_sucursal__fecha_asignacion').first()
+                    except Exception:
+                        logger.exception(
+                            'Error inesperado resolviendo sucursal M2M para user=%s',
+                            getattr(user, 'username', '?')
                         )
-                        sucursal = None
 
             request.sucursal_actual = sucursal
 

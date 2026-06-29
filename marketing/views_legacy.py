@@ -12,6 +12,7 @@ from django.views.decorators.http import require_http_methods
 from core.models import OrdenDeServicio, Paciente
 from .models import CampanaMarketing, CuponMarketing, CuponUso
 from .utils import generar_codigo_cupon, generar_cupon_imagen_jpg
+from core.utils.sucursal_helpers import get_user_primary_sucursal
 import logging
 
 
@@ -56,7 +57,7 @@ def api_generar_cupon(request):
     empresa = getattr(request.user, "empresa", None)
     if not empresa:
         return JsonResponse({"ok": False, "error": "Usuario sin empresa asignada."}, status=403)
-    sucursal = getattr(request.user, "sucursal", None)
+        sucursal = get_user_primary_sucursal(request.user)
     paciente_id = request.POST.get("paciente_id")
     porcentaje = (request.POST.get("porcentaje") or "0").strip()
     descripcion = (request.POST.get("descripcion") or "").strip()
@@ -102,7 +103,7 @@ def api_crear_campana(request):
     empresa = getattr(request.user, "empresa", None)
     if not empresa:
         return JsonResponse({"ok": False, "error": "Usuario sin empresa asignada."}, status=403)
-    sucursal = getattr(request.user, "sucursal", None)
+    sucursal = get_user_primary_sucursal(request.user)
     segmento = (request.POST.get("segmento") or "").strip()
     mensaje = (request.POST.get("mensaje") or "").strip()
 
@@ -300,7 +301,7 @@ def crear_campana(request):
         else:
             campana = CampanaMarketing.objects.create(
                 empresa=empresa,
-                sucursal=getattr(request.user, "sucursal", None),
+                sucursal=get_user_primary_sucursal(request.user),
                 nombre=nombre,
                 segmento=segmento,
                 mensaje_whatsapp=mensaje,
@@ -502,7 +503,7 @@ def generar_cupon(request):
             
             cupon = CuponMarketing.objects.create(
                 empresa=empresa,
-                sucursal=getattr(request.user, "sucursal", None),
+                sucursal=get_user_primary_sucursal(request.user),
                 paciente=paciente,
                 codigo=codigo,
                 porcentaje_descuento=porcentaje_dec,

@@ -226,15 +226,40 @@ def _apply_sucursal_filter(qs, model):
       1. El modelo tiene FK 'sucursal'.
       2. Hay una sucursal activa en el hilo (set_current_sucursal).
       3. El bypass NO está activo.
-    Si la sucursal es None (usuario sin sucursal asignada o superuser) → no filtra.
+
+    Si la sucursal es None (usuario sin sucursal asignada o superuser):
+      - Con PRISLAB_TENANT_STRICT_MODE=True: bloquea la consulta.
+      - En modo shadow (default): permite pero registra advertencia.
+
+    Nota: los filtros de sucursal SIEMPRE van acompañados de filtro empresa.
     """
     if not _model_has_sucursal(model):
         return qs
     if is_tenant_bypassed():
         return qs
+
     sucursal = get_current_sucursal()
     if sucursal is not None:
         return qs.filter(sucursal=sucursal)
+
+    # Sucursal None: usuario sin sucursal explícita asignada
+    # Verificar si está en STRICT_MODE
+    shadow_on, strict_mode, log_cli, debug = _shadow_settings()
+    if strict_mode:
+        req = _get_http_request()
+        user = getattr(req, 'user', None) if req is not None else None
+        if bool(getattr(user, 'is_authenticated', False)) and not bool(getattr(user, 'is_superuser', False)):
+            logger.error(
+                'TENANT_SUCURSAL_STRICT_MODE_BLOCK modelo=%s usuario_id=%s username=%s',
+                model.__name__,
+                getattr(user, 'pk', '?'),
+                getattr(user, 'username', '?'),
+            )
+            raise PermissionDenied(
+                'Usuario autenticado sin sucursal asignada. '
+                'Acceso bloqueado por PRISLAB_TENANT_STRICT_MODE.'
+            )
+
     return qs
 
 
