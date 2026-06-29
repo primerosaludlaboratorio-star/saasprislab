@@ -262,6 +262,7 @@ MIDDLEWARE = [
     'core.middleware.read_only.ReadOnlyMiddleware',  # DRP Punto 14: contingencia solo lectura (PRISLAB_READ_ONLY=1)
     'core.middleware.admin_access.AdminAccessMiddleware',  # Bastión 4: /admin/ por IP y grupo
     'core.middleware.rate_limit.RateLimitMiddleware',  # BLINDAJE R104: Rate limiting
+    'core.middleware.tenant_subdomain.TenantSubdomainMiddleware',  # Multi-tenant: resolución por subdominio/header
     'core.middleware.EmpresaIdentityMiddleware',  # V6.0: Identidad + set_current_empresa() para TenantManager ORM
     'core.middleware.feature_flags.FeatureFlagMiddleware',  # V6.0: Bloqueo HTTP por módulo apagado (403)
     'core.middleware.json_response.JSONResponseMiddleware',  # Asegura respuestas JSON para AJAX
@@ -281,6 +282,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# ── Multi-Tenant: configuración de dominio raíz y modo strict ───────────────
+PRISLAB_ROOT_DOMAIN = os.environ.get('PRISLAB_ROOT_DOMAIN', 'labcorecloud.com').strip()
+# PRISLAB_TENANT_STRICT_MODE ya definido antes (core/tenant.py lo lee)
+# PRISLAB_TENANT_STRICT_SUBDOMAIN: True → 403 si slug no existe en BD
+PRISLAB_TENANT_STRICT_SUBDOMAIN = os.environ.get('PRISLAB_TENANT_STRICT_SUBDOMAIN', 'False').lower() in ('1', 'true', 'yes')
 
 # Punto 19 — PerformanceMiddleware: conteo SQL (execute_wrapper) + alertas GCP
 SENTINEL_WARN_QUERY_COUNT = int(os.environ.get('SENTINEL_WARN_QUERY_COUNT', '50'))

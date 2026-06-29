@@ -18,6 +18,7 @@ from decimal import Decimal
 
 from core.models import Producto, Lote
 from farmacia.models import MovimientoInventario, MotivoAjuste
+from core.utils.sucursal_helpers import get_user_primary_sucursal
 
 # Umbrales de caducidad configurables vía settings
 _DIAS_CADUCIDAD_CRITICO = getattr(settings, 'FARMACIA_DIAS_CADUCIDAD_CRITICO', 30)
@@ -250,10 +251,11 @@ def crear_movimiento_manual(request):
             producto = get_object_or_404(Producto, id=producto_id, empresa=empresa)
             lote = get_object_or_404(Lote, id=lote_id, producto__empresa=empresa) if lote_id else None
             motivo_ajuste = get_object_or_404(MotivoAjuste, id=motivo_ajuste_id) if motivo_ajuste_id else None
+            sucursal = get_user_primary_sucursal(request.user)
             
             movimiento = MovimientoInventario(
                 empresa=empresa,
-                sucursal=getattr(request.user, 'sucursal', None),
+                sucursal=sucursal,
                 producto=producto,
                 lote=lote,
                 tipo_movimiento=tipo_movimiento,

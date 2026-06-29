@@ -582,7 +582,8 @@ class VentaFarmaciaService:
                     crear_borrador_cfdi_desde_venta_farmacia(venta, usuario)
 
                 # 9. ACTUALIZAR META DE VENTA (Impacto en Metas)
-                sucursal_venta = getattr(request.user, 'sucursal', None)
+                from core.utils.sucursal_helpers import get_user_primary_sucursal
+                sucursal_venta = get_user_primary_sucursal(request.user)
                 if not sucursal_venta:
                     sucursal_venta = sucursal_operativa
                 fecha_actual = timezone.now().date()
@@ -656,7 +657,8 @@ class VentaFarmaciaService:
                         prod = detalle.producto
                         if not (getattr(prod, 'es_antibiotico', False) or getattr(prod, 'es_controlado', False)):
                             continue
-                        sucursal_actual = getattr(request.user, 'sucursal', None)
+                        from core.utils.sucursal_helpers import get_user_primary_sucursal
+                        sucursal_actual = get_user_primary_sucursal(request.user)
                         if not sucursal_actual:
                             logger.warning(
                                 '[Farmacia-COFEPRIS] Usuario %s sin sucursal — registro omitido para %s',

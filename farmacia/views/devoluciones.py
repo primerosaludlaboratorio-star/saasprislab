@@ -18,6 +18,7 @@ from django.utils import timezone
 
 from core.models import Venta, DetalleVenta, SalesReturn, Pago
 from core.utils.empresa_request import get_empresa_usuario
+from core.utils.sucursal_helpers import get_request_sucursal
 from farmacia.models import MermaFarmacia, MovimientoInventario, DevolucionVenta
 
 logger = logging.getLogger('farmacia.devoluciones')
@@ -413,7 +414,7 @@ def procesar_devolucion(request):
 
         venta = get_object_or_404(Venta, id=venta_id, empresa=empresa)
 
-        sucursal = getattr(venta, 'sucursal', None) or getattr(request.user, 'sucursal', None)
+        sucursal = getattr(venta, 'sucursal', None) or get_request_sucursal(request)
         if not sucursal and venta.empresa:
             sucursal = venta.empresa.sucursales.filter(activa=True).first()
         if not sucursal:
@@ -685,7 +686,7 @@ def dashboard_devoluciones(request):
     empresa = getattr(request.user, 'empresa', None)
     if not empresa:
         return render(request, 'farmacia/devoluciones/dashboard.html', {'pendientes': [], 'procesadas': []})
-    sucursal = getattr(request.user, 'sucursal', None)
+    sucursal = get_request_sucursal(request)
     
     pendientes = DevolucionVenta.objects.filter(
         empresa=empresa,

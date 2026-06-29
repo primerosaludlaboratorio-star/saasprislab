@@ -281,7 +281,7 @@ class ConfiguracionModulos(models.Model):
 class Usuario(AbstractUser):
     """Usuario personalizado con roles y pertenencia a empresa SaaS."""
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='usuarios', null=True, blank=True)
-    sucursal = models.ForeignKey('Sucursal', on_delete=models.SET_NULL, related_name='usuarios', null=True, blank=True, verbose_name="Sucursal de Trabajo")
+    sucursales = models.ManyToManyField('Sucursal', related_name='usuarios', blank=True, verbose_name="Sucursales Asignadas", through='Usuario_Sucursal')
     rol = models.CharField(
         max_length=50,
         choices=[
@@ -355,6 +355,84 @@ class Usuario(AbstractUser):
     def puede_ver_ia_negocios(self):
         """Verifica si el usuario puede ver el botón de 'Consultar IA de Negocios'."""
         return self.tiene_permiso_ia_master() or self.rol in ['ADMIN']
+
+    # ── PUENTE TEMPORAL DE COMPATIBILIDAD (v6.1 → v7.0) ──────────────────────────
+    # Durante la migración de FK único a M2M, estas propiedades mantienen retrocompatibilidad.
+    @property
+    def sucursal(self):
+        """
+        Retorna la primera sucursal asignada al usuario (compatibilidad con código legacy).
+        En nueva arquitectura, usar .sucursales.all() para iterar o .get_primary_sucursal().
+        DEPRECATED: usar get_primary_sucursal() en código nuevo.
+        """
+        return self.get_primary_sucursal()
+
+    @sucursal.setter
+    def sucursal(self, value):
+        """
+        Asigna la primera sucursal via M2M (compatibilidad).
+        DEPRECATED: usar add_sucursal(value) en código nuevo.
+        """
+        if value is None:
+            self.sucursales.clear()
+        else:
+            self.sucursales.clear()
+            self.sucursales.add(value)
+
+    @property
+    def sucursal_id(self):
+        """Retorna el ID de la sucursal principal (compatibilidad)."""
+        suc = self.get_primary_sucursal()
+        return suc.pk if suc else None
+
+    @sucursal_id.setter
+    def sucursal_id(self, value):
+        """Asigna por ID de sucursal (compatibilidad)."""
+        if value is None:
+            self.sucursales.clear()
+        else:
+            try:
+                suc = Sucursal.objects.get(pk=value)
+                self.sucursales.clear()
+                self.sucursales.add(suc)
+            except Sucursal.DoesNotExist:
+                self.sucursales.clear()
+
+    def get_primary_sucursal(self):
+        """
+        Retorna la sucursal "primaria" del usuario (primera asignada).
+        Nuevo método: prefiere esto en lugar de .sucursal.
+        """
+        return self.sucursales.filter(
+            usuario_sucursal__activa=True,
+            activa=True,
+        ).order_by('usuario_sucursal__fecha_asignacion').first()
+
+    def add_sucursal(self, sucursal_obj, vencimiento=None):
+        """
+        Asigna una sucursal al usuario con fecha de vencimiento opcional.
+        Nuevo método: usar en lugar de .sucursal = ...
+        """
+        Usuario_Sucursal.objects.update_or_create(
+            usuario=self,
+            sucursal=sucursal_obj,
+            defaults={'fecha_vencimiento': vencimiento, 'activa': True}
+        )
+
+    def has_sucursal(self, sucursal_id) -> bool:
+        """
+        Verifica si el usuario tiene acceso a la sucursal (M2M vigente).
+        """
+        try:
+            asignacion = self.asignaciones_sucursal.filter(
+                sucursal_id=sucursal_id,
+                activa=True,
+            ).first()
+            if not asignacion:
+                return False
+            return asignacion.esta_vigente()
+        except Exception:
+            return False
 
 
 # ==============================================================================
@@ -478,3 +556,62 @@ class RutaLogistica(models.Model):
 
     def __str__(self) -> str:
         return f"{self.chofer} @ {self.timestamp:%Y-%m-%d %H:%M}"
+
+
+# ==============================================================================
+# TABLA INTERMEDIA: Usuario_Sucursal (M2M con permisos por sucursal)
+# ==============================================================================
+class Usuario_Sucursal(models.Model):
+    """
+    Relación Many-to-Many entre Usuario y Sucursal.
+    Permite que un usuario tenga acceso a múltiples sucursales con permisos granulares.
+    """
+    usuario = models.ForeignKey(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name='asignaciones_sucursal',
+        verbose_name="Usuario"
+    )
+    sucursal = models.ForeignKey(
+        Sucursal,
+        on_delete=models.CASCADE,
+        related_name='asignaciones_usuario',
+        verbose_name="Sucursal"
+    )
+    activa = models.BooleanField(
+        default=True,
+        verbose_name="Asignación Activa",
+        help_text="Si es False, el usuario no accede a esta sucursal aunque esté en M2M."
+    )
+    fecha_asignacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Asignación"
+    )
+    fecha_vencimiento = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Vencimiento",
+        help_text="Si se establece, la asignación vence automáticamente en esa fecha."
+    )
+
+    class Meta:
+        app_label = 'core'
+        unique_together = ('usuario', 'sucursal')
+        verbose_name = "Asignación Usuario-Sucursal"
+        verbose_name_plural = "Asignaciones Usuario-Sucursal"
+        indexes = [
+            models.Index(fields=['usuario', 'activa']),
+            models.Index(fields=['sucursal', 'activa']),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.usuario.username} → {self.sucursal.nombre}"
+
+    def esta_vigente(self) -> bool:
+        """Retorna True si la asignación es activa y no ha vencido."""
+        from django.utils import timezone
+        if not self.activa:
+            return False
+        if self.fecha_vencimiento is None:
+            return True
+        return timezone.now() <= self.fecha_vencimiento

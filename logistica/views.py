@@ -10,6 +10,7 @@ import logging
 
 from .models import RutaRecoleccion, VisitaDomicilio, TransferenciaInventario, DetalleTransferencia, LogTransferencia
 from core.models import Producto, Lote, Sucursal
+from core.utils.sucursal_helpers import get_request_sucursal, get_user_sucursales
 
 
 @login_required
@@ -68,7 +69,8 @@ def lista_transferencias(request):
     if not empresa:
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
-    sucursal_usuario = getattr(request.user, 'sucursal', None)
+    sucursal_usuario = get_request_sucursal(request)
+    sucursales_usuario = get_user_sucursales(request.user)
     
     # Filtros
     estado = request.GET.get('estado', '')
@@ -84,6 +86,16 @@ def lista_transferencias(request):
         transferencias = TransferenciaInventario.objects.filter(
             empresa=empresa,
             sucursal_destino=sucursal_usuario
+        )
+    elif direccion == 'salientes' and sucursales_usuario.exists():
+        transferencias = TransferenciaInventario.objects.filter(
+            empresa=empresa,
+            sucursal_origen__in=sucursales_usuario,
+        )
+    elif direccion == 'entrantes' and sucursales_usuario.exists():
+        transferencias = TransferenciaInventario.objects.filter(
+            empresa=empresa,
+            sucursal_destino__in=sucursales_usuario,
         )
     else:
         transferencias = TransferenciaInventario.objects.filter(empresa=empresa)
