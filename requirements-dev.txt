@@ -3,7 +3,7 @@
 # Requiere Chrome/Chromium para core.tests_e2e.
 
 beautifulsoup4>=4.12.0
-selenium>=4.15.0
+selenium>=4.45.0
 webdriver-manager>=4.0.0
 pytest>=8.0.0
 coverage[toml]>=7.4.0
