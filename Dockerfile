@@ -79,9 +79,9 @@ RUN groupadd -r appgroup && useradd -r -g appgroup appuser \
 EXPOSE ${PORT}
 
 # ── Comando de inicio (v7.5 — Cloud Run) ─────────────────────────────────────
-# scripts/cloudrun_web_entrypoint.sh: migrate (salvo PRISLAB_SKIP_MIGRATE_ON_STARTUP=1) + gunicorn.
+# scripts/web_entrypoint.sh: migrate (salvo PRISLAB_SKIP_MIGRATE_ON_STARTUP=1) + gunicorn.
 # sed quita CR (\r) si el repo se clonó en Windows — sin esto: env: 'sh\r': No such file (exit 127).
-RUN sed -i 's/\r$//' /app/scripts/cloudrun_web_entrypoint.sh && chmod +x /app/scripts/cloudrun_web_entrypoint.sh
+RUN sed -i 's/\r$//' /app/scripts/web_entrypoint.sh && chmod +x /app/scripts/web_entrypoint.sh
 
 USER appuser
-CMD ["/app/scripts/cloudrun_web_entrypoint.sh"]
+CMD ["/app/scripts/web_entrypoint.sh"]

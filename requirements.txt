@@ -55,7 +55,8 @@ lxml>=5.2.2
 pypdf>=4.3.0
 
 # RAG — Motor de Biblioteca de Entrenamiento PRIS-IA
-chromadb>=1.6.0
+# 1.6.0 aún no está publicado; usar la última versión disponible para evitar romper CI.
+chromadb>=1.5.9,<1.6.0
 
 # Seguridad / Auth
 pyotp==2.9.0
