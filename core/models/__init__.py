@@ -10,8 +10,10 @@ from .base import (
     AuditoriaModel,
     Empresa,
     Sucursal,
-    ConfiguracionModulos,
     Usuario,
+    Usuario_Sucursal,
+    Usuario_Permiso_Extra,
+    ConfiguracionModulos,
     DocumentoConocimiento,
     DatosFiscales,
     ControlCalidad,
@@ -174,8 +176,8 @@ from .operaciones import (
 __all__ = [
     # base
     'get_google_drive_storage',
-    'Empresa', 'Sucursal', 'ConfiguracionModulos', 'Usuario', 'Usuario_Sucursal',
-    'DocumentoConocimiento', 'DatosFiscales', 'ControlCalidad', 'RutaLogistica',
+    'Empresa', 'Sucursal', 'Usuario', 'Usuario_Sucursal', 'Usuario_Permiso_Extra',
+    'ConfiguracionModulos', 'DocumentoConocimiento', 'DatosFiscales', 'ControlCalidad', 'RutaLogistica',
     # catalogos
     'Producto', 'Lote', 'Medico', 'DiscountPolicy',
     'Convenio', 'ConvenioPrecioLims',

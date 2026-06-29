@@ -22,6 +22,7 @@ from functools import wraps
 from typing import Sequence
 
 from django.core.exceptions import PermissionDenied
+from django.db import models
 from django.http import JsonResponse
 
 logger = logging.getLogger("core.rbac")
@@ -121,6 +122,75 @@ def _has_permission(user, permission_key: str) -> bool:
         logger.warning("RBAC: permiso desconocido '%s' — denegado por defecto.", permission_key)
         return False
     return _user_rol(user) in allowed
+
+
+# ── ABAC: Attribute-Based Access Control (v1.1+) ────────────────────────────
+
+def _evaluate_abac_override(user, permission_key: str, sucursal_id: int | None = None) -> bool | None:
+    """
+    Evalúa overrides de ABAC (Usuario_Permiso_Extra).
+
+    Retorna:
+        True si hay GRANT vigente para este permiso
+        False si hay REVOKE vigente para este permiso
+        None si no hay override (fallback a RBAC)
+    """
+    from django.utils import timezone
+    from core.models import Usuario_Permiso_Extra
+
+    # Buscar overrides activos para este usuario
+    overrides = Usuario_Permiso_Extra.objects.filter(
+        usuario=user,
+        permiso_key=permission_key,
+        fecha_vencimiento__isnull=True  # Sin fecha de vencimiento
+    ) | Usuario_Permiso_Extra.objects.filter(
+        usuario=user,
+        permiso_key=permission_key,
+        fecha_vencimiento__gte=timezone.now()
+    )
+
+    # Filtrar por sucursal si se proporciona
+    if sucursal_id:
+        # Overrides globales (sucursal=None) + overrides de esta sucursal específica
+        overrides = overrides.filter(
+            models.Q(sucursal_id=None) | models.Q(sucursal_id=sucursal_id)
+        )
+    else:
+        # Solo overrides globales
+        overrides = overrides.filter(sucursal_id=None)
+
+    # Evaluar: REVOKE tiene prioridad sobre GRANT
+    revoke = overrides.filter(tipo_override='REVOKE').exists()
+    grant = overrides.filter(tipo_override='GRANT').exists()
+
+    if revoke:
+        return False
+    elif grant:
+        return True
+    else:
+        return None
+
+
+def _has_permission_with_abac(user, permission_key: str, sucursal_id: int | None = None) -> bool:
+    """
+    Verifica permiso combinando RBAC + ABAC.
+
+    1. Superadmin → True
+    2. Evalúa ABAC overrides
+       - REVOKE vigente → False
+       - GRANT vigente → True
+    3. Fallback a RBAC (rol-based)
+    """
+    if _is_superadmin(user):
+        return True
+
+    # Evaluar ABAC
+    abac_result = _evaluate_abac_override(user, permission_key, sucursal_id)
+    if abac_result is not None:
+        return abac_result
+
+    # Fallback: RBAC
+    return _has_permission(user, permission_key)
 
 
 def check_permission(user, permission_key: str) -> None:
