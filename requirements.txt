@@ -23,7 +23,7 @@ google-auth-oauthlib>=1.0.0
 google-api-python-client>=2.100.0
 google-cloud-secret-manager>=2.18.0
 google-cloud-storage>=2.16.0
-google-cloud-vision>=3.7.0
+google-cloud-vision>=3.15.0
 google-cloud-speech>=2.20.0
 
 # Encriptación
