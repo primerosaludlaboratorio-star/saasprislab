@@ -55,7 +55,9 @@ jobs:
         run: python manage.py check
 
       - name: Migration check
-        run: python manage.py migrate --check --no-input
+        # makemigrations --check verifies all model changes have a migration file.
+        # migrate --check would always exit 1 on a fresh CI database (no migrations applied).
+        run: python manage.py makemigrations --check --no-input
 
       - name: Quality Gate — suite ampliada (Guardian, CFDI, Westgard, fórmulas LIMS, inventario FEFO/stock, offline, sandbox, ética IA)
         run: |
