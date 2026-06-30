@@ -128,7 +128,7 @@ class KPIService:
         today = timezone.now().date()
         ingresos = MovimientoCaja.objects.filter(
             *self._get_filters(),
-            id__date=today,  # Approx; ideally fecha_movimiento field
+            fecha_movimiento__date=today,
             tipo_movimiento='INGRESO'
         ).aggregate(
             total=Coalesce(Sum('monto'), Decimal(0), output_field=DecimalField())
@@ -136,7 +136,7 @@ class KPIService:
 
         egresos = MovimientoCaja.objects.filter(
             *self._get_filters(),
-            id__date=today,
+            fecha_movimiento__date=today,
             tipo_movimiento='EGRESO'
         ).aggregate(
             total=Coalesce(Sum('monto'), Decimal(0), output_field=DecimalField())
@@ -155,7 +155,7 @@ class KPIService:
         result = CuentaPorCobrar.objects.filter(
             *self._get_filters(),
         ).aggregate(
-            total=Coalesce(Sum('monto_pendiente'), Decimal(0), output_field=DecimalField())
+            total=Coalesce(Sum('saldo_pendiente'), Decimal(0), output_field=DecimalField())
         )
         return result['total']
 
