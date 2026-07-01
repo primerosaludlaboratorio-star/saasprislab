@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0085_usuario_permiso_extra_abac'),
+        ('core', '0086_compliance_cofepris_lgpd'),
     ]
 
     operations = [
@@ -36,8 +36,7 @@ class Migration(migrations.Migration):
             model_name='empresa',
             name='iso15189_target_date',
             field=models.DateField(
-                blank=True,
-                null=True,
+                blank=True, null=True,
                 help_text='Fecha meta declarada por el laboratorio para alcanzar el nivel objetivo.',
                 verbose_name='Fecha objetivo ISO 15189',
             ),
@@ -46,8 +45,7 @@ class Migration(migrations.Migration):
             model_name='empresa',
             name='iso15189_last_audit',
             field=models.DateTimeField(
-                blank=True,
-                null=True,
+                blank=True, null=True,
                 help_text='Fecha y hora de la última revisión formal de cumplimiento.',
                 verbose_name='Última auditoría ISO 15189',
             ),
