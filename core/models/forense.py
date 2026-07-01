@@ -80,3 +80,11 @@ class ForenseAcceso(models.Model):
 
     def __str__(self):
         return f'{self.accion} empresa={self.empresa_id} p={self.paciente_id} o={self.orden_id} @ {self.created_at}'
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise RuntimeError('ForenseAcceso es append-only: no se permiten updates.')
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise RuntimeError('ForenseAcceso es append-only: no se permiten deletes.')

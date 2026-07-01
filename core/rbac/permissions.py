@@ -22,6 +22,7 @@ from functools import wraps
 from typing import Sequence
 
 from django.core.exceptions import PermissionDenied
+from django.db import models
 from django.http import JsonResponse
 
 logger = logging.getLogger("core.rbac")
@@ -123,15 +124,85 @@ def _has_permission(user, permission_key: str) -> bool:
     return _user_rol(user) in allowed
 
 
-def check_permission(user, permission_key: str) -> None:
+# ── ABAC: Attribute-Based Access Control (v1.1+) ────────────────────────────
+
+def _evaluate_abac_override(user, permission_key: str, sucursal_id: int | None = None) -> bool | None:
     """
-    Verifica permiso o lanza PermissionDenied.
+    Evalúa overrides de ABAC (Usuario_Permiso_Extra).
+
+    Retorna:
+        True si hay GRANT vigente para este permiso
+        False si hay REVOKE vigente para este permiso
+        None si no hay override (fallback a RBAC)
+    """
+    from django.utils import timezone
+    from core.models import Usuario_Permiso_Extra
+
+    # Buscar overrides activos para este usuario
+    overrides = Usuario_Permiso_Extra.objects.filter(
+        usuario=user,
+        permiso_key=permission_key,
+        fecha_vencimiento__isnull=True  # Sin fecha de vencimiento
+    ) | Usuario_Permiso_Extra.objects.filter(
+        usuario=user,
+        permiso_key=permission_key,
+        fecha_vencimiento__gte=timezone.now()
+    )
+
+    # Filtrar por sucursal si se proporciona
+    if sucursal_id:
+        # Overrides globales (sucursal=None) + overrides de esta sucursal específica
+        overrides = overrides.filter(
+            models.Q(sucursal_id=None) | models.Q(sucursal_id=sucursal_id)
+        )
+    else:
+        # Solo overrides globales
+        overrides = overrides.filter(sucursal_id=None)
+
+    # Evaluar: REVOKE tiene prioridad sobre GRANT
+    revoke = overrides.filter(tipo_override='REVOKE').exists()
+    grant = overrides.filter(tipo_override='GRANT').exists()
+
+    if revoke:
+        return False
+    elif grant:
+        return True
+    else:
+        return None
+
+
+def _has_permission_with_abac(user, permission_key: str, sucursal_id: int | None = None) -> bool:
+    """
+    Verifica permiso combinando RBAC + ABAC.
+
+    1. Superadmin → True
+    2. Evalúa ABAC overrides
+       - REVOKE vigente → False
+       - GRANT vigente → True
+    3. Fallback a RBAC (rol-based)
+    """
+    if _is_superadmin(user):
+        return True
+
+    # Evaluar ABAC
+    abac_result = _evaluate_abac_override(user, permission_key, sucursal_id)
+    if abac_result is not None:
+        return abac_result
+
+    # Fallback: RBAC
+    return _has_permission(user, permission_key)
+
+
+def check_permission(user, permission_key: str, sucursal_id: int | None = None) -> None:
+    """
+    Verifica permiso (RBAC + ABAC) o lanza PermissionDenied.
     Registra el intento fallido en el log.
 
     Uso en vistas funcionales:
         check_permission(request.user, "lab:validar_resultados")
+        check_permission(request.user, "caja:cancelar_venta", sucursal_id=request.sucursal_actual.pk)
     """
-    if not _has_permission(user, permission_key):
+    if not _has_permission_with_abac(user, permission_key, sucursal_id):
         logger.warning(
             "RBAC_DENIED user=%s rol=%s permission=%s",
             getattr(user, "username", "?"),
@@ -166,8 +237,8 @@ def check_sucursal_assignment(user, sucursal_id: int | None) -> bool:
     # Verificar que la sucursal está en las asignaciones M2M del usuario
     try:
         user_sucursales = user.sucursales.filter(
-            usuario_sucursal__activa=True,
-            usuario_sucursal__fecha_asignacion__isnull=False,
+            asignaciones_usuario__activa=True,
+            asignaciones_usuario__fecha_asignacion__isnull=False,
         ).values_list('pk', flat=True)
         return int(sucursal_id) in user_sucursales
     except Exception:
@@ -177,9 +248,9 @@ def check_sucursal_assignment(user, sucursal_id: int | None) -> bool:
 
 # ── Decoradores de vista ──────────────────────────────────────────────────────
 
-def require_permission(permission_key: str):
+def require_permission(permission_key: str, use_abac: bool = True):
     """
-    Decorador: verifica permiso RBAC antes de ejecutar la vista.
+    Decorador: verifica permiso RBAC+ABAC antes de ejecutar la vista.
 
     Uso:
         @login_required
@@ -188,13 +259,16 @@ def require_permission(permission_key: str):
             ...
 
     Responde JSON si la request es AJAX, renderiza 403 en caso contrario.
+    use_abac=True (default): evalúa overrides ABAC (GRANT/REVOKE) además del RBAC base.
     """
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
             if not request.user.is_authenticated:
                 raise PermissionDenied("No autenticado.")
-            if not _has_permission(request.user, permission_key):
+            sucursal_id = getattr(getattr(request, 'sucursal_actual', None), 'pk', None)
+            check_fn = _has_permission_with_abac if use_abac else _has_permission
+            if not check_fn(request.user, permission_key, sucursal_id):
                 logger.warning(
                     "RBAC_DENIED view=%s user=%s rol=%s permission=%s path=%s",
                     view_func.__name__,

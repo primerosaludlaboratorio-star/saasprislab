@@ -1,105 +1,102 @@
 #!/usr/bin/env bash
 # =============================================================================
-# PRISLAB — Post-Fix Validation Suite (21 checks)
-# Usage: bash audit_fixes/validate_fixes.sh /path/to/prislab/repo
+# PRISLAB SaaS — Post-Fix Validation Script
+# Usage: bash audit_fixes/validate_fixes.sh /path/to/PRISLAB_SaaS-master
 # =============================================================================
 set -euo pipefail
 
-REPO="${1:-$(pwd)}"
-PASS=0; FAIL=0
+TARGET="${1:-$(pwd)}"
+PASS=0
+FAIL=0
 
 check() {
   local desc="$1"; local cmd="$2"
   if eval "$cmd" &>/dev/null; then
-    echo "  ✅ $desc"
+    echo "  ✓ PASS: $desc"
     PASS=$((PASS+1))
   else
-    echo "  ❌ FAIL: $desc"
+    echo "  ✗ FAIL: $desc"
     FAIL=$((FAIL+1))
   fi
 }
 
 echo ""
-echo "============================================================"
-echo "  PRISLAB Validate Fixes — $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-echo "  Repo: $REPO"
-echo "============================================================"
+echo "=== PRISLAB Audit Validation ==="
+echo "Target: $TARGET"
 echo ""
 
-# --- P0-1: Dockerfile entrypoint ---
-echo "[P0-1] Dockerfile entrypoint"
-check "Dockerfile uses web_entrypoint.sh (not cloudrun)" \
-  "grep -q 'web_entrypoint.sh' '$REPO/Dockerfile'"
-check "Dockerfile does NOT reference cloudrun_web_entrypoint" \
-  "! grep -q 'cloudrun_web_entrypoint' '$REPO/Dockerfile'"
+# ─── Fix 1: Dockerfile ───────────────────────────────────────────────────────
+echo "[Fix 1] Dockerfile entrypoint"
+check "No cloudrun_web_entrypoint.sh reference" \
+  "! grep -q 'cloudrun_web_entrypoint' '$TARGET/Dockerfile'"
+check "web_entrypoint.sh in RUN sed" \
+  "grep -q 'web_entrypoint.sh' '$TARGET/Dockerfile'"
+check "CMD uses web_entrypoint.sh" \
+  "grep -q 'CMD.*web_entrypoint.sh' '$TARGET/Dockerfile'"
 
-# --- P0-2: Nginx Docker conf ---
-echo "[P0-2] Nginx Docker Compose conf"
+# ─── Fix 2: requirements.txt ─────────────────────────────────────────────────
+echo "[Fix 2] requirements.txt"
+check "Only one numpy entry" \
+  "[ \$(grep -c '^numpy>=' '$TARGET/requirements.txt') -eq 1 ]"
+check "Keeps numpy>=1.26.4" \
+  "grep -q 'numpy>=1.26.4' '$TARGET/requirements.txt'"
+
+# ─── Fix 3: CI workflow ──────────────────────────────────────────────────────
+echo "[Fix 3] GitHub Actions CI"
+check "Python 3.12 in CI" \
+  "grep -q 'python-version: \"3.12\"' '$TARGET/.github/workflows/main.yml'"
+check "No python 3.11 in CI" \
+  "! grep -q 'python-version: \"3.11\"' '$TARGET/.github/workflows/main.yml'"
+check "Migration check step in CI" \
+  "grep -q 'migrate --check' '$TARGET/.github/workflows/main.yml'"
+
+# ─── Fix 4: database.py ──────────────────────────────────────────────────────
+echo "[Fix 4] database.py connection age"
+check "No '0 if IS_PRODUCTION' pattern" \
+  "! grep -q '0 if IS_PRODUCTION else 60' '$TARGET/config/settings/database.py'"
+check "DB_CONN_MAX_AGE default is 60" \
+  "grep -q \"_env_int('DB_CONN_MAX_AGE', 60)\" '$TARGET/config/settings/database.py'"
+
+# ─── Fix 5: cache.py ─────────────────────────────────────────────────────────
+echo "[Fix 5] cache.py session engine"
+check "Redis cache session engine present" \
+  "grep -q 'backends.cache' '$TARGET/config/settings/cache.py'"
+check "SESSION_CACHE_ALIAS set" \
+  "grep -q 'SESSION_CACHE_ALIAS' '$TARGET/config/settings/cache.py'"
+check "DB fallback session engine present" \
+  "grep -q 'backends.db' '$TARGET/config/settings/cache.py'"
+
+# ─── Fix 6: nginx conf ───────────────────────────────────────────────────────
+echo "[Fix 6] nginx/conf.d/prislab.conf"
+check "X-Forwarded-For uses proxy_add" \
+  "grep -q 'proxy_add_x_forwarded_for' '$TARGET/nginx/conf.d/prislab.conf'"
+check "No remote_addr in X-Forwarded-For" \
+  "! grep -q 'X-Forwarded-For \\\$remote_addr' '$TARGET/nginx/conf.d/prislab.conf'"
+check "HSTS max-age=31536000" \
+  "grep -q 'max-age=31536000' '$TARGET/nginx/conf.d/prislab.conf'"
+check "No HSTS max-age=63072000" \
+  "! grep -q 'max-age=63072000' '$TARGET/nginx/conf.d/prislab.conf'"
+check "Content-Security-Policy header" \
+  "grep -q 'Content-Security-Policy' '$TARGET/nginx/conf.d/prislab.conf'"
+
+# ─── Fix 7: nginx Docker conf ────────────────────────────────────────────────
+echo "[Fix 7] nginx/conf.d/prislab.docker.conf"
 check "prislab.docker.conf exists" \
-  "test -f '$REPO/nginx/conf.d/prislab.docker.conf'"
-check "prislab.docker.conf uses app:8000" \
-  "grep -q 'server app:8000' '$REPO/nginx/conf.d/prislab.docker.conf'"
-check "prislab.docker.conf has NO hardcoded IP" \
-  "! grep -q '216.238.89.243' '$REPO/nginx/conf.d/prislab.docker.conf'"
+  "[ -f '$TARGET/nginx/conf.d/prislab.docker.conf' ]"
+check "Docker conf uses app:8000" \
+  "grep -q 'server app:8000' '$TARGET/nginx/conf.d/prislab.docker.conf'"
+check "Docker conf has no 127.0.0.1:8000" \
+  "! grep -q '127.0.0.1:8000' '$TARGET/nginx/conf.d/prislab.docker.conf'"
 
-# --- P1-2: CI Python version ---
-echo "[P1-2] CI Python version"
-check "CI uses Python 3.12" \
-  "grep -q 'python-version: \"3.12\"' '$REPO/.github/workflows/main.yml'"
-check "CI has migration check step" \
-  "grep -q 'migrate --check' '$REPO/.github/workflows/main.yml'"
-
-# --- P1-3: Redis sessions ---
-echo "[P1-3] Redis sessions"
-check "cache.py uses cache session backend when Redis present" \
-  "grep -q 'backends.cache' '$REPO/config/settings/cache.py'"
-check "cache.py SESSION_CACHE_ALIAS defined" \
-  "grep -q 'SESSION_CACHE_ALIAS' '$REPO/config/settings/cache.py'"
-
-# --- P1-4: DB connection pooling ---
-echo "[P1-4] DB connection pooling"
-check "database.py DB_CONN_MAX_AGE default is 60" \
-  "grep -q \"_env_int('DB_CONN_MAX_AGE', 60)\" '$REPO/config/settings/database.py'"
-
-# --- P1-5: nginx X-Forwarded-For ---
-echo "[P1-5] nginx X-Forwarded-For"
-check "prislab.conf uses proxy_add_x_forwarded_for" \
-  "grep -q 'proxy_add_x_forwarded_for' '$REPO/nginx/conf.d/prislab.conf'"
-check "docker conf uses proxy_add_x_forwarded_for" \
-  "grep -q 'proxy_add_x_forwarded_for' '$REPO/nginx/conf.d/prislab.docker.conf'"
-
-# --- P1-6: CSP header ---
-echo "[P1-6] Content-Security-Policy"
-check "prislab.conf has CSP header" \
-  "grep -q 'Content-Security-Policy' '$REPO/nginx/conf.d/prislab.conf'"
-check "docker conf has CSP header" \
-  "grep -q 'Content-Security-Policy' '$REPO/nginx/conf.d/prislab.docker.conf'"
-
-# --- P1-7: HSTS consistency ---
-echo "[P1-7] HSTS"
-check "prislab.conf HSTS is 31536000 (1 year)" \
-  "grep -q 'max-age=31536000' '$REPO/nginx/conf.d/prislab.conf'"
-check "prislab.conf does NOT have 63072000 (2 years)" \
-  "! grep -q 'max-age=63072000' '$REPO/nginx/conf.d/prislab.conf'"
-
-# --- P1-9: numpy dedup ---
-echo "[P1-9] requirements.txt numpy"
-check "requirements.txt has only one numpy entry" \
-  "test \$(grep -c '^numpy' '$REPO/requirements.txt') -eq 1"
-
-# --- Secrets rotation script ---
-echo "[Tools] Secrets rotation"
+# ─── Fix 8: rotate_secrets.sh ────────────────────────────────────────────────
+echo "[Fix 8] scripts/rotate_secrets.sh"
 check "rotate_secrets.sh exists" \
-  "test -f '$REPO/scripts/rotate_secrets.sh'"
-check "rotate_secrets.sh is executable or at least has content" \
-  "test -s '$REPO/scripts/rotate_secrets.sh'"
+  "[ -f '$TARGET/scripts/rotate_secrets.sh' ]"
 
 echo ""
-echo "============================================================"
-echo "  Results: $PASS passed, $FAIL failed"
-echo "============================================================"
+echo "══════════════════════════════════════"
+echo "  Results: ${PASS} passed, ${FAIL} failed"
+echo "══════════════════════════════════════"
+[ "$FAIL" -eq 0 ] && echo "  ALL CHECKS PASSED ✓" || echo "  SOME CHECKS FAILED — review output above"
 echo ""
-
-if [ "$FAIL" -gt 0 ]; then
-  exit 1
-fi
+exit "$FAIL"

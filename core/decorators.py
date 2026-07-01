@@ -386,7 +386,9 @@ def role_required(*allowed_roles):
     """
     Decorador que restringe acceso a vistas según el rol del usuario.
 
-    Permite acceso a superusers y is_staff siempre.
+    Permite acceso a superusers siempre.
+    El bypass por is_staff se controla por setting
+    PRISLAB_ROLE_REQUIRED_ALLOW_STAFF_BYPASS (False por defecto).
     Los roles se comparan en mayúsculas contra usuario.rol.
 
     Uso:
@@ -404,20 +406,24 @@ def role_required(*allowed_roles):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
             user = request.user
-            if user.is_superuser or user.is_staff:
+            if user.is_superuser:
+                return view_func(request, *args, **kwargs)
+
+            from django.conf import settings
+            allow_staff_bypass = getattr(settings, 'PRISLAB_ROLE_REQUIRED_ALLOW_STAFF_BYPASS', False)
+            if allow_staff_bypass and user.is_staff:
                 return view_func(request, *args, **kwargs)
 
             user_rol = (getattr(user, 'rol', '') or '').upper().strip()
             if user_rol in allowed_upper:
                 return view_func(request, *args, **kwargs)
 
-            has_group = user.groups.filter(name__in=allowed_upper).exists()
-            if has_group:
-                return view_func(request, *args, **kwargs)
-
             logger.warning(
-                f"Acceso denegado por rol. Usuario: {user.username}, "
-                f"Rol: {user_rol}, Requeridos: {allowed_upper}"
+                "ROLE_DENIED view=%s user=%s rol=%s requeridos=%s",
+                view_func.__name__,
+                getattr(user, 'username', '?'),
+                user_rol,
+                allowed_upper,
             )
 
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':

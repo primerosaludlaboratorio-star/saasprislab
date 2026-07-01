@@ -15,9 +15,10 @@ from contabilidad.validators_cfdi40 import (
     validate_codigo_postal_sat40,
     validate_rfc_sat40,
 )
+from core.tenant import TenantModel
 
 
-class ClienteFacturacion(models.Model):
+class ClienteFacturacion(TenantModel):
     """
     Datos fiscales del cliente para facturación electrónica
     """
@@ -99,7 +100,7 @@ class ClienteFacturacion(models.Model):
         super().save(*args, **kwargs)
 
 
-class FacturaCFDI(models.Model):
+class FacturaCFDI(TenantModel):
     """
     Factura Electrónica CFDI 4.0
     """
@@ -223,6 +224,23 @@ class FacturaCFDI(models.Model):
         """ID empresa para Idempotency-Key (empresa directa o usuario_creo.empresa). Sin PHI."""
         return self.empresa_id or getattr(self.usuario_creo, 'empresa_id', None)
 
+    def _validar_integridad_tenant(self):
+        if self.cliente_id and self.empresa_id and self.cliente.empresa_id != self.empresa_id:
+            raise ValidationError('Integridad tenant: cliente pertenece a otra empresa.')
+
+        if self.orden_laboratorio_id and self.empresa_id and self.orden_laboratorio.empresa_id != self.empresa_id:
+            raise ValidationError('Integridad tenant: orden de laboratorio pertenece a otra empresa.')
+
+        if self.pago_orden_id and self.empresa_id and getattr(self.pago_orden, 'empresa_id', None) not in (None, self.empresa_id):
+            raise ValidationError('Integridad tenant: pago de orden pertenece a otra empresa.')
+
+        if self.venta_farmacia_id and self.empresa_id and getattr(self.venta_farmacia, 'empresa_id', None) not in (None, self.empresa_id):
+            raise ValidationError('Integridad tenant: venta de farmacia pertenece a otra empresa.')
+
+        usuario_empresa = getattr(self.usuario_creo, 'empresa_id', None) if self.usuario_creo_id else None
+        if self.empresa_id and usuario_empresa not in (None, self.empresa_id):
+            raise ValidationError('Integridad tenant: usuario_creo pertenece a otra empresa.')
+
     def save(self, *args, **kwargs):
         if not self.empresa_id and self.cliente_id:
             self.empresa = self.cliente.empresa
@@ -237,6 +255,7 @@ class FacturaCFDI(models.Model):
             self.folio_interno = (
                 f"FAC-{scope}-{self.serie}-{timezone.localdate().year}-{self.folio:05d}"
             )
+        self._validar_integridad_tenant()
         super().save(*args, **kwargs)
 
 
@@ -318,7 +337,7 @@ class ImpuestoConcepto(models.Model):
 # CONTABILIDAD GENERAL (Catálogo de cuentas, pólizas y asientos)
 # =============================================================================
 
-class CuentaContable(models.Model):
+class CuentaContable(TenantModel):
     """Catálogo de cuentas contables por empresa."""
     TIPO_CHOICES = [
         ('ACTIVO', 'Activo'),
@@ -354,7 +373,7 @@ class CuentaContable(models.Model):
         return f'{self.codigo} - {self.nombre}'
 
 
-class Poliza(models.Model):
+class Poliza(TenantModel):
     """Póliza contable: agrupa asientos de un período / concepto."""
     TIPO_CHOICES = [
         ('INGRESOS', 'Ingresos'),
