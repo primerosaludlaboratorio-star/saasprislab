@@ -39,7 +39,7 @@ class KPIService:
         """Total de ventas (facturadas) de hoy."""
         today = timezone.now().date()
         result = Venta.objects.filter(
-            *self._get_filters(),
+            self._get_filters(),
             fecha__date=today,
             estado='COMPLETADA'
         ).aggregate(
@@ -51,7 +51,7 @@ class KPIService:
         """Ingresos de los últimos N días (por día)."""
         desde = timezone.now().date() - timedelta(days=dias)
         ventas = Venta.objects.filter(
-            *self._get_filters(),
+            self._get_filters(),
             fecha__date__gte=desde,
             estado='COMPLETADA'
         ).extra(
@@ -69,7 +69,7 @@ class KPIService:
 
         # Órdenes de Lab (OrdenDeServicio)
         ingresos_lab = OrdenDeServicio.objects.filter(
-            *self._get_filters(),
+            self._get_filters(),
             fecha_creacion__date__range=(fecha_desde, fecha_hasta),
             estado__in=['COMPLETADA', 'ENTREGADA'],
         ).aggregate(
@@ -80,7 +80,7 @@ class KPIService:
         # Nota: Este es un ejemplo simplificado; en producción habría campos
         # específicos en Venta para indicar módulo
         ingresos_farmacia = Venta.objects.filter(
-            *self._get_filters(),
+            self._get_filters(),
             fecha__date__range=(fecha_desde, fecha_hasta),
             estado='COMPLETADA',
             # Filtro simplificado: asume paciente existe
@@ -100,7 +100,7 @@ class KPIService:
         """Órdenes creadas hoy."""
         today = timezone.now().date()
         return OrdenDeServicio.objects.filter(
-            *self._get_filters(),
+            self._get_filters(),
             fecha_creacion__date=today
         ).count()
 
@@ -108,7 +108,7 @@ class KPIService:
         """Órdenes completadas hoy."""
         today = timezone.now().date()
         return OrdenDeServicio.objects.filter(
-            *self._get_filters(),
+            self._get_filters(),
             fecha_creacion__date=today,
             estado__in=['COMPLETADA', 'ENTREGADA']
         ).count()
@@ -127,7 +127,7 @@ class KPIService:
         """Ingresos y egresos de caja hoy."""
         today = timezone.now().date()
         ingresos = MovimientoCaja.objects.filter(
-            *self._get_filters(),
+            self._get_filters(),
             fecha_movimiento__date=today,
             tipo_movimiento='INGRESO'
         ).aggregate(
@@ -135,7 +135,7 @@ class KPIService:
         )['total']
 
         egresos = MovimientoCaja.objects.filter(
-            *self._get_filters(),
+            self._get_filters(),
             fecha_movimiento__date=today,
             tipo_movimiento='EGRESO'
         ).aggregate(
@@ -153,7 +153,7 @@ class KPIService:
     def cuentas_por_cobrar(self) -> Decimal:
         """Monto total de CxC pendiente."""
         result = CuentaPorCobrar.objects.filter(
-            *self._get_filters(),
+            self._get_filters(),
         ).aggregate(
             total=Coalesce(Sum('saldo_pendiente'), Decimal(0), output_field=DecimalField())
         )
@@ -165,7 +165,7 @@ class KPIService:
         """Pacientes registrados hoy."""
         today = timezone.now().date()
         return Paciente.objects.filter(
-            *self._get_filters(),
+            self._get_filters(),
             fecha_registro__date=today
         ).count()
 
@@ -177,7 +177,7 @@ class KPIService:
         # Órdenes
         pacientes_ids.update(
             OrdenDeServicio.objects.filter(
-                *self._get_filters(),
+                self._get_filters(),
                 fecha_creacion__date=today
             ).values_list('paciente_id', flat=True)
         )
@@ -185,7 +185,7 @@ class KPIService:
         # Ventas
         pacientes_ids.update(
             Venta.objects.filter(
-                *self._get_filters(),
+                self._get_filters(),
                 fecha__date=today
             ).values_list('paciente_id', flat=True)
         )
@@ -198,7 +198,7 @@ class KPIService:
         """Operaciones en AuditLog hoy."""
         today = timezone.now().date()
         return AuditLog.objects.filter(
-            *self._get_filters(),
+            self._get_filters(),
             fecha_cierta__date=today
         ).count()
 

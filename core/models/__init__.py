@@ -12,6 +12,7 @@ from .base import (
     Sucursal,
     ConfiguracionModulos,
     Usuario,
+    Usuario_Sucursal,
     DocumentoConocimiento,
     DatosFiscales,
     ControlCalidad,
