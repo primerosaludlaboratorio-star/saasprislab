@@ -386,7 +386,9 @@ def role_required(*allowed_roles):
     """
     Decorador que restringe acceso a vistas según el rol del usuario.
 
-    Permite acceso a superusers y is_staff siempre.
+    Permite acceso a superusers siempre.
+    El bypass por is_staff se controla por setting
+    PRISLAB_ROLE_REQUIRED_ALLOW_STAFF_BYPASS (False por defecto).
     Los roles se comparan en mayúsculas contra usuario.rol.
 
     Uso:
@@ -404,7 +406,12 @@ def role_required(*allowed_roles):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
             user = request.user
-            if user.is_superuser or user.is_staff:
+            if user.is_superuser:
+                return view_func(request, *args, **kwargs)
+
+            from django.conf import settings
+            allow_staff_bypass = getattr(settings, 'PRISLAB_ROLE_REQUIRED_ALLOW_STAFF_BYPASS', False)
+            if allow_staff_bypass and user.is_staff:
                 return view_func(request, *args, **kwargs)
 
             user_rol = (getattr(user, 'rol', '') or '').upper().strip()
