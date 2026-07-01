@@ -11,10 +11,11 @@ from django.utils import timezone
 from core.services.kpi_service import KPIService
 from core.utils.sucursal_helpers import get_user_primary_sucursal
 from core.rbac.permissions import check_permission
-from core.tenant import get_current_empresa, get_current_sucursal
+from core.tenant import get_current_empresa, get_current_sucursal, tenant_required
 
 
 @login_required
+@tenant_required
 @require_http_methods(["GET"])
 def dashboard_hoy(request):
     """
@@ -50,8 +51,8 @@ def dashboard_hoy(request):
             'status': 'forbidden'
         }, status=403)
 
-    empresa = get_current_empresa()
-    sucursal = get_current_sucursal()
+    empresa = get_current_empresa() or getattr(request.user, 'empresa', None)
+    sucursal = get_current_sucursal() or getattr(request, 'sucursal_actual', None)
 
     if not empresa:
         return JsonResponse({
@@ -66,6 +67,7 @@ def dashboard_hoy(request):
 
 
 @login_required
+@tenant_required
 @require_http_methods(["GET"])
 def dashboard_comparativo(request):
     """
@@ -95,8 +97,8 @@ def dashboard_comparativo(request):
             'status': 'forbidden'
         }, status=403)
 
-    empresa = get_current_empresa()
-    sucursal = get_current_sucursal()
+    empresa = get_current_empresa() or getattr(request.user, 'empresa', None)
+    sucursal = get_current_sucursal() or getattr(request, 'sucursal_actual', None)
 
     if not empresa:
         return JsonResponse({
@@ -132,13 +134,14 @@ def dashboard_comparativo(request):
 
 
 @login_required
+@tenant_required
 @require_http_methods(["POST"])
 def generar_snapshot(request):
     """
     POST /api/dashboard/snapshot/generar
 
     Genera snapshot inmediato de KPIs para hoy.
-    (Admin only)
+    Requiere "finanzas:exportar" (ADMIN, DIRECTOR).
 
     Respuesta (201):
         {
@@ -147,15 +150,15 @@ def generar_snapshot(request):
         }
     """
     try:
-        check_permission(request.user, "finanzas:ver_reportes")
+        check_permission(request.user, "finanzas:exportar")
     except Exception as e:
         return JsonResponse({
             'error': str(e),
             'status': 'forbidden'
         }, status=403)
 
-    empresa = get_current_empresa()
-    sucursal = get_current_sucursal()
+    empresa = get_current_empresa() or getattr(request.user, 'empresa', None)
+    sucursal = get_current_sucursal() or getattr(request, 'sucursal_actual', None)
 
     if not empresa:
         return JsonResponse({
