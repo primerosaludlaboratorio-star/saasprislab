@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from contabilidad.models import ClienteFacturacion, ConceptoFactura, FacturaCFDI
 from core.models import OrdenDeServicio
+from core.tenant import get_current_empresa, set_current_empresa
 
 
 def _cliente_ip(request) -> str:
@@ -90,59 +91,64 @@ def api_generar_autofactura(request):
             token_acceso=ticket_token,
         )
 
-        # Validar si ya está facturada para esta orden
-        if FacturaCFDI.objects_all.filter(
-            empresa=orden.empresa,
-            orden_laboratorio=orden,
-            estado__in=['TIMBRADO', 'PROCESANDO', 'FACTURANDO'],
-        ).exists():
-            return JsonResponse({'error': 'Este ticket ya fue facturado previamente.'}, status=400)
+        # Ejecutar escritura fiscal bajo contexto tenant explícito de la orden.
+        prev_empresa = get_current_empresa()
+        set_current_empresa(orden.empresa)
+        try:
+            if FacturaCFDI.objects.filter(
+                empresa=orden.empresa,
+                orden_laboratorio=orden,
+                estado__in=['TIMBRADO', 'PROCESANDO', 'FACTURANDO'],
+            ).exists():
+                return JsonResponse({'error': 'Este ticket ya fue facturado previamente.'}, status=400)
 
-        cliente, created = ClienteFacturacion.objects_all.get_or_create(
-            rfc=rfc,
-            empresa=orden.empresa,
-            defaults={
-                'razon_social': razon_social,
-                'codigo_postal': cp,
-                'regimen_fiscal': regimen,
-                'email': 'autofactura@sin-email.local',
-            }
-        )
-        if not created:
-            cliente.razon_social = razon_social
-            cliente.codigo_postal = cp
-            cliente.regimen_fiscal = regimen
-            if not cliente.email:
-                cliente.email = 'autofactura@sin-email.local'
-            cliente.save()
+            cliente, created = ClienteFacturacion.objects.get_or_create(
+                rfc=rfc,
+                empresa=orden.empresa,
+                defaults={
+                    'razon_social': razon_social,
+                    'codigo_postal': cp,
+                    'regimen_fiscal': regimen,
+                    'email': 'autofactura@sin-email.local',
+                }
+            )
+            if not created:
+                cliente.razon_social = razon_social
+                cliente.codigo_postal = cp
+                cliente.regimen_fiscal = regimen
+                if not cliente.email:
+                    cliente.email = 'autofactura@sin-email.local'
+                cliente.save()
 
-        usuario_emisor = orden.responsable_ingreso
-        if usuario_emisor is None:
-            return JsonResponse({'error': 'La orden no tiene usuario responsable para emitir factura.'}, status=400)
+            usuario_emisor = orden.responsable_ingreso
+            if usuario_emisor is None:
+                return JsonResponse({'error': 'La orden no tiene usuario responsable para emitir factura.'}, status=400)
 
-        factura = FacturaCFDI.objects_all.create(
-            empresa=orden.empresa,
-            cliente=cliente,
-            usuario_creo=usuario_emisor,
-            orden_laboratorio=orden,
-            forma_pago='01',
-            metodo_pago='PUE',
-            subtotal=orden.total,
-            total_impuestos_trasladados=Decimal('0.00'),
-            total=orden.total,
-        )
+            factura = FacturaCFDI.objects.create(
+                empresa=orden.empresa,
+                cliente=cliente,
+                usuario_creo=usuario_emisor,
+                orden_laboratorio=orden,
+                forma_pago='01',
+                metodo_pago='PUE',
+                subtotal=orden.total,
+                total_impuestos_trasladados=Decimal('0.00'),
+                total=orden.total,
+            )
 
-        ConceptoFactura.objects.create(
-            factura=factura,
-            numero_linea=1,
-            clave_producto_servicio='85121800',
-            descripcion=f"Servicios de Laboratorio (Ticket {orden.id})",
-            cantidad=Decimal('1.00'),
-            valor_unitario=orden.total,
-            importe=orden.total,
-        )
+            ConceptoFactura.objects.create(
+                factura=factura,
+                numero_linea=1,
+                clave_producto_servicio='85121800',
+                descripcion=f"Servicios de Laboratorio (Ticket {orden.id})",
+                cantidad=Decimal('1.00'),
+                valor_unitario=orden.total,
+                importe=orden.total,
+            )
 
-        return JsonResponse({'mensaje': 'Factura generada y encolada para timbrado exitosamente.', 'factura_id': factura.id})
+            return JsonResponse({'mensaje': 'Factura generada y encolada para timbrado exitosamente.', 'factura_id': factura.id})
+        finally:
+            set_current_empresa(prev_empresa)
 
     except json.JSONDecodeError:
         return JsonResponse({'error': 'JSON inválido'}, status=400)
