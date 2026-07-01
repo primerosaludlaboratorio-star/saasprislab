@@ -420,7 +420,6 @@ async function verifyDirector(page, recorder, baseUrl, pause) {
   }
   recorder.record(module, page.url(), 'PASS', 'Director dashboard loaded');
 
-  // Verificar War Room directamente
   const warRoomUrl = `${baseUrl}/director/war-room/`;
   await page.goto(warRoomUrl, { waitUntil: 'networkidle', timeout: 30000 });
   await capture(page, recorder.screenshotsDir, '13_director_war_room');
@@ -431,6 +430,189 @@ async function verifyDirector(page, recorder, baseUrl, pause) {
   recorder.record(module, page.url(), 'PASS', 'War Room loaded correctly');
 
   if (pause) await maybePause(true, 'Director: revisa la pantalla y presiona Enter para terminar');
+  return true;
+}
+
+async function verifySeguridad(page, recorder, baseUrl) {
+  const module = 'seguridad';
+  const urls = [
+    ['/seguridad/2fa/', '14_seg_2fa'],
+    ['/seguridad/sesiones/', '15_seg_sesiones'],
+    ['/seguridad/auditoria/', '16_seg_auditoria'],
+    ['/seguridad/auditoria/logs/', '17_seg_logs'],
+  ];
+  for (const [path, shot] of urls) {
+    await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle', timeout: 30000 });
+    await capture(page, recorder.screenshotsDir, shot);
+    if (await pageErrorMarkers(page)) {
+      recorder.record(module, page.url(), 'FAIL', `${path} shows error markers`);
+    } else {
+      recorder.record(module, page.url(), 'PASS', `${path} loaded correctly`);
+    }
+  }
+  return true;
+}
+
+async function verifyContabilidad(page, recorder, baseUrl) {
+  const module = 'contabilidad';
+  const urls = [
+    ['/contabilidad/', '18_cont_dashboard'],
+    ['/contabilidad/facturas/', '19_cont_facturas'],
+    ['/contabilidad/clientes/', '20_cont_clientes'],
+  ];
+  for (const [path, shot] of urls) {
+    await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle', timeout: 30000 });
+    await capture(page, recorder.screenshotsDir, shot);
+    if (await pageErrorMarkers(page)) {
+      recorder.record(module, page.url(), 'FAIL', `${path} shows error markers`);
+    } else {
+      recorder.record(module, page.url(), 'PASS', `${path} loaded correctly`);
+    }
+  }
+  return true;
+}
+
+async function verifyFinanzas(page, recorder, baseUrl) {
+  const module = 'finanzas';
+  const urls = [
+    ['/finanzas/lab/caja/', '21_fin_caja_lab'],
+    ['/finanzas/farmacia/caja/', '22_fin_caja_farmacia'],
+    ['/finanzas/master/', '23_fin_master'],
+    ['/reportes/flujo-caja/', '24_fin_flujo_caja'],
+  ];
+  for (const [path, shot] of urls) {
+    await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle', timeout: 30000 });
+    await capture(page, recorder.screenshotsDir, shot);
+    if (await pageErrorMarkers(page)) {
+      recorder.record(module, page.url(), 'FAIL', `${path} shows error markers`);
+    } else {
+      recorder.record(module, page.url(), 'PASS', `${path} loaded correctly`);
+    }
+  }
+  return true;
+}
+
+async function verifyPacientes(page, recorder, baseUrl, query) {
+  const module = 'pacientes';
+  await page.goto(`${baseUrl}/pacientes/`, { waitUntil: 'networkidle', timeout: 30000 });
+  await capture(page, recorder.screenshotsDir, '25_pac_lista');
+  if (await pageErrorMarkers(page)) {
+    recorder.record(module, page.url(), 'FAIL', 'Pacientes lista shows error markers');
+    return false;
+  }
+  const rowCount = await page.locator('table tbody tr').count().catch(() => 0);
+  recorder.record(module, page.url(), 'PASS', `Lista de pacientes: ${rowCount} filas`);
+
+  await page.goto(`${baseUrl}/pacientes/nuevo/`, { waitUntil: 'networkidle', timeout: 30000 });
+  await capture(page, recorder.screenshotsDir, '26_pac_nuevo');
+  if (await pageErrorMarkers(page)) {
+    recorder.record(module, page.url(), 'FAIL', 'Nuevo paciente form shows error markers');
+  } else {
+    recorder.record(module, page.url(), 'PASS', 'Formulario nuevo paciente cargado');
+  }
+  return true;
+}
+
+async function verifyInventario(page, recorder, baseUrl) {
+  const module = 'inventario';
+  const urls = [
+    ['/inventario/', '27_inv_dashboard'],
+    ['/inventario/productos/', '28_inv_productos'],
+    ['/inventario/movimientos/', '29_inv_movimientos'],
+  ];
+  for (const [path, shot] of urls) {
+    await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle', timeout: 30000 });
+    await capture(page, recorder.screenshotsDir, shot);
+    if (await pageErrorMarkers(page)) {
+      recorder.record(module, page.url(), 'FAIL', `${path} shows error markers`);
+    } else {
+      recorder.record(module, page.url(), 'PASS', `${path} loaded correctly`);
+    }
+  }
+  return true;
+}
+
+async function verifySuscripciones(page, recorder, baseUrl) {
+  const module = 'suscripciones';
+  // Módulo nuevo (commit 682790f) — rutas del admin y endpoint de suscripciones
+  const urls = [
+    ['/suscripciones/', '30_sus_lista'],
+    ['/suscripciones/planes/', '31_sus_planes'],
+  ];
+  for (const [path, shot] of urls) {
+    await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle', timeout: 20000 });
+    await capture(page, recorder.screenshotsDir, shot);
+    const status = await pageErrorMarkers(page) ? 'FAIL' : 'PASS';
+    const detail = status === 'FAIL' ? `${path} shows error markers` : `${path} loaded (may redirect to login/admin)`;
+    recorder.record(module, page.url(), status, detail);
+  }
+  return true;
+}
+
+async function verifyAutoFactura(page, recorder, baseUrl) {
+  const module = 'auto-factura';
+  // Endpoint público sin autenticación (commit 682790f)
+  await page.goto(`${baseUrl}/f/TEST001/`, { waitUntil: 'networkidle', timeout: 20000 });
+  await capture(page, recorder.screenshotsDir, '32_autofactura_public');
+  const html = await page.content().catch(() => '');
+  const hasForm = html.includes('RFC') || html.includes('factura') || html.includes('folio') || html.includes('TEST001');
+  if (await pageErrorMarkers(page)) {
+    recorder.record(module, page.url(), 'FAIL', 'Auto-factura pública shows error markers (500)');
+  } else if (hasForm) {
+    recorder.record(module, page.url(), 'PASS', 'Auto-factura pública cargada con formulario RFC');
+  } else {
+    recorder.record(module, page.url(), 'WARN', 'Auto-factura cargó pero no se detectó formulario (folio puede no existir)');
+  }
+  return true;
+}
+
+async function verifyIA(page, recorder, baseUrl) {
+  const module = 'ia';
+  const urls = [
+    ['/ia/', '33_ia_dashboard'],
+    ['/ia/asistente/', '34_ia_asistente'],
+    ['/pris/acciones/', '35_ia_pris_acciones'],
+  ];
+  for (const [path, shot] of urls) {
+    await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle', timeout: 30000 });
+    await capture(page, recorder.screenshotsDir, shot);
+    if (await pageErrorMarkers(page)) {
+      recorder.record(module, page.url(), 'FAIL', `${path} shows error markers`);
+    } else {
+      recorder.record(module, page.url(), 'PASS', `${path} loaded correctly`);
+    }
+  }
+  return true;
+}
+
+async function verifyAcademia(page, recorder, baseUrl) {
+  const module = 'academia';
+  await page.goto(`${baseUrl}/academia/`, { waitUntil: 'networkidle', timeout: 30000 });
+  await capture(page, recorder.screenshotsDir, '36_academia');
+  if (await pageErrorMarkers(page)) {
+    recorder.record(module, page.url(), 'FAIL', 'Academia shows error markers');
+  } else {
+    recorder.record(module, page.url(), 'PASS', 'Academia dashboard loaded');
+  }
+  return true;
+}
+
+async function verifyBienestar(page, recorder, baseUrl) {
+  const module = 'bienestar';
+  const urls = [
+    ['/bienestar/', '37_bienestar_dashboard'],
+    ['/bienestar/chat/', '38_bienestar_chat'],
+    ['/bienestar/diario/', '39_bienestar_diario'],
+  ];
+  for (const [path, shot] of urls) {
+    await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle', timeout: 30000 });
+    await capture(page, recorder.screenshotsDir, shot);
+    if (await pageErrorMarkers(page)) {
+      recorder.record(module, page.url(), 'FAIL', `${path} shows error markers`);
+    } else {
+      recorder.record(module, page.url(), 'PASS', `${path} loaded correctly`);
+    }
+  }
   return true;
 }
 
@@ -521,6 +703,16 @@ async function main() {
     await verifyFarmacia(page, recorder, baseUrl, args.query, pause);
     await verifyConsultorio(page, recorder, baseUrl, pause);
     await verifyDirector(page, recorder, baseUrl, pause);
+    await verifySeguridad(page, recorder, baseUrl);
+    await verifyContabilidad(page, recorder, baseUrl);
+    await verifyFinanzas(page, recorder, baseUrl);
+    await verifyPacientes(page, recorder, baseUrl, args.query);
+    await verifyInventario(page, recorder, baseUrl);
+    await verifySuscripciones(page, recorder, baseUrl);
+    await verifyAutoFactura(page, recorder, baseUrl);
+    await verifyIA(page, recorder, baseUrl);
+    await verifyAcademia(page, recorder, baseUrl);
+    await verifyBienestar(page, recorder, baseUrl);
 
     summary.modules = recorder.steps;
     summary.steps = recorder.steps;

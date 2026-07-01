@@ -16,6 +16,7 @@ from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
+from core.utils.sucursal_helpers import get_request_sucursal
 
 from core.models import Medico
 from laboratorio.models import Estudio, PerfilLaboratorio
@@ -75,7 +76,7 @@ def recepcion_lab(request):
 
                 from decimal import Decimal as _Dec
 
-                sucursal = getattr(request.user, 'sucursal', None)
+                sucursal = get_request_sucursal(request)
                 try:
                     core_paciente = Paciente.objects.select_for_update().get(
                         pk=int(paciente_id),
@@ -243,7 +244,7 @@ def crear_paciente_ajax(request):
             }, status=400)
 
         try:
-            sucursal = getattr(request.user, 'sucursal', None)
+            sucursal = get_request_sucursal(request)
             resultado = crear_paciente_unificado(
                 empresa=empresa,
                 sucursal=sucursal,

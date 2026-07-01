@@ -38,6 +38,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 from core.models import Empresa, Producto, Lote, Venta, OrdenDeServicio, DetalleOrden, Paciente, Medico
 from laboratorio.models import Estudio, CategoriaExamen
+from core.utils.sucursal_helpers import get_user_primary_sucursal
 import logging
 
 User = get_user_model()
@@ -467,7 +468,7 @@ class LaboratorioE2ETest(E2ETestBase):
         total_o = self.estudio1.precio_base + self.estudio2.precio_base
         orden = OrdenDeServicio.objects.create(
             empresa=self.empresa,
-            sucursal=getattr(self.user, 'sucursal', None),
+            sucursal=get_user_primary_sucursal(self.user),
             paciente=paciente,
             responsable_ingreso=self.user,
             total=total_o,
@@ -592,7 +593,7 @@ class LaboratorioE2ETest(E2ETestBase):
         )
         orden = OrdenDeServicio.objects.create(
             empresa=self.empresa,
-            sucursal=getattr(self.user, 'sucursal', None),
+            sucursal=get_user_primary_sucursal(self.user),
             paciente=paciente,
             responsable_ingreso=self.user,
             total=self.estudio1.precio_base,

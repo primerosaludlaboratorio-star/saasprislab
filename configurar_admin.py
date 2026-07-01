@@ -21,7 +21,11 @@ try:
     
     # Asignar empresa y sucursal
     admin_user.empresa = empresa
-    admin_user.sucursal = sucursal
+    # Usar nuevo método M2M si está disponible, sino fallback al setter (puente compatibilidad)
+    if hasattr(admin_user, 'add_sucursal'):
+        admin_user.add_sucursal(sucursal)
+    else:
+        admin_user.sucursal = sucursal
     admin_user.rol = 'ADMIN'
     admin_user.save()
     

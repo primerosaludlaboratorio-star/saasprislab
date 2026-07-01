@@ -42,7 +42,10 @@ try:
         print(f"[OK] Empresa asignada: {empresa.nombre}")
     
     if sucursal:
-        admin_user.sucursal = sucursal
+        if hasattr(admin_user, 'add_sucursal'):
+            admin_user.add_sucursal(sucursal)
+        else:
+            admin_user.sucursal = sucursal
         print(f"[OK] Sucursal asignada: {sucursal.nombre}")
     
     # Asegurarse de que el rol sea ADMIN
