@@ -58,6 +58,14 @@ class AuditLog(models.Model):
     def __str__(self):
         return f"{self.get_accion_display()} {self.modelo_afectado} #{self.objeto_id} - {self.usuario} - {self.fecha_cierta.strftime('%Y-%m-%d %H:%M')}"
 
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise RuntimeError('AuditLog es append-only: no se permiten updates.')
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise RuntimeError('AuditLog es append-only: no se permiten deletes.')
+
 
 # ==============================================================================
 # BLOQUE 5: RESILIENCIA DE DATOS - BACKUP NOCTURNO 3:00 AM

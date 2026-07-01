@@ -190,6 +190,17 @@ class tenant_bypass:
     def __enter__(self):
         self._prev = is_tenant_bypassed()
         self._outer = not self._prev
+
+        req = _get_http_request()
+        user = getattr(req, 'user', None) if req is not None else None
+        if req is not None and bool(getattr(user, 'is_authenticated', False)) and not bool(getattr(user, 'is_superuser', False)):
+            logger.error(
+                'TENANT_BYPASS_WEB_NON_SUPERUSER user_id=%s username=%s path=%s',
+                getattr(user, 'pk', '?'),
+                getattr(user, 'username', '?'),
+                getattr(req, 'path', ''),
+            )
+
         set_tenant_bypass(True)
         if self._outer:
             stack = ''.join(traceback.format_stack())

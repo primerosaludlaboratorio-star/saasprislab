@@ -38,7 +38,7 @@ def get_user_sucursales(user: Usuario, activas_only: bool = True) -> QuerySet:
 
     qs = user.sucursales.filter(activa=True)
     if activas_only:
-        qs = qs.filter(usuario_sucursal__activa=True)
+        qs = qs.filter(asignaciones_usuario__activa=True)
     return qs
 
 

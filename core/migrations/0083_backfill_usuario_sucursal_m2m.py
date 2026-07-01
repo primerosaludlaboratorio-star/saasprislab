@@ -1,7 +1,7 @@
 # Data migration: FK usuario.sucursal → M2M Usuario_Sucursal
 # Migra todos los datos existentes desde la FK antigua hacia la tabla intermedia.
 
-from django.db import migrations
+from django.db import migrations, models
 from django.utils import timezone
 
 
@@ -47,4 +47,19 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(backfill_usuario_sucursal_m2m, reverse_backfill),
+        migrations.RemoveField(
+            model_name='usuario',
+            name='sucursal',
+        ),
+        migrations.AddField(
+            model_name='usuario',
+            name='sucursales',
+            field=models.ManyToManyField(
+                blank=True,
+                related_name='usuarios',
+                through='core.Usuario_Sucursal',
+                to='core.sucursal',
+                verbose_name='Sucursales Asignadas',
+            ),
+        ),
     ]
