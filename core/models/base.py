@@ -124,6 +124,39 @@ class Empresa(models.Model):
         help_text="ID de la carpeta raíz en Google Drive donde se guardarán audios, PDFs y respaldos.",
     )
 
+    # ── ISO 15189 — Cumplimiento progresivo ───────────────────────────────────
+    iso15189_enabled = models.BooleanField(
+        default=False,
+        verbose_name="ISO 15189 habilitado",
+        help_text="Activa el módulo de cumplimiento progresivo para este laboratorio.",
+    )
+    iso15189_mode = models.CharField(
+        max_length=20,
+        choices=[
+            ('OPTIONAL', 'Flexible / opcional'),
+            ('GUIDED', 'Guiado / sugerencias'),
+            ('STRICT', 'Estricto / obligatorio'),
+        ],
+        default='OPTIONAL',
+        verbose_name="Modo ISO 15189",
+        help_text="OPTIONAL = no bloquea; GUIDED = guía y avisa; STRICT = bloquea liberación si faltan controles.",
+    )
+    iso15189_target_date = models.DateField(
+        blank=True, null=True,
+        verbose_name="Fecha objetivo ISO 15189",
+        help_text="Fecha meta declarada por el laboratorio para alcanzar el nivel objetivo.",
+    )
+    iso15189_last_audit = models.DateTimeField(
+        blank=True, null=True,
+        verbose_name="Última auditoría ISO 15189",
+        help_text="Fecha y hora de la última revisión formal de cumplimiento.",
+    )
+    iso15189_compliance_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0,
+        verbose_name="% cumplimiento ISO 15189",
+        help_text="Porcentaje consolidado de checkpoints verificados.",
+    )
+
     class Meta:
         app_label = 'core'
         verbose_name = "Empresa / Institución"
