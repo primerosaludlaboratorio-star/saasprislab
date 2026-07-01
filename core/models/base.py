@@ -404,9 +404,9 @@ class Usuario(AbstractUser):
         Nuevo método: prefiere esto en lugar de .sucursal.
         """
         return self.sucursales.filter(
-            usuario_sucursal__activa=True,
+            asignaciones_usuario__activa=True,
             activa=True,
-        ).order_by('usuario_sucursal__fecha_asignacion').first()
+        ).order_by('asignaciones_usuario__fecha_asignacion').first()
 
     def add_sucursal(self, sucursal_obj, vencimiento=None):
         """

@@ -151,9 +151,9 @@ class EmpresaIdentityMiddleware:
                         else:
                             # Obtener la primera sucursal asignada al usuario vía M2M
                             sucursal = user.sucursales.filter(
-                                usuario_sucursal__activa=True,
+                                asignaciones_usuario__activa=True,
                                 activa=True,
-                            ).order_by('usuario_sucursal__fecha_asignacion').first()
+                            ).order_by('asignaciones_usuario__fecha_asignacion').first()
                     except Exception:
                         logger.exception(
                             'Error inesperado resolviendo sucursal M2M para user=%s',
