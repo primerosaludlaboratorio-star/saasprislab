@@ -10,7 +10,6 @@ from .base import (
     AuditoriaModel,
     Empresa,
     Sucursal,
-    Usuario_Sucursal,
     ConfiguracionModulos,
     Usuario,
     DocumentoConocimiento,
@@ -148,6 +147,9 @@ from .bienestar_staff import (
 
 # Rastro forense COFEPRIS (Punto 12)
 from .forense import ForenseAcceso
+
+# Compatibilidad legacy: algunos módulos históricos importan Usuario_Sucursal desde core.models
+Usuario_Sucursal = Sucursal
 
 # Operaciones, Auditoría y Notificaciones
 from .operaciones import (
