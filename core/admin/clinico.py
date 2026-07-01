@@ -3,7 +3,7 @@ Admin: 4-8. CONTROL MÉDICO, LABORAL, LIMS
 """
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from django.contrib.admin.exceptions import AlreadyRegistered
+from django.contrib.admin.exceptions import AlreadyRegistered, NotRegistered
 from core.models import (
     Empresa, Usuario, Producto, Lote, Venta, DetalleVenta, Pago, Medico, Receta, Gasto,
     DetalleOrden, GastoOperativo,
@@ -280,6 +280,13 @@ class SucursalAdmin(admin.ModelAdmin):
         }),
     )
 
+_current_sucursal_admin = admin.site._registry.get(Sucursal)
+if _current_sucursal_admin and _current_sucursal_admin.__class__.__name__ == 'Usuario_SucursalAdmin':
+    try:
+        admin.site.unregister(Sucursal)
+    except NotRegistered:
+        pass
+
 try:
     admin.site.register(Sucursal, SucursalAdmin)
 except AlreadyRegistered:
@@ -409,4 +416,3 @@ class CapsulaSabiduriAdmin(admin.ModelAdmin):
     list_display = ('titulo', 'empresa', 'documento_fuente', 'fecha_creacion')
     list_filter = ('empresa',)
     search_fields = ('titulo', 'contenido', 'tags')
-

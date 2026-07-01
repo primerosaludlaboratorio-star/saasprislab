@@ -3,6 +3,7 @@ Admin: 1. GESTIÓN DE IDENTIDAD SaaS
 """
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.admin.exceptions import NotRegistered
 from core.models import (
     Empresa, Usuario, Producto, Lote, Venta, DetalleVenta, Pago, Medico, Receta, Gasto,
     DetalleOrden, GastoOperativo,
@@ -77,5 +78,14 @@ class EmpresaAdmin(admin.ModelAdmin):
     """Configuración de la identidad institucional (PRISLAB, Clínica del Valle)."""
     list_display = ('nombre', 'rfc', 'periodo_vigencia', 'telefono')
     search_fields = ('nombre', 'rfc')
+
+
+# Limpia una posible registración legacy inválida de Sucursal por Usuario_SucursalAdmin.
+_legacy_admin = admin.site._registry.get(Sucursal)
+if _legacy_admin and _legacy_admin.__class__.__name__ == 'Usuario_SucursalAdmin':
+    try:
+        admin.site.unregister(Sucursal)
+    except NotRegistered:
+        pass
 
 # ==============================================================================
