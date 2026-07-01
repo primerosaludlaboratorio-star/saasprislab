@@ -193,15 +193,16 @@ def _has_permission_with_abac(user, permission_key: str, sucursal_id: int | None
     return _has_permission(user, permission_key)
 
 
-def check_permission(user, permission_key: str) -> None:
+def check_permission(user, permission_key: str, sucursal_id: int | None = None) -> None:
     """
-    Verifica permiso o lanza PermissionDenied.
+    Verifica permiso (RBAC + ABAC) o lanza PermissionDenied.
     Registra el intento fallido en el log.
 
     Uso en vistas funcionales:
         check_permission(request.user, "lab:validar_resultados")
+        check_permission(request.user, "caja:cancelar_venta", sucursal_id=request.sucursal_actual.pk)
     """
-    if not _has_permission(user, permission_key):
+    if not _has_permission_with_abac(user, permission_key, sucursal_id):
         logger.warning(
             "RBAC_DENIED user=%s rol=%s permission=%s",
             getattr(user, "username", "?"),
@@ -247,9 +248,9 @@ def check_sucursal_assignment(user, sucursal_id: int | None) -> bool:
 
 # ── Decoradores de vista ──────────────────────────────────────────────────────
 
-def require_permission(permission_key: str):
+def require_permission(permission_key: str, use_abac: bool = True):
     """
-    Decorador: verifica permiso RBAC antes de ejecutar la vista.
+    Decorador: verifica permiso RBAC+ABAC antes de ejecutar la vista.
 
     Uso:
         @login_required
@@ -258,13 +259,16 @@ def require_permission(permission_key: str):
             ...
 
     Responde JSON si la request es AJAX, renderiza 403 en caso contrario.
+    use_abac=True (default): evalúa overrides ABAC (GRANT/REVOKE) además del RBAC base.
     """
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
             if not request.user.is_authenticated:
                 raise PermissionDenied("No autenticado.")
-            if not _has_permission(request.user, permission_key):
+            sucursal_id = getattr(getattr(request, 'sucursal_actual', None), 'pk', None)
+            check_fn = _has_permission_with_abac if use_abac else _has_permission
+            if not check_fn(request.user, permission_key, sucursal_id):
                 logger.warning(
                     "RBAC_DENIED view=%s user=%s rol=%s permission=%s path=%s",
                     view_func.__name__,
