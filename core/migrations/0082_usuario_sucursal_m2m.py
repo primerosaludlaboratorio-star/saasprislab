@@ -47,18 +47,7 @@ class Migration(migrations.Migration):
             index=models.Index(fields=['sucursal', 'activa'], name='core_usuari_sucursa_idx'),
         ),
 
-        # 4. Remove old FK field usuario.sucursal (after data migration if needed)
-        # NOTE: If you have existing data in usuario.sucursal, run a separate
-        # data migration first to populate Usuario_Sucursal table.
-        migrations.RemoveField(
-            model_name='usuario',
-            name='sucursal',
-        ),
-
-        # 5. Add ManyToManyField usuario.sucursales (via through)
-        migrations.AddField(
-            model_name='usuario',
-            name='sucursales',
-            field=models.ManyToManyField(blank=True, related_name='usuarios', through='core.Usuario_Sucursal', to='core.sucursal', verbose_name='Sucursales Asignadas'),
-        ),
+        # La remoción de la FK legacy y el alta del M2M se hacen en 0083,
+        # después del backfill, para que la migración de datos tenga acceso
+        # al campo histórico usuario.sucursal.
     ]
