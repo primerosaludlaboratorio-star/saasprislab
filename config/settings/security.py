@@ -252,3 +252,8 @@ if IS_PRODUCTION and not os.environ.get('PRISLAB_DEFAULT_EMPRESA_ID', '').strip(
         'En entornos con múltiples empresas, usuarios sin empresa asignada serán bloqueados '
         'si PRISLAB_TENANT_STRICT_MODE está activo.'
     )
+
+
+# ── API pública de autofactura (anti-enumeración / brute-force) ─────────────
+PRISLAB_AUTOFACTURA_MAX_ATTEMPTS = _env_int('PRISLAB_AUTOFACTURA_MAX_ATTEMPTS', 20)
+PRISLAB_AUTOFACTURA_WINDOW_SECONDS = _env_int('PRISLAB_AUTOFACTURA_WINDOW_SECONDS', 60)

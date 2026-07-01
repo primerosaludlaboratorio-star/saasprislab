@@ -2,12 +2,39 @@ import json
 import uuid
 from decimal import Decimal
 
-from django.shortcuts import render, get_object_or_404
+from django.conf import settings
+from django.core.cache import cache
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import csrf_exempt
 
+from contabilidad.models import ClienteFacturacion, ConceptoFactura, FacturaCFDI
 from core.models import OrdenDeServicio
-from contabilidad.models import ClienteFacturacion, FacturaCFDI, ConceptoFactura
+
+
+def _cliente_ip(request) -> str:
+    xff = (request.META.get('HTTP_X_FORWARDED_FOR') or '').split(',')[0].strip()
+    return xff or request.META.get('REMOTE_ADDR', '0.0.0.0')
+
+
+def _rate_limit_exceeded(request) -> bool:
+    max_attempts = int(getattr(settings, 'PRISLAB_AUTOFACTURA_MAX_ATTEMPTS', 20))
+    window_sec = int(getattr(settings, 'PRISLAB_AUTOFACTURA_WINDOW_SECONDS', 60))
+    ip = _cliente_ip(request)
+    key = f"autofactura:api:{ip}"
+
+    current = cache.get(key, 0)
+    if current >= max_attempts:
+        return True
+
+    if current == 0:
+        cache.set(key, 1, timeout=window_sec)
+    else:
+        try:
+            cache.incr(key)
+        except ValueError:
+            cache.set(key, current + 1, timeout=window_sec)
+    return False
 
 
 def autofactura_portal(request):
@@ -37,6 +64,9 @@ def api_generar_autofactura(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
 
+    if _rate_limit_exceeded(request):
+        return JsonResponse({'error': 'Demasiadas solicitudes. Intente nuevamente en un momento.'}, status=429)
+
     try:
         data = json.loads(request.body)
         ticket_raw = str(data.get('ticket', '')).strip()
@@ -61,14 +91,14 @@ def api_generar_autofactura(request):
         )
 
         # Validar si ya está facturada para esta orden
-        if FacturaCFDI.objects.filter(
+        if FacturaCFDI.objects_all.filter(
             empresa=orden.empresa,
-            referencia_origen=f"ORDEN_{orden.id}",
+            orden_laboratorio=orden,
             estado__in=['TIMBRADO', 'PROCESANDO', 'FACTURANDO'],
         ).exists():
             return JsonResponse({'error': 'Este ticket ya fue facturado previamente.'}, status=400)
 
-        cliente, created = ClienteFacturacion.objects.get_or_create(
+        cliente, created = ClienteFacturacion.objects_all.get_or_create(
             rfc=rfc,
             empresa=orden.empresa,
             defaults={
@@ -86,22 +116,26 @@ def api_generar_autofactura(request):
                 cliente.email = 'autofactura@sin-email.local'
             cliente.save()
 
-        factura = FacturaCFDI.objects.create(
+        usuario_emisor = orden.responsable_ingreso
+        if usuario_emisor is None:
+            return JsonResponse({'error': 'La orden no tiene usuario responsable para emitir factura.'}, status=400)
+
+        factura = FacturaCFDI.objects_all.create(
             empresa=orden.empresa,
             cliente=cliente,
+            usuario_creo=usuario_emisor,
+            orden_laboratorio=orden,
             forma_pago='01',
             metodo_pago='PUE',
-            uso_cfdi=uso,
-            moneda='MXN',
             subtotal=orden.total,
             total_impuestos_trasladados=Decimal('0.00'),
             total=orden.total,
-            referencia_origen=f"ORDEN_{orden.id}",
         )
 
         ConceptoFactura.objects.create(
             factura=factura,
-            clave_prod_serv='85121800',
+            numero_linea=1,
+            clave_producto_servicio='85121800',
             descripcion=f"Servicios de Laboratorio (Ticket {orden.id})",
             cantidad=Decimal('1.00'),
             valor_unitario=orden.total,
