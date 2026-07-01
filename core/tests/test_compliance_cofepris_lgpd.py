@@ -33,7 +33,7 @@ def _setup_base():
 def _make_paciente(empresa):
     return Paciente.objects.create(
         empresa=empresa,
-        nombre="Juan",
+        nombres="Juan",
         apellido_paterno="Perez",
         apellido_materno="Lopez",
         fecha_nacimiento=date(1990, 1, 1),
@@ -112,11 +112,7 @@ class FirmaDigitalValidacionTest(TestCase):
         self.assertFalse(firma.verificada)
 
     def test_firma_con_rs_vencido_debe_bloquearse(self):
-        """
-        El modelo permite creación física (no hay constraint de DB),
-        pero la lógica de negocio debe verificar esta_vigente() antes.
-        Este test documenta que un RS vencido NO debe firmar.
-        """
+        """FirmaDigitalResultado.save() bloquea RS vencido con ValueError."""
         hoy = timezone.now().date()
         user2 = User.objects.create_user(username="quimico_vencido", password="x", rol="QUIMICO")
         user2.empresa = self.empresa
@@ -129,8 +125,15 @@ class FirmaDigitalValidacionTest(TestCase):
             fecha_vigencia_fin=hoy - timedelta(days=1),
         )
         self.assertFalse(rs_vencido.esta_vigente())
-        # El servicio que crea firmas debe verificar esta_vigente() antes de crear
-        # Aquí solo validamos que la bandera es correcta para enforcement en capa de servicio
+        with self.assertRaises(ValueError):
+            FirmaDigitalResultado.objects.create(
+                responsable_sanitario=rs_vencido,
+                modelo_referencia="OrdenDeServicio",
+                objeto_id=99,
+                paciente=self.paciente,
+                hash_contenido="deadbeef",
+                firma_hexadecimal="cafebabe",
+            )
 
 
 class ConsentimientoLGPDFlowTest(TestCase):
@@ -290,3 +293,14 @@ class RegistroAccesoDatosAuditTest(TestCase):
                 usuario=self.user, paciente=self.paciente, tipo_datos="expediente"
             ).count(), 2
         )
+
+    def test_registro_acceso_no_se_puede_eliminar(self):
+        """RegistroAccesoDatos es append-only: delete() lanza PermissionError."""
+        reg = RegistroAccesoDatos.objects.create(
+            usuario=self.user,
+            paciente=self.paciente,
+            tipo_datos="resultados_lab",
+            accion="READ",
+        )
+        with self.assertRaises(PermissionError):
+            reg.delete()

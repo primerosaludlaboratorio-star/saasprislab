@@ -12,6 +12,7 @@ from .base import (
     Sucursal,
     ConfiguracionModulos,
     Usuario,
+    Usuario_Sucursal,
     DocumentoConocimiento,
     DatosFiscales,
     ControlCalidad,
@@ -22,12 +23,6 @@ from .base import (
 from .ia_config import (
     UsoRecursosIA,
     ReglaLocalIA,
-)
-
-# KPIs — Panel Ejecutivo (v1.1+)
-from .kpis import (
-    KPI_Snapshot,
-    KPI_MetaAnual,
 )
 
 # Compliance — COFEPRIS + LGPD (v1.1+)
@@ -163,9 +158,6 @@ from .bienestar_staff import (
 # Rastro forense COFEPRIS (Punto 12)
 from .forense import ForenseAcceso
 
-# Compatibilidad legacy: algunos módulos históricos importan Usuario_Sucursal desde core.models
-Usuario_Sucursal = Sucursal
-
 # Operaciones, Auditoría y Notificaciones
 from .operaciones import (
     AuditLog,
@@ -240,8 +232,6 @@ __all__ = [
     # bienestar_staff NOM-035 (Migración Maestra activada)
     'EvaluacionNOM035', 'DiarioEmocionalStaff', 'SesionCoachingStaff',
     'AlertaBurnout', 'ProgramaCapacitacion',
-    # kpis — Panel Ejecutivo
-    'KPI_Snapshot', 'KPI_MetaAnual',
     # compliance — COFEPRIS + LGPD
     'ResponsableSanitario', 'FirmaDigitalResultado',
     'ConsentimientoLGPD', 'DerechoOlvido', 'RegistroAccesoDatos',

@@ -143,6 +143,13 @@ class FirmaDigitalResultado(models.Model):
             models.Index(fields=['responsable_sanitario', 'fecha_firma']),
         ]
 
+    def save(self, *args, **kwargs):
+        if not self.responsable_sanitario.esta_vigente():
+            raise ValueError(
+                "No se puede firmar con un Responsable Sanitario vencido o inactivo."
+            )
+        super().save(*args, **kwargs)
+
     def __str__(self) -> str:
         return f"Firma {self.paciente.nombre_completo} por {self.responsable_sanitario.usuario.get_full_name()} @ {self.fecha_firma:%Y-%m-%d %H:%M}"
 
@@ -341,6 +348,9 @@ class RegistroAccesoDatos(models.Model):
             models.Index(fields=['paciente', 'fecha_acceso']),
             models.Index(fields=['usuario', 'fecha_acceso']),
         ]
+
+    def delete(self, *args, **kwargs):
+        raise PermissionError("RegistroAccesoDatos es append-only y no puede eliminarse.")
 
     def __str__(self) -> str:
         return f"{self.usuario.username} accedió {self.tipo_datos} de {self.paciente.nombre_completo} @ {self.fecha_acceso:%Y-%m-%d %H:%M}"
