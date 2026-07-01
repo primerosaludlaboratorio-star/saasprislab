@@ -10,8 +10,10 @@ from .base import (
     AuditoriaModel,
     Empresa,
     Sucursal,
-    ConfiguracionModulos,
     Usuario,
+    Usuario_Sucursal,
+    Usuario_Permiso_Extra,
+    ConfiguracionModulos,
     DocumentoConocimiento,
     DatosFiscales,
     ControlCalidad,
@@ -148,9 +150,6 @@ from .bienestar_staff import (
 # Rastro forense COFEPRIS (Punto 12)
 from .forense import ForenseAcceso
 
-# Compatibilidad legacy: algunos módulos históricos importan Usuario_Sucursal desde core.models
-Usuario_Sucursal = Sucursal
-
 # Operaciones, Auditoría y Notificaciones
 from .operaciones import (
     AuditLog,
@@ -174,8 +173,8 @@ from .operaciones import (
 __all__ = [
     # base
     'get_google_drive_storage',
-    'Empresa', 'Sucursal', 'ConfiguracionModulos', 'Usuario', 'Usuario_Sucursal',
-    'DocumentoConocimiento', 'DatosFiscales', 'ControlCalidad', 'RutaLogistica',
+    'Empresa', 'Sucursal', 'Usuario', 'Usuario_Sucursal', 'Usuario_Permiso_Extra',
+    'ConfiguracionModulos', 'DocumentoConocimiento', 'DatosFiscales', 'ControlCalidad', 'RutaLogistica',
     # catalogos
     'Producto', 'Lote', 'Medico', 'DiscountPolicy',
     'Convenio', 'ConvenioPrecioLims',
