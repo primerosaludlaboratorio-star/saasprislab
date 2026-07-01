@@ -10,7 +10,7 @@ from core.models import (
     Paciente, OrdenDeServicio, PagoOrden, MetaVenta,
     Convenio, ConvenioPrecioLims, CuentaPorCobrar, PagoCuentaPorCobrar, NotaCredito,
     # Nuevos modelos
-    Sucursal, ConfiguracionModulos,
+    Sucursal, ConfiguracionModulos, Usuario_Sucursal, Usuario_Permiso_Extra,
     GastoCaja, MovimientoCaja, AjusteInventario, RecetaItem,
     PeriodoNomina, ReciboNomina,
     SolicitudAutorizacion,
@@ -87,5 +87,47 @@ if _legacy_admin and _legacy_admin.__class__.__name__ == 'Usuario_SucursalAdmin'
         admin.site.unregister(Sucursal)
     except NotRegistered:
         pass
+
+
+@admin.register(Usuario_Permiso_Extra)
+class Usuario_Permiso_ExtraAdmin(admin.ModelAdmin):
+    """ABAC: Admin para overrides de permisos granulares (v1.1+)."""
+    list_display = ('usuario', 'permiso_key', 'tipo_override', 'sucursal', 'esta_vigente', 'otorgado_por')
+    list_filter = ('tipo_override', 'fecha_vencimiento', 'sucursal__empresa', 'otorgado_por')
+    search_fields = ('usuario__username', 'permiso_key', 'razon_negocio')
+    readonly_fields = ('fecha_inicio', 'otorgado_por')
+    fieldsets = (
+        ('Override', {
+            'fields': ('usuario', 'permiso_key', 'tipo_override')
+        }),
+        ('Alcance', {
+            'fields': ('sucursal',),
+            'description': 'Dejar vacío = aplica en todas las sucursales'
+        }),
+        ('Validez', {
+            'fields': ('fecha_inicio', 'fecha_vencimiento'),
+            'description': 'Sin fecha de vencimiento = indefinido'
+        }),
+        ('Auditoría', {
+            'fields': ('razon_negocio', 'otorgado_por'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        # Registrar quién otorgó el permiso extra
+        if not change:  # Create
+            obj.otorgado_por = request.user
+        super().save_model(request, obj, form, change)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        # Admin de empresa solo ve overrides de su empresa
+        eid = getattr(request.user, 'empresa_id', None)
+        if eid:
+            return qs.filter(usuario__empresa_id=eid)
+        return qs.none()
 
 # ==============================================================================

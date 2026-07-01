@@ -54,7 +54,8 @@ class Migration(migrations.Migration):
             model_name='empresa',
             name='iso15189_compliance_percent',
             field=models.DecimalField(
-                default=0, decimal_places=2,
+                default=0,
+                decimal_places=2,
                 help_text='Porcentaje consolidado de checkpoints verificados.',
                 max_digits=5,
                 verbose_name='% cumplimiento ISO 15189',

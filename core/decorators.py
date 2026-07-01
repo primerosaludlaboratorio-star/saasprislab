@@ -418,13 +418,12 @@ def role_required(*allowed_roles):
             if user_rol in allowed_upper:
                 return view_func(request, *args, **kwargs)
 
-            has_group = user.groups.filter(name__in=allowed_upper).exists()
-            if has_group:
-                return view_func(request, *args, **kwargs)
-
             logger.warning(
-                f"Acceso denegado por rol. Usuario: {user.username}, "
-                f"Rol: {user_rol}, Requeridos: {allowed_upper}"
+                "ROLE_DENIED view=%s user=%s rol=%s requeridos=%s",
+                view_func.__name__,
+                getattr(user, 'username', '?'),
+                user_rol,
+                allowed_upper,
             )
 
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':

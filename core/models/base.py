@@ -648,3 +648,92 @@ class Usuario_Sucursal(models.Model):
         if self.fecha_vencimiento is None:
             return True
         return timezone.now() <= self.fecha_vencimiento
+
+
+# ==============================================================================
+# ABAC: Usuario_Permiso_Extra — Overrides granulares de permisos (v1.1+)
+# ==============================================================================
+class Usuario_Permiso_Extra(models.Model):
+    """
+    Modelo para ABAC (Attribute-Based Access Control).
+    Permite otorgar o revocar permisos adicionales a un usuario específico,
+    opcionalmente limitados a una sucursal y con fecha de vencimiento.
+
+    Ejemplos:
+    - Usuario CAJA recibe permiso temporal "caja:cancelar_venta" (override positivo)
+    - Usuario QUIMICO pierde acceso a "lab:validar_resultados" temporalmente (override negativo)
+    - Usuario RECEPCION accede a "consultorio:ver_expediente" solo en Sucursal A (scope por sucursal)
+    """
+    TIPO_OVERRIDE = (
+        ('GRANT', 'Otorgar permiso'),
+        ('REVOKE', 'Revocar permiso'),
+    )
+
+    usuario = models.ForeignKey(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name='permisos_extra',
+        verbose_name="Usuario"
+    )
+    permiso_key = models.CharField(
+        max_length=100,
+        verbose_name="Clave de Permiso",
+        help_text="Ej: 'caja:cancelar_venta', 'lab:validar_resultados', 'consultorio:ver_expediente'"
+    )
+    tipo_override = models.CharField(
+        max_length=10,
+        choices=TIPO_OVERRIDE,
+        default='GRANT',
+        verbose_name="Tipo de Override"
+    )
+    sucursal = models.ForeignKey(
+        Sucursal,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='permisos_usuario_extra',
+        verbose_name="Sucursal (opcional)",
+        help_text="Si se establece, el override solo aplica en esta sucursal. Vacío = todas las sucursales."
+    )
+    fecha_inicio = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Inicio"
+    )
+    fecha_vencimiento = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Vencimiento",
+        help_text="Después de esta fecha, el override expira automáticamente."
+    )
+    razon_negocio = models.TextField(
+        verbose_name="Razón de Negocio",
+        help_text="Por qué se otorgó/revocó este permiso. Requerido para auditoría."
+    )
+    otorgado_por = models.ForeignKey(
+        Usuario,
+        on_delete=models.PROTECT,
+        related_name='permisos_otorgados',
+        verbose_name="Otorgado por",
+        help_text="Usuario que creó este override (debe ser ADMIN o SUPERADMIN)."
+    )
+
+    class Meta:
+        app_label = 'core'
+        unique_together = ('usuario', 'permiso_key', 'sucursal')
+        verbose_name = "Permiso Extra (ABAC)"
+        verbose_name_plural = "Permisos Extra (ABAC)"
+        indexes = [
+            models.Index(fields=['usuario', 'tipo_override']),
+            models.Index(fields=['sucursal', 'fecha_vencimiento']),
+        ]
+
+    def __str__(self) -> str:
+        sucursal_str = f" @ {self.sucursal.codigo_sucursal}" if self.sucursal else " (global)"
+        return f"{self.usuario.username} [{self.tipo_override}] {self.permiso_key}{sucursal_str}"
+
+    def esta_vigente(self) -> bool:
+        """Retorna True si el override es activo y no ha vencido."""
+        from django.utils import timezone
+        if self.fecha_vencimiento is None:
+            return True
+        return timezone.now() <= self.fecha_vencimiento
