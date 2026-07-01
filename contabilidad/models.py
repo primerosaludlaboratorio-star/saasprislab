@@ -15,9 +15,10 @@ from contabilidad.validators_cfdi40 import (
     validate_codigo_postal_sat40,
     validate_rfc_sat40,
 )
+from core.tenant import TenantModel
 
 
-class ClienteFacturacion(models.Model):
+class ClienteFacturacion(TenantModel):
     """
     Datos fiscales del cliente para facturación electrónica
     """
@@ -99,7 +100,7 @@ class ClienteFacturacion(models.Model):
         super().save(*args, **kwargs)
 
 
-class FacturaCFDI(models.Model):
+class FacturaCFDI(TenantModel):
     """
     Factura Electrónica CFDI 4.0
     """
@@ -318,7 +319,7 @@ class ImpuestoConcepto(models.Model):
 # CONTABILIDAD GENERAL (Catálogo de cuentas, pólizas y asientos)
 # =============================================================================
 
-class CuentaContable(models.Model):
+class CuentaContable(TenantModel):
     """Catálogo de cuentas contables por empresa."""
     TIPO_CHOICES = [
         ('ACTIVO', 'Activo'),
@@ -354,7 +355,7 @@ class CuentaContable(models.Model):
         return f'{self.codigo} - {self.nombre}'
 
 
-class Poliza(models.Model):
+class Poliza(TenantModel):
     """Póliza contable: agrupa asientos de un período / concepto."""
     TIPO_CHOICES = [
         ('INGRESOS', 'Ingresos'),
