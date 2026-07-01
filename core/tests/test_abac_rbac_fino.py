@@ -158,7 +158,6 @@ class DenyRolesDecoratorTest(TestCase):
         self.cajero = User.objects.create_user(username="cajero_deny", password="x", rol=Rol.CAJA)
         self.cajero.empresa = self.empresa
         self.cajero.save()
-        self.cajero.is_authenticated = True
         self.quimico = User.objects.create_user(username="quimico_deny", password="x", rol=Rol.QUIMICO)
         self.quimico.empresa = self.empresa
         self.quimico.save()
