@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0084_usuario_permiso_extra_abac'),
+        ('core', '0084_rename_core_usuari_usuario_idx_core_usuari_usuario_8f597b_idx_and_more'),
     ]
 
     operations = [
