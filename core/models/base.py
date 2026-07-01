@@ -211,6 +211,18 @@ class Sucursal(models.Model):
         return f"{self.nombre} ({self.codigo_sucursal})"
 
 
+class Usuario_Sucursal(Sucursal):
+    """
+    Compatibilidad legacy para imports históricos de Usuario_Sucursal.
+    Proxy de Sucursal para evitar colisiones de registro en admin.
+    """
+    class Meta:
+        app_label = 'core'
+        proxy = True
+        verbose_name = "Usuario-Sucursal"
+        verbose_name_plural = "Usuarios-Sucursal"
+
+
 class ConfiguracionModulos(models.Model):
     """Feature Toggles: Interruptores de módulos según contrato de la empresa."""
     empresa = models.OneToOneField(
