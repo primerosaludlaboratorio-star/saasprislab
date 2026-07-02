@@ -165,10 +165,10 @@ def check_sucursal_assignment(user, sucursal_id: int | None) -> bool:
 
     # Verificar que la sucursal está en las asignaciones M2M del usuario
     try:
-        user_sucursales = user.sucursales.filter(
-            usuario_sucursal__activa=True,
-            usuario_sucursal__fecha_asignacion__isnull=False,
-        ).values_list('pk', flat=True)
+        user_sucursales = user.asignaciones_sucursal.filter(
+            activa=True,
+            fecha_asignacion__isnull=False,
+        ).values_list('sucursal_id', flat=True)
         return int(sucursal_id) in user_sucursales
     except Exception:
         logger.exception("Error inesperado en check_sucursal_assignment")

@@ -13,9 +13,9 @@ def backfill_usuario_sucursal_m2m(apps, schema_editor):
     Usuario = apps.get_model('core', 'Usuario')
     Usuario_Sucursal = apps.get_model('core', 'Usuario_Sucursal')
 
-    # La FK antigua usuario.sucursal se elimina en 0082, antes de esta migración.
-    # Si el campo ya no existe en el estado histórico, no hay nada que respaldar
-    # (p. ej. en bases de datos nuevas), así que salimos sin error.
+    # La FK usuario.sucursal se conserva hasta 0084, así que aquí normalmente
+    # existe y podemos leerla. Guarda defensiva: si en algún entorno la FK ya
+    # fue eliminada (p. ej. una versión previa de 0082), salimos sin error.
     field_names = {f.name for f in Usuario._meta.get_fields()}
     if 'sucursal' not in field_names:
         return

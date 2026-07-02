@@ -33,13 +33,13 @@ def get_user_sucursales(user: Usuario, activas_only: bool = True) -> QuerySet:
     Retorna:
         QuerySet de Sucursal
     """
-    if not user or not hasattr(user, 'sucursales'):
+    if not user or not hasattr(user, 'asignaciones_sucursal'):
         return Sucursal.objects.none()
 
-    qs = user.sucursales.filter(activa=True)
+    filtros = {'activa': True, 'asignaciones_usuario__usuario': user}
     if activas_only:
-        qs = qs.filter(usuario_sucursal__activa=True)
-    return qs
+        filtros['asignaciones_usuario__activa'] = True
+    return Sucursal.objects.filter(**filtros).distinct()
 
 
 def assign_sucursal_to_user(user: Usuario, sucursal: Sucursal, vencimiento=None) -> Usuario_Sucursal:
