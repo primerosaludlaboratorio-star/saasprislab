@@ -17,7 +17,8 @@ jobs:
       actions: read
       contents: read
     steps:
-      - uses: actions/checkout@v7`n      - uses: github/codeql-action/init@v4
+      - uses: actions/checkout@v7
+      - uses: github/codeql-action/init@v4
         with:
           languages: python
       - uses: github/codeql-action/autobuild@v4
