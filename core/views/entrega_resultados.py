@@ -21,6 +21,7 @@ from urllib.parse import quote
 from core.models import OrdenDeServicio, BitacoraEntregaResultados, ForenseAcceso
 from core.services.forense_service import metadata_consentimiento_snapshot, registrar_acceso_forense
 from core.utils.lfpdppp_resultados import paciente_autorizado_canal_digital_resultados
+from core.utils.sucursal_helpers import get_request_sucursal
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +68,7 @@ def _crear_bitacora_entrega(
     try:
         return BitacoraEntregaResultados.objects.create(
             empresa=orden.empresa,
-            sucursal=getattr(orden, "sucursal", None),
+            sucursal=get_request_sucursal(request),
             usuario_entrega=usuario if getattr(usuario, "is_authenticated", False) else None,
             orden_id=orden.id,
             folio_orden=orden.folio_orden or f"ORD-{orden.id}",

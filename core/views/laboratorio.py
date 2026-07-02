@@ -42,6 +42,7 @@ from core.lims_cart import (
 )
 from core.utils.trazabilidad import registrar_trazabilidad, serializar_modelo
 from core.utils.detalle_orden import attach_detalle_display_attrs
+from core.utils.sucursal_helpers import get_request_sucursal
 from core.services.audit_service import registrar_auditoria
 from core.services.lims import OrdenServicioLims, parse_optional_client_mutation_uuid, ResultadosLimsService
 from core.services.forense_service import metadata_consentimiento_snapshot, registrar_acceso_forense
@@ -1334,7 +1335,7 @@ def toma_muestra_index(request):
         if orden and orden.estado == "PAGADO" and not _ya_tiene_toma:
             TomaMuestra.objects.create(
                 empresa=empresa,
-                sucursal=getattr(request.user, "sucursal", None),
+                sucursal=get_request_sucursal(request),
                 orden=orden,
                 tomada_por=request.user,
             )
@@ -1367,7 +1368,7 @@ def api_toma_muestra(request, orden_id: int):
 
     TomaMuestra.objects.create(
         empresa=empresa,
-        sucursal=getattr(request.user, "sucursal", None),
+        sucursal=get_request_sucursal(request),
         orden=orden,
         tomada_por=request.user,
     )
@@ -2962,7 +2963,7 @@ def api_iniciar_toma(request, orden_id):
             orden=orden,
             defaults={
                 'empresa': empresa,
-                'sucursal': getattr(request.user, 'sucursal', None),
+                'sucursal': get_request_sucursal(request),
                 'tomada_por': request.user,
             }
         )

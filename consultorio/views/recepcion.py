@@ -16,6 +16,7 @@ from django.contrib import messages
 from core.models import Paciente, Medico, CitaMedica
 from core.services.audit_service import registrar_auditoria
 from core.utils.empresa_request import empresa_efectiva_request
+from core.utils.sucursal_helpers import get_request_sucursal
 
 from ._helpers import _int_or_none, _resolver_medico_usuario
 
@@ -169,7 +170,7 @@ def agendar_cita(request):
             
             cita = CitaMedica.objects.create(
                 empresa=empresa,
-                sucursal=getattr(request.user, 'sucursal', None),
+                sucursal=get_request_sucursal(request),
                 paciente=paciente,
                 medico=medico_obj,
                 fecha_cita=fecha_cita,

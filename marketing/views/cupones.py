@@ -14,6 +14,7 @@ from django.views.decorators.http import require_http_methods
 from core.models import OrdenDeServicio, Paciente
 from marketing.models import CampanaMarketing, CuponMarketing, CuponUso
 from marketing.utils import generar_codigo_cupon, generar_cupon_imagen_jpg
+from core.utils.sucursal_helpers import get_user_primary_sucursal
 
 logger = logging.getLogger("marketing.cupones")
 
@@ -26,7 +27,7 @@ def api_generar_cupon(request):
     if not empresa:
         return JsonResponse({"ok": False, "error": "Usuario sin empresa asignada."}, status=403)
 
-    sucursal = getattr(request.user, "sucursal", None)
+    sucursal = get_user_primary_sucursal(request.user)
     paciente_id = request.POST.get("paciente_id")
     porcentaje = (request.POST.get("porcentaje") or "0").strip()
     descripcion = (request.POST.get("descripcion") or "").strip()
@@ -242,7 +243,7 @@ def generar_cupon(request):
 
             CuponMarketing.objects.create(
                 empresa=empresa,
-                sucursal=getattr(request.user, "sucursal", None),
+                sucursal=get_user_primary_sucursal(request.user),
                 paciente=paciente,
                 codigo=codigo,
                 porcentaje_descuento=porcentaje_dec,

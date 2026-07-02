@@ -28,6 +28,7 @@ from core.models import (
 from core.lims_cart import resolve_lims_cart_ids, aplicar_precio_convenio
 from core.services.audit_service import registrar_auditoria
 from core.utils.empresa_request import empresa_efectiva_request
+from core.utils.sucursal_helpers import get_request_sucursal
 
 from ._helpers import (
     _empresa_explicita_usuario, _resolver_medico_usuario,
@@ -64,13 +65,15 @@ def api_crear_consulta_directa(request):
         if paciente_id is None or paciente_id == '':
             return JsonResponse({'ok': False, 'mensaje': 'paciente_id es requerido'}, status=400)
 
+        from core.utils.sucursal_helpers import get_user_primary_sucursal
         paciente = get_object_or_404(Paciente, id=paciente_id, empresa=empresa)
         medico = _resolver_medico_usuario(request, empresa, autocrear=True)
+        user_sucursal = get_user_primary_sucursal(request.user)
 
         with transaction.atomic():
             cita = CitaMedica.objects.create(
                 empresa=empresa,
-                sucursal=getattr(request.user, 'sucursal', None),
+                sucursal=user_sucursal,
                 paciente=paciente,
                 medico=medico,
                 fecha_cita=timezone.localdate(),
@@ -84,7 +87,7 @@ def api_crear_consulta_directa(request):
                 cita=cita,
                 defaults={
                     'empresa': empresa,
-                    'sucursal': getattr(request.user, 'sucursal', None),
+                    'sucursal': user_sucursal,
                     'paciente': paciente,
                     'medico': medico,
                     'tipo_consulta': 'SUBSECUENTE' if paciente.consultas.exists() else 'PRIMERA_VEZ',
@@ -163,7 +166,7 @@ def api_crear_paciente_y_consulta(request):
             nombre_completo = f"{nombre} {apellidos}".strip()
             paciente = Paciente.objects.create(
                 empresa=empresa,
-                sucursal=getattr(request.user, 'sucursal', None),
+                sucursal=get_request_sucursal(request),
                 nombre_completo=nombre_completo,
                 fecha_nacimiento=fecha_nac,
                 sexo=sexo,
@@ -174,7 +177,7 @@ def api_crear_paciente_y_consulta(request):
 
             cita = CitaMedica.objects.create(
                 empresa=empresa,
-                sucursal=getattr(request.user, 'sucursal', None),
+                sucursal=get_request_sucursal(request),
                 paciente=paciente,
                 medico=medico,
                 fecha_cita=timezone.localdate(),
@@ -188,7 +191,7 @@ def api_crear_paciente_y_consulta(request):
                 cita=cita,
                 defaults={
                     'empresa': empresa,
-                    'sucursal': getattr(request.user, 'sucursal', None),
+                    'sucursal': get_request_sucursal(request),
                     'paciente': paciente,
                     'medico': medico,
                     'tipo_consulta': 'PRIMERA_VEZ',

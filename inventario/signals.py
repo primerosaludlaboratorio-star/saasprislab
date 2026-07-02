@@ -59,7 +59,7 @@ def _orden_lab_gestion_inventario_activa(orden) -> bool:
     usa el flag de esa sucursal (típico laboratorio único).
     """
     if getattr(orden, 'sucursal_id', None):
-        suc = getattr(orden, 'sucursal', None)
+        suc = None
         if suc is None:
             from core.models import Sucursal
 

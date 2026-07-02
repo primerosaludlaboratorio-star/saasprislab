@@ -67,6 +67,26 @@ def set_tenant_bypass(value: bool):
     _tenant_state.bypass = value
 
 
+# ─── SUCURSAL: CONTEXTO POR HILO ────────────────────────────────────────────────────
+
+def get_current_sucursal():
+    """
+    Retorna la Sucursal activa para el hilo actual.
+    Retorna None si el usuario no tiene sucursal asignada o si hay bypass.
+    """
+    return getattr(_tenant_state, 'sucursal', None)
+
+
+def set_current_sucursal(sucursal):
+    """Establece la sucursal activa del hilo. Llamado por EmpresaIdentityMiddleware."""
+    _tenant_state.sucursal = sucursal
+
+
+def clear_current_sucursal():
+    """Limpia el contexto de sucursal al final del request."""
+    _tenant_state.sucursal = None
+
+
 def _shadow_settings():
     try:
         from django.conf import settings
@@ -189,21 +209,77 @@ class tenant_bypass:
         return False
 
 
+# ─── HELPERS SUCURSAL ────────────────────────────────────────────────────────
+
+def _model_has_sucursal(model) -> bool:
+    """True si el modelo tiene un campo FK llamado 'sucursal'."""
+    try:
+        model._meta.get_field('sucursal')
+        return True
+    except Exception:
+        return False
+
+
+def _apply_sucursal_filter(qs, model):
+    """
+    Aplica filtro de sucursal al QuerySet si:
+      1. El modelo tiene FK 'sucursal'.
+      2. Hay una sucursal activa en el hilo (set_current_sucursal).
+      3. El bypass NO está activo.
+
+    Si la sucursal es None (usuario sin sucursal asignada o superuser):
+      - Con PRISLAB_TENANT_STRICT_MODE=True: bloquea la consulta.
+      - En modo shadow (default): permite pero registra advertencia.
+
+    Nota: los filtros de sucursal SIEMPRE van acompañados de filtro empresa.
+    """
+    if not _model_has_sucursal(model):
+        return qs
+    if is_tenant_bypassed():
+        return qs
+
+    sucursal = get_current_sucursal()
+    if sucursal is not None:
+        return qs.filter(sucursal=sucursal)
+
+    # Sucursal None: usuario sin sucursal explícita asignada
+    # Verificar si está en STRICT_MODE
+    shadow_on, strict_mode, log_cli, debug = _shadow_settings()
+    if strict_mode:
+        req = _get_http_request()
+        user = getattr(req, 'user', None) if req is not None else None
+        if bool(getattr(user, 'is_authenticated', False)) and not bool(getattr(user, 'is_superuser', False)):
+            logger.error(
+                'TENANT_SUCURSAL_STRICT_MODE_BLOCK modelo=%s usuario_id=%s username=%s',
+                model.__name__,
+                getattr(user, 'pk', '?'),
+                getattr(user, 'username', '?'),
+            )
+            raise PermissionDenied(
+                'Usuario autenticado sin sucursal asignada. '
+                'Acceso bloqueado por PRISLAB_TENANT_STRICT_MODE.'
+            )
+
+    return qs
+
+
 # ─── QUERYSET Y MANAGER MULTI-TENANT ────────────────────────────────────────
 
 class TenantQuerySet(models.QuerySet):
     """
     QuerySet que auto-filtra por empresa_actual del hilo.
+    Si el modelo ademas tiene FK 'sucursal', aplica filtro de sucursal tambien.
 
     Si empresa_actual es None (usuario no autenticado o bypass activo),
-    no aplica ningún filtro adicional.
+    no aplica ningun filtro adicional.
     """
 
     def for_current_tenant(self):
-        """Aplica el filtro de tenant explícitamente."""
+        """Aplica el filtro de tenant (empresa + sucursal si aplica)."""
         empresa = get_current_empresa()
         if empresa and not is_tenant_bypassed():
-            return self.filter(empresa=empresa)
+            qs = self.filter(empresa=empresa)
+            return _apply_sucursal_filter(qs, self.model)
         return self
 
 
@@ -226,8 +302,11 @@ class TenantManager(models.Manager):
         bypass = is_tenant_bypassed()
         qs = TenantQuerySet(self.model, using=self._db)
         if empresa and not bypass:
-            return qs.filter(empresa=empresa)
-        # Sin filtro por tenant: operación normal (superuser, Celery, etc.) pero Shadow Mode registra riesgo.
+            qs = qs.filter(empresa=empresa)
+            # — Filtro de sucursal OBLIGATORIO si el modelo tiene FK sucursal —
+            qs = _apply_sucursal_filter(qs, self.model)
+            return qs
+        # Sin filtro por tenant: operacion normal (superuser, Celery, etc.) pero Shadow Mode registra riesgo.
         if not bypass and empresa is None:
             _shadow_on, strict_mode, _log_cli, _debug = _shadow_settings()
             if strict_mode:
@@ -243,14 +322,23 @@ class TenantManager(models.Manager):
                     )
                     raise PermissionDenied(
                         'Contexto de empresa ausente para usuario autenticado. '
-                        'Operación bloqueada por PRISLAB_TENANT_STRICT_MODE.'
+                        'Operacion bloqueada por PRISLAB_TENANT_STRICT_MODE.'
                     )
             _log_tenant_shadow_unscoped(self.model)
         return qs
 
     def for_tenant(self, empresa):
-        """Fuerza el filtro a una empresa específica (para uso admin/sistema)."""
+        """Fuerza el filtro a una empresa especifica (para uso admin/sistema)."""
         return TenantQuerySet(self.model, using=self._db).filter(empresa=empresa)
+
+    def for_sucursal(self, sucursal):
+        """Fuerza filtro empresa + sucursal especifica (admin/sistema)."""
+        qs = TenantQuerySet(self.model, using=self._db)
+        if sucursal is not None:
+            qs = qs.filter(empresa=sucursal.empresa)
+            if _model_has_sucursal(self.model):
+                qs = qs.filter(sucursal=sucursal)
+        return qs
 
     def all_tenants(self):
         """Devuelve QuerySet sin filtro de tenant (requiere is_superuser o bypass)."""
@@ -273,27 +361,33 @@ class TenantModel(models.Model):
     Clase base abstracta para todos los modelos que pertenecen a un tenant.
 
     Al hacer Model.objects.filter(...) o Model.objects.all(),
-    el resultado ya viene filtrado por la empresa en sesión.
+    el resultado ya viene filtrado por empresa en sesion.
+    Si el modelo tiene FK 'sucursal', el filtrado tambien aplica por sucursal.
 
-    También expone Model.objects_all para consultas sin filtro (admin, comandos).
+    Tambien expone Model.objects_all para consultas sin filtro (admin, comandos).
 
     Uso:
-        class Paciente(TenantModel):
-            nombre = models.CharField(...)
-            # empresa ya viene incluido desde TenantModel
+        class Venta(TenantModel):
+            sucursal = models.ForeignKey(Sucursal, ...)
+            # objects filtra por empresa Y sucursal automaticamente
     """
-    objects     = TenantManager()    # Auto-filtra por empresa en sesión
-    objects_all = UnfilteredManager()  # Sin filtro (admin, señales, Celery)
+    objects     = TenantManager()      # Auto-filtra por empresa (+sucursal si aplica)
+    objects_all = UnfilteredManager()  # Sin filtro (admin, senales, Celery)
 
     class Meta:
         abstract = True
 
     def save(self, *args, **kwargs):
-        """Auto-asigna empresa si no está establecida."""
+        """Auto-asigna empresa y sucursal si no estan establecidas."""
         if not getattr(self, 'empresa_id', None):
             empresa = get_current_empresa()
             if empresa:
                 self.empresa = empresa
+        # Auto-asignar sucursal si el modelo la tiene y no esta fijada
+        if _model_has_sucursal(self.__class__) and not getattr(self, 'sucursal_id', None):
+            sucursal = get_current_sucursal()
+            if sucursal:
+                self.sucursal = sucursal
         super().save(*args, **kwargs)
 
 

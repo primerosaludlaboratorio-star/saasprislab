@@ -10,6 +10,8 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
 
+from core.utils.sucursal_helpers import get_request_sucursal
+
 logger = logging.getLogger('farmacia.corte_caja_api')
 
 
@@ -53,7 +55,7 @@ def api_corte_caja_unificado(request):
         corte = cerrar_turno_unificado(
             cajero=request.user,
             empresa=empresa,
-            sucursal=getattr(request.user, 'sucursal', None),
+            sucursal=get_request_sucursal(request),
             efectivo_declarado=efectivo,
             imprimir_ticket=imprimir,
             host_impresora=host_imp,

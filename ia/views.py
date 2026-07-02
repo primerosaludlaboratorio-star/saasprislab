@@ -26,6 +26,7 @@ from laboratorio.models import Estudio
 from core.models import OrdenDeServicio, DetalleOrden
 from consultorio.models import ConsultaMedica
 from core.models import Paciente
+from core.utils.sucursal_helpers import get_user_primary_sucursal
 
 
 # ========================================
@@ -189,7 +190,7 @@ def crear_orden_desde_ocr(request, pk):
 
     from decimal import Decimal as _Dec
 
-    sucursal = getattr(request.user, 'sucursal', None)
+    sucursal = get_user_primary_sucursal(request.user)
 
     total_orden = _Dec('0')
     try:

@@ -107,8 +107,7 @@ class Command(BaseCommand):
                 
                 # Asignar sucursal a usuarios sin sucursal
                 for usuario in usuarios_sin_sucursal:
-                    usuario.sucursal = sucursal_matriz
-                    usuario.save()
+                    usuario.add_sucursal(sucursal_matriz)
                     asignados += 1
                 
                 if asignados > 0:

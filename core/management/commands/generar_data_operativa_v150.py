@@ -122,13 +122,17 @@ def _pick_quimico_user(empresa: Empresa) -> Usuario:
 
 
 def _ensure_actor_sucursal(user: Usuario, empresa: Empresa) -> Sucursal:
-    if user.sucursal_id:
-        return user.sucursal
+    # Obtener sucursal asignada actual (primaria) via M2M
+    suc_actual = user.get_primary_sucursal()
+    if suc_actual:
+        return suc_actual
+
     suc = Sucursal.objects.filter(empresa=empresa, activa=True).order_by('id').first()
     if not suc:
         raise CommandError(f'La empresa {empresa.pk} no tiene sucursal activa.')
-    user.sucursal = suc
-    user.save(update_fields=['sucursal'])
+
+    # Asignar via M2M
+    user.add_sucursal(suc)
     return suc
 
 
@@ -421,7 +425,7 @@ class Command(BaseCommand):
                 orden = OrdenDeServicio.objects.get(pk=orden_id)
                 if not orden.sucursal_id:
                     orden.sucursal = sucursal
-                    orden.save(update_fields=['sucursal'])
+                    orden.save()
 
                 if es_fila_adeudo:
                     pdf_url = '(adeudo: orden sin pago total — Muro de Pago / Octógono)'

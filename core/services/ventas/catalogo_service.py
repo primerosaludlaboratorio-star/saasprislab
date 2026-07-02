@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from core.models import Lote, Producto, Sucursal
+from core.utils.sucursal_helpers import get_user_primary_sucursal
 
 logger = logging.getLogger("core.farmacia")
 
@@ -56,7 +57,7 @@ class CatalogoService:
     @staticmethod
     def resolver_sucursal_operativa(usuario, empresa):
         """Obtiene una sucursal operativa o crea una matriz mínima para empresa única."""
-        sucursal = getattr(usuario, 'sucursal', None)
+        sucursal = get_user_primary_sucursal(usuario)
         if sucursal:
             return sucursal
 

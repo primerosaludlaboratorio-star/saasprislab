@@ -13,6 +13,8 @@ from django.db.models import Q
 from core.models import Paciente, CitaMedica
 from core.utils.empresa_request import empresa_efectiva_request
 
+from core.utils.sucursal_helpers import get_request_sucursal
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +34,7 @@ def _empresa_recepcion(request):
 def dashboard_recepcion(request):
     """Dashboard principal de recepcion."""
     empresa = _empresa_recepcion(request)
-    sucursal = getattr(request.user, 'sucursal', None)
+    sucursal = get_request_sucursal(request)
     if not empresa:
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
@@ -158,8 +160,9 @@ def buscar_paciente(request):
 @login_required
 def agendar_cita(request):
     """Agendar nueva cita medica."""
+    from core.utils.sucursal_helpers import get_user_primary_sucursal
     empresa = _empresa_recepcion(request)
-    sucursal = getattr(request.user, 'sucursal', None)
+    sucursal = get_user_primary_sucursal(request.user)
     if not empresa:
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
@@ -220,7 +223,7 @@ def check_in_paciente(request, cita_id):
 def lista_espera(request):
     """Lista de pacientes en sala de espera."""
     empresa = _empresa_recepcion(request)
-    sucursal = getattr(request.user, 'sucursal', None)
+    sucursal = get_request_sucursal(request)
     if not empresa:
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')

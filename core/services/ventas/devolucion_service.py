@@ -12,6 +12,7 @@ from django.db.models.functions import Coalesce
 
 from core.models import SalesReturn, Venta
 from core.services.ventas.catalogo_service import _int_or_none
+from core.utils.sucursal_helpers import get_request_sucursal
 
 logger = logging.getLogger("core.farmacia")
 
@@ -199,7 +200,7 @@ class DevolucionService:
                             cantidad_lote = min(restante, extraida)
                             MovimientoInventario.objects.create(
                                 empresa=empresa,
-                                sucursal=getattr(request.user, 'sucursal', None),
+                                sucursal=get_request_sucursal(request),
                                 producto=detalle.producto,
                                 lote=lote,
                                 tipo_movimiento='ENTRADA_DEVOLUCION',
@@ -274,7 +275,7 @@ class DevolucionService:
                         continue
                     MovimientoInventario.objects.create(
                         empresa=empresa,
-                        sucursal=getattr(request.user, 'sucursal', None),
+                        sucursal=get_request_sucursal(request),
                         producto=mov.producto,
                         lote=mov.lote,
                         tipo_movimiento='ENTRADA_DEVOLUCION',

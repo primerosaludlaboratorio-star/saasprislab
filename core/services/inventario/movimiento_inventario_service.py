@@ -340,9 +340,10 @@ class MovimientoInventarioService:
                         requiere_autorizacion_gerente=False,
                         activo=True,
                     )
+                from core.utils.sucursal_helpers import get_user_primary_sucursal
                 MovimientoInventario.objects.create(
                     empresa=empresa,
-                    sucursal=getattr(request.user, 'sucursal', None),
+                    sucursal=get_user_primary_sucursal(request.user),
                     producto=producto,
                     lote=lote,
                     tipo_movimiento=tipo_mov,

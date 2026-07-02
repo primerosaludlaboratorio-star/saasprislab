@@ -170,3 +170,12 @@ v3_test*.html
 tools/last_runs/
 tools/last_suite*.json
 diagnostico_omni_*/
+
+# Artefactos de sesión de agente — NUNCA versionar
+.imperium/
+.imperium_metrics/
+structure_temp.txt
+logs/prislab_errors.log.*
+
+# Scripts de Cursor E2E — rama separada (chore/cursor-e2e-tests)
+scripts_cursor_e2e/

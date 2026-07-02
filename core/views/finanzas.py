@@ -61,13 +61,15 @@ class LabCajaView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         inicio_dia = timezone.make_aware(datetime.combine(hoy, datetime.min.time()))
         
         # Filtrar por empresa y sucursal del usuario
+        from core.utils.sucursal_helpers import get_user_primary_sucursal
         ordenes_hoy = OrdenDeServicio.objects.filter(
             empresa=empresa,
             fecha_creacion__gte=inicio_dia
         )
-        
-        if user.sucursal:
-            ordenes_hoy = ordenes_hoy.filter(sucursal=user.sucursal)
+
+        user_sucursal = get_user_primary_sucursal(user)
+        if user_sucursal:
+            ordenes_hoy = ordenes_hoy.filter(sucursal=user_sucursal)
         
         # KPI HUMANISTA 1: Pacientes Atendidos
         context['pacientes_atendidos'] = ordenes_hoy.values('paciente').distinct().count()
@@ -83,8 +85,8 @@ class LabCajaView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             'orden__empresa': empresa,
             'orden__fecha_creacion__gte': inicio_dia,
         }
-        if user.sucursal:
-            pago_join['orden__sucursal'] = user.sucursal
+        if user_sucursal:
+            pago_join['orden__sucursal'] = user_sucursal
 
         pagos_hoy = PagoOrden.objects.filter(**pago_join).aggregate(
             total_ingresos=Coalesce(
@@ -105,8 +107,8 @@ class LabCajaView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             'orden__fecha_creacion__gte': inicio_ayer,
             'orden__fecha_creacion__lte': fin_ayer,
         }
-        if user.sucursal:
-            pago_join_ayer['orden__sucursal'] = user.sucursal
+        if user_sucursal:
+            pago_join_ayer['orden__sucursal'] = user_sucursal
 
         pagos_ayer = PagoOrden.objects.filter(**pago_join_ayer).aggregate(
             total=Coalesce(
@@ -124,8 +126,8 @@ class LabCajaView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             'orden__empresa': empresa,
             'orden__fecha_creacion__gte': inicio_dia,
         }
-        if user.sucursal:
-            detalle_join['orden__sucursal'] = user.sucursal
+        if user_sucursal:
+            detalle_join['orden__sucursal'] = user_sucursal
 
         _cnt = Counter()
         for d in DetalleOrden.objects.filter(**detalle_join).select_related(
@@ -141,7 +143,7 @@ class LabCajaView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         
         context['fecha_corte'] = timezone.now()
         context['usuario_corte'] = user.get_full_name() or user.username
-        context['sucursal'] = user.sucursal.nombre if user.sucursal else "Todas las sucursales"
+        context['sucursal'] = user_sucursal.nombre if user_sucursal else "Todas las sucursales"
         
         return context
 
@@ -194,9 +196,11 @@ class FarmaciaCajaView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             fecha__gte=inicio_dia,
             estado='COMPLETADA',
         )
+        from core.utils.sucursal_helpers import get_user_primary_sucursal
+        user_sucursal = get_user_primary_sucursal(user)
 
-        if user.sucursal:
-            ventas_hoy = ventas_hoy.filter(sucursal=user.sucursal)
+        if user_sucursal:
+            ventas_hoy = ventas_hoy.filter(sucursal=user_sucursal)
         
         # KPI HUMANISTA 1: Clientes Atendidos
         context['clientes_atendidos'] = ventas_hoy.count()
@@ -211,8 +215,8 @@ class FarmaciaCajaView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             'venta__fecha__gte': inicio_dia,
             'venta__estado': 'COMPLETADA',
         }
-        if user.sucursal:
-            dv_join['venta__sucursal'] = user.sucursal
+        if user_sucursal:
+            dv_join['venta__sucursal'] = user_sucursal
 
         # KPI HUMANISTA 3: Productos Vendidos
         context['productos_vendidos'] = DetalleVenta.objects.filter(**dv_join).aggregate(
@@ -236,8 +240,8 @@ class FarmaciaCajaView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             estado='COMPLETADA',
         )
         
-        if user.sucursal:
-            ventas_ayer = ventas_ayer.filter(sucursal=user.sucursal)
+        if user_sucursal:
+            ventas_ayer = ventas_ayer.filter(sucursal=user_sucursal)
         
         ingresos_ayer = ventas_ayer.aggregate(
             total=Coalesce(Sum('total'), Value(0), output_field=DecimalField())
@@ -255,7 +259,7 @@ class FarmaciaCajaView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         
         context['fecha_corte'] = timezone.now()
         context['usuario_corte'] = user.get_full_name() or user.username
-        context['sucursal'] = user.sucursal.nombre if user.sucursal else "Todas las sucursales"
+        context['sucursal'] = user_sucursal.nombre if user_sucursal else "Todas las sucursales"
         
         return context
 

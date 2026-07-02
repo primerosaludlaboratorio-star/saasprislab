@@ -228,7 +228,7 @@ class Command(BaseCommand):
         )
         if not created and paciente.sucursal_id is None:
             paciente.sucursal = sucursal
-            paciente.save(update_fields=["sucursal"])
+            paciente.save()
         return paciente
 
     def _ensure_medico(self, empresa: Empresa) -> Medico:
@@ -285,7 +285,9 @@ class Command(BaseCommand):
             )
         else:
             user.empresa = empresa
-            user.sucursal = sucursal
+            # Asignar sucursal via M2M
+            user.save()  # Guardar primero para que el usuario tenga PK
+            user.add_sucursal(sucursal)
             user.rol = "QUIMICO"
-            user.save(update_fields=["empresa", "sucursal", "rol"])
+            user.save()
         return user

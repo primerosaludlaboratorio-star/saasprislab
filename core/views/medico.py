@@ -26,6 +26,7 @@ from core.utils.auditoria_helper import crear_log_auditoria, calcular_hash_audit
 from core.models import AuditLog
 from core.utils.trazabilidad import registrar_trazabilidad, serializar_modelo
 from core.utils.empresa_request import empresa_efectiva_request
+from core.utils.sucursal_helpers import get_request_sucursal
 import logging
 
 
@@ -134,7 +135,7 @@ def consulta_medica(request, paciente_id=None):
                 nota_soap = NotaClinicaSOAP.objects.create(
                     paciente=paciente,
                     empresa=empresa,
-                    sucursal=getattr(request.user, 'sucursal', None),
+                    sucursal=get_request_sucursal(request),
                     medico=request.user,
                     subjetivo=data.get('subjetivo', ''),
                     objetivo=data.get('objetivo', ''),
@@ -188,7 +189,7 @@ def consulta_medica(request, paciente_id=None):
 
                         orden_servicio = OrdenDeServicio.objects.create(
                             empresa=empresa,
-                            sucursal=getattr(request.user, 'sucursal', None),
+                            sucursal=get_request_sucursal(request),
                             paciente=paciente,
                             medico_referente=medico_orden,
                             estado='PENDIENTE_PAGO',
@@ -230,7 +231,7 @@ def consulta_medica(request, paciente_id=None):
                             ),
                             usuario=request.user,
                             empresa=empresa,
-                            sucursal=getattr(request.user, 'sucursal', None),
+                            sucursal=get_request_sucursal(request),
                             datos_nuevos={
                                 'folio_orden': folio_orden,
                                 'total': str(total_orden),
@@ -274,7 +275,7 @@ def consulta_medica(request, paciente_id=None):
                     medico=medico,
                     paciente=paciente,
                     empresa=empresa,
-                    sucursal=getattr(request.user, 'sucursal', None),
+                    sucursal=get_request_sucursal(request),
                     folio_receta=folio_receta,
                     fecha_emision=django_timezone.now(),
                     # Signos vitales
@@ -379,6 +380,7 @@ def consulta_medica(request, paciente_id=None):
                 receta.save()
                 
                 # Crear log de auditoría
+                user_sucursal = get_request_sucursal(request)
                 crear_log_auditoria(
                     empresa=empresa,
                     usuario=request.user,
@@ -392,7 +394,7 @@ def consulta_medica(request, paciente_id=None):
                         'paciente': paciente.nombre_completo if paciente else 'Externo',
                         'diagnostico': receta.diagnostico_principal
                     },
-                    sucursal=request.user.sucursal,
+                    sucursal=user_sucursal,
                     request=request
                 )
                 

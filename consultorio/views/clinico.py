@@ -26,6 +26,7 @@ from core.lims_cart import resolve_lims_cart_ids, aplicar_precio_convenio
 from core.services.audit_service import registrar_auditoria
 from core.utils.trazabilidad import registrar_trazabilidad
 from core.utils.empresa_request import empresa_efectiva_request
+from core.utils.sucursal_helpers import get_request_sucursal
 
 from ._helpers import (
     _int_or_none, _dec_or_none, _int_in_range, _dec_in_range,
@@ -132,7 +133,7 @@ def consulta_sin_cita(request):
             with transaction.atomic():
                 cita = CitaMedica.objects.create(
                     empresa=empresa,
-                    sucursal=getattr(request.user, 'sucursal', None),
+                    sucursal=get_request_sucursal(request),
                     paciente=paciente,
                     medico=medico,
                     fecha_cita=timezone.localdate(),
@@ -199,7 +200,7 @@ def nueva_consulta_soap(request, cita_id):
     if not consulta:
         consulta = ConsultaMedica(
             empresa=empresa,
-            sucursal=getattr(request.user, 'sucursal', None),
+            sucursal=get_request_sucursal(request),
             paciente=cita.paciente,
             medico=cita.medico,
             cita=cita,
@@ -748,7 +749,7 @@ def nueva_consulta_con_paciente(request, paciente_uuid):
                 # Crear cita (registro administrativo)
                 cita = CitaMedica.objects.create(
                     empresa=empresa,
-                    sucursal=getattr(request.user, 'sucursal', None),
+                    sucursal=get_request_sucursal(request),
                     paciente=paciente,
                     medico=medico,
                     fecha_cita=timezone.localdate(),
@@ -785,7 +786,7 @@ def nueva_consulta_con_paciente(request, paciente_uuid):
                 # Crear consulta medica (SOAP)
                 consulta = ConsultaMedica.objects.create(
                     empresa=empresa,
-                    sucursal=getattr(request.user, 'sucursal', None),
+                    sucursal=get_request_sucursal(request),
                     paciente=paciente,
                     medico=medico,
                     cita=cita,
@@ -810,7 +811,7 @@ def nueva_consulta_con_paciente(request, paciente_uuid):
                         medico=medico,
                         paciente=paciente,
                         empresa=empresa,
-                        sucursal=getattr(request.user, 'sucursal', None),
+                        sucursal=get_request_sucursal(request),
                         folio_receta=folio_receta,
                         diagnostico_principal=request.POST.get('diagnostico', 'Sin diagnóstico') or 'Sin diagnóstico',
                         indicaciones=tratamiento_texto,

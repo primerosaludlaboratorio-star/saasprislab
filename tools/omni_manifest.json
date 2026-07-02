@@ -69,7 +69,7 @@
       ]
     },
     "cloud": {
-      "baseUrlDefault": "https://prislab-saas-811785477499.us-central1.run.app",
+      "baseUrlDefault": "https://prislab.labcorecloud.com",
       "requiresRunningServer": false,
       "auditors": [
         { "id": "pdv_e2e", "cmd": "node", "args": ["_e2e_pdv_audit.mjs"], "env": { "BASE_URL": "${BASE_URL}", "PDV_USER": "${USER}", "PDV_PASS": "${PASS}" } },

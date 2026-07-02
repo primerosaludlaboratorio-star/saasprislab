@@ -5,6 +5,7 @@ import logging
 from django.utils import timezone
 from django.utils.timezone import localdate
 from django.db import transaction, IntegrityError, OperationalError
+from core.utils.sucursal_helpers import get_user_primary_sucursal
 
 logger = logging.getLogger('core')
 
@@ -147,7 +148,7 @@ def tool_crear_orden_laboratorio(args: dict, empresa, user) -> dict:
         with transaction.atomic():
             orden = OrdenDeServicio.objects.create(
                 empresa=empresa,
-                sucursal=getattr(user, "sucursal", None),
+                sucursal=get_user_primary_sucursal(user),
                 paciente=paciente,
                 paciente_nombre_snapshot=paciente.nombre_completo,
                 paciente_edad_snapshot=paciente.edad if hasattr(paciente, "edad") else None,
