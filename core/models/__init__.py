@@ -11,6 +11,7 @@ from .base import (
     Empresa,
     Sucursal,
     ConfiguracionModulos,
+    Usuario_Sucursal,
     Usuario,
     DocumentoConocimiento,
     DatosFiscales,
@@ -171,7 +172,7 @@ from .operaciones import (
 __all__ = [
     # base
     'get_google_drive_storage',
-    'Empresa', 'Sucursal', 'ConfiguracionModulos', 'Usuario',
+    'Empresa', 'Sucursal', 'ConfiguracionModulos', 'Usuario_Sucursal', 'Usuario',
     'DocumentoConocimiento', 'DatosFiscales', 'ControlCalidad', 'RutaLogistica',
     # catalogos
     'Producto', 'Lote', 'Medico', 'DiscountPolicy',

@@ -403,10 +403,11 @@ class Usuario(AbstractUser):
         Retorna la sucursal "primaria" del usuario (primera asignada).
         Nuevo método: prefiere esto en lugar de .sucursal.
         """
-        return self.sucursales.filter(
-            usuario_sucursal__activa=True,
+        asignacion = self.asignaciones_sucursal.filter(
             activa=True,
-        ).order_by('usuario_sucursal__fecha_asignacion').first()
+            sucursal__activa=True,
+        ).order_by('fecha_asignacion').first()
+        return asignacion.sucursal if asignacion else None
 
     def add_sucursal(self, sucursal_obj, vencimiento=None):
         """
@@ -600,8 +601,8 @@ class Usuario_Sucursal(models.Model):
         verbose_name = "Asignación Usuario-Sucursal"
         verbose_name_plural = "Asignaciones Usuario-Sucursal"
         indexes = [
-            models.Index(fields=['usuario', 'activa']),
-            models.Index(fields=['sucursal', 'activa']),
+            models.Index(fields=['usuario', 'activa'], name='core_usuari_usuario_idx'),
+            models.Index(fields=['sucursal', 'activa'], name='core_usuari_sucursa_idx'),
         ]
 
     def __str__(self) -> str:

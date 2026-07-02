@@ -13,6 +13,13 @@ def backfill_usuario_sucursal_m2m(apps, schema_editor):
     Usuario = apps.get_model('core', 'Usuario')
     Usuario_Sucursal = apps.get_model('core', 'Usuario_Sucursal')
 
+    # La FK usuario.sucursal se conserva hasta 0084, así que aquí normalmente
+    # existe y podemos leerla. Guarda defensiva: si en algún entorno la FK ya
+    # fue eliminada (p. ej. una versión previa de 0082), salimos sin error.
+    field_names = {f.name for f in Usuario._meta.get_fields()}
+    if 'sucursal' not in field_names:
+        return
+
     # Obtener todos los usuarios que tienen una sucursal asignada
     usuarios_con_sucursal = Usuario.objects.filter(sucursal_id__isnull=False)
 
