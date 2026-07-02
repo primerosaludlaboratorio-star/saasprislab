@@ -600,8 +600,8 @@ class Usuario_Sucursal(models.Model):
         verbose_name = "Asignación Usuario-Sucursal"
         verbose_name_plural = "Asignaciones Usuario-Sucursal"
         indexes = [
-            models.Index(fields=['usuario', 'activa']),
-            models.Index(fields=['sucursal', 'activa']),
+            models.Index(fields=['usuario', 'activa'], name='core_usuari_usuario_idx'),
+            models.Index(fields=['sucursal', 'activa'], name='core_usuari_sucursa_idx'),
         ]
 
     def __str__(self) -> str:
