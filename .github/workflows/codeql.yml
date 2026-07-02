@@ -1,1 +1,27 @@
-name: CodeQL Analysis  on:   push:     branches: [ "release/v1.0-local", "main" ]   pull_request:     branches: [ "release/v1.0-local", "main" ]   schedule:     - cron: '0 6 * * 1'  jobs:   analyze:     name: Analyze (python)     runs-on: ubuntu-latest     permissions:       security-events: write       actions: read       contents: read     steps:       - uses: actions/checkout@v7       - uses: github/codeql-action/init@v4         with:           languages: python       - uses: github/codeql-action/autobuild@v4       - uses: github/codeql-action/analyze@v4         with:           category: "/language:python"
+name: CodeQL Analysis
+
+on:
+  push:
+    branches: [ "release/v1.0-local", "main" ]
+  pull_request:
+    branches: [ "release/v1.0-local", "main" ]
+  schedule:
+    - cron: '0 6 * * 1'
+
+jobs:
+  analyze:
+    name: Analyze (python)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: python
+      - uses: github/codeql-action/autobuild@v4
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:python"
