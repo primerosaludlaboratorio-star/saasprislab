@@ -347,6 +347,15 @@ class Usuario(AbstractUser):
         # La empresa debe quedar explícita en la cuenta; la resolución por defecto
         # se reserva para imports/commands y para el middleware de request.
         super().save(*args, **kwargs)
+        # Aplicar asignaciones de sucursal diferidas: el puente de compatibilidad
+        # (setter .sucursal / .sucursal_id) no puede tocar el M2M antes de tener
+        # pk, p. ej. en create_user(sucursal=...) o Usuario(sucursal=...).
+        if hasattr(self, '_pending_sucursal'):
+            pending = self.__dict__.pop('_pending_sucursal')
+            self.sucursal = pending
+        if hasattr(self, '_pending_sucursal_id'):
+            pending_id = self.__dict__.pop('_pending_sucursal_id')
+            self.sucursal_id = pending_id
 
     def tiene_permiso_ia_master(self):
         """Verifica si el usuario tiene acceso de nivel MASTER a la IA."""
@@ -373,6 +382,11 @@ class Usuario(AbstractUser):
         Asigna la primera sucursal via M2M (compatibilidad).
         DEPRECATED: usar add_sucursal(value) en código nuevo.
         """
+        if self.pk is None:
+            # Instancia aún sin guardar: el M2M no está disponible todavía.
+            # Se difiere y se aplica en save().
+            self._pending_sucursal = value
+            return
         if value is None:
             self.sucursales.clear()
         else:
@@ -388,6 +402,10 @@ class Usuario(AbstractUser):
     @sucursal_id.setter
     def sucursal_id(self, value):
         """Asigna por ID de sucursal (compatibilidad)."""
+        if self.pk is None:
+            # Instancia aún sin guardar: se difiere y se aplica en save().
+            self._pending_sucursal_id = value
+            return
         if value is None:
             self.sucursales.clear()
         else:
