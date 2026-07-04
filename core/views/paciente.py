@@ -22,12 +22,22 @@ def timeline_paciente(request, paciente_id):
     Vista del Timeline 360° del paciente.
     Muestra cronológicamente: Consultas + Lab + Farmacia.
     """
-    paciente = get_object_or_404(Paciente, pk=paciente_id, activo=True, deleted_at__isnull=True)
-    
     # Verificar permisos (solo médicos, directores y recepción)
     if not (request.user.is_superuser or 
             request.user.groups.filter(name__in=['MEDICO', 'RECEPCION', 'LABORATORIO']).exists()):
         return render(request, '403.html', status=403)
+
+    # Scope de tenant: un usuario solo puede ver pacientes de su propia empresa.
+    # No confiar únicamente en el filtro implícito del middleware.
+    paciente_qs = Paciente.objects.filter(
+        pk=paciente_id, activo=True, deleted_at__isnull=True
+    )
+    if not request.user.is_superuser:
+        empresa = getattr(request.user, 'empresa', None)
+        if empresa is None:
+            return render(request, '403.html', status=403)
+        paciente_qs = paciente_qs.filter(empresa=empresa)
+    paciente = get_object_or_404(paciente_qs)
     
     # Obtener timeline completo
     eventos = obtener_timeline_paciente(paciente)

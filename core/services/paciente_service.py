@@ -152,10 +152,15 @@ def obtener_timeline_paciente(paciente):
     from core.models import ConsultaMedica, OrdenDeServicio, Venta
     
     eventos = []
+    # Scope de tenant: todos los eventos deben pertenecer a la empresa del
+    # paciente. ConsultaMedica no es TenantModel, así que el filtro por empresa
+    # es obligatorio aquí para no exponer historial de otro tenant.
+    empresa = paciente.empresa
     
     # 1. CONSULTAS MÉDICAS (core.ConsultaMedica: medico es Medico, tiene nombre_completo)
     consultas = ConsultaMedica.objects.filter(
-        paciente=paciente
+        empresa=empresa,
+        paciente=paciente,
     ).select_related('medico', 'sucursal').order_by('-fecha_consulta')
     
     for consulta in consultas:
@@ -174,6 +179,7 @@ def obtener_timeline_paciente(paciente):
     
     # 2. ÓRDENES DE LABORATORIO (core.OrdenDeServicio — v7.5)
     ordenes = OrdenDeServicio.objects.filter(
+        empresa=empresa,
         paciente=paciente,
         estado__in=('RESULTADOS_LISTOS', 'ENTREGADO'),
     ).select_related('sucursal').order_by('-fecha_creacion')
@@ -193,7 +199,7 @@ def obtener_timeline_paciente(paciente):
     # 3. VENTAS DE FARMACIA (modelo canonico core.Venta)
     try:
         ventas = Venta.objects.filter(
-            empresa=paciente.empresa,
+            empresa=empresa,
             paciente=paciente
         ).select_related('sucursal').prefetch_related('detalles__producto').order_by('-fecha')
         
