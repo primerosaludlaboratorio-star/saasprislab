@@ -63,9 +63,7 @@ def _requiere_lims_captura(user) -> bool:
         return True
     allowed_upper = {"QUIMICO", "ADMIN", "LABORATORIO"}
     user_rol = (getattr(user, "rol", "") or "").upper().strip()
-    if user_rol in allowed_upper:
-        return True
-    return user.groups.filter(name__in=list(allowed_upper)).exists()
+    return user_rol in allowed_upper
 
 
 def _raise_from_farmacia_venta_json(resp: JsonResponse) -> dict:

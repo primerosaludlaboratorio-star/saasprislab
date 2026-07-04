@@ -266,7 +266,8 @@ def api_enviar_email_masivo_resultados(request):
         return JsonResponse({"ok": False, "error": "Debe enviar una lista de órdenes"}, status=400)
 
     # Permisos mínimos: recepción/químico/admin
-    if not (request.user.is_staff or request.user.is_superuser or getattr(request.user, "rol", "") in ["RECEPCION", "QUIMICO", "ADMIN"]):
+    user_rol = (getattr(request.user, "rol", "") or "").upper().strip()
+    if not (request.user.is_staff or request.user.is_superuser or user_rol in ("RECEPCION", "QUIMICO", "ADMIN")):
         return JsonResponse({"ok": False, "error": "Acceso denegado"}, status=403)
 
     from django.core.mail import EmailMultiAlternatives
@@ -566,10 +567,11 @@ def api_marcar_whatsapp_enviado(request, orden_id: int):
     if not empresa:
         return JsonResponse({"ok": False, "error": "Usuario sin empresa asignada"}, status=403)
 
+    user_rol = (getattr(request.user, "rol", "") or "").upper().strip()
     if not (
         request.user.is_staff
         or request.user.is_superuser
-        or getattr(request.user, "rol", "") in ["RECEPCION", "QUIMICO", "ADMIN"]
+        or user_rol in ("RECEPCION", "QUIMICO", "ADMIN")
     ):
         return JsonResponse({"ok": False, "error": "Acceso denegado"}, status=403)
 
