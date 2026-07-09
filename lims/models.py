@@ -245,8 +245,27 @@ class ValorReferenciaAnalito(models.Model):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
 # NIVEL 2 : PERFIL  (contenedor técnico para reportes)
 # ─────────────────────────────────────────────────────────────────────────────
+class PerfilAnalito(TenantModel):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+    perfil = models.ForeignKey('PerfilLims', on_delete=models.CASCADE)
+    analito = models.ForeignKey(Analito, on_delete=models.CASCADE)
+    orden = models.PositiveIntegerField(default=0, verbose_name='Orden en el reporte')
+
+    class Meta:
+        verbose_name = 'Analito de Perfil'
+        verbose_name_plural = 'Analitos de Perfiles'
+        ordering = ['orden', 'id']
+        unique_together = ('perfil', 'analito')
+        indexes = [
+            models.Index(fields=['perfil', 'orden']),
+        ]
+
+    def __str__(self):
+        return f"{self.perfil.nombre} -> {self.analito.abreviatura} ({self.orden})"
+
 class PerfilLims(TenantModel):
     # Clave estable desde Examenes.csv + Examenes_Perfil: "{Codigo}|{Abreviatura}" (unico por fila en Examenes)
     empresa      = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='perfiles_lims')
@@ -269,6 +288,7 @@ class PerfilLims(TenantModel):
     # M2M a Analito — sin filtro es_vendible_individualmente (todos los analitos son buscables)
     analitos    = models.ManyToManyField(
         Analito, blank=True,
+        through='PerfilAnalito',
         related_name='perfiles',
         verbose_name='Analitos incluidos',
         help_text='Buscador inteligente: cualquier analito del catálogo.',

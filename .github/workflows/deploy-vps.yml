@@ -79,7 +79,30 @@ jobs:
 
       - name: Smoke test public endpoints
         run: |
-          sleep 10
-          curl -fsS https://${{ secrets.DEPLOY_HOST }}/live/ || true
-          curl -fsS https://${{ secrets.DEPLOY_HOST }}/ready/ || true
-          curl -fsS https://${{ secrets.DEPLOY_HOST }}/metrics/ | head -n 10 || true
+          set -euo pipefail
+          echo "==> Smoke tests against https://${{ secrets.DEPLOY_HOST }}"
+          for endpoint in /live/ /ready/ /health/ /metrics/; do
+            url="https://${{ secrets.DEPLOY_HOST }}${endpoint}"
+            echo "Testing ${url}"
+            status=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+            if [ "$status" -ne 200 ]; then
+              echo "Smoke test failed for ${url}: HTTP ${status}" >&2
+              exit 1
+            fi
+            echo "OK ${url} -> ${status}"
+          done
+
+      - name: Restart monitoring stack (if configured)
+        run: |
+          ssh deploy-target << 'REMOTE_SCRIPT'
+            set -euo pipefail
+            DEPLOY_DIR="${{ vars.DEPLOY_DIR || '/opt/prislab' }}"
+            cd "$DEPLOY_DIR"
+            if [ -f docker-compose.monitoring.yml ]; then
+              echo "==> Restarting monitoring stack"
+              docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d prometheus grafana alertmanager
+            else
+              echo "==> docker-compose.monitoring.yml not found; skipping monitoring restart"
+            fi
+          REMOTE_SCRIPT
+        continue-on-error: true
