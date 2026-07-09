@@ -9,6 +9,7 @@ from core.views.general import (
     readiness_view,
     liveness_view,
 )
+from core.views.monitoring import metrics_view
 from core.views import autenticacion_2fa as views_2fa
 
 urlpatterns = [
@@ -26,6 +27,7 @@ urlpatterns = [
     path('health/', health_view, name='health'),
     path('ready/', readiness_view, name='ready'),
     path('live/', liveness_view, name='live'),
+    path('metrics/', metrics_view, name='metrics'),
 
     # RUTA PRINCIPAL - Login personalizado
     path('', CustomLoginView.as_view(), name='login_root'),
