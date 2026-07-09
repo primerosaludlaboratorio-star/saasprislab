@@ -47,7 +47,20 @@ def _rango_referencia_para_analito(analito, paciente):
     if not rangos:
         return None
 
-    seleccionado = next((r for r in rangos if r.aplica_para_paciente(sexo, dias_vida or 0, edad_anios or 0)), None)
+    def _aplica(r):
+        if r.sexo not in (sexo, "I"):
+            return False
+        if r.unidad_edad == "ANOS":
+            if edad_anios is None:
+                return False
+            return r.edad_minima <= edad_anios <= r.edad_maxima
+        if r.unidad_edad == "DIAS":
+            if dias_vida is None:
+                return False
+            return r.edad_minima <= dias_vida <= r.edad_maxima
+        return True
+
+    seleccionado = next((r for r in rangos if _aplica(r)), None)
     if seleccionado is None:
         seleccionado = next((r for r in rangos if r.sexo in (sexo, "I")), rangos[0])
 

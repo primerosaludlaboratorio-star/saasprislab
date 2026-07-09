@@ -3,7 +3,7 @@ from django.contrib import admin
 try:
     from .models import (
         Analito, ValorReferenciaAnalito,
-        PerfilLims, PaqueteLims, PrecioItem, PerfilAnalito
+        PerfilLims, PaqueteLims, PrecioItem,
     )
 except ImportError:  # pragma: no cover
     Analito = None
@@ -11,7 +11,6 @@ except ImportError:  # pragma: no cover
     PerfilLims = None
     PaqueteLims = None
     PrecioItem = None
-    PerfilAnalito = None
 
 
 if ValorReferenciaAnalito is not None:
@@ -51,17 +50,11 @@ if Analito is not None:
         inlines = [ValorReferenciaInline] if ValorReferenciaAnalito is not None else []
 
 
-if PerfilAnalito is not None:
-    class PerfilAnalitoInline(admin.TabularInline):
-        model = PerfilAnalito
-        extra = 1
-        autocomplete_fields = ('analito',)
-
 if PerfilLims is not None:
     @admin.register(PerfilLims)
     class PerfilLimsAdmin(admin.ModelAdmin):
         list_display = ('nombre', 'id_perfil_legacy', 'activo')
-        inlines = [PerfilAnalitoInline] if PerfilAnalito is not None else []
+        filter_horizontal = ('analitos',)
         search_fields = ('nombre', 'id_perfil_legacy')
 
 

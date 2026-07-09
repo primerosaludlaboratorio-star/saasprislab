@@ -189,15 +189,6 @@ class ValorReferenciaAnalito(models.Model):
             f'{self.get_unidad_edad_display()} {self.edad_minima}–{self.edad_maxima}'
         )
 
-    def aplica_para_paciente(self, sexo_paciente: str, edad_dias: int, edad_anos: int) -> bool:
-        """Determina si este valor de referencia aplica al paciente."""
-        if self.sexo != 'I' and self.sexo != sexo_paciente:
-            return False
-        if self.unidad_edad == 'DIAS':
-            return self.edad_minima <= edad_dias <= self.edad_maxima
-        else:
-            return self.edad_minima <= edad_anos <= self.edad_maxima
-
     def evaluar_valor_numerico(self, valor_num) -> dict:
         """
         Clasifica un valor numérico contra referencia y umbrales LIMS (v1.14).
