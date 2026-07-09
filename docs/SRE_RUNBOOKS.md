@@ -128,7 +128,31 @@
 
 ---
 
-## 7. Comandos de verificación rápida
+## 7. Acceso al stack de monitoreo
+
+| Servicio | URL local (tunel SSH) | Archivo de config |
+|----------|----------------------|-------------------|
+| Prometheus | http://localhost:9090 | `monitoring/prometheus/prometheus.yml` |
+| Alertmanager | http://localhost:9093 | `monitoring/alertmanager/alertmanager.yml` |
+| Grafana | http://localhost:3000 | `monitoring/grafana/provisioning/` |
+
+Para levantar el stack:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+```
+
+Para acceder con túnel SSH:
+
+```bash
+ssh -L 9090:localhost:9090 -L 3000:localhost:3000 -L 9093:localhost:9093 usuario@vps
+```
+
+Dashboard principal: **PRISLAB SRE Dashboard** (`monitoring/grafana/dashboards/prislab_sre.json`).
+
+---
+
+## 8. Comandos de verificación rápida
 
 ```bash
 # Salud completa

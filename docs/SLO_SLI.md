@@ -64,7 +64,10 @@
 - Métricas expuestas en `/metrics/`.
 - Health checks: `/health/`, `/ready/`, `/live/`.
 - Logs estructurados en `config/settings/logging_conf.py`.
-- Alertas iniciales se pueden implementar con Prometheus + Alertmanager o con un cron que consulte `/metrics/` y envíe alertas vía Telegram/email (`CISO_EMAIL`).
+- Stack de monitoreo: Prometheus + Alertmanager + Grafana (`docker-compose.monitoring.yml`).
+- Alert rules: `monitoring/prometheus/rules/prislab.yml`.
+- Dashboard SRE: `monitoring/grafana/dashboards/prislab_sre.json`.
+- Acceso: túneles SSH a puertos 9090 (Prometheus), 9093 (Alertmanager), 3000 (Grafana).
 
 ---
 

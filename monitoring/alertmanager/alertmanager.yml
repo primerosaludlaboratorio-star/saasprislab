@@ -1,0 +1,26 @@
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alertas@prislab.app'
+
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - match:
+        severity: critical
+      receiver: 'critical'
+      continue: true
+
+receivers:
+  - name: 'default'
+    email_configs:
+      - to: 'admin@prislab.app'
+        send_resolved: true
+
+  - name: 'critical'
+    email_configs:
+      - to: 'director@prislab.app'
+        send_resolved: true

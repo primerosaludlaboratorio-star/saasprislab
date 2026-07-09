@@ -1,0 +1,44 @@
+groups:
+  - name: prislab_sre
+    rules:
+      - alert: PrislabDatabaseDown
+        expr: prislab_health_status{component="database"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Base de datos no disponible en PRISLAB"
+          description: "El componente database ha estado caído por más de 2 minutos."
+
+      - alert: PrislabCacheDown
+        expr: prislab_health_status{component="cache"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Caché no disponible en PRISLAB"
+          description: "El componente cache ha estado caído por más de 2 minutos."
+
+      - alert: PrislabHighErrorRate
+        expr: |
+          sum(rate(prislab_request_total{status=~"5.."}[5m]))
+          /
+          sum(rate(prislab_request_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tasa de errores alta en PRISLAB"
+          description: "Más del 5% de requests retornan 5xx en los últimos 5 minutos."
+
+      - alert: PrislabHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(prislab_request_duration_seconds_bucket[5m])) by (le)
+          ) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latencia p95 alta en PRISLAB"
+          description: "La latencia p95 supera 800 ms por más de 10 minutos."

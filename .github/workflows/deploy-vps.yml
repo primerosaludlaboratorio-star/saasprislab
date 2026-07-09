@@ -1,0 +1,85 @@
+name: PRISLAB Deploy to VPS
+
+on:
+  push:
+    branches: [release/v1.0-local]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Ambiente de despliegue'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  deploy:
+    name: Deploy to VPS (${{ github.event.inputs.environment || 'staging' }})
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          cat >> ~/.ssh/config <<EOF
+          Host deploy-target
+            HostName ${{ secrets.DEPLOY_HOST }}
+            User ${{ secrets.DEPLOY_USER }}
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking no
+            UserKnownHostsFile=/dev/null
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Deploy on VPS
+        run: |
+          ssh deploy-target << 'REMOTE_SCRIPT'
+            set -euo pipefail
+            DEPLOY_DIR="${{ vars.DEPLOY_DIR || '/opt/prislab' }}"
+            COMPOSE_FILE="${{ vars.COMPOSE_FILE || 'docker-compose.yml' }}"
+            cd "$DEPLOY_DIR"
+
+            echo "==> Pull latest code"
+            git fetch origin
+            git checkout release/v1.0-local
+            git pull origin release/v1.0-local
+
+            echo "==> Build and start services"
+            docker compose -f "$COMPOSE_FILE" pull
+            docker compose -f "$COMPOSE_FILE" up -d --build
+
+            echo "==> Run migrations"
+            docker compose -f "$COMPOSE_FILE" exec -T app python manage.py migrate --noinput
+
+            echo "==> Collect static files"
+            docker compose -f "$COMPOSE_FILE" exec -T app python manage.py collectstatic --noinput
+
+            echo "==> Health check"
+            for i in {1..12}; do
+              if curl -fsS http://localhost:8000/live/ >/dev/null; then
+                echo "Health check passed"
+                exit 0
+              fi
+              echo "Waiting for app... ($i/12)"
+              sleep 5
+            done
+            echo "Health check failed" >&2
+            exit 1
+          REMOTE_SCRIPT
+
+      - name: Smoke test public endpoints
+        run: |
+          sleep 10
+          curl -fsS https://${{ secrets.DEPLOY_HOST }}/live/ || true
+          curl -fsS https://${{ secrets.DEPLOY_HOST }}/ready/ || true
+          curl -fsS https://${{ secrets.DEPLOY_HOST }}/metrics/ | head -n 10 || true
