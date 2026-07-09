@@ -1,0 +1,117 @@
+name: PRISLAB Backup & Restore Test
+
+on:
+  push:
+    branches: [main, release/v1.0-local]
+    paths:
+      - 'scripts/backup/**'
+      - 'docs/DR_PLAN.md'
+      - '.github/workflows/backup-restore-test.yml'
+  pull_request:
+    branches: [main, release/v1.0-local]
+    paths:
+      - 'scripts/backup/**'
+      - 'docs/DR_PLAN.md'
+      - '.github/workflows/backup-restore-test.yml'
+  schedule:
+    # Cada lunes a las 06:00 UTC — restore test semanal como evidencia
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+env:
+  DJANGO_SETTINGS_MODULE: config.settings
+  PYTHONUNBUFFERED: "1"
+  SECRET_KEY: "ci-prislab-backup-restore-test-dummy-secret-key-not-for-production-min-55chars"
+  FERNET_KEY: "crFEHsDc7QApfMoN2nKLLdaHvGW4TMfx4vB7Wf8DYOE="
+  DB_NAME: prislab_v5
+  DB_USER: prislab_user
+  DB_PASSWORD: prislab_backup_test_password
+  DB_HOST: localhost
+  DB_PORT: "5432"
+  BACKUP_DIR: /tmp/prislab_backups
+
+jobs:
+  backup-restore-test:
+    name: Backup + Restore Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: prislab_user
+          POSTGRES_PASSWORD: prislab_backup_test_password
+          POSTGRES_DB: prislab_v5
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create database schema
+        run: |
+          python manage.py migrate --noinput
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: prislab_v5
+          DB_USER: prislab_user
+          DB_PASSWORD: prislab_backup_test_password
+
+      - name: Run backup script
+        run: |
+          bash scripts/backup/backup_postgres.sh
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: prislab_v5
+          DB_USER: prislab_user
+          DB_PASSWORD: prislab_backup_test_password
+          BACKUP_DIR: /tmp/prislab_backups
+          BACKUP_RETENTION_DAYS: 7
+
+      - name: Run restore test
+        run: |
+          bash scripts/backup/restore_test.sh
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: prislab_v5
+          DB_USER: prislab_user
+          DB_PASSWORD: prislab_backup_test_password
+          BACKUP_DIR: /tmp/prislab_backups
+
+      - name: Upload backup artifact (for inspection)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prislab-backup-artifact
+          path: /tmp/prislab_backups/*.dump
+          retention-days: 3
+
+      - name: Report result
+        if: always()
+        run: |
+          echo "Backup and restore test completed."
+          ls -lh /tmp/prislab_backups/
