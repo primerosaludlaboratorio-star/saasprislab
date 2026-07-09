@@ -24,7 +24,7 @@ from django.db.models import Count
 from core.models import Empresa
 from core.tenant import clear_current_empresa, set_current_empresa, tenant_bypass
 from core.utils.default_empresa import resolve_default_empresa_sistema
-from lims.models import Analito, PerfilLims
+from lims.models import Analito, PerfilLims, PerfilAnalito
 
 BASE_DIR = getattr(settings, 'BASE_DIR', os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -167,7 +167,7 @@ class Command(BaseCommand):
                     self.stdout.write(f'  Fase 1 — definiciones desde Examenes.csv: {def_f1} perfiles')
 
                 # ── Fase 2: Examenes_Perfil.csv (por posicion) ──────────────
-                grupos = defaultdict(lambda: {'codigos_analito': set()})
+                grupos = defaultdict(lambda: {'codigos_analito': []})
                 with open(CSV_EXAMENES_PERFIL, newline='', encoding='utf-8-sig', errors='replace') as f:
                     reader = csv.reader(f)
                     rows_ep = list(reader)
@@ -183,8 +183,8 @@ class Command(BaseCommand):
                     pkey = _perfil_legacy_key(ec, ea)
                     if not pkey.strip('|'):
                         continue
-                    if sc:
-                        grupos[pkey]['codigos_analito'].add(sc)
+                    if sc and sc not in grupos[pkey]['codigos_analito']:
+                        grupos[pkey]['codigos_analito'].append(sc)
 
                 self.stdout.write(f'  Fase 2 — grupos en Examenes_Perfil.csv: {len(grupos)}')
 
@@ -196,7 +196,7 @@ class Command(BaseCommand):
                     for pkey, info in grupos.items():
                         codigos = info['codigos_analito']
                         analito_ids = []
-                        for cod in sorted(codigos):
+                        for cod in codigos:
                             a = _buscar_analito(cod)
                             if a:
                                 analito_ids.append(a.pk)
@@ -220,7 +220,14 @@ class Command(BaseCommand):
                                 sin_analitos += 1
                             continue
 
-                        perfil.analitos.set(analito_ids)
+                        PerfilAnalito.objects.filter(perfil=perfil).delete()
+                        for i, a_pk in enumerate(analito_ids, start=1):
+                            PerfilAnalito.objects.create(
+                                empresa=perfil.empresa,
+                                perfil=perfil,
+                                analito_id=a_pk,
+                                orden=i
+                            )
                         comp_ok += 1
                         if not analito_ids:
                             sin_analitos += 1
