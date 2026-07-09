@@ -17,7 +17,14 @@ from core.views import laboratorio_reportes as reportes_views
 from core.views import finanzas as finanzas_views
 from core.views import motor_financiero as motor_fin_views
 from core.views.administracion_usuarios import gestionar_usuarios
-from core.views.general import CustomLoginView, service_worker_view
+from core.views.general import (
+    CustomLoginView,
+    service_worker_view,
+    health_view,
+    readiness_view,
+    liveness_view,
+)
+from core.views.monitoring import metrics_view
 from core.views import autenticacion_2fa as views_2fa
 from core.views import contabilidad_personal as contabilidad_personal_views
 from core.views import sucursal_modo_inventario_lab as sucursal_inv_lab_views
@@ -69,6 +76,12 @@ urlpatterns = [
 
     # PWA — Service Worker con scope completo del dominio (debe estar en la raíz)
     path('sw.js', service_worker_view, name='service_worker'),
+
+    # SRE / Observabilidad: health checks y métricas Prometheus
+    path('health/', health_view, name='health'),
+    path('ready/', readiness_view, name='ready'),
+    path('live/', liveness_view, name='live'),
+    path('metrics/', metrics_view, name='metrics'),
 
     # RUTA PRINCIPAL - Login personalizado (single name='login' for reverse/redirect)
     path('', CustomLoginView.as_view(), name='login_root'),

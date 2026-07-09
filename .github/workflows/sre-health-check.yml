@@ -1,0 +1,110 @@
+name: PRISLAB SRE Health Check
+
+on:
+  push:
+    branches: [main, release/v1.0-local]
+    paths:
+      - 'core/views/general.py'
+      - 'core/views/monitoring.py'
+      - 'core/middleware/sre_metrics.py'
+      - 'core/tests/test_health_endpoints.py'
+      - 'core/tests/test_monitoring.py'
+      - 'config/urls.py'
+      - 'config/settings.py'
+      - '.github/workflows/sre-health-check.yml'
+      - 'docs/SRE_RUNBOOKS.md'
+      - 'docs/SLO_SLI.md'
+  pull_request:
+    branches: [main, release/v1.0-local]
+    paths:
+      - 'core/views/general.py'
+      - 'core/views/monitoring.py'
+      - 'core/middleware/sre_metrics.py'
+      - 'core/tests/test_health_endpoints.py'
+      - 'core/tests/test_monitoring.py'
+      - 'config/urls.py'
+      - 'config/settings.py'
+      - '.github/workflows/sre-health-check.yml'
+  schedule:
+    # Diario a las 06:00 UTC — evidencia de salud del sistema
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+env:
+  DJANGO_SETTINGS_MODULE: config.settings
+  PYTHONUNBUFFERED: "1"
+  SECRET_KEY: "ci-prislab-sre-health-check-dummy-secret-key-not-for-production-min-55chars"
+  FERNET_KEY: "crFEHsDc7QApfMoN2nKLLdaHvGW4TMfx4vB7Wf8DYOE="
+
+jobs:
+  sre-health-check:
+    name: Health, Readiness, Liveness and Metrics
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: prislab_user
+          POSTGRES_PASSWORD: prislab_test_password
+          POSTGRES_DB: prislab_v5
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run migrations and health/metrics tests
+        run: |
+          python manage.py migrate --noinput
+          python manage.py test core.tests.test_health_endpoints core.tests.test_monitoring -v 2
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: prislab_v5
+          DB_USER: prislab_user
+          DB_PASSWORD: prislab_test_password
+
+      - name: Smoke test endpoints with curl
+        run: |
+          # Levantar Django en segundo plano
+          python manage.py runserver 0.0.0.0:8000 --noreload &
+          SERVER_PID=$!
+          sleep 5
+
+          echo "== /live/ =="
+          curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/live/
+
+          echo "== /ready/ =="
+          curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/ready/
+
+          echo "== /health/ =="
+          curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/health/
+
+          echo "== /metrics/ =="
+          curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/metrics/
+          curl -s http://localhost:8000/metrics/ | head -n 20
+
+          kill $SERVER_PID
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: prislab_v5
+          DB_USER: prislab_user
+          DB_PASSWORD: prislab_test_password

@@ -252,6 +252,7 @@ if find_spec('django_extensions') is not None:
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Para servir archivos estáticos en producción
+    'core.middleware.sre_metrics.SreMetricsMiddleware',  # SRE: métricas Prometheus /metrics/
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
