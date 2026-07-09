@@ -1,0 +1,44 @@
+name: PRISLAB SBOM & Dependency Audit
+
+on:
+  push:
+    branches: [release/v1.0-local, main, master]
+  pull_request:
+    branches: [release/v1.0-local, main, master]
+  schedule:
+    # Lunes 06:00 UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  sbom-and-audit:
+    name: Generate SBOM and audit dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install audit tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+
+      - name: Run dependency vulnerability audit
+        run: |
+          pip-audit --requirement=requirements.txt --desc
+
+      - name: Generate SBOM
+        run: |
+          python scripts/generate_sbom.py --input requirements.txt --output sbom.json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: sbom.json
+          if-no-files-found: error
