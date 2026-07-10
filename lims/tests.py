@@ -64,12 +64,14 @@ class ValorReferenciaAnalitoTests(TestCase):
         )
 
     def test_aplica_para_paciente_adulto(self):
+        from datetime import date, timedelta
         paciente = Paciente.objects.create(
             empresa=self.empresa,
-            nombre='Juan',
-            apellidos='Pérez',
+            nombres='Juan',
+            apellido_paterno='Pérez',
+            nombre_completo='Juan Pérez',
             sexo='M',
-            edad_aproximada=30
+            fecha_nacimiento=date.today() - timedelta(days=30*365)
         )
         rango = ValorReferenciaAnalito.aplica_para_paciente(self.analito, paciente=paciente)
         self.assertIsNotNone(rango)
