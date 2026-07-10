@@ -423,3 +423,63 @@ class AsientoContable(models.Model):
             raise ValidationError('Cargo y abono deben ser positivos.')
         if self.cargo == 0 and self.abono == 0:
             raise ValidationError('Debe tener cargo o abono.')
+
+# =============================================================================
+# OPERACIONES PENDIENTES (Compras y Nómina)
+# =============================================================================
+
+class Compra(models.Model):
+    """Registro de facturas de proveedores y cuentas por pagar."""
+    empresa = models.ForeignKey('core.Empresa', on_delete=models.CASCADE, related_name='compras')
+    proveedor = models.CharField(max_length=200, help_text='Nombre o Razón Social del proveedor')
+    rfc_proveedor = models.CharField(max_length=13, blank=True)
+    folio_factura = models.CharField(max_length=50, blank=True)
+    fecha_compra = models.DateField(default=timezone.localdate)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    iva = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    pagada = models.BooleanField(default=False)
+    fecha_pago = models.DateField(null=True, blank=True)
+    creada_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='compras_registradas')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Compra / Gasto'
+        verbose_name_plural = 'Compras / Gastos'
+        ordering = ['-fecha_compra']
+
+    def __str__(self):
+        return f'{self.proveedor} - {self.total}'
+
+
+class Nomina(models.Model):
+    """Registro de pagos de salario y honorarios médicos."""
+    TIPO_PAGO = [
+        ('SALARIO', 'Salario base'),
+        ('HONORARIOS', 'Honorarios médicos'),
+        ('COMISIONES', 'Comisiones por venta'),
+        ('OTRO', 'Otro tipo de pago')
+    ]
+    empresa = models.ForeignKey('core.Empresa', on_delete=models.CASCADE, related_name='nominas')
+    empleado = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='pagos_nomina')
+    tipo = models.CharField(max_length=20, choices=TIPO_PAGO, default='SALARIO')
+    fecha_pago = models.DateField(default=timezone.localdate)
+    monto_bruto = models.DecimalField(max_digits=12, decimal_places=2)
+    retenciones = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    monto_neto = models.DecimalField(max_digits=12, decimal_places=2)
+    pagada = models.BooleanField(default=False)
+    poliza_generada = models.ForeignKey(Poliza, on_delete=models.SET_NULL, null=True, blank=True, related_name='nominas')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Nómina / Honorario'
+        verbose_name_plural = 'Nóminas y Honorarios'
+        ordering = ['-fecha_pago']
+
+    def __str__(self):
+        return f'{self.empleado.get_full_name()} - {self.monto_neto}'
+
+    def save(self, *args, **kwargs):
+        self.monto_neto = self.monto_bruto - self.retenciones
+        super().save(*args, **kwargs)
+

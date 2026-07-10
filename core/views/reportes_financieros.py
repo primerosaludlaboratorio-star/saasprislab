@@ -17,9 +17,8 @@ import json
 
 from core.models import (
     Venta, Pago, GastoCaja, GastoOperativo
-    # NOTA: Modelos Compra, PolizaContable, MovimientoContable, CatalogoCuenta y Nomina pendientes de migración.
-    # Compra, PolizaContable, MovimientoContable, CatalogoCuenta, Nomina
 )
+from contabilidad.models import Compra, Nomina, Poliza, AsientoContable, CuentaContable
 
 
 def _sumas_por_dia(queryset, fecha_field: str, total_field: str):
