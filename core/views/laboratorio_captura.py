@@ -44,18 +44,12 @@ def _estudio_like(detalle):
 
 
 def _ref_analito(analito, edad_anos, sexo):
-    if not analito:
-        return None
-    qs = (
-        ValorReferenciaAnalito.objects.filter(analito=analito)
-        .filter(Q(sexo=sexo) | Q(sexo='I'))
-        .order_by('unidad_edad', 'edad_minima')
+    from lims.models import ValorReferenciaAnalito
+    return ValorReferenciaAnalito.aplica_para_paciente(
+        analito=analito,
+        edad_anios=edad_anos,
+        sexo=sexo
     )
-    edad = edad_anos if edad_anos is not None else 0
-    for r in qs:
-        if r.unidad_edad == 'ANOS' and r.edad_minima <= edad <= r.edad_maxima:
-            return r
-    return qs.first()
 
 
 @login_required

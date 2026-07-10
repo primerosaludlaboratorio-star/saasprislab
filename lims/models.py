@@ -183,6 +183,45 @@ class ValorReferenciaAnalito(models.Model):
             models.Index(fields=['analito', 'unidad_edad', 'sexo']),
         ]
 
+    @classmethod
+    def aplica_para_paciente(cls, analito, paciente=None, edad_dias=None, edad_anios=None, sexo=None):
+        from django.db.models import Q
+        
+        # Calculate from paciente if provided
+        if paciente:
+            sexo = paciente.sexo
+            if paciente.fecha_nacimiento:
+                import datetime
+                hoy = datetime.date.today()
+                delta = hoy - paciente.fecha_nacimiento
+                edad_dias = delta.days
+                edad_anios = edad_dias // 365
+            else:
+                edad_anios = paciente.edad_aproximada
+                edad_dias = (edad_anios * 365) if edad_anios is not None else None
+
+        qs = cls.objects.filter(analito=analito)
+        sx = (sexo or '')[:1].upper() if sexo else ''
+        if sx in ('M', 'F'):
+            qs = qs.filter(Q(sexo=sx) | Q(sexo='I'))
+        else:
+            qs = qs.filter(sexo='I')
+            
+        if edad_anios is not None and edad_anios >= 1:
+            return qs.filter(
+                unidad_edad='ANOS',
+                edad_minima__lte=edad_anios,
+                edad_maxima__gte=edad_anios,
+            ).first()
+        elif edad_dias is not None:
+            return qs.filter(
+                unidad_edad='DIAS',
+                edad_minima__lte=edad_dias,
+                edad_maxima__gte=edad_dias,
+            ).first()
+            
+        return qs.first()
+
     def __str__(self):
         return (
             f'{self.analito.abreviatura} | {self.get_sexo_display()} | '

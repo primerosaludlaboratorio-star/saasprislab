@@ -54,17 +54,14 @@ if PerfilLims is not None:
     @admin.register(PerfilLims)
     class PerfilLimsAdmin(admin.ModelAdmin):
         list_display = ('nombre', 'id_perfil_legacy', 'activo')
-        filter_horizontal = ('analitos',)
+        # filter_horizontal = ('analitos',) # Removed due to through table
         search_fields = ('nombre', 'id_perfil_legacy')
-
-
 if PaqueteLims is not None:
     @admin.register(PaqueteLims)
     class PaqueteLimsAdmin(admin.ModelAdmin):
         list_display = ('nombre', 'id_paquete_legacy', 'costo_lista', 'venta_publico', 'activo')
-        filter_horizontal = ('analitos', 'perfiles')
+        # filter_horizontal = ('analitos', 'perfiles') # Removed due to through table
         search_fields = ('nombre',)
-
 
 if PrecioItem is not None:
     @admin.register(PrecioItem)
