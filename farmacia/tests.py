@@ -505,7 +505,7 @@ class FarmaciaCorteCajaTests(TestCase):
         )
         self.usuario.rol = "CAJERO"
         self.usuario.sucursal = self.sucursal
-        self.usuario.save(update_fields=["rol", "sucursal"])
+        self.usuario.save(update_fields=["rol"])
         g, _ = Group.objects.get_or_create(name="FARMACIA")
         self.usuario.groups.add(g)
         self.client = Client()
@@ -563,7 +563,7 @@ class FarmaciaEntradaExpressTests(TestCase):
         )
         self.usuario.rol = "CAJERO"
         self.usuario.sucursal = self.sucursal
-        self.usuario.save(update_fields=["rol", "sucursal"])
+        self.usuario.save(update_fields=["rol"])
         g, _ = Group.objects.get_or_create(name="FARMACIA")
         self.usuario.groups.add(g)
         self.producto = Producto.objects.create(
