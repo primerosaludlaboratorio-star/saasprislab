@@ -4,7 +4,7 @@ Reportes financieros avanzados: P&L, Balance, Flujo de Caja, etc.
 """
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from core.decorators import role_required
+from core.utils.rbac import role_required, PRISLAB_ROLES
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseForbidden
 from django.db.models import Sum, Count, Q, F
@@ -37,7 +37,7 @@ def _sumas_por_dia(queryset, fecha_field: str, total_field: str):
 
 
 @login_required
-@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
+@role_required(PRISLAB_ROLES.DIRECTOR, PRISLAB_ROLES.ADMIN, PRISLAB_ROLES.GERENTE, PRISLAB_ROLES.FINANZAS)
 def reporte_ingresos_egresos(request):
     """Reporte de Ingresos y Egresos (P&L simplificado)."""
     empresa = getattr(request.user, 'empresa', None)
@@ -133,7 +133,7 @@ def reporte_ingresos_egresos(request):
 
 
 @login_required
-@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
+@role_required(PRISLAB_ROLES.DIRECTOR, PRISLAB_ROLES.ADMIN, PRISLAB_ROLES.GERENTE, PRISLAB_ROLES.FINANZAS)
 def reporte_balance_general(request):
     """Reporte de Balance General (Activos, Pasivos, Capital)."""
     empresa = getattr(request.user, 'empresa', None)
@@ -216,7 +216,7 @@ def reporte_balance_general(request):
 
 
 @login_required
-@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
+@role_required(PRISLAB_ROLES.DIRECTOR, PRISLAB_ROLES.ADMIN, PRISLAB_ROLES.GERENTE, PRISLAB_ROLES.FINANZAS)
 def reporte_flujo_caja(request):
     """Reporte de Flujo de Caja."""
     empresa = getattr(request.user, 'empresa', None)
@@ -358,7 +358,7 @@ def _estilo_encabezado(ws, row, cols, fill_hex='1F4E79'):
 
 
 @login_required
-@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
+@role_required(PRISLAB_ROLES.DIRECTOR, PRISLAB_ROLES.ADMIN, PRISLAB_ROLES.GERENTE, PRISLAB_ROLES.FINANZAS)
 def exportar_excel_ingresos_egresos(request):
     """Exporta el reporte de Ingresos y Egresos a Excel."""
     import openpyxl
@@ -470,7 +470,7 @@ def exportar_excel_ingresos_egresos(request):
 
 
 @login_required
-@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
+@role_required(PRISLAB_ROLES.DIRECTOR, PRISLAB_ROLES.ADMIN, PRISLAB_ROLES.GERENTE, PRISLAB_ROLES.FINANZAS)
 def exportar_excel_flujo_caja(request):
     """Exporta el reporte de Flujo de Caja a Excel."""
     import openpyxl
@@ -540,7 +540,7 @@ def exportar_excel_flujo_caja(request):
 
 
 @login_required
-@role_required('DIRECTOR', 'ADMIN', 'GERENTE', 'FINANZAS')
+@role_required(PRISLAB_ROLES.DIRECTOR, PRISLAB_ROLES.ADMIN, PRISLAB_ROLES.GERENTE, PRISLAB_ROLES.FINANZAS)
 def exportar_excel_balance(request):
     """Exporta el Balance General a Excel."""
     import openpyxl
