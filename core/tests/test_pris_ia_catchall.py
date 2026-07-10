@@ -138,7 +138,7 @@ class TestViewsChatCatchAll(TestCase):
             with patch('core.views.pris_ia._rbac._verificar_rbac', return_value=(True, "")):
                 with patch('core.views.pris_ia.views._build_system_prompt',
                            return_value="prompt"):
-                    with self.assertLogs('core.views.pris_ia._dispatcher', level='ERROR'):
+                    with self.assertLogs('core', level='ERROR'):
                         response = asistente_chat(request)
 
         self.assertIn(response.status_code, [200, 500])

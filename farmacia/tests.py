@@ -202,7 +202,7 @@ class FarmaciaViewTests(TestCase):
         self.usuario.empresa = self.empresa
         self.usuario.rol = "CAJERO"
         self.usuario.sucursal = self.sucursal
-        self.usuario.save(update_fields=["empresa", "rol", "sucursal"])
+        self.usuario.save(update_fields=["empresa", "rol"])
         g, _ = Group.objects.get_or_create(name="FARMACIA")
         self.usuario.groups.add(g)
         self.client.force_login(self.usuario)
