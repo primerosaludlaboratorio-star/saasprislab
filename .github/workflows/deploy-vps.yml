@@ -3,6 +3,42 @@ name: PRISLAB Deploy to VPS
 on:
   push:
     branches: [release/v1.0-local]
+    paths:
+      - 'academia/**'
+      - 'bienestar/**'
+      - 'config/**'
+      - 'consultorio/**'
+      - 'contabilidad/**'
+      - 'core/**'
+      - 'enfermeria/**'
+      - 'farmacia/**'
+      - 'ia/**'
+      - 'inventario/**'
+      - 'iot/**'
+      - 'laboratorio/**'
+      - 'lims/**'
+      - 'logistica/**'
+      - 'mantenimiento/**'
+      - 'marketing/**'
+      - 'middleware_local/**'
+      - 'monitoring/**'
+      - 'nginx/**'
+      - 'pacientes/**'
+      - 'pris_ai_core/**'
+      - 'recepcion/**'
+      - 'reglas_negocio/**'
+      - 'scripts/**'
+      - 'seguridad/**'
+      - 'suscripciones/**'
+      - 'templates/**'
+      - 'tools/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'docker-compose.monitoring.yml'
+      - 'manage.py'
+      - 'requirements.txt'
+      - 'runtime.txt'
+      - '.github/workflows/deploy-vps.yml'
   workflow_dispatch:
     inputs:
       environment:
@@ -45,28 +81,45 @@ jobs:
         run: |
           ssh deploy-target << 'REMOTE_SCRIPT'
             set -euo pipefail
-            DEPLOY_DIR="${{ vars.DEPLOY_DIR || '/opt/prislab' }}"
-            COMPOSE_FILE="${{ vars.COMPOSE_FILE || 'docker-compose.yml' }}"
-            cd "$DEPLOY_DIR"
+            ROOT_DIR="${{ vars.DEPLOY_ROOT_DIR || '/opt/prislab' }}"
+            APP_DIR="${{ vars.DEPLOY_APP_DIR || '/opt/prislab/app' }}"
+            APP_USER="${{ vars.DEPLOY_APP_USER || 'prislab' }}"
 
-            echo "==> Pull latest code"
-            git fetch origin
-            git checkout release/v1.0-local
-            git pull origin release/v1.0-local
+            mkdir -p "$ROOT_DIR"
+            mkdir -p "$APP_DIR"
 
-            echo "==> Build and start services"
-            docker compose -f "$COMPOSE_FILE" pull
-            docker compose -f "$COMPOSE_FILE" up -d --build
+            echo "==> Sync release/v1.0-local into ${APP_DIR}"
+            if [ ! -d "$APP_DIR/.git" ]; then
+              sudo -u "$APP_USER" git -C "$APP_DIR" init
+              sudo -u "$APP_USER" git -C "$APP_DIR" remote add origin https://github.com/primerosaludlaboratorio-star/saasprislab.git || true
+            fi
+
+            chown -R "$APP_USER:$APP_USER" "$APP_DIR"
+            sudo -u "$APP_USER" git -C "$APP_DIR" fetch --depth 1 origin release/v1.0-local
+            sudo -u "$APP_USER" git -C "$APP_DIR" checkout -B release/v1.0-local FETCH_HEAD
+            sudo -u "$APP_USER" git -C "$APP_DIR" reset --hard FETCH_HEAD
 
             echo "==> Run migrations"
-            docker compose -f "$COMPOSE_FILE" exec -T app python manage.py migrate --noinput
+            cd "$APP_DIR"
+            sudo -u "$APP_USER" .venv/bin/python scripts/run_manage_with_env.py migrate --noinput
 
             echo "==> Collect static files"
-            docker compose -f "$COMPOSE_FILE" exec -T app python manage.py collectstatic --noinput
+            sudo -u "$APP_USER" .venv/bin/python scripts/run_manage_with_env.py collectstatic --noinput
+
+            echo "==> Restart services"
+            systemctl restart prislab-gunicorn
+            systemctl restart prislab-celery
+            systemctl restart prislab-celerybeat
+            systemctl reload nginx
+
+            echo "==> Verify services"
+            systemctl is-active prislab-gunicorn
+            systemctl is-active prislab-celery
+            systemctl is-active prislab-celerybeat
 
             echo "==> Health check"
             for i in {1..12}; do
-              if curl -fsS http://localhost:8000/live/ >/dev/null; then
+              if curl -fsS http://127.0.0.1/health/ >/dev/null; then
                 echo "Health check passed"
                 exit 0
               fi
@@ -80,9 +133,10 @@ jobs:
       - name: Smoke test public endpoints
         run: |
           set -euo pipefail
-          echo "==> Smoke tests against https://${{ secrets.DEPLOY_HOST }}"
-          for endpoint in /live/ /ready/ /health/ /metrics/; do
-            url="https://${{ secrets.DEPLOY_HOST }}${endpoint}"
+          BASE_URL="${{ vars.PUBLIC_BASE_URL || format('https://{0}', secrets.DEPLOY_HOST) }}"
+          echo "==> Smoke tests against ${BASE_URL}"
+          for endpoint in /live/ /ready/ /health/; do
+            url="${BASE_URL}${endpoint}"
             echo "Testing ${url}"
             status=$(curl -s -o /dev/null -w "%{http_code}" "$url")
             if [ "$status" -ne 200 ]; then
@@ -91,18 +145,3 @@ jobs:
             fi
             echo "OK ${url} -> ${status}"
           done
-
-      - name: Restart monitoring stack (if configured)
-        run: |
-          ssh deploy-target << 'REMOTE_SCRIPT'
-            set -euo pipefail
-            DEPLOY_DIR="${{ vars.DEPLOY_DIR || '/opt/prislab' }}"
-            cd "$DEPLOY_DIR"
-            if [ -f docker-compose.monitoring.yml ]; then
-              echo "==> Restarting monitoring stack"
-              docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d prometheus grafana alertmanager
-            else
-              echo "==> docker-compose.monitoring.yml not found; skipping monitoring restart"
-            fi
-          REMOTE_SCRIPT
-        continue-on-error: true
