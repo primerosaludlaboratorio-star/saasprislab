@@ -174,9 +174,9 @@ Responde en español, de forma directa y práctica. Sin formato JSON.
             'mensaje': 'Analisis generado exitosamente'
         })
 
-    except (DatabaseError, ValidationError, ValueError, TypeError) as e:
-        logger.error("Error generando analisis: %s", e)
-        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+    except (DatabaseError, ValidationError, ValueError, TypeError):
+        logger.exception("Error generando analisis")
+        return JsonResponse({'ok': False, 'error': 'No fue posible generar el análisis'}, status=500)
 
 
 # ==============================================================================
@@ -240,8 +240,9 @@ def api_agregar_lista_espera(request):
             'mensaje': f'{paciente.nombre_completo} agregado a lista de espera'
         })
 
-    except (DatabaseError, ValidationError, ValueError, TypeError) as e:
-        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+    except (DatabaseError, ValidationError, ValueError, TypeError):
+        logger.exception("Error agregando paciente a lista de espera")
+        return JsonResponse({'ok': False, 'error': 'No fue posible agregar a lista de espera'}, status=500)
 
 
 # ==============================================================================
@@ -755,7 +756,7 @@ def configuracion_medico(request):
             return redirect('consultorio:configuracion_medico')
 
         except (DatabaseError, ValidationError) as e:
-            messages.error(request, f'Error al guardar: {str(e)}')
+            messages.error(request, 'No fue posible guardar la configuración.')
 
     return render(request, 'consultorio/configuracion_medico.html', {
         'config': config,
@@ -866,9 +867,9 @@ def crear_paciente_express(request):
             return redirect('consultorio:nueva_consulta_paciente', paciente_uuid=paciente.uuid)
         return redirect('consultorio:nueva_consulta')
 
-    except (DatabaseError, ValidationError, ValueError, TypeError) as e:
-        logger.error("Error en crear_paciente_express: %s", e, exc_info=True)
+    except (DatabaseError, ValidationError, ValueError, TypeError):
+        logger.exception("Error en crear_paciente_express")
         if is_json:
-            return JsonResponse({'ok': False, 'error': str(e)}, status=500)
-        messages.error(request, f"Error al registrar paciente: {e}")
+            return JsonResponse({'ok': False, 'error': 'No fue posible registrar paciente'}, status=500)
+        messages.error(request, "Error al registrar paciente.")
         return redirect('consultorio:dashboard_consultorio')

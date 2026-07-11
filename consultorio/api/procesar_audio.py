@@ -96,5 +96,5 @@ def procesar_audio_consulta(request):
         logger.error(f"Error al procesar audio de consulta: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'No fue posible procesar el audio.'
         }, status=500)

@@ -479,7 +479,7 @@ def _ejecutar_herramienta(nombre_tool, args, request, jarvis_mode=True):
             return {"error": f"Herramienta '{nombre_tool}' no disponible. Herramientas disponibles: {', '.join(TOOLS_OPERATIVOS.keys())}"}
     except Exception as e:
         logger.error(f"PRIS tool '{nombre_tool}' error: {e}", exc_info=True)
-        return {"error": str(e)}
+        return {"error": "No fue posible procesar la solicitud IA."}
 
 
 def _tool_buscar_paciente(args, empresa):
@@ -600,7 +600,7 @@ def _tool_resultados_orden(args, empresa):
                 "estado": orden.estado, "estudios": estudios}
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en _tool_resultados_orden (pris_ia.py)")
-        return {"error": str(e)}
+        return {"error": "No fue posible procesar la solicitud IA."}
 
 
 def _tool_guardar_resultado(args, empresa, user):
@@ -672,7 +672,7 @@ def _tool_guardar_resultado(args, empresa, user):
         }
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en _tool_guardar_resultado (pris_ia.py)")
-        return {"error": str(e)}
+        return {"error": "No fue posible procesar la solicitud IA."}
 
 
 def _tool_buscar_medicamento(args, empresa):
@@ -858,7 +858,7 @@ def _tool_auditar_errores_recientes(args, empresa):
         }
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en _tool_auditar_errores_recientes (pris_ia.py)")
-        return {"error": str(e)}
+        return {"error": "No fue posible procesar la solicitud IA."}
 
 
 def _tool_generar_corte_caja(args, empresa, user):
@@ -921,7 +921,7 @@ def _tool_auditoria_sistema_completa(args, empresa, user):
         reporte["checks"]["base_datos"] = {"ok": True, "msg": "Conexión activa"}
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en _tool_auditoria_sistema_completa (pris_ia.py)")
-        reporte["checks"]["base_datos"] = {"ok": False, "msg": str(e)[:100]}
+        reporte["checks"]["base_datos"] = {"ok": False, "msg": "No fue posible verificar base de datos."}
 
     # 2. Modelos críticos
     modelos_check = {
@@ -956,7 +956,7 @@ def _tool_auditoria_sistema_completa(args, empresa, user):
         }
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en _tool_auditoria_sistema_completa (pris_ia.py)")
-        reporte["checks"]["sentinel"] = {"ok": False, "error": str(e)[:100]}
+        reporte["checks"]["sentinel"] = {"ok": False, "error": "No fue posible verificar Sentinel."}
 
     # 4. Google Drive
     drive_activo = getattr(settings, '_DRIVE_STORAGE_ACTIVO', False)
@@ -1276,7 +1276,7 @@ def asistente_chat(request):
             }, status=200)
         return JsonResponse({
             'status': 'error',
-            'mensaje': type(e).__name__,
+            'mensaje': 'No fue posible procesar la solicitud IA.',
             'respuesta': f'Tuve un problema técnico: {error_msg[:120]}. Intenta de nuevo.',
         }, status=200)
 
@@ -1348,7 +1348,7 @@ def _tool_buscar_reactivo_lab(args, empresa):
         return {"total": len(lotes), "lotes": lotes}
     except Exception as e:
         logger.warning(f"PRIS buscar_reactivo_lab: {e}")
-        return {"error": str(e), "lotes": []}
+        return {"error": "No fue posible consultar lotes.", "lotes": []}
 
 
 def _tool_consultar_stock_silos(args, empresa):
@@ -1390,7 +1390,7 @@ def _tool_consultar_stock_silos(args, empresa):
         return {"silo": silo, "total": len(items), "items": items}
     except Exception as e:
         logger.warning(f"PRIS consultar_stock_silos: {e}")
-        return {"error": str(e), "items": []}
+        return {"error": "No fue posible consultar items.", "items": []}
 
 
 def _tool_validar_orden_laboratorio(args, empresa, user):

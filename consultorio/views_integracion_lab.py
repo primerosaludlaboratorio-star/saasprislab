@@ -127,10 +127,10 @@ def crear_orden_lab_desde_consulta(request, consulta_id):
             'total': float(total),
         })
     
-    except (DatabaseError, ValidationError) as e:
+    except (DatabaseError, ValidationError):
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error al crear orden: {str(e)}'
+            'mensaje': 'No fue posible crear la orden de laboratorio'
         }, status=500)
 
 

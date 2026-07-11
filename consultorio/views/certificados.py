@@ -134,7 +134,7 @@ def generar_certificado(request):
                 return redirect('consultorio:ver_certificado', certificado_id=certificado.id)
                 
         except (DatabaseError, ValidationError) as e:
-            messages.error(request, f'Error al generar certificado: {str(e)}')
+            messages.error(request, 'No fue posible generar el certificado.')
     
     # GET: Mostrar formulario
     pacientes = Paciente.objects.filter(empresa=empresa, activo=True).order_by('nombres', 'apellido_paterno')

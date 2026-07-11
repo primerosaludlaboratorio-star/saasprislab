@@ -127,7 +127,7 @@ def registrar_compra(request):
                     return redirect('farmacia:kardex_list')
                     
             except (DatabaseError, ValueError, TypeError, InvalidOperation, ValidationError) as e:
-                messages.error(request, f'❌ Error al registrar compra: {str(e)}')
+                messages.error(request, 'No fue posible registrar la compra.')
                 return redirect('farmacia:registrar_compra')
     
     form_compra = RegistrarCompraForm(empresa=empresa)
@@ -198,7 +198,7 @@ def api_agregar_producto_compra(request):
         except (DatabaseError, ValueError, TypeError, InvalidOperation, ValidationError) as e:
             return JsonResponse({
                 'status': 'error',
-                'mensaje': f'Error: {str(e)}'
+                'mensaje': 'No fue posible procesar la compra.'
             }, status=500)
     
     return JsonResponse({'status': 'error', 'mensaje': 'Metodo no permitido'}, status=405)
@@ -263,7 +263,7 @@ def api_agregar_multi_lote(request):
         except (DatabaseError, ValueError, TypeError, InvalidOperation, ValidationError) as e:
             return JsonResponse({
                 'status': 'error',
-                'mensaje': f'Error: {str(e)}'
+                'mensaje': 'No fue posible procesar la compra.'
             }, status=500)
     
     return JsonResponse({'status': 'error', 'mensaje': 'Metodo no permitido'}, status=405)
@@ -293,7 +293,7 @@ def api_eliminar_producto_compra(request, index):
     except (TypeError, ValueError, KeyError, IndexError) as e:
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error: {str(e)}'
+            'mensaje': 'No fue posible procesar la compra.'
         }, status=500)
 
 
@@ -388,5 +388,5 @@ def entrada_express(request):
     except (DatabaseError, ValueError, TypeError, InvalidOperation, ValidationError) as e:
         return JsonResponse({
             'success': False,
-            'error': f'Error al procesar entrada: {str(e)}'
+            'error': 'No fue posible procesar la entrada.'
         }, status=500)

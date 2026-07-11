@@ -112,7 +112,7 @@ def crear_prospecto(request):
             return redirect('crm_detalle_prospecto', pk=prospecto.pk)
         except Exception as exc:
             logger.error("Error creando prospecto: %s", exc)
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la solicitud.')
 
     return render(request, 'core/crm/crear_prospecto.html', {
         'ORIGEN_CHOICES': ProspectoCRM.ORIGEN_CHOICES,
@@ -153,7 +153,7 @@ def agregar_seguimiento(request, pk):
         messages.success(request, 'Seguimiento registrado.')
     except Exception as exc:
         logger.error("Error agregando seguimiento: %s", exc)
-        messages.error(request, f'Error: {exc}')
+        messages.error(request, 'No fue posible procesar la solicitud.')
     return redirect('crm_detalle_prospecto', pk=pk)
 
 

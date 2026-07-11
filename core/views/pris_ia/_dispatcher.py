@@ -116,4 +116,4 @@ def _ejecutar_herramienta(nombre_tool, args, request, jarvis_mode=True):
         # Broad catch intencional: el despachador no puede predecir todos los fallos
         # de herramientas externas (inventario, RAG, Drive, WhatsApp).
         logger.error(f"PRIS tool '{nombre_tool}' error: {e}", exc_info=True)
-        return {"error": str(e)}
+        return {"error": "No fue posible procesar la solicitud IA."}

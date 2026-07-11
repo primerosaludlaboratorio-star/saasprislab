@@ -170,7 +170,7 @@ def api_generar_y_guardar_reporte(request, orden_id):
         logger.error(f"Error API generar reporte orden {orden_id}: {e}", exc_info=True)
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error generando reporte: {str(e)}'
+            'mensaje': 'No fue posible generar el reporte.'
         }, status=500)
 
 

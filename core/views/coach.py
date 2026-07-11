@@ -101,5 +101,5 @@ Responde como consultor experto:"""
         logging.getLogger(__name__).exception("Error inesperado en api_coach_preguntar (coach.py)")
         return JsonResponse({
             "status": "error",
-            "mensaje": f"Error al consultar al Coach: {str(e)}"
+            "mensaje": "No fue posible consultar al Coach."
         }, status=500)

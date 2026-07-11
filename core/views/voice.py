@@ -81,7 +81,7 @@ def procesar_comando_api(request):
         logger.error(f"Error al procesar comando de voz: {e}", exc_info=True)
         return JsonResponse({
             'status': 'error',
-            'message': f'Error del servidor: {type(e).__name__}'
+            'message': 'No fue posible procesar el comando de voz.'
         }, status=500)
 
 

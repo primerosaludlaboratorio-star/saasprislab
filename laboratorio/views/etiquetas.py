@@ -81,7 +81,7 @@ def imprimir_etiqueta_tubo(request, orden_id):
         
     except (RuntimeError, ValueError, TypeError, ImportError) as e:
         logger.error(f"Error al generar etiqueta: {e}", exc_info=True)
-        return HttpResponse(f"Error al generar etiqueta: {str(e)}", status=500)
+        return HttpResponse("No fue posible generar la etiqueta.", status=500)
 
 
 @login_required
@@ -150,7 +150,7 @@ def imprimir_etiquetas_lote(request):
         
     except (RuntimeError, ValueError, TypeError, ImportError, DatabaseError, ValidationError) as e:
         logger.error(f"Error al generar etiquetas en lote: {e}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'No fue posible generar la etiqueta'}, status=500)
 
 
 @login_required
@@ -201,7 +201,7 @@ def imprimir_etiqueta_qr(request, orden_id):
         
     except (RuntimeError, ValueError, TypeError, ImportError) as e:
         logger.error(f"Error al generar etiqueta QR: {e}", exc_info=True)
-        return HttpResponse(f"Error al generar etiqueta: {str(e)}", status=500)
+        return HttpResponse("No fue posible generar la etiqueta.", status=500)
 
 
 @login_required
@@ -234,4 +234,4 @@ def vista_previa_etiqueta(request, orden_id):
         
     except (RuntimeError, ValueError, TypeError, ImportError, DatabaseError, ValidationError) as e:
         logger.error(f"Error en vista previa: {e}", exc_info=True)
-        return HttpResponse(f"Error: {str(e)}", status=500)
+        return HttpResponse("No fue posible generar la etiqueta.", status=500)

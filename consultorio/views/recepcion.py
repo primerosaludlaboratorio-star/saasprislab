@@ -204,7 +204,7 @@ def agendar_cita(request):
         except Paciente.DoesNotExist:
             messages.error(request, 'Paciente no encontrado')
         except (DatabaseError, ValidationError) as e:
-            messages.error(request, f'Error al agendar cita: {str(e)}')
+            messages.error(request, 'No fue posible agendar la cita.')
     
     # GET: Mostrar formulario
     pacientes = Paciente.objects.filter(empresa=empresa, activo=True).order_by('nombres', 'apellido_paterno')

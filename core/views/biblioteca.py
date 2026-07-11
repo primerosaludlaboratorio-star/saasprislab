@@ -88,7 +88,7 @@ def api_cambiar_estado_libro(request, libro_id):
         return JsonResponse({'status': 'error', 'mensaje': 'Libro no encontrado'}, status=404)
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_cambiar_estado_libro (biblioteca.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible actualizar el libro'}, status=500)
 
 
 @login_required
@@ -129,8 +129,8 @@ def agregar_libro(request):
             'libro_id': libro.id
         })
         
-    except Exception as e:
+    except Exception:
         import logging
         logger = logging.getLogger('core')
-        logger.error(f"Error al agregar libro: {str(e)}", exc_info=True)
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        logger.exception("Error al agregar libro")
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible agregar el libro'}, status=500)

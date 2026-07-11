@@ -308,7 +308,7 @@ def crear_poliza(request):
                 return redirect('contabilidad:ver_poliza', poliza_id=poliza.id)
             except Exception as e:
                 logging.getLogger(__name__).exception("Error inesperado en crear_poliza (contabilidad.py)")
-                messages.error(request, f'Error al crear la póliza: {e}')
+                messages.error(request, 'No fue posible crear la póliza.')
 
     return render(request, 'core/contabilidad/crear_poliza.html', {
         'cuentas': cuentas,

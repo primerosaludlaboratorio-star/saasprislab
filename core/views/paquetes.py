@@ -68,5 +68,5 @@ def api_actualizar_orden_paquete(request, paquete_id):
         logging.getLogger(__name__).exception("Error inesperado en api_actualizar_orden_paquete (paquetes.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error al actualizar orden: {str(e)}'
+            'mensaje': 'No fue posible actualizar el orden.'
         }, status=500)

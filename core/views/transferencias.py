@@ -133,7 +133,7 @@ def crear_transferencia(request):
                 return redirect('ver_transferencia', transferencia_id=transferencia.id)
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en crear_transferencia (transferencias.py)")
-            messages.error(request, f'Error al crear transferencia: {str(e)}')
+            messages.error(request, 'No fue posible crear la transferencia.')
     
     # GET: Mostrar formulario
     sucursales = Sucursal.objects.filter(empresa=empresa, activa=True)
@@ -225,7 +225,7 @@ def enviar_transferencia(request, transferencia_id):
             messages.success(request, f'Transferencia {transferencia.folio} enviada exitosamente')
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en enviar_transferencia (transferencias.py)")
-        messages.error(request, f'Error al enviar transferencia: {str(e)}')
+        messages.error(request, 'No fue posible enviar la transferencia.')
     
     return redirect('ver_transferencia', transferencia_id=transferencia.id)
 
@@ -297,7 +297,7 @@ def recibir_transferencia(request, transferencia_id):
             messages.success(request, f'Transferencia {transferencia.folio} recibida exitosamente')
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en recibir_transferencia (transferencias.py)")
-        messages.error(request, f'Error al recibir transferencia: {str(e)}')
+        messages.error(request, 'No fue posible recibir la transferencia.')
     
     return redirect('ver_transferencia', transferencia_id=transferencia.id)
 

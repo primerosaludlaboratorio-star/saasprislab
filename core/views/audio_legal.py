@@ -44,8 +44,8 @@ def api_sellar_audio(request):
         )
         return JsonResponse({'ok': True, **resultado})
     except Exception as exc:
-        logger.error(f'[AudioLegal] Error sellando: {exc}')
-        return JsonResponse({'error': str(exc)}, status=500)
+        logger.exception('[AudioLegal] Error sellando')
+        return JsonResponse({'error': 'No fue posible sellar el audio'}, status=500)
 
 
 @login_required
@@ -61,4 +61,4 @@ def api_verificar_integridad_audio(request, registro_id: int):
         return JsonResponse(resultado)
     except Exception as exc:
         logging.getLogger(__name__).exception("Error inesperado en api_verificar_integridad_audio (audio_legal.py)")
-        return JsonResponse({'error': str(exc)}, status=500)
+        return JsonResponse({'error': 'No fue posible verificar integridad del audio'}, status=500)

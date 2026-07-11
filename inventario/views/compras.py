@@ -139,7 +139,7 @@ def crear_orden_compra(request, empresa):
                 return redirect('inventario:detalle_oc', pk=oc.pk)
             except (DatabaseError, ValidationError) as exc:
                 logger.error("Error crear OC: %s", exc, exc_info=True)
-                messages.error(request, f'Error: {exc}')
+                messages.error(request, 'No fue posible procesar la compra.')
 
     proveedores = ProveedorCompras.objects.filter(empresa=empresa, activo=True).order_by('razon_social')
     # Artículos de los 3 silos para el selector dinámico
@@ -373,7 +373,7 @@ def crear_proveedor(request, empresa):
             messages.success(request, 'Proveedor creado.')
             return redirect('inventario:lista_proveedores')
         except (DatabaseError, ValidationError) as exc:
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la compra.')
     ctx = {'titulo': 'Nuevo Proveedor'}
     return render(request, 'inventario/compras/form_proveedor.html', ctx)
 

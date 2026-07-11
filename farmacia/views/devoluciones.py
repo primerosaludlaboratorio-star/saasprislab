@@ -296,7 +296,7 @@ def procesar_devolucion_venta(request):
     except Exception as e:
         # Justificación: Boundary top-level de API para evitar crash de la solicitud.
         logger.error(f'Error al procesar devolución: {str(e)}')
-        return JsonResponse({'status': 'error', 'mensaje': f'Error al procesar devolución: {str(e)}'}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible procesar la devolución'}, status=500)
 
 
 # ==============================================================================
@@ -361,7 +361,7 @@ def buscar_venta_para_devolucion(request):
             logger.error(f"Error buscando venta: {e}", exc_info=True)
             return JsonResponse({
                 'success': False,
-                'error': f'Error al buscar venta: {str(e)}'
+                'error': 'No fue posible buscar la venta.'
             }, status=500)
     
     empresa = getattr(request.user, 'empresa', None)
@@ -437,7 +437,7 @@ def procesar_devolucion(request):
         return JsonResponse({
             'success': False,
             'status': 'error',
-            'error': f'Error al procesar devolución: {str(e)}'
+            'error': 'No fue posible procesar la devolución.'
         }, status=500)
 
 
@@ -759,5 +759,5 @@ def autorizar_devolucion(request, devolucion_id):
         logger.error(f"Error autorizando devolución: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': f'Error: {str(e)}'
+            'error': 'No fue posible procesar la devolución.'
         }, status=500)

@@ -68,7 +68,7 @@ def crear_solicitud_autorizacion(request):
         logging.getLogger(__name__).exception("Error inesperado en crear_solicitud_autorizacion (autorizaciones.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la autorización.'
         }, status=500)
 
 
@@ -103,7 +103,7 @@ def verificar_estado_solicitud(request, solicitud_id):
         logging.getLogger(__name__).exception("Error inesperado en verificar_estado_solicitud (autorizaciones.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la autorización.'
         }, status=500)
 
 
@@ -219,7 +219,7 @@ def api_aprobar_solicitud(request, solicitud_id):
         logging.getLogger(__name__).exception("Error inesperado en api_aprobar_solicitud (autorizaciones.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la autorización.'
         }, status=500)
 
 
@@ -281,5 +281,5 @@ def api_rechazar_solicitud(request, solicitud_id):
         logging.getLogger(__name__).exception("Error inesperado en api_rechazar_solicitud (autorizaciones.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la autorización.'
         }, status=500)

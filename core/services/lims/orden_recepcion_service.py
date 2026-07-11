@@ -448,7 +448,7 @@ class OrdenServicioLims:
                 'http_status': 400,
                 'body': {
                     'status': 'error',
-                    'mensaje': f'Error al procesar los datos JSON: {str(e)}',
+                    'mensaje': 'No fue posible procesar los datos JSON.',
                 },
             }
         except Exception as e:

@@ -71,7 +71,7 @@ def captura_reporte_usg(request, paciente_id=None):
             return redirect('lista_trabajo_usg')
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en captura_reporte_usg (ultrasonido.py)")
-            messages.error(request, f'Error al crear reporte: {e}')
+            messages.error(request, 'No fue posible crear el reporte.')
 
     pacientes = Paciente.objects.filter(empresa=empresa).order_by('nombres')[:50]
     return render(request, 'core/medico/captura_reporte_usg.html', {

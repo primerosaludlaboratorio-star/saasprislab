@@ -607,7 +607,7 @@ def importar_contactos(request):
             
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en importar_contactos (views_legacy.py)")
-            messages.error(request, f'Error al importar: {str(e)}')
+            messages.error(request, 'No fue posible importar los contactos.')
             return redirect('marketing:importar_contactos')
     
     return render(request, "marketing/contactos/importar.html", {

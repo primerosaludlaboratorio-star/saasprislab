@@ -89,7 +89,7 @@ class VoiceCommandConsumer(AsyncWebsocketConsumer):
             logger.warning(f"Datos malformados en VoiceCommandConsumer: {e}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': f'Datos inválidos: {type(e).__name__}'
+                'message': 'Datos inválidos.'
             }))
         except Exception as e:
             # Safety net del consumer async — evita que un error no anticipado
@@ -97,7 +97,7 @@ class VoiceCommandConsumer(AsyncWebsocketConsumer):
             logger.error(f"Error en receive de VoiceCommandConsumer: {e}", exc_info=True)
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': f'Error del servidor: {type(e).__name__}'
+                'message': 'No fue posible procesar la solicitud.'
             }))
     
     async def handle_voice_command(self, data):

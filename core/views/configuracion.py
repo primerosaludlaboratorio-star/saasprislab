@@ -115,8 +115,8 @@ def api_ia_consumo(request):
         data['cache'] = estadisticas_cache(empresa)
         return JsonResponse(data)
     except Exception as exc:
-        logger.error("api_ia_consumo: %s", exc)
-        return JsonResponse({'error': str(exc)}, status=500)
+        logger.exception("api_ia_consumo")
+        return JsonResponse({'error': 'No fue posible consultar consumo IA'}, status=500)
 
 
 @login_required
@@ -140,8 +140,8 @@ def api_cambiar_modo_ia(request):
         cfg.save(update_fields=['modo_ia'])
         return JsonResponse({'ok': True, 'modo_ia': modo})
     except Exception as exc:
-        logger.error("api_cambiar_modo_ia: %s", exc)
-        return JsonResponse({'error': str(exc)}, status=500)
+        logger.exception("api_cambiar_modo_ia")
+        return JsonResponse({'error': 'No fue posible cambiar el modo IA'}, status=500)
 
 
 @login_required
@@ -168,5 +168,5 @@ def api_guardar_byok(request):
             'drive_folder_id': empresa.drive_folder_id or '',
         })
     except Exception as exc:
-        logger.error("api_guardar_byok: %s", exc)
-        return JsonResponse({'error': str(exc)}, status=500)
+        logger.exception("api_guardar_byok")
+        return JsonResponse({'error': 'No fue posible guardar la configuración IA'}, status=500)

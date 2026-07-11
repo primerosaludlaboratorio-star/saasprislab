@@ -136,7 +136,7 @@ def captura_signos_vitales(request, cita_id):
                 return redirect('consultorio:lista_triage')
                 
         except (DatabaseError, ValidationError) as e:
-            messages.error(request, f'Error al guardar signos vitales: {str(e)}')
+            messages.error(request, 'No fue posible guardar los signos vitales.')
     
     # Para GET o re-render tras error: asegurar que signos no sea None (template accede a signos.xxx)
     if signos is None:

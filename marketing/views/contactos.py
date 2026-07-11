@@ -77,7 +77,7 @@ def importar_contactos(request):
             return redirect('marketing:lista_contactos')
 
         except (UnicodeDecodeError, csv.Error) as e:
-            messages.error(request, f'Error al importar: {str(e)}')
+            messages.error(request, 'No fue posible importar los contactos.')
             return redirect('marketing:importar_contactos')
 
     return render(request, "marketing/contactos/importar.html", {

@@ -287,7 +287,7 @@ def api_preordenes_pendientes(request):
         return JsonResponse({'status': 'success', 'preordenes': data})
 
     except (PreOrdenLaboratorio.DoesNotExist, ValueError, TypeError) as e:
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible editar la orden'}, status=500)
 
 
 @login_required
@@ -365,4 +365,4 @@ def api_cargar_preorden(request):
     except PreOrdenLaboratorio.DoesNotExist:
         return JsonResponse({'status': 'error', 'mensaje': 'Pre-orden no encontrada o ya fue procesada'}, status=404)
     except (json.JSONDecodeError, ValueError, TypeError, KeyError) as e:
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible editar la orden'}, status=500)

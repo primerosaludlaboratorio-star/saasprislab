@@ -109,5 +109,5 @@ def api_generar_receta_pdf(request, consulta_id):
         logger.error(f"Error API receta {consulta_id}: {e}", exc_info=True)
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error generando receta: {str(e)}'
+            'mensaje': 'No fue posible generar la receta.'
         }, status=500)

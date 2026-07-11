@@ -126,7 +126,7 @@ def crear_insumo_consultorio(request, empresa):
             messages.success(request, 'Insumo creado.')
             return redirect('inventario:lista_insumos_consultorio')
         except (DatabaseError, ValidationError) as exc:
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la solicitud.')
     ctx = {
         'titulo': 'Nuevo Insumo de Consultorio',
         'tipo_choices': CatalogoInsumoConsultorio.TIPO_CHOICES,
@@ -154,7 +154,7 @@ def editar_insumo_consultorio(request, empresa, pk):
             messages.success(request, 'Insumo actualizado.')
             return redirect('inventario:lista_insumos_consultorio')
         except (DatabaseError, ValidationError) as exc:
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la solicitud.')
     ctx = {
         'titulo': 'Editar Insumo',
         'insumo': insumo,
@@ -221,7 +221,7 @@ def crear_lote_consultorio(request, empresa):
             return redirect('inventario:lista_lotes_consultorio')
         except (DatabaseError, ValidationError) as exc:
             logger.error("Error crear lote consultorio: %s", exc, exc_info=True)
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la solicitud.')
 
     insumos = CatalogoInsumoConsultorio.objects.filter(empresa=empresa, activo=True).order_by('nombre')
     ctx = {'titulo': 'Nuevo Lote — Consultorio', 'insumos': insumos}
@@ -271,7 +271,7 @@ def registrar_salida_consultorio(request, empresa):
                     messages.success(request, f'Consumo de {cantidad} registrado.')
                     return redirect('inventario:lista_salidas_consultorio')
         except (DatabaseError, ValidationError) as exc:
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la solicitud.')
 
     lotes = (
         LoteInsumoConsultorio.objects

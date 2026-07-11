@@ -148,7 +148,7 @@ def crear_evaluacion_39a(request, empleado_id=None):
                 'periodo_semanal': periodo_semanal,
                 'fecha_inicio': inicio_semana,
                 'fecha_fin': fin_semana,
-                'error': f'Error al crear evaluación: {str(e)}',
+                'error': 'No fue posible crear la evaluación.',
                 'empresa': empresa
             })
     
@@ -457,10 +457,10 @@ def nueva_evaluacion_desempeno(request, empleado_id=None):
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en nueva_evaluacion_desempeno (rh.py)")
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=400)
+                return JsonResponse({'status': 'error', 'mensaje': 'No fue posible guardar la evaluación'}, status=400)
             # Para formularios normales, mostrar error en la página
             from django.contrib import messages as django_messages
-            django_messages.error(request, f'Error al guardar la evaluación: {str(e)}')
+            django_messages.error(request, 'No fue posible guardar la evaluación.')
     
     # GET: Mostrar formulario
     empleados = Empleado.objects.filter(empresa=empresa, activo=True).select_related('usuario')

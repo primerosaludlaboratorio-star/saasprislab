@@ -120,7 +120,7 @@ def crear_insumo_general(request, empresa):
             messages.success(request, 'Insumo general creado.')
             return redirect('inventario:lista_insumos_generales')
         except (DatabaseError, ValidationError) as exc:
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la solicitud.')
     ctx = {
         'titulo': 'Nuevo Insumo General',
         'categoria_choices': CatalogoInsumoGeneral.CATEGORIA_CHOICES,
@@ -148,7 +148,7 @@ def editar_insumo_general(request, empresa, pk):
             messages.success(request, 'Actualizado.')
             return redirect('inventario:lista_insumos_generales')
         except (DatabaseError, ValidationError) as exc:
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la solicitud.')
     ctx = {
         'titulo': 'Editar Insumo General',
         'insumo': insumo,
@@ -200,7 +200,7 @@ def crear_lote_general(request, empresa):
             messages.success(request, f'Lote de {insumo.nombre} registrado.')
             return redirect('inventario:lista_lotes_generales')
         except (DatabaseError, ValidationError) as exc:
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la solicitud.')
 
     insumos = CatalogoInsumoGeneral.objects.filter(empresa=empresa, activo=True).order_by('nombre')
     ctx = {'titulo': 'Nuevo Lote — Generales', 'insumos': insumos}
@@ -270,7 +270,7 @@ def crear_vale(request, empresa):
                 return redirect('inventario:detalle_vale', pk=vale.pk)
             except (DatabaseError, ValidationError) as exc:
                 logger.error("Error crear vale: %s", exc, exc_info=True)
-                messages.error(request, f'Error: {exc}')
+                messages.error(request, 'No fue posible procesar la solicitud.')
 
     insumos = CatalogoInsumoGeneral.objects.filter(empresa=empresa, activo=True).order_by('nombre')
     ctx = {

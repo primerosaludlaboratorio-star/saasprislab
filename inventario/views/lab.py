@@ -185,7 +185,7 @@ def crear_reactivo(request, empresa):
             return redirect('inventario:lista_reactivos')
         except (DatabaseError, ValidationError) as exc:
             logger.error("Error al crear reactivo: %s", exc, exc_info=True)
-            messages.error(request, f'Error al guardar: {exc}')
+            messages.error(request, 'No fue posible guardar.')
 
     ctx = {
         'titulo': 'Nuevo Reactivo',
@@ -220,7 +220,7 @@ def editar_reactivo(request, empresa, pk):
             return redirect('inventario:lista_reactivos')
         except (DatabaseError, ValidationError) as exc:
             logger.error("Error al editar reactivo pk=%s: %s", pk, exc, exc_info=True)
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la solicitud.')
 
     ctx = {
         'titulo': 'Editar Reactivo',
@@ -310,7 +310,7 @@ def crear_lote(request, empresa):
             return redirect('inventario:lista_lotes')
         except (DatabaseError, ValidationError) as exc:
             logger.error("Error al crear lote: %s", exc, exc_info=True)
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la solicitud.')
 
     reactivos = CatalogoReactivoLab.objects.filter(empresa=empresa, activo=True).order_by('nombre')
     ctx = {
@@ -460,7 +460,7 @@ def crear_salida_tecnica(request, empresa):
             return redirect('inventario:lista_salidas_tecnicas')
         except (DatabaseError, ValidationError) as exc:
             logger.error("Error salida técnica: %s", exc, exc_info=True)
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la solicitud.')
 
     lotes = (
         LoteReactivoLab.objects
@@ -514,7 +514,7 @@ def crear_consumo(request, empresa):
             return redirect('inventario:lista_consumo')
         except (DatabaseError, ValidationError) as exc:
             logger.error("Error crear consumo: %s", exc, exc_info=True)
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la solicitud.')
 
     analitos = AnalitoLims.objects.filter(empresa=empresa, activo=True).order_by('nombre')
     reactivos = CatalogoReactivoLab.objects.filter(empresa=empresa, activo=True).order_by('nombre')
@@ -545,7 +545,7 @@ def editar_consumo(request, empresa, pk):
             messages.success(request, 'Fórmula actualizada.')
             return redirect('inventario:lista_consumo')
         except (DatabaseError, ValidationError) as exc:
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la solicitud.')
 
     analitos = AnalitoLims.objects.filter(empresa=empresa, activo=True).order_by('nombre')
     reactivos = CatalogoReactivoLab.objects.filter(empresa=empresa, activo=True).order_by('nombre')

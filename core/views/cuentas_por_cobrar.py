@@ -165,7 +165,7 @@ def api_registrar_pago_cxc(request):
         return JsonResponse({'status': 'error', 'mensaje': 'Cuenta no encontrada'}, status=404)
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_registrar_pago_cxc (cuentas_por_cobrar.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible procesar cuenta por cobrar'}, status=500)
 
 
 # ======================================================================
@@ -236,7 +236,7 @@ def api_crear_cxc(request):
         return JsonResponse({'status': 'error', 'mensaje': 'Convenio no encontrado o inactivo'}, status=404)
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_crear_cxc (cuentas_por_cobrar.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible procesar cuenta por cobrar'}, status=500)
 
 
 # ======================================================================
@@ -294,7 +294,7 @@ def api_crear_convenio(request):
         })
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_crear_convenio (cuentas_por_cobrar.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible procesar cuenta por cobrar'}, status=500)
 
 
 # ======================================================================

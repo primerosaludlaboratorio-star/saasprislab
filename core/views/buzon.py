@@ -212,7 +212,7 @@ def api_cambiar_estado_queja(request, queja_id):
         return JsonResponse({'status': 'error', 'mensaje': 'Queja no encontrada'}, status=404)
     except (DatabaseError, json.JSONDecodeError) as e:
         logging.getLogger(__name__).exception("Error inesperado en api_cambiar_estado_queja (buzon.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible procesar el buzón'}, status=500)
 
 
 @login_required

@@ -218,9 +218,9 @@ def api_sentinel_feedback(request):
 
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'message': 'Formato de datos invalido.'}, status=400)
-    except (DatabaseError, ValidationError, ValueError, TypeError) as e:
-        _logger.error("SENTINEL FEEDBACK ERROR: %s: %s", type(e).__name__, e, exc_info=True)
-        return JsonResponse({'status': 'error', 'message': f'Error del servidor: {type(e).__name__}'}, status=500)
+    except (DatabaseError, ValidationError, ValueError, TypeError):
+        _logger.exception("SENTINEL FEEDBACK ERROR")
+        return JsonResponse({'status': 'error', 'message': 'No fue posible registrar el reporte.'}, status=500)
 
 
 @login_required
@@ -350,7 +350,8 @@ def api_test_github_sentinel(request):
     elif request.method == 'POST':
         ok, msg = test_github_connection()
         if not ok:
-            return JsonResponse({'status': 'error', 'mensaje': f'Conexion fallida: {msg}'}, status=500)
+            logger.warning("SENTINEL GitHub test connection failed: %s", msg)
+            return JsonResponse({'status': 'error', 'mensaje': 'Conexion fallida'}, status=500)
 
         resultado = crear_github_issue({
             'tipo_excepcion': 'TestSentinel',

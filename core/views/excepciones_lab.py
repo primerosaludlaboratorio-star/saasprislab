@@ -109,7 +109,7 @@ def cancelar_orden(request, orden_id):
         logging.getLogger(__name__).exception("Error inesperado en cancelar_orden (excepciones_lab.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la excepción de laboratorio.'
         }, status=500)
 
 
@@ -179,7 +179,7 @@ def editar_paciente_orden(request, orden_id):
         logging.getLogger(__name__).exception("Error inesperado en editar_paciente_orden (excepciones_lab.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la excepción de laboratorio.'
         }, status=500)
 
 
@@ -257,7 +257,7 @@ def validar_valor_critico(request, detalle_id):
         logging.getLogger(__name__).exception("Error inesperado en validar_valor_critico (excepciones_lab.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la excepción de laboratorio.'
         }, status=500)
 
 
@@ -312,7 +312,7 @@ def rechazar_muestra(request, detalle_id):
         logging.getLogger(__name__).exception("Error inesperado en rechazar_muestra (excepciones_lab.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la excepción de laboratorio.'
         }, status=500)
 
 
@@ -413,7 +413,7 @@ def registrar_merma(request):
         logging.getLogger(__name__).exception("Error inesperado en registrar_merma (excepciones_lab.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la excepción de laboratorio.'
         }, status=500)
 
 
@@ -502,7 +502,7 @@ def agregar_estudio_orden(request, orden_id):
         })
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en agregar_estudio_orden (excepciones_lab.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible procesar excepción de laboratorio'}, status=500)
 
 
 @login_required
@@ -567,7 +567,7 @@ def eliminar_estudio_orden(request, orden_id, detalle_id):
         })
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en eliminar_estudio_orden (excepciones_lab.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible procesar excepción de laboratorio'}, status=500)
 
 
 @login_required

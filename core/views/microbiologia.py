@@ -109,7 +109,7 @@ def api_inyectar_antibiogramas(request, detalle_id):
         logging.getLogger(__name__).exception("Error inesperado en api_inyectar_antibiogramas (microbiologia.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error al inyectar antibióticos: {str(e)}'
+            'mensaje': 'No fue posible inyectar antibióticos.'
         }, status=500)
 
 
@@ -162,5 +162,5 @@ def api_guardar_sensibilidad(request, resultado_id):
         logging.getLogger(__name__).exception("Error inesperado en api_guardar_sensibilidad (microbiologia.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error al guardar: {str(e)}'
+            'mensaje': 'No fue posible guardar.'
         }, status=500)

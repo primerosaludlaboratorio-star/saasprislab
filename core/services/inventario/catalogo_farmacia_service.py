@@ -285,7 +285,7 @@ class CatalogoFarmaciaService:
             logger.exception('carga_masiva_productos: %s', e)
             return cls._result(500, {
                 'status': 'error',
-                'mensaje': str(e),
+                'mensaje': 'No fue posible procesar el catálogo de farmacia.',
                 'creados': creados,
                 'actualizados': actualizados,
                 'lotes_creados': lotes_creados,

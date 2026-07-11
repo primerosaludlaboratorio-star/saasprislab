@@ -174,7 +174,7 @@ def tool_enviar_notificacion_paciente(args: dict, empresa, user) -> dict:
         }
     except Exception as e:
         logger.exception("PRIS tool_enviar_notificacion_paciente")
-        return {"error": str(e)}
+        return {"error": "No fue posible consultar operaciones."}
 
 
 
@@ -301,7 +301,7 @@ def tool_gestionar_usuario(args: dict, empresa, user) -> dict:
             }
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en tool_gestionar_usuario (operaciones.py)")
-            return {"error": str(e)}
+            return {"error": "No fue posible consultar operaciones."}
 
     elif accion == "DESACTIVAR":
         if not username:
@@ -321,7 +321,7 @@ def tool_gestionar_usuario(args: dict, empresa, user) -> dict:
             return {"error": f"Usuario '{username}' no encontrado."}
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en tool_gestionar_usuario (operaciones.py)")
-            return {"error": str(e)}
+            return {"error": "No fue posible consultar operaciones."}
 
     return {"error": f"Acción '{accion}' no válida. Usa CREAR, MODIFICAR o DESACTIVAR."}
 

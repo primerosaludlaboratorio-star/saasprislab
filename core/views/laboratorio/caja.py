@@ -91,7 +91,7 @@ def api_cobrar_orden(request, orden_id):
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError as e:
-            return JsonResponse({'status': 'error', 'mensaje': f'Error al procesar los datos JSON: {str(e)}'}, status=400)
+            return JsonResponse({'status': 'error', 'mensaje': 'Error al procesar los datos JSON'}, status=400)
 
         try:
             cmid_pay = parse_optional_client_mutation_uuid(data.get('client_mutation_id'))
@@ -252,7 +252,7 @@ def api_cobrar_orden(request, orden_id):
             )
         except (OSError, ValueError, TypeError):
             pass
-        return JsonResponse({'status': 'error', 'mensaje': f'Error al procesar los datos JSON: {str(e)}'}, status=400)
+        return JsonResponse({'status': 'error', 'mensaje': 'Error al procesar los datos JSON'}, status=400)
     except ValueError as e:
         # BITÁCORA DE TRANSACCIÓN CRÍTICA: Fallo en cobro
         try:
@@ -265,7 +265,7 @@ def api_cobrar_orden(request, orden_id):
             )
         except (OSError, ValueError, TypeError):
             pass
-        return JsonResponse({'status': 'error', 'mensaje': f'Error de validación: {str(e)}'}, status=400)
+        return JsonResponse({'status': 'error', 'mensaje': 'Error de validación en el pago'}, status=400)
     except (IntegrityError, OperationalError, ValueError, TypeError) as e:
         import traceback
         error_details = traceback.format_exc()
@@ -277,7 +277,7 @@ def api_cobrar_orden(request, orden_id):
                 f"Usuario: {usuario.username} (ID: {usuario.id}) - "
                 f"Orden ID: {orden_id} - "
                 f"Error: {str(e)} - "
-                f"Tipo: {type(e).__name__} - "
+                "Tipo: error interno - "
                 f"Traceback: {error_details[:500]} - "
                 f"Empresa: {empresa.nombre}"
             )
@@ -287,8 +287,7 @@ def api_cobrar_orden(request, orden_id):
         logger_core.error(f"Error en api_cobrar_orden: {error_details}")
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error inesperado al procesar el pago: {str(e)}',
-            'detalle': error_details if settings.DEBUG else None
+            'mensaje': 'Error inesperado al procesar el pago',
         }, status=500)
 
 

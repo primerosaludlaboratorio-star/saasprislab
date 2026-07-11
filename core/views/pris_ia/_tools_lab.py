@@ -43,7 +43,7 @@ def _tool_buscar_reactivo_lab(args, empresa):
         return {"total": len(lotes), "lotes": lotes}
     except (ImportError, LookupError, OperationalError) as e:
         logger.warning(f"PRIS buscar_reactivo_lab: {e}")
-        return {"error": str(e), "lotes": []}
+        return {"error": "No fue posible consultar lotes.", "lotes": []}
 
 
 def _tool_consultar_stock_silos(args, empresa):
@@ -84,7 +84,7 @@ def _tool_consultar_stock_silos(args, empresa):
         return {"silo": silo, "total": len(items), "items": items}
     except (ImportError, LookupError, OperationalError) as e:
         logger.warning(f"PRIS consultar_stock_silos: {e}")
-        return {"error": str(e), "items": []}
+        return {"error": "No fue posible consultar items.", "items": []}
 
 
 def _tool_validar_orden_laboratorio(args, empresa, user):

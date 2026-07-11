@@ -79,7 +79,7 @@ def api_guardar_consentimiento(request, orden_id):
 
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_guardar_consentimiento (consentimientos.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible procesar consentimiento'}, status=500)
 
 
 @login_required
@@ -109,7 +109,7 @@ def api_verificar_consentimiento(request, orden_id):
             })
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_verificar_consentimiento (consentimientos.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible procesar consentimiento'}, status=500)
 
 
 def validar_consentimiento_requerido(orden):

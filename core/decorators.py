@@ -224,13 +224,13 @@ def check_payment_status(view_func):
                 return JsonResponse({
                     'status': 'error',
                     'mensaje': 'Error al validar el estado de pago',
-                    'detalle': str(e)
+                    'detalle': 'No fue posible validar la solicitud.'
                 }, status=500)
             
             return render(request, 'core/error.html', {
                 'titulo': '❌ Error del Sistema',
                 'mensaje': 'Ocurrió un error al validar el estado de pago.',
-                'detalle': str(e) if request.user.is_staff else 'Contacta al administrador.'
+                'detalle': 'Contacta al administrador.'
             }, status=500)
     
     return wrapper

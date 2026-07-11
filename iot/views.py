@@ -66,7 +66,7 @@ def api_crear_kiosco(request):
         return JsonResponse({'status': 'success', 'id': kiosco.id, 'mensaje': f'Kiosco "{kiosco.nombre}" creado'})
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_crear_kiosco (views.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible crear el kiosco'}, status=500)
 
 
 @login_required
@@ -197,4 +197,4 @@ def api_enviar_a_kiosco(request):
         return JsonResponse({'status': 'success', 'verificacion_id': verificacion.id})
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_enviar_a_kiosco (views.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible enviar la verificación al kiosco'}, status=500)
