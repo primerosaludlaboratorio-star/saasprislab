@@ -157,6 +157,7 @@ def procesar_dictado_resultado(transcripcion: str, detalle_orden=None) -> dict:
     Ejemplo: "glucosa 95, hemoglobina 14.5"
     """
     valores_mapeados = {}
+    transcripcion = (transcripcion or '')[:8000]
     if detalle_orden and hasattr(detalle_orden, 'estudio') and detalle_orden.estudio:
         try:
             parametros = detalle_orden.estudio.parametros.all()
@@ -185,11 +186,9 @@ def procesar_dictado_inventario(transcripcion: str, empresa=None, usuario=None) 
     Extrae cantidades y productos de un dictado de inventario.
     Ejemplo: "5 cajas de amoxicilina y 3 piezas sueltas"
     """
-    patron_cajas = re.compile(r'(\d+)\s*(?:cajas?|caja)', re.IGNORECASE)
-    patron_piezas = re.compile(r'(\d+)\s*(?:piezas?|pieza|unidades?|unidad)', re.IGNORECASE)
-    patron_producto = re.compile(
-        r'(?:de|del|la|el)\s+([A-Za-záéíóúüñÁÉÍÓÚÜÑ\s]+?)(?:\s+y|\s+con|\s*$)', re.IGNORECASE
-    )
+    transcripcion = (transcripcion or '')[:8000]
+    patron_cajas = re.compile(r'\b(\d{1,6})\s*cajas?\b', re.IGNORECASE)
+    patron_piezas = re.compile(r'\b(\d{1,6})\s*(?:piezas?|unidades?)\b', re.IGNORECASE)
 
     cantidad_cajas = 0
     cantidad_piezas = 0
@@ -201,9 +200,18 @@ def procesar_dictado_inventario(transcripcion: str, empresa=None, usuario=None) 
     m = patron_piezas.search(transcripcion)
     if m:
         cantidad_piezas = int(m.group(1))
-    m = patron_producto.search(transcripcion)
-    if m:
-        producto_nombre = m.group(1).strip()
+    texto_lower = transcripcion.lower()
+    for marcador in (' de ', ' del ', ' la ', ' el '):
+        idx = texto_lower.find(marcador)
+        if idx >= 0:
+            candidato = transcripcion[idx + len(marcador):]
+            for corte in (' y ', ' con '):
+                corte_idx = candidato.lower().find(corte)
+                if corte_idx >= 0:
+                    candidato = candidato[:corte_idx]
+                    break
+            producto_nombre = candidato.strip()[:120] or None
+            break
 
     return {
         'cantidad_cajas': cantidad_cajas,

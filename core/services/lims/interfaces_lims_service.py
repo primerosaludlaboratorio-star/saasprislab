@@ -219,8 +219,8 @@ def receptor_hl7(request):
     try:
         resultados_parseados = _parsear_mensaje(mensaje_crudo, protocolo)
     except Exception as exc:
-        logger.error(f'[HL7] Error al parsear mensaje: {exc}')
-        return JsonResponse({'error': f'Error de parseo: {exc}'}, status=422)
+        logger.error('[HL7] Error al parsear mensaje: %s', exc, exc_info=True)
+        return JsonResponse({'error': 'Error de parseo HL7'}, status=422)
 
     if not resultados_parseados:
         logger.info(f'[HL7] Mensaje recibido sin resultados OBX: {mensaje_crudo[:100]}')
@@ -251,13 +251,22 @@ def receptor_hl7(request):
         f'Críticos: {criticos}, Duplicados ignorados: {duplicados}, IP: {ip_equipo}'
     )
 
+    detalle_publico = [
+        {
+            'codigo': p.get('codigo'),
+            'estado': p.get('estado'),
+            'critico': bool(p.get('critico')),
+        }
+        for p in procesados
+    ]
+
     return JsonResponse({
         'ok': True,
         'recibidos': len(procesados),
         'integrados': integrados,
         'criticos': criticos,
         'duplicados_ignorados': duplicados,
-        'detalle': procesados,
+        'detalle': detalle_publico,
     })
 
 
@@ -905,12 +914,11 @@ def _procesar_item_hl7(
     except _FalloIntegracionClinica as fic:
         logger.warning('[HL7] Integración clínica rechazada: %s', fic.out)
         respuesta['estado'] = 'INTEGRACION_CLINICA_RECHAZADA'
-        respuesta['detalle_servicio'] = fic.out.get('body')
         respuesta['http_status_servicio'] = fic.out.get('http_status')
     except Exception as exc:
-        logger.error(f'[HL7] Error procesando item {codigo}: {exc}')
+        logger.error('[HL7] Error procesando item %s: %s', codigo, exc, exc_info=True)
         respuesta['estado'] = 'ERROR'
-        respuesta['error'] = str(exc)[:200]
+        respuesta['error'] = 'ERROR_PROCESANDO_ITEM'
 
     return respuesta
 

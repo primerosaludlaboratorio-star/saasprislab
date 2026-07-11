@@ -110,7 +110,7 @@ class Command(BaseCommand):
                 import os
                 test_dir = 'test_pdfs'
                 os.makedirs(test_dir, exist_ok=True)
-                pdf_path = os.path.join(test_dir, f'receta_{receta.folio_receta}.pdf')
+                pdf_path = os.path.join(test_dir, f'receta_{receta.pk}.pdf')
                 with open(pdf_path, 'wb') as f:
                     f.write(response.content)
                 self.stdout.write(self.style.SUCCESS(f'✓ PDF guardado en: {pdf_path}'))

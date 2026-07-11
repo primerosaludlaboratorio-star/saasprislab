@@ -11,6 +11,7 @@ Reglas de negocio (aprobadas por Dirección General):
   - El bloqueo es omnicanal: PDF, WhatsApp, Email, Portal del Paciente, QR público.
 """
 from decimal import Decimal
+from django.utils.html import escape
 from django.http import HttpResponse, JsonResponse
 
 import logging
@@ -60,7 +61,7 @@ def respuesta_retenida_html(saldo: Decimal, folio: str = "") -> HttpResponse:
     Devuelve una página HTML de error 403 que el navegador muestra al intentar
     abrir/imprimir el PDF cuando hay saldo pendiente.
     """
-    folio_txt = f" (Folio: {folio})" if folio else ""
+    folio_txt = f" (Folio: {escape(str(folio))})" if folio else ""
     html = f"""<!DOCTYPE html>
 <html lang="es">
 <head>

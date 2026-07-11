@@ -205,7 +205,7 @@ def asistente_chat(request):
         # Broad catch intencional: handler de último recurso del endpoint principal de chat.
         # Clasifica errores conocidos (rate limit, API key) antes de devolver respuesta genérica.
         error_msg = str(e)
-        logger.error(f"PRIS Error: {e}\n{traceback.format_exc()}")
+        logger.error("PRIS Error: %s\n%s", type(e).__name__, traceback.format_exc())
         if '429' in error_msg or 'Resource exhausted' in error_msg or 'quota' in error_msg.lower():
             return JsonResponse({
                 'status': 'error',
@@ -218,8 +218,8 @@ def asistente_chat(request):
             }, status=200)
         return JsonResponse({
             'status': 'error',
-            'mensaje': type(e).__name__,
-            'respuesta': f'Tuve un problema técnico: {error_msg[:120]}. Intenta de nuevo.',
+            'mensaje': 'ERROR_INTERNO',
+            'respuesta': 'Tuve un problema técnico. Intenta de nuevo.',
         }, status=200)
 
 
@@ -325,7 +325,6 @@ def api_confirmar_accion(request, accion_id):
         return JsonResponse({
             'ok': False,
             'error': 'La acción no pudo ejecutarse. Permanece pendiente.',
-            'detalle': str(exc),
         }, status=500)
 
 

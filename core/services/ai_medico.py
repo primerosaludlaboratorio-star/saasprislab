@@ -37,6 +37,24 @@ from django.conf import settings
 
 logger = logging.getLogger('ia')
 
+_AUDIO_SUFFIXES = {'.webm', '.wav', '.mp3', '.m4a', '.ogg'}
+
+
+def _safe_audio_path(path_value) -> str:
+    """Acepta solo archivos de audio existentes dentro de ubicaciones controladas."""
+    raw_path = Path(path_value).expanduser().resolve()
+    allowed_roots = [Path(tempfile.gettempdir()).resolve()]
+    media_root = getattr(settings, 'MEDIA_ROOT', None)
+    if media_root:
+        allowed_roots.append(Path(media_root).resolve())
+    if raw_path.suffix.lower() not in _AUDIO_SUFFIXES:
+        raise ValueError("Tipo de archivo de audio no permitido")
+    if not raw_path.is_file():
+        raise FileNotFoundError("Archivo de audio no encontrado")
+    if not any(raw_path == root or root in raw_path.parents for root in allowed_roots):
+        raise PermissionError("Ruta de audio fuera de ubicaciones permitidas")
+    return str(raw_path)
+
 
 # ==============================================================================
 # UTILIDADES DE ERROR
@@ -127,7 +145,7 @@ def procesar_consulta_medica(audio_file) -> Dict[str, Any]:
         audio_path = _guardar_audio_temporal(audio_file)
         
         # Subir archivo a Gemini (nueva API: client.files.upload)
-        logger.info("Subiendo archivo de audio: %s", audio_path)
+        logger.info("Subiendo archivo de audio temporal a Gemini")
         from core.utils.gemini_client import get_gemini_client
         client = get_gemini_client()
         try:
@@ -258,7 +276,7 @@ def procesar_resultados_lab(audio_file, lista_parametros: List[Dict[str, str]]) 
         audio_path = _guardar_audio_temporal(audio_file)
 
         # Subir archivo con nueva API
-        logger.info("Subiendo archivo de audio: %s", audio_path)
+        logger.info("Subiendo archivo de audio temporal a Gemini")
         from core.utils.gemini_client import get_gemini_client
         client = get_gemini_client()
         try:
@@ -345,7 +363,7 @@ def _guardar_audio_temporal(audio_file) -> str:
     """
     # Si ya es una ruta, retornarla
     if isinstance(audio_file, (str, Path)):
-        return str(audio_file)
+        return _safe_audio_path(audio_file)
     
     # Si es un archivo Django, guardarlo temporalmente
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.webm')
@@ -356,7 +374,7 @@ def _guardar_audio_temporal(audio_file) -> str:
     
     temp_file.close()
     
-    logger.info(f"Audio guardado temporalmente en: {temp_file.name}")
+    logger.info("Audio guardado temporalmente para procesamiento IA")
     return temp_file.name
 
 
@@ -369,9 +387,9 @@ def _limpiar_archivo_temporal(audio_path: str, audio_file_original):
         try:
             if os.path.exists(audio_path):
                 os.remove(audio_path)
-                logger.info(f"Archivo temporal eliminado: {audio_path}")
+                logger.info("Archivo temporal de audio eliminado")
         except Exception as e:
-            logger.warning(f"No se pudo eliminar archivo temporal: {e}")
+            logger.warning("No se pudo eliminar archivo temporal de audio: %s", type(e).__name__)
 
 
 def _extraer_json_de_respuesta(response_text: str) -> Dict[str, Any]:
