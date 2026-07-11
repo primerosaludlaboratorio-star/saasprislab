@@ -24,13 +24,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/primerosaludlaboratorio-star/PRISLAB_SaaS.git"
+    "url": "git+https://github.com/primerosaludlaboratorio-star/saasprislab.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/primerosaludlaboratorio-star/PRISLAB_SaaS/issues"
+    "url": "https://github.com/primerosaludlaboratorio-star/saasprislab/issues"
   },
-  "homepage": "https://github.com/primerosaludlaboratorio-star/PRISLAB_SaaS#readme"
+  "homepage": "https://github.com/primerosaludlaboratorio-star/saasprislab#readme"
 }

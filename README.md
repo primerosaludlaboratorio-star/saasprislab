@@ -8,7 +8,7 @@
 
 | Capa | Tecnología |
 |---|---|
-| **Backend** | Django 5.0.6 + Python 3.11+ |
+| **Backend** | Django 5.1.x + Python 3.11+ |
 | **API** | Django Ninja (OpenAPI) |
 | **Base de Datos** | PostgreSQL 15+ |
 | **Cache / Colas** | Redis + Celery + Channels |
@@ -55,7 +55,7 @@
 ```bash
 # 1. Clonar el repositorio
 git clone <repo-url>
-cd PRISLAB_SaaS-master
+cd saasprislab
 
 # 2. Crear entorno virtual
 python -m venv venv
@@ -133,7 +133,7 @@ PRISLAB_SaaS-master/
 ├── core/                # Módulo central (views, models, tasks, tests)
 │   ├── views/           # Vistas organizadas por dominio
 │   ├── models/          # Modelos compartidos
-│   ├── tests/           # 80+ tests unitarios
+│   ├── tests/           # Suite amplia de tests unitarios y de integración
 │   └── management/      # Comandos personalizados
 ├── laboratorio/         # Módulo LIMS
 ├── farmacia/            # Módulo Farmacia / PDV
