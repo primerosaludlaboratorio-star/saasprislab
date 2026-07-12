@@ -342,7 +342,7 @@ def api_cancelar_pago(request, pago_id):
     Cancela un PagoOrden y recalcula el anticipo de la OrdenDeServicio.
     Requiere rol con permiso (staff o admin).
     """
-    if not (request.user.is_staff or request.user.is_superuser or
+    if not (request.user.is_superuser or
             getattr(request.user, 'rol', '') in ['ADMIN', 'DIRECTOR', 'QUIMICO']):
         return JsonResponse({'ok': False, 'error': 'Sin permisos para cancelar pagos'}, status=403)
 

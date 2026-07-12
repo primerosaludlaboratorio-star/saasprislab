@@ -2557,7 +2557,7 @@ def api_cancelar_pago(request, pago_id):
     Después de cancelar, si el saldo > 0 el Candado Financiero se reactiva
     automáticamente (porque candado_financiero.py lee total-anticipo en tiempo real).
     """
-    if not (request.user.is_staff or request.user.is_superuser or
+    if not (request.user.is_superuser or
             getattr(request.user, 'rol', '') in ['ADMIN', 'DIRECTOR', 'QUIMICO']):
         return JsonResponse({'ok': False, 'error': 'Sin permisos para cancelar pagos'}, status=403)
 
