@@ -62,6 +62,8 @@ jobs:
           python manage.py test \
             core.tests.test_guardian_v53 \
             core.tests.test_e2e_cfdi \
+            core.tests.test_tenant_isolation \
+            core.tests.test_lims_config_tenant_security \
             laboratorio.tests.test_westgard \
             laboratorio.tests.test_cci_lj_postgres_guard \
             core.tests.test_clinical_math \
