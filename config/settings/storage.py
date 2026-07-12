@@ -15,6 +15,7 @@ from .base import BASE_DIR, IS_PRODUCTION, DEBUG, _env_bool
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+os.makedirs(STATIC_ROOT, exist_ok=True)
 
 # USE_MANIFEST_STORAGE se usa durante Docker build para que collectstatic
 # genere el manifest (staticfiles.json) que la producción necesita.
