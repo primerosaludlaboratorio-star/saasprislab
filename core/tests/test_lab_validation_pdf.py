@@ -145,6 +145,11 @@ class LabValidationPdfTest(TestCase):
 
     def test_imprimir_resultados_no_expone_orden_de_otro_tenant(self):
         empresa_otra = Empresa.objects.create(nombre='Empresa Ajena', rfc='AJE260507TST')
+        usuario_otro = Usuario.objects.create_user(
+            username='lab_pdf_otro',
+            password='test123456789',
+            empresa=empresa_otra,
+        )
         paciente_otro = Paciente.objects.create(
             empresa=empresa_otra,
             nombre_completo='Paciente Ajeno',
@@ -153,10 +158,12 @@ class LabValidationPdfTest(TestCase):
         orden_ajena = OrdenDeServicio.objects.create(
             empresa=empresa_otra,
             paciente=paciente_otro,
+            responsable_ingreso=usuario_otro,
             total=Decimal('50.00'),
             anticipo=Decimal('50.00'),
-            estado='RESULTADOS_LISTOS',
+            estado='PAGADO',
         )
+        OrdenDeServicio.objects.filter(id=orden_ajena.id).update(estado='RESULTADOS_LISTOS')
 
         response = self.client.get(reverse('imprimir_resultados', args=[orden_ajena.id]))
 
