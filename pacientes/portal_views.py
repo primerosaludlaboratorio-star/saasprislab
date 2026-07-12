@@ -293,6 +293,7 @@ def portal_descargar_resultado(request, orden_id):
         OrdenDeServicio,
         id=orden_id,
         paciente=paciente,
+        empresa=paciente.empresa,
         estado='ENTREGADO'
     )
 
