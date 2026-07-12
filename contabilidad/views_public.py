@@ -23,7 +23,7 @@ def _resolver_orden_por_token(ticket):
     except (TypeError, ValueError, AttributeError):
         return None
     return (
-        OrdenDeServicio.objects
+        OrdenDeServicio.objects_all
         .select_related('empresa', 'responsable_ingreso')
         .filter(token_acceso=token)
         .first()

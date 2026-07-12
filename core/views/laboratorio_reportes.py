@@ -191,7 +191,7 @@ def validar_resultado(request, token):
         })
 
     try:
-        orden = OrdenDeServicio.objects.select_related(
+        orden = OrdenDeServicio.objects_all.select_related(
             'paciente', 'empresa', 'medico_referente'
         ).get(token_acceso=token_uuid)
 
