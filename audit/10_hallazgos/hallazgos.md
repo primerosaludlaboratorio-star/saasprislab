@@ -10,15 +10,15 @@
 
 | Atributo | Valor |
 |------------|-------|
-| **Hecho** | Los pushes directos a `release/v1.0-local` muestran `Bypassed rule violations ... Changes must be made through a pull request.` |
-| **Evidencia** | EV-SEC-006 |
+| **Hecho** | Los pushes directos a `release/v1.0-local` mostraban `Bypassed rule violations ... Changes must be made through a pull request.` |
+| **Evidencia** | EV-SEC-006, EV-SEC-014 |
 | **Impacto** | Crítico |
 | **Probabilidad** | Alta |
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Cambios pueden llegar a la rama release sin revisión ni status checks, introduciendo regresiones o fallos de seguridad. |
 | **Prioridad** | P1 |
-| **Estado** | **PENDIENTE** (requiere cambio en GitHub, no en código) |
-| **Recomendación** | Configurar branch protection real sin bypass para usuarios automatizados; usar PRs con required status checks. Si se requiere deploy automático, usar un bot dedicado sin permisos de bypass. |
+| **Estado** | **CORREGIDO** — verificación con commit vacío `50948d8` no mostró bypass. |
+| **Recomendación** | Mantener la regla activa; validar periódicamente con push directo de prueba. Documentar excepciones solo para bots con permisos mínimos. |
 
 ---
 

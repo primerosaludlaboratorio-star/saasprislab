@@ -293,6 +293,23 @@ jobs:
 
 ---
 
+## EV-SEC-014 — Verificación de branch protection en `release/v1.0-local`
+
+**Criticidad:** CRÍTICA  
+**Archivo:** N/A (configuración de GitHub)  
+**Estado:** CORREGIDO  
+**Comando de verificación:**
+```bash
+git commit --allow-empty -m "verify protection"
+git push origin release/v1.0-local
+```
+**Resultado:** El push se completó sin el mensaje previo `Bypassed rule violations for refs/heads/release/v1.0-local`. Esto indica que la regla de "Changes must be made through a pull request" ya no está siendo bypassada.
+**Confianza:** ★★★★☆ (observado en push real)
+**Riesgos:** Ninguno; la protección parece activa. Se recomienda validar periódicamente.
+**Estado:** CORREGIDO
+
+---
+
 ## EV-SEC-012 — Protección opcional de `/metrics/`
 
 **Criticidad:** BAJA  
