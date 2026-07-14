@@ -1,0 +1,194 @@
+# Resumen de inventario PRISLAB SaaS
+
+- Total de archivos propios: 1897
+- Total de líneas aproximadas: 370928
+
+## Directorios principales
+
+| Directorio | Archivos |
+|------------|----------|
+| core | 776 |
+| docs | 136 |
+| consultorio | 80 |
+| inventario | 78 |
+| laboratorio | 77 |
+| farmacia | 62 |
+| mantenimiento | 57 |
+| lims | 46 |
+| contabilidad | 40 |
+| static | 39 |
+| marketing | 35 |
+| config | 30 |
+| pacientes | 27 |
+| scripts | 25 |
+| seguridad | 24 |
+| bienestar | 23 |
+| academia | 21 |
+| templates | 21 |
+| logistica | 18 |
+| ia | 17 |
+| tools | 17 |
+| enfermeria | 15 |
+| iot | 15 |
+| recepcion | 15 |
+| middleware_local | 12 |
+| reglas_negocio | 11 |
+| pris_ai_core | 10 |
+| suscripciones | 10 |
+| .github | 9 |
+| datos_lims | 7 |
+| monitoring | 6 |
+| release_candidate | 5 |
+| nginx | 4 |
+| logs | 2 |
+| .cursorignore | 1 |
+| .dockerignore | 1 |
+| .env.agent.example | 1 |
+| .env.example | 1 |
+| .env.production.example | 1 |
+| .env.staging.example | 1 |
+| .gitattributes | 1 |
+| .gitignore | 1 |
+| .runtimeconfig.json.backup | 1 |
+| ACCESO_Y_DEPLOY_OPERATIVO_VPS.md | 1 |
+| AI_COORDINATION_STATUS.md | 1 |
+| ANEXO_TECNICO_PRISLAB_LEGACY_VS_SAAS.md | 1 |
+| CARGAR_INVENTARIO_AHORA.bat | 1 |
+| CHECKLIST_CONTROL_PRISLAB.md | 1 |
+| DEPLOY.md | 1 |
+| DESPLEGAR_A_PRODUCCION.bat | 1 |
+
+## Extensiones
+
+| Extensión | Archivos |
+|-----------|----------|
+| .py | 1153 |
+| .html | 423 |
+| .md | 112 |
+| .txt | 67 |
+| .js | 30 |
+| .yml | 15 |
+| .sh | 12 |
+| .mjs | 12 |
+| .json | 12 |
+| .csv | 11 |
+| .css | 10 |
+| (sin extensión) | 7 |
+| .example | 6 |
+| .bat | 6 |
+| .conf | 4 |
+| .service | 3 |
+| .svg | 3 |
+| .xlsx | 2 |
+| .ps1 | 2 |
+| .pdf | 2 |
+| .backup | 1 |
+| .py" | 1 |
+| .png | 1 |
+| .yaml | 1 |
+| .dat | 1 |
+
+## Archivos más grandes (top 100)
+
+| Líneas | Archivo |
+|--------|---------|
+| 14508 | `tools/url_inventory.json` |
+| 14286 | `docs/audit/INVENTARIO_URLS.txt` |
+| 4620 | `resultados.csv` |
+| 4186 | `core/templates/core/recepcion_lab.html` |
+| 3165 | `core/views/laboratorio.py` |
+| 2097 | `docs/audit/DOCS_AUDIT_MAESTRO.md` |
+| 2085 | `docs/audit/FUNCIONES_EXHAUSTIVO_POR_RUTA.md` |
+| 1960 | `core/templates/base.html` |
+| 1742 | `inventario.csv` |
+| 1718 | `Productos-farmacia-2026-02-10-10-31.csv` |
+| 1670 | `core/views/pris_ia.py` |
+| 1645 | `core/templates/includes/sidebar.html` |
+| 1621 | `core/templates/core/captura_resultados_industrial.html` |
+| 1487 | `core/migrations/0001_initial.py` |
+| 1400 | `core/management/commands/omni_audit.py` |
+| 1270 | `core/services/motor_reportes_lab.py` |
+| 1250 | `REPORTE_COMPLETO_PARA_CLAUDE_2026-06-18.md` |
+| 1222 | `consultorio/templates/consultorio/nueva_consulta_soap.html` |
+| 1183 | `consultorio/templates/consultorio/nueva_consulta_gemelo.html` |
+| 1148 | `datos_lims/Parametros.csv` |
+| 1146 | `config/settings.py` |
+| 1098 | `core/models/expediente_blindaje.py` |
+| 1089 | `docs/LEVANTAMIENTO_TOPOGRAFICO_PRISLAB_SAAS.md` |
+| 1073 | `tools/run_ai_agent_audit.mjs` |
+| 1044 | `core/management/commands/stress_test_extremo.py` |
+| 1041 | `consultorio/views/api_consulta.py` |
+| 1030 | `core/views/medico.py` |
+| 1014 | `static/css/prislab_shared.css` |
+| 1010 | `core/tests_e2e.py` |
+| 1004 | `laboratorio/templates/laboratorio/crear_orden.html` |
+| 983 | `core/admin.py` |
+| 981 | `core/templates/core/preparacion_toma.html` |
+| 956 | `core/models/ventas.py` |
+| 936 | `core/models/operaciones.py` |
+| 935 | `core/services/lims/interfaces_lims_service.py` |
+| 908 | `core/middleware/sentinel.py` |
+| 876 | `core/views/pris_jarvis.py` |
+| 875 | `consultorio/views/reportes.py` |
+| 865 | `consultorio/views/clinico.py` |
+| 834 | `consultorio/tests.py` |
+| 829 | `core/models/clinico.py` |
+| 820 | `config/urls.py` |
+| 811 | `core/templates/core/pris_chat.html` |
+| 803 | `core/management/commands/simular_flujo_completo.py` |
+| 793 | `core/templates/core/captura_resultados.html` |
+| 790 | `farmacia/tests.py` |
+| 787 | `core/services/lims/resultados_lims_service.py` |
+| 785 | `core/templates/core/pris_ia_assistant.html` |
+| 780 | `pacientes/templates/pacientes/historial_360.html` |
+| 778 | `farmacia/views/inventario.py` |
+| 769 | `tools/run_human_ui_audit.mjs` |
+| 763 | `farmacia/views/devoluciones.py` |
+| 760 | `static/js/pdv_farmacia.js` |
+| 758 | `datos_lims/Examenes_Perfil.csv` |
+| 754 | `core/templates/core/dashboard_director.html` |
+| 751 | `core/services/ventas/cobro_service.py` |
+| 751 | `marketing/views_legacy.py` |
+| 745 | `core/views/laboratorio/calidad.py` |
+| 716 | `farmacia/templates/farmacia/registrar_compra.html` |
+| 707 | `core/templates/pris/widget.html` |
+| 701 | `core/templates/core/lista_trabajo.html` |
+| 697 | `core/models/laboratorio.py` |
+| 695 | `seguridad/models.py` |
+| 685 | `laboratorio/management/commands/importar_catalogo_maestro.py` |
+| 684 | `ia/views.py` |
+| 676 | `core/templates/core/control_calidad.html` |
+| 670 | `core/management/commands/setup_demo_total.py` |
+| 668 | `inventario/views/lab.py` |
+| 658 | `core/templates/core/detalle_orden.html` |
+| 657 | `core/templates/core/laboratorio/captura_resultados.html` |
+| 657 | `core/views/war_room.py` |
+| 649 | `laboratorio/management/commands/migrar_lab_completo.py` |
+| 641 | `consultorio/templates/consultorio/cobro_consulta.html` |
+| 636 | `core/models/base.py` |
+| 629 | `core/views/entrega_resultados.py` |
+| 625 | `core/services/motor_recetas.py` |
+| 625 | `datos_lims/Tarifa_estudios de laboratorio.csv` |
+| 622 | `core/templates/core/laboratorio/monitor_produccion.html` |
+| 621 | `tarifas.csv` |
+| 616 | `core/views/monitor_produccion.py` |
+| 614 | `core/views/excepciones_lab.py` |
+| 602 | `core/views/paciente_detalle.py` |
+| 598 | `core/views/pris_ia/_tools_lectura.py` |
+| 598 | `core/views/reportes_financieros.py` |
+| 594 | `docs/ai_coordination/INVENTARIO_REAL_REPO.md` |
+| 588 | `core/management/commands/war_room_stress_test.py` |
+| 578 | `pacientes/views.py` |
+| 575 | `core/tests_e2e_playwright.py` |
+| 575 | `core/views/blindaje_expediente.py` |
+| 575 | `core/views/rh.py` |
+| 571 | `core/templates/pacientes/historial_clinico.html` |
+| 565 | `core/views/general.py` |
+| 563 | `core/services/ai_medico.py` |
+| 559 | `core/utils/pdf_generator.py` |
+| 558 | `docs/ai_coordination/INVENTARIO_MAESTRO_TOTAL.md` |
+| 555 | `core/templates/core/resultados_print.html` |
+| 554 | `docs/ai_coordination/AI_COORDINATION_STATUS.md` |
+| 551 | `docs/ai_coordination/ESTADO_CANONICO_RAMA_RELEASE_V1_0_LOCAL.md` |
+| 550 | `consultorio/pdf_views.py` |
+| 548 | `core/templates/core/lims/editar_parametro.html` |
