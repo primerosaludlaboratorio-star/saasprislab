@@ -79,6 +79,7 @@ env_produccion.txt
 !docs/audit/GUARDIAN_360_REPORT.md
 *_REPORTE.md
 AUDITORIA_*.md
+!audit/AUDITORIA_COMPLETA_E2E.md
 CICLO*_*.md
 QA_*.md
 REPORTE_*.md
