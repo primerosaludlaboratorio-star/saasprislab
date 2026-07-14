@@ -39,15 +39,17 @@ System check identified 4 issues (0 silenced).
 **Criticidad:** ALTA  
 **Archivo:** Múltiples `tests.py`, `tests/`  
 **Estado:** NO EJECUTABLE EN ESTE ENTORNO  
-**Comando intentado:**
+**Comandos intentados:**
 ```bash
 python manage.py test core lims --verbosity=1
+python manage.py test core.tests.test_monitoring --verbosity=1
 ```
-**Resultado:** El comando no finalizó en el tiempo de espera permitido (más de 90 segundos) y fue terminado.
-**Explicación:** Sin base de datos PostgreSQL real, Django usa SQLite fallback. La suite `core lims` incluye muchos tests y posiblemente intentos de conexión a servicios externos, causando timeouts. No se pudo obtener un reporte de cobertura.
+**Resultado:** Ambos no finalizaron en tiempo razonable (más de 90s) y fueron terminados, incluso tras configurar SQLite en memoria (`:memory:`) para tests.
+**Acción correctiva:** Se configuró `DATABASES['default']['NAME'] = ':memory:'` y `TEST['NAME'] = ':memory:'` cuando `_TESTING=True` y no hay `DB_HOST`, en `config/settings.py`.
+**Explicación:** El cuelgue persiste. Posibles causas: middlewares, signals, migraciones pesadas o intentos de conexión a servicios externos durante `setUp`/migraciones. No se pudo obtener un reporte de cobertura.
 **Confianza:** ★★★★★ (intentado)
-**Riesgos:** No se pudo validar regresión funcional localmente.
-**Estado:** NO EJECUTABLE EN ESTE ENTORNO
+**Riesgos:** No se pudo validar regresión funcional localmente. El CI ejecuta un subconjunto controlado en `.github/workflows/main.yml`.
+**Estado:** PARCIALMENTE ABORDADO — requiere depuración aparte con `--verbosity=3 --debug-mode` o entorno Docker/PostgreSQL.
 
 ---
 

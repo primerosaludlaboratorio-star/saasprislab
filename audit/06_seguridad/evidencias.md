@@ -293,6 +293,51 @@ jobs:
 
 ---
 
+## EV-SEC-012 — Protección opcional de `/metrics/`
+
+**Criticidad:** BAJA  
+**Archivo:** `core/views/monitoring.py`, `config/settings.py`  
+**Estado:** CORREGIDO  
+**Fragmento:**
+```python
+token = getattr(settings, 'PRISLAB_METRICS_TOKEN', '') or ''
+if token:
+    provided = (
+        request.headers.get('X-Prometheus-Token', '')
+        or request.GET.get('token', '')
+    )
+    if not provided:
+        return HttpResponseForbidden('Forbidden: token de scraping requerido')
+    if not secrets.compare_digest(provided.strip(), token.strip()):
+        return HttpResponseForbidden('Forbidden: token inválido')
+```
+**Explicación:** El endpoint `/metrics/` ahora soporta protección por token configurable (`PRISLAB_METRICS_TOKEN`) a través del header `X-Prometheus-Token` o query param `?token=`. Si no se configura, permanece abierto para scraping.
+**Confianza:** ★★★★☆ (código)
+**Riesgos:** Si el token no está configurado en producción, las métricas siguen expuestas.
+**Estado:** CORREGIDO
+
+---
+
+## EV-SEC-013 — `DEBUG=True` prohibido en producción
+
+**Criticidad:** MEDIA  
+**Archivo:** `config/settings.py`  
+**Estado:** CORREGIDO  
+**Fragmento:**
+```python
+if IS_PRODUCTION and DEBUG:
+    raise RuntimeError(
+        '🔴 PRISLAB SEGURIDAD: DEBUG=True no está permitido en producción. '
+        'Configure DEBUG=False y PRISLAB_ENV=development solo para entornos locales.'
+    )
+```
+**Explicación:** El sistema ahora rechaza el arranque en producción si `DEBUG=True`.
+**Confianza:** ★★★★☆ (código)
+**Riesgos:** Ninguno; previene exposición de trazas y datos sensibles.
+**Estado:** CORREGIDO
+
+---
+
 ## EV-SEC-010 — Auth: uso de AUTH_USER_MODEL custom
 
 **Criticidad:** MEDIA  

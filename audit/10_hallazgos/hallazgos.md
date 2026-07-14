@@ -74,14 +74,15 @@
 
 | Atributo | Valor |
 |------------|-------|
-| **Hecho** | `python manage.py test core lims` no finalizó en tiempo razonable (terminado tras ~90s). |
+| **Hecho** | `python manage.py test core lims` no finalizó en tiempo razonable (terminado tras ~90s). Incluso el subconjunto `core.tests.test_monitoring` se cuelga al crear la base de datos de prueba. |
 | **Evidencia** | EV-TEST-002 |
 | **Impacto** | Alto |
 | **Probabilidad** | Alta |
 | **Esfuerzo** | Medio |
 | **Riesgo resultante** | No se pudo validar regresión funcional localmente. Bugs pueden pasar a staging/producción sin detección. |
 | **Prioridad** | P1 |
-| **Recomendación** | Configurar base de datos de prueba PostgreSQL o SQLite en memoria; asegurar que la suite corra en < 5 min en CI. |
+| **Estado** | **PARCIALMENTE ABORDADO**: se configuró SQLite en memoria para tests (`:memory:`) cuando no hay `DB_HOST`, pero el cuelgue persiste. Posible causa: middleware, signals o conexión a servicios externos durante migraciones/test setup. |
+| **Recomendación** | Requiere depuración aparte: ejecutar con `--verbosity=3 --debug-mode` en entorno con Docker/PostgreSQL. Validar CI actual (`.github/workflows/main.yml`) que ejecuta subconjuntos controlados. |
 
 ---
 
@@ -157,7 +158,8 @@
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Un deploy con `DEBUG=True` en producción no alertaría sobre SECRET_KEY inseguro. |
 | **Prioridad** | P2 |
-| **Recomendación** | Considerar advertencia también cuando `DEBUG=True`, o usar un validador de arranque independiente del modo. |
+| **Estado** | **CORREGIDO** en `config/settings.py` |
+| **Recomendación** | ~~Considerar advertencia también cuando `DEBUG=True`.~~ Corregido: ahora se lanza `RuntimeError` si `IS_PRODUCTION=True` y `DEBUG=True`. |
 
 ---
 
@@ -188,7 +190,8 @@
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Fuga de métricas internas (latencias, contadores) si la URL es accesible desde internet. |
 | **Prioridad** | P3 |
-| **Recomendación** | Restringir `/metrics/` a redes internas o añadir token de scraping en middleware. |
+| **Estado** | **CORREGIDO** en `core/views/monitoring.py` y `config/settings.py` |
+| **Recomendación** | ~~Restringir `/metrics/` a redes internas o añadir token de scraping en middleware.~~ Corregido: `/metrics/` ahora valida `PRISLAB_METRICS_TOKEN` vía header `X-Prometheus-Token` o query param `?token=...` cuando está configurado. Si no está configurado, el endpoint sigue abierto para scraping. |
 
 ---
 

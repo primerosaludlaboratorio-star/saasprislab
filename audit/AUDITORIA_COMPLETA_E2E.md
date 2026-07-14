@@ -926,15 +926,17 @@ System check identified 4 issues (0 silenced).
 **Criticidad:** ALTA  
 **Archivo:** Múltiples `tests.py`, `tests/`  
 **Estado:** NO EJECUTABLE EN ESTE ENTORNO  
-**Comando intentado:**
+**Comandos intentados:**
 ```bash
 python manage.py test core lims --verbosity=1
+python manage.py test core.tests.test_monitoring --verbosity=1
 ```
-**Resultado:** El comando no finalizó en el tiempo de espera permitido (más de 90 segundos) y fue terminado.
-**Explicación:** Sin base de datos PostgreSQL real, Django usa SQLite fallback. La suite `core lims` incluye muchos tests y posiblemente intentos de conexión a servicios externos, causando timeouts. No se pudo obtener un reporte de cobertura.
+**Resultado:** Ambos no finalizaron en tiempo razonable (más de 90s) y fueron terminados, incluso tras configurar SQLite en memoria (`:memory:`) para tests.
+**Acción correctiva:** Se configuró `DATABASES['default']['NAME'] = ':memory:'` y `TEST['NAME'] = ':memory:'` cuando `_TESTING=True` y no hay `DB_HOST`, en `config/settings.py`.
+**Explicación:** El cuelgue persiste. Posibles causas: middlewares, signals, migraciones pesadas o intentos de conexión a servicios externos durante `setUp`/migraciones. No se pudo obtener un reporte de cobertura.
 **Confianza:** ★★★★★ (intentado)
-**Riesgos:** No se pudo validar regresión funcional localmente.
-**Estado:** NO EJECUTABLE EN ESTE ENTORNO
+**Riesgos:** No se pudo validar regresión funcional localmente. El CI ejecuta un subconjunto controlado en `.github/workflows/main.yml`.
+**Estado:** PARCIALMENTE ABORDADO — requiere depuración aparte con `--verbosity=3 --debug-mode` o entorno Docker/PostgreSQL.
 
 ---
 
@@ -1273,6 +1275,51 @@ jobs:
 
 ---
 
+## EV-SEC-012 — Protección opcional de `/metrics/`
+
+**Criticidad:** BAJA  
+**Archivo:** `core/views/monitoring.py`, `config/settings.py`  
+**Estado:** CORREGIDO  
+**Fragmento:**
+```python
+token = getattr(settings, 'PRISLAB_METRICS_TOKEN', '') or ''
+if token:
+    provided = (
+        request.headers.get('X-Prometheus-Token', '')
+        or request.GET.get('token', '')
+    )
+    if not provided:
+        return HttpResponseForbidden('Forbidden: token de scraping requerido')
+    if not secrets.compare_digest(provided.strip(), token.strip()):
+        return HttpResponseForbidden('Forbidden: token inválido')
+```
+**Explicación:** El endpoint `/metrics/` ahora soporta protección por token configurable (`PRISLAB_METRICS_TOKEN`) a través del header `X-Prometheus-Token` o query param `?token=`. Si no se configura, permanece abierto para scraping.
+**Confianza:** ★★★★☆ (código)
+**Riesgos:** Si el token no está configurado en producción, las métricas siguen expuestas.
+**Estado:** CORREGIDO
+
+---
+
+## EV-SEC-013 — `DEBUG=True` prohibido en producción
+
+**Criticidad:** MEDIA  
+**Archivo:** `config/settings.py`  
+**Estado:** CORREGIDO  
+**Fragmento:**
+```python
+if IS_PRODUCTION and DEBUG:
+    raise RuntimeError(
+        '🔴 PRISLAB SEGURIDAD: DEBUG=True no está permitido en producción. '
+        'Configure DEBUG=False y PRISLAB_ENV=development solo para entornos locales.'
+    )
+```
+**Explicación:** El sistema ahora rechaza el arranque en producción si `DEBUG=True`.
+**Confianza:** ★★★★☆ (código)
+**Riesgos:** Ninguno; previene exposición de trazas y datos sensibles.
+**Estado:** CORREGIDO
+
+---
+
 ## EV-SEC-010 — Auth: uso de AUTH_USER_MODEL custom
 
 **Criticidad:** MEDIA  
@@ -1466,14 +1513,15 @@ docker: The term 'docker' is not recognized as a name of a cmdlet, function, scr
 
 | Atributo | Valor |
 |------------|-------|
-| **Hecho** | `python manage.py test core lims` no finalizó en tiempo razonable (terminado tras ~90s). |
+| **Hecho** | `python manage.py test core lims` no finalizó en tiempo razonable (terminado tras ~90s). Incluso el subconjunto `core.tests.test_monitoring` se cuelga al crear la base de datos de prueba. |
 | **Evidencia** | EV-TEST-002 |
 | **Impacto** | Alto |
 | **Probabilidad** | Alta |
 | **Esfuerzo** | Medio |
 | **Riesgo resultante** | No se pudo validar regresión funcional localmente. Bugs pueden pasar a staging/producción sin detección. |
 | **Prioridad** | P1 |
-| **Recomendación** | Configurar base de datos de prueba PostgreSQL o SQLite en memoria; asegurar que la suite corra en < 5 min en CI. |
+| **Estado** | **PARCIALMENTE ABORDADO**: se configuró SQLite en memoria para tests (`:memory:`) cuando no hay `DB_HOST`, pero el cuelgue persiste. Posible causa: middleware, signals o conexión a servicios externos durante migraciones/test setup. |
+| **Recomendación** | Requiere depuración aparte: ejecutar con `--verbosity=3 --debug-mode` en entorno con Docker/PostgreSQL. Validar CI actual (`.github/workflows/main.yml`) que ejecuta subconjuntos controlados. |
 
 ---
 
@@ -1549,7 +1597,8 @@ docker: The term 'docker' is not recognized as a name of a cmdlet, function, scr
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Un deploy con `DEBUG=True` en producción no alertaría sobre SECRET_KEY inseguro. |
 | **Prioridad** | P2 |
-| **Recomendación** | Considerar advertencia también cuando `DEBUG=True`, o usar un validador de arranque independiente del modo. |
+| **Estado** | **CORREGIDO** en `config/settings.py` |
+| **Recomendación** | ~~Considerar advertencia también cuando `DEBUG=True`.~~ Corregido: ahora se lanza `RuntimeError` si `IS_PRODUCTION=True` y `DEBUG=True`. |
 
 ---
 
@@ -1580,7 +1629,8 @@ docker: The term 'docker' is not recognized as a name of a cmdlet, function, scr
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Fuga de métricas internas (latencias, contadores) si la URL es accesible desde internet. |
 | **Prioridad** | P3 |
-| **Recomendación** | Restringir `/metrics/` a redes internas o añadir token de scraping en middleware. |
+| **Estado** | **CORREGIDO** en `core/views/monitoring.py` y `config/settings.py` |
+| **Recomendación** | ~~Restringir `/metrics/` a redes internas o añadir token de scraping en middleware.~~ Corregido: `/metrics/` ahora valida `PRISLAB_METRICS_TOKEN` vía header `X-Prometheus-Token` o query param `?token=...` cuando está configurado. Si no está configurado, el endpoint sigue abierto para scraping. |
 
 ---
 
@@ -1655,13 +1705,13 @@ docker: The term 'docker' is not recognized as a name of a cmdlet, function, scr
 | Área | Estado | Notas |
 |------|--------|-------|
 | **Infraestructura / CI-CD** | Funcional | Docker, Compose, Nginx, CI/CD y monitoreo implementados. Sin verificación local por falta de Docker. |
-| **Seguridad** | Funcional parcial | Buenas prácticas en settings, middleware y workflows. Riesgo crítico: bypass de branch protection. Riesgo alto: fallback de SECRET_KEY y tokens. |
+| **Seguridad** | Funcional parcial | Buenas prácticas en settings, middleware y workflows. Riesgo crítico: bypass de branch protection. Riesgos altos H-002, H-003, H-004 corregidos. `/metrics/` protección opcional implementada. |
 | **Base de datos / Modelos** | Implementado | PostgreSQL/SQLite configurable, modelo de usuario custom, relaciones LIMS actualizadas. No se verificó integridad referencial por falta de BD. |
 | **Backend funcional** | Implementado | Múltiples dominios y vistas. Completado Fase 2 (Bloques 2, 3, 8, 13) y Fase 4 (governance/RBAC/performance) por Antigravity. |
 | **API** | Implementado | 1,812 rutas registradas; API Ninja presente; endpoints de monitoreo expuestos. |
 | **Frontend / UI** | Implementado | ~423 templates HTML, JS/CSS. No se auditaron visualmente todos. |
 | **IA / MCA** | Implementado | Pris IA, Jarvis, agent tools, OCR/voz. Requiere API keys de terceros. |
-| **Pruebas** | No ejecutable en este entorno | Suite intentada y abortada por timeout. `check --deploy` sí se ejecutó con 4 warnings esperados. |
+| **Pruebas** | Parcialmente abordado | Se configuró SQLite `:memory:` para tests. La suite aún se cuelga localmente; requiere depuración en entorno Docker/PostgreSQL. `check --deploy` se ejecutó con 4 warnings esperados. |
 | **Métricas de calidad** | No verificable | `radon`, `lizard`, `jscpd` no instalados. |
 
 ---
@@ -1679,7 +1729,9 @@ docker: The term 'docker' is not recognized as a name of a cmdlet, function, scr
 
 ### Adicionales corregidos
 6. **H-006 — `SECURE_SSL_REDIRECT` desactivado por defecto**: ✅ corregido. Ahora default es `IS_PRODUCTION`.
-7. **H-011 — CORS sin orígenes en producción**: ✅ corregido. Ahora `RuntimeError` si no está configurado en producción.
+7. **H-010 — `DEBUG=True` en producción**: ✅ corregido. Ahora se rechaza el arranque si `IS_PRODUCTION=True` y `DEBUG=True`.
+8. **H-011 — CORS sin orígenes en producción**: ✅ corregido. Ahora `RuntimeError` si no está configurado en producción.
+9. **H-012 — `/metrics/` expuesto**: ✅ corregido. Protección opcional por token `PRISLAB_METRICS_TOKEN` implementada.
 
 ---
 

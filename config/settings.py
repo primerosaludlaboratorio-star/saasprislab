@@ -23,6 +23,9 @@ DEEPSEEK_API_URL = os.environ.get(
 PRISCI_WEBHOOK_TOKEN = os.environ.get("PRISCI_WEBHOOK_TOKEN", "").strip()
 PRISCI_WEBHOOK_VERIFY_TOKEN = os.environ.get("PRISCI_WEBHOOK_VERIFY_TOKEN", "").strip()
 
+# Token opcional para proteger el endpoint /metrics/ de scraping no autorizado.
+PRISLAB_METRICS_TOKEN = os.environ.get("PRISLAB_METRICS_TOKEN", "").strip()
+
 # Canonicalización: una sola clave puede alimentar Gemini.
 # Orden de preferencia: GOOGLE_API_KEY -> GOOGLE_GEMINI_API_KEY -> GEMINI_API_KEY
 if not GOOGLE_API_KEY:
@@ -178,6 +181,12 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # ── Validación de seguridad en producción ────────────────────────────────────
+if IS_PRODUCTION and DEBUG:
+    raise RuntimeError(
+        '🔴 PRISLAB SEGURIDAD: DEBUG=True no está permitido en producción. '
+        'Configure DEBUG=False y PRISLAB_ENV=development solo para entornos locales.'
+    )
+
 _CLAVES_INSEGURAS = {
     'django-insecure-prislab-saas-key-2025',
     'dev-only-fallback-key-not-for-production-prislab-2026-local',
@@ -361,11 +370,17 @@ if os.environ.get('DB_HOST'):
     # Sin print en producción
 else:
     # SQLite para desarrollo local (timeout 60s para evitar "database is locked" en carga masiva)
+    _sqlite_db_name = BASE_DIR / 'db.sqlite3'
+    if _TESTING:
+        # Tests: usar memoria para mayor velocidad y evitar contaminación de db.sqlite3
+        _sqlite_db_name = ':memory:'
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'NAME': _sqlite_db_name,
             'OPTIONS': {'timeout': 60},
+            # En memoria cada test runner requiere conexión persistente
+            'TEST': {'NAME': ':memory:'},
         }
     }
 

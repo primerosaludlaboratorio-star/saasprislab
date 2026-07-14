@@ -29,13 +29,13 @@
 | Área | Estado | Notas |
 |------|--------|-------|
 | **Infraestructura / CI-CD** | Funcional | Docker, Compose, Nginx, CI/CD y monitoreo implementados. Sin verificación local por falta de Docker. |
-| **Seguridad** | Funcional parcial | Buenas prácticas en settings, middleware y workflows. Riesgo crítico: bypass de branch protection. Riesgo alto: fallback de SECRET_KEY y tokens. |
+| **Seguridad** | Funcional parcial | Buenas prácticas en settings, middleware y workflows. Riesgo crítico: bypass de branch protection. Riesgos altos H-002, H-003, H-004 corregidos. `/metrics/` protección opcional implementada. |
 | **Base de datos / Modelos** | Implementado | PostgreSQL/SQLite configurable, modelo de usuario custom, relaciones LIMS actualizadas. No se verificó integridad referencial por falta de BD. |
 | **Backend funcional** | Implementado | Múltiples dominios y vistas. Completado Fase 2 (Bloques 2, 3, 8, 13) y Fase 4 (governance/RBAC/performance) por Antigravity. |
 | **API** | Implementado | 1,812 rutas registradas; API Ninja presente; endpoints de monitoreo expuestos. |
 | **Frontend / UI** | Implementado | ~423 templates HTML, JS/CSS. No se auditaron visualmente todos. |
 | **IA / MCA** | Implementado | Pris IA, Jarvis, agent tools, OCR/voz. Requiere API keys de terceros. |
-| **Pruebas** | No ejecutable en este entorno | Suite intentada y abortada por timeout. `check --deploy` sí se ejecutó con 4 warnings esperados. |
+| **Pruebas** | Parcialmente abordado | Se configuró SQLite `:memory:` para tests. La suite aún se cuelga localmente; requiere depuración en entorno Docker/PostgreSQL. `check --deploy` se ejecutó con 4 warnings esperados. |
 | **Métricas de calidad** | No verificable | `radon`, `lizard`, `jscpd` no instalados. |
 
 ---
@@ -53,7 +53,9 @@
 
 ### Adicionales corregidos
 6. **H-006 — `SECURE_SSL_REDIRECT` desactivado por defecto**: ✅ corregido. Ahora default es `IS_PRODUCTION`.
-7. **H-011 — CORS sin orígenes en producción**: ✅ corregido. Ahora `RuntimeError` si no está configurado en producción.
+7. **H-010 — `DEBUG=True` en producción**: ✅ corregido. Ahora se rechaza el arranque si `IS_PRODUCTION=True` y `DEBUG=True`.
+8. **H-011 — CORS sin orígenes en producción**: ✅ corregido. Ahora `RuntimeError` si no está configurado en producción.
+9. **H-012 — `/metrics/` expuesto**: ✅ corregido. Protección opcional por token `PRISLAB_METRICS_TOKEN` implementada.
 
 ---
 

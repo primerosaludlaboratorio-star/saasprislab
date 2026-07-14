@@ -3,13 +3,18 @@
 # No requiere dependencias externas: métricas básicas de salud, uptime y
 # contadores recolectados por SreMetricsMiddleware.
 
+import logging
+import secrets
 import time
 from datetime import datetime, timezone
 
+from django.conf import settings
 from django.db import connection, OperationalError
 from django.core.cache import cache
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseForbidden
 from django.views.decorators.http import require_http_methods
+
+logger = logging.getLogger('prislab.metrics')
 
 
 STARTUP_TIME = time.time()
@@ -95,7 +100,23 @@ def _prometheus_lines():
 def metrics_view(request):
     """
     Expone métricas en formato Prometheus text exposition.
-    No requiere autenticación para permitir scraping por Prometheus/Grafana.
+    Por defecto permite scraping por Prometheus/Grafana. Si se configura
+    PRISLAB_METRICS_TOKEN, se exige en header X-Prometheus-Token o query param token.
     """
+    token = getattr(settings, 'PRISLAB_METRICS_TOKEN', '') or ''
+    if token:
+        provided = (
+            request.headers.get('X-Prometheus-Token', '')
+            or request.GET.get('token', '')
+        )
+        if not provided:
+            logger.warning('metrics_view: acceso denegado: falta token de scraping')
+            return HttpResponseForbidden('Forbidden: token de scraping requerido')
+        if not secrets.compare_digest(provided.strip(), token.strip()):
+            logger.warning('metrics_view: acceso denegado: token inválido')
+            return HttpResponseForbidden('Forbidden: token inválido')
+    else:
+        logger.debug('metrics_view: acceso sin token (PRISLAB_METRICS_TOKEN no configurado)')
+
     body = _prometheus_lines()
     return HttpResponse(body, content_type="text/plain; version=0.0.4; charset=utf-8")
