@@ -1,5 +1,6 @@
 import logging
 import os
+import secrets
 import sys
 from importlib.util import find_spec
 from pathlib import Path
@@ -47,11 +48,21 @@ DEPLOYMENT_ENV = (
     or ('test' if _TESTING else 'development')
 ).strip().lower()
 IS_PRODUCTION = DEPLOYMENT_ENV == 'production'
-# SECRET_KEY: obligatoria via variable de entorno. En dev local usa fallback solo si no esta definida.
+# SECRET_KEY: obligatoria via variable de entorno en producción. En dev/test, si no está
+# definida, se genera una clave aleatoria efímera y se emite advertencia. Nunca se hardcodea.
 _SECRET_KEY_ENV = os.environ.get('SECRET_KEY', '').strip()
 if not _SECRET_KEY_ENV:
-    # Fallback solo en desarrollo local — NUNCA usar en produccion
-    _SECRET_KEY_ENV = 'dev-only-fallback-key-not-for-production-prislab-2026-local'
+    if IS_PRODUCTION:
+        raise RuntimeError(
+            '🔴 PRISLAB SEGURIDAD: SECRET_KEY no está configurada en producción.\n'
+            'Defina la variable de entorno SECRET_KEY con una clave segura de al menos 50 caracteres.\n'
+            'Genere una con: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"'
+        )
+    _SECRET_KEY_ENV = secrets.token_urlsafe(64)
+    logging.getLogger('config').warning(
+        'SECRET_KEY no está configurada; usando clave aleatoria efímera para desarrollo/test. '
+        'Las sesiones/cookies firmadas no persistirán entre reinicios.'
+    )
 SECRET_KEY = _SECRET_KEY_ENV
 
 
@@ -141,10 +152,10 @@ CORS_ALLOWED_ORIGINS = [
     x.strip() for x in (_cors_origins_raw or '').split(',') if x.strip()
 ]
 if IS_PRODUCTION and not CORS_ALLOW_ALL_ORIGINS and not CORS_ALLOWED_ORIGINS:
-    logging.getLogger('config').warning(
-        'CORS: en producción CORS_ALLOW_ALL_ORIGINS está en False y CORS_ALLOWED_ORIGINS está vacío. '
-        'Las peticiones desde otros orígenes pueden fallar. '
-        'Defina CORS_ALLOWED_ORIGINS o, temporalmente, CORS_ALLOW_ALL_ORIGINS=true.'
+    raise RuntimeError(
+        '🔴 PRISLAB SEGURIDAD: en producción CORS_ALLOW_ALL_ORIGINS está en False y '
+        'CORS_ALLOWED_ORIGINS está vacío. Defina CORS_ALLOWED_ORIGINS o, solo para '
+        'pruebas controladas, CORS_ALLOW_ALL_ORIGINS=true.'
     )
 
 CORS_ALLOW_CREDENTIALS = os.environ.get('CORS_ALLOW_CREDENTIALS', 'False').lower() in ('true', '1', 'yes', 'on')
@@ -197,10 +208,9 @@ if IS_PRODUCTION:
     }
     _tokens_faltantes = [k for k, v in _TOKENS_REQUERIDOS.items() if not v or v.startswith('replace-with')]
     if _tokens_faltantes:
-        import logging as _log_tok
-        _log_tok.getLogger('core').warning(
-            f'🔴 PRISLAB SEGURIDAD: Tokens de servicio no configurados en produccion: {_tokens_faltantes}. '
-            'Los endpoints protegidos por estos tokens retornarán 503.'
+        raise RuntimeError(
+            f'🔴 PRISLAB SEGURIDAD: Tokens de servicio no configurados en producción: {_tokens_faltantes}. '
+            'Defínalos en variables de entorno; los endpoints protegidos no funcionarán sin ellos.'
         )
 
 
@@ -327,6 +337,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Configuración de Base de Datos
+if IS_PRODUCTION and not os.environ.get('DB_HOST'):
+    raise RuntimeError(
+        '🔴 PRISLAB SEGURIDAD: DB_HOST no está configurado en producción. '
+        'PostgreSQL es obligatorio; defina DB_HOST (ej. localhost o su host de RDS/Cloud SQL/Vultr).'
+    )
 if os.environ.get('DB_HOST'):
     # PostgreSQL local o remoto en Vultr
     db_host = os.environ.get('DB_HOST', '')
@@ -814,7 +829,7 @@ SESSION_COOKIE_SECURE = _env_bool('SESSION_COOKIE_SECURE', IS_PRODUCTION)
 CSRF_COOKIE_SECURE = _env_bool('CSRF_COOKIE_SECURE', IS_PRODUCTION)
 
 # No redirigir SSL en local; en staging/prod se puede forzar por entorno.
-SECURE_SSL_REDIRECT = _env_bool('SECURE_SSL_REDIRECT', False)
+SECURE_SSL_REDIRECT = _env_bool('SECURE_SSL_REDIRECT', IS_PRODUCTION)
 
 # Headers de seguridad adicionales (clínica: protección de datos sensibles)
 SECURE_CONTENT_TYPE_NOSNIFF = True

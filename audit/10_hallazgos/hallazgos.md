@@ -17,6 +17,7 @@
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Cambios pueden llegar a la rama release sin revisión ni status checks, introduciendo regresiones o fallos de seguridad. |
 | **Prioridad** | P1 |
+| **Estado** | **PENDIENTE** (requiere cambio en GitHub, no en código) |
 | **Recomendación** | Configurar branch protection real sin bypass para usuarios automatizados; usar PRs con required status checks. Si se requiere deploy automático, usar un bot dedicado sin permisos de bypass. |
 
 ---
@@ -32,7 +33,8 @@
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Si por error se desactivan las validaciones de producción o se usa `DEBUG=True`, la clave queda expuesta. Además, cualquier clave en el repo es visible para todos los colaboradores. |
 | **Prioridad** | P1 |
-| **Recomendación** | Rechazar el arranque en cualquier entorno si `SECRET_KEY` no está definida, eliminando el fallback. Documentar el comando para generarla en `README.md` y `.env.example`. |
+| **Estado** | **CORREGIDO** en `config/settings.py` |
+| **Recomendación** | ~~Rechazar el arranque en cualquier entorno si `SECRET_KEY` no está definida, eliminando el fallback.~~ Corregido: en producción se lanza `RuntimeError`; en dev/test se genera clave aleatoria efímera. |
 
 ---
 
@@ -47,7 +49,8 @@
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | En producción sin `DB_HOST` configurado se usaría SQLite, causando corrupción de datos y pérdida de integridad. |
 | **Prioridad** | P1 |
-| **Recomendación** | En producción (`IS_PRODUCTION=True`), lanzar `RuntimeError` si `DB_HOST` no está configurado. Mantener SQLite solo para `development`/`test`. |
+| **Estado** | **CORREGIDO** en `config/settings.py` |
+| **Recomendación** | ~~En producción (`IS_PRODUCTION=True`), lanzar `RuntimeError` si `DB_HOST` no está configurado.~~ Corregido: ahora se rechaza el arranque en producción sin `DB_HOST`; SQLite se mantiene solo para dev/test. |
 
 ---
 
@@ -62,7 +65,8 @@
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Endpoints que dependen de estos tokens retornarán 503 sin que el administrador se entere si no revisa logs. |
 | **Prioridad** | P2 |
-| **Recomendación** | Convertir en error crítico en producción o, al menos, documentar claramente en checklists de deploy. |
+| **Estado** | **CORREGIDO** en `config/settings.py` |
+| **Recomendación** | ~~Convertir en error crítico en producción.~~ Corregido: ahora se lanza `RuntimeError` si faltan tokens requeridos en producción. |
 
 ---
 
@@ -92,7 +96,8 @@
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Si Nginx no fuerza HTTPS, las peticiones HTTP pueden ser atendidas por Django. |
 | **Prioridad** | P2 |
-| **Recomendación** | Usar `True` por defecto en producción, permitiendo override explícito. |
+| **Estado** | **CORREGIDO** en `config/settings.py` |
+| **Recomendación** | ~~Usar `True` por defecto en producción.~~ Corregido: `SECURE_SSL_REDIRECT` ahora usa `IS_PRODUCTION` como default. |
 
 ---
 
@@ -167,7 +172,8 @@
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Peticiones cross-origin legítimas fallarán. No es un riesgo de seguridad directo, pero afecta funcionalidad. |
 | **Prioridad** | P3 |
-| **Recomendación** | Documentar dominios permitidos en `.env.production.example` y validar en deploy. |
+| **Estado** | **CORREGIDO** en `config/settings.py` |
+| **Recomendación** | ~~Documentar dominios permitidos en `.env.production.example` y validar en deploy.~~ Corregido: ahora se lanza `RuntimeError` en producción si CORS no está configurado y `CORS_ALLOW_ALL_ORIGINS=False`. |
 
 ---
 

@@ -1250,6 +1250,29 @@ jobs:
 
 ---
 
+## EV-SEC-011 — Correcciones aplicadas a `config/settings.py`
+
+**Criticidad:** ALTA  
+**Archivo:** `config/settings.py`  
+**Estado:** CORREGIDO  
+**Cambios realizados:**
+
+1. **H-002 — SECRET_KEY hardcodeado**: se eliminó el fallback literal. Ahora:
+   - En producción (`IS_PRODUCTION=True`), si `SECRET_KEY` no está configurada → `RuntimeError`.
+   - En dev/test, si no está configurada, se genera una clave aleatoria efímera con `secrets.token_urlsafe(64)` y se advierte.
+
+2. **H-003 — DB_HOST obligatorio en producción**: se agregó validación que lanza `RuntimeError` si `DB_HOST` no está configurado en producción, evitando el fallback silencioso a SQLite.
+
+3. **H-004 — Tokens de servicio como error**: los tokens `PRISLAB_API_TOKEN`, `PRISLAB_FRONTEND_LOG_TOKEN`, `CRON_SECRET` ahora lanzan `RuntimeError` si faltan en producción.
+
+4. **H-006 — `SECURE_SSL_REDIRECT` por defecto en producción**: el default pasó de `False` a `IS_PRODUCTION`.
+
+5. **H-011 — CORS en producción**: ahora se lanza `RuntimeError` si `CORS_ALLOW_ALL_ORIGINS=False` y `CORS_ALLOWED_ORIGINS` está vacío en producción.
+
+**Validación:** `python manage.py check` se ejecutó sin errores después de los cambios.
+
+---
+
 ## EV-SEC-010 — Auth: uso de AUTH_USER_MODEL custom
 
 **Criticidad:** MEDIA  
@@ -1386,6 +1409,7 @@ docker: The term 'docker' is not recognized as a name of a cmdlet, function, scr
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Cambios pueden llegar a la rama release sin revisión ni status checks, introduciendo regresiones o fallos de seguridad. |
 | **Prioridad** | P1 |
+| **Estado** | **PENDIENTE** (requiere cambio en GitHub, no en código) |
 | **Recomendación** | Configurar branch protection real sin bypass para usuarios automatizados; usar PRs con required status checks. Si se requiere deploy automático, usar un bot dedicado sin permisos de bypass. |
 
 ---
@@ -1401,7 +1425,8 @@ docker: The term 'docker' is not recognized as a name of a cmdlet, function, scr
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Si por error se desactivan las validaciones de producción o se usa `DEBUG=True`, la clave queda expuesta. Además, cualquier clave en el repo es visible para todos los colaboradores. |
 | **Prioridad** | P1 |
-| **Recomendación** | Rechazar el arranque en cualquier entorno si `SECRET_KEY` no está definida, eliminando el fallback. Documentar el comando para generarla en `README.md` y `.env.example`. |
+| **Estado** | **CORREGIDO** en `config/settings.py` |
+| **Recomendación** | ~~Rechazar el arranque en cualquier entorno si `SECRET_KEY` no está definida, eliminando el fallback.~~ Corregido: en producción se lanza `RuntimeError`; en dev/test se genera clave aleatoria efímera. |
 
 ---
 
@@ -1416,7 +1441,8 @@ docker: The term 'docker' is not recognized as a name of a cmdlet, function, scr
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | En producción sin `DB_HOST` configurado se usaría SQLite, causando corrupción de datos y pérdida de integridad. |
 | **Prioridad** | P1 |
-| **Recomendación** | En producción (`IS_PRODUCTION=True`), lanzar `RuntimeError` si `DB_HOST` no está configurado. Mantener SQLite solo para `development`/`test`. |
+| **Estado** | **CORREGIDO** en `config/settings.py` |
+| **Recomendación** | ~~En producción (`IS_PRODUCTION=True`), lanzar `RuntimeError` si `DB_HOST` no está configurado.~~ Corregido: ahora se rechaza el arranque en producción sin `DB_HOST`; SQLite se mantiene solo para dev/test. |
 
 ---
 
@@ -1431,7 +1457,8 @@ docker: The term 'docker' is not recognized as a name of a cmdlet, function, scr
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Endpoints que dependen de estos tokens retornarán 503 sin que el administrador se entere si no revisa logs. |
 | **Prioridad** | P2 |
-| **Recomendación** | Convertir en error crítico en producción o, al menos, documentar claramente en checklists de deploy. |
+| **Estado** | **CORREGIDO** en `config/settings.py` |
+| **Recomendación** | ~~Convertir en error crítico en producción.~~ Corregido: ahora se lanza `RuntimeError` si faltan tokens requeridos en producción. |
 
 ---
 
@@ -1461,7 +1488,8 @@ docker: The term 'docker' is not recognized as a name of a cmdlet, function, scr
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Si Nginx no fuerza HTTPS, las peticiones HTTP pueden ser atendidas por Django. |
 | **Prioridad** | P2 |
-| **Recomendación** | Usar `True` por defecto en producción, permitiendo override explícito. |
+| **Estado** | **CORREGIDO** en `config/settings.py` |
+| **Recomendación** | ~~Usar `True` por defecto en producción.~~ Corregido: `SECURE_SSL_REDIRECT` ahora usa `IS_PRODUCTION` como default. |
 
 ---
 
@@ -1536,7 +1564,8 @@ docker: The term 'docker' is not recognized as a name of a cmdlet, function, scr
 | **Esfuerzo** | Bajo |
 | **Riesgo resultante** | Peticiones cross-origin legítimas fallarán. No es un riesgo de seguridad directo, pero afecta funcionalidad. |
 | **Prioridad** | P3 |
-| **Recomendación** | Documentar dominios permitidos en `.env.production.example` y validar en deploy. |
+| **Estado** | **CORREGIDO** en `config/settings.py` |
+| **Recomendación** | ~~Documentar dominios permitidos en `.env.production.example` y validar en deploy.~~ Corregido: ahora se lanza `RuntimeError` en producción si CORS no está configurado y `CORS_ALLOW_ALL_ORIGINS=False`. |
 
 ---
 
@@ -1640,13 +1669,17 @@ docker: The term 'docker' is not recognized as a name of a cmdlet, function, scr
 ## 3. Hallazgos más críticos
 
 ### CRÍTICO (1)
-1. **H-001 — Branch protection bypass en `release/v1.0-local`**: los pushes directos bypassan la regla de "solo vía PR". Esto invalida el control de calidad de integración.
+1. **H-001 — Branch protection bypass en `release/v1.0-local`**: los pushes directos bypassan la regla de "solo vía PR". Esto invalida el control de calidad de integración. **Pendiente** (requiere cambio en GitHub, no en código).
 
-### ALTO (4)
-2. **H-002 — Fallback de SECRET_KEY hardcodeado**: clave de desarrollo visible en el repositorio; riesgo si se usa accidentalmente en producción.
-3. **H-003 — Fallback silencioso a SQLite si falta DB_HOST**: en producción sin `DB_HOST` se usaría SQLite.
-4. **H-004 — Tokens de servicio solo generan warning**: endpoints protegidos podrían retornar 503 sin bloquear el arranque.
-5. **H-005 — Suite de tests no ejecutable localmente**: imposible validar regresión funcional en este entorno.
+### ALTO — Corregidos en este commit (4)
+2. **H-002 — Fallback de SECRET_KEY hardcodeado**: ✅ corregido. Se eliminó el fallback literal; en producción es obligatoria y en dev/test se genera una clave aleatoria efímera.
+3. **H-003 — Fallback silencioso a SQLite si falta DB_HOST**: ✅ corregido. Ahora se rechaza el arranque en producción si no está configurado `DB_HOST`.
+4. **H-004 — Tokens de servicio solo generan warning**: ✅ corregido. Ahora se lanza `RuntimeError` en producción si faltan.
+5. **H-005 — Suite de tests no ejecutable localmente**: **Pendiente** por limitaciones de entorno (requiere PostgreSQL/CI).
+
+### Adicionales corregidos
+6. **H-006 — `SECURE_SSL_REDIRECT` desactivado por defecto**: ✅ corregido. Ahora default es `IS_PRODUCTION`.
+7. **H-011 — CORS sin orígenes en producción**: ✅ corregido. Ahora `RuntimeError` si no está configurado en producción.
 
 ---
 

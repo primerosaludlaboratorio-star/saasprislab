@@ -43,13 +43,17 @@
 ## 3. Hallazgos más críticos
 
 ### CRÍTICO (1)
-1. **H-001 — Branch protection bypass en `release/v1.0-local`**: los pushes directos bypassan la regla de "solo vía PR". Esto invalida el control de calidad de integración.
+1. **H-001 — Branch protection bypass en `release/v1.0-local`**: los pushes directos bypassan la regla de "solo vía PR". Esto invalida el control de calidad de integración. **Pendiente** (requiere cambio en GitHub, no en código).
 
-### ALTO (4)
-2. **H-002 — Fallback de SECRET_KEY hardcodeado**: clave de desarrollo visible en el repositorio; riesgo si se usa accidentalmente en producción.
-3. **H-003 — Fallback silencioso a SQLite si falta DB_HOST**: en producción sin `DB_HOST` se usaría SQLite.
-4. **H-004 — Tokens de servicio solo generan warning**: endpoints protegidos podrían retornar 503 sin bloquear el arranque.
-5. **H-005 — Suite de tests no ejecutable localmente**: imposible validar regresión funcional en este entorno.
+### ALTO — Corregidos en este commit (4)
+2. **H-002 — Fallback de SECRET_KEY hardcodeado**: ✅ corregido. Se eliminó el fallback literal; en producción es obligatoria y en dev/test se genera una clave aleatoria efímera.
+3. **H-003 — Fallback silencioso a SQLite si falta DB_HOST**: ✅ corregido. Ahora se rechaza el arranque en producción si no está configurado `DB_HOST`.
+4. **H-004 — Tokens de servicio solo generan warning**: ✅ corregido. Ahora se lanza `RuntimeError` en producción si faltan.
+5. **H-005 — Suite de tests no ejecutable localmente**: **Pendiente** por limitaciones de entorno (requiere PostgreSQL/CI).
+
+### Adicionales corregidos
+6. **H-006 — `SECURE_SSL_REDIRECT` desactivado por defecto**: ✅ corregido. Ahora default es `IS_PRODUCTION`.
+7. **H-011 — CORS sin orígenes en producción**: ✅ corregido. Ahora `RuntimeError` si no está configurado en producción.
 
 ---
 

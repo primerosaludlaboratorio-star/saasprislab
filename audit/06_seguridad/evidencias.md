@@ -270,6 +270,29 @@ jobs:
 
 ---
 
+## EV-SEC-011 — Correcciones aplicadas a `config/settings.py`
+
+**Criticidad:** ALTA  
+**Archivo:** `config/settings.py`  
+**Estado:** CORREGIDO  
+**Cambios realizados:**
+
+1. **H-002 — SECRET_KEY hardcodeado**: se eliminó el fallback literal. Ahora:
+   - En producción (`IS_PRODUCTION=True`), si `SECRET_KEY` no está configurada → `RuntimeError`.
+   - En dev/test, si no está configurada, se genera una clave aleatoria efímera con `secrets.token_urlsafe(64)` y se advierte.
+
+2. **H-003 — DB_HOST obligatorio en producción**: se agregó validación que lanza `RuntimeError` si `DB_HOST` no está configurado en producción, evitando el fallback silencioso a SQLite.
+
+3. **H-004 — Tokens de servicio como error**: los tokens `PRISLAB_API_TOKEN`, `PRISLAB_FRONTEND_LOG_TOKEN`, `CRON_SECRET` ahora lanzan `RuntimeError` si faltan en producción.
+
+4. **H-006 — `SECURE_SSL_REDIRECT` por defecto en producción**: el default pasó de `False` a `IS_PRODUCTION`.
+
+5. **H-011 — CORS en producción**: ahora se lanza `RuntimeError` si `CORS_ALLOW_ALL_ORIGINS=False` y `CORS_ALLOWED_ORIGINS` está vacío en producción.
+
+**Validación:** `python manage.py check` se ejecutó sin errores después de los cambios.
+
+---
+
 ## EV-SEC-010 — Auth: uso de AUTH_USER_MODEL custom
 
 **Criticidad:** MEDIA  
