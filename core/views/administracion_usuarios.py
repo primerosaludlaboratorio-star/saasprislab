@@ -108,7 +108,7 @@ def api_obtener_usuario(request, usuario_id):
         logging.getLogger(__name__).exception("Error inesperado en api_obtener_usuario (administracion_usuarios.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error al obtener usuario: {str(e)}'
+            'mensaje': 'No fue posible obtener el usuario.'
         }, status=500)
 
 
@@ -248,7 +248,7 @@ def api_actualizar_usuario(request, usuario_id):
         logging.getLogger(__name__).exception("Error inesperado en api_actualizar_usuario (administracion_usuarios.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error al actualizar usuario: {str(e)}'
+            'mensaje': 'No fue posible actualizar el usuario.'
         }, status=500)
 
 
@@ -321,7 +321,7 @@ def api_actualizar_tarifa(request, estudio_id):
         logging.getLogger(__name__).exception("Error inesperado en api_actualizar_tarifa (administracion_usuarios.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error al actualizar tarifa: {str(e)}'
+            'mensaje': 'No fue posible actualizar la tarifa.'
         }, status=500)
 
 
@@ -396,5 +396,5 @@ def api_actualizar_permiso(request, perfil_id):
         logging.getLogger(__name__).exception("Error inesperado en api_actualizar_permiso (administracion_usuarios.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error al actualizar permiso: {str(e)}'
+            'mensaje': 'No fue posible actualizar el permiso.'
         }, status=500)

@@ -147,7 +147,7 @@ def consulta_sin_cita(request):
                 return redirect('consultorio:nueva_consulta_soap', cita_id=cita.id)
                 
         except (DatabaseError, ValidationError) as e:
-            messages.error(request, f'Error al crear consulta: {str(e)}')
+            messages.error(request, 'No fue posible crear la consulta.')
     
     # GET: Mostrar formulario
     # Obtener pacientes recientes para búsqueda rápida
@@ -636,7 +636,7 @@ def nueva_consulta_soap(request, cita_id):
                     return redirect('consultorio:nueva_consulta_soap', cita_id=cita.id)
                 
         except (DatabaseError, ValidationError) as e:
-            messages.error(request, f'Error al guardar consulta: {str(e)}')
+            messages.error(request, 'No fue posible guardar la consulta.')
         finally:
             # Liberar el bloqueo anti-doble-envío siempre (éxito o error)
             request.session.pop(_lock_key, None)
@@ -851,7 +851,7 @@ def nueva_consulta_con_paciente(request, paciente_uuid):
                 return redirect('consultorio:dashboard_consultorio')
                 
         except (DatabaseError, ValidationError) as e:
-            messages.error(request, f'Error al guardar consulta: {e}')
+            messages.error(request, 'No fue posible guardar la consulta.')
     
     # PASO 3: MOSTRAR FORMULARIO (GET)
     consultas_previas = paciente.consultas.order_by('-fecha_consulta')[:5]

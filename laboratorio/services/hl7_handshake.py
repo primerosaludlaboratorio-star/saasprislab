@@ -18,14 +18,16 @@ _UNIDAD_ALIASES = {
     'µIU/ML': 'µUI/ML',
 }
 
+_DECIMAL_HL7_RE = re.compile(r'^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$')
+
 
 def normalizar_unidad(u: str) -> str:
     """Normaliza para comparación estricta catálogo ↔ equipo."""
     if not u:
         return ''
-    s = ' '.join(str(u).strip().split())
+    s = ' '.join(str(u)[:80].strip().split())
     s = s.replace('μ', 'µ').upper()
-    s = re.sub(r'\s*/\s*', '/', s)
+    s = '/'.join(part.strip() for part in s.split('/'))
     return _UNIDAD_ALIASES.get(s, s)
 
 
@@ -53,7 +55,7 @@ def decimal_desde_valor_hl7(valor_str: str) -> Tuple[Optional[Decimal], Optional
     Convierte valor HL7 a Decimal (coma decimal, sin float intermedio de magnitud).
     Rechaza marcadores no numéricos típicos (> < texto).
     """
-    raw = (valor_str or '').strip()
+    raw = (valor_str or '')[:80].strip()
     if not raw:
         return None, 'vacio'
     # Quitar comparadores de desigualdad al inicio para intentar parseo
@@ -62,7 +64,7 @@ def decimal_desde_valor_hl7(valor_str: str) -> Tuple[Optional[Decimal], Optional
         core = core[1:].strip()
     core = core.replace(',', '.')
     # Solo dígitos, punto, signo y exponente mínimo
-    if not re.match(r'^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$', core):
+    if not _DECIMAL_HL7_RE.fullmatch(core):
         return None, 'no_decimal'
     try:
         d = Decimal(core)

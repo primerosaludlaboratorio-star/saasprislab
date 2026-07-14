@@ -132,7 +132,7 @@ def _tool_resultados_orden(args, empresa):
                 "paciente": orden.paciente.nombre_completo if orden.paciente else "",
                 "estado": orden.estado, "estudios": estudios}
     except (LookupError, AttributeError, ValueError) as e:
-        return {"error": str(e)}
+        return {"error": "No fue posible procesar la solicitud IA."}
 
 
 def _tool_guardar_resultado(args, empresa, user):
@@ -204,7 +204,7 @@ def _tool_guardar_resultado(args, empresa, user):
             ),
         }
     except (LookupError, IntegrityError, ValueError) as e:
-        return {"error": str(e)}
+        return {"error": "No fue posible procesar la solicitud IA."}
 
 
 def _tool_buscar_medicamento(args, empresa):
@@ -376,7 +376,7 @@ def _tool_auditar_errores_recientes(args, empresa):
             ),
         }
     except (ImportError, LookupError, OperationalError) as e:
-        return {"error": str(e)}
+        return {"error": "No fue posible procesar la solicitud IA."}
 
 
 def _tool_generar_corte_caja(args, empresa, user):
@@ -438,7 +438,7 @@ def _tool_auditoria_sistema_completa(args, empresa, user):
             c.execute("SELECT 1")
         reporte["checks"]["base_datos"] = {"ok": True, "msg": "Conexión activa"}
     except (OperationalError, OSError) as e:
-        reporte["checks"]["base_datos"] = {"ok": False, "msg": str(e)[:100]}
+        reporte["checks"]["base_datos"] = {"ok": False, "msg": "No fue posible verificar base de datos."}
 
     # 2. Modelos críticos
     modelos_check = {
@@ -471,7 +471,7 @@ def _tool_auditoria_sistema_completa(args, empresa, user):
             "criticos": qs_pend.filter(severidad="CRITICA").count(),
         }
     except (ImportError, LookupError, OperationalError) as e:
-        reporte["checks"]["sentinel"] = {"ok": False, "error": str(e)[:100]}
+        reporte["checks"]["sentinel"] = {"ok": False, "error": "No fue posible verificar Sentinel."}
 
     # 4. Google Drive
     drive_activo = getattr(settings, '_DRIVE_STORAGE_ACTIVO', False)

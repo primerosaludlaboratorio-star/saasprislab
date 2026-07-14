@@ -56,13 +56,11 @@ try:
     user.set_password(password)
     user.save()
     
-    print(f"✅ User {username} {'created' if created else 'updated'} with password: {password}")
+    print(f"User {username} {'created' if created else 'updated'} with password: [NO MOSTRADA]")
     print(f"   Empresa: {empresa.nombre} (ID: {empresa.id})")
     print(f"   Sucursal: {sucursal.nombre} (ID: {sucursal.id})")
     
 except Exception as e:
     logging.getLogger(__name__).exception("Error inesperado en funcion_desconocida (create_e2e_user.py)")
-    print(f"❌ Error: {e}")
-    import traceback
-    traceback.print_exc()
+    print("Error creando usuario E2E. Revisa logs internos.")
     sys.exit(1)

@@ -607,7 +607,7 @@ def importar_contactos(request):
             
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en importar_contactos (views_legacy.py)")
-            messages.error(request, f'Error al importar: {str(e)}')
+            messages.error(request, 'No fue posible importar los contactos.')
             return redirect('marketing:importar_contactos')
     
     return render(request, "marketing/contactos/importar.html", {
@@ -727,9 +727,9 @@ def api_detectar_pacientes_inactivos(request):
             'pacientes': resultado,
         })
 
-    except Exception as e:
-        logger.error('api_detectar_pacientes_inactivos: %s', e, exc_info=True)
-        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+    except Exception:
+        logger.exception('api_detectar_pacientes_inactivos')
+        return JsonResponse({'ok': False, 'error': 'No fue posible detectar pacientes inactivos.'}, status=500)
 
 
 @login_required

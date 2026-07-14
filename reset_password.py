@@ -22,7 +22,7 @@ def resetear_password(username, password):
         usuario.save()
         print(f"[OK] Contrasena reseteada para '{username}'")
         print(f"     Usuario: {username}")
-        print(f"     Nueva contrasena: {password}")
+        print("     Nueva contrasena: [NO MOSTRADA]")
         return True
     except Usuario.DoesNotExist:
         print(f"[ERROR] Usuario '{username}' no encontrado")
@@ -38,4 +38,4 @@ if __name__ == '__main__':
         resetear_password(username, password)
     else:
         print("Uso: python reset_password.py [username] [nueva_password]")
-        print("\nEjemplo: python reset_password.py admin mi_password_seguro")
+        print("\nEjemplo: python reset_password.py admin <nueva_password>")

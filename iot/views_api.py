@@ -50,6 +50,6 @@ def api_kiosco_checkin(request, kiosco_id):
         
     except Kiosco.DoesNotExist:
         return JsonResponse({'status': 'error', 'mensaje': 'Kiosco no existe o está inactivo'}, status=404)
-    except Exception as e:
+    except Exception:
         logging.getLogger(__name__).exception("Error en api_kiosco_checkin")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'Error interno al procesar check-in'}, status=500)

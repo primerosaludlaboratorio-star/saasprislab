@@ -499,5 +499,5 @@ def api_procesar_tokens_lims(request):
         logger.error(f"[LIMS-v7.5] Error en API: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'No fue posible resolver tokens LIMS.'
         }, status=500)

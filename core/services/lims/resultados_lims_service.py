@@ -78,7 +78,7 @@ class ResultadosLimsService:
                 )
             return {
                 'http_status': 500,
-                'body': {'status': 'error', 'mensaje': f'Error inesperado: {str(e)}'},
+                'body': {'status': 'error', 'mensaje': 'No fue posible procesar resultados LIMS.'},
             }
 
     @staticmethod
@@ -705,7 +705,7 @@ class ResultadosLimsService:
                 )
             return {
                 'http_status': 500,
-                'body': {'status': 'error', 'mensaje': f'Error inesperado: {str(e)}'},
+                'body': {'status': 'error', 'mensaje': 'No fue posible procesar resultados LIMS.'},
             }
 
     @staticmethod

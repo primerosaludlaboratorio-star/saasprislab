@@ -410,8 +410,8 @@ def api_crear_archivo_raw(request):
             'mensaje': 'Archivo RAW sellado con éxito. Hash inmutable registrado.',
         })
     except Exception as exc:
-        logger.error('Error creando archivo RAW: %s', exc)
-        return JsonResponse({'status': 'error', 'mensaje': str(exc)}, status=500)
+        logger.exception('Error creando archivo RAW')
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible sellar archivo RAW'}, status=500)
 
 
 # ── API: Consulta de voz (logística) ─────────────────────────────────────────
@@ -872,5 +872,5 @@ def api_coach_toma_muestra(request):
         )
         return JsonResponse({'status': 'success', **evaluacion})
     except Exception as exc:
-        logger.error('Error coach toma muestra: %s', exc)
-        return JsonResponse({'status': 'error', 'mensaje': str(exc)}, status=500)
+        logger.exception('Error coach toma muestra')
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible evaluar toma de muestra'}, status=500)

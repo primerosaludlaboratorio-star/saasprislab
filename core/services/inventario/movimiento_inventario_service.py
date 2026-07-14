@@ -169,7 +169,7 @@ class MovimientoInventarioService:
             logger_core.error('Error al registrar entrada de mercancía: %s', str(e), exc_info=True)
             return cls._json_result(500, {
                 'status': 'error',
-                'mensaje': f'Error al registrar ingreso: {str(e)}',
+                'mensaje': 'No fue posible registrar el ingreso.',
             })
 
     @classmethod
@@ -272,7 +272,7 @@ class MovimientoInventarioService:
             logger_core.error('Error al registrar compra: %s', str(e), exc_info=True)
             return cls._json_result(500, {
                 'status': 'error',
-                'mensaje': f'Error al registrar compra: {str(e)}',
+                'mensaje': 'No fue posible registrar la compra.',
             })
 
     @classmethod
@@ -371,4 +371,4 @@ class MovimientoInventarioService:
             return cls._json_result(200, {'status': 'success'})
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en aplicar_ajuste_por_lote (movimiento_inventario_service.py)")
-            return cls._json_result(500, {'status': 'error', 'mensaje': str(e)})
+            return cls._json_result(500, {'status': 'error', 'mensaje': 'No fue posible procesar el movimiento de inventario.'})

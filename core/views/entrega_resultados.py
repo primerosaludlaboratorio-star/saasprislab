@@ -383,7 +383,7 @@ def resultados_publicos(request, token: str):
         logging.getLogger(__name__).exception("Error inesperado en resultados_publicos (entrega_resultados.py)")
         return HttpResponse("Enlace inválido o expirado.", status=400)
 
-    orden = OrdenDeServicio.objects.select_related("paciente", "empresa", "responsable_ingreso").filter(
+    orden = OrdenDeServicio.objects_all.select_related("paciente", "empresa", "responsable_ingreso").filter(
         id=oid, empresa_id=eid
     ).first()
     if not orden:
@@ -497,7 +497,7 @@ def resultados_publicos_pdf(request, token: str):
         logging.getLogger(__name__).exception("Error inesperado en resultados_publicos_pdf (entrega_resultados.py)")
         return HttpResponse("Enlace inválido o expirado.", status=400)
 
-    orden = OrdenDeServicio.objects.select_related("paciente", "empresa").filter(
+    orden = OrdenDeServicio.objects_all.select_related("paciente", "empresa").filter(
         id=oid, empresa_id=eid
     ).first()
     if not orden:

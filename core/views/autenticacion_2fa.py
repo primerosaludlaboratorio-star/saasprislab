@@ -269,5 +269,5 @@ def desactivar_2fa(request):
         )
         return JsonResponse({'ok': True, 'mensaje': '2FA desactivado correctamente.'})
     except Exception as exc:
-        logger.error(f'[2FA] Error desactivando 2FA: {exc}')
-        return JsonResponse({'error': str(exc)}, status=500)
+        logger.exception('[2FA] Error desactivando 2FA')
+        return JsonResponse({'error': 'No fue posible desactivar 2FA'}, status=500)

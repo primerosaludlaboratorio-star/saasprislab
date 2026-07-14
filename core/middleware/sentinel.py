@@ -868,7 +868,7 @@ class SentinelTelemetryMiddleware:
             except Exception as e:
                 logger.warning(f"SENTINEL: IA no disponible para incidencia #{incidencia.id}: {e}")
                 incidencia.analisis_ia = (
-                    f"Analisis IA no disponible ({type(e).__name__}). "
+                    "Analisis IA no disponible. "
                     f"Error original: {datos['tipo_excepcion']} en {datos['path']}. "
                     f"Revisar traceback completo para diagnostico manual."
                 )

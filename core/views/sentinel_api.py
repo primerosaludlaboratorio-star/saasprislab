@@ -133,7 +133,7 @@ def api_sentinel_reset(request):
 
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_sentinel_reset (sentinel_api.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible reiniciar Sentinel'}, status=500)
 
 
 @csrf_exempt
@@ -186,9 +186,9 @@ def api_sentinel_diagnostico(request):
                     ]
             except Exception as e:
                 logging.getLogger(__name__).exception("Error inesperado en api_sentinel_diagnostico (sentinel_api.py)")
-                info[f'error_{table}'] = str(e)
+                info[f'error_{table}'] = 'No disponible'
 
         return JsonResponse({'status': 'success', 'diagnostico': info})
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_sentinel_diagnostico (sentinel_api.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible ejecutar diagnóstico Sentinel'}, status=500)

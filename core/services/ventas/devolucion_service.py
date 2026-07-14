@@ -236,7 +236,7 @@ class DevolucionService:
                 )
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en _cantidad_ya_devuelta (devolucion_service.py)")
-            return {'http_status': 400, 'body': {'status': 'error', 'mensaje': str(e)}}
+            return {'http_status': 400, 'body': {'status': 'error', 'mensaje': 'No fue posible procesar la devolución.'}}
         return {'http_status': 200, 'body': {'status': 'success'}}
 
     @staticmethod
@@ -309,4 +309,4 @@ class DevolucionService:
             }
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en cancelar_venta_resultado (devolucion_service.py)")
-            return {'http_status': 400, 'body': {'status': 'error', 'mensaje': str(e)}}
+            return {'http_status': 400, 'body': {'status': 'error', 'mensaje': 'No fue posible procesar la devolución.'}}

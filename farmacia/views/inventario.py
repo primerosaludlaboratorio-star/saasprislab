@@ -572,8 +572,9 @@ def registro_gasto(request):
         except ValidationError as e:
             err = getattr(e, 'message_dict', None) or str(e)
             return JsonResponse({'status': 'error', 'mensaje': err}, status=400)
-        except (DatabaseError, ValueError, TypeError, KeyError) as e:
-            return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=400)
+        except (DatabaseError, ValueError, TypeError, KeyError):
+            logger.exception("Error al registrar gasto de caja farmacia")
+            return JsonResponse({'status': 'error', 'mensaje': 'No fue posible registrar el gasto'}, status=400)
     return JsonResponse({'status': 'error'}, status=405)
 
 
@@ -708,8 +709,9 @@ def imprimir_etiquetas(request):
                 'status': 'error',
                 'message': 'Generación de etiquetas de farmacia no implementada. Contacte al administrador.',
             }, status=501)
-        except (ValueError, TypeError, KeyError, json.JSONDecodeError) as e:
-            return JsonResponse({'error': str(e)}, status=500)
+        except (ValueError, TypeError, KeyError, json.JSONDecodeError):
+            logger.exception("Error al imprimir etiquetas de farmacia")
+            return JsonResponse({'error': 'No fue posible generar etiquetas'}, status=500)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 

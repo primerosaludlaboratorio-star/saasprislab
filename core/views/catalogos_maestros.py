@@ -138,7 +138,7 @@ def api_actualizar_metodo(request):
         logging.getLogger(__name__).exception("Error inesperado en api_actualizar_metodo (catalogos_maestros.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error al actualizar método: {str(e)}'
+            'mensaje': 'No fue posible actualizar el método.'
         }, status=500)
 
 
@@ -220,5 +220,5 @@ def api_actualizar_muestra(request):
         logging.getLogger(__name__).exception("Error inesperado en api_actualizar_muestra (catalogos_maestros.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error al actualizar muestra: {str(e)}'
+            'mensaje': 'No fue posible actualizar la muestra.'
         }, status=500)

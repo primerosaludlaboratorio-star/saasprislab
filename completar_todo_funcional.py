@@ -6,6 +6,7 @@ No requiere intervención manual.
 """
 
 import os
+import secrets
 import sys
 import subprocess
 import json
@@ -44,15 +45,26 @@ def main():
         if env_example.exists():
             env_file.write_bytes(env_example.read_bytes())
         else:
+            secret_key = secrets.token_urlsafe(48)
+            lab_pin = secrets.token_hex(8)
+            frontend_log_token = secrets.token_urlsafe(24)
+            kiosco_token = secrets.token_urlsafe(24)
+            webhook_token = secrets.token_urlsafe(24)
             env_file.write_text("""DEBUG=False
-SECRET_KEY=django-insecure-&$%^&*()_+?><:{}|~!@#$%^&*()_+
+SECRET_KEY={secret_key}
 ALLOWED_HOSTS=localhost,127.0.0.1
-LAB_VALIDATION_PIN=123456
-PRISLAB_FRONTEND_LOG_TOKEN=test_frontend_123
-PRISLAB_KIOSCO_API_TOKEN=test_kiosco_123
-PRISCI_WEBHOOK_TOKEN=test_webhook_123
+LAB_VALIDATION_PIN={lab_pin}
+PRISLAB_FRONTEND_LOG_TOKEN={frontend_log_token}
+PRISLAB_KIOSCO_API_TOKEN={kiosco_token}
+PRISCI_WEBHOOK_TOKEN={webhook_token}
 DEEPSEEK_API_KEY=
-""")
+""".format(
+                secret_key=secret_key,
+                lab_pin=lab_pin,
+                frontend_log_token=frontend_log_token,
+                kiosco_token=kiosco_token,
+                webhook_token=webhook_token,
+            ))
         print("[OK] .env creado (revisa y completa las API keys si es necesario)")
 
     # 3. Migrar base de datos

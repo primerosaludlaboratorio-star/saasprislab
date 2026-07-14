@@ -612,5 +612,5 @@ def api_avanzar_estado(request):
         logger.error(f"Error avanzando estado: {e}")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la solicitud.'
         }, status=500)

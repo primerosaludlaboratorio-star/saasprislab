@@ -79,7 +79,7 @@ def catalogo_medicos(request):
         return render(
             request,
             'core/catalogos/medicos.html',
-            {'empresa': getattr(request.user, 'empresa', None), 'medicos': [], 'error': str(e)},
+            {'empresa': getattr(request.user, 'empresa', None), 'medicos': [], 'error': 'No fue posible cargar médicos.'},
         )
 
 
@@ -137,7 +137,7 @@ def catalogo_convenios(request):
         return render(
             request,
             'core/catalogos/convenios.html',
-            {'empresa': getattr(request.user, 'empresa', None), 'convenios': [], 'error': str(e)},
+            {'empresa': getattr(request.user, 'empresa', None), 'convenios': [], 'error': 'No fue posible cargar convenios.'},
         )
 
 

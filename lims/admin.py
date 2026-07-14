@@ -3,12 +3,13 @@ from django.contrib import admin
 try:
     from .models import (
         Analito, ValorReferenciaAnalito,
-        PerfilLims, PaqueteLims, PrecioItem,
+        PerfilLims, PerfilAnalito, PaqueteLims, PrecioItem,
     )
 except ImportError:  # pragma: no cover
     Analito = None
     ValorReferenciaAnalito = None
     PerfilLims = None
+    PerfilAnalito = None
     PaqueteLims = None
     PrecioItem = None
 
@@ -51,10 +52,16 @@ if Analito is not None:
 
 
 if PerfilLims is not None:
+    class PerfilAnalitoInline(admin.TabularInline):
+        model = PerfilAnalito
+        extra = 0
+        autocomplete_fields = ('analito',)
+
     @admin.register(PerfilLims)
     class PerfilLimsAdmin(admin.ModelAdmin):
         list_display = ('nombre', 'id_perfil_legacy', 'activo')
         # filter_horizontal = ('analitos',) # Removed due to through table
+        inlines = [PerfilAnalitoInline] if PerfilAnalito is not None else []
         search_fields = ('nombre', 'id_perfil_legacy')
 if PaqueteLims is not None:
     @admin.register(PaqueteLims)

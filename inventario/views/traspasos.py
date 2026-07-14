@@ -147,7 +147,7 @@ def crear_traspaso(request, empresa):
                 return redirect('inventario:detalle_traspaso', pk=traspaso.pk)
             except (DatabaseError, ValidationError) as exc:
                 logger.error('Error crear traspaso: %s', exc, exc_info=True)
-                messages.error(request, f'Error: {exc}')
+                messages.error(request, 'No fue posible procesar el traspaso.')
 
     # Lotes disponibles del silo seleccionado
     LoteModel = LOTE_MODEL.get(silo, LoteReactivoLab)

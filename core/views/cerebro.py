@@ -65,4 +65,4 @@ def api_cerebro_preguntar(request):
         return JsonResponse({"status": "success", **resultado})
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_cerebro_preguntar (cerebro.py)")
-        return JsonResponse({"status": "error", "mensaje": str(e)}, status=500)
+        return JsonResponse({"status": "error", "mensaje": "No fue posible procesar cerebro IA"}, status=500)

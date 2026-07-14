@@ -111,7 +111,7 @@ def generar_campaña(usuario, segmento: str) -> Dict[str, Any]:
         cupon_rel = None
         return {
             "ok": False,
-            "mensaje": f"No se pudo generar el cupón QR: {str(e)}",
+            "mensaje": "No se pudo generar el cupón QR.",
         }
 
     return {
@@ -320,13 +320,13 @@ def responder(usuario, pregunta: str) -> Dict[str, Any]:
     except ImportError as e:
         return {
             "ok": False,
-            "mensaje": f"Módulo de IA no disponible: {str(e)}"
+            "mensaje": "Módulo de IA no disponible."
         }
     except Exception as e:
         logger.exception("Error al inicializar cliente Gemini")
         return {
             "ok": False,
-            "mensaje": f"Error de conexión con IA: {str(e)}"
+            "mensaje": "Error de conexión con IA."
         }
     
     system_prompt = build_system_prompt(usuario)
@@ -391,5 +391,5 @@ Responde como asistente experto. Si necesitas usar una herramienta, indícalo cl
         logger.exception("Error al procesar respuesta IA en ai_brain.responder")
         return {
             "ok": False,
-            "mensaje": f"Error al procesar respuesta IA: {str(e)}",
+            "mensaje": "No fue posible procesar la respuesta IA.",
         }

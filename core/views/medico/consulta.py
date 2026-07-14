@@ -122,5 +122,5 @@ def verificar_existencia_farmacia(request):
         logging.getLogger(__name__).exception("Error inesperado en verificar_existencia_farmacia (consulta.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la consulta.'
         }, status=400)

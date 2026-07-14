@@ -85,5 +85,5 @@ def api_auditar_campo(request):
         logging.getLogger(__name__).exception("Error inesperado en api_auditar_campo (auditoria_api.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error inesperado: {str(e)}'
+            'mensaje': 'No fue posible procesar la auditoría.'
         }, status=500)

@@ -123,7 +123,7 @@ def pre_sellar_nota(request, nota_id):
         logger.error(f"[BLINDAJE] Error en pre_sellar_nota: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'No fue posible procesar el expediente.'
         }, status=500)
 
 
@@ -314,7 +314,7 @@ def sellar_con_pin(request, nota_id):
         logger.error(f"[BLINDAJE] Error en sellar_con_pin: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'No fue posible procesar el expediente.'
         }, status=500)
 
 
@@ -348,7 +348,7 @@ def verificar_nota(request, nota_id):
         logger.error(f"[BLINDAJE] Error en verificar_nota: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'No fue posible procesar el expediente.'
         }, status=500)
 
 
@@ -418,7 +418,7 @@ def desbloqueo_forense(request, nota_id):
         logger.error(f"[BLINDAJE] Error en desbloqueo_forense: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'No fue posible procesar el expediente.'
         }, status=500)
 
 
@@ -482,7 +482,7 @@ def configurar_pin_lab(request):
         logger.error(f"[BLINDAJE] Error en configurar_pin_lab: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'No fue posible procesar el expediente.'
         }, status=500)
 
 
@@ -567,7 +567,7 @@ def buscar_cie10(request):
     except Exception as e:
         logger.error(f"[BLINDAJE] Error en buscar_cie10: {e}", exc_info=True)
         return JsonResponse({
-            'error': str(e)
+            'error': 'No fue posible procesar el expediente.'
         }, status=500)
 
 

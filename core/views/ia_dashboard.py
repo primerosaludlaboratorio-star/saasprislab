@@ -230,9 +230,9 @@ def api_ia_chat(request):
 
     try:
         out = responder(request.user, mensaje)
-    except Exception as e:
-        logger.error(f"Error CRITICO en responder() desde api_ia_chat: {str(e)}", exc_info=True)
-        return JsonResponse({"status": "error", "mensaje": f"Error interno en cerebro IA: {str(e)}"}, status=500)
+    except Exception:
+        logger.exception("Error CRITICO en responder() desde api_ia_chat")
+        return JsonResponse({"status": "error", "mensaje": "Error interno en cerebro IA"}, status=500)
 
     if out.get("ok") is False:
         return JsonResponse({"status": "error", "mensaje": out.get("mensaje", "No se pudo responder.")}, status=400)
@@ -331,10 +331,10 @@ def api_ia_diagnostico(request):
                 'Sistema operando con normalidad. Sin problemas detectados.'
             )
 
-    except Exception as e:
-        diagnostico['problemas'].append(f'Error ejecutando diagnostico: {str(e)}')
+    except Exception:
+        diagnostico['problemas'].append('Error ejecutando diagnostico. Revisa logs internos.')
         diagnostico['salud'] = 'ERROR'
-        logger.error(f'Error en diagnostico IA: {e}')
+        logger.exception('Error en diagnostico IA')
 
     return JsonResponse({'status': 'success', 'diagnostico': diagnostico})
 

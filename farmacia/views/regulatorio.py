@@ -99,7 +99,7 @@ def validar_venta_antibiotico(request):
         logger.error(f"Error validando antibiótico: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': f'Error: {str(e)}'
+            'error': 'No fue posible procesar la solicitud regulatoria.'
         }, status=500)
 
 
@@ -250,7 +250,7 @@ def generar_etiquetas(request):
             except (ValueError, TypeError, IOError, ImportError, KeyError, Exception) as e:
                 # Nota: reportlab puede lanzar muchas excepciones internas, se usa Exception explícitamente justificado.
                 # Justificación: Integración externa (generación de PDF) propensa a fallos no controlados.
-                messages.error(request, f'❌ Error al generar etiquetas: {str(e)}')
+                messages.error(request, 'No fue posible generar las etiquetas.')
     else:
         form = GenerarEtiquetasForm(empresa=empresa)
     

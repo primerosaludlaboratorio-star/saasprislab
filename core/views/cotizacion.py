@@ -71,7 +71,7 @@ def api_buscar_paciente_cotizacion(request):
         logging.getLogger(__name__).exception("Error inesperado en api_buscar_paciente_cotizacion (cotizacion.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la cotización.'
         }, status=400)
 
 
@@ -113,7 +113,7 @@ def api_crear_paciente_rapido(request):
         logging.getLogger(__name__).exception("Error inesperado en api_crear_paciente_rapido (cotizacion.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la cotización.'
         }, status=400)
 
 
@@ -185,7 +185,7 @@ def api_buscar_estudios_cotizacion(request):
         logging.getLogger(__name__).exception("Error inesperado en api_buscar_estudios_cotizacion (cotizacion.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la cotización.'
         }, status=400)
 
 
@@ -214,7 +214,7 @@ def api_calcular_total_cotizacion(request):
         logging.getLogger(__name__).exception("Error inesperado en api_calcular_total_cotizacion (cotizacion.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la cotización.'
         }, status=400)
 
 
@@ -252,7 +252,7 @@ def api_enviar_whatsapp_cotizacion(request):
         logging.getLogger(__name__).exception("Error inesperado en api_enviar_whatsapp_cotizacion (cotizacion.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la cotización.'
         }, status=400)
 
 
@@ -289,5 +289,5 @@ def convertir_cotizacion_orden(request):
         logging.getLogger(__name__).exception("Error inesperado en convertir_cotizacion_orden (cotizacion.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la cotización.'
         }, status=400)

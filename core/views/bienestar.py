@@ -210,7 +210,7 @@ def diario_emocional(request):
 
         except Exception as exc:
             logger.error('Error guardando diario emocional: %s', exc)
-            messages.error(request, f'Error al guardar: {exc}')
+            messages.error(request, 'No fue posible guardar.')
 
     # Solo el propio usuario puede ver sus entradas
     entradas = DiarioEmocionalStaff.objects.filter(

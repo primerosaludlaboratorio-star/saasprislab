@@ -413,7 +413,7 @@ def consulta_medica(request, paciente_id=None):
                 'firma_digital': firma_digital,
                 'cedula_profesional': cedula_profesional,
                 'fecha_vencimiento_cedula': fecha_vencimiento_cedula,
-                'error': f'Error al crear consulta: {str(e)}'
+                'error': 'No fue posible crear la consulta.'
             })
     
     return render(request, 'core/consulta_medica.html', {
@@ -493,7 +493,7 @@ def verificar_existencia_farmacia(request):
         logging.getLogger(__name__).exception("Error inesperado en verificar_existencia_farmacia (medico.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la solicitud.'
         }, status=400)
 
 
@@ -529,7 +529,7 @@ def generar_pdf_receta(request, receta_id):
         logging.getLogger(__name__).exception("Error inesperado en generar_pdf_receta (medico.py)")
         from django.contrib import messages
         from django.shortcuts import redirect
-        messages.error(request, str(e))
+        messages.error(request, 'No fue posible procesar la solicitud.')
         return redirect('ver_receta_medica', receta_id=receta.id)
 
     from reportlab.lib.pagesizes import letter
@@ -926,7 +926,7 @@ def verificar_qr_receta(request):
             logging.getLogger(__name__).exception("Error inesperado en verificar_qr_receta (medico.py)")
             return JsonResponse({
                 'status': 'error',
-                'mensaje': str(e)
+                'mensaje': 'No fue posible procesar la solicitud.'
             }, status=400)
     
     return JsonResponse({'status': 'error'}, status=405)
@@ -1001,7 +1001,7 @@ def captura_reporte_usg(request, paciente_id=None):
             return redirect('lista_trabajo_usg')
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en captura_reporte_usg (medico.py)")
-            messages.error(request, f'Error al crear reporte: {e}')
+            messages.error(request, 'No fue posible crear el reporte.')
 
     from core.models import Paciente as PacienteModel
     pacientes = PacienteModel.objects.filter(empresa=empresa).order_by('nombres')[:50]

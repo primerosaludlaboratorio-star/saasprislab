@@ -119,7 +119,7 @@ def consultar_ia_negocios(request):
         logging.getLogger(__name__).exception("Error inesperado en consultar_ia_negocios (ia.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error: {str(e)}'
+            'mensaje': 'No fue posible procesar la solicitud IA.'
         }, status=500)
 
 

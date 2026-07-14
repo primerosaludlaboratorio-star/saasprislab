@@ -142,3 +142,29 @@ class LabValidationPdfTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('captura_resultados', args=[orden.id]))
         generar.assert_not_called()
+
+    def test_imprimir_resultados_no_expone_orden_de_otro_tenant(self):
+        empresa_otra = Empresa.objects.create(nombre='Empresa Ajena', rfc='AJE260507TST')
+        usuario_otro = Usuario.objects.create_user(
+            username='lab_pdf_otro',
+            password='test123456789',
+            empresa=empresa_otra,
+        )
+        paciente_otro = Paciente.objects.create(
+            empresa=empresa_otra,
+            nombre_completo='Paciente Ajeno',
+            sexo='F',
+        )
+        orden_ajena = OrdenDeServicio.objects.create(
+            empresa=empresa_otra,
+            paciente=paciente_otro,
+            responsable_ingreso=usuario_otro,
+            total=Decimal('50.00'),
+            anticipo=Decimal('50.00'),
+            estado='PAGADO',
+        )
+        OrdenDeServicio.objects.filter(id=orden_ajena.id).update(estado='RESULTADOS_LISTOS')
+
+        response = self.client.get(reverse('imprimir_resultados', args=[orden_ajena.id]))
+
+        self.assertEqual(response.status_code, 404)

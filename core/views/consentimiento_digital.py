@@ -341,8 +341,8 @@ def api_guardar_consentimiento(request, orden_id: int):
         })
 
     except Exception as exc:
-        logger.error(f'api_guardar_consentimiento: {exc}')
-        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
+        logger.exception('api_guardar_consentimiento')
+        return JsonResponse({'ok': False, 'error': 'No fue posible guardar el consentimiento'}, status=500)
 
 
 @login_required

@@ -63,7 +63,7 @@ def api_enviar_mensaje(request):
         return JsonResponse({'status': 'error', 'mensaje': 'JSON invalido'}, status=400)
     except DatabaseError as e:
         logging.getLogger(__name__).exception("Error inesperado en api_enviar_mensaje (comunicacion.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible procesar comunicación'}, status=500)
 
 
 @login_required
@@ -105,7 +105,7 @@ def api_enviar_audio(request):
         
     except DatabaseError as e:
         logging.getLogger(__name__).exception("Error inesperado en api_enviar_audio (comunicacion.py)")
-        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible procesar comunicación'}, status=500)
 
 
 @login_required

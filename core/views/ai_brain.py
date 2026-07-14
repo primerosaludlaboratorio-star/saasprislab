@@ -29,4 +29,4 @@ def api_ai_brain_preguntar(request):
         return JsonResponse({"status": "success", **out})
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_ai_brain_preguntar (ai_brain.py)")
-        return JsonResponse({"status": "error", "mensaje": str(e)}, status=500)
+        return JsonResponse({"status": "error", "mensaje": "No fue posible procesar la solicitud IA"}, status=500)

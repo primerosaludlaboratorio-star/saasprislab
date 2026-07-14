@@ -281,7 +281,7 @@ def crear_movimiento_manual(request):
         except (DatabaseError, ValueError, TypeError, ValidationError) as e:
             return JsonResponse({
                 'status': 'error',
-                'mensaje': f'Error al crear movimiento: {str(e)}'
+                'mensaje': 'No fue posible crear el movimiento.'
             }, status=500)
     
     empresa = getattr(request.user, 'empresa', None)

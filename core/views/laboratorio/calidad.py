@@ -104,7 +104,7 @@ def control_calidad(request):
                 messages.success(request, f'Control registrado: {parametro_nombre} = {valor_str}')
         except (IntegrityError, ValueError, TypeError) as _e:
             from django.contrib import messages
-            messages.error(request, f'Error al registrar: {_e}')
+            messages.error(request, 'No fue posible registrar.')
         return redirect('control_calidad')
 
     # GET: listar controles y preparar contexto para gráficas

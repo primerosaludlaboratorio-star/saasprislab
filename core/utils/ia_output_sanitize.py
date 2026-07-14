@@ -7,6 +7,8 @@ from __future__ import annotations
 import re
 from typing import Optional, Tuple
 
+MAX_SANITIZE_CHARS = 12000
+
 # CURP (patrón típico 18 caracteres)
 _CURP_RE = re.compile(
     r'\b[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d\b',
@@ -42,14 +44,14 @@ def sanitizar_salida_ia(
     if not texto or not str(texto).strip():
         return texto, True
 
-    t = str(texto)
+    t = str(texto)[:MAX_SANITIZE_CHARS]
     if _CURP_RE.search(t) or _EMAIL_RE.search(t):
         return mensaje_sustituto, False
     if _RFC_RE.search(t) and len(_RFC_RE.findall(t)) > 0:
         # Evitar falsos positivos muy cortos: longitud RFC ya acotada en regex
         return mensaje_sustituto, False
     for m in _PHONE_RE.finditer(t):
-        digits = re.sub(r'\D', '', m.group(1) or '')
+        digits = ''.join(ch for ch in (m.group(1) or '') if ch.isdigit())
         if len(digits) >= 10:
             return mensaje_sustituto, False
 

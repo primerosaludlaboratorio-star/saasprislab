@@ -95,7 +95,7 @@ def tool_crear_paciente(args: dict, empresa, user) -> dict:
         }
     except (IntegrityError, ValueError, AttributeError) as e:
         logger.exception("PRIS tool_crear_paciente error")
-        return {"error": str(e)}
+        return {"error": "No fue posible consultar pacientes."}
 
 
 
@@ -292,5 +292,5 @@ def tool_consultar_expediente_paciente(args: dict, empresa, user) -> dict:
         return {"error": f"Paciente ID {pid} no encontrado."}
     except (OSError, RuntimeError, ValueError) as e:
         logger.exception("PRIS tool_consultar_expediente_paciente")
-        return {"error": str(e)}
+        return {"error": "No fue posible consultar pacientes."}
 

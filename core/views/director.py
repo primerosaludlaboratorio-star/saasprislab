@@ -439,7 +439,7 @@ def director_analizadores_probar_conexion(request):
         return JsonResponse({'ok': result == 0, 'mensaje': 'Conectado' if result == 0 else 'Sin respuesta'})
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en director_analizadores_probar_conexion (director.py)")
-        return JsonResponse({'ok': False, 'mensaje': str(e)})
+        return JsonResponse({'ok': False, 'mensaje': 'No fue posible procesar la solicitud'})
 
 
 @login_required

@@ -194,7 +194,7 @@ def tool_crear_orden_laboratorio(args: dict, empresa, user) -> dict:
         }
     except (IntegrityError, OperationalError, ValueError, AttributeError) as e:
         logger.exception("PRIS tool_crear_orden_laboratorio error")
-        return {"error": str(e)}
+        return {"error": "No fue posible consultar laboratorio."}
 
 
 
@@ -260,7 +260,7 @@ def tool_cobrar_orden(args: dict, empresa, user) -> dict:
         }
     except (IntegrityError, OperationalError, ValueError) as e:
         logger.exception("PRIS tool_cobrar_orden error")
-        return {"error": str(e)}
+        return {"error": "No fue posible consultar laboratorio."}
 
 
 
@@ -395,7 +395,7 @@ def tool_actualizar_resultado_laboratorio(args: dict, empresa, user) -> dict:
         return {"error": f"Orden '{folio}' no encontrada."}
     except (IntegrityError, OperationalError, ValueError, AttributeError) as e:
         logger.exception("PRIS tool_actualizar_resultado_laboratorio error")
-        return {"error": str(e)}
+        return {"error": "No fue posible consultar laboratorio."}
 
 
 

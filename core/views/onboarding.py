@@ -111,7 +111,7 @@ class OnboardingCrearEmpresaView(View):
             return JsonResponse({'ok': True, **resultado})
         except Exception as exc:
             logger.error('[ONBOARDING] Fallo atómico: %s', exc, exc_info=True)
-            return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+            return JsonResponse({'ok': False, 'error': 'No fue posible procesar onboarding'}, status=400)
 
     @transaction.atomic
     def _crear_empresa_atomica(self, request, payload: dict) -> dict:
@@ -268,7 +268,7 @@ def api_parse_excel_personal(request):
 
     except Exception as exc:
         logger.error('[ONBOARDING] Error parseando Excel: %s', exc)
-        return JsonResponse({'error': str(exc)}, status=400)
+        return JsonResponse({'error': 'No fue posible procesar onboarding'}, status=400)
 
 
 @_solo_superusuario

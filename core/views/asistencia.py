@@ -128,7 +128,7 @@ def registrar_entrada_salida(request):
             return redirect('registro_asistencia')
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en registrar_entrada_salida (asistencia.py)")
-            messages.error(request, f'Error al registrar asistencia: {str(e)}')
+            messages.error(request, 'No fue posible registrar la asistencia.')
     
     # GET: Mostrar formulario
     empleados = Empleado.objects.filter(empresa=empresa, activo=True).order_by('id')
@@ -198,7 +198,7 @@ def crear_horario(request):
             return redirect('horarios_trabajo')
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en crear_horario (asistencia.py)")
-            messages.error(request, f'Error al guardar horario: {str(e)}')
+            messages.error(request, 'No fue posible guardar el horario.')
     
     # GET: Mostrar formulario
     horario = None
@@ -286,7 +286,7 @@ def crear_incidencia(request):
             return redirect('incidencias_asistencia')
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en crear_incidencia (asistencia.py)")
-            messages.error(request, f'Error al guardar incidencia: {str(e)}')
+            messages.error(request, 'No fue posible guardar la incidencia.')
     
     # GET: Mostrar formulario
     incidencia = None

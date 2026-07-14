@@ -92,7 +92,7 @@ def crear_cliente(request):
             return redirect('contabilidad:lista_clientes')
             
         except (IntegrityError, ValidationError, ValueError) as e:
-            messages.error(request, f'Error al crear cliente: {str(e)}')
+            messages.error(request, 'No fue posible crear el cliente.')
     
     # GET
     empresa_u = _empresa_fiscal(request)
@@ -234,7 +234,7 @@ def crear_factura(request):
                 return redirect('contabilidad:detalle_factura', factura_id=factura.id)
                 
         except (IntegrityError, ValidationError, ValueError) as e:
-            messages.error(request, f'Error al crear factura: {str(e)}')
+            messages.error(request, 'No fue posible crear la factura.')
     
     # GET
     empresa_u = _empresa_fiscal(request)

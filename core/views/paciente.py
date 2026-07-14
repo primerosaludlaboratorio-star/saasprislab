@@ -117,7 +117,7 @@ def buscar_paciente_api(request):
         logger.error(f"Error en búsqueda de paciente: {e}", exc_info=True)
         return JsonResponse({
             'status': 'error',
-            'message': f'Error del servidor: {type(e).__name__}'
+            'message': 'No fue posible procesar la solicitud.'
         }, status=500)
 
 

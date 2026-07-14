@@ -48,7 +48,7 @@ def generar_pdf_receta(request, receta_id):
         receta.validar_items_antes_de_emitir()
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en generar_pdf_receta (receta.py)")
-        messages.error(request, str(e))
+        messages.error(request, 'No fue posible procesar la receta.')
         return redirect('ver_receta_medica', receta_id=receta.id)
 
     from reportlab.lib.pagesizes import letter
@@ -394,7 +394,7 @@ def verificar_qr_receta(request):
             logging.getLogger(__name__).exception("Error inesperado en verificar_qr_receta (receta.py)")
             return JsonResponse({
                 'status': 'error',
-                'mensaje': str(e)
+                'mensaje': 'No fue posible procesar la receta.'
             }, status=400)
     
     return JsonResponse({'status': 'error'}, status=405)

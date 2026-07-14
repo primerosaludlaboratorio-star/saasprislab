@@ -88,7 +88,7 @@ def _enviar_twilio(telefono_e164: str, mensaje: str) -> dict:
         return {'enviado': False, 'canal': 'error', 'error': 'Librería twilio no instalada'}
     except Exception as e:
         logger.error('whatsapp_twilio error: %s', e)
-        return {'enviado': False, 'canal': 'error', 'error': str(e)}
+        return {'enviado': False, 'canal': 'error', 'error': 'No fue posible enviar el mensaje.'}
 
 
 def _enviar_meta(telefono_e164: str, mensaje: str) -> dict:
@@ -121,7 +121,7 @@ def _enviar_meta(telefono_e164: str, mensaje: str) -> dict:
         return {'enviado': True, 'canal': 'meta', 'message_id': msg_id}
     except Exception as e:
         logger.error('whatsapp_meta error: %s', e)
-        return {'enviado': False, 'canal': 'error', 'error': str(e)}
+        return {'enviado': False, 'canal': 'error', 'error': 'No fue posible enviar el mensaje.'}
 
 
 def generar_enlace_whatsapp(telefono, mensaje):

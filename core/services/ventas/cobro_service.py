@@ -713,7 +713,7 @@ class VentaFarmaciaService:
             logging.getLogger(__name__).exception("Error inesperado en _moneto (cobro_service.py)")
             from django.core.exceptions import ValidationError
             if isinstance(e, ValidationError):
-                return JsonResponse({'status': 'error', 'mensaje': str(e.messages[0]) if e.messages else str(e)}, status=400)
+                return JsonResponse({'status': 'error', 'mensaje': 'No fue posible procesar el cobro'}, status=400)
             import traceback
             error_detail = traceback.format_exc()
             try:
@@ -730,7 +730,7 @@ class VentaFarmaciaService:
                     f"Usuario: {getattr(usuario_log, 'username', '?')} (ID: {getattr(usuario_log, 'id', '?')}) - "
                     f"Monto intentado: ${monto_intentado:.2f} - "
                     f"Error: {str(e)} - "
-                    f"Tipo: {type(e).__name__} - "
+                    "Tipo: error interno - "
                     f"Traceback: {error_detail[:500]} - "
                     f"Empresa: {empresa_nombre}"
                 )
@@ -741,7 +741,7 @@ class VentaFarmaciaService:
 
             return JsonResponse({
                 'status': 'error',
-                'mensaje': f'Error al procesar la venta: {str(e)}',
+                'mensaje': 'No fue posible procesar la venta.',
                 'detalle': error_detail
             }, status=500)
 

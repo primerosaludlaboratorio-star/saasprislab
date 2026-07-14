@@ -112,7 +112,7 @@ def suscribir_push(request):
         logger.error(f"Error al suscribir push: {e}", exc_info=True)
         return _json_no_store({
             'status': 'error',
-            'message': f'Error del servidor: {type(e).__name__}'
+            'message': 'No fue posible procesar la suscripción push.'
         }, status=500)
 
 
@@ -167,7 +167,7 @@ def desuscribir_push(request):
         logger.error(f"Error al desuscribir push: {e}", exc_info=True)
         return _json_no_store({
             'status': 'error',
-            'message': f'Error del servidor: {type(e).__name__}'
+            'message': 'No fue posible cancelar la suscripción push.'
         }, status=500)
 
 

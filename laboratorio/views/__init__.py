@@ -153,7 +153,7 @@ def recepcion_lab(request):
                 messages.success(request, msg)
                 return redirect('recepcion_lab')
         except (DatabaseError, ValidationError) as e:
-            messages.error(request, f"Error al crear la orden: {str(e)}")
+            messages.error(request, "No fue posible crear la orden.")
 
     cotizacion_flash = request.session.get('cotizacion_flash', None)
     paciente_precargado = None
@@ -240,7 +240,7 @@ def crear_paciente_ajax(request):
         except (ValueError, TypeError) as e:
             return JsonResponse({
                 'success': False,
-                'error': f'Fecha de nacimiento invalida. Formato esperado: YYYY-MM-DD. Error: {str(e)}'
+                'error': 'Fecha de nacimiento inválida. Formato esperado: YYYY-MM-DD.'
             }, status=400)
 
         try:
@@ -261,7 +261,7 @@ def crear_paciente_ajax(request):
         except (DatabaseError, ValidationError) as e:
             return JsonResponse({
                 'success': False,
-                'error': f'Error al crear el paciente: {str(e)}'
+                'error': 'No fue posible crear el paciente.'
             }, status=500)
 
         ap_display = (
@@ -288,7 +288,7 @@ def crear_paciente_ajax(request):
     except (DatabaseError, ValidationError) as e:
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'No fue posible procesar la solicitud.'
         }, status=500)
 
 
@@ -359,7 +359,7 @@ def crear_medico_ajax(request):
     except (DatabaseError, ValidationError) as e:
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'No fue posible procesar la solicitud.'
         }, status=500)
 
 

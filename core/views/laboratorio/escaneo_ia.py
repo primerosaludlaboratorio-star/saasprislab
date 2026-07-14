@@ -107,7 +107,7 @@ Para estudios_detectados, lista todos los nombres de estudios, análisis o prueb
                     datos_extraidos = json.loads(json_match.group())
                 except json.JSONDecodeError:
                     return JsonResponse({
-                        'error': f'Error al parsear respuesta de Gemini: {str(e)}. Respuesta recibida: {texto_respuesta[:200]}'
+                        'error': 'Error al parsear respuesta de Gemini'
                     }, status=500)
             else:
                 return JsonResponse({
@@ -155,7 +155,7 @@ Para estudios_detectados, lista todos los nombres de estudios, análisis o prueb
 
     except (ImportError, RuntimeError, ValueError, TypeError, OSError, json.JSONDecodeError) as e:
         return JsonResponse({
-            'error': f'Error al procesar la receta: {str(e)}',
+            'error': 'Error al procesar la receta',
             'traceback': traceback.format_exc() if settings.DEBUG else None
         }, status=500)
 
@@ -186,7 +186,7 @@ def escanear_identidad_ia(request):
             model_name = get_gemini_model('gemini-2.0-flash')
         except (ImportError, RuntimeError, ValueError) as e:
             return JsonResponse(
-                {"error": f"Error al inicializar Gemini: {str(e)}"},
+                {"error": "Error al inicializar Gemini"},
                 status=500,
             )
 
@@ -221,7 +221,7 @@ Reglas:
 
             Image.open(io.BytesIO(imagen_bytes)).verify()
         except (ImportError, OSError, ValueError) as e:
-            return JsonResponse({"error": f"Error al procesar la imagen: {str(e)}"}, status=400)
+            return JsonResponse({"error": "Error al procesar la imagen"}, status=400)
 
         from google.genai import types as genai_types
 
@@ -265,7 +265,7 @@ Reglas:
     except (ImportError, RuntimeError, ValueError, TypeError, OSError, json.JSONDecodeError, KeyError) as e:
         return JsonResponse(
             {
-                "error": f"Error al procesar la identificación: {str(e)}",
+                "error": "Error al procesar la identificación",
                 "traceback": traceback.format_exc() if settings.DEBUG else None,
             },
             status=500,

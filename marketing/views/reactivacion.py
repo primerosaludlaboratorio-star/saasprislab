@@ -126,6 +126,6 @@ def api_detectar_pacientes_inactivos(request):
             'pacientes': resultado,
         })
 
-    except (DatabaseError, ValidationError) as e:
-        logger.error('api_detectar_pacientes_inactivos: %s', e, exc_info=True)
-        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+    except (DatabaseError, ValidationError):
+        logger.exception('api_detectar_pacientes_inactivos')
+        return JsonResponse({'ok': False, 'error': 'No fue posible detectar pacientes inactivos.'}, status=500)

@@ -88,7 +88,7 @@ def registrar_incidencia(request):
         logging.getLogger(__name__).exception("Error inesperado en registrar_incidencia (incidencias.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la incidencia.'
         }, status=500)
 
 
@@ -199,5 +199,5 @@ def marcar_incidencia_revisada(request, incidencia_id):
         logging.getLogger(__name__).exception("Error inesperado en marcar_incidencia_revisada (incidencias.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la incidencia.'
         }, status=500)

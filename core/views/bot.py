@@ -131,5 +131,5 @@ def api_bot_pregunta(request):
         logging.getLogger(__name__).exception("Error inesperado en api_bot_pregunta (bot.py)")
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'No fue posible procesar la solicitud.'
         }, status=400)

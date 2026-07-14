@@ -128,7 +128,7 @@ def tool_registrar_venta_farmacia(args: dict, empresa, user) -> dict:
         }
     except Exception as e:
         logger.exception("PRIS tool_registrar_venta_farmacia error")
-        return {"error": str(e)}
+        return {"error": "No fue posible consultar ventas."}
 
 
 

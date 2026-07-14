@@ -108,8 +108,9 @@ def api_crear_consulta_directa(request):
 
     except Http404:
         return JsonResponse({'ok': False, 'mensaje': 'Paciente no encontrado'}, status=404)
-    except (DatabaseError, ValidationError) as e:
-        return JsonResponse({'ok': False, 'mensaje': f'Error: {str(e)}'}, status=500)
+    except (DatabaseError, ValidationError):
+        logger.exception("Error creando consulta desde API")
+        return JsonResponse({'ok': False, 'mensaje': 'No fue posible crear la consulta'}, status=500)
 
 
 # ==============================================================================
@@ -211,8 +212,9 @@ def api_crear_paciente_y_consulta(request):
                 'paciente': paciente.nombre_completo
             })
 
-    except (DatabaseError, ValidationError) as e:
-        return JsonResponse({'ok': False, 'mensaje': f'Error al crear paciente: {str(e)}'}, status=500)
+    except (DatabaseError, ValidationError):
+        logger.exception("Error creando paciente y consulta")
+        return JsonResponse({'ok': False, 'mensaje': 'No fue posible crear paciente y consulta'}, status=500)
 
 
 # ==============================================================================
@@ -409,15 +411,14 @@ REGLAS CRÍTICAS:
             'mensaje': 'Campos SOAP extraidos y clasificados exitosamente',
         })
 
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError:
         return JsonResponse({
             'ok': False,
-            'error': f'Error parseando JSON de IA: {str(e)}',
-            'respuesta_ia': respuesta_texto,
+            'error': 'La IA no devolvió JSON válido',
         }, status=500)
-    except (DatabaseError, ValidationError, ValueError, TypeError, ImportError, RuntimeError) as e:
-        logger.error("Error en analisis de transcripcion: %s", e)
-        return JsonResponse({'ok': False, 'error': f'Error procesando transcripcion: {str(e)}'}, status=500)
+    except (DatabaseError, ValidationError, ValueError, TypeError, ImportError, RuntimeError):
+        logger.exception("Error en analisis de transcripcion")
+        return JsonResponse({'ok': False, 'error': 'No fue posible procesar la transcripción'}, status=500)
 
 
 # ==============================================================================
@@ -524,9 +525,9 @@ def api_generar_receta_inmediata(request):
             'mensaje': 'Receta generada exitosamente'
         })
 
-    except (DatabaseError, ValidationError, ValueError, TypeError) as e:
-        logger.error("Error generando receta inmediata: %s", e, exc_info=True)
-        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+    except (DatabaseError, ValidationError, ValueError, TypeError):
+        logger.exception("Error generando receta inmediata")
+        return JsonResponse({'ok': False, 'error': 'No fue posible generar la receta'}, status=500)
 
 
 # ==============================================================================
@@ -626,9 +627,9 @@ def api_generar_certificado_inmediato(request):
             'mensaje': '✅ Certificado generado exitosamente'
         })
 
-    except (DatabaseError, ValidationError, ValueError, TypeError) as e:
-        logger.error("Error generando certificado: %s", e)
-        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+    except (DatabaseError, ValidationError, ValueError, TypeError):
+        logger.exception("Error generando certificado")
+        return JsonResponse({'ok': False, 'error': 'No fue posible generar el certificado'}, status=500)
 
 
 # ==============================================================================
@@ -716,9 +717,9 @@ def api_generar_orden_laboratorio_inmediata(request):
             'mensaje': '✅ Orden de laboratorio generada exitosamente'
         })
 
-    except (DatabaseError, ValidationError, ValueError, TypeError) as e:
-        logger.error("Error generando orden: %s", e)
-        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+    except (DatabaseError, ValidationError, ValueError, TypeError):
+        logger.exception("Error generando orden de laboratorio")
+        return JsonResponse({'ok': False, 'error': 'No fue posible generar la orden de laboratorio'}, status=500)
 
 
 # ==============================================================================
@@ -813,9 +814,9 @@ def api_subir_archivo(request):
             'mensaje': f'Archivo "{titulo}" subido exitosamente'
         })
 
-    except (DatabaseError, ValidationError, ValueError, TypeError, OSError) as e:
-        logger.error("Error subiendo archivo: %s", e)
-        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+    except (DatabaseError, ValidationError, ValueError, TypeError, OSError):
+        logger.exception("Error subiendo archivo de paciente")
+        return JsonResponse({'ok': False, 'error': 'No fue posible subir el archivo'}, status=500)
 
 
 @login_required
@@ -834,8 +835,9 @@ def api_eliminar_archivo(request, archivo_id):
         archivo.delete()
 
         return JsonResponse({'ok': True, 'mensaje': f'Archivo "{nombre}" eliminado'})
-    except (DatabaseError, ValidationError, ObjectDoesNotExist, OSError) as e:
-        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+    except (DatabaseError, ValidationError, ObjectDoesNotExist, OSError):
+        logger.exception("Error eliminando archivo de paciente")
+        return JsonResponse({'ok': False, 'error': 'No fue posible eliminar el archivo'}, status=500)
 
 
 # ==============================================================================
@@ -1034,5 +1036,6 @@ def api_resultados_disponibles(request):
                     })
 
         return JsonResponse({'status': 'success', 'resultados': resultados})
-    except (DatabaseError, ImportError, AttributeError) as e:
-        return JsonResponse({'status': 'success', 'resultados': [], 'nota': str(e)})
+    except (DatabaseError, ImportError, AttributeError):
+        logger.exception("Error consultando resultados disponibles del paciente")
+        return JsonResponse({'status': 'success', 'resultados': [], 'nota': 'Resultados no disponibles temporalmente'})

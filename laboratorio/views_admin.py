@@ -94,8 +94,8 @@ def cargar_tarifas_desde_csv(request):
                         estudios_actualizados += 1
 
                 except (DatabaseError, ValidationError, ValueError, TypeError, KeyError, AttributeError) as e:
-                    logger.warning(f'[CSV Tarifas] Error fila {idx + 2}: {e}')
-                    errores.append(f"Linea {idx + 2}: {str(e)}")
+                    logger.warning('[CSV Tarifas] Error fila %s', idx + 2, exc_info=True)
+                    errores.append(f"Linea {idx + 2}: no fue posible procesar la fila")
         
         # Resumen
         total_estudios = Estudio.objects.count()
@@ -115,10 +115,11 @@ def cargar_tarifas_desde_csv(request):
             'errores_detalle': errores[:10]  # Solo mostrar primeros 10 errores
         })
         
-    except (DatabaseError, ValidationError, UnicodeDecodeError, csv.Error) as e:
+    except (DatabaseError, ValidationError, UnicodeDecodeError, csv.Error):
+        logger.exception('[CSV Tarifas] Error al procesar archivo')
         return JsonResponse({
             'ok': False,
-            'mensaje': f'Error al procesar el archivo: {str(e)}'
+            'mensaje': 'No fue posible procesar el archivo'
         }, status=500)
 
 

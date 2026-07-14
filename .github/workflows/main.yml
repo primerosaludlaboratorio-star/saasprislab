@@ -4,9 +4,9 @@ name: PRISLAB Quality Gate
 
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, release/v1.0-local]
   pull_request:
-    branches: [master, main]
+    branches: [master, main, release/v1.0-local]
 
 env:
   DJANGO_SETTINGS_MODULE: config.settings
@@ -62,6 +62,8 @@ jobs:
           python manage.py test \
             core.tests.test_guardian_v53 \
             core.tests.test_e2e_cfdi \
+            core.tests.test_tenant_isolation \
+            core.tests.test_lims_config_tenant_security \
             laboratorio.tests.test_westgard \
             laboratorio.tests.test_cci_lj_postgres_guard \
             core.tests.test_clinical_math \
@@ -69,4 +71,8 @@ jobs:
             core.tests.test_offline_idempotency \
             core.tests.test_sandbox_telegram \
             core.tests.test_ia_ethics_p18
-          python scripts_cursor_e2e/run_cursor_reliability_suite.py
+          if [ -f scripts_cursor_e2e/run_cursor_reliability_suite.py ]; then
+            python scripts_cursor_e2e/run_cursor_reliability_suite.py
+          else
+            echo "Cursor reliability suite no presente; se omite."
+          fi

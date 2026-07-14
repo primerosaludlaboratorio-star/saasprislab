@@ -98,7 +98,7 @@ def crear_periodo(request):
                 return redirect('nomina_detalle_periodo', pk=periodo.pk)
         except Exception as exc:
             logger.error("Error creando período de nómina: %s", exc)
-            messages.error(request, f'Error al crear período: {exc}')
+            messages.error(request, 'No fue posible crear el período.')
 
     empleados_count = Empleado.objects.filter(empresa=empresa, activo=True).count()
     return render(request, 'core/nomina/crear_periodo.html', {
@@ -159,7 +159,7 @@ def editar_recibo(request, pk):
             return redirect('nomina_detalle_periodo', pk=recibo.periodo.pk)
         except Exception as exc:
             logger.error("Error editando recibo %s: %s", pk, exc)
-            messages.error(request, f'Error: {exc}')
+            messages.error(request, 'No fue posible procesar la nómina.')
 
     return render(request, 'core/nomina/editar_recibo.html', {
         'recibo': recibo,
@@ -232,7 +232,7 @@ def calcular_nomina(request, periodo_id):
         messages.success(request, f'{recalculados} recibos recalculados correctamente.')
     except Exception as exc:
         logger.error("Error calculando nómina %s: %s", periodo_id, exc)
-        messages.error(request, f'Error al recalcular: {exc}')
+        messages.error(request, 'No fue posible recalcular la nómina.')
 
     return redirect('nomina_detalle_periodo', pk=periodo_id)
 

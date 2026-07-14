@@ -375,5 +375,5 @@ def registrar_notificacion_panico(request, orden_id):
         logger.error("Error al registrar notificación de pánico: %s", e, exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': f'Error al registrar notificación: {str(e)}'
+            'error': 'No fue posible registrar la notificación.'
         }, status=500)

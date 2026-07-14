@@ -36,17 +36,16 @@ def imprimir_resultados(request, orden_id):
         guardar=1  → Guarda automaticamente en storage (GCS/local)
         descargar=1 → Content-Disposition: attachment
     """
+    empresa_usuario = getattr(request.user, 'empresa', None)
+    if not empresa_usuario:
+        return HttpResponse("No autorizado", status=403)
     orden = get_object_or_404(
         OrdenDeServicio.objects.select_related(
             'paciente', 'empresa', 'medico_referente'
         ),
-        id=orden_id
+        id=orden_id,
+        empresa=empresa_usuario,
     )
-    
-    # Verificar permisos - Permitir superuser/staff CON empresa válida
-    empresa_usuario = getattr(request.user, 'empresa', None)
-    if empresa_usuario != orden.empresa:
-        return HttpResponse("No autorizado", status=403)
 
     if orden.estado not in ('RESULTADOS_LISTOS', 'ENTREGADO'):
         messages.error(
@@ -127,16 +126,16 @@ def api_generar_y_guardar_reporte(request, orden_id):
     API: Genera el PDF, lo guarda en storage, y retorna la URL.
     Usado por el monitor de produccion al marcar FINALIZADO.
     """
+    empresa_usuario = getattr(request.user, 'empresa', None)
+    if not empresa_usuario:
+        return JsonResponse({'status': 'error', 'mensaje': 'No autorizado'}, status=403)
     orden = get_object_or_404(
         OrdenDeServicio.objects.select_related(
             'paciente', 'empresa', 'medico_referente'
         ),
-        id=orden_id
+        id=orden_id,
+        empresa=empresa_usuario,
     )
-    
-    # Verificar permisos - SIN BYPASS SUPERUSER
-    if getattr(request.user, 'empresa', None) != orden.empresa:
-        return JsonResponse({'status': 'error', 'mensaje': 'No autorizado'}, status=403)
     
     try:
         pdf_bytes = generar_reporte_pdf(orden, request=request)
@@ -170,7 +169,7 @@ def api_generar_y_guardar_reporte(request, orden_id):
         logger.error(f"Error API generar reporte orden {orden_id}: {e}", exc_info=True)
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error generando reporte: {str(e)}'
+            'mensaje': 'No fue posible generar el reporte.'
         }, status=500)
 
 
@@ -191,7 +190,7 @@ def validar_resultado(request, token):
         })
 
     try:
-        orden = OrdenDeServicio.objects.select_related(
+        orden = OrdenDeServicio.objects_all.select_related(
             'paciente', 'empresa', 'medico_referente'
         ).get(token_acceso=token_uuid)
 

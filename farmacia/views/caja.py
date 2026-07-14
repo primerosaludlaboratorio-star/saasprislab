@@ -137,7 +137,7 @@ def corte_caja_farmacia(request):
                     })
                     
             except (DatabaseError, ValueError, TypeError, InvalidOperation, ValidationError) as e:
-                messages.error(request, f'❌ Error al procesar corte de caja: {str(e)}')
+                messages.error(request, 'No fue posible procesar el corte de caja.')
     else:
         form = CorteCajaFarmaciaForm()
     
@@ -255,7 +255,7 @@ def abrir_caja(request):
         except (DatabaseError, ValueError, TypeError, InvalidOperation, ValidationError) as e:
             return JsonResponse({
                 'success': False,
-                'error': f'Error al abrir caja: {str(e)}'
+                'error': 'No fue posible abrir la caja.'
             }, status=500)
     
     return render(request, 'farmacia/caja/abrir_caja.html')

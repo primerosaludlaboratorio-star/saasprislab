@@ -104,7 +104,7 @@ def api_buscar_pacientes(request):
         # Siempre devolver JSON, nunca HTML
         return JsonResponse({
             'status': 'error',
-            'mensaje': f'Error al buscar pacientes: {str(e)}',
+            'mensaje': 'No fue posible buscar pacientes.',
             'pacientes': []
         }, status=500)
 
@@ -126,7 +126,7 @@ def api_guardar_paciente(request):
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError as e:
-            return JsonResponse({'status': 'error', 'mensaje': 'Error al procesar los datos JSON: ' + str(e)}, status=400)
+            return JsonResponse({'status': 'error', 'mensaje': 'Error al procesar los datos JSON'}, status=400)
         
         # Aceptar nombres separados O nombre completo
         nombres_sep = data.get('nombres', '').strip()
