@@ -4,6 +4,8 @@ on:
   push:
     branches: [release/v1.0-local]
     paths:
+      # La documentación aislada no dispara este flujo; se usa un cambio de código,
+      # script, infraestructura o workflow para activar un despliegue real.
       - 'academia/**'
       - 'bienestar/**'
       - 'config/**'
