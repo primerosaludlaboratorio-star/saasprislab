@@ -8,6 +8,48 @@
 
 **Alcance:** Código y configuración presentes en el workspace local (`PRISLAB_SaaS`). No sustituye inventarios en tiempo real de bases de datos ni secretos en producción.
 
+> Nota de canon vigente: este documento es histórico. El estado actual de cierre, pendientes y coordinación vive en `docs/ai_coordination/` y puede dejar obsoletas algunas observaciones de esta bitácora sin que eso implique error en su contexto original.
+
+---
+
+## Actualización operativa 2026-07-13 — cierre de H-005 y pendientes reales
+
+### H-005 — Suite de tests / base de datos de prueba
+
+**Diagnóstico corregido:** el atasco principal no debe seguir describiéndose como un simple problema de consola Windows o `UnicodeEncodeError`.  
+La causa estructural es el costo de recrear y migrar el proyecto completo sobre **SQLite** en cada corrida de tests, cuando el sistema está diseñado para **PostgreSQL**.
+
+**Estado actual:** `PARCIAL`
+
+- **CI:** ya quedó encaminado a **PostgreSQL** como solución correcta.
+- **Local:** ya existen runners reproducibles en `scripts/run_quality_gate_postgres.ps1` y `scripts/run_quality_gate_postgres.py`, pero sigue pendiente disponer de PostgreSQL local/Docker o reducir deuda vía `squash` de migraciones.
+- **Bootstrap local centralizado:** `scripts/bootstrap_local_runtime.ps1` quedó como entrypoint operativo para diagnosticar WSL/Docker/PostgreSQL y encadenar preflight + probe local del gate.
+- **Evidencia de host:** `tools/last_runs/bootstrap_local_runtime.json` conserva el estado del host y el siguiente paso operativo después de cada ejecución del bootstrap.
+- **Evidencia local actual:** `tools/last_runs/postgres_quality_gate_local.json` registra estado `pending_runtime` cuando no hay PostgreSQL disponible en `127.0.0.1:5432`.
+- **Bloqueo de entorno actual (2026-07-14):** esta máquina no tiene PostgreSQL instalado ni servicio local disponible; el intento de instalación con `winget install PostgreSQL.PostgreSQL.16` falló por descarga `403` desde el origen externo del paquete.
+- **Interpretación correcta:** SQLite puede servir como fallback de desarrollo básico, pero **no** como baseline de cierre para la suite completa.
+- **Validación estática hecha:** el workflow root `.github/workflows/main.yml` resuelve correctamente `working-directory: PRISLAB_SaaS-master` y encuentra `manage.py`, `requirements.txt` y `requirements-dev.txt`.
+
+### Pendientes de cierre que permanecen vivos
+
+| Hallazgo | Estado real | Nota operativa |
+| :--- | :--- | :--- |
+| **H-005** | Parcial | Validar CI sobre PostgreSQL y ejecutar el runner local `scripts/run_quality_gate_postgres.py` o `scripts/run_quality_gate_postgres.ps1` con PostgreSQL disponible; hoy sigue bloqueado por ausencia de PostgreSQL local y fallo `winget` 403 al intentar instalarlo |
+| **H-007** | **CERRADO** | `playwright` fijado en `1.60.0`; `chromadb` removido del baseline Python; RAG con SQLite por defecto y activación explícita para Chroma |
+| **H-008** | **PARCIAL** | Compose, nginx, entrypoint y plantillas de entorno ya validan en preflight; falta solo validación runtime porque Docker no está instalado en esta máquina y WSL tampoco está habilitado |
+| **H-009** | **CERRADO** | Gate reproducible con `radon`, `lizard` y `jscpd`; baseline actual `4.31%` duplicidad y reporte persistido en `tools/last_runs/quality_metrics_gate.json` |
+| **H-013** | **CERRADO** | Capa de middlewares consolidada en código y documentación: legado exportado removido, `ApiRequestIdMiddleware` adelantado, `RateLimitMiddleware` atómico, `ActividadUsuarioMiddleware` sin escrituras por request y `SentinelTelemetryMiddleware` sin solapamiento de latencia. |
+
+### Regla documental vigente
+
+No usar lenguaje de “cierre total” o “enterprise ready” mientras los pendientes anteriores sigan abiertos.  
+El cierre técnico debe seguir distinguiendo entre:
+
+1. **Código corregido**
+2. **CI encaminado correctamente**
+3. **Baseline local reproducible**
+4. **Cierre real de producción**
+
 ---
 
 ## 1. Gobernanza y privacidad
@@ -281,33 +323,72 @@ python docs/audit/_regen_comandos_manage.py
 | 27 | `pwa` | PWA |
 | 28 | `channels` | WebSockets / ASGI |
 
-### 5.4 `MIDDLEWARE` (orden de ejecución en `config/settings.py`)
+### 5.4 `MIDDLEWARE` (orden de ejecución en `config/settings/base.py`) — H-013 **CERRADO**
 
-1. `django.middleware.security.SecurityMiddleware`  
-2. `whitenoise.middleware.WhiteNoiseMiddleware`  
-3. `django.contrib.sessions.middleware.SessionMiddleware`  
-4. `django.middleware.common.CommonMiddleware`  
-5. `core.middleware.canonical_host.CanonicalHostMiddleware`  
-6. `django.middleware.csrf.CsrfViewMiddleware`  
-7. `django.contrib.auth.middleware.AuthenticationMiddleware`  
-8. `core.middleware.read_only.ReadOnlyMiddleware` — DRP (`PRISLAB_READ_ONLY=1`)  
-9. `core.middleware.admin_access.AdminAccessMiddleware` — bastión `/admin/` (IP / grupo **`ADMIN_SISTEMA`**)  
-10. `core.middleware.rate_limit.RateLimitMiddleware`  
-11. `core.middleware.EmpresaIdentityMiddleware`  
-12. `core.middleware.feature_flags.FeatureFlagMiddleware`  
-13. `core.middleware.json_response.JSONResponseMiddleware`  
-14. `core.middleware.actividad_usuario.ActividadUsuarioMiddleware`  
-15. `core.middleware.sentinel.SentinelTelemetryMiddleware`  
-16. `core.middleware.performance.PerformanceMiddleware`  
-17. `core.middleware.pris_context.PrisContextMiddleware`  
-18. `core.middleware.mantenimiento.MaintenanceModeMiddleware`  
-19. `core.middleware.seguridad.SessionTimeoutMiddleware`  
-20. `core.middleware.seguridad.TenantStorageMiddleware`  
-21. *(comentado)* `LogAccesoExpedienteMiddleware` — legacy desactivado (**Punto 12**)  
-22. `core.middleware.blindaje_expediente.BlindajeExpedienteMiddleware`  
-23. `core.middleware.blindaje_expediente.SnapshotMiddleware`  
-24. `django.contrib.messages.middleware.MessageMiddleware`  
-25. `django.middleware.clickjacking.XFrameOptionsMiddleware`  
+**Stack consolidado (middlewares custom resaltados):**
+
+| Orden | Middleware | Archivo | Propósito real | Estado |
+| :---: | :--- | :--- | :--- | :--- |
+| 1 | `SecurityMiddleware` | Django | HTTPS/HSTS | Estándar |
+| 2 | `WhiteNoiseMiddleware` | whitenoise | Estáticos en prod | Estándar |
+| 3 | `ApiRequestIdMiddleware` | `core/api_contracts/middleware.py` | Correlación `X-Request-ID` | ✅ Activo; antes de autenticación |
+| 5 | `CorsMiddleware` | corsheaders | CORS | Estándar |
+| 6 | `SessionMiddleware` | Django | Sesiones | Estándar |
+| 7 | `CommonMiddleware` | Django | Common | Estándar |
+| 8 | `CanonicalHostMiddleware` | `core/middleware/canonical_host.py` | Host canónico | ✅ Activo |
+| 9 | `CsrfViewMiddleware` | Django | CSRF | Estándar |
+| 10 | `AuthenticationMiddleware` | Django | Auth user | Estándar |
+| 11 | `ReadOnlyMiddleware` | `core/middleware/read_only.py` | Kill-switch solo lectura | ✅ Activo; DRP |
+| 12 | `AdminAccessMiddleware` | `core/middleware/admin_access.py` | Bastión `/admin/` | ✅ Activo; usa `REMOTE_ADDR` |
+| 13 | `RateLimitMiddleware` | `core/middleware/rate_limit.py` | Rate limit login/API por IP; contador atómico por ventana fija | ✅ Activo |
+| 14 | `EmpresaIdentityMiddleware` | `core/middleware/empresa.py` | Tenant por usuario + sucursal + `modulos_activos` | ✅ Activo |
+| 15 | `SuscripcionMiddleware` | `core/middleware/suscripciones.py` | Bloqueo por suscripción inactiva (402) | ✅ Activo |
+| 16 | `FeatureFlagMiddleware` | `core/middleware/feature_flags.py` | Bloqueo módulos no contratados | ✅ Activo |
+| 17 | `JSONResponseMiddleware` | `core/middleware/json_response.py` | Errores HTML→JSON XHR | ✅ Activo |
+| 18 | `ActividadUsuarioMiddleware` | `core/middleware/actividad_usuario.py` | Actividad 4h / sugerir descanso | ✅ Activo; session-based |
+| 19 | `SentinelTelemetryMiddleware` | `core/middleware/sentinel.py` | Captura errores + auto-reparación | ✅ Activo |
+| 20 | `PerformanceMiddleware` | `core/middleware/performance.py` | Latencia + queries SQL | ✅ Activo; diagnóstico detallado |
+| 21 | `PrisContextMiddleware` | `core/middleware/pris_context.py` | Contexto PRIS | ✅ Activo |
+| 22 | `MaintenanceModeMiddleware` | `core/middleware/mantenimiento.py` | Mantenimiento | ✅ Activo |
+| 23 | `SessionTimeoutMiddleware` | `core/middleware/seguridad.py` | Timeout 8h | ✅ Activo |
+| 24 | `TenantStorageMiddleware` | `core/middleware/seguridad.py` | Slug empresa en storage | ✅ Activo |
+| 25 | `BlindajeExpedienteMiddleware` | `core/middleware/blindaje_expediente.py` | Notas selladas | ✅ Activo |
+| 26 | `SnapshotMiddleware` | `core/middleware/blindaje_expediente.py` | Metadatos SHA | ✅ Activo |
+| 27 | `MessageMiddleware` | Django | Mensajes | Estándar |
+| 28 | `XFrameOptionsMiddleware` | Django | Clickjacking | Estándar |
+
+**Middlewares custom fuera de la cadena:**
+
+| Middleware | Archivo | Motivo |
+| :--- | :--- | :--- |
+| `TenantSubdomainMiddleware` | `core/middleware/tenant_subdomain.py` | Resolución tenant por subdominio/header; no activo en `MIDDLEWARE` |
+
+**Cambios de consolidación realizados:**
+
+- `core/middleware/admin_access_restrict.py`: eliminado (re-export redundante).
+- `LogAccesoExpedienteMiddleware`: eliminado de `core/middleware/seguridad.py` y `core/middleware/__init__.py`; la trazabilidad NOM-024 de **modificaciones** queda cubierta por `BlindajeExpedienteMiddleware` + `SnapshotMiddleware` + señales.
+- `SentinelTelemetryMiddleware`: se removió medición de latencia y auto-cleanup; ahora solo captura errores, auto-repara y registra incidencias.
+- `PerformanceMiddleware`: retiene diagnóstico de latencia/queries e `IncidenciaSentinel` >5s.
+- `ActividadUsuarioMiddleware`: reescrito para usar la sesión (`_actividad_inicio`), eliminando `usuario.save()` por request autenticado.
+- `ApiRequestIdMiddleware`: movido antes de `AuthenticationMiddleware` para correlación completa.
+- `config/settings.py` sigue existiendo en el repo; la cadena activa y canónica de middlewares está en `config/settings/base.py`.
+- `RateLimitMiddleware`: reescrito para contador atómico por ventana fija (`cache.add`/`cache.incr`), eliminando la condición de carrera de listas no atómicas. El límite de `/api/` ahora cubre todos los métodos HTTP y devuelve `Retry-After`.
+
+**Riesgos mitigados:**
+
+- `ActividadUsuarioMiddleware` ya no genera `UPDATE` en cada request autenticado.
+- `ApiRequestIdMiddleware` ahora asigna `X-Request-ID` antes de `AuthenticationMiddleware`.
+- `SentinelTelemetryMiddleware` dejó de medir latencia y ejecutar auto-cleanup; ya no solapa con `PerformanceMiddleware`.
+- `RateLimitMiddleware` ya no depende de listas de timestamps compartidas sin atomicidad; usa contador atómico por ventana fija (`cache.add`/`cache.incr`).
+
+**Validación ejecutada para el cierre real de H-013:**
+
+- `python manage.py check` → OK
+- Pruebas aisladas:
+  - `core.tests.test_rate_limit_middleware`
+  - `core.tests.test_actividad_usuario_middleware`
+  - `core.tests.test_auto_repair_tenant_guard`
+- Barrido de referencias huérfanas en `core/` → sin `admin_access_restrict`, sin `LogAccesoExpedienteMiddleware`, sin auto-cleanup de `SentinelTelemetryMiddleware`
 
 ### 5.5 Context processors (`TEMPLATES` en settings)
 
@@ -910,7 +991,7 @@ Estatus técnico: ✅ Aprob. Programador | 🟡 Requiere revisión del Programad
 
 **Autor/IA:** Cursor.
 
-**Cambio realizado:** Middleware canónico **`core.middleware.admin_access.AdminAccessMiddleware`** en **`config/settings.py`**: **`ADMIN_IP_RESTRICTION_ENABLED`**, **`ALLOWED_ADMIN_IPS`**, **`ADMIN_GROUP_RESTRICTION_ENABLED`**, grupo Django **`ADMIN_SISTEMA`**. Compatibilidad: **`admin_access_restrict`** reexporta la misma clase. Documentación de variables: **SOP §1.2**.
+**Cambio realizado:** Middleware canónico **`core.middleware.admin_access.AdminAccessMiddleware`** en **`config/settings.py`**: **`ADMIN_IP_RESTRICTION_ENABLED`**, **`ALLOWED_ADMIN_IPS`**, **`ADMIN_GROUP_RESTRICTION_ENABLED`**, grupo Django **`ADMIN_SISTEMA`**. El alias **`admin_access_restrict`** ya fue retirado del código para evitar ambigüedad. Documentación de variables: **SOP §1.2**.
 
 **Estatus técnico:** 🟢 Bastión **`/admin/`** activo en código; activación en prod solo con allowlist/grupo definidos por Director.
 

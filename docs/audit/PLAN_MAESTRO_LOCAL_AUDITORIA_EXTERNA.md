@@ -3,6 +3,8 @@
 **Versión:** 1.0  
 **Alcance temporal:** Todo el trabajo descrito aquí asume **entorno local** hasta que el sistema funcione de forma estable en ese contexto. **No se incluyen acciones obligatorias sobre producción** en esta fase; las verificaciones y cambios en cloud se harán **después**, con baseline tomado de este documento.
 
+> Nota de canon vigente: este plan es histórico y de soporte. El estado operativo actual y los pendientes vivos deben leerse en `docs/ai_coordination/`; si hay contradicción, manda el canon de coordinación más reciente.
+
 **Objetivo del documento:**
 
 1. Servir como **plan completo** para mejorar el producto de forma ordenada (arquitectura, funcionalidad, UX, comandos, pruebas).
@@ -21,6 +23,149 @@
 
 ---
 
+## 1.1 Estado de cierre actual (actualizado)
+
+### H-005 — Suite de tests colgada
+
+**Diagnóstico confirmado:** el bloqueo no era un bug simple de tests sino el costo de recrear y migrar todo el esquema Django sobre SQLite en cada corrida. El proyecto está diseñado para PostgreSQL; SQLite degrada fuerte en migraciones masivas y deja estados inconsistentes si se interrumpe una corrida.
+
+**Estado actual:** `PARCIALMENTE CORREGIDO`
+
+- **CI:** ya quedó encaminado a **PostgreSQL** como solución correcta para la ruta automatizada mediante [main.yml](C:/Users/jonil/Desktop/PRISLAB_SaaS-master/.github/workflows/main.yml) en el root del repositorio, apuntando al código en `PRISLAB_SaaS-master/`.
+- **Local:** ya existen runners reproducibles en [run_quality_gate_postgres.ps1](C:/Users/jonil/Desktop/PRISLAB_SaaS-master/PRISLAB_SaaS-master/scripts/run_quality_gate_postgres.ps1) y [run_quality_gate_postgres.py](C:/Users/jonil/Desktop/PRISLAB_SaaS-master/PRISLAB_SaaS-master/scripts/run_quality_gate_postgres.py). Ambos replican la ruta CI sobre PostgreSQL; sigue pendiente contar con PostgreSQL real disponible en la máquina para ejecutar el gate completo.
+- **Bootstrap operativo agregado:** [bootstrap_local_runtime.ps1](C:/Users/jonil/Desktop/PRISLAB_SaaS-master/PRISLAB_SaaS-master/scripts/bootstrap_local_runtime.ps1) concentra el flujo local de host: diagnóstico de WSL/Docker/PostgreSQL, preflight del stack y probe del gate PostgreSQL.
+- **SQLite en memoria:** no resuelve la causa raíz; solo cambia el medio de almacenamiento, no el peso del grafo de migraciones.
+- **Validación estática hecha:** el workflow root resuelve correctamente `working-directory: PRISLAB_SaaS-master` y encuentra `manage.py`, `requirements.txt` y `requirements-dev.txt`.
+
+### Pendientes reales que siguen abiertos
+
+| Hallazgo | Estado | Acción real pendiente |
+|---------|--------|-----------------------|
+| H-005 | Parcial | Verificar corrida CI en GitHub sobre PostgreSQL y ejecutar `scripts/run_quality_gate_postgres.py` o `scripts/run_quality_gate_postgres.ps1` cuando haya PostgreSQL disponible; después evaluar `squash` de migraciones |
+| H-008 | **PARCIAL** | Repo-side del stack validado con preflight; falta solo runtime local porque Docker no está instalado en esta máquina |
+| H-009 | **CERRADO** | Gate reproducible activo con `radon`, `lizard` y `jscpd`; baseline persistido en `tools/last_runs/quality_metrics_gate.json` |
+| H-013 | **CERRADO** | Capa de middlewares consolidada en código y documentación: legado exportado removido, `ApiRequestIdMiddleware` adelantado, `RateLimitMiddleware` atómico, `ActividadUsuarioMiddleware` sin escrituras por request y `SentinelTelemetryMiddleware` sin solapamiento de latencia. |
+
+### Regla operativa
+
+**No declarar cierre enterprise mientras H-005 siga solo en estado parcial.**  
+CI sobre PostgreSQL desbloquea la ruta correcta, pero no sustituye la validación del entorno local reproducible ni el cierre de la deuda de migraciones.
+
+### 1.1.1 H-007 — Dependencias de seguridad (estado: **CERRADO**)
+
+**Corrección aplicada en código:**
+
+- `playwright` quedó fijado en `1.60.0` en `package.json` y `package-lock.json`.
+- `chromadb` salió de `requirements.txt`; ya no forma parte del baseline Python por defecto.
+- `core/utils/rag_engine.py` ahora usa **SQLite persistente por defecto** y solo habilita Chroma si existe activación explícita con `PRISLAB_ENABLE_CHROMA`.
+- Se agregó prueba de regresión en `core/tests/test_rag_engine_hardening.py` para impedir que Chroma vuelva a activarse implícitamente.
+
+**Resultado operativo:**
+
+- El flujo RAG sigue operativo con backend SQLite persistente.
+- El riesgo de cadena de suministro por `chromadb` queda fuera del runtime estándar mientras no exista versión upstream corregida.
+- La actualización de Playwright queda alineada con el lock real del repositorio.
+
+### 1.1.2 H-009 — Métricas de complejidad y duplicidad (estado: **CERRADO**)
+
+**Corrección aplicada en código:**
+
+- `requirements-dev.txt` ahora declara `radon` y `lizard`.
+- `package.json` fija `jscpd` en `devDependencies` y expone `quality:metrics`.
+- `.github/workflows/main.yml` instala toolchain Node con `npm ci --ignore-scripts` y ejecuta `python tools/quality_metrics_gate.py`.
+- `tools/quality_metrics_gate.py` quedó como gate reproducible del proyecto:
+  - alcance: `core`, `farmacia`, `laboratorio`, `inventario`, `contabilidad`, `consultorio`, `lims`, `pacientes`, `config`
+  - exclusiones: `migrations`, `tests`, `docs`, `node_modules`, `_archive_legacy`
+  - thresholds congelados:
+    - `radon_max_complexity = 130`
+    - `lizard_max_ccn = 130`
+    - `lizard_max_length = 700`
+    - `lizard_max_params = 12`
+    - `jscpd_max_percent = 4.5`
+
+**Baseline validado:**
+
+- estado del gate: `pass`
+- complejidad máxima actual: `128`
+- longitud máxima actual: `689`
+- duplicidad actual (`jscpd`): `4.31%`
+- evidencia persistida: `tools/last_runs/quality_metrics_gate.json`
+
+### 1.1.3 H-008 — Validación del stack local (estado: **PARCIAL**)
+
+**Corrección aplicada en código:**
+
+- `nginx/conf.d/prislab.docker.conf` quedó alineado con los mounts reales de Compose:
+  - `/static/` -> `/app/staticfiles/`
+  - `/media/` -> `/app/media/`
+  - `/favicon.ico` -> `/app/staticfiles/img/favicon.ico`
+- `.env.example` y `.env.production.example` ahora incluyen `REDIS_PASSWORD`, requerido por `docker-compose.yml`.
+- Se agregó `scripts/validate_local_stack_preflight.py` para verificar el stack local sin depender de inspección manual.
+
+**Resultado del preflight local:**
+
+- estado: `pass_with_warnings`
+- servicios esperados presentes: `app`, `db`, `redis`, `nginx`, `certbot`
+- Dockerfile, entrypoint, nginx y plantillas de entorno: `OK`
+- único bloqueo restante: `docker` no está instalado en esta máquina
+
+**Conclusión real:**
+
+- La parte del repositorio quedó alineada y validada.
+- El cierre completo de H-008 depende exclusivamente de disponer del runtime Docker/Compose para levantar el stack y ejecutar la validación viva.
+
+### 1.2 H-013 — Consolidación de middlewares custom (estado: **CERRADO**)
+
+Fuente canónica de la cadena: `config/settings/base.py`.
+
+**Middlewares custom activos en `MIDDLEWARE` (orden de ejecución real):**
+
+1. `core.middleware.canonical_host.CanonicalHostMiddleware` — redirección a host canónico.
+2. `core.api_contracts.middleware.ApiRequestIdMiddleware` — correlación `X-Request-ID`; ahora corre antes de autenticación.
+3. `core.middleware.read_only.ReadOnlyMiddleware` — kill-switch solo lectura (`PRISLAB_READ_ONLY`).
+4. `core.middleware.admin_access.AdminAccessMiddleware` — bastión `/admin/` por IP/grupo.
+5. `core.middleware.rate_limit.RateLimitMiddleware` — rate limiting login/API por IP; contador atómico por ventana fija.
+6. `core.middleware.empresa.EmpresaIdentityMiddleware` — tenant por usuario + sucursal, inyecta `request.modulos_activos`.
+7. `core.middleware.suscripciones.SuscripcionMiddleware` — bloqueo por suscripción inactiva (402).
+8. `core.middleware.feature_flags.FeatureFlagMiddleware` — bloquea módulos no contratados.
+9. `core.middleware.json_response.JSONResponseMiddleware` — convierte errores HTML a JSON para XHR.
+10. `core.middleware.actividad_usuario.ActividadUsuarioMiddleware` — rastrea actividad usuario con sesión, sin `save()` por request.
+11. `core.middleware.sentinel.SentinelTelemetryMiddleware` — captura errores y auto-reparación.
+12. `core.middleware.performance.PerformanceMiddleware` — diagnóstico de latencia + conteo SQL.
+13. `core.middleware.pris_context.PrisContextMiddleware` — contexto para agente PRIS.
+14. `core.middleware.mantenimiento.MaintenanceModeMiddleware` — modo mantenimiento.
+15. `core.middleware.seguridad.SessionTimeoutMiddleware` — logout por inactividad 8h.
+16. `core.middleware.seguridad.TenantStorageMiddleware` — inyecta slug empresa en storage Drive.
+17. `core.middleware.blindaje_expediente.BlindajeExpedienteMiddleware` — bloquea modificaciones a notas selladas.
+18. `core.middleware.blindaje_expediente.SnapshotMiddleware` — captura metadatos request para SHA.
+
+**Middlewares fuera de la cadena:**
+
+- `core.middleware.tenant_subdomain.TenantSubdomainMiddleware`: archivo existe, no activo en `MIDDLEWARE`; resolución tenant por subdominio no se usa en la cadena canónica actual.
+
+**Cambios realizados para cerrar H-013:**
+
+- `SuscripcionMiddleware`: se mantiene activo en la cadena (tiene tests propios). No se eliminó porque aporta control de pago.
+- `core/middleware/admin_access_restrict.py`: eliminado; era un re-export redundante de `AdminAccessMiddleware`.
+- `LogAccesoExpedienteMiddleware`: eliminado del módulo `core/middleware/seguridad.py` y de `core/middleware/__init__.py`. La trazabilidad NOM-024 de **modificaciones** queda cubierta por `BlindajeExpedienteMiddleware` + señales + `SnapshotMiddleware`.
+- Medición de latencia/request consolidada:
+  - `PerformanceMiddleware`: diagnóstico detallado (queries SQL, umbrales, `IncidenciaSentinel` >5s).
+  - `SentinelTelemetryMiddleware`: solo captura de errores, auto-reparación y registro de incidencias; se eliminó su medición de latencia y auto-cleanup duplicados.
+- `ActividadUsuarioMiddleware`: reescrito para usar la sesión (`_actividad_inicio`) en lugar de `usuario.save()` por cada request autenticado.
+- `ApiRequestIdMiddleware`: movido antes de `AuthenticationMiddleware` para garantizar trazabilidad desde el inicio útil del request.
+- `config/settings.py` sigue existiendo en el repo; la cadena activa de middlewares está definida en `config/settings/base.py`.
+- `RateLimitMiddleware`: reescrito para usar contador atómico por ventana fija (`cache.add` + `cache.incr`) en lugar de lista no atómica; se eliminó la condición de carrera. El límite de `/api/` ahora aplica a todos los métodos HTTP y devuelve header `Retry-After`.
+- Se verificó `python manage.py check`, el barrido de referencias huérfanas y las pruebas aisladas de `core.tests.test_rate_limit_middleware`, `core.tests.test_actividad_usuario_middleware` y `core.tests.test_auto_repair_tenant_guard`. Todas pasaron.
+
+**Riesgos mitigados:**
+
+- `ActividadUsuarioMiddleware` ya no genera `UPDATE` en cada request autenticado.
+- `ApiRequestIdMiddleware` ahora asigna `X-Request-ID` antes de `AuthenticationMiddleware`.
+- `SentinelTelemetryMiddleware` dejó de medir latencia y ejecutar auto-cleanup; ya no solapa con `PerformanceMiddleware`.
+- `RateLimitMiddleware` ya no depende de listas de timestamps compartidas sin atomicidad; usa contador atómico por ventana fija (`cache.add`/`cache.incr`).
+
+---
+
 ## 2. Inventario del sistema (contexto para auditores)
 
 ### 2.1 Stack técnico
@@ -29,7 +174,7 @@
 |------|----------------------|
 | Framework | Django 5.x |
 | API estructurada | Django Ninja (`api/v3/`) |
-| BD desarrollo típica | SQLite (según `config/settings.py` si no hay `DB_HOST`) |
+| BD desarrollo típica | SQLite fallback si no hay `DB_HOST`; **recomendado para cierre real: PostgreSQL local/Docker** |
 | BD producción (futuro) | PostgreSQL / Cloud SQL |
 | Caché / colas / WS (opcional) | Redis (si `REDIS_URL`); sin Redis: LocMem, Channels en memoria, Celery “eager” |
 | Media | Google Drive / GCS / local según configuración |
@@ -60,6 +205,7 @@ Incluyen entre otras: `core`, `farmacia`, `pacientes`, `laboratorio`, `lims`, `s
 **Entregables:**
 
 - Entorno Python acordado (p. ej. 3.11, alineado con CI).
+- PostgreSQL disponible para la ruta de pruebas completa; SQLite queda solo como fallback de desarrollo liviano.
 - Instalación documentada de dependencias del sistema donde aplique (p. ej. librerías para WeasyPrint en Linux; en Windows pueden requerirse wheels o WSL/Docker).
 - Archivo `.env` de ejemplo **solo con claves necesarias para local** (sin secretos reales); lista explícita de variables opcionales vs obligatorias para features concretas (IA, Drive, etc.).
 
@@ -76,6 +222,7 @@ Notas:
 
 - `verificar_funcionalidades` puede mostrar `[WARN]` en BD vacía; es **esperado** hasta poblar datos o usar `--strict` solo cuando corresponda.
 - Si `psycopg2-binary` falla en Windows, registrar Python exacto y alternativa (Docker Compose en repo, WSL).
+- Para la suite grande, **no usar SQLite como baseline de cierre**: la ruta correcta es PostgreSQL local/Docker o CI con PostgreSQL.
 
 ### Fase B — Integridad de datos y multitenant
 
@@ -141,6 +288,14 @@ Para cada dominio el auditor debe registrar: **rol de usuario**, **pasos**, **re
 **Referencia CI:** `.github/workflows/main.yml`  
 **Suite ampliada local:** `python scripts_cursor_e2e/run_cursor_reliability_suite.py`  
 **Omni / Playwright:** `npm run omni:local` (requiere servidor local y credenciales de prueba documentadas).
+
+**Actualización actual:** la solución correcta para H-005 ya quedó orientada a **PostgreSQL en CI**.  
+El siguiente cierre de esta fase es:
+
+1. Verificar en GitHub que el workflow nuevo corre sobre PostgreSQL sin atasco en migraciones.
+2. Ejecutar `scripts/run_quality_gate_postgres.ps1` en local con PostgreSQL disponible (Docker o instalación local).
+3. Si se requiere runner multiplataforma o evidencia JSON del bloqueo, usar `scripts/run_quality_gate_postgres.py`; la salida queda en `tools/last_runs/postgres_quality_gate_local.json`.
+3. Evaluar `squash` de migraciones como deuda técnica posterior para acelerar setup.
 
 ### Fase G — Producción (posterior; solo planificación aquí)
 
@@ -237,7 +392,7 @@ Se considera lista la transición hacia preparación de producción cuando:
 
 1. `python manage.py check` sin errores.  
 2. Migraciones aplicadas en BD local de referencia.  
-3. Quality Gate de tests (o subconjunto acordado) en verde en máquina reproducible (idealmente Docker).  
+3. Quality Gate de tests (o subconjunto acordado) en verde en máquina reproducible **sobre PostgreSQL** (idealmente Docker).  
 4. Lista de `[WARN]` de `verificar_funcionalidades` **explicada** (dato ausente vs bug).  
 5. Informe corto interno: “Flujos críticos probados manualmente” con capturas o notas por dominio (Fase D).
 

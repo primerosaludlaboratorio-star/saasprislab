@@ -1,6 +1,6 @@
 # Estado Canonico de PRISLAB SaaS
 
-Fecha de consolidacion: 2026-06-26 (última actualización: Contabilidad/Finanzas cerrado definitivo)  
+Fecha de consolidacion: 2026-07-16 (última actualización: coordinación documental reconciliada y Recepcion cerrada con suite completa)  
 Rama canonica: `release/v1.0-local`
 
 ## Proposito
@@ -42,7 +42,7 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 - Marketing -> `RESUELTO` con 9/9 tests reportados en checklist oficial
 - RH / Nomina -> `RESUELTO` con 25 tests reportados, Competencia consolidado como catalogo global y endurecimiento tenant/roles ya integrado
 - IoT -> `RESUELTO` con `0005_kiosco_empresa`, suite `iot.tests` y cierre oficial documentado
-- Recepcion -> `RESUELTO` con `5/5` tests y bloqueo explicito a usuarios sin FK `empresa`
+- Recepcion -> `RESUELTO` con fix de timezone y suite completa verde
 - Seguridad -> `RESUELTO` con `9/9` tests en el arbol local
 - Operaciones -> `RESUELTO` con tenant canonico y `4/4` tests dedicados
 - Bienestar -> `RESUELTO` con hardening de rutas NOM-035, `localdate()` y redirect final revalidado
@@ -50,13 +50,23 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 
 ## Modulos que siguen abiertos
 
-- Ninguno
+- Ninguno en codigo local.
+- `branch protection` / `rulesets` en GitHub: verificados por evidencia funcional; `H-001` corregido en `release/v1.0-local`.
 
-## Reportes finales integrados pendientes de auditoria profunda
+## Reportes finales integrados
 
 - Buzon / Comunicacion / Notificaciones
 
 ## Hallazgos que siguen vigentes
+
+### Hallazgos de auditoria anterior ya descartados en el arbol actual
+
+- `role_required` no permite bypass por `is_staff`; el decorador solo deja pasar a `is_superuser` o al rol permitido.
+- `_requiere_lims_captura` ya no permite `is_staff` como bypass.
+- `AuditLog` y `ForenseAcceso` ya son append-only a nivel modelo mediante `save()` y `delete()`.
+- `chromadb` ya no forma parte del baseline de `requirements.txt`; el motor RAG lo trata como opcional con activacion explicita.
+- El script de deploy local vigente es `scripts/deploy_vps.sh`; el supuesto `deploy-vps.yml` citado en la auditoria anterior no existe en este checkout.
+- El `NameError path` del middleware Sentinel no se reproduce en el arbol actual: `path` queda definido antes de cada uso relevante.
 
 ### Consultorio PDF / tenant efectivo
 
@@ -146,11 +156,13 @@ Estado actual del codigo y evidencia reportada:
 - bienestar reporta `18/18` pruebas verdes, superficie canonica dual explicitada y cobertura ampliada a `alertas_rrhh`, `marcar_alerta_vista`, cross-tenant y rutas NOM-035
 - academia reporta `8/8` pruebas verdes con regresiones de aislamiento cross-tenant
 - marketing reporta `9/9` pruebas verdes con bloqueo de `empresa=None`
+- recepcion tiene el fix de timezone integrado y la suite completa ya quedo verde; la auditoria vieja de desalineacion de rol/grupo queda descartada en esta rama
 
 Conclusion:
 
 - Bienestar -> `RESUELTO/CERRADO` en esta ronda.
 - Logistica, Mantenimiento, Academia y Marketing -> `RESUELTOS/CERRADOS` en la documentacion oficial vigente del 2026-06-25.
+- Recepcion -> `RESUELTO`; no reabrir el bug viejo sin reproduccion nueva contra esta rama.
 
 ### RH / Nomina - cierre oficial consolidado
 
@@ -245,12 +257,13 @@ Estado actual:
   - discriminacion TZ en dashboard y lista de espera
 - `manage.py check` pasa
 - el helper `_empresa_recepcion()` ya no acepta el fallback de empresa por defecto del middleware para usuarios sin FK `empresa`
-- corrida reproducible local:
-  - `manage.py test recepcion.tests --keepdb -v 1` -> `5 OK`
+- corrida reproducible local reportada en el cierre anterior:
+  - `manage.py test recepcion.tests --keepdb -v 0` -> `5 OK`
+  - la suite completa quedó verde y el cierre se considera definitivo en esta rama
 
 Conclusion:
 
-- RESUELTO / CERRADO — el modulo ya queda cerrado en el arbol canonico local
+- RESUELTO / CERRADO definitivo en esta rama
 
 ### Seguridad - revalidacion local final
 

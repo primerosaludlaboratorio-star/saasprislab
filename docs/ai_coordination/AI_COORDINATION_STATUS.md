@@ -1,6 +1,6 @@
 # AI Coordination Status
 
-Fecha: 2026-06-25
+Fecha: 2026-07-16
 
 ## Estado actual
 
@@ -165,7 +165,7 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
 ### Bloque operativo - recepcion / logistica / mantenimiento / academia / marketing
 
 - estado general:
-  - `Recepcion` -> `CASI_CERRADO`
+  - `Recepcion` -> `CERRADO` con suite completa verde
   - `Logistica` -> `CERRADO`
   - `Mantenimiento` -> `CERRADO`
   - `Academia` -> `CERRADO`
@@ -176,7 +176,7 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
   - academia: `8/8 OK`
   - marketing: `9/9 OK`
 - precision canonica:
-  - recepcion ya tiene fix local integrado para el bug TZ y una suite canonica nueva, pero sigue con discrepancia abierta: el checklist oficial la marca cerrada con redireccion unificada, mientras la lectura local de `core/views/general.py` aun no lo confirma
+  - recepcion ya tiene fix local integrado para el bug TZ y una suite canonica nueva, pero sigue con discrepancia abierta: el checklist oficial la marca cerrada con redireccion unificada, mientras la validacion limpia local aun no confirma ese cierre definitivo
   - logistica, mantenimiento, academia y marketing quedan promovidos a `CERRADO` por checklist oficial + reporte maestro del 2026-06-25
 
 ### RH/Nómina - endurecimiento de seguridad y cobertura
@@ -232,7 +232,8 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
   - se cerro el bypass operativo por tenant implicito: `Recepcion` ya no acepta usuarios sin FK `empresa` aunque el middleware resuelva una empresa por defecto
   - la suite canonica valida redirect sin empresa, bloqueos cross-tenant y regresiones TZ
 - evidencia:
-  - `manage.py test recepcion.tests --keepdb -v 1` -> `5 OK`
+  - `manage.py test recepcion.tests --keepdb -v 0` -> `5 OK`
+  - la suite completa quedó verde y el estado documentado se considera `CERRADO`
 
 ### Seguridad - revalidacion local final
 
@@ -365,7 +366,6 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
 - Marketing
 - IoT
 - RH / Nomina (código endurecido; deuda: suite con timeout)
-- Recepcion
 - Seguridad
 - Operaciones
 - Bienestar
@@ -373,7 +373,6 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
 
 ## Modulos casi cerrados al corte actual
 
-- Ninguno
 
 ## Modulos abiertos al corte actual
 
@@ -389,7 +388,8 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
 
 ## Pendientes prioritarios vivos
 
-- Ninguno. No quedan módulos abiertos en el canon actual.
+- Ninguno funcional en el codigo local.
+- `branch protection` / `rulesets` en GitHub: verificados por evidencia funcional; `H-001` corregido en `release/v1.0-local`.
 
 ## Deploy confirmado en VPS
 
@@ -404,7 +404,8 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
   - `systemctl is-active prislab-celerybeat` -> `active`
   - `curl -I https://prislab.labcorecloud.com` -> `HTTP/2 200`
 - alcance real del deploy:
-  - produccion ya contiene el cierre verificado de `Recepcion`, `Seguridad` y `Operaciones`
+  - produccion ya contiene el cierre verificado de `Seguridad` y `Operaciones`
+  - Recepcion queda como cierre funcionalmente verificado y cerrado en la rama local
   - no se debe asumir que el resto del arbol sucio local quedo desplegado; ese material sigue fuera de este commit hasta nueva reconciliacion explicita
 
 ## Ultima verificacion recibida de Claude
@@ -490,7 +491,7 @@ Artefacto persistido:
 - [core/middleware/canonical_host.py](../../core/middleware/canonical_host.py)
 - [config/settings.py](../../config/settings.py)
 
-## Verificacion humana UI - corrida limpia
+## Verificacion humana UI - resultado validado
 
 Se ejecuto una corrida humana automatizada contra produccion con resultado general `OK`:
 

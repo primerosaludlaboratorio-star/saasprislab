@@ -45,7 +45,7 @@ No deben volver a entrar como pendiente salvo evidencia nueva.
 
 ### Prioridad viva para la siguiente ronda
 
-- Ninguna deuda funcional viva. Solo validar que el árbol sucio restante sea documental o de ramas externas antes de cualquier nuevo deploy.
+- Ninguna deuda funcional viva.
 
 ### Modulos ya cerrados y que no deben reabrirse sin repro nueva
 
@@ -64,10 +64,14 @@ No deben volver a entrar como pendiente salvo evidencia nueva.
 - IoT
 - RH / Nomina
 - Bienestar
+- Seguridad
+- Operaciones
+- Contabilidad / Finanzas
+- Buzon / Comunicacion / Notificaciones
 
 ### Modulos estabilizados que no deben volver al carril critico sin repro nueva
 
-- Ninguno
+- Ninguno.
 
 ### Reportes finales ya integrados y cerrados
 
@@ -76,7 +80,7 @@ No deben volver a entrar como pendiente salvo evidencia nueva.
 
 ## Pendientes exactos por modulo
 
-- Ninguno. Los módulos que antes figuraban aquí quedaron cerrados y solo conservan deuda histórica documentada.
+- Ninguno funcional en el codigo local.
 
 ## Próximo paso: validación final y preparación de deploy
 

@@ -5,6 +5,8 @@
 **Alcance:** Módulos **6.3 (Laboratorio)** y **6.4 (LIMS App)** (evidencia en repo).  
 **Fecha:** 2026-04-02
 
+> Nota de canon vigente: este informe es histórico. Varias observaciones sobre permisos, append-only, `chromadb`, `deploy-vps.yml` y Sentinel quedaron superadas por el árbol actual `release/v1.0-local` y ya están registradas como descartadas en `docs/ai_coordination/ESTADO_CANONICO_RAMA_RELEASE_V1_0_LOCAL.md`.
+
 ---
 
 ## Fallas Arquitectónicas (riesgos graves / código inescalable)
@@ -71,14 +73,12 @@
 ### 1) Configuración de catálogo (LIMS SaaS dinámico) sin control de permisos robusto
 **Evidencia**
 - `core/views/laboratorio_config.py`:
-  - Múltiples vistas de configuración (`lista_pruebas`, `configurar_prueba`, `configurar_rangos`, `api_rangos_parametro`, `api_buscar_parametros`) tienen **solo `@login_required`**.
-  - El único control fuerte observado es en `api_soft_delete_parametro`: exige `is_superuser` o `is_staff`.
+  - Esta observación era válida para un snapshot histórico, pero ya no describe el árbol actual.
+  - En `release/v1.0-local`, las vistas sensibles usan `@role_required('DIRECTOR_QC', 'ADMIN')` y las mutaciones se protegen con `_can_manage_lims_catalog()` más filtro por empresa.
 
 **Impacto**
-- Cualquier usuario autenticado (incl. roles no clínicos) podría potencialmente:
-  - crear/editar estudios
-  - editar parámetros
-  - versionar rangos
+- En el snapshot histórico, cualquier usuario autenticado (incl. roles no clínicos) habría podido modificar catálogo.
+- En el árbol actual, ese vector quedó corregido y esta sección debe leerse como legado, no como deuda viva.
 
 Esto es una brecha severa de integridad clínica (alteración del catálogo afecta interpretación de resultados y PDF).
 
