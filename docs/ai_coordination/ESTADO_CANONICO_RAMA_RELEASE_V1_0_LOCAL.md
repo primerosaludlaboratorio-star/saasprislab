@@ -65,7 +65,7 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 - `_requiere_lims_captura` ya no permite `is_staff` como bypass.
 - `AuditLog` y `ForenseAcceso` ya son append-only a nivel modelo mediante `save()` y `delete()`.
 - `chromadb` ya no forma parte del baseline de `requirements.txt`; el motor RAG lo trata como opcional con activacion explicita.
-- El script de deploy local vigente es `scripts/deploy_vps.sh`; el supuesto `deploy-vps.yml` citado en la auditoria anterior no existe en este checkout.
+- El script de deploy local vigente es `scripts/deploy_vps.sh`; ademas existe el workflow GitHub Actions `.github/workflows/deploy-vps.yml` para el despliegue remoto a VPS cuando hay secretos configurados.
 - El `NameError path` del middleware Sentinel no se reproduce en el arbol actual: `path` queda definido antes de cada uso relevante.
 
 ### Consultorio PDF / tenant efectivo

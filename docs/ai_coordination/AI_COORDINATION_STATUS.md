@@ -393,12 +393,12 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
 
 ## Deploy confirmado en VPS
 
-- fecha: `2026-06-25`
-- commit desplegado: `d54a1ee`
+- fecha: `2026-07-16`
+- commit desplegado: `1b2d42e`
 - servidor: `216.238.89.243`
 - ruta productiva: `/opt/prislab/app`
 - validaciones ejecutadas:
-  - `git -C /opt/prislab/app rev-parse --short HEAD` -> `d54a1ee`
+  - `git -C /opt/prislab/app rev-parse --short HEAD` -> `1b2d42e`
   - `systemctl is-active prislab-gunicorn` -> `active`
   - `systemctl is-active prislab-celery` -> `active`
   - `systemctl is-active prislab-celerybeat` -> `active`
@@ -406,7 +406,7 @@ Se ejecutó la herramienta con credenciales reales de prueba (`admin`) contra pr
 - alcance real del deploy:
   - produccion ya contiene el cierre verificado de `Seguridad` y `Operaciones`
   - Recepcion queda como cierre funcionalmente verificado y cerrado en la rama local
-  - no se debe asumir que el resto del arbol sucio local quedo desplegado; ese material sigue fuera de este commit hasta nueva reconciliacion explicita
+  - el despliegue de hoy sincronizo el arbol real hasta `1b2d42e` y resolvio el bloqueo de `collectstatic` causado por el mapa faltante de Chart.js
 
 ## Ultima verificacion recibida de Claude
 
