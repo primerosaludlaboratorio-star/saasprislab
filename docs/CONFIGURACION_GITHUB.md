@@ -75,3 +75,4 @@ Después de configurar:
 2. Crear un PR trivial; los status checks deben aparecer y ser requeridos.
 3. Ejecutar manualmente `PRISLAB Deploy to VPS` desde **Actions > deploy-vps.yml > Run workflow**.
 4. Recordar que los cambios solo de documentación no disparan el deploy automático: el workflow actual escucha cambios de código, scripts, `Dockerfile`, `manage.py`, `requirements.txt` y `.github/workflows/deploy-vps.yml`.
+5. El deploy automático de `release/v1.0-local` queda apuntado a `production` por defecto; `staging` sigue disponible solo en ejecución manual si existe configuración de secretos para ese entorno.

@@ -158,9 +158,9 @@ feature/*  -->  release/v1.0-local  -->  staging  -->  production
 1. Desarrollador crea `feature/*` desde `release/v1.0-local`.
 2. Abre PR a `release/v1.0-local`.
 3. Se ejecutan status checks: quality gate, SRE, backup, secret scan, SBOM.
-4. Merge a `release/v1.0-local` dispara deploy a staging.
-5. Validación en staging.
-6. Deploy manual/explicito a production.
+4. Merge a `release/v1.0-local` dispara deploy a production por defecto en el workflow actual.
+5. `staging` queda como ruta manual solo si el entorno tiene secretos configurados.
+6. Validación en producción o staging segun el despliegue ejecutado.
 
 ---
 

@@ -46,7 +46,7 @@ on:
       environment:
         description: 'Ambiente de despliegue'
         required: true
-        default: 'staging'
+        default: 'production'
         type: choice
         options:
           - staging
@@ -54,15 +54,28 @@ on:
 
 env:
   PYTHONUNBUFFERED: "1"
+  DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'production' }}
 
 jobs:
   deploy:
-    name: Deploy to VPS (${{ github.event.inputs.environment || 'staging' }})
+    name: Deploy to VPS (${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'production' }})
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'staging' }}
+    environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'production' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Validate deploy secrets
+        run: |
+          set -euo pipefail
+          missing=()
+          [ -n "${{ secrets.DEPLOY_HOST }}" ] || missing+=("DEPLOY_HOST")
+          [ -n "${{ secrets.DEPLOY_USER }}" ] || missing+=("DEPLOY_USER")
+          [ -n "${{ secrets.DEPLOY_SSH_KEY }}" ] || missing+=("DEPLOY_SSH_KEY")
+          if [ "${#missing[@]}" -ne 0 ]; then
+            echo "Missing deploy secrets for ${DEPLOY_ENV}: ${missing[*]}" >&2
+            exit 1
+          fi
 
       - name: Setup SSH
         run: |
