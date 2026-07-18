@@ -4,6 +4,7 @@ Rutas para gestión completa de farmacia con Kardex, Compras y Corte de Caja
 """
 from django.urls import path
 from farmacia import views
+from core.views import farmacia as core_farmacia_views
 from farmacia.views.semaforo import dashboard_semaforo_caducidad, dashboard_stock_critico
 
 # Importar vistas de los nuevos módulos
@@ -35,7 +36,7 @@ urlpatterns = [
     # ======================================================================
     # CORTE DE CAJA (ARQUEO CIEGO)
     # ======================================================================
-    path('corte-caja/', views.corte_caja_farmacia, name='corte_caja'),
+    path('corte-caja/', core_farmacia_views.corte_caja_dia, name='corte_caja'),
     
     # ======================================================================
     # ETIQUETAS CON CÓDIGO DE BARRAS
@@ -60,6 +61,7 @@ urlpatterns = [
     path('devoluciones/buscar/', views.buscar_venta_para_devolucion, name='buscar_venta_devolucion'),
     path('devoluciones/procesar/', views.procesar_devolucion, name='procesar_devolucion'),
     path('devoluciones/autorizar/<int:devolucion_id>/', views.autorizar_devolucion, name='autorizar_devolucion'),
+    path('ventas/cancelar/<int:venta_id>/', core_farmacia_views.cancelar_venta, name='cancelar_venta'),
     
     # Apertura de Caja
     path('caja/verificar/', views.verificar_apertura_caja, name='verificar_apertura_caja'),

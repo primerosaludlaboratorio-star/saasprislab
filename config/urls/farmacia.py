@@ -1,13 +1,14 @@
 from django.urls import path, include
-from django.views.generic import RedirectView
 from core import views
+from core.views import farmacia as core_farmacia_views
 from farmacia.views import pdv as farmacia_pdv
 from farmacia.views import inventario as farmacia_inventario
 from farmacia.views import reportes as farmacia_reportes
 
 urlpatterns = [
-    # Redirect legacy corte-caja
-    path('farmacia/corte-caja/', RedirectView.as_view(url='/farmacia/pdv/?accion=corte', permanent=False), name='corte_caja_legacy'),
+    # Corte diario operativo
+    path('farmacia/corte-caja/', core_farmacia_views.corte_caja_dia, name='corte_caja_legacy'),
+    path('finanzas/corte/', core_farmacia_views.corte_caja_dia, name='corte_dia'),
 
     # 1. MÓDULO FARMACIA (Punto de Venta)
     path('farmacia/', farmacia_inventario.dashboard_farmacia, name='dashboard_farmacia'),
@@ -20,6 +21,7 @@ urlpatterns = [
     path('farmacia/devoluciones/', views.historial_devoluciones, name='historial_devoluciones'),
     path('farmacia/devoluciones/buscar/', views.buscar_venta_devolucion, name='buscar_venta_devolucion'),
     path('farmacia/devoluciones/procesar/', views.procesar_devolucion, name='procesar_devolucion'),
+    path('farmacia/ventas/cancelar/<int:venta_id>/', views.cancelar_venta, name='cancelar_venta'),
     path('farmacia/ticket/<int:venta_id>/', views.imprimir_ticket, name='imprimir_ticket'),
     path('farmacia/carga-masiva-excel/', views.carga_masiva_excel, name='carga_masiva_excel'),
     path('farmacia/ajustes-inventario/', views.ajustes_inventario, name='ajustes_inventario'),

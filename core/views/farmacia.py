@@ -6,7 +6,7 @@ después de la extracción de lógica hacia ``farmacia/views/``.
 """
 
 import warnings
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
@@ -16,8 +16,9 @@ from django.http import HttpResponseForbidden, HttpResponseRedirect, JsonRespons
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
-from core.models import DetalleVenta, Venta
+from core.models import DetalleVenta, GastoCaja, Pago, Venta
 from core.services.ventas.venta_farmacia_service import VentaFarmaciaService
 
 warnings.warn(
@@ -141,6 +142,7 @@ def imprimir_ticket_raw(request, venta_id):
 
 
 @login_required
+@require_POST
 def cancelar_venta(request, venta_id):
     """Wrapper legacy para cancelación de venta con reversión de stock."""
     empresa = _empresa_desde_request(request)
@@ -168,8 +170,74 @@ def registrar_gasto(request):
 
 @login_required
 def corte_caja_dia(request):
-    """Alias legacy al flujo actual de corte de caja."""
-    return HttpResponseRedirect(reverse("corte_caja_legacy"))
+    """Vista operativa de corte diario de farmacia."""
+    empresa = _empresa_desde_request(request)
+    if not empresa:
+        return HttpResponseForbidden("Usuario sin empresa asignada.")
+
+    fecha_param = request.GET.get("fecha")
+    if fecha_param:
+        try:
+            fecha_seleccionada = datetime.strptime(fecha_param, "%Y-%m-%d").date()
+        except ValueError:
+            fecha_seleccionada = timezone.localdate()
+    else:
+        fecha_seleccionada = timezone.localdate()
+
+    inicio = timezone.make_aware(datetime.combine(fecha_seleccionada, datetime.min.time()))
+    fin = timezone.make_aware(datetime.combine(fecha_seleccionada, datetime.max.time()))
+
+    ventas_qs = Venta.objects.filter(
+        empresa=empresa,
+        fecha__range=(inicio, fin),
+        estado="COMPLETADA",
+    )
+    pagos_qs = Pago.objects.filter(venta__in=ventas_qs)
+    gastos_qs = GastoCaja.objects.filter(
+        empresa=empresa,
+        fecha__range=(inicio, fin),
+    ).select_related("usuario").order_by("-fecha")
+
+    ventas_efectivo = pagos_qs.aggregate(total=Coalesce(Sum("monto_efectivo"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
+    ventas_tarjeta = pagos_qs.aggregate(total=Coalesce(Sum("monto_tarjeta"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
+    ventas_transferencia = pagos_qs.aggregate(total=Coalesce(Sum("monto_transferencia"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
+    total_gastos = gastos_qs.aggregate(total=Coalesce(Sum("monto"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
+    total_ventas = ventas_efectivo + ventas_tarjeta + ventas_transferencia
+    saldo_caja = ventas_efectivo - total_gastos
+
+    lista_gastos = [
+        {
+            "fecha": gasto.fecha,
+            "concepto": gasto.concepto,
+            "monto": gasto.monto,
+            "usuario": gasto.usuario,
+        }
+        for gasto in gastos_qs
+    ]
+
+    contexto = {
+        "empresa": empresa,
+        "fecha": fecha_seleccionada,
+        "fecha_seleccionada": fecha_seleccionada,
+        "fecha_seleccionada_str": fecha_seleccionada.strftime("%Y-%m-%d"),
+        "ventas_efectivo": ventas_efectivo,
+        "ventas_digital": ventas_tarjeta + ventas_transferencia,
+        "ventas_efectivo_farm": ventas_efectivo,
+        "ventas_digital_farm": ventas_tarjeta + ventas_transferencia,
+        "lab_efectivo": Decimal("0.00"),
+        "lab_digital": Decimal("0.00"),
+        "cons_efectivo": Decimal("0.00"),
+        "cons_digital": Decimal("0.00"),
+        "total_gastos": total_gastos,
+        "total_devoluciones": Decimal("0.00"),
+        "saldo_caja": saldo_caja,
+        "total_farmacia": total_ventas,
+        "total_lab": Decimal("0.00"),
+        "total_consultorio": Decimal("0.00"),
+        "total_ventas": total_ventas,
+        "gastos": lista_gastos,
+    }
+    return render(request, "core/corte_caja_dia.html", contexto)
 
 
 def _resolver_periodo_kpis(periodo):

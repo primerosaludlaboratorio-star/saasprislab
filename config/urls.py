@@ -175,8 +175,9 @@ urlpatterns = [
     path('academia/', include(('academia.urls', 'academia'), namespace='academia')),
 
     # ── Redirects legacy (eliminan 404s detectados por Omnitex) ─────────────
-    # /farmacia/corte-caja/ era referenciado en war_room_stress_test → redirige al POS
-    path('farmacia/corte-caja/', RedirectView.as_view(url='/farmacia/pdv/?accion=corte', permanent=False), name='corte_caja_legacy'),
+    # /farmacia/corte-caja/ ahora resuelve la vista operativa real de corte diario
+    path('farmacia/corte-caja/', farmacia_views.corte_caja_dia, name='corte_caja_legacy'),
+    path('finanzas/corte/', farmacia_views.corte_caja_dia, name='corte_dia'),
     # /laboratorio/captura/ sin ID → redirige al worklist con mensaje amigable
     path('laboratorio/captura/', views.registro_resultados_entrada, name='captura_sin_id'),
 
@@ -191,6 +192,7 @@ urlpatterns = [
     path('farmacia/devoluciones/', views.historial_devoluciones, name='historial_devoluciones'),
     path('farmacia/devoluciones/buscar/', views.buscar_venta_devolucion, name='buscar_venta_devolucion'),
     path('farmacia/devoluciones/procesar/', views.procesar_devolucion, name='procesar_devolucion'),
+    path('farmacia/ventas/cancelar/<int:venta_id>/', views.cancelar_venta, name='cancelar_venta'),
     # Aliases legacy aún consumidos por templates/tests/comandos
     path('farmacia/ticket/<int:venta_id>/', views.imprimir_ticket, name='imprimir_ticket'),
     path('farmacia/carga-masiva-excel/', views.carga_masiva_excel, name='carga_masiva_excel'),

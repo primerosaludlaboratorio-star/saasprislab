@@ -4,6 +4,7 @@ from core import views
 from core.views import finanzas as finanzas_views
 from core.views import motor_financiero as motor_fin_views
 from core.views import contabilidad_personal as contabilidad_personal_views
+from core.views import farmacia as core_farmacia_views
 from farmacia.views import inventario as farmacia_inventario
 from core.views.autofactura import (
     autofactura_publica,
@@ -16,7 +17,7 @@ urlpatterns = [
     path('finanzas/facturacion/', views.facturacion_40, name='facturacion_40'),
     path('finanzas/registro-gasto/', farmacia_inventario.registro_gasto, name='registro_gasto'),
     path('finanzas/api/registro-gasto/', farmacia_inventario.registro_gasto, name='api_registro_gasto'),
-    path('finanzas/corte/', RedirectView.as_view(pattern_name='corte_caja_legacy', permanent=False), name='corte_dia'),
+    path('finanzas/corte/', core_farmacia_views.corte_caja_dia, name='corte_dia'),
 
     # 6B. CUENTAS POR COBRAR Y CONVENIOS
     path('finanzas/cuentas-por-cobrar/', views.cuentas_por_cobrar_dashboard, name='cuentas_por_cobrar'),

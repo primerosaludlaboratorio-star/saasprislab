@@ -530,29 +530,53 @@ def registro_gasto(request):
     empresa = _empresa_desde_request(request)
     if not empresa:
         return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}, status=403)
+
+    categorias = [
+        ('GARRAFON_AGUA', 'Garrafón de agua'),
+        ('LIMPIEZA', 'Artículos de limpieza'),
+        ('PAPELERIA', 'Papelería'),
+        ('ALIMENTOS', 'Comida / Alimentos'),
+        ('TRANSPORTE', 'Transporte / Mensajería'),
+        ('MANTENIMIENTO', 'Mantenimiento'),
+        ('OTRO', 'Otro'),
+    ]
     
     if request.method == 'GET':
-        from core.models import GastoCaja
         gastos_hoy = GastoCaja.objects.filter(
             empresa=empresa,
             fecha__date=timezone.now().date()
         ).order_by('-fecha')[:20]
         return render(request, 'core/registro_gasto.html', {
             'empresa': empresa,
+            'gastos': gastos_hoy,
             'gastos_hoy': gastos_hoy,
+            'categorias': categorias,
         })
     if request.method == 'POST':
         try:
             from django.core.exceptions import ValidationError
 
-            data = json.loads(request.body)
-            concepto = data.get('concepto', '')
-            monto = Decimal(str(data.get('monto', 0)))
+            contenido_json = 'application/json' in (request.content_type or '')
+            if contenido_json:
+                data = json.loads(request.body or b'{}')
+            else:
+                data = request.POST.dict()
+
+            concepto = str(data.get('concepto', '') or data.get('descripcion', '') or data.get('categoria', '')).strip()
+            categoria = str(data.get('categoria', '') or '').strip().upper()
+            if not concepto and categoria and categoria != 'OTRO':
+                concepto = dict(categorias).get(categoria, categoria.replace('_', ' ').title())
+            if categoria == 'OTRO' and not concepto:
+                concepto = str(data.get('descripcion', '') or '').strip()
+
+            monto = Decimal(str(data.get('monto', 0) or 0))
+            documento_adjunto = request.FILES.get('documento_adjunto') or request.FILES.get('evidencia_foto')
             gasto = GastoCaja(
                 empresa=empresa,
                 usuario=request.user,
                 concepto=concepto,
                 monto=monto,
+                documento_adjunto=documento_adjunto,
             )
             gasto.save()
             # AuditLog
@@ -568,13 +592,22 @@ def registro_gasto(request):
             except Exception:
                 # Justificación: Auditoría secundaria no bloqueante.
                 logger.exception("No se pudo registrar auditoria de gasto de caja %s", gasto.id)
-            return JsonResponse({'status': 'success'})
+            if contenido_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'success'})
+            messages.success(request, 'Gasto registrado correctamente.')
+            return redirect('registro_gasto')
         except ValidationError as e:
             err = getattr(e, 'message_dict', None) or str(e)
-            return JsonResponse({'status': 'error', 'mensaje': err}, status=400)
+            if contenido_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'mensaje': err}, status=400)
+            messages.error(request, str(err))
+            return redirect('registro_gasto')
         except (DatabaseError, ValueError, TypeError, KeyError):
             logger.exception("Error al registrar gasto de caja farmacia")
-            return JsonResponse({'status': 'error', 'mensaje': 'No fue posible registrar el gasto'}, status=400)
+            if contenido_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'mensaje': 'No fue posible registrar el gasto'}, status=400)
+            messages.error(request, 'No fue posible registrar el gasto')
+            return redirect('registro_gasto')
     return JsonResponse({'status': 'error'}, status=405)
 
 

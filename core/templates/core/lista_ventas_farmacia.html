@@ -103,6 +103,9 @@
                                 <button class="btn btn-sm btn-outline-secondary fw-bold neon-hover" onclick="procesarDevolucion({{ venta.id }})">
                                     <i class="bi bi-arrow-counterclockwise"></i> Devolución
                                 </button>
+                                <button class="btn btn-sm btn-outline-danger fw-bold neon-hover" onclick="cancelarVenta('{% url 'cancelar_venta' venta.id %}', '{{ venta.folio_operacion|default:venta.id }}')">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </button>
                                 {% endif %}
                                 {% for f in venta.facturas_cfdi.all %}
                                 <div class="border-top pt-1 mt-1 text-start" style="max-width: 200px; margin-left: auto; margin-right: auto;">
@@ -159,6 +162,51 @@
 <script>
     function procesarDevolucion(ventaId) {
         window.location.href = `/farmacia/devoluciones/buscar/?venta_id=${ventaId}`;
+    }
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return '';
+    }
+
+    async function cancelarVenta(url, folio) {
+        const confirmar = await Swal.fire({
+            icon: 'warning',
+            title: 'Cancelar venta',
+            text: `¿Cancelar la venta ${folio}? Esta acción revierte el stock.`,
+            showCancelButton: true,
+            confirmButtonText: 'Sí, cancelar',
+            cancelButtonText: 'No'
+        });
+
+        if (!confirmar.isConfirmed) return;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+            const data = await response.json();
+            if (!response.ok || data.status === 'error') {
+                throw new Error(data.mensaje || 'No se pudo cancelar la venta');
+            }
+            await Swal.fire({
+                icon: 'success',
+                title: 'Venta cancelada',
+                text: `La venta ${folio} fue cancelada correctamente.`,
+                timer: 1800,
+                showConfirmButton: false
+            });
+            window.location.reload();
+        } catch (error) {
+            Swal.fire('Error', error.message, 'error');
+        }
     }
 </script>
 {% endblock %}
