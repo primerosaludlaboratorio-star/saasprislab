@@ -50,7 +50,7 @@ openpyxl==3.1.2
 # PDFs e Imágenes
 reportlab>=4.2.2
 weasyprint>=62.3
-pillow>=11.0.0
+pillow>=12.3.0
 lxml>=5.2.2
 pypdf>=4.3.0
 
