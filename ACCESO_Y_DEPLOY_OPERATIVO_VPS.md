@@ -1,6 +1,20 @@
 # Acceso y Deploy Operativo VPS
 
-Estado: vigente al 2026-06-20
+Estado: procedimiento vigente; estado operativo verificado 2026-07-21
+
+## Corte de verificacion 2026-07-21
+
+La documentacion del procedimiento existe y se conserva. Lo que no estaba alineado era la evidencia actual de acceso y ejecucion:
+
+- El codigo probado de Laboratorio esta en `9addd1c` y ese commit ya esta en `release/v1.0-local` del remoto.
+- El workflow `PRISLAB Deploy to VPS` se disparo en GitHub como run `29855825290`, pero fallo en `Validate deploy secrets`.
+- El workflow no llego a `Setup SSH`, `Deploy on VPS` ni al smoke test; por tanto no existe evidencia de despliegue de `9addd1c` en la VPS.
+- La URL publica responde, pero la verificacion de interfaz mostro la version anterior de Laboratorio; esto es consistente con que el deploy no se ejecuto.
+- La llave local descrita en documentos anteriores fue rechazada por el servidor para `root`, `ubuntu`, `deploy` y `prislab`. No debe declararse acceso SSH funcional solo por tener el archivo local.
+
+Bloqueador actual: configurar en el Environment `production` de GitHub los valores vigentes `DEPLOY_HOST`, `DEPLOY_USER` y `DEPLOY_SSH_KEY`. Las variables opcionales son `DEPLOY_ROOT_DIR=/opt/prislab`, `DEPLOY_APP_DIR=/opt/prislab/app` y `DEPLOY_APP_USER=prislab`.
+
+Hasta que el workflow termine correctamente y se verifique el commit remoto desde la VPS, el deploy y el cierre productivo de Laboratorio permanecen `PENDIENTES`. El HTTP 200 por si solo no prueba que el codigo nuevo este desplegado.
 
 ## Objetivo
 
@@ -71,7 +85,7 @@ Commits ya preparados y empujados:
 - `5650acb` - Bloque B - Codex
 - `e04ca4b` - Bloque C - Documentacion
 
-Estos cambios ya fueron empujados a GitHub y estan listos para bajarse al VPS con `git pull`.
+El listado anterior corresponde a un corte historico. Para el corte actual, el commit que debe desplegarse es `9addd1c`.
 
 ## Procedimiento exacto de deploy
 

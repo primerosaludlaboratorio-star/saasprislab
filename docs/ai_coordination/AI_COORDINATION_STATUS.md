@@ -2,6 +2,12 @@
 
 Fecha: 2026-07-21
 
+## Corte operativo 2026-07-21: deploy pendiente por configuracion real
+
+La documentacion del procedimiento VPS existe y se mantiene como canon. La evidencia actual es distinta: `9addd1c` esta publicado en `release/v1.0-local`, pero el workflow `PRISLAB Deploy to VPS` run `29855825290` fallo en `Validate deploy secrets` por ausencia de `DEPLOY_HOST`, `DEPLOY_USER` y `DEPLOY_SSH_KEY` en el Environment `production`. No se ejecutaron SSH, sincronizacion del arbol, migraciones, reinicios ni smoke test.
+
+La URL publica responde, pero eso no acredita que contenga `9addd1c`; la revision de interfaz mostro la version anterior de Laboratorio. El despliegue y la auditoria productiva de este corte quedan `PENDIENTES` hasta configurar una llave realmente autorizada y obtener un workflow verde con verificacion del commit en la VPS.
+
 ## Auditoria humana UI en desarrollo — 2026-07-21
 
 - Se ejecutó una interacción visible contra `http://127.0.0.1:8000` con la base QA aislada; no fue producción.

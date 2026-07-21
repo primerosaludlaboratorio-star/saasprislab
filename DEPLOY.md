@@ -2,6 +2,12 @@
 
 > **Nota:** esta es la guía canónica actual para VPS. Los documentos de Cloud Run, Railway y Nixpacks quedan solo como histórico.
 
+## Estado verificado 2026-07-21
+
+El proceso de despliegue esta documentado, pero el acceso configurado debe verificarse contra la infraestructura actual. El commit de Laboratorio `9addd1c` ya esta publicado en `release/v1.0-local`; el run de GitHub `29855825290` fallo antes de abrir SSH porque el Environment `production` no entrego `DEPLOY_HOST`, `DEPLOY_USER` y `DEPLOY_SSH_KEY`. No se deben declarar migraciones, reinicios ni smoke test ejecutados por ese run.
+
+La llave local mencionada en cortes anteriores no fue aceptada por la VPS. La afirmacion de "acceso SSH validado" queda como evidencia historica, no como autorizacion vigente. El siguiente paso operativo es actualizar los tres secretos del Environment `production` con una llave realmente autorizada y repetir el workflow. El cierre solo procede cuando el workflow termina en verde y la VPS confirma el commit desplegado.
+
 ## Objetivo
 
 Dejar PRISLAB corriendo en una VPS limpia con:
