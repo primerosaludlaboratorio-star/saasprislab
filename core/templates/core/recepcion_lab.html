@@ -811,7 +811,7 @@
     let convenioDescuento = 0; // % fallback
     let conveniosDisponibles = [];
 
-    document.addEventListener('DOMContentLoaded', function() {
+    function inicializarBusquedaPacienteLab() {
         cargarMaestrosMedicosConvenios();
         const selConvenio = document.getElementById('select-convenio');
         const selMedico = document.getElementById('select-medico-referidor');
@@ -838,7 +838,7 @@
                 }
             });
         }
-    });
+    }
 
     async function cargarMaestrosMedicosConvenios() {
         try {
@@ -1005,6 +1005,8 @@
             });
         }, 300);
     }
+
+    window.buscarPacienteLab = buscarPacienteLab;
 
     function seleccionarPacienteLab(paciente) {
         document.getElementById('paciente-id').value = paciente.id;
@@ -2175,6 +2177,8 @@
         });
     }
 
+    window.generarOrden = generarOrden;
+
     async function enviarOrden() {
         // 1. Recolectar datos multimodales — Fase 2-A (4 campos)
         const efe = parseFloat(document.getElementById('init_pago_efectivo').value) || 0;
@@ -2552,6 +2556,9 @@
                                 </button>
                                 <button class="btn btn-sm btn-outline-primary me-1" onclick="verOrden(${orden.id})" title="Ver Detalle Completo">
                                     <i class="bi bi-eye"></i> Ver
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger me-1" onclick='mostrarModalCancelacion(${orden.id}, ${JSON.stringify(orden.folio || orden.id).replace(/'/g, "&#39;")}, ${JSON.stringify(orden.paciente || '').replace(/'/g, "&#39;")})' title="Cancelar orden">
+                                    <i class="bi bi-x-circle"></i> Cancelar
                                 </button>
                                 ${orden.saldo > 0 ? `
                                     <button type="button" class="btn btn-dark btn-sm btn-cobrar" 
@@ -3660,6 +3667,28 @@
             document.getElementById('resultados-estudios').classList.add('d-none');
         }
     });
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', inicializarBusquedaPacienteLab, { once: true });
+    } else {
+        inicializarBusquedaPacienteLab();
+    }
+
+    const confirmOrderButtonLab = document.getElementById('btn-confirmar-orden');
+    if (confirmOrderButtonLab) {
+        confirmOrderButtonLab.addEventListener('click', function(event) {
+            event.preventDefault();
+            generarOrden();
+        });
+    }
+    window.seleccionarPacienteLab = seleccionarPacienteLab;
+    const patientSearchInputLab = document.getElementById('buscar-paciente');
+    if (patientSearchInputLab) {
+        patientSearchInputLab.addEventListener('input', function() {
+            buscarPacienteLab(this.value);
+        });
+        patientSearchInputLab.removeAttribute('onkeyup');
+    }
 </script>
 
 {% include "core/partials/_modal_cobro.html" %}
@@ -4155,18 +4184,61 @@
     
     window.agregarTodosSugeridos = agregarTodosSugeridos;
     
-    // Exponer funciones críticas en window para acceso desde HTML inline
-    window.buscarPacienteLab = buscarPacienteLab;
-    window.limpiarPacienteLab = limpiarPacienteLab;
-    window.abrirEscaneoReceta = abrirEscaneoReceta;
+    // Exponer funciones críticas en window para acceso desde HTML inline.
+    // Algunas instalaciones renderizan este bloque en un alcance aislado.
+    if (typeof buscarPacienteLab === 'function') {
+        window.buscarPacienteLab = buscarPacienteLab;
+    } else {
+        window.buscarPacienteLab = function(nombre) {
+            const contenedor = document.getElementById('resultados-pacientes-lab');
+            if (!contenedor) return;
+            if ((nombre || '').length < 2) {
+                contenedor.classList.toggle('d-none', !(nombre || '').length);
+                contenedor.innerHTML = (nombre || '').length
+                    ? '<div class="list-group-item text-muted small">Escriba al menos 2 caracteres para buscar.</div>'
+                    : '';
+                return;
+            }
+            fetch(`/api/pacientes/buscar/?q=${encodeURIComponent(nombre)}`, {
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            }).then(r => r.json()).then(data => {
+                contenedor.innerHTML = '';
+                const pacientes = Array.isArray(data.pacientes) ? data.pacientes : [];
+                pacientes.forEach(p => {
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'list-group-item list-group-item-action text-start';
+                    item.textContent = `${p.nombre || p.nombre_completo || ''}${p.telefono ? ` - Tel: ${p.telefono}` : ''}`;
+                    item.addEventListener('click', () => {
+                        document.getElementById('paciente-id').value = p.id;
+                        document.getElementById('pac-nombre').textContent = p.nombre_completo || p.nombre || 'N/A';
+                        document.getElementById('pac-edad').textContent = p.edad || 'N/A';
+                        document.getElementById('pac-sexo').textContent = p.sexo || 'N/A';
+                        document.getElementById('pac-telefono').textContent = p.telefono || 'N/A';
+                        document.getElementById('buscar-paciente').value = p.nombre_completo || p.nombre || '';
+                        document.getElementById('card-paciente-selected').classList.remove('d-none');
+                        contenedor.classList.add('d-none');
+                    });
+                    contenedor.appendChild(item);
+                });
+                if (!pacientes.length) contenedor.innerHTML = '<div class="list-group-item text-muted small">No se encontraron pacientes.</div>';
+                contenedor.classList.remove('d-none');
+            }).catch(() => {
+                contenedor.innerHTML = '<div class="list-group-item text-danger small">No se pudo buscar pacientes.</div>';
+                contenedor.classList.remove('d-none');
+            });
+        };
+    }
+    if (typeof limpiarPacienteLab === 'function') window.limpiarPacienteLab = limpiarPacienteLab;
+    if (typeof abrirEscaneoReceta === 'function') window.abrirEscaneoReceta = abrirEscaneoReceta;
     
     // Agregar event listeners de forma robusta cuando el DOM esté listo
-    document.addEventListener('DOMContentLoaded', function() {
+    function inicializarControlesPacienteLab() {
         // Búsqueda de pacientes con addEventListener (más robusto que onkeyup)
         const inputBuscarPaciente = document.getElementById('buscar-paciente');
         if (inputBuscarPaciente) {
             inputBuscarPaciente.addEventListener('keyup', function(e) {
-                buscarPacienteLab(this.value);
+                window.buscarPacienteLab(this.value);
             });
             // Remover onkeyup inline para evitar conflictos
             inputBuscarPaciente.removeAttribute('onkeyup');
@@ -4181,6 +4253,11 @@
             });
             btnLimpiarPaciente.removeAttribute('onclick');
         }
-    });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', inicializarControlesPacienteLab, { once: true });
+    } else {
+        inicializarControlesPacienteLab();
+    }
 </script>
 {% endblock %}

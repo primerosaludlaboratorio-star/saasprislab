@@ -145,7 +145,9 @@ def detalle_orden_view(request, orden_id):
 
     subtotal = sum(d.precio_momento for d in detalles)
     descuento_monto = orden.descuento_monto or Decimal('0')
-    total = orden.total or subtotal
+    # Courtesy orders retain the study subtotal as reference, but their
+    # payable total and balance are explicitly zero.
+    total = Decimal('0.00') if orden.es_cortesia else (orden.total or subtotal)
     saldo = total - total_pagado
 
     # Edad del paciente

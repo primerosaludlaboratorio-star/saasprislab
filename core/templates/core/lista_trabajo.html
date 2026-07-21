@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load auth_extras %}
 
 {% block title %}Lista de Trabajo - Laboratorio{% endblock %}
 
@@ -59,9 +60,9 @@
                 </div>
                 <div class="flex-grow-1">
                     <h5 class="mb-2 fw-bold">
-                        {% if user.rol == 'QUIMICO' %}
+                        {% if user|is_role:"QUIMICO" %}
                             ¡Hola Q.C. {{ user.first_name|default:user.username }}!
-                        {% elif user.rol == 'RECEPCION' %}
+                        {% elif user|is_role:"RECEPCION" %}
                             ¡Hola {{ user.first_name|default:user.username }}!
                         {% else %}
                             ¡Hola {{ user.first_name|default:user.username }}!
@@ -251,10 +252,12 @@
                                        title="Consentimiento Informado Digital">
                                         <i class="bi bi-pen"></i> CI
                                     </a>
+                                    {% with primer_detalle=item.orden.detalles.all|first %}
                                     <button class="btn btn-sm btn-outline-warning" title="Rechazar/devolver muestra"
-                                            onclick="abrirRechazoMuestra({{ item.orden.id }}, '{{ item.orden.folio_orden|default:item.orden.id }}')">
+                                            onclick="abrirRechazoMuestra({{ primer_detalle.id|default:0 }}, '{{ item.orden.folio_orden|default:item.orden.id }}')">
                                         <i class="bi bi-x-octagon"></i> Rechazar
                                     </button>
+                                    {% endwith %}
                                     <button class="btn btn-sm btn-outline-dark" title="Imprimir etiqueta de tubo (ZPL/Zebra)"
                                             onclick="imprimirEtiquetaZPL({{ item.orden.id }}, '{{ item.orden.folio_orden|default:item.orden.id }}', '{{ item.orden.paciente.nombre_completo|escapejs }}')">
                                         <i class="bi bi-upc-scan"></i> ZPL
@@ -502,9 +505,9 @@
         });
       }
       
-      // Abrir rechazo desde la lista de trabajo (por orden_id y folio)
-      function abrirRechazoMuestra(ordenId, folio) {
-        mostrarModalRechazo(ordenId, `Orden ${folio} — Rechazar/Devolver Muestra`);
+      // El endpoint de rechazo opera sobre el detalle/muestra, no sobre la orden.
+      function abrirRechazoMuestra(detalleId, folio) {
+        mostrarModalRechazo(detalleId, `Orden ${folio} — Rechazar/Devolver Muestra`);
       }
 
       // Función para mostrar modal de rechazo

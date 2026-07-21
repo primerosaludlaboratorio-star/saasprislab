@@ -352,13 +352,13 @@ def _detectar_burnout_nom035(empresa) -> list[dict]:
     """Detecta señales de riesgo de burnout del staff (NOM-035)."""
     anomalias = []
     try:
-        from bienestar.models import EvaluacionNOM035, DiarioEmocionalStaff
+        from core.models import EvaluacionNOM035, DiarioEmocionalStaff
         desde = timezone.now() - timedelta(days=7)
 
         evaluaciones_criticas = EvaluacionNOM035.objects.filter(
-            usuario__empresa=empresa,
-            riesgo_factor__in=('ALTO', 'MUY_ALTO'),
-            fecha__gte=desde,
+            empleado__empresa=empresa,
+            nivel_riesgo__gte=4,
+            fecha__gte=desde.date(),
         ).count()
         if evaluaciones_criticas:
             anomalias.append({
@@ -398,7 +398,7 @@ def _obtener_flujo_caja(empresa) -> dict:
             empresa=empresa,
             estado__in=('COMPLETADA', 'PARCIALMENTE_RECIBIDA'),
             fecha_aprobacion__date=hoy,
-        ).aggregate(total=Sum('total_estimado'))
+        ).aggregate(total=Sum('total'))
         resultado['gastos_compras'] = float(gastos['total'] or 0)
     except Exception:
         logging.getLogger(__name__).exception("Error inesperado en _obtener_flujo_caja (war_room.py)")

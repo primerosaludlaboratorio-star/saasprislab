@@ -163,9 +163,8 @@
     </style>
     {% endif %}
     
-    <!-- SweetAlert2 (CDN + fallback local) -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>if(typeof Swal==='undefined'){var s=document.createElement('script');s.src="{% static 'vendor/js/sweetalert2.all.min.js' %}";document.head.appendChild(s);}</script>
+    <!-- SweetAlert2 local y determinista para no depender de red externa -->
+    <script src="{% static 'vendor/js/sweetalert2.all.min.js' %}"></script>
     
     <!-- Estilos del Layout por Islas -->
     <style>
@@ -643,7 +642,7 @@
                             </h6>
                         </li>
                         <li><hr class="dropdown-divider"></li>
-                        {% if user.is_superuser or user.is_staff %}
+                        {% if user.is_superuser or user|is_role:"ADMIN" or user|is_role:"DIRECTOR" %}
                         <li>
                             <a class="dropdown-item" href="{% url 'admin:index' %}">
                                 <i class="bi bi-gear"></i> Panel Admin

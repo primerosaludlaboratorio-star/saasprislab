@@ -13,6 +13,7 @@ from core.lims_cart import detalle_orden_etiqueta
 from core.models import AuditLog, DetalleOrden, OrdenDeServicio, ResultadoParametro
 from core.utils.sucursal_helpers import get_request_sucursal
 from core.utils.trazabilidad import registrar_trazabilidad, serializar_modelo
+from core.services.lims.asistente_clinico import evaluar_asistencia_clinica_orden
 from lims.models import Analito
 from reglas_negocio.validadores import validar_triple_llave
 
@@ -78,7 +79,7 @@ class ResultadosLimsService:
                 )
             return {
                 'http_status': 500,
-                'body': {'status': 'error', 'mensaje': 'No fue posible procesar resultados LIMS.'},
+                'body': {'status': 'error', 'mensaje': f'Error inesperado: {str(e)}'},
             }
 
     @staticmethod
@@ -102,6 +103,7 @@ class ResultadosLimsService:
 
             resultados_data = data.get('resultados', {})
             accion = data.get('accion', 'borrador')
+            comentario_validacion = str(data.get('comentario_validacion') or '').strip()
 
             _MIG0058_CODIGO = '__PRISLAB_MIG_0058__'
             if accion == 'validar':
@@ -189,7 +191,10 @@ class ResultadosLimsService:
             pdf_pendiente_pago = False
             saldo_pdf_pendiente = None
             aviso_consentimiento = None
+            pdf_storage_fallo = False
+            aviso_pdf_storage = None
             _formula_engine_snapshot = {}
+            asistencia_clinica = None
 
             with transaction.atomic():
                 orden = OrdenDeServicio.objects.select_for_update().filter(
@@ -362,6 +367,8 @@ class ResultadosLimsService:
                             'validado_por': getattr(actor, 'id', None),
                             'fecha_validacion': detalle.fecha_validacion.isoformat(),
                         }
+                        if accion == 'validar' and comentario_validacion:
+                            datos_nuevo['comentario_validacion'] = comentario_validacion
 
                         crear_log_auditoria(
                             empresa=empresa,
@@ -450,15 +457,10 @@ class ResultadosLimsService:
 
                 if accion == 'validar':
                     rol_usuario = (getattr(actor, 'rol', '') or '').upper().strip()
-                    es_quimico_por_grupo = actor.groups.filter(
-                        name__in=['LABORATORIO', 'GERENCIA_OPERATIVA']
-                    ).exists()
                     if (
                         rol_usuario
                         not in ('QUIMICO', 'LABORATORIO', 'ADMIN', 'ADMINISTRADOR')
                         and not actor.is_superuser
-                        and not actor.is_staff
-                        and not es_quimico_por_grupo
                     ):
                         return {
                             'http_status': 403,
@@ -511,6 +513,55 @@ class ResultadosLimsService:
                             exc_info=True,
                         )
 
+                    asistencia_clinica = evaluar_asistencia_clinica_orden(
+                        orden,
+                        empresa,
+                        usuario=actor,
+                        request=request,
+                        accion=accion,
+                    )
+                    _formula_engine_snapshot['asistencia_clinica'] = asistencia_clinica
+
+                    if accion == 'validar' and asistencia_clinica.get('debe_bloquear'):
+                        return {
+                            'http_status': 422,
+                            'body': {
+                                'status': 'error',
+                                'codigo': 'ISO15189_BLOQUEO',
+                                'mensaje': asistencia_clinica.get('mensaje') or (
+                                    'Liberación bloqueada por discrepancias clínicas críticas.'
+                                ),
+                                'alertas_clinicas': asistencia_clinica.get('alertas', []),
+                                'resumen_asistencia': asistencia_clinica.get('resumen', {}),
+                                'modo_iso': asistencia_clinica.get('modo'),
+                            },
+                        }
+
+                    resultados_alerta = list(
+                        ResultadoParametro.objects.filter(orden=orden, es_critico=True)
+                    ) + list(
+                        ResultadoParametro.objects.filter(orden=orden, fuera_rango=True)
+                    )
+                    if resultados_alerta and len(comentario_validacion) < 10:
+                        transaction.set_rollback(True)
+                        return {
+                            'http_status': 400,
+                            'body': {
+                                'status': 'error',
+                                'codigo': 'JUSTIFICACION_QC_REQUERIDA',
+                                'mensaje': (
+                                    'La validación requiere una justificación técnica de al menos 10 caracteres '
+                                    'porque existen resultados críticos o fuera de rango.'
+                                ),
+                            },
+                        }
+                    if comentario_validacion:
+                        for detalle in orden.detalles.all():
+                            anterior = (detalle.observaciones or '').strip()
+                            marca = f'Validación QFB: {comentario_validacion}'
+                            detalle.observaciones = f'{anterior}\n{marca}'.strip()
+                            detalle.save(update_fields=['observaciones'])
+
                     try:
                         from core.services.motor_reportes_lab import (
                             generar_reporte_pdf,
@@ -521,16 +572,18 @@ class ResultadosLimsService:
                         pdf_bytes = generar_reporte_pdf(orden, request=request)
                         pdf_url = guardar_reporte_en_storage(orden, pdf_bytes)
                         if not pdf_url:
-                            return {
-                                'http_status': 500,
-                                'body': {
-                                    'status': 'error',
-                                    'mensaje': (
-                                        'No se pudo guardar el PDF de resultados en storage. '
-                                        'La orden no fue marcada como lista.'
-                                    ),
-                                },
-                            }
+                            pdf_storage_fallo = True
+                            aviso_pdf_storage = (
+                                'No se pudo guardar el PDF de resultados en storage; '
+                                'la validación se conservó y el PDF deberá regenerarse o '
+                                'respaldarse cuando el storage esté disponible.'
+                            )
+                            logger_core.warning(
+                                'ResultadosLimsService: PDF no guardado en storage para orden=%s; '
+                                'se conserva la validación. usuario=%s',
+                                orden_id,
+                                getattr(actor, 'username', str(getattr(actor, 'pk', '?'))),
+                            )
                     except ReportePdfSaldoPendienteError as e:
                         pdf_pendiente_pago = True
                         saldo_pdf_pendiente = float(e.saldo_pendiente)
@@ -660,9 +713,19 @@ class ResultadosLimsService:
                 respuesta['formulas_computados'] = _fe['computados']
             if _fe.get('avisos'):
                 respuesta['formulas_avisos'] = _fe['avisos']
+            if asistencia_clinica:
+                respuesta['asistencia_clinica'] = asistencia_clinica
             if accion == 'validar' and aviso_consentimiento:
                 respuesta['aviso_consentimiento'] = aviso_consentimiento
                 respuesta['mensaje'] += f' (Aviso: {aviso_consentimiento})'
+            if accion == 'validar' and asistencia_clinica and asistencia_clinica.get('requiere_revision'):
+                respuesta['alertas_clinicas'] = asistencia_clinica.get('alertas', [])
+                respuesta['resumen_asistencia'] = asistencia_clinica.get('resumen', {})
+                respuesta['modo_iso'] = asistencia_clinica.get('modo')
+                if asistencia_clinica.get('debe_bloquear'):
+                    respuesta['mensaje'] = asistencia_clinica.get('mensaje') or respuesta['mensaje']
+                else:
+                    respuesta['mensaje'] += ' Se generaron alertas clínicas asistidas.'
             if accion == 'validar' and pdf_pendiente_pago:
                 respuesta['pdf_pendiente_pago'] = True
                 respuesta['codigo_pdf'] = 'SALDO_PENDIENTE_PDF'
@@ -671,6 +734,13 @@ class ResultadosLimsService:
                 respuesta['mensaje'] = (
                     f"{respuesta['mensaje']} El PDF oficial quedará disponible al liquidar el saldo en recepción."
                 ).strip()
+            if accion == 'validar' and pdf_storage_fallo:
+                respuesta['pdf_storage_fallo'] = True
+                if aviso_pdf_storage:
+                    respuesta['aviso_pdf_storage'] = aviso_pdf_storage
+                    respuesta['mensaje'] = (
+                        f"{respuesta['mensaje']} {aviso_pdf_storage}"
+                    ).strip()
 
             return {'http_status': 200, 'body': respuesta}
 
@@ -705,7 +775,7 @@ class ResultadosLimsService:
                 )
             return {
                 'http_status': 500,
-                'body': {'status': 'error', 'mensaje': 'No fue posible procesar resultados LIMS.'},
+                'body': {'status': 'error', 'mensaje': f'Error inesperado: {str(e)}'},
             }
 
     @staticmethod
@@ -719,7 +789,6 @@ class ResultadosLimsService:
         puede_validar = (
             rol in ('QUIMICO', 'LABORATORIO', 'ADMIN', 'ADMINISTRADOR')
             or request.user.is_superuser
-            or request.user.is_staff
         )
         if not puede_validar:
             return {

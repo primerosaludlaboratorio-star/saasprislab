@@ -615,7 +615,7 @@
     fillAnalitos();
 
     // Autocomplete de parámetros desde la vista
-    const parametrosLista = {{ parametros_lista_json|default:"[]" }};
+    const parametrosLista = {{ parametros_lista_json|default:"[]"|safe }};
     const datalist = document.getElementById('cc-datalist');
     if (datalist && parametrosLista.length) {
         parametrosLista.forEach(p => {

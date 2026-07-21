@@ -72,6 +72,20 @@ class MonitorProduccionWorkflowTest(TestCase):
         self.assertEqual(orden.estado_clinico, 'COMPLETO')
         self.assertEqual(orden.estado, 'RESULTADOS_LISTOS')
 
+    def test_avanzar_sin_pdf_devuelve_error_controlado(self):
+        orden = self._crear_orden_lims(estado_clinico='VALIDADO_PARCIAL')
+
+        response = self.client.post(
+            reverse('laboratorio:api_avanzar_estado'),
+            data=json.dumps({'orden_id': orden.id}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('PDF', response.json()['mensaje'])
+        orden.refresh_from_db()
+        self.assertEqual(orden.estado_clinico, 'VALIDADO_PARCIAL')
+
     def test_toma_muestra_renderiza_detalles_lims_sin_estudio_legacy(self):
         orden = self._crear_orden_lims()
 
@@ -166,6 +180,44 @@ class MonitorProduccionWorkflowTest(TestCase):
         )
 
         self.assertIn(self.analito.codigo, resultados)
+
+    def test_validar_resultados_no_bloquea_si_falla_storage_pdf(self):
+        orden = self._crear_orden_lims()
+        detalle = orden.detalles.select_related('analito').first()
+
+        payload = {
+            'accion': 'validar',
+            'equipo_id': '',
+            'resultados': {
+                str(detalle.id): {
+                    'resultado': '95',
+                    'parametros': {
+                        str(self.analito.id): {
+                            'valor': '95',
+                            'descripcion': self.analito.nombre,
+                        }
+                    },
+                }
+            },
+        }
+
+        with patch('core.services.lims.resultados_lims_service.validar_triple_llave', return_value=(True, [])):
+            with patch('core.services.lims.resultados_lims_service.evaluar_asistencia_clinica_orden', return_value={'debe_bloquear': False, 'requiere_revision': False, 'alertas': [], 'resumen': {}, 'modo': 'ok'}):
+                with patch('core.services.motor_reportes_lab.generar_reporte_pdf', return_value=b'%PDF-1.4 mock'):
+                    with patch('core.services.motor_reportes_lab.guardar_reporte_en_storage', return_value=None):
+                        response = self.client.post(
+                            reverse('laboratorio:api_guardar_resultados', args=[orden.id]),
+                            data=json.dumps(payload),
+                            content_type='application/json',
+                        )
+
+        self.assertEqual(response.status_code, 200, response.content)
+        data = response.json()
+        self.assertEqual(data['status'], 'success')
+        self.assertTrue(data.get('validado'))
+        self.assertTrue(data.get('pdf_storage_fallo'))
+        orden.refresh_from_db()
+        self.assertEqual(orden.estado, 'RESULTADOS_LISTOS')
 
     def _crear_orden_lims(self, estado_clinico='PENDIENTE_TOMA'):
         orden = OrdenDeServicio.objects.create(

@@ -1,6 +1,6 @@
 # Estado Canonico de PRISLAB SaaS
 
-Fecha de consolidacion: 2026-07-16 (última actualización: coordinación documental reconciliada y Recepcion cerrada con suite completa)  
+Fecha de consolidacion: 2026-07-21 (última actualización: auditoría humana UI en desarrollo de Laboratorio)
 Rama canonica: `release/v1.0-local`
 
 ## Proposito
@@ -32,10 +32,45 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 - Director -> `RESUELTO`
 - IA/PRIS (timezone local en el alcance Director/IA/PRIS) -> `RESUELTO`
 - Pacientes (alta de paciente / form / template faltante) -> `RESUELTO`
-- Laboratorio (flujo funcional principal) -> `RESUELTO` con deuda arquitectonica legacy/LIMS documentada
+- Laboratorio (flujo funcional principal) -> `ABIERTO` hasta completar la matriz humana E2E; el esquema y catálogo LIMS autoritativos ya están disponibles
+  - auditoría humana UI en desarrollo del 2026-07-21: login, recepción, toma, captura, validación, PDF y entrega OK para `LAB-20260721-002`; la ruta feliz básica ya persiste y entrega una orden
+  - la auditoría posterior en QA cerró con evidencia la creación CxC parcial (`$85/$40/$45`), la cortesía con total/saldo cobrable `$0`, la toma manual 6/6 y el envío a Maquila (`EN_MAQUILA`)
+  - QA 2026-07-21 cerró valores fuera de rango con justificación QFB, rechazo/repetición, complemento de pago, cancelación/reembolso y Levey-Jennings básico con 3 fixtures; sigue pendiente Westgard CCI estricto, UREA/BUN y la segunda auditoría humana completa
+  - se corrigió el JSON escapado de `parametros_lista_json` en Control de Calidad; el histórico aceptó `GLUCOSA` lote `QA-GLU-2026` con valores 100/101/99 y desviaciones 0/+1/-1
+  - se reemplazó el `prompt()` de validación por diálogo SweetAlert con textarea; el backend bloquea `400 JUSTIFICACION_QC_REQUERIDA` antes de generar PDF y registra la justificación QFB en el detalle
+  - Worklist ya envía el `DetalleOrden` correcto al rechazo; Recepción expone el botón de cancelación y genera el movimiento negativo de caja
+  - se corrigió `core/services/validador_ia.py` para usar `ResultadoParametro.analito`; el avance de Monitor sin PDF quedó protegido con respuesta `400` controlada en lugar de `500`
+  - evidencia: `docs/ai_coordination/inbox/20260721_human_ui_dev_laboratorio.md`
+  - revalidado en produccion el 2026-07-20: `preparacion_toma` dejo de caer por el campo obsoleto `firmado` y la orden `LAB-20260720-001` vuelve a abrir cubiculo
+  - revalidado en produccion el 2026-07-20: `api_iniciar_toma` y `api_finalizar_toma` persistieron `TomaMuestra` para `LAB-20260720-001` y la orden regreso a `lista-trabajo`
+  - revalidado y endurecido el 2026-07-20: la captura de resultados para filas de un solo analito ya envía el valor crudo y la validación no bloquea si falla el storage del PDF
+  - revalidado en produccion el 2026-07-20: `ResultadosLimsService` pudo validar la orden `LAB-20260620-001` con `PESO=70`, persistio `ResultadoParametro` y dejo `validado=True` sin romper la transaccion
+  - revalidado en produccion el 2026-07-20: la orden `LAB-202607-00005` paso a `RESULTADOS_LISTOS` con `BILIRRUBINA TOTAL=1.2`, se registro consentimiento de prueba y `/laboratorio/imprimir/9/` devolvio PDF real
+  - corregido y revalidado en produccion el 2026-07-21: `cancelar_orden`, `rechazar_muestra` y `validar_valor_critico` devuelven `404` JSON para IDs inexistentes, sin `500` ni traza de error interno
+  - corregido y revalidado en produccion el 2026-07-21: `etiqueta-termica` y `etiqueta-termica-qr` devuelven PDF valido; la validacion repetida de la orden `9` es idempotente y conserva `RESULTADOS_LISTOS`
+  - ejecutado en produccion el 2026-07-21: rechazo de muestra en `LAB-202607-00009` reinicio el detalle a `PENDIENTE_TOMA`; validacion LIMS sin rango legacy en `LAB-202607-00010` devolvio respuesta controlada; cancelacion de `LAB-202607-00011` genero devolucion `GastoCaja=-95.00`
+  - segunda auditoria E2E ejecutada en produccion el 2026-07-21: todas las pantallas operativas, APIs de consulta, resultados, tickets, etiquetas, historial de paciente, catalogo LIMS, preordenes y guardas anonimas respondieron conforme al contrato; `qa_auditor` autentico por cliente Django y la orden `9` quedo `ENTREGADO`
+  - corregido y revalidado en produccion el 2026-07-21: el historial de pacientes usaba el reverse inexistente `detalle_orden`; ahora usa `detalle_orden_view` y la ruta `/laboratorio/paciente/21/historial/` responde `200`
+  - `inventario.signals` dejo de hacer `select_for_update()` sobre el lado nullable de `orden`, evitando el `NotSupportedError` que contaminaba el atomic de laboratorio
+  - `core/views/war_room.py` ya usa `core.models.EvaluacionNOM035` y `Sum('total')` para no lanzar errores obsoletos desde el panel lateral
+  - revalidado en producción el 2026-07-21: la interfaz autenticada cargó recepción, toma, worklist, captura, entrega, consulta, pacientes, historial válido, monitor, maquila, LIMS y control de calidad; se corrigió y desplegó el JSON autoescapado que rompía JavaScript en control de calidad
+  - revalidado en producción el 2026-07-21: la migración `lims.0011_perfilanalito_alter_perfillims_analitos_and_more` estaba pendiente; se aplicó sin borrar catálogos y `/laboratorio/api/estudios/1/parametros/` pasó a `200 application/json` sin `lims_perfilanalito`
+  - revalidado en producción el 2026-07-21: el catálogo LIMS autoritativo contiene 101 perfiles y 810 analitos; el catálogo legado de estudios no representa el inventario LIMS operativo
+  - revalidado en producción el 2026-07-21: el proceso Gunicorn efectivo tiene HSTS, redirección SSL y cookies seguras activas; los hosts alternos no canónicos son rechazados por `ALLOWED_HOSTS` de forma intencional
+  - revalidado en producción el 2026-07-21: las pantallas y PDFs operativos responden, pero varias vistas tardan entre 2.6 y 3.3 segundos y queda pendiente evaluar ese rendimiento antes del cierre enterprise
+  - corregido y desplegado en producción el 2026-07-21: tokens públicos inválidos de resultados siguen respondiendo `400`, pero ya no generan traceback; se registran como advertencia controlada
+  - corregido y desplegado en producción el 2026-07-21: Maquila solo lista órdenes con `requiere_maquila=True`, exige POST y registra laboratorio externo, guía, notas y fecha en `EnvioMaquila`; una orden QA sin laboratorio fue rechazada y una marcada pasó a `EN_MAQUILA`
+  - corregido y desplegado en producción el 2026-07-21: Sentinel ya no crea incidencias para `404` JSON controlados de APIs; una cancelación QA inexistente devolvió `404` sin nueva incidencia
+  - corregido y desplegado en producción el 2026-07-21: el resumen IA opcional no intenta llamadas externas ni genera advertencias cuando no hay proveedor configurado; los PDFs siguen generándose
+  - corregido y desplegado en producción el 2026-07-21: `api_parametros_estudio` pasó de 32 a 11 consultas en la medición QA mediante `Count('rangos')`, conservando respuesta `200` y 29 parámetros
+  - auditoría segura productiva ejecutada el 2026-07-21: `20 OK`, `0 FAIL`; snapshot empresa 1 con 806 analitos, 101 perfiles, 17 paquetes, 13 órdenes y 8 resultados; quedan 2 detalles de órdenes históricas legacy sin llave LIMS, no se modifican por preservar trazabilidad clínica
 - Enfermeria -> `RESUELTO`
 - Inventario -> `RESUELTO`
 - Farmacia -> `RESUELTO` en esta ronda de refactor + endurecimiento, con 21/21 tests nuevos reportados y hallazgos H1-H4 cerrados
+  - revalidado en produccion el 2026-07-18 con interfaz real: busqueda, alta de producto, cambio de cantidad y retiro de linea
+  - revalidado adicionalmente el 2026-07-18 con apertura de caja, devolucion real, corte operativo y registro de gasto en produccion
+  - adicionalmente se valido una devolucion parcial real sobre una venta de prueba distinta para cubrir el flujo parcial
+  - no se detecto un flujo separado de "precorte" como modulo canonico independiente; el corte diario vigente vive en `core.views.farmacia.corte_caja_dia`
 - Logistica -> `RESUELTO` segun checklist oficial y reporte maestro del 2026-06-25
 - Mantenimiento -> `RESUELTO` segun checklist oficial y reporte maestro del 2026-06-25
 - Academia -> `RESUELTO` con 8/8 tests reportados en checklist oficial
@@ -50,8 +85,10 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 
 ## Modulos que siguen abiertos
 
-- Ninguno en codigo local.
+- Laboratorio: matriz de pruebas humanas con efectos laterales aún no ejecutada completamente; el catálogo LIMS autoritativo y la migración de relación perfil-analito ya están disponibles.
 - `branch protection` / `rulesets` en GitHub: verificados por evidencia funcional; `H-001` corregido en `release/v1.0-local`.
+- Laboratorio: la autenticación administrativa y navegación UI ya fueron verificadas; no se debe afirmar cierre humano total hasta ejecutar recepción, toma, captura, críticos, rechazo/repetición, cancelación/reembolso, entrega y control de calidad con datos QA trazables.
+- Laboratorio: la confirmación de recepción ya fue reproducida aceptando el modal y la ruta feliz quedó persistida; no contar esto como cierre total porque la matriz de excepciones continúa abierta.
 
 ## Reportes finales integrados
 
@@ -65,7 +102,7 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 - `_requiere_lims_captura` ya no permite `is_staff` como bypass.
 - `AuditLog` y `ForenseAcceso` ya son append-only a nivel modelo mediante `save()` y `delete()`.
 - `chromadb` ya no forma parte del baseline de `requirements.txt`; el motor RAG lo trata como opcional con activacion explicita.
-- El script de deploy local vigente es `scripts/deploy_vps.sh`; ademas existe el workflow GitHub Actions `.github/workflows/deploy-vps.yml` para el despliegue remoto a VPS cuando hay secretos configurados.
+- El despliegue vigente tiene dos rutas: `deploy.sh` para Docker Compose local/staging y `scripts/deploy_vps.sh` para VPS; el supuesto `deploy-vps.yml` citado en la auditoria anterior no existe en este checkout.
 - El `NameError path` del middleware Sentinel no se reproduce en el arbol actual: `path` queda definido antes de cada uso relevante.
 
 ### Consultorio PDF / tenant efectivo

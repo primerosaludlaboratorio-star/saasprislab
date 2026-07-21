@@ -486,6 +486,14 @@ def api_avanzar_estado(request):
                 'status': 'error',
                 'mensaje': f'No hay transición válida desde "{_orden_check.estado_clinico}"'
             }, status=400)
+        if (
+            TRANSICIONES_VALIDAS.get(_orden_check.estado_clinico) == 'COMPLETO'
+            and not (_orden_check.archivo_resultado and _orden_check.archivo_resultado.name)
+        ):
+            return JsonResponse({
+                'status': 'error',
+                'mensaje': 'Valida y genera primero el PDF de resultados desde Captura; Monitor no puede aprobar una orden sin documento adjunto.'
+            }, status=400)
 
         with transaction.atomic():
             orden = OrdenDeServicio.objects.select_for_update().get(
@@ -612,5 +620,5 @@ def api_avanzar_estado(request):
         logger.error(f"Error avanzando estado: {e}")
         return JsonResponse({
             'status': 'error',
-            'mensaje': 'No fue posible procesar la solicitud.'
+            'mensaje': str(e)
         }, status=500)

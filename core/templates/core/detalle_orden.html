@@ -545,9 +545,10 @@ function recalcularTotales() {
     const descPct = parseFloat(document.getElementById('inputDescPct').value) || 0;
     const descMonto = subtotal * descPct / 100;
     const subtotal2 = subtotal - descMonto;
-    const total = subtotal2;
+    const esCortesia = {{ orden.es_cortesia|yesno:"true,false" }};
+    const total = esCortesia ? 0 : subtotal2;
     const abono = parseFloat('{{ total_pagado|floatformat:2 }}') || 0;
-    const saldo = total - abono;
+    const saldo = esCortesia ? 0 : Math.max(total - abono, 0);
 
     document.getElementById('spanSubtotal').textContent = '$' + subtotal.toFixed(2);
     document.getElementById('spanDescMonto').textContent = '$' + descMonto.toFixed(2);

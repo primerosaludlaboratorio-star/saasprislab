@@ -356,6 +356,33 @@
                     </a>
                 </div>
 
+                {% if asistencia_clinica and asistencia_clinica.activo %}
+                <div class="w-100 mt-2 p-2 rounded p18-leyenda-global">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="badge {% if asistencia_clinica.debe_bloquear %}bg-danger{% elif asistencia_clinica.requiere_revision %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                            ISO {{ asistencia_clinica.modo }}
+                        </span>
+                        <span><strong>{{ asistencia_clinica.resumen.criticas|default:0 }}</strong> críticas</span>
+                        <span><strong>{{ asistencia_clinica.resumen.altas|default:0 }}</strong> altas</span>
+                        <span><strong>{{ asistencia_clinica.resumen.medias|default:0 }}</strong> medias</span>
+                        <span><strong>{{ asistencia_clinica.resumen.bajas|default:0 }}</strong> bajas</span>
+                    </div>
+                    <div class="mt-1 small">
+                        {{ asistencia_clinica.mensaje }}
+                    </div>
+                    {% if asistencia_clinica.recomendaciones %}
+                    <div class="mt-2 small">
+                        <strong>Recomendaciones:</strong>
+                        <ul class="mb-0">
+                            {% for sug in asistencia_clinica.recomendaciones|slice:":3" %}
+                            <li>{{ sug.area }}: {{ sug.mensaje }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
                 {# ── Modal QR de Publicación ── #}
                 <div class="modal fade" id="modalQRPublicar" tabindex="-1">
                     <div class="modal-dialog modal-sm">
@@ -739,6 +766,37 @@ function _ov(pattern) {
     return isNaN(n) ? null : n;
 }
 
+async function solicitarComentarioValidacion(detalleAlertas, cantidadAlertas) {
+    const titulo = `OMNI-GUARDIÁN QC detectó ${cantidadAlertas} alerta(s)`;
+    const texto =
+        `<div style="text-align:left;max-height:220px;overflow:auto;white-space:pre-wrap;` +
+        `font-size:.9rem">${detalleAlertas}</div>`;
+    if (typeof Swal === 'undefined' || typeof Swal.fire !== 'function') {
+        alert('No está disponible el diálogo de justificación técnica. Validación bloqueada.');
+        return '';
+    }
+    const respuesta = await Swal.fire({
+        icon: 'warning',
+        title: titulo,
+        html: texto + '<p style="text-align:left;margin:1rem 0 0">Justificación técnica del QFB (mínimo 10 caracteres):</p>',
+        input: 'textarea',
+        inputPlaceholder: 'Describa la revisión y la decisión técnica...',
+        inputAttributes: { 'aria-label': 'Justificación técnica del QFB' },
+        inputValidator: (value) => {
+            if (!value || value.trim().length < 10) {
+                return 'La justificación debe contener al menos 10 caracteres.';
+            }
+            return undefined;
+        },
+        showCancelButton: true,
+        confirmButtonText: 'Confirmar y validar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#b42318',
+        reverseButtons: true,
+    });
+    return respuesta.isConfirmed ? respuesta.value.trim() : '';
+}
+
 async function validarYPublicar() {
     const alertasPanico  = [];  // valores críticos — bloquean SIEMPRE
     const alertasDelta   = [];  // Delta Check >20%
@@ -903,18 +961,8 @@ async function validarYPublicar() {
             seccionesMensaje.push(`📊 DELTA CHECK / FUERA DE RANGO (${alertasDelta.length}):\n` + alertasDelta.map(a => `  • ${a}`).join('\n'));
 
         const msgCompleto = seccionesMensaje.join('\n\n');
-        const comentario = prompt(
-            `⚠️ OMNI-GUARDIÁN QC detectó ${todasAlertas.length} alerta(s) en esta orden:\n\n` +
-            msgCompleto +
-            `\n\n${'─'.repeat(50)}\n` +
-            `Como QFB autorizado, ingrese su comentario técnico (mínimo 10 caracteres) para liberar la validación:`
-        );
-        if (!comentario || comentario.trim().length < 10) {
-            alert(
-                '❌ VALIDACIÓN BLOQUEADA (ISO 15189 §5.8.3)\n\n' +
-                'Se detectaron alertas clínicas que requieren justificación técnica del QFB.\n' +
-                'Ingrese un comentario de al menos 10 caracteres para continuar.'
-            );
+        const comentario = await solicitarComentarioValidacion(msgCompleto, todasAlertas.length);
+        if (!comentario) {
             return;
         }
         window._comentarioValidacion = comentario.trim();
@@ -951,10 +999,15 @@ async function guardarResultados(accion) {
     for (let dId in resultados) {
         const params = resultados[dId].parametros;
         const lineas = [];
+        const valores = [];
         for (let pId in params) {
             lineas.push(`${params[pId].descripcion}: ${params[pId].valor}`);
+            valores.push(params[pId].valor);
         }
-        resultados[dId].resultado = lineas.join('\n');
+        // El backend de LIMS valida los analitos numéricos sobre el valor crudo.
+        // Si una fila representa un solo parámetro, enviamos ese valor limpio;
+        // en filas con varios parámetros conservamos el formato descriptivo.
+        resultados[dId].resultado = (valores.length === 1) ? valores[0] : lineas.join('\n');
     }
 
     if (!hayResultados) {
@@ -969,7 +1022,12 @@ async function guardarResultados(accion) {
         const resp = await fetch(`/laboratorio/api/guardar-resultados/${ordenId}/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-            body: JSON.stringify({ resultados, accion, equipo_id: equipoId })
+            body: JSON.stringify({
+                resultados,
+                accion,
+                equipo_id: equipoId,
+                comentario_validacion: window._comentarioValidacion || '',
+            })
         });
         if (resp.status === 401 || (resp.redirected && resp.url && String(resp.url).includes('/login'))) {
             alert('Sesión expirada. Redirigiendo al login.');

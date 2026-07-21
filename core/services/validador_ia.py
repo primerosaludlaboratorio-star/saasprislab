@@ -54,7 +54,7 @@ RANGOS_IMPOSIBLES = {
 }
 
 
-def validar_resultado_ia(detalle_orden):
+def validar_resultado_ia(detalle_orden, analito_id=None):
     """
     Valida un DetalleOrden antes de marcar como RESULTADO_LISTO.
     
@@ -76,15 +76,17 @@ def validar_resultado_ia(detalle_orden):
 
         resultados = ResultadoParametro.objects.filter(
             orden=detalle_orden.orden,
-        ).select_related('parametro')
+        ).select_related('analito')
+        if analito_id is not None:
+            resultados = resultados.filter(analito_id=analito_id)
 
         for resultado in resultados:
             if not resultado.valor:
                 continue
 
             nombre_param = ''
-            if resultado.parametro:
-                nombre_param = resultado.parametro.nombre or ''
+            if resultado.analito:
+                nombre_param = resultado.analito.nombre or ''
 
             valor_str = str(resultado.valor).strip()
 
@@ -188,7 +190,7 @@ def validar_orden_completa(orden):
     try:
         detalles = orden.detalles.select_related('analito', 'perfil_lims', 'paquete_lims').all()
         for detalle in detalles:
-            alertas = validar_resultado_ia(detalle)
+            alertas = validar_resultado_ia(detalle, analito_id=getattr(detalle, 'analito_id', None))
             todas_alertas.extend(alertas)
     except Exception as e:
         logger.error(f'[VALIDADOR-IA] Error validando orden completa: {e}')

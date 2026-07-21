@@ -1,6 +1,44 @@
 # AI Coordination Status
 
-Fecha: 2026-07-16
+Fecha: 2026-07-21
+
+## Auditoria humana UI en desarrollo — 2026-07-21
+
+- Se ejecutó una interacción visible contra `http://127.0.0.1:8000` con la base QA aislada; no fue producción.
+- Login, recepción, búsqueda/selección de paciente, búsqueda de estudios, selección de `GLU` + `URE` y cálculo de cobro exacto (`$145.00`) pasaron.
+- La confirmación de orden quedó validada al aceptar explícitamente el modal: se crearon `LAB-20260721-001` y `LAB-20260721-002`.
+- La orden `LAB-20260721-002` completó toma 6/6, captura `GLU=95`, validación humana, PDF y entrega; la base QA confirma `ENTREGADO` y `aprobado_por_humano=True`.
+- La orden `LAB-20260721-003` se creó como CxC con total `$85.00`, abono `$40.00`, saldo `$45.00` y motivo trazable; el estado de pago pendiente se reflejó en la interfaz.
+- La orden `LAB-20260721-004` se creó como cortesía autorizada: el subtotal de referencia es `$85.00`, pero total, abono y saldo son `$0.00`; se corrigió la vista para no mostrar un saldo cobrable ficticio.
+- La misma orden de cortesía completó toma manual 6/6 y fue enviada a Maquila desde la interfaz; la base QA confirmó `EN_MAQUILA`.
+- La pantalla de Control de Calidad cargó después de corregir el JSON escapado de `parametros_lista_json`; se registraron tres fixtures visibles y persistidos (`GLUCOSA`, lote `QA-GLU-2026`, valores 100/101/99, desviaciones 0/+1/-1). Levey-Jennings básico queda probado; Westgard CCI estricto sigue pendiente porque usa otro canal de medición.
+- La orden `LAB-20260721-005` probó `GLUCOSA=500`: el diálogo visible sustituyó el `prompt()` no soportado, exigió justificación QFB y validó con PDF; la base confirmó `RESULTADOS_LISTOS`, `fuera_rango=True` y `aprobado_por_humano=True`.
+- El servidor bloqueó por API una validación sin justificación (`400 JUSTIFICACION_QC_REQUERIDA`) antes de generar PDF; con justificación válida registró `Validación QFB` en observaciones.
+- La orden `LAB-20260721-006` probó rechazo desde Worklist y cancelación desde Recepción: el detalle volvió a `PENDIENTE_TOMA`, después quedó `CANCELADO` con motivo trazable y `GastoCaja=-85.00`.
+- La orden `LAB-20260721-003` completó por interfaz el complemento de `$45.00`; la base confirmó `PAGADO`, anticipo `$85.00` y saldo `$0.00`.
+- El cierre del servidor QA reprodujo un residual operativo fuera del flujo clínico: `/favicon.ico` termina en `503` por `ValueError: unsupported format` dentro de Sentinel y genera una incidencia duplicable.
+- Se hizo determinista SweetAlert2 local en `core/templates/base.html` y se corrigió `core/services/validador_ia.py` para usar la relación `analito` real.
+- El avance de Monitor sin PDF está protegido para responder `400` controlado; la ejecución automática focalizada se lanzó con UTF-8, pero debe contabilizarse solo cuando finalice con salida verificable.
+- `UREA` está configurada como calculada (`BUN*2.14`) y no es capturable manualmente sin dependencia; queda como pendiente de catálogo/LIMS.
+- Evidencia detallada: [20260721_human_ui_dev_laboratorio.md](./inbox/20260721_human_ui_dev_laboratorio.md).
+- Estado: `ABIERTO`. Ya están probados en QA críticos fuera de rango con justificación, rechazo/repetición, cancelación/reembolso, complemento de pago y Levey-Jennings básico; siguen abiertos Westgard CCI estricto, UREA/BUN y la segunda auditoría humana completa.
+
+## Revalidacion productiva de Laboratorio/LIMS — 2026-07-21
+
+- La interfaz autenticada en producción fue recorrida como usuario administrativo: recepción, toma de muestra, worklist, captura, entrega, consulta de órdenes, pacientes, historial válido, monitor, maquila, LIMS y control de calidad cargaron.
+- Se corrigió y desplegó `core/templates/core/control_calidad.html`: `parametros_lista_json` se renderizaba como `&quot;` y provocaba `SyntaxError: Unexpected token '&'`.
+- La verificación no cierra el módulo: la matriz humana con efectos laterales todavía no fue ejecutada completamente; el catálogo LIMS autoritativo observado contiene 101 perfiles y 810 analitos.
+- La migración productiva pendiente `lims.0011_perfilanalito_alter_perfillims_analitos_and_more` fue aplicada y la API de parámetros del estudio pasó a `200 application/json`; antes de la migración producía `OperationalError: no such table: lims_perfilanalito`.
+- Los tokens públicos inválidos de resultados continúan devolviendo `400`, pero ahora se registran como advertencia controlada sin traceback; el cambio fue desplegado y revalidado.
+- La configuración efectiva del proceso Gunicorn tiene HSTS, redirección SSL y cookies seguras activas; los hosts alternos rechazados por `ALLOWED_HOSTS` son una guardia esperada del dominio canónico.
+- Las pantallas operativas probadas respondieron, pero recepción y captura registraron latencias de aproximadamente 2.6 a 3.3 segundos; queda evaluación de rendimiento.
+- Maquila fue corregida y desplegada: solo acepta órdenes `requiere_maquila=True`, exige POST y registra laboratorio externo, guía, notas y fecha en `EnvioMaquila`; el flujo QA fue verificado con rechazo por datos incompletos y envío exitoso.
+- Sentinel fue corregido y desplegado para excluir `404` JSON contractuales de sus incidencias; la guardia se revalidó con una cancelación de orden inexistente.
+- Se eliminó el N+1 de la API de parámetros LIMS: la medición productiva pasó de 32 a 11 consultas, con respuesta `200` y 29 parámetros.
+- La IA de resumen de bienestar quedó como integración opcional silenciosa cuando no hay clave configurada; el PDF productivo continúa generándose sin advertencia.
+- Auditoría segura productiva: `20 OK`, `0 FAIL`; los únicos avisos son el modo sin credenciales del comando de solo lectura y 2 detalles históricos legacy sin analito/perfil/paquete LIMS. No se alteraron esos registros clínicos.
+- La suite Django remota quedó ejecutándose sin resultado durante más de un minuto y fue detenida; no se contabiliza como aprobada.
+- Estado: `ABIERTO`. No declarar Laboratorio 100% cerrado hasta corregir los puntos anteriores y ejecutar la matriz humana con efectos laterales usando datos QA.
 
 ## Estado actual
 

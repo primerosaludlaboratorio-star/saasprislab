@@ -45,7 +45,9 @@ No deben volver a entrar como pendiente salvo evidencia nueva.
 
 ### Prioridad viva para la siguiente ronda
 
-- Ninguna deuda funcional viva.
+- Laboratorio: completar Westgard CCI estricto, UREA/BUN y la segunda auditoría humana; Levey-Jennings básico, críticos fuera de rango, CxC, cortesía, toma, Maquila, rechazo/repetición y cancelación ya tienen evidencia QA y no deben reabrirse sin repro nueva.
+- Resolver la decisión de catálogo para `UREA` calculada por `BUN*2.14`.
+- Completar la regresión automática del avance de Monitor sin PDF y confirmar con salida verificable que responde `400`, no `500`.
 
 ### Modulos ya cerrados y que no deben reabrirse sin repro nueva
 
@@ -53,7 +55,6 @@ No deben volver a entrar como pendiente salvo evidencia nueva.
 - Director
 - IA/PRIS (fix TZ en alcance Director/IA/PRIS)
 - Pacientes
-- Laboratorio funcional principal
 - Enfermeria
 - Inventario
 - Farmacia
@@ -80,14 +81,14 @@ No deben volver a entrar como pendiente salvo evidencia nueva.
 
 ## Pendientes exactos por modulo
 
-- Ninguno funcional en el codigo local.
+- Laboratorio: Westgard CCI estricto, UREA/BUN y segunda auditoría humana E2E; Levey-Jennings básico y los escenarios de críticos fuera de rango, rechazo/repetición, cancelación/reembolso, CxC parcial, cortesía, toma y Maquila ya están evidenciados en QA.
 
-## Próximo paso: validación final y preparación de deploy
+## Próximo paso: matriz completa de Laboratorio
 
-1. Reconciliar el árbol sucio restante contra código real.
-2. Confirmar que no haya archivos ejecutables borrados por accidente.
-3. Preparar el siguiente paquete limpio de commit.
-4. Desplegar de nuevo solo ese paquete validado.
+1. Crear fixtures `MedicionControlInterno`/CCI y ejecutar Westgard con evidencia de aceptación, alerta y bloqueo.
+2. Completar el caso UREA/BUN calculado desde captura hasta PDF y entrega.
+3. Ejecutar la regresión automática de Monitor sin PDF y la suite focalizada completa con salida verificable.
+4. Reconciliar el árbol y preparar deploy únicamente con pruebas verdes.
 
 ## Carril Claude
 
