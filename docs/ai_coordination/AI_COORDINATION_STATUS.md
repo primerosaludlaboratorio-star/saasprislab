@@ -36,6 +36,17 @@ La expiracion esta respaldada por el timer `prislab-expire-auditoria-users.timer
 
 **Estado Sentinel:** incidente funcional corregido y verificado en produccion; la advertencia de latencia queda pendiente de optimizacion separada.
 
+## Punto cero Sentinel para nueva auditoria — 2026-07-23
+
+- Se ejecuto `sentinel_amnistia_pre_produccion --dry-run` y despues la ejecucion real en produccion.
+- Se marcaron `58` incidencias Sentinel historicas como `SOLUCIONADO`, conservando los registros y su trazabilidad; no se eliminaron filas.
+- Buzon de quejas, discrepancias de inventario y notificaciones internas no tenian pendientes.
+- La verificacion posterior dejo `0` incidencias Sentinel abiertas y `0` incidencias nuevas del dia.
+- Las rutas `/farmacia/pdv/`, `/farmacia/erp/kardex/`, `/farmacia/erp/kardex/crear-movimiento/` y `/farmacia/libro-control/` respondieron `HTTP 200` autenticadas con `auditoria_admin_10d`.
+- `IncidenciaOperativa` de negocio no fue modificada.
+
+**Estado operativo:** Sentinel queda en punto cero para la siguiente auditoria. Cualquier nueva incidencia posterior a este corte debe tratarse como evento nuevo, no como arrastre historico.
+
 ## Corte de auditoria productiva Laboratorio/LIMS — 2026-07-23
 
 La verificacion se ejecuto autenticada con `auditoria_admin_10d` sobre `https://prislab.labcorecloud.com`. No se modificaron ordenes clinicas, pacientes, catalogos LIMS ni catalogo de farmacia durante este corte.
