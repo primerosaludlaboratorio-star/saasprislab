@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, include
+from django.views.generic import RedirectView
 
 # ── Handlers de error (deben estar en el módulo ROOT_URLCONF) ────────────────
 from core.views.general import error_404, error_500, error_403
@@ -21,6 +22,18 @@ from .api import urlpatterns as _api
 
 # Catch-all core.urls (SIEMPRE al final)
 _core_catchall = [path('', include('core.urls', namespace='core'))]
+_inventory_aliases = [
+    path(
+        'inventario/productos/',
+        RedirectView.as_view(url='/silo-lab/lab/lotes/', permanent=False),
+        name='inventario_productos_alias',
+    ),
+    path(
+        'inventario/movimientos/',
+        RedirectView.as_view(url='/silo-lab/lab/salidas-tecnicas/', permanent=False),
+        name='inventario_movimientos_alias',
+    ),
+]
 
 urlpatterns = (
     _core
@@ -31,6 +44,7 @@ urlpatterns = (
     + _pris
     + _mod
     + _api
+    + _inventory_aliases
     + _core_catchall
 )
 
