@@ -14,6 +14,17 @@ Se habilitaron tres cuentas temporales para pruebas humanas sobre Empresa `1` / 
 
 La expiracion esta respaldada por el timer `prislab-expire-auditoria-users.timer`, que desactiva las tres cuentas automaticamente.
 
+## Correcciones productivas Farmacia — 2026-07-23
+
+- Se corrigio la seleccion de resultados del PDV: el buscador renderiza botones con `data-producto-id` y el manejador ahora acepta ese elemento, no solamente tarjetas `.card`. La busqueda vuelve a permitir seleccionar y agregar el medicamento al carrito.
+- Se corrigio la entrada de mercancia: la pantalla usa la URL canonica mediante `reverse`, muestra de forma visible `Producto existente` y `Producto nuevo`, permite buscar/seleccionar un producto existente y registra el incremento por Kardex sin duplicar el catalogo.
+- La entrada existente conserva el producto seleccionado y actualiza existencias mediante `MovimientoInventario`; la prueba productiva se ejecuto dentro de una transaccion de rollback y confirmo que el stock quedo sin cambios.
+- Se corrigio la llamada de trazabilidad de entradas para usar el contrato real de `registrar_trazabilidad`; el movimiento queda asociado a empresa, sucursal, usuario, producto y request.
+- Se detecto y restauro la ausencia de las tres cuentas temporales documentadas. El login de `auditoria_admin_10d` fue verificado nuevamente despues de la restauracion.
+- `manage.py check`, compilacion Python, despliegue, reinicio de servicios y busquedas productivas pasaron. La suite local dirigida sigue sin contabilizarse porque quedo bloqueada creando su base de pruebas.
+
+**Estado Farmacia:** estas dos incidencias quedan corregidas y verificadas en produccion. La certificacion global del modulo Farmacia continua sujeta a la matriz completa de escenarios, no solo a estas dos correcciones.
+
 ## Corte de auditoria productiva Laboratorio/LIMS — 2026-07-23
 
 La verificacion se ejecuto autenticada con `auditoria_admin_10d` sobre `https://prislab.labcorecloud.com`. No se modificaron ordenes clinicas, pacientes, catalogos LIMS ni catalogo de farmacia durante este corte.
