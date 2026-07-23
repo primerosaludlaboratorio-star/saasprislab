@@ -45,7 +45,7 @@ class MovimientoInventarioService:
         categoria = data.get('categoria', 'GENERICO')
         es_controlado = data.get('es_controlado', False)
 
-        if not producto_id and not nombre or cantidad <= 0:
+        if (not producto_id and not nombre) or cantidad <= 0:
             return cls._json_result(400, {
                 'status': 'error',
                 'mensaje': 'Faltan datos requeridos: nombre y cantidad son obligatorios',
@@ -150,11 +150,18 @@ class MovimientoInventarioService:
                     producto.save()
 
                 try:
+                    from core.utils.sucursal_helpers import get_user_primary_sucursal
                     registrar_trazabilidad(
+                        tipo_operacion='ENTRADA_MERCANCIA',
+                        modulo='FARMACIA',
+                        referencia_id=producto.id,
+                        referencia_tipo='Producto',
+                        accion='CREAR',
+                        descripcion=f'Ingreso: {cantidad} pz, Lote: {lote_num or "N/A"}, Factura: {factura or "N/A"}',
                         usuario=request.user,
-                        accion='ENTRADA_MERCANCIA',
-                        modelo=producto,
-                        detalles=f'Ingreso: {cantidad} pz, Lote: {lote_num or "N/A"}, Factura: {factura or "N/A"}',
+                        empresa=empresa,
+                        sucursal=get_user_primary_sucursal(request.user),
+                        request=request,
                     )
                 except Exception:
                     logging.getLogger(__name__).exception("Error inesperado en entrada_mercancia_directa (movimiento_inventario_service.py)")
