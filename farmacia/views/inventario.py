@@ -313,11 +313,15 @@ def libro_control_antibioticos(request):
                 'doctor': f"{reg.medico_nombre or ''} | Cédula: {reg.medico_cedula or ''}".strip('| '),
             })
 
-        return render(request, 'core/libro_control_antibioticos.html', {
+        reporte = list(grupos.values())
+        return render(request, 'core/libro_control.html', {
             'empresa': empresa,
-            'grupos': dict(grupos),
-            'fecha_desde': fecha_desde_str,
-            'fecha_hasta': fecha_hasta_str,
+            'razon_social': empresa.nombre,
+            'rfc': empresa.rfc or '',
+            'reporte': reporte,
+            'fecha_seleccionada': fecha_desde_str or fecha_hasta_str,
+            'fecha_inicio': fecha_desde_str,
+            'fecha_fin': fecha_hasta_str,
             'producto_q': producto_q,
         })
     finally:

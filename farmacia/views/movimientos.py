@@ -2,7 +2,7 @@
 Vistas de Gestión de Movimientos de Inventario y Kardex para Farmacia
 """
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView, ListView
 from django.conf import settings
@@ -19,6 +19,7 @@ from decimal import Decimal
 from core.models import Producto, Lote
 from farmacia.models import MovimientoInventario, MotivoAjuste
 from core.utils.sucursal_helpers import get_user_primary_sucursal
+from core.decorators import role_required
 
 # Umbrales de caducidad configurables vía settings
 _DIAS_CADUCIDAD_CRITICO = getattr(settings, 'FARMACIA_DIAS_CADUCIDAD_CRITICO', 30)
@@ -226,7 +227,7 @@ class KardexListView(LoginRequiredMixin, ListView):
 
 
 @login_required
-@permission_required('farmacia.add_movimientoinventario', raise_exception=True)
+@role_required('FARMACIA', 'ADMIN', 'GERENTE', 'DIRECTOR')
 def crear_movimiento_manual(request):
     """
     Vista para crear movimientos manuales de inventario.
