@@ -2,6 +2,29 @@
 
 Fecha: 2026-07-21
 
+## Corte Farmacia: correcciones y verificacion productiva — 2026-07-23
+
+Este corte se limita al modulo Farmacia y deja trazabilidad de lo que fue corregido y de lo que sigue pendiente para la certificacion humana integral.
+
+### Correcciones desplegadas
+
+- `9b59814`: el historial de ventas precarga detalles, pagos y CFDI; las consultas observadas bajaron de `63` a `20` y Sentinel dejo de reportar el umbral de consultas.
+- `d68cdbe`: la validacion de antibioticos devuelve `400` si falta `producto_id`, `404` si el producto no pertenece a la empresa y `400` si faltan datos del prescriptor; ya no convierte esos casos en `500`.
+- `f9d2b0b`: las rutas legacy `/farmacia/kardex/`, `/farmacia/reporte/valorizacion/`, `/farmacia/semaforo-caducidad/`, `/farmacia/stock-critico/` y `/farmacia/antibioticos/reporte-cofepris/` redirigen al namespace ERP vigente.
+
+### Evidencia productiva
+
+- El commit `f9d2b0b` esta desplegado en `/opt/prislab/app` sobre `release/v1.0-local`.
+- `manage.py check`, estaticos y los servicios `prislab-gunicorn`, `prislab-celery` y `prislab-celerybeat` quedaron correctos.
+- Las pantallas de Farmacia, APIs de busqueda, caja, Kardex, lotes, libro de control, devoluciones, reportes y regulatorio respondieron conforme a contrato bajo `auditoria_admin_10d`.
+- La busqueda positiva de `AMOXICILINA` devolvio resultados en PDV y entrada; la busqueda inexistente devolvio lista vacia sin error.
+- La validacion regulatoria productiva devolvio `400`, `404`, `400` y `200` en los cuatro escenarios de contrato probados.
+- La cola Sentinel pendiente para URLs de Farmacia quedo en `0`. Las nueve incidencias historicas relacionadas fueron resueltas con nota de trazabilidad, no eliminadas.
+
+### Estado de cierre
+
+El backend y las pantallas de consulta de Farmacia quedan verificados en verde. La certificacion `100%` del modulo sigue **ABIERTA** hasta ejecutar con una sesion humana autenticada los flujos con efecto lateral: apertura de caja, ventas con varios productos y lotes, venta parcial, cancelacion, devolucion parcial/total, registro de gasto, precorte y corte. No se ejecutaron esos writes contra datos reales en este corte para no contaminar produccion ni usar credenciales no entregadas.
+
 ## Usuarios temporales de auditoria productiva — 2026-07-23
 
 Se habilitaron tres cuentas temporales para pruebas humanas sobre Empresa `1` / sucursal `Matriz Principal`. No se guardan contrasenas en el repositorio.
