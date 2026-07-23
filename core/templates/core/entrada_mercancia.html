@@ -82,8 +82,8 @@
                             <small class="text-muted">Selecciona un lote para acumular la compra en ese mismo lote.</small>
                         </div>
                         <hr>
-                        <div class="col-md-6"><label class="small fw-bold text-danger">COSTO UNITARIO (COMPRA)</label><input type="number" id="ent-costo" class="form-control"></div>
-                        <div class="col-md-6"><label class="small fw-bold text-success">PRECIO AL PÚBLICO (VENTA)</label><input type="number" id="ent-venta" class="form-control"></div>
+                        <div class="col-md-6"><label class="small fw-bold text-danger">COSTO UNITARIO (COMPRA)</label><input type="number" id="ent-costo" class="form-control" min="0" step="0.01"><small class="text-muted" id="ent-costo-memoria">Se precarga el costo vigente del catálogo.</small></div>
+                        <div class="col-md-6"><label class="small fw-bold text-success">PRECIO AL PÚBLICO (VENTA)</label><input type="number" id="ent-venta" class="form-control" min="0" step="0.01"><small class="text-muted" id="ent-venta-memoria">Se conserva el precio vigente si no lo modificas.</small></div>
                         <div class="col-md-12"><label class="small fw-bold">PROVEEDOR</label><input type="text" id="ent-proveedor" class="form-control"></div>
                     </div>
                     <button class="btn btn-primary w-100 mt-4 fw-bold py-3" onclick="guardarEntrada()">REGISTRAR INGRESO AL ALMACÉN</button>
@@ -241,6 +241,9 @@
         inputNombreProducto.value = producto.nombre || '';
         document.getElementById('ent-codigo').value = producto.codigo_barras || '';
         document.getElementById('ent-costo').value = producto.precio_compra || '';
+        document.getElementById('ent-venta').value = producto.precio_publico || '';
+        document.getElementById('ent-costo-memoria').textContent = 'Costo vigente: $' + Number(producto.precio_compra || 0).toFixed(2) + '. Puedes ajustarlo si cambió el proveedor.';
+        document.getElementById('ent-venta-memoria').textContent = 'Precio vigente: $' + Number(producto.precio_publico || 0).toFixed(2) + '. Se conservará si no lo modificas.';
         document.getElementById('ent-marca').value = producto.marca || '';
         document.getElementById('ent-equivalencias').value = producto.equivalencias_comerciales || '';
         document.getElementById('ent-producto-seleccionado').textContent = 'Seleccionado: ' + producto.nombre + ' | Stock actual: ' + (producto.stock || 0);
@@ -286,6 +289,10 @@
             document.getElementById('ent-producto-id').value = '';
             document.getElementById('ent-producto-seleccionado').textContent = '';
             inputNombreProducto.value = '';
+            document.getElementById('ent-costo').value = '';
+            document.getElementById('ent-venta').value = '';
+            document.getElementById('ent-costo-memoria').textContent = 'Captura el costo de esta compra.';
+            document.getElementById('ent-venta-memoria').textContent = 'Opcional: si lo dejas vacio, se conserva el precio vigente del catalogo.';
             inputNombreProducto.focus();
         }
     }
@@ -312,7 +319,7 @@
                     const boton = document.createElement('button');
                     boton.type = 'button';
                     boton.className = 'list-group-item list-group-item-action text-start';
-                    boton.innerHTML = '<strong>' + (producto.nombre || '') + '</strong><br><small class="text-muted">Codigo: ' + (producto.codigo_barras || 'N/A') + ' | Stock actual: ' + (producto.stock || 0) + '</small>';
+                    boton.innerHTML = '<strong>' + (producto.nombre || '') + '</strong><br><small class="text-muted">Codigo: ' + (producto.codigo_barras || 'N/A') + ' | Stock: ' + (producto.stock || 0) + ' | Costo: $' + Number(producto.precio_compra || 0).toFixed(2) + ' | Venta: $' + Number(producto.precio_publico || 0).toFixed(2) + '</small>';
                     boton.addEventListener('click', function() { aplicarProductoEntrada(producto); });
                     resultados.appendChild(boton);
                 });

@@ -135,6 +135,7 @@ def api_buscar_productos_compra(request):
             'marca': p.marca_laboratorio or '',
             'equivalencias_comerciales': p.equivalencias_comerciales or '',
             'precio_compra': float(p.precio_compra or 0),
+            'precio_publico': float(p.precio_publico or 0),
             'stock': int(p.stock or 0),
         })
     
