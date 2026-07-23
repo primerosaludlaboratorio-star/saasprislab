@@ -92,7 +92,7 @@
                         <div class="col-md-6"><label class="small fw-bold text-success">PRECIO AL PÚBLICO (VENTA)</label><input type="number" id="ent-venta" class="form-control" min="0" step="0.01"><small class="text-muted" id="ent-venta-memoria">Se conserva el precio vigente si no lo modificas.</small></div>
                         <div class="col-md-12"><label class="small fw-bold">PROVEEDOR</label><input type="text" id="ent-proveedor" class="form-control"></div>
                     </div>
-                    <button class="btn btn-primary w-100 mt-4 fw-bold py-3" onclick="guardarEntrada()">REGISTRAR INGRESO AL ALMACÉN</button>
+                    <button class="btn btn-primary w-100 mt-4 fw-bold py-3" onclick="guardarEntrada()">GUARDAR LOTE Y CONTINUAR</button>
                 </div>
             </div>
         </div>
@@ -199,33 +199,20 @@
         })
         .then(res => {
             if(res.status === 'success') {
+                const productoSeleccionadoId = payload.producto_id;
                 Swal.fire({
                     icon: 'success',
-                    title: 'Guardado',
-                    text: res.mensaje || 'Inventario actualizado correctamente',
+                    title: productoSeleccionadoId ? 'Lote guardado' : 'Producto guardado',
+                    text: productoSeleccionadoId
+                        ? (res.mensaje || 'Lote guardado. Puedes capturar otro lote del mismo medicamento.')
+                        : (res.mensaje || 'Inventario actualizado correctamente'),
                     confirmButtonText: 'Aceptar'
                 }).then(() => {
-                    // Limpiar formulario
-                    document.getElementById('ent-codigo').value = '';
-                    document.getElementById('ent-nombre').value = '';
-                    document.getElementById('ent-marca').value = '';
-                    document.getElementById('ent-equivalencias').value = '';
-                    document.getElementById('ent-producto-id').value = '';
-                    document.getElementById('ent-busqueda-producto').value = '';
-                    document.getElementById('ent-resultados-producto').innerHTML = '';
-                    document.getElementById('ent-producto-seleccionado').textContent = '';
-                    document.getElementById('ent-factura').value = '';
-                    document.getElementById('ent-lote').value = '';
-                    document.getElementById('ent-caducidad').value = '';
-                    document.getElementById('ent-lote-existente').innerHTML = '<option value="">-- Crear/ingresar un lote nuevo --</option>';
-                    document.getElementById('ent-lote-existente-wrap').classList.add('d-none');
-                    document.getElementById('ent-cantidad').value = '';
-                    document.getElementById('ent-costo').value = '';
-                    document.getElementById('ent-venta').value = '';
-                    document.getElementById('ent-proveedor').value = '';
-                    document.getElementById('ent-es-controlado').checked = false;
-                    // Recargar para ver cambios en inventario
-                    location.reload();
+                    if (productoSeleccionadoId) {
+                        prepararSiguienteLote(res);
+                    } else {
+                        limpiarFormularioEntrada();
+                    }
                 });
             } else {
                 Swal.fire('Error', res.mensaje || 'Error al guardar', 'error');
@@ -235,6 +222,42 @@
             console.error('Error:', error);
             Swal.fire('Error', error.message || 'Error de conexión. Verifica tu conexión a internet.', 'error');
         });
+    }
+
+    function prepararSiguienteLote(res) {
+        document.getElementById('ent-factura').value = '';
+        document.getElementById('ent-lote').value = '';
+        document.getElementById('ent-caducidad').value = '';
+        document.getElementById('ent-cantidad').value = '';
+        document.getElementById('ent-lote-existente').value = '';
+        document.getElementById('ent-lote').readOnly = false;
+        document.getElementById('ent-caducidad').readOnly = false;
+        document.getElementById('ent-producto-seleccionado').textContent =
+            'Producto seleccionado. ' + (res.lote ? 'Ultimo lote guardado: ' + res.lote + '. ' : '') +
+            'Selecciona o captura el siguiente lote.';
+        cargarLotesEntrada(document.getElementById('ent-producto-id').value);
+        document.getElementById('ent-cantidad').focus();
+    }
+
+    function limpiarFormularioEntrada() {
+        document.getElementById('ent-codigo').value = '';
+        document.getElementById('ent-nombre').value = '';
+        document.getElementById('ent-marca').value = '';
+        document.getElementById('ent-equivalencias').value = '';
+        document.getElementById('ent-producto-id').value = '';
+        document.getElementById('ent-busqueda-producto').value = '';
+        document.getElementById('ent-resultados-producto').innerHTML = '';
+        document.getElementById('ent-producto-seleccionado').textContent = '';
+        document.getElementById('ent-factura').value = '';
+        document.getElementById('ent-lote').value = '';
+        document.getElementById('ent-caducidad').value = '';
+        document.getElementById('ent-lote-existente').innerHTML = '<option value="">-- Crear/ingresar un lote nuevo --</option>';
+        document.getElementById('ent-lote-existente-wrap').classList.add('d-none');
+        document.getElementById('ent-cantidad').value = '';
+        document.getElementById('ent-costo').value = '';
+        document.getElementById('ent-venta').value = '';
+        document.getElementById('ent-proveedor').value = '';
+        document.getElementById('ent-es-controlado').checked = false;
     }
 
     let busquedaProductoTimer = null;
@@ -255,9 +278,13 @@
         document.getElementById('ent-producto-seleccionado').textContent = 'Seleccionado: ' + producto.nombre + ' | Stock actual: ' + (producto.stock || 0);
         document.getElementById('ent-resultados-producto').innerHTML = '';
         inputBusquedaProducto.value = producto.nombre || '';
+        cargarLotesEntrada(producto.id);
+    }
+
+    function cargarLotesEntrada(productoId) {
         const wrap = document.getElementById('ent-lote-existente-wrap');
         const select = document.getElementById('ent-lote-existente');
-        fetch('/farmacia/api/lotes-producto/' + producto.id + '/?modo=entrada', {credentials: 'same-origin', headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        fetch('/farmacia/api/lotes-producto/' + productoId + '/?modo=entrada', {credentials: 'same-origin', headers: {'X-Requested-With': 'XMLHttpRequest'}})
             .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
             .then(function(data) {
                 select.innerHTML = '<option value="">-- Crear/ingresar un lote nuevo --</option>';

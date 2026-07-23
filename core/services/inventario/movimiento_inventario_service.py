@@ -232,6 +232,8 @@ class MovimientoInventarioService:
                     ),
                     'producto_id': producto.id,
                     'stock_actual': producto.stock,
+                    'lote_id': lote_obj.id if lote_obj else None,
+                    'lote': lote_obj.numero_lote if lote_obj else (lote_num or None),
                 })
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en entrada_mercancia_directa (movimiento_inventario_service.py)")

@@ -61,3 +61,12 @@ class EntradaMercanciaPreciosTest(TestCase):
         self.assertIn('list="marcas-farmacia"', contenido)
         self.assertIn('Maver', contenido)
         self.assertIn('Campo editable', contenido)
+
+    def test_entrada_existente_conserva_producto_para_capturar_multiples_lotes(self):
+        response = self.client.get('/farmacia/almacen/entradas/')
+        contenido = response.content.decode('utf-8')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('function prepararSiguienteLote(res)', contenido)
+        self.assertIn('GUARDAR LOTE Y CONTINUAR', contenido)
+        self.assertNotIn('location.reload()', contenido)
