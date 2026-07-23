@@ -47,6 +47,17 @@ La expiracion esta respaldada por el timer `prislab-expire-auditoria-users.timer
 
 **Estado operativo:** Sentinel queda en punto cero para la siguiente auditoria. Cualquier nueva incidencia posterior a este corte debe tratarse como evento nuevo, no como arrastre historico.
 
+## Correccion productiva de seleccion Producto/Lote — 2026-07-23
+
+- La busqueda manual del PDV ya no deshabilita productos cuando `Producto.stock` esta en cero pero existen lotes con existencia; la API de lotes es la fuente de verdad, igual que en el escaneo.
+- La entrada de mercancia resuelve el codigo de barras contra la misma API de catalogo usada por Farmacia; el lector puede confirmar con `Enter` y no se crea un producto duplicado.
+- La entrada permite seleccionar un lote existente, suma la cantidad en ese lote y conserva la trazabilidad del Kardex. Los lotes sin existencia tambien aparecen en modo entrada para poder reabastecerlos.
+- La venta muestra selector cuando hay varios lotes, conserva FEFO como valor predeterminado cuando solo hay uno y envia `lote_id` al cobro. El carrito muestra el lote y el backend registra `DetalleVentaLote`/Kardex.
+- Se actualizo el cache-bust del JavaScript del PDV a `7.11-product-lot-selection`.
+- Produccion verificada: busqueda PDV y entrada encontraron el mismo producto/codigo (`HTTP 200`); prueba de entrada con `lote_id` y prueba multi-lote pasaron dentro de rollback, sin dejar datos de auditoria; la pantalla autenticada carga el JavaScript nuevo y Sentinel permanece con `0` incidencias abiertas.
+
+**Estado:** correccion desplegada y verificada en produccion. La certificacion integral de todos los escenarios de Farmacia sigue siendo independiente de este cierre puntual.
+
 ## Corte de auditoria productiva Laboratorio/LIMS — 2026-07-23
 
 La verificacion se ejecuto autenticada con `auditoria_admin_10d` sobre `https://prislab.labcorecloud.com`. No se modificaron ordenes clinicas, pacientes, catalogos LIMS ni catalogo de farmacia durante este corte.
