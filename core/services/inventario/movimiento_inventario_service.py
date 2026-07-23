@@ -7,7 +7,7 @@ import uuid as uuid_module
 from decimal import Decimal
 from typing import Any, Dict, Optional
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Sum
 from django.utils.dateparse import parse_date
 
@@ -78,24 +78,47 @@ class MovimientoInventarioService:
                         codigo_barras=codigo,
                     ).first()
 
+                # El catalogo conserva un indice global por codigo de barras.
+                # Si el lector llega sin producto_id y el codigo pertenece a
+                # otra empresa, no convertir el conflicto en un HTTP 500.
+                if not producto and codigo and Producto.objects_all.filter(
+                    codigo_barras=codigo,
+                ).exists():
+                    return cls._json_result(409, {
+                        'status': 'error',
+                        'mensaje': (
+                            'El codigo de barras ya pertenece a otro producto. '
+                            'Selecciona el producto existente o captura un codigo distinto.'
+                        ),
+                    })
+
                 if not producto:
                     if not codigo:
                         codigo = f"PRIS-{uuid_module.uuid4().hex[:8].upper()}"
-                    producto = Producto.objects.create(
-                        empresa=empresa,
-                        codigo_barras=codigo,
-                        nombre=nombre,
-                        marca_laboratorio=marca_laboratorio or 'GENÉRICO',
-                        equivalencias_comerciales=equivalencias_comerciales,
-                        forma_farmaceutica=data.get('forma_farmaceutica') or 'No especificada',
-                        concentracion=data.get('concentracion') or 'No especificada',
-                        presentacion=data.get('presentacion') or 'Unidad',
-                        categoria=categoria,
-                        es_antibiotico=es_controlado,
-                        precio_compra=costo_unitario,
-                        precio_publico=precio_venta if precio_venta > 0 else costo_unitario * Decimal('1.5'),
-                        stock=0,
-                    )
+                    try:
+                        producto = Producto.objects.create(
+                            empresa=empresa,
+                            codigo_barras=codigo,
+                            nombre=nombre,
+                            marca_laboratorio=marca_laboratorio or 'GENERICO',
+                            equivalencias_comerciales=equivalencias_comerciales,
+                            forma_farmaceutica=data.get('forma_farmaceutica') or 'No especificada',
+                            concentracion=data.get('concentracion') or 'No especificada',
+                            presentacion=data.get('presentacion') or 'Unidad',
+                            categoria=categoria,
+                            es_antibiotico=es_controlado,
+                            precio_compra=costo_unitario,
+                            precio_publico=precio_venta if precio_venta > 0 else costo_unitario * Decimal('1.5'),
+                            stock=0,
+                        )
+                    except IntegrityError:
+                        return cls._json_result(409, {
+                            'status': 'error',
+                            'mensaje': (
+                                'El codigo de barras ya existe. '
+                                'Selecciona el producto del catalogo antes de ingresar existencias.'
+                            ),
+                        })
                 else:
                     datos_antes = {
                         'marca_laboratorio': producto.marca_laboratorio,

@@ -70,3 +70,30 @@ class FarmaciaRegulatorioContractTest(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertTrue(response.json()["requiere_validacion"])
+
+    def test_entrada_con_codigo_globalmente_existente_no_devuelve_500(self):
+        otra_empresa = Empresa.objects.create(
+            nombre="Otra Empresa",
+            rfc="OTR123456789",
+        )
+        Producto.objects.create(
+            empresa=otra_empresa,
+            nombre="Producto con codigo reservado",
+            codigo_barras="CODIGO-RESERVADO-001",
+            precio_compra=Decimal("10.00"),
+            precio_publico=Decimal("20.00"),
+        )
+
+        response = self.client.post(
+            "/farmacia/almacen/entradas/",
+            data=json.dumps({
+                "codigo": "CODIGO-RESERVADO-001",
+                "nombre": "Producto nuevo",
+                "cantidad": 1,
+                "costo_unitario": "10.00",
+            }),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["status"], "error")
