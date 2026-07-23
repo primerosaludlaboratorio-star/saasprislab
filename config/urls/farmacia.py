@@ -1,4 +1,5 @@
 from django.urls import path, include
+from django.views.generic import RedirectView
 from core import views
 from core.views import farmacia as core_farmacia_views
 from farmacia.views import pdv as farmacia_pdv
@@ -29,6 +30,13 @@ urlpatterns = [
     path('farmacia/api/kpis/', views.api_farmacia_kpis, name='api_farmacia_kpis'),
     path('farmacia/politicas-descuento/', farmacia_inventario.gestionar_politicas_descuento, name='politicas_descuento'),
     path('farmacia/ticket/<int:venta_id>/raw/', views.imprimir_ticket_raw, name='imprimir_ticket_venta_raw'),
+
+    # Compatibilidad con enlaces legacy previos al namespace ERP.
+    path('farmacia/kardex/', RedirectView.as_view(pattern_name='farmacia:kardex_list', permanent=False), name='farmacia_kardex_legacy'),
+    path('farmacia/reporte/valorizacion/', RedirectView.as_view(pattern_name='farmacia:reporte_valorizacion', permanent=False), name='farmacia_valorizacion_legacy'),
+    path('farmacia/semaforo-caducidad/', RedirectView.as_view(pattern_name='farmacia:dashboard_semaforo_caducidad', permanent=False), name='farmacia_semaforo_legacy'),
+    path('farmacia/stock-critico/', RedirectView.as_view(pattern_name='farmacia:dashboard_stock_critico', permanent=False), name='farmacia_stock_legacy'),
+    path('farmacia/antibioticos/reporte-cofepris/', RedirectView.as_view(pattern_name='farmacia:reporte_cofepris', permanent=False), name='farmacia_cofepris_legacy'),
 
     # 2. MÓDULO ALMACÉN (Entradas de Mercancía)
     path('farmacia/almacen/entradas/', farmacia_inventario.entrada_mercancia, name='entrada_mercancia'),
