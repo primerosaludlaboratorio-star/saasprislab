@@ -22,12 +22,29 @@
     <div class="row">
         <div class="col-md-7">
             <div class="card shadow border-0">
-                <div class="card-header bg-dark text-white fw-bold">NUEVA ENTRADA (RIGOR COFEPRIS)</div>
+                <div class="card-header bg-dark text-white fw-bold">INGRESO DE MERCANCIA (RIGOR COFEPRIS)</div>
                 <div class="card-body p-4">
+                    <div class="alert alert-info small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Si el medicamento ya existe, buscalo y seleccionalo: el sistema sumara la cantidad al stock. Usa “Producto nuevo” solo cuando no exista en el catalogo.
+                    </div>
+                    <div class="btn-group w-100 mb-3" role="group" aria-label="Tipo de ingreso">
+                        <input type="radio" class="btn-check" name="tipo-ingreso" id="tipo-existente" value="existente" checked>
+                        <label class="btn btn-outline-primary" for="tipo-existente"><i class="bi bi-search me-1"></i>Producto existente</label>
+                        <input type="radio" class="btn-check" name="tipo-ingreso" id="tipo-nuevo" value="nuevo">
+                        <label class="btn btn-outline-primary" for="tipo-nuevo"><i class="bi bi-plus-circle me-1"></i>Producto nuevo</label>
+                    </div>
+                    <input type="hidden" id="ent-producto-id" value="">
+                    <div id="panel-producto-existente" class="border rounded p-3 mb-3 bg-light">
+                        <label class="small fw-bold" for="ent-busqueda-producto">BUSCAR PRODUCTO DEL CATALOGO</label>
+                        <input type="search" id="ent-busqueda-producto" class="form-control" placeholder="Nombre, sustancia activa o codigo de barras" autocomplete="off">
+                        <div id="ent-resultados-producto" class="list-group mt-2" role="listbox" aria-label="Productos encontrados"></div>
+                        <div id="ent-producto-seleccionado" class="small text-success mt-2" aria-live="polite"></div>
+                    </div>
                     <div class="row g-3">
                         <div class="col-md-6"><label class="small fw-bold">CÓDIGO DE BARRAS</label><input type="text" id="ent-codigo" class="form-control bg-light"></div>
                         <div class="col-md-6"><label class="small fw-bold">FACTURA / FOLIO</label><input type="text" id="ent-factura" class="form-control"></div>
-                        <div class="col-md-6"><label class="small fw-bold">NOMBRE DEL MEDICAMENTO</label><input type="text" id="ent-nombre" class="form-control fw-bold"></div>
+                        <div class="col-md-6"><label class="small fw-bold">NOMBRE DEL MEDICAMENTO</label><input type="text" id="ent-nombre" class="form-control fw-bold" required></div>
                         <div class="col-md-3">
                             <label class="small fw-bold">CATEGORÍA</label>
                             <select id="ent-categoria" class="form-select border-primary">
@@ -110,6 +127,7 @@
         }
         
         const payload = {
+            producto_id: document.getElementById('ent-producto-id').value || null,
             codigo: document.getElementById('ent-codigo').value.trim(),
             nombre: nombre,
             factura: document.getElementById('ent-factura').value.trim(),
@@ -136,7 +154,7 @@
             }
         });
 
-        fetch('/farmacia/almacen/entradas/', {
+        fetch('{% url "entrada_mercancia" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -164,6 +182,10 @@
                     // Limpiar formulario
                     document.getElementById('ent-codigo').value = '';
                     document.getElementById('ent-nombre').value = '';
+                    document.getElementById('ent-producto-id').value = '';
+                    document.getElementById('ent-busqueda-producto').value = '';
+                    document.getElementById('ent-resultados-producto').innerHTML = '';
+                    document.getElementById('ent-producto-seleccionado').textContent = '';
                     document.getElementById('ent-factura').value = '';
                     document.getElementById('ent-lote').value = '';
                     document.getElementById('ent-caducidad').value = '';
@@ -184,6 +206,65 @@
             Swal.fire('Error', error.message || 'Error de conexión. Verifica tu conexión a internet.', 'error');
         });
     }
+
+    let busquedaProductoTimer = null;
+    const panelExistente = document.getElementById('panel-producto-existente');
+    const inputBusquedaProducto = document.getElementById('ent-busqueda-producto');
+    const inputNombreProducto = document.getElementById('ent-nombre');
+
+    function seleccionarModoIngreso(modo) {
+        const existente = modo === 'existente';
+        panelExistente.classList.toggle('d-none', !existente);
+        inputNombreProducto.readOnly = existente;
+        if (!existente) {
+            document.getElementById('ent-producto-id').value = '';
+            document.getElementById('ent-producto-seleccionado').textContent = '';
+            inputNombreProducto.value = '';
+            inputNombreProducto.focus();
+        }
+    }
+
+    document.querySelectorAll('input[name="tipo-ingreso"]').forEach(function(radio) {
+        radio.addEventListener('change', function() { seleccionarModoIngreso(this.value); });
+    });
+
+    inputBusquedaProducto.addEventListener('input', function() {
+        clearTimeout(busquedaProductoTimer);
+        const termino = this.value.trim();
+        const resultados = document.getElementById('ent-resultados-producto');
+        if (termino.length < 2) { resultados.innerHTML = ''; return; }
+        resultados.innerHTML = '<div class="list-group-item small text-muted">Buscando...</div>';
+        busquedaProductoTimer = setTimeout(function() {
+            fetch('{% url "api_buscar_productos_compra" %}?q=' + encodeURIComponent(termino), {
+                credentials: 'same-origin',
+                headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}
+            })
+            .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+            .then(function(data) {
+                resultados.innerHTML = '';
+                (data.productos || []).forEach(function(producto) {
+                    const boton = document.createElement('button');
+                    boton.type = 'button';
+                    boton.className = 'list-group-item list-group-item-action text-start';
+                    boton.innerHTML = '<strong>' + (producto.nombre || '') + '</strong><br><small class="text-muted">Codigo: ' + (producto.codigo_barras || 'N/A') + ' | Stock actual: ' + (producto.stock || 0) + '</small>';
+                    boton.addEventListener('click', function() {
+                        document.getElementById('ent-producto-id').value = producto.id;
+                        inputNombreProducto.value = producto.nombre || '';
+                        document.getElementById('ent-codigo').value = producto.codigo_barras || '';
+                        document.getElementById('ent-costo').value = producto.precio_compra || '';
+                        document.getElementById('ent-producto-seleccionado').textContent = 'Seleccionado: ' + producto.nombre + ' | Stock actual: ' + (producto.stock || 0);
+                        resultados.innerHTML = '';
+                        inputBusquedaProducto.value = producto.nombre || '';
+                    });
+                    resultados.appendChild(boton);
+                });
+                if (!resultados.children.length) resultados.innerHTML = '<div class="list-group-item small text-muted">No se encontro el producto. Cambia a “Producto nuevo” si corresponde.</div>';
+            })
+            .catch(function() { resultados.innerHTML = '<div class="list-group-item small text-danger">No fue posible buscar productos.</div>'; });
+        }, 250);
+    });
+
+    seleccionarModoIngreso('existente');
 
     function subirExcel() {
         const file = document.getElementById('input-excel').files[0];

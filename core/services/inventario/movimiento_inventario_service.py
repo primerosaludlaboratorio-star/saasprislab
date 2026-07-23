@@ -30,6 +30,7 @@ class MovimientoInventarioService:
         Ingreso rápido al almacén (producto + opcional lote + ENTRADA_COMPRA Kardex).
         `data` es el dict ya parseado (JSON o POST).
         """
+        producto_id = data.get('producto_id') or data.get('producto') or None
         codigo = (data.get('codigo') or '').strip()
         nombre = (data.get('nombre') or '').strip()
         factura = (data.get('factura') or '').strip()
@@ -44,7 +45,7 @@ class MovimientoInventarioService:
         categoria = data.get('categoria', 'GENERICO')
         es_controlado = data.get('es_controlado', False)
 
-        if not nombre or cantidad <= 0:
+        if not producto_id and not nombre or cantidad <= 0:
             return cls._json_result(400, {
                 'status': 'error',
                 'mensaje': 'Faltan datos requeridos: nombre y cantidad son obligatorios',
@@ -60,7 +61,15 @@ class MovimientoInventarioService:
         try:
             with transaction.atomic():
                 producto = None
-                if codigo:
+                if producto_id:
+                    try:
+                        producto = Producto.objects.get(pk=producto_id, empresa=empresa)
+                    except (Producto.DoesNotExist, TypeError, ValueError):
+                        return cls._json_result(404, {
+                            'status': 'error',
+                            'mensaje': 'El producto seleccionado no pertenece a esta empresa o ya no existe.',
+                        })
+                if not producto and codigo:
                     producto = Producto.objects.filter(
                         empresa=empresa,
                         codigo_barras=codigo,
@@ -73,6 +82,9 @@ class MovimientoInventarioService:
                         empresa=empresa,
                         codigo_barras=codigo,
                         nombre=nombre,
+                        forma_farmaceutica=data.get('forma_farmaceutica') or 'No especificada',
+                        concentracion=data.get('concentracion') or 'No especificada',
+                        presentacion=data.get('presentacion') or 'Unidad',
                         categoria=categoria,
                         es_antibiotico=es_controlado,
                         precio_compra=costo_unitario,
@@ -84,7 +96,7 @@ class MovimientoInventarioService:
                         'precio_publico': str(producto.precio_publico) if producto.precio_publico else None,
                         'precio_compra': str(producto.precio_compra) if producto.precio_compra else None,
                     }
-                    if nombre and producto.nombre != nombre:
+                    if nombre and producto.nombre != nombre and not producto_id:
                         producto.nombre = nombre
                     if precio_venta > 0:
                         producto.precio_publico = precio_venta

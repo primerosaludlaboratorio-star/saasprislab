@@ -64,7 +64,8 @@ def entrada_mercancia(request):
     
     # GET: Mostrar formulario
     return render(request, 'core/entrada_mercancia.html', {
-        'empresa': empresa.nombre if empresa else 'PRISLAB'
+        'empresa': empresa.nombre if empresa else 'PRISLAB',
+        'modo_existente_por_defecto': True,
     })
 
 

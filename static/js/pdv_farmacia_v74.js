@@ -249,7 +249,7 @@ window.initPdvResultados = function() {
     var cont = document.getElementById('search-results-container');
     if (!cont || cont.dataset.pdvResultsBound === '1') return false;
     cont.addEventListener('click', function(ev) {
-        var card = ev.target.closest('.card[data-producto-id]');
+        var card = ev.target.closest('[data-producto-id]');
         if (!card) return;
         if (card.getAttribute('tabindex') === '-1') return;
         var pid = parseInt(card.getAttribute('data-producto-id'), 10);
@@ -257,7 +257,7 @@ window.initPdvResultados = function() {
     });
     cont.addEventListener('keydown', function(ev) {
         if (ev.key !== 'Enter' && ev.key !== ' ') return;
-        var card = ev.target.closest('.card[data-producto-id]');
+        var card = ev.target.closest('[data-producto-id]');
         if (!card) return;
         if (card.getAttribute('tabindex') === '-1') return;
         ev.preventDefault();
