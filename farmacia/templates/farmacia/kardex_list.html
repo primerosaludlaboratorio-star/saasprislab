@@ -143,6 +143,7 @@
                                         <th>Fecha/Hora</th>
                                         <th>Tipo</th>
                                         <th>Producto</th>
+                                        <th>Marca / laboratorio</th>
                                         <th>Lote</th>
                                         <th>Cantidad</th>
                                         <th>Costo Unit.</th>
@@ -184,7 +185,12 @@
                                         <td>
                                             <strong>{{ mov.producto.nombre|truncatewords:5 }}</strong>
                                             <br><small class="text-muted">{{ mov.producto.presentacion }}</small>
-                                            <br><small class="text-primary"><i class="bi bi-building"></i> Marca: {{ mov.producto.marca_laboratorio|default:"GENÉRICO" }}</small>
+                                        </td>
+                                        <td>
+                                            <strong class="text-primary">{{ mov.producto.marca_laboratorio|default:"GENÉRICO" }}</strong>
+                                            {% if mov.producto.equivalencias_comerciales %}
+                                                <br><small class="text-muted">Equivalencias: {{ mov.producto.equivalencias_comerciales }}</small>
+                                            {% endif %}
                                         </td>
                                         <td>
                                             {% if mov.lote %}

@@ -673,3 +673,23 @@ Artefacto persistido:
 3. Codex corrige si hay fallos de código.
 4. Claude y Cascada clasifican y contrastan reportes nuevos.
 5. Se actualiza el estado canónico solo con evidencia nueva.
+
+## Marca y equivalencias comerciales en Farmacia - 2026-07-23
+
+Se incorporó la trazabilidad de marca/laboratorio y nombres comerciales equivalentes en el flujo de medicamentos:
+
+- La entrada de mercancía permite capturar o seleccionar marca/laboratorio mediante una lista sugerida, conservando texto libre para nuevos laboratorios.
+- La entrada permite registrar equivalencias comerciales o nombres de patente separados por coma, sin hardcodear composiciones farmacológicas.
+- Las búsquedas de PDV y entrada consultan también las equivalencias comerciales y priorizan la coincidencia exacta del término.
+- Kardex muestra marca/laboratorio y equivalencias en cada movimiento; el Libro de Control las muestra junto al producto cuando existen registros.
+- El dato de marca y equivalencias se conserva al actualizar un producto existente y queda incluido en la evidencia de auditoría del movimiento.
+- Migración aplicada: `core.0085_producto_equivalencias_comerciales`.
+
+La composición de una patente debe validarse con la ficha técnica o fuente regulatoria antes de capturarla como equivalencia; el sistema no inventa ni deduce sustancias activas.
+
+Evidencia de producción tras el despliegue del commit `8d95298`:
+
+- búsqueda por marca y equivalencia: `200`, producto encontrado
+- formulario de entrada: campos de marca/laboratorio y equivalencias visibles
+- migración aplicada correctamente y servicios activos
+- pruebas realizadas con transacción reversible; no se modificó permanentemente el catálogo de producción
