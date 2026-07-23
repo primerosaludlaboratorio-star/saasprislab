@@ -694,3 +694,15 @@ Evidencia de producción tras los despliegues de los commits `8d95298`, `8cf1af5
 - Kardex usa la plantilla efectiva `core/templates/farmacia/kardex_list.html` y expone la marca como columna dedicada
 - migración aplicada correctamente y servicios activos
 - pruebas realizadas con transacción reversible; no se modificó permanentemente el catálogo de producción
+
+## Memoria de precios en entrada de medicamentos - 2026-07-23
+
+Al seleccionar un producto existente en Entrada de Mercancía:
+
+- se precarga el costo de compra vigente (`precio_compra`);
+- se precarga el precio al público vigente (`precio_publico`);
+- ambos valores se muestran también en el resultado de búsqueda para evitar consultas manuales repetidas;
+- el costo puede ajustarse en el momento de la nueva compra si cambió el proveedor;
+- el precio de venta vigente se conserva si el usuario no lo modifica explícitamente.
+
+La API de búsqueda de compras expone ambos valores y la interfaz muestra la referencia de memoria junto a cada campo. Evidencia productiva: commit `fa8e999`, respuesta `200` con ambos precios y prueba reversible sin cambios persistentes en catálogo.
