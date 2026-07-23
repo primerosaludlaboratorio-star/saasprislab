@@ -34,6 +34,7 @@ urlpatterns = [
 
     # 12. MÓDULO DE CONTABILIDAD
     # Todas las rutas viven en contabilidad/urls.py para evitar superposición
+    path('contabilidad/', views.dashboard_contabilidad, name='dashboard_contabilidad_legacy'),
     path('contabilidad/', include(('contabilidad.urls', 'contabilidad'), namespace='contabilidad')),
 
     # Contabilidad Personal — exclusiva del Director

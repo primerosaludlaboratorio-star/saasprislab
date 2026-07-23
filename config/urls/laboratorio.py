@@ -17,6 +17,7 @@ from laboratorio.views.etiquetas import (
     imprimir_etiqueta_qr,
     vista_previa_etiqueta,
 )
+from core.views.monitor_produccion import monitor_produccion
 
 urlpatterns = [
     # FASE 6: IoT HL7/ASTM — Receptor de resultados de analizadores
@@ -44,6 +45,8 @@ urlpatterns = [
     path('laboratorio/detalle-orden/<int:orden_id>/', views.detalle_orden_view, name='detalle_orden_view'),
     path('laboratorio/api/detalle-orden-completo/<int:orden_id>/', views.api_detalle_orden_completo, name='api_detalle_orden_completo'),
     path('laboratorio/lista-trabajo/', views.lista_trabajo_lab, name='lista_trabajo_lab'),
+    path('laboratorio/monitor-produccion/', monitor_produccion, name='monitor_produccion_legacy'),
+    path('laboratorio/paciente/<int:paciente_id>/historial/', views.historial_lab_paciente, name='historial_lab_paciente'),
     path('laboratorio/registro-resultados/', views.registro_resultados_entrada, name='registro_resultados'),
 
     # 5.1 LIMS - Configuración de Estudios

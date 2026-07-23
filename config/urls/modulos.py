@@ -18,9 +18,13 @@ from core.views.inventario_predictivo import (
     api_prediccion_stock,
 )
 from inventario.views import dashboard_reactivos
+from suscripciones import views as suscripciones_views
 from ._helpers import lazy_view
 
 urlpatterns = [
+    # Aliases de navegacion para pantallas que existen fuera del admin.
+    path('suscripciones/', suscripciones_views.lista_suscripciones, name='suscripciones_lista'),
+    path('suscripciones/planes/', suscripciones_views.lista_planes, name='suscripciones_planes'),
     # 3. MÓDULO MÉDICO (Consultorio)
     path('medico/', views.dashboard_medico, name='medico'),
     path('medico/consulta/', views.consulta_medica, name='consulta_medica'),
