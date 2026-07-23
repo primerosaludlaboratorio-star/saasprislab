@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from django.test import SimpleTestCase
 
 from core.views.farmacia import _verificar_acceso
+from core.services.auto_repair import _usuario_deberia_acceder
 from farmacia.views.semaforo import es_farmacia_o_director
 
 
@@ -66,4 +67,14 @@ class FarmaciaPermissionHelpersTest(SimpleTestCase):
         self.assertFalse(es_farmacia_o_director(_user(groups=['FARMACIA'])))
         self.assertTrue(es_farmacia_o_director(_user(empresa=object(), superuser=True)))
         self.assertTrue(es_farmacia_o_director(_user(empresa=object(), groups=['FARMACIA'])))
+
+    def test_sentinel_no_auto_habilita_ajuste_kardex_a_cajero(self):
+        cajero = _user(empresa=object(), rol='CAJERO')
+
+        self.assertFalse(
+            _usuario_deberia_acceder(
+                cajero,
+                '/farmacia/erp/kardex/crear-movimiento/',
+            )
+        )
 

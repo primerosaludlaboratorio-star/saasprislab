@@ -253,6 +253,8 @@ class CatalogoService:
                 "precio_publico",
                 "precio_compra",
                 "stock",
+                "marca_laboratorio",
+                "equivalencias_comerciales",
                 "iva_porcentaje",
                 "es_antibiotico",
                 "requiere_receta",

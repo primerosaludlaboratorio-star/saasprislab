@@ -359,6 +359,15 @@ ROLE_ACCESS_MAP = {
     ],
 }
 
+# Rutas sensibles que nunca deben ser auto-habilitadas para un cajero.
+# El ajuste manual de Kardex requiere autorizacion de Farmacia o gerencia.
+ROLE_DENY_MAP = {
+    'CAJERO': [
+        '/farmacia/erp/kardex/crear-movimiento/',
+        '/farmacia/erp/kardex/autorizar/',
+    ],
+}
+
 # Grupos de Django → prefijos de URL
 GROUP_ACCESS_MAP = {
     'GERENCIA_OPERATIVA': ['*'],  # Acceso total (Nancy, Gabriela)
@@ -427,6 +436,8 @@ def _usuario_deberia_acceder(user, path):
     """
     # Verificar por rol
     rol = getattr(user, 'rol', '')
+    if any(path.startswith(prefijo) for prefijo in ROLE_DENY_MAP.get(rol, [])):
+        return False
     if rol and rol in ROLE_ACCESS_MAP:
         prefijos = ROLE_ACCESS_MAP[rol]
         if '*' in prefijos:

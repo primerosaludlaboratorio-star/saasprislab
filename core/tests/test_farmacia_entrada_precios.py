@@ -2,6 +2,8 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
+from django.test.utils import CaptureQueriesContext
+from django.db import connection
 
 from core.models import Empresa, Producto, Sucursal
 
@@ -70,3 +72,10 @@ class EntradaMercanciaPreciosTest(TestCase):
         self.assertIn('function prepararSiguienteLote(res)', contenido)
         self.assertIn('GUARDAR LOTE Y CONTINUAR', contenido)
         self.assertNotIn('location.reload()', contenido)
+
+    def test_busqueda_pdv_no_hace_consulta_por_cada_producto(self):
+        with CaptureQueriesContext(connection) as consultas:
+            response = self.client.get('/farmacia/api/buscar-producto-pdv/?termino=Paracetamol')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertLessEqual(len(consultas), 12)
