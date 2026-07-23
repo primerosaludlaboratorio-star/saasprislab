@@ -34,6 +34,15 @@ El backend y las pantallas de consulta de Farmacia quedan verificados en verde. 
 - La prueba productiva de codigo existente se ejecuto con rollback: devolvio `200`, resolvio el producto correcto y stock/precios quedaron identicos antes y despues.
 - No se detectaron nuevos `500` de Farmacia despues del despliegue. Los `DisallowedHost` de dominios no canonicos y `401` de telemetria no autenticada quedan fuera del modulo.
 
+## Entrada continua por multiples lotes — 2026-07-23
+
+- `8e5581c` elimina la recarga automatica de Entrada de mercancia al guardar un producto existente.
+- La interfaz conserva medicamento, marca, equivalencias, costo y precio; limpia solamente la operacion del lote y vuelve a cargar los lotes disponibles.
+- El boton ahora indica `GUARDAR LOTE Y CONTINUAR` y permite registrar consecutivamente lotes distintos sin abandonar la ventana.
+- El API devuelve `lote_id` y `lote` en cada ingreso exitoso.
+- Produccion verificada con dos lotes reales dentro de rollback: ambos respondieron `200`, devolvieron sus identificadores correctos y no cambiaron stock ni precios.
+- HTML productivo: `200`, funcion de continuidad presente y `location.reload()` ausente.
+
 ## Usuarios temporales de auditoria productiva — 2026-07-23
 
 Se habilitaron tres cuentas temporales para pruebas humanas sobre Empresa `1` / sucursal `Matriz Principal`. No se guardan contrasenas en el repositorio.
