@@ -25,6 +25,15 @@ Este corte se limita al modulo Farmacia y deja trazabilidad de lo que fue correg
 
 El backend y las pantallas de consulta de Farmacia quedan verificados en verde. La certificacion `100%` del modulo sigue **ABIERTA** hasta ejecutar con una sesion humana autenticada los flujos con efecto lateral: apertura de caja, ventas con varios productos y lotes, venta parcial, cancelacion, devolucion parcial/total, registro de gasto, precorte y corte. No se ejecutaron esos writes contra datos reales en este corte para no contaminar produccion ni usar credenciales no entregadas.
 
+## Revision Sentinel Farmacia posterior — 2026-07-23
+
+- Sentinel de produccion: `0` incidencias `PENDIENTE` cuya URL pertenece a Farmacia.
+- La revision de logs detecto un `500` repetido en Entrada de mercancia por `UniqueViolation` de `core_producto_codigo_barras_key` cuando el formulario llegaba sin `producto_id` y el codigo ya existia.
+- `8a624dc` corrige el caso: el servicio resuelve el codigo existente dentro de la empresa y, ante conflicto global, responde `409` controlado en lugar de `500`; se agrego regresion automatica.
+- Produccion quedo desplegada en `8a624dc`; `manage.py check`, estaticos, servicios y rutas principales de Farmacia respondieron correctamente.
+- La prueba productiva de codigo existente se ejecuto con rollback: devolvio `200`, resolvio el producto correcto y stock/precios quedaron identicos antes y despues.
+- No se detectaron nuevos `500` de Farmacia despues del despliegue. Los `DisallowedHost` de dominios no canonicos y `401` de telemetria no autenticada quedan fuera del modulo.
+
 ## Usuarios temporales de auditoria productiva — 2026-07-23
 
 Se habilitaron tres cuentas temporales para pruebas humanas sobre Empresa `1` / sucursal `Matriz Principal`. No se guardan contrasenas en el repositorio.
