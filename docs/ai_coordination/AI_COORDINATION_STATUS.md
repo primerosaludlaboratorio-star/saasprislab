@@ -2,6 +2,12 @@
 
 Fecha: 2026-07-21
 
+## Corte operativo 2026-07-21: deploy pendiente por configuracion real
+
+La documentacion del procedimiento VPS existe y se mantiene como canon. El estado actual es: `e8a4d21` esta publicado en `release/v1.0-local` y fue desplegado manualmente en la VPS. Las migraciones no tuvieron cambios, los estaticos fueron actualizados, los tres servicios quedaron activos y el dominio publico respondio `HTTP 200`.
+
+El workflow `PRISLAB Deploy to VPS` run `29855825290` sigue fallando en `Validate deploy secrets` por ausencia de `DEPLOY_HOST`, `DEPLOY_USER` y `DEPLOY_SSH_KEY`; por eso queda pendiente solo la automatizacion GitHub, no el deploy manual confirmado. La auditoria funcional productiva debe continuar sobre `e8a4d21`.
+
 ## Auditoria humana UI en desarrollo — 2026-07-21
 
 - Se ejecutó una interacción visible contra `http://127.0.0.1:8000` con la base QA aislada; no fue producción.

@@ -2,6 +2,12 @@
 
 > **Nota:** esta es la guía canónica actual para VPS. Los documentos de Cloud Run, Railway y Nixpacks quedan solo como histórico.
 
+## Estado verificado 2026-07-21
+
+El proceso de despliegue esta documentado y fue ejecutado manualmente el 2026-07-23. El commit `e8a4d21` esta publicado en `release/v1.0-local`; la VPS quedo en ese commit, con migraciones sin cambios, estaticos actualizados, servicios activos y dominio publico `HTTP 200`. El run de GitHub `29855825290` fallo antes de abrir SSH porque el Environment `production` no entrego `DEPLOY_HOST`, `DEPLOY_USER` y `DEPLOY_SSH_KEY`.
+
+La llave operativa verificada es `C:\Users\jonil\.ssh\id_ed25519` para `root@216.238.89.243`; `key.pem` no fue aceptada. El pendiente restante es configurar los tres secretos del Environment `production` y repetir el workflow para automatizar el mismo procedimiento.
+
 ## Objetivo
 
 Dejar PRISLAB corriendo en una VPS limpia con:
@@ -66,8 +72,6 @@ Nota operativa real:
 - no asumir que `/opt/prislab` es el repo Git
 - si `git pull` falla con `not a git repository`, revisar si `/opt/prislab/app/.git` existe
 - si no existe, inicializar el repo y hacer `fetch + reset` contra `release/v1.0-local`
-- el acceso remoto validado en esta sesión fue `root@216.238.89.243` con la llave local SSH disponible en la máquina de trabajo
-- el árbol productivo puede tener cambios locales previos; antes de desplegar, comparar y no sobrescribir archivos ajenos al bloque actual
 
 Secuencia de recuperacion ya validada:
 
@@ -183,13 +187,3 @@ Usar `systemd` para:
 3. Confirmar acceso a farmacia, laboratorio y consultorio
 4. Probar carga de archivo a Drive
 5. Validar que `nginx`, `postgresql`, `redis-server`, `prislab-gunicorn`, `prislab-celery` y `prislab-celerybeat` estén activos
-
-## Estado verificado en esta sesión
-
-- VPS viva: `216.238.89.243`
-- despliegue aplicado sobre `/opt/prislab/app`
-- `manage.py check`: OK
-- `prislab-gunicorn`: active
-- `prislab-celery`: active
-- `prislab-celerybeat`: active
-- `https://prislab.labcorecloud.com`: `HTTP/2 200`
