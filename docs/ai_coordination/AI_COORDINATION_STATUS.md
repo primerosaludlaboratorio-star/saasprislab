@@ -687,9 +687,10 @@ Se incorporó la trazabilidad de marca/laboratorio y nombres comerciales equival
 
 La composición de una patente debe validarse con la ficha técnica o fuente regulatoria antes de capturarla como equivalencia; el sistema no inventa ni deduce sustancias activas.
 
-Evidencia de producción tras el despliegue del commit `8d95298`:
+Evidencia de producción tras los despliegues de los commits `8d95298`, `8cf1af5`, `3cda2b5` y `1c72469`:
 
 - búsqueda por marca y equivalencia: `200`, producto encontrado
 - formulario de entrada: campos de marca/laboratorio y equivalencias visibles
+- Kardex usa la plantilla efectiva `core/templates/farmacia/kardex_list.html` y expone la marca como columna dedicada
 - migración aplicada correctamente y servicios activos
 - pruebas realizadas con transacción reversible; no se modificó permanentemente el catálogo de producción
