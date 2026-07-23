@@ -52,3 +52,12 @@ class EntradaMercanciaPreciosTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("producto.precio_publico", contenido)
         self.assertIn("ent-venta-memoria", contenido)
+
+    def test_marca_es_campo_de_texto_editable_con_sugerencias(self):
+        response = self.client.get('/farmacia/almacen/entradas/')
+        contenido = response.content.decode('utf-8')
+
+        self.assertIn('id="ent-marca" class="form-control"', contenido)
+        self.assertIn('list="marcas-farmacia"', contenido)
+        self.assertIn('Maver', contenido)
+        self.assertIn('Campo editable', contenido)

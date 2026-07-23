@@ -47,8 +47,14 @@
                         <div class="col-md-6"><label class="small fw-bold">NOMBRE DEL MEDICAMENTO</label><input type="text" id="ent-nombre" class="form-control fw-bold" required></div>
                         <div class="col-md-6">
                             <label class="small fw-bold" for="ent-marca">MARCA / LABORATORIO</label>
-                            <input type="text" id="ent-marca" class="form-control" list="marcas-farmacia" placeholder="Ej. Maver, Valle, Gerinplow">
-                            <datalist id="marcas-farmacia"><option value="GENÉRICO"><option value="Maver"><option value="Valle"><option value="Gerinplow"></datalist>
+                            <input type="text" id="ent-marca" class="form-control" list="marcas-farmacia" autocomplete="off" placeholder="Escribe o selecciona: Maver, Valle, Gerinplow" aria-describedby="ent-marca-ayuda">
+                            <datalist id="marcas-farmacia">
+                                <option value="GENÉRICO"></option>
+                                <option value="Maver"></option>
+                                <option value="Valle"></option>
+                                <option value="Gerinplow"></option>
+                            </datalist>
+                            <small id="ent-marca-ayuda" class="text-muted">Campo editable: selecciona una sugerencia o escribe cualquier otra marca/laboratorio.</small>
                         </div>
                         <div class="col-md-12">
                             <label class="small fw-bold" for="ent-equivalencias">EQUIVALENCIAS COMERCIALES / NOMBRES DE PATENTE</label>
