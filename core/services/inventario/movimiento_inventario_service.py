@@ -34,6 +34,7 @@ class MovimientoInventarioService:
         codigo = (data.get('codigo') or '').strip()
         nombre = (data.get('nombre') or '').strip()
         factura = (data.get('factura') or '').strip()
+        lote_id = data.get('lote_id') or None
         lote_num = (data.get('lote') or '').strip()
         caducidad_str = (data.get('caducidad') or '').strip()
         try:
@@ -121,7 +122,19 @@ class MovimientoInventarioService:
                         )
 
                 lote_obj = None
-                if lote_num and fecha_caducidad:
+                if lote_id:
+                    try:
+                        lote_obj = Lote.objects.get(
+                            pk=lote_id, producto=producto, empresa=empresa
+                        )
+                        lote_num = lote_obj.numero_lote
+                        fecha_caducidad = lote_obj.fecha_caducidad
+                    except (Lote.DoesNotExist, TypeError, ValueError):
+                        return cls._json_result(404, {
+                            'status': 'error',
+                            'mensaje': 'El lote seleccionado no pertenece al producto o empresa indicada.',
+                        })
+                elif lote_num and fecha_caducidad:
                     lote_obj, _ = Lote.objects.get_or_create(
                         producto=producto,
                         numero_lote=lote_num,

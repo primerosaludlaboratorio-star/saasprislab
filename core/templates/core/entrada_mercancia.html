@@ -64,6 +64,13 @@
                         <div class="col-md-4"><label class="small fw-bold">LOTE</label><input type="text" id="ent-lote" class="form-control border-danger"></div>
                         <div class="col-md-4"><label class="small fw-bold">CADUCIDAD</label><input type="date" id="ent-caducidad" class="form-control border-danger"></div>
                         <div class="col-md-4"><label class="small fw-bold">CANTIDAD (PZ)</label><input type="number" id="ent-cantidad" class="form-control border-primary"></div>
+                        <div class="col-md-8 d-none" id="ent-lote-existente-wrap">
+                            <label class="small fw-bold" for="ent-lote-existente">LOTE EXISTENTE AL QUE SE SUMARA</label>
+                            <select id="ent-lote-existente" class="form-select border-success">
+                                <option value="">-- Crear/ingresar un lote nuevo --</option>
+                            </select>
+                            <small class="text-muted">Selecciona un lote para acumular la compra en ese mismo lote.</small>
+                        </div>
                         <hr>
                         <div class="col-md-6"><label class="small fw-bold text-danger">COSTO UNITARIO (COMPRA)</label><input type="number" id="ent-costo" class="form-control"></div>
                         <div class="col-md-6"><label class="small fw-bold text-success">PRECIO AL PÚBLICO (VENTA)</label><input type="number" id="ent-venta" class="form-control"></div>
@@ -128,6 +135,7 @@
         
         const payload = {
             producto_id: document.getElementById('ent-producto-id').value || null,
+            lote_id: document.getElementById('ent-lote-existente').value || null,
             codigo: document.getElementById('ent-codigo').value.trim(),
             nombre: nombre,
             factura: document.getElementById('ent-factura').value.trim(),
@@ -189,6 +197,8 @@
                     document.getElementById('ent-factura').value = '';
                     document.getElementById('ent-lote').value = '';
                     document.getElementById('ent-caducidad').value = '';
+                    document.getElementById('ent-lote-existente').innerHTML = '<option value="">-- Crear/ingresar un lote nuevo --</option>';
+                    document.getElementById('ent-lote-existente-wrap').classList.add('d-none');
                     document.getElementById('ent-cantidad').value = '';
                     document.getElementById('ent-costo').value = '';
                     document.getElementById('ent-venta').value = '';
@@ -211,6 +221,46 @@
     const panelExistente = document.getElementById('panel-producto-existente');
     const inputBusquedaProducto = document.getElementById('ent-busqueda-producto');
     const inputNombreProducto = document.getElementById('ent-nombre');
+
+    function aplicarProductoEntrada(producto) {
+        document.getElementById('ent-producto-id').value = producto.id;
+        inputNombreProducto.value = producto.nombre || '';
+        document.getElementById('ent-codigo').value = producto.codigo_barras || '';
+        document.getElementById('ent-costo').value = producto.precio_compra || '';
+        document.getElementById('ent-producto-seleccionado').textContent = 'Seleccionado: ' + producto.nombre + ' | Stock actual: ' + (producto.stock || 0);
+        document.getElementById('ent-resultados-producto').innerHTML = '';
+        inputBusquedaProducto.value = producto.nombre || '';
+        const wrap = document.getElementById('ent-lote-existente-wrap');
+        const select = document.getElementById('ent-lote-existente');
+        fetch('/farmacia/api/lotes-producto/' + producto.id + '/?modo=entrada', {credentials: 'same-origin', headers: {'X-Requested-With': 'XMLHttpRequest'}})
+            .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+            .then(function(data) {
+                select.innerHTML = '<option value="">-- Crear/ingresar un lote nuevo --</option>';
+                (data.lotes || []).forEach(function(lote) {
+                    const option = document.createElement('option');
+                    option.value = lote.id;
+                    option.textContent = lote.numero_lote + ' | Cad: ' + (lote.fecha_caducidad || 'N/A') + ' | Existencia: ' + lote.cantidad;
+                    select.appendChild(option);
+                });
+                wrap.classList.toggle('d-none', !(data.lotes || []).length);
+            })
+            .catch(function() { wrap.classList.add('d-none'); });
+    }
+
+    document.getElementById('ent-lote-existente').addEventListener('change', function() {
+        const seleccionado = this.options[this.selectedIndex];
+        const usarExistente = !!this.value;
+        document.getElementById('ent-lote').readOnly = usarExistente;
+        document.getElementById('ent-caducidad').readOnly = usarExistente;
+        if (usarExistente) {
+            document.getElementById('ent-lote').value = seleccionado.textContent.split(' | ')[0];
+            const cad = seleccionado.textContent.match(/Cad: ([^|]+)/);
+            document.getElementById('ent-caducidad').value = cad ? cad[1].trim() : '';
+        } else {
+            document.getElementById('ent-lote').value = '';
+            document.getElementById('ent-caducidad').value = '';
+        }
+    });
 
     function seleccionarModoIngreso(modo) {
         const existente = modo === 'existente';
@@ -247,21 +297,41 @@
                     boton.type = 'button';
                     boton.className = 'list-group-item list-group-item-action text-start';
                     boton.innerHTML = '<strong>' + (producto.nombre || '') + '</strong><br><small class="text-muted">Codigo: ' + (producto.codigo_barras || 'N/A') + ' | Stock actual: ' + (producto.stock || 0) + '</small>';
-                    boton.addEventListener('click', function() {
-                        document.getElementById('ent-producto-id').value = producto.id;
-                        inputNombreProducto.value = producto.nombre || '';
-                        document.getElementById('ent-codigo').value = producto.codigo_barras || '';
-                        document.getElementById('ent-costo').value = producto.precio_compra || '';
-                        document.getElementById('ent-producto-seleccionado').textContent = 'Seleccionado: ' + producto.nombre + ' | Stock actual: ' + (producto.stock || 0);
-                        resultados.innerHTML = '';
-                        inputBusquedaProducto.value = producto.nombre || '';
-                    });
+                    boton.addEventListener('click', function() { aplicarProductoEntrada(producto); });
                     resultados.appendChild(boton);
                 });
                 if (!resultados.children.length) resultados.innerHTML = '<div class="list-group-item small text-muted">No se encontro el producto. Cambia a “Producto nuevo” si corresponde.</div>';
             })
             .catch(function() { resultados.innerHTML = '<div class="list-group-item small text-danger">No fue posible buscar productos.</div>'; });
         }, 250);
+    });
+
+    // El lector de codigo de barras envia el valor al campo de codigo.
+    // Resolverlo contra el mismo catalogo evita que PDV y entradas diverjan.
+    document.getElementById('ent-codigo').addEventListener('change', function() {
+        const codigo = this.value.trim();
+        if (codigo.length < 2) return;
+        fetch('{% url "api_buscar_productos_compra" %}?q=' + encodeURIComponent(codigo), {
+            credentials: 'same-origin', headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}
+        }).then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+          .then(function(data) {
+              const productos = data.productos || [];
+              const producto = productos.find(function(p) { return String(p.codigo_barras || '') === codigo; }) || productos[0];
+              if (producto) {
+                  document.getElementById('tipo-existente').checked = true;
+                  seleccionarModoIngreso('existente');
+                  aplicarProductoEntrada(producto);
+              } else {
+                  document.getElementById('ent-producto-seleccionado').textContent = 'No existe un producto con ese codigo en este catalogo.';
+              }
+          })
+          .catch(function() { document.getElementById('ent-producto-seleccionado').textContent = 'No fue posible consultar el codigo en el catalogo.'; });
+    });
+    document.getElementById('ent-codigo').addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            this.dispatchEvent(new Event('change'));
+        }
     });
 
     seleccionarModoIngreso('existente');

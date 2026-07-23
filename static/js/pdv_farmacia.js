@@ -351,7 +351,9 @@ function _renderResultados(productos, termino) {
         var stock = p.stock_total || p.stock || 0; var sinStock = stock <= 0;
         var esVencido = p.sin_stock_vigente || false;
         var alertaPrecio = p.alerta_precio_bajo || false;
-        var bloqueado = sinStock || esVencido;
+        // Producto.stock puede estar desfasado respecto a sus lotes; la API de
+        // lotes es la fuente de verdad y valida la existencia al seleccionar.
+        var bloqueado = esVencido;
         var bc = p.es_controlado ? 'bg-dark' : (esVencido ? 'bg-danger' : (sinStock ? 'bg-secondary' : (alertaPrecio ? 'bg-warning text-dark' : 'bg-success')));
         var bt = p.es_controlado ? 'CONTROLADO' : (esVencido ? '?? VENCIDO' : (sinStock ? 'SIN STOCK' : (alertaPrecio ? '? PRECIO BAJO' : 'LIBRE')));
         var aria = 'Agregar ' + (p.nombre_comercial || 'producto');
@@ -374,6 +376,62 @@ function _renderResultados(productos, termino) {
     window._pdvHacerVisibleResultados();
 }
 
+function _seleccionarLotePDV(producto, lotes) {
+    return new Promise(function(resolve) {
+        var modal = document.createElement('div');
+        modal.className = 'modal fade show';
+        modal.style.display = 'block';
+        modal.style.background = 'rgba(0,0,0,.55)';
+        modal.setAttribute('role', 'dialog');
+        var dialog = document.createElement('div');
+        dialog.className = 'modal-dialog modal-dialog-centered';
+        var content = document.createElement('div');
+        content.className = 'modal-content';
+        var header = document.createElement('div');
+        header.className = 'modal-header bg-primary text-white';
+        header.innerHTML = '<h5 class="modal-title"><i class="bi bi-box-seam me-2"></i>Seleccionar lote</h5>';
+        var body = document.createElement('div');
+        body.className = 'modal-body';
+        var title = document.createElement('p');
+        title.className = 'fw-bold mb-3';
+        title.textContent = producto.nombre_comercial || 'Producto';
+        body.appendChild(title);
+        var list = document.createElement('div');
+        list.className = 'list-group';
+        lotes.forEach(function(lote) {
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'list-group-item list-group-item-action text-start';
+            button.innerHTML = '<strong>' + (lote.numero_lote || 'Sin lote') + '</strong><br><small>Caducidad: ' + (lote.fecha_caducidad || 'N/A') + ' | Existencia: ' + (lote.cantidad || 0) + '</small>';
+            button.addEventListener('click', function() {
+                modal.remove();
+                resolve(lote);
+            });
+            list.appendChild(button);
+        });
+        body.appendChild(list);
+        var footer = document.createElement('div');
+        footer.className = 'modal-footer';
+        var cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'btn btn-outline-secondary';
+        cancel.textContent = 'Cancelar';
+        cancel.addEventListener('click', function() { modal.remove(); resolve(null); });
+        footer.appendChild(cancel);
+        content.appendChild(header); content.appendChild(body); content.appendChild(footer);
+        dialog.appendChild(content); modal.appendChild(dialog); document.body.appendChild(modal);
+    });
+}
+
+function _procesarProductoPDV(prod) {
+    if (prod.sin_stock_vigente) { _mostrarAlerta('Lote Vencido', prod.nombre_comercial + ': todos los lotes están VENCIDOS. Retire del área de venta.', 'danger'); return; }
+    if (prod.alerta_precio_bajo) {
+        if (!confirm('ALERTA DE RENTABILIDAD\n\n' + prod.nombre_comercial + '\nPrecio venta: ' + _fmt(prod.precio_base) + '\nCosto lote: ' + _fmt(prod.costo_lote) + '\n\n¿Confirmar de todas formas?')) return;
+    }
+    if (prod.requiere_receta || prod.es_antibiotico || prod.es_controlado) { window._productoAntibioticoTemp = prod; abrirModalReceta(); return; }
+    _agregarAlCarrito(prod);
+}
+
 // AGREGAR AL CARRITO
 window.intentarAgregar = function(productoId) {
     fetch('/farmacia/api/lotes-producto/' + productoId + '/', {headers:{'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin'})
@@ -381,12 +439,23 @@ window.intentarAgregar = function(productoId) {
     .then(function(data){
         var prod = data.producto || data;
         if (!prod || !prod.nombre_comercial) { alert('Producto no disponible.'); return; }
-        if (prod.sin_stock_vigente) { _mostrarAlerta('Lote Vencido', prod.nombre_comercial + ': todos los lotes estÃ¡n VENCIDOS. Retire del Ã¡rea de venta.', 'danger'); return; }
-        if (prod.alerta_precio_bajo) {
-            if (!confirm('?? ALERTA DE RENTABILIDAD\n\n' + prod.nombre_comercial + '\nPrecio venta: ' + _fmt(prod.precio_base) + '\nCosto lote: ' + _fmt(prod.costo_lote) + '\n\nESTÃ VENDIENDO A PÃ‰RDIDA. Â¿Confirmar de todas formas?')) return;
+        var lotes = data.lotes || [];
+        if (lotes.length > 1) {
+            _seleccionarLotePDV(prod, lotes).then(function(lote) {
+                if (!lote) return;
+                _procesarProductoPDV(Object.assign({}, prod, {
+                    lote_id: lote.id,
+                    numero_lote_proximo: lote.numero_lote,
+                    proxima_caducidad: lote.fecha_caducidad,
+                    dias_restantes: lote.dias_restantes,
+                    stock: lote.cantidad,
+                    stock_total: lote.cantidad,
+                    costo_lote: lote.costo_adquisicion
+                }));
+            });
+            return;
         }
-        if (prod.requiere_receta || prod.es_antibiotico || prod.es_controlado) { window._productoAntibioticoTemp = prod; abrirModalReceta(); return; }
-        _agregarAlCarrito(prod);
+        _procesarProductoPDV(prod);
     })
     .catch(function() {
         var buscador = document.getElementById('input-buscador');

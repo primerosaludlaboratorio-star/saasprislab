@@ -92,7 +92,8 @@ def api_lotes_producto(request, producto_id):
     # Lotes con cantidad > 0 (para stock)
     lotes_con_stock = [l for l in lotes_cache if (l.cantidad or 0) > 0]
     lotes_data = []
-    for lote in sorted(lotes_con_stock, key=lambda l: (l.fecha_caducidad or date(9999, 12, 31))):
+    lotes_para_respuesta = lotes_cache if request.GET.get('modo') == 'entrada' else lotes_con_stock
+    for lote in sorted(lotes_para_respuesta, key=lambda l: (l.fecha_caducidad or date(9999, 12, 31))):
         dias_lote = (lote.fecha_caducidad - hoy_fefo).days if lote.fecha_caducidad else None
         es_vencido = bool(lote.fecha_caducidad and lote.fecha_caducidad < hoy_fefo)
         lotes_data.append({
