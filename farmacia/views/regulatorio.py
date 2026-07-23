@@ -1,7 +1,7 @@
 """
 Vistas de Control Regulatorio, Validaciones de Antibióticos y Generación de Etiquetas para Farmacia
 """
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
 from django.db import DatabaseError
@@ -42,10 +42,21 @@ def validar_venta_antibiotico(request):
         empresa = getattr(request.user, 'empresa', None)
         if not empresa:
             return JsonResponse({'success': False, 'error': 'Usuario sin empresa asignada'}, status=403)
+        if not producto_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'producto_id es obligatorio',
+            }, status=400)
         empresa_prev = get_current_empresa()
         set_current_empresa(empresa)
         try:
-            producto = get_object_or_404(Producto.objects_all, id=producto_id, empresa=empresa)
+            try:
+                producto = Producto.objects_all.get(id=producto_id, empresa=empresa)
+            except (Producto.DoesNotExist, TypeError, ValueError):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Producto no encontrado para la empresa actual',
+                }, status=404)
         
             if not producto.es_antibiotico and producto.clasificacion_sanitaria != 'IV':
                 return JsonResponse({
