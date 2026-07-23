@@ -44,7 +44,13 @@ def lista_ventas_farmacia(request):
     estado = request.GET.get('estado', '')
     
     # Query base
-    ventas = Venta.objects.filter(empresa=empresa).select_related('paciente', 'usuario')
+    # El template muestra detalles, pagos y CFDI de cada venta; precargarlos
+    # evita una consulta por relación para cada fila del historial.
+    ventas = (
+        Venta.objects.filter(empresa=empresa)
+        .select_related('paciente', 'usuario')
+        .prefetch_related('detalles', 'pagos', 'facturas_cfdi')
+    )
     
     # Aplicar filtros
     if fecha_desde:
