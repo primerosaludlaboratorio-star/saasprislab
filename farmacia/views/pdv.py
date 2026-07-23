@@ -92,7 +92,13 @@ def api_lotes_producto(request, producto_id):
     # Lotes con cantidad > 0 (para stock)
     lotes_con_stock = [l for l in lotes_cache if (l.cantidad or 0) > 0]
     lotes_data = []
-    lotes_para_respuesta = lotes_cache if request.GET.get('modo') == 'entrada' else lotes_con_stock
+    # El PDV no debe ofrecer lotes caducados; entradas conserva visibilidad
+    # completa para permitir su ajuste o disposición controlada.
+    lotes_para_respuesta = (
+        lotes_cache
+        if request.GET.get('modo') == 'entrada'
+        else [l for l in lotes_con_stock if not l.fecha_caducidad or l.fecha_caducidad >= hoy_fefo]
+    )
     for lote in sorted(lotes_para_respuesta, key=lambda l: (l.fecha_caducidad or date(9999, 12, 31))):
         dias_lote = (lote.fecha_caducidad - hoy_fefo).days if lote.fecha_caducidad else None
         es_vencido = bool(lote.fecha_caducidad and lote.fecha_caducidad < hoy_fefo)

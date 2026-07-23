@@ -747,3 +747,27 @@ Al seleccionar un producto existente en Entrada de Mercancía:
 - el precio de venta vigente se conserva si el usuario no lo modifica explícitamente.
 
 La API de búsqueda de compras expone ambos valores y la interfaz muestra la referencia de memoria junto a cada campo. Evidencia productiva: commit `fa8e999`, respuesta `200` con ambos precios y prueba reversible sin cambios persistentes en catálogo.
+
+## Auditoria integral Farmacia - 2026-07-23
+
+Se reaudito el modulo completo sobre produccion despues de la captura continua por lote y de los ajustes de busqueda:
+
+- matriz de rutas Farmacia para auditoria, administrador de Farmacia y empleado de Farmacia;
+- busqueda PDV y entrada de mercancia;
+- seleccion por codigo de barras y por texto;
+- consulta de lotes, FEFO, entradas por lote, precios recordados y captura consecutiva;
+- cancelacion, devolucion, caja, cortes, alertas, Kardex y reporte COFEPRIS;
+- controles de empresa, rol y respuestas HTTP sin redireccion silenciosa.
+
+Correcciones incluidas en el corte:
+
+- `a257d4a`: el rol CAJERO ya no es reparado erroneamente por Sentinel al consultar el Kardex manual; la ruta responde `403` de forma explicita y el administrador conserva `200`.
+- `a257d4a`: la busqueda PDV carga marca y equivalencias en la consulta principal, evitando consultas adicionales por producto.
+- corte posterior: el endpoint de lotes del PDV excluye lotes caducados con existencia; `modo=entrada` mantiene su visibilidad para disposicion o ajuste controlado.
+
+Hallazgos de datos que no se modificaron automaticamente:
+
+- existen 12 lotes caducados con existencia en la empresa auditada; quedan bloqueados para venta, pero requieren cuarentena, disposicion o ajuste documentado por el responsable de Farmacia;
+- el reporte de consistencia marco 298 diferencias de Kardex; la inspeccion clasifico la mayoria como saldos iniciales o catalogo historico sin movimientos equivalentes, por lo que no se alteraron existencias productivas sin autorizacion y evidencia de inventario fisico.
+
+Estado de certificacion: el comportamiento de aplicacion queda corregido para esos riesgos, pero Farmacia no debe declararse `100% cerrada` hasta resolver los 12 lotes caducados y conciliar formalmente las diferencias de saldos iniciales. Las pruebas de operaciones mutables se ejecutaron de forma reversible para no contaminar produccion; la prueba humana visual requiere una sesion autenticada del usuario final.

@@ -101,3 +101,27 @@ class FarmaciaLotesAPITest(TestCase):
         self._assert_lotes_contract(data)
         self.assertEqual(data['producto']['stock_total'], 5.0)
         self.assertEqual(data['producto']['stock_total_fisico'], 5.0)
+
+    def test_pdv_no_ofrece_lotes_caducados_y_entrada_si_los_muestra(self):
+        lote_caducado = Lote(
+            producto=self.producto,
+            numero_lote='LOT-CADUCADO',
+            cantidad=4,
+            empresa=self.empresa,
+            fecha_caducidad=date.today() - timedelta(days=1),
+            costo_adquisicion=Decimal('17.00'),
+        )
+        # Simula un registro legado anterior al blindaje de fecha del modelo.
+        Lote.objects.bulk_create([lote_caducado])
+        lote_caducado = Lote.objects.get(numero_lote='LOT-CADUCADO')
+
+        pdv = self.client.get(f'/farmacia/api/lotes-producto/{self.producto.id}/').json()
+        pdv_ids = {lote['id'] for lote in pdv['lotes']}
+        self.assertNotIn(lote_caducado.id, pdv_ids)
+        self.assertEqual(pdv['producto']['stock_total'], 5)
+
+        entrada = self.client.get(
+            f'/farmacia/api/lotes-producto/{self.producto.id}/?modo=entrada'
+        ).json()
+        entrada_ids = {lote['id'] for lote in entrada['lotes']}
+        self.assertIn(lote_caducado.id, entrada_ids)
