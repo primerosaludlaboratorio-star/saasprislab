@@ -771,3 +771,31 @@ Hallazgos de datos que no se modificaron automaticamente:
 - el reporte historico habia marcado 298 diferencias de Kardex; la revalidacion actual de la empresa auditada marca `20`. El responsable confirma que corresponden a datos de prueba controlados para esta etapa; no son un bloqueo funcional y se limpiaran en el reinicio formal del catalogo.
 
 Estado de certificacion: el comportamiento de aplicacion queda corregido y la revalidacion productiva no detecta lotes caducados vendibles. Las 20 diferencias quedan clasificadas como datos de prueba y no bloquean la auditoria funcional actual; se conservaran hasta concluir las pruebas y se limpiaran antes del arranque operativo definitivo. Las operaciones mutables se ejecutaron de forma reversible para no contaminar el escenario de prueba.
+
+## Auditoria Laboratorio y LIMS - 2026-07-23
+
+Se ejecuto una segunda auditoria integral sobre producción después del despliegue `2024f8e`:
+
+- matriz productiva de 32 rutas entre recepción, toma, worklist, captura, entrega, Maquila, reportes, catálogo y ventanas LIMS;
+- interacción visual autenticada: búsqueda y selección de paciente, carga de ficha clínica, búsqueda y selección de `GLU`, actualización de subtotal, total y saldo;
+- revisión visual de Toma de Muestra, Registro de Resultados, Control de Calidad, Entrega, Maquila, Analitos, Perfiles, Paquetes y Precios;
+- APIs de búsqueda, órdenes recientes, preórdenes, detalle, estado, pagos, rangos y parámetros;
+- aislamiento tenant, permisos, estados y Sentinel.
+
+Resultado de código:
+
+- `19/19` pruebas funcionales de LIMS/Laboratorio verdes;
+- motor Westgard `10/10` pruebas verdes;
+- `manage.py check` y compilación sin errores;
+- producción en `2024f8e`, Gunicorn/Celery/Celery Beat activos;
+- `/lims/precios/` conserva respuesta `200` y bajó de 104 consultas a 20 mediante conteo agregado de analitos por perfil;
+- Sentinel Laboratorio: `0` incidencias pendientes;
+- no se detectaron `404` ni `500` en la matriz productiva.
+
+Hallazgo operativo explícito:
+
+- Control de Calidad muestra `QC_WESTGARD_ACTIVO = off` en modo sombra;
+- producción no tiene materiales CCI, lotes de control ni equipos asociados a la empresa auditada;
+- por seguridad clínica no se activa el bloqueo estricto ni se inventan medias, desviaciones o equipos. El motor está probado, pero la validación CCI real requiere cargar esos datos con valores del laboratorio y después repetir la prueba PostgreSQL de integración.
+
+Estado: Laboratorio y LIMS quedan funcionales para operación y pruebas de flujo, pero el cierre `100% enterprise` del subflujo CCI/Westgard queda condicionado a la configuración clínica real del laboratorio. No se modificaron catálogos ni datos clínicos de producción durante esta auditoría.
