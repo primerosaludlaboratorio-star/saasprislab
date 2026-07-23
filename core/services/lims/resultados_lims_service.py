@@ -13,7 +13,7 @@ from core.lims_cart import detalle_orden_etiqueta
 from core.models import AuditLog, DetalleOrden, OrdenDeServicio, ResultadoParametro
 from core.utils.sucursal_helpers import get_request_sucursal
 from core.utils.trazabilidad import registrar_trazabilidad, serializar_modelo
-from core.services.lims.asistente_clinico import evaluar_asistencia_clinica_orden
+from core.services.lims.coherencia_clinica import evaluar_orden_canonica
 from lims.models import Analito
 from reglas_negocio.validadores import validar_triple_llave
 
@@ -513,7 +513,7 @@ class ResultadosLimsService:
                             exc_info=True,
                         )
 
-                    asistencia_clinica = evaluar_asistencia_clinica_orden(
+                    asistencia_clinica = evaluar_orden_canonica(
                         orden,
                         empresa,
                         usuario=actor,
