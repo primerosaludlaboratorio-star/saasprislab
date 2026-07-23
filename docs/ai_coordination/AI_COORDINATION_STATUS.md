@@ -2,6 +2,18 @@
 
 Fecha: 2026-07-21
 
+## Usuarios temporales de auditoria productiva — 2026-07-23
+
+Se habilitaron tres cuentas temporales para pruebas humanas sobre Empresa `1` / sucursal `Matriz Principal`. No se guardan contrasenas en el repositorio.
+
+| Usuario | Rol | Alcance verificado | Expira |
+|---|---|---|---|
+| `auditoria_admin_10d` | `ADMIN` + superusuario | Acceso total del sistema | 2026-08-02 17:25 UTC |
+| `farmacia_admin_10d` | `FARMACIA` | PDV e inventario de Farmacia; Laboratorio bloqueado | 2026-08-02 17:25 UTC |
+| `farmacia_empleado_10d` | `CAJERO` | PDV e inventario operativo; Laboratorio y admin bloqueados | 2026-08-02 17:25 UTC |
+
+La expiracion esta respaldada por el timer `prislab-expire-auditoria-users.timer`, que desactiva las tres cuentas automaticamente.
+
 ## Corte operativo 2026-07-21: deploy pendiente por configuracion real
 
 La documentacion del procedimiento VPS existe y se mantiene como canon. El estado actual es: `e8a4d21` esta publicado en `release/v1.0-local` y fue desplegado manualmente en la VPS. Las migraciones no tuvieron cambios, los estaticos fueron actualizados, los tres servicios quedaron activos y el dominio publico respondio `HTTP 200`.
