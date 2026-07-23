@@ -21,6 +21,7 @@ from user_agents import parse
 from core.decorators import role_required
 from core.models import ForenseAcceso, Usuario
 from core.utils.empresa_request import get_empresa_usuario
+from seguridad.views.helpers import _empresa_staff_o_redirect
 
 from seguridad.models import (
     DispositivoTOTP, DispositivoSMS, CodigoBackup2FA,

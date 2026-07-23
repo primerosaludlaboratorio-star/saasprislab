@@ -637,7 +637,7 @@ class SentinelTelemetryMiddleware:
         # Esto evita que el usuario se confunda al terminar en otra pantalla
         reload_url = path
 
-        status_code = 404 if tipo_exc == 'Http404' else 503
+        status_code = 404 if tipo_exc == 'Http404' else 403 if tipo_exc == 'PermissionDenied' else 503
 
         try:
             # STATUS 404 para recursos inexistentes; 503 para el resto de

@@ -330,16 +330,10 @@ class MasterDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         )['total']
         
         # Costos Lab (mismo criterio temporal; agregado legacy estudio si existe en esquema)
-        costos_lab = DetalleOrden.objects.filter(
-            orden__empresa=empresa,
-            orden__fecha_creacion__gte=inicio_dia,
-        ).aggregate(
-            total=Coalesce(
-                Sum('estudio__costo_operativo'),
-                Value(0),
-                output_field=DecimalField()
-            )
-        )['total']
+        # El catalogo LIMS actual ya no tiene la relacion legacy ``estudio``.
+        # No inventar costos: dejar el KPI en cero hasta versionar costos
+        # operativos por perfil, paquete o analito.
+        costos_lab = Decimal('0')
         
         # --- FARMACIA ---
         ventas_hoy = None  # set if farmacia module available
@@ -414,17 +408,7 @@ class MasterDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
             )
         )['total']
 
-        costos_lab_ayer = DetalleOrden.objects.filter(
-            orden__empresa=empresa,
-            orden__fecha_creacion__gte=inicio_ayer,
-            orden__fecha_creacion__lte=fin_ayer,
-        ).aggregate(
-            total=Coalesce(
-                Sum('estudio__costo_operativo'),
-                Value(0),
-                output_field=DecimalField()
-            )
-        )['total']
+        costos_lab_ayer = Decimal('0')
         
         try:
             ventas_ayer = Venta.objects.filter(
