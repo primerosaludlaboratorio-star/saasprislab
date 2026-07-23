@@ -799,3 +799,31 @@ Hallazgo operativo explícito:
 - por seguridad clínica no se activa el bloqueo estricto ni se inventan medias, desviaciones o equipos. El motor está probado, pero la validación CCI real requiere cargar esos datos con valores del laboratorio y después repetir la prueba PostgreSQL de integración.
 
 Estado: Laboratorio y LIMS quedan funcionales para operación y pruebas de flujo, pero el cierre `100% enterprise` del subflujo CCI/Westgard queda condicionado a la configuración clínica real del laboratorio. No se modificaron catálogos ni datos clínicos de producción durante esta auditoría.
+
+## Fachada canónica de coherencia clínica - 2026-07-23
+
+Para eliminar la dispersión del flujo clínico se incorporó `core.services.lims.coherencia_clinica` como punto de entrada auditable para la evaluación de resultados y órdenes LIMS. La fachada conserva la lógica existente y expone explícitamente las capas que participan:
+
+- rangos de referencia LIMS con contexto de edad, sexo y edad en días;
+- detección de valores improbables y alertas clínicas asistidas;
+- Delta Check;
+- fórmulas clínicas LIMS mediante el motor seguro existente;
+- Westgard/CCI en modo compatible con la configuración productiva;
+- guardia de liberación humana y trazabilidad de la decisión.
+
+`resultados_lims_service.py` consume ahora esta fachada en lugar de invocar directamente al orquestador interno. La evaluación de resultado canónico es de solo lectura y no muta la base de datos; la evaluación de orden conserva las reglas de persistencia y bloqueo existentes según la acción solicitada.
+
+Evidencia posterior al cambio:
+
+- commit desplegado: `5128f8a feat(lims): centralizar coherencia clinica`;
+- `manage.py check` sin errores;
+- 12 pruebas de contrato de coherencia clínica verdes;
+- 18 pruebas funcionales de aislamiento, búsqueda, recepción y bitácora verdes;
+- 10 pruebas Westgard verdes;
+- producción respondió `200` en Laboratorio, Control de Calidad, Analitos, Perfiles, Paquetes y Precios; Registro de Resultados mantuvo su redirección funcional a la captura autenticada;
+- la fachada respondió en producción con todas sus capas declaradas y modo `OPTIONAL` sin alterar datos;
+- Sentinel Laboratorio mantiene `0` incidencias pendientes.
+
+Observación operativa: la ruta `/laboratorio/` registró una medición aislada de `865 ms`, con `12` consultas y respuesta `200`; no es una falla funcional ni un exceso de consultas, pero queda como métrica para seguimiento de rendimiento.
+
+Límite de cierre clínico: la fachada centraliza la evaluación, pero no convierte el sistema en diagnóstico autónomo. Las recomendaciones siguen siendo asistidas y la liberación requiere intervención humana. CCI/Westgard estricto permanece desactivado hasta que el laboratorio configure materiales, lotes, equipos, medias y desviaciones reales; no se inventan esos datos en producción.
