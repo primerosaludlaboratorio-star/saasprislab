@@ -121,7 +121,8 @@ def api_buscar_productos_compra(request):
         Q(nombre__icontains=termino) |
         Q(codigo_barras__icontains=termino) |
         Q(sustancia_activa__icontains=termino) |
-        Q(marca_laboratorio__icontains=termino)
+        Q(marca_laboratorio__icontains=termino) |
+        Q(equivalencias_comerciales__icontains=termino)
     )[:20]  # Limitar a 20 resultados
     
     resultados = []
@@ -132,6 +133,7 @@ def api_buscar_productos_compra(request):
             'codigo_barras': p.codigo_barras,
             'sustancia_activa': p.sustancia_activa or '',
             'marca': p.marca_laboratorio or '',
+            'equivalencias_comerciales': p.equivalencias_comerciales or '',
             'precio_compra': float(p.precio_compra or 0),
             'stock': int(p.stock or 0),
         })

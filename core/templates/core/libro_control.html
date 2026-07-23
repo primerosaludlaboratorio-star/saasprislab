@@ -54,6 +54,7 @@
             <div class="mb-5">
                 <h6 class="bg-light p-2 border-start border-4 border-primary fw-bold text-uppercase">
                     {{ item.producto.nombre }} - {{ item.producto.sustancia_activa }}
+                    <small class="d-block text-primary">Marca / laboratorio: {{ item.producto.marca_laboratorio|default:"GENÉRICO" }}</small>
                 </h6>
                 <table class="table table-sm table-bordered mt-2" style="font-size: 0.85rem;">
                     <thead class="table-secondary">

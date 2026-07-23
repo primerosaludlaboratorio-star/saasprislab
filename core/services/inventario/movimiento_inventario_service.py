@@ -33,6 +33,8 @@ class MovimientoInventarioService:
         producto_id = data.get('producto_id') or data.get('producto') or None
         codigo = (data.get('codigo') or '').strip()
         nombre = (data.get('nombre') or '').strip()
+        marca_laboratorio = (data.get('marca_laboratorio') or data.get('marca') or '').strip()
+        equivalencias_comerciales = (data.get('equivalencias_comerciales') or '').strip()
         factura = (data.get('factura') or '').strip()
         lote_id = data.get('lote_id') or None
         lote_num = (data.get('lote') or '').strip()
@@ -83,6 +85,8 @@ class MovimientoInventarioService:
                         empresa=empresa,
                         codigo_barras=codigo,
                         nombre=nombre,
+                        marca_laboratorio=marca_laboratorio or 'GENÉRICO',
+                        equivalencias_comerciales=equivalencias_comerciales,
                         forma_farmaceutica=data.get('forma_farmaceutica') or 'No especificada',
                         concentracion=data.get('concentracion') or 'No especificada',
                         presentacion=data.get('presentacion') or 'Unidad',
@@ -94,17 +98,25 @@ class MovimientoInventarioService:
                     )
                 else:
                     datos_antes = {
+                        'marca_laboratorio': producto.marca_laboratorio,
+                        'equivalencias_comerciales': producto.equivalencias_comerciales,
                         'precio_publico': str(producto.precio_publico) if producto.precio_publico else None,
                         'precio_compra': str(producto.precio_compra) if producto.precio_compra else None,
                     }
                     if nombre and producto.nombre != nombre and not producto_id:
                         producto.nombre = nombre
+                    if marca_laboratorio:
+                        producto.marca_laboratorio = marca_laboratorio
+                    if equivalencias_comerciales:
+                        producto.equivalencias_comerciales = equivalencias_comerciales
                     if precio_venta > 0:
                         producto.precio_publico = precio_venta
                     producto.precio_compra = costo_unitario
                     producto.save()
                     if (
-                        datos_antes.get('precio_publico') != str(producto.precio_publico)
+                        datos_antes.get('marca_laboratorio') != producto.marca_laboratorio
+                        or datos_antes.get('equivalencias_comerciales') != producto.equivalencias_comerciales
+                        or datos_antes.get('precio_publico') != str(producto.precio_publico)
                         or datos_antes.get('precio_compra') != str(producto.precio_compra)
                     ):
                         from core.services.audit_service import registrar_auditoria
@@ -117,6 +129,8 @@ class MovimientoInventarioService:
                                 'precio_publico': str(producto.precio_publico),
                                 'precio_compra': str(producto.precio_compra),
                                 'nombre': producto.nombre,
+                                'marca_laboratorio': producto.marca_laboratorio,
+                                'equivalencias_comerciales': producto.equivalencias_comerciales,
                             },
                             request=request,
                         )

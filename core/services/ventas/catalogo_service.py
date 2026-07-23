@@ -112,7 +112,8 @@ class CatalogoService:
             sustancia_norm = _normalizar_texto(p.sustancia_activa)
             codigo_norm = _normalizar_texto(p.codigo_barras)
             marca_norm = _normalizar_texto(getattr(p, "marca_laboratorio", ""))
-            piezas = [nombre_norm, sustancia_norm, codigo_norm, marca_norm]
+            equivalencias_norm = _normalizar_texto(getattr(p, "equivalencias_comerciales", ""))
+            piezas = [nombre_norm, sustancia_norm, codigo_norm, marca_norm, equivalencias_norm]
             base_texto = " ".join(part for part in piezas if part)
 
             score = 0.0
@@ -125,6 +126,8 @@ class CatalogoService:
                 score = max(score, 970.0)
             if marca_norm == termino_norm:
                 score = max(score, 960.0)
+            if termino_norm and termino_norm in [x.strip() for x in equivalencias_norm.split(',')]:
+                score = max(score, 950.0)
 
             if nombre_norm.startswith(termino_norm):
                 score = max(score, 900.0 - min(len(nombre_norm) - len(termino_norm), 120))
@@ -141,6 +144,8 @@ class CatalogoService:
                 score = max(score, 760.0 - min(codigo_norm.index(termino_norm), 120))
             if termino_norm in marca_norm:
                 score = max(score, 740.0 - min(marca_norm.index(termino_norm), 120))
+            if termino_norm in equivalencias_norm:
+                score = max(score, 735.0 - min(equivalencias_norm.index(termino_norm), 120))
 
             # Fuzzy suave para rescatar errores tipográficos leves.
             ratio = difflib.SequenceMatcher(None, termino_norm, base_texto).ratio()
@@ -162,6 +167,7 @@ class CatalogoService:
                 | Q(nombre__icontains=termino)
                 | Q(sustancia_activa__icontains=termino)
                 | Q(marca_laboratorio__icontains=termino)
+                | Q(equivalencias_comerciales__icontains=termino)
             )
             .only(
                 "id",
@@ -241,6 +247,8 @@ class CatalogoService:
                 "id",
                 "nombre",
                 "sustancia_activa",
+                "marca_laboratorio",
+                "equivalencias_comerciales",
                 "codigo_barras",
                 "precio_publico",
                 "precio_compra",
@@ -250,7 +258,6 @@ class CatalogoService:
                 "requiere_receta",
                 "categoria",
                 "empresa_id",
-                "marca_laboratorio",
             )
             .iterator(chunk_size=500)
         ):
@@ -258,14 +265,16 @@ class CatalogoService:
             sustancia_norm = _normalizar_texto(p.sustancia_activa)
             codigo_norm = _normalizar_texto(p.codigo_barras)
             marca_norm = _normalizar_texto(getattr(p, "marca_laboratorio", ""))
+            equivalencias_norm = _normalizar_texto(getattr(p, "equivalencias_comerciales", ""))
 
             base_texto = " ".join(
-                part for part in [nombre_norm, sustancia_norm, codigo_norm, marca_norm] if part
+                part for part in [nombre_norm, sustancia_norm, codigo_norm, marca_norm, equivalencias_norm] if part
             )
             ratio = difflib.SequenceMatcher(None, termino_norm, base_texto).ratio()
             ratio_nombre = difflib.SequenceMatcher(None, termino_norm, nombre_norm).ratio()
             ratio_sust = difflib.SequenceMatcher(None, termino_norm, sustancia_norm).ratio()
-            score = max(ratio, ratio_nombre, ratio_sust)
+            ratio_equivalencias = difflib.SequenceMatcher(None, termino_norm, equivalencias_norm).ratio()
+            score = max(ratio, ratio_nombre, ratio_sust, ratio_equivalencias)
 
             # Umbral conservador: evita ruido y solo rescata errores leves.
             if score >= 0.72:
@@ -284,6 +293,8 @@ class CatalogoService:
                     "id": p.id,
                     "nombre_comercial": p.nombre,
                     "sustancia_activa": p.sustancia_activa or "",
+                    "marca_laboratorio": p.marca_laboratorio or "",
+                    "equivalencias_comerciales": p.equivalencias_comerciales or "",
                     "codigo_barras": p.codigo_barras or "",
                     "precio_base": precio_venta,
                     "precio_venta": precio_venta,

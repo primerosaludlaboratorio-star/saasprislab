@@ -41,6 +41,12 @@ class Producto(TenantModel):
 
     nombre = models.CharField(max_length=255, verbose_name="Nombre Comercial", db_index=True)
     sustancia_activa = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre Genérico / Sustancia")
+    equivalencias_comerciales = models.TextField(
+        blank=True,
+        default='',
+        verbose_name="Equivalencias comerciales / nombres alternativos",
+        help_text="Patentes, marcas o nombres alternativos separados por coma. Se usan para búsqueda equivalente; validar la composición antes de capturarla.",
+    )
     codigo_barras = models.CharField(max_length=100, unique=True, verbose_name="Código de Barras / VIN")
 
     forma_farmaceutica = models.CharField(max_length=100, verbose_name="Forma (Tabletas, Jarabe, etc.)")

@@ -361,6 +361,8 @@ function _renderResultados(productos, termino) {
         html += '<div class="flex-grow-1 min-w-0">';
         html += '<div class="d-flex align-items-center gap-2 mb-1 flex-wrap"><span class="badge '+bc+'">'+bt+'</span><span class="fw-bold text-truncate">'+(p.nombre_comercial||'')+'</span></div>';
         html += '<small class="text-muted d-block text-truncate">'+(p.sustancia_activa||'')+'</small>';
+        if (p.marca_laboratorio) html += '<small class="text-primary d-block">Marca: '+p.marca_laboratorio+'</small>';
+        if (p.equivalencias_comerciales) html += '<small class="text-info d-block text-truncate">Equiv.: '+p.equivalencias_comerciales+'</small>';
         html += '<small class="text-muted d-block">Stock: '+stock+'</small>';
         if (esVencido) html += '<small class="text-danger fw-bold d-block"><i class="bi bi-x-octagon"></i> LOTE VENCIDO - No se puede vender</small>';
         if (alertaPrecio) html += '<small class="text-warning fw-bold d-block"><i class="bi bi-exclamation-triangle"></i> Precio < Costo ('+_fmt(p.costo_lote)+')</small>';

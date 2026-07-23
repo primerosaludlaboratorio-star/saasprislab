@@ -45,6 +45,16 @@
                         <div class="col-md-6"><label class="small fw-bold">CÓDIGO DE BARRAS</label><input type="text" id="ent-codigo" class="form-control bg-light"></div>
                         <div class="col-md-6"><label class="small fw-bold">FACTURA / FOLIO</label><input type="text" id="ent-factura" class="form-control"></div>
                         <div class="col-md-6"><label class="small fw-bold">NOMBRE DEL MEDICAMENTO</label><input type="text" id="ent-nombre" class="form-control fw-bold" required></div>
+                        <div class="col-md-6">
+                            <label class="small fw-bold" for="ent-marca">MARCA / LABORATORIO</label>
+                            <input type="text" id="ent-marca" class="form-control" list="marcas-farmacia" placeholder="Ej. Maver, Valle, Gerinplow">
+                            <datalist id="marcas-farmacia"><option value="GENÉRICO"><option value="Maver"><option value="Valle"><option value="Gerinplow"></datalist>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="small fw-bold" for="ent-equivalencias">EQUIVALENCIAS COMERCIALES / NOMBRES DE PATENTE</label>
+                            <input type="text" id="ent-equivalencias" class="form-control" placeholder="Ej. Panclasa, nombre alternativo o patente; separar varios con coma">
+                            <small class="text-muted">Se usara para encontrar este medicamento por nombre comercial. Captura la composicion generica validada.</small>
+                        </div>
                         <div class="col-md-3">
                             <label class="small fw-bold">CATEGORÍA</label>
                             <select id="ent-categoria" class="form-select border-primary">
@@ -138,6 +148,8 @@
             lote_id: document.getElementById('ent-lote-existente').value || null,
             codigo: document.getElementById('ent-codigo').value.trim(),
             nombre: nombre,
+            marca_laboratorio: document.getElementById('ent-marca').value.trim(),
+            equivalencias_comerciales: document.getElementById('ent-equivalencias').value.trim(),
             factura: document.getElementById('ent-factura').value.trim(),
             lote: document.getElementById('ent-lote').value.trim(),
             caducidad: document.getElementById('ent-caducidad').value,
@@ -190,6 +202,8 @@
                     // Limpiar formulario
                     document.getElementById('ent-codigo').value = '';
                     document.getElementById('ent-nombre').value = '';
+                    document.getElementById('ent-marca').value = '';
+                    document.getElementById('ent-equivalencias').value = '';
                     document.getElementById('ent-producto-id').value = '';
                     document.getElementById('ent-busqueda-producto').value = '';
                     document.getElementById('ent-resultados-producto').innerHTML = '';
@@ -227,6 +241,8 @@
         inputNombreProducto.value = producto.nombre || '';
         document.getElementById('ent-codigo').value = producto.codigo_barras || '';
         document.getElementById('ent-costo').value = producto.precio_compra || '';
+        document.getElementById('ent-marca').value = producto.marca || '';
+        document.getElementById('ent-equivalencias').value = producto.equivalencias_comerciales || '';
         document.getElementById('ent-producto-seleccionado').textContent = 'Seleccionado: ' + producto.nombre + ' | Stock actual: ' + (producto.stock || 0);
         document.getElementById('ent-resultados-producto').innerHTML = '';
         inputBusquedaProducto.value = producto.nombre || '';

@@ -50,7 +50,7 @@ class ProductoAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Identificación Detallada (Marca/Línea)', {
-            'fields': (('marca_laboratorio', 'linea', 'sublinea'), 'nombre', 'sustancia_activa', 'codigo_barras')
+            'fields': (('marca_laboratorio', 'linea', 'sublinea'), 'nombre', 'sustancia_activa', 'equivalencias_comerciales', 'codigo_barras')
         }),
         ('Ficha Técnica Farmacéutica', {
             'fields': (('forma_farmaceutica', 'concentracion', 'presentacion'), 'clasificacion_sanitaria')
@@ -62,7 +62,7 @@ class ProductoAdmin(admin.ModelAdmin):
     
     list_display = ('codigo_barras', 'nombre', 'sustancia_activa', 'marca_laboratorio', 'stock', 'precio_publico', 'clasificacion_sanitaria')
     list_filter = ('empresa', 'clasificacion_sanitaria', 'es_antibiotico', 'marca_laboratorio')
-    search_fields = ('nombre', 'sustancia_activa', 'codigo_barras', 'marca_laboratorio')
+    search_fields = ('nombre', 'sustancia_activa', 'equivalencias_comerciales', 'codigo_barras', 'marca_laboratorio')
     inlines = [LoteInline]
 
 @admin.register(Lote)

@@ -184,6 +184,7 @@
                                         <td>
                                             <strong>{{ mov.producto.nombre|truncatewords:5 }}</strong>
                                             <br><small class="text-muted">{{ mov.producto.presentacion }}</small>
+                                            <br><small class="text-primary"><i class="bi bi-building"></i> Marca: {{ mov.producto.marca_laboratorio|default:"GENÉRICO" }}</small>
                                         </td>
                                         <td>
                                             {% if mov.lote %}
@@ -245,7 +246,7 @@
                                                         <dd class="col-sm-8">{{ mov.get_tipo_movimiento_display }}</dd>
                                                         
                                                         <dt class="col-sm-4">Producto:</dt>
-                                                        <dd class="col-sm-8">{{ mov.producto.nombre }}</dd>
+                                                        <dd class="col-sm-8">{{ mov.producto.nombre }}<br><small class="text-primary">Marca: {{ mov.producto.marca_laboratorio|default:"GENÉRICO" }}</small></dd>
                                                         
                                                         <dt class="col-sm-4">Cantidad:</dt>
                                                         <dd class="col-sm-8">{{ mov.cantidad }}</dd>
