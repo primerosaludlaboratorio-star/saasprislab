@@ -14,6 +14,26 @@ Se habilitaron tres cuentas temporales para pruebas humanas sobre Empresa `1` / 
 
 La expiracion esta respaldada por el timer `prislab-expire-auditoria-users.timer`, que desactiva las tres cuentas automaticamente.
 
+## Corte de auditoria productiva Laboratorio/LIMS — 2026-07-23
+
+La verificacion se ejecuto autenticada con `auditoria_admin_10d` sobre `https://prislab.labcorecloud.com`. No se modificaron ordenes clinicas, pacientes, catalogos LIMS ni catalogo de farmacia durante este corte.
+
+### Evidencia aprobada
+
+- La suite automatica integral `PRISLAB_OMNI_SUITE` termino `ok=true`, `findingsCount=0`; sus cuatro bloques (`pdv_e2e`, `ui_omni`, `api_smoke`, `role_matrix`) terminaron correctamente.
+- La verificacion de interfaz autenticada cargo recepcion de Laboratorio y acepto la busqueda de `glucosa`; las pantallas operativas de recepcion, lista de trabajo, consulta de ordenes, control de calidad, toma de muestra, entrega, maquila y dashboard respondieron `HTTP 200`.
+- Las APIs de busqueda de estudios, parametros LIMS y ordenes recientes respondieron correctamente. El endpoint de preordenes rechazo sin `paciente_id` con `HTTP 400` contractual, no con error interno.
+- La matriz de permisos confirmo que `auditoria_admin_10d` conserva acceso administrativo a Laboratorio, mientras que los usuarios de Farmacia reciben `403` en lista de trabajo y no heredan acceso por `is_staff`.
+
+### Bloqueos que impiden cerrar Laboratorio
+
+- **CCI/Westgard estricto no es verificable en produccion:** no existen equipos, materiales de control, lotes ni mediciones CCI persistidas. No se fabricaron fixtures en produccion para no contaminar evidencia ni datos operativos.
+- **UREA/BUN sigue pendiente:** la consulta autoritativa de analitos no encontro los codigos exactos `UREA` ni `BUN`; no se debe declarar completo el flujo de resultados hasta resolver la dependencia de catalogo/LIMS.
+- **UI LIMS legacy:** `/lims/estudios/` y `/lims/parametros/` redirigen al administrador (`/admin/lims/analito/`), aunque sus APIs responden. Esto queda como discrepancia funcional de interfaz, no como fallo de autenticacion.
+- La auditoria UI transversal genero 15 avisos fuera del alcance especifico de Laboratorio (rutas 404/503 y una advertencia de autofactura). Se conservan separados y no se presentan como fallos del flujo LIMS.
+
+**Estado de cierre:** `ABIERTO`. El modulo no puede marcarse 100% hasta provisionar un entorno/datos QA controlados para CCI, resolver UREA/BUN, decidir la ruta LIMS visible y ejecutar la matriz humana completa con efectos laterales.
+
 ## Corte operativo 2026-07-21: deploy pendiente por configuracion real
 
 La documentacion del procedimiento VPS existe y se mantiene como canon. El estado actual es: `e8a4d21` esta publicado en `release/v1.0-local` y fue desplegado manualmente en la VPS. Las migraciones no tuvieron cambios, los estaticos fueron actualizados, los tres servicios quedaron activos y el dominio publico respondio `HTTP 200`.
