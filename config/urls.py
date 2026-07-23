@@ -522,6 +522,20 @@ urlpatterns = [
          lazy_view('core.views.pris_checklist.api_guia_preguntas'),
          name='pris_checklist_guia'),
     
+    # Alias de inventario antes del include general de core: ese include
+    # captura el prefijo vacio y evita que los alias definidos al final sean
+    # alcanzables.
+    path(
+        'inventario/productos/',
+        RedirectView.as_view(url='/silo-lab/lab/lotes/', permanent=False),
+        name='inventario_productos_alias',
+    ),
+    path(
+        'inventario/movimientos/',
+        RedirectView.as_view(url='/silo-lab/lab/salidas-tecnicas/', permanent=False),
+        name='inventario_movimientos_alias',
+    ),
+
     # 11. MÓDULO: HISTORIAL DE RESULTADOS CON GRÁFICAS (con namespace 'core')
     path('', include('core.urls', namespace='core')),
     
@@ -796,23 +810,6 @@ urlpatterns = [
         name='suscripciones_planes',
     ),
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # INVENTARIO — rutas alias (productos y movimientos → silo-lab)
-    # ══════════════════════════════════════════════════════════════════════════
-    path(
-        'inventario/productos/',
-        __import__('django.views.generic', fromlist=['RedirectView']).RedirectView.as_view(
-            url='/silo-lab/lab/lotes/', permanent=False
-        ),
-        name='inventario_productos_alias',
-    ),
-    path(
-        'inventario/movimientos/',
-        __import__('django.views.generic', fromlist=['RedirectView']).RedirectView.as_view(
-            url='/silo-lab/lab/salidas-tecnicas/', permanent=False
-        ),
-        name='inventario_movimientos_alias',
-    ),
 ]
 
 # Servir archivos media en desarrollo
