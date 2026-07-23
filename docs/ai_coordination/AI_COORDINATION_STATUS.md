@@ -25,6 +25,17 @@ La expiracion esta respaldada por el timer `prislab-expire-auditoria-users.timer
 
 **Estado Farmacia:** estas dos incidencias quedan corregidas y verificadas en produccion. La certificacion global del modulo Farmacia continua sujeta a la matriz completa de escenarios, no solo a estas dos correcciones.
 
+## Auditoria Sentinel productiva — 2026-07-23
+
+- Se revisaron los registros del dia. La alerta funcional reproducible de Farmacia era `PermissionDenied` repetido en `/farmacia/erp/kardex/crear-movimiento/`, provocado por el permiso Django obligatorio para el rol `FARMACIA`; se sustituyo por RBAC de Farmacia para `FARMACIA`, `ADMIN`, `GERENTE` y `DIRECTOR`.
+- Se corrigio `TemplateDoesNotExist` en `/farmacia/libro-control/`: la vista apuntaba a `core/libro_control_antibioticos.html`, archivo inexistente; ahora usa la plantilla canonica existente `core/libro_control.html` con contexto compatible.
+- Los reintentos de Sentinel habian provocado saturacion temporal de conexiones PostgreSQL (`remaining connection slots are reserved...`). Se reiniciaron Gunicorn, Celery y Celery Beat despues de corregir las causas; el estado posterior quedo estable.
+- Verificacion posterior en produccion: Kardex y Libro de Antibioticos respondieron `HTTP 200` con `farmacia_admin_10d`; no aparecieron nuevas alertas de `PermissionDenied`, `TemplateDoesNotExist`, `503` ni `remaining connection slots` despues del reinicio.
+- Queda una advertencia no bloqueante de latencia aislada en `/notificaciones/badge/` de aproximadamente `2.41 s`; no se clasifica como fallo funcional en este corte.
+- Los `DisallowedHost` contra la IP publica son rechazo esperado del dominio no canonico, y los `401` de `/api/log-frontend-error/` son telemetria no autenticada, no errores de negocio.
+
+**Estado Sentinel:** incidente funcional corregido y verificado en produccion; la advertencia de latencia queda pendiente de optimizacion separada.
+
 ## Corte de auditoria productiva Laboratorio/LIMS — 2026-07-23
 
 La verificacion se ejecuto autenticada con `auditoria_admin_10d` sobre `https://prislab.labcorecloud.com`. No se modificaron ordenes clinicas, pacientes, catalogos LIMS ni catalogo de farmacia durante este corte.
