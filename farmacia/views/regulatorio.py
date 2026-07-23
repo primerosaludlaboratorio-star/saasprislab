@@ -15,6 +15,7 @@ from core.models import Producto, Lote
 from farmacia.models import RegistroAntibiotico
 from farmacia.forms import GenerarEtiquetasForm
 from core.utils.sucursal_helpers import get_user_primary_sucursal
+from core.tenant import get_current_empresa, set_current_empresa
 
 logger = logging.getLogger(__name__)
 
@@ -41,65 +42,70 @@ def validar_venta_antibiotico(request):
         empresa = getattr(request.user, 'empresa', None)
         if not empresa:
             return JsonResponse({'success': False, 'error': 'Usuario sin empresa asignada'}, status=403)
-        producto = get_object_or_404(Producto, id=producto_id, empresa=empresa)
+        empresa_prev = get_current_empresa()
+        set_current_empresa(empresa)
+        try:
+            producto = get_object_or_404(Producto.objects_all, id=producto_id, empresa=empresa)
         
-        if not producto.es_antibiotico and producto.clasificacion_sanitaria != 'IV':
-            return JsonResponse({
-                'success': True,
-                'requiere_validacion': False,
-                'message': 'Producto no requiere validación de antibiótico'
-            })
-        
-        if receta_folio:
-            receta_valida = False
-            try:
-                from consultorio.models import Receta
-                receta_obj = Receta.objects.filter(
-                    folio=receta_folio,
-                    paciente__empresa=empresa
-                ).prefetch_related('items').first()
-                if receta_obj:
-                    receta_valida = receta_obj.items.filter(producto=producto).exists()
-            except ImportError:
-                logger.warning('[Farmacia] Módulo consultorio no disponible — validación de receta omitida')
-                receta_valida = False
-            except (DatabaseError, ValueError, TypeError) as _rec_exc:
-                logger.error(f'[Farmacia] Error validando receta antibiótico: {_rec_exc}', exc_info=True)
-                receta_valida = False
-
-            return JsonResponse({
-                'success': True,
-                'requiere_validacion': True,
-                'validado': receta_valida,
-                'message': 'Antibiótico validado por receta interna' if receta_valida
-                           else 'Receta no encontrada o no contiene este producto'
+            if not producto.es_antibiotico and producto.clasificacion_sanitaria != 'IV':
+                return JsonResponse({
+                    'success': True,
+                    'requiere_validacion': False,
+                    'message': 'Producto no requiere validación de antibiótico'
                 })
         
-        if not medico_cedula or not medico_nombre:
-            return JsonResponse({
-                'success': False,
-                'requiere_validacion': True,
-                'validado': False,
-                'error': 'Para venta de antibióticos sin receta interna, es OBLIGATORIO capturar Cédula y Nombre del Médico Prescriptor (NOM-072-SSA1-2012).'
-            }, status=400)
+            if receta_folio:
+                receta_valida = False
+                try:
+                    from consultorio.models import Receta
+                    receta_obj = Receta.objects.filter(
+                        folio=receta_folio,
+                        paciente__empresa=empresa
+                    ).prefetch_related('items').first()
+                    if receta_obj:
+                        receta_valida = receta_obj.items.filter(producto=producto).exists()
+                except ImportError:
+                    logger.warning('[Farmacia] Módulo consultorio no disponible — validación de receta omitida')
+                    receta_valida = False
+                except (DatabaseError, ValueError, TypeError) as _rec_exc:
+                    logger.error(f'[Farmacia] Error validando receta antibiótico: {_rec_exc}', exc_info=True)
+                    receta_valida = False
+
+                return JsonResponse({
+                    'success': True,
+                    'requiere_validacion': True,
+                    'validado': receta_valida,
+                    'message': 'Antibiótico validado por receta interna' if receta_valida
+                               else 'Receta no encontrada o no contiene este producto'
+                    })
         
-        return JsonResponse({
-            'success': True,
-            'requiere_validacion': True,
-            'validado': True,
-            'message': 'Antibiótico validado. Datos del médico capturados.',
-            'medico': {
-                'cedula': medico_cedula,
-                'nombre': medico_nombre
-            }
-        })
+            if not medico_cedula or not medico_nombre:
+                return JsonResponse({
+                    'success': False,
+                    'requiere_validacion': True,
+                    'validado': False,
+                    'error': 'Para venta de antibióticos sin receta interna, es OBLIGATORIO capturar Cédula y Nombre del Médico Prescriptor (NOM-072-SSA1-2012).'
+                }, status=400)
+        
+            return JsonResponse({
+                'success': True,
+                'requiere_validacion': True,
+                'validado': True,
+                'message': 'Antibiótico validado. Datos del médico capturados.',
+                'medico': {
+                    'cedula': medico_cedula,
+                    'nombre': medico_nombre
+                }
+            })
+        finally:
+            set_current_empresa(empresa_prev)
         
     except Exception as e:
         # Justificación: Boundary top-level de API para validar antibiótico.
         logger.error(f"Error validando antibiótico: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': 'No fue posible procesar la solicitud regulatoria.'
+            'error': f'Error: {str(e)}'
         }, status=500)
 
 
@@ -129,12 +135,17 @@ def reporte_cofepris(request):
             'registros': [], 'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin, 'total_registros': 0
         })
         
-    registros = RegistroAntibiotico.objects.filter(
-        empresa=empresa,
-        sucursal=sucursal,
-        fecha_venta__date__gte=fecha_inicio,
-        fecha_venta__date__lte=fecha_fin
-    ).select_related('producto', 'venta', 'paciente', 'usuario_vendedor', 'lote_vendido').order_by('-fecha_venta')
+    empresa_prev = get_current_empresa()
+    set_current_empresa(empresa)
+    try:
+        registros = RegistroAntibiotico.objects.filter(
+            empresa=empresa,
+            sucursal=sucursal,
+            fecha_venta__date__gte=fecha_inicio,
+            fecha_venta__date__lte=fecha_fin
+        ).select_related('producto', 'venta', 'paciente', 'usuario_vendedor', 'lote_vendido').order_by('-fecha_venta')
+    finally:
+        set_current_empresa(empresa_prev)
     
     if request.GET.get('formato') == 'csv':
         import csv
@@ -250,7 +261,7 @@ def generar_etiquetas(request):
             except (ValueError, TypeError, IOError, ImportError, KeyError, Exception) as e:
                 # Nota: reportlab puede lanzar muchas excepciones internas, se usa Exception explícitamente justificado.
                 # Justificación: Integración externa (generación de PDF) propensa a fallos no controlados.
-                messages.error(request, 'No fue posible generar las etiquetas.')
+                messages.error(request, f'❌ Error al generar etiquetas: {str(e)}')
     else:
         form = GenerarEtiquetasForm(empresa=empresa)
     

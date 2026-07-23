@@ -158,7 +158,13 @@ class SentinelTelemetryMiddleware:
         # Capturar 404s en namespaces monitoreados (excluir rutas triviales)
         _404_IGNORE = ('/favicon.ico', '/robots.txt', '/sitemap.xml', '/apple-touch-icon',
                        '/manifest.json', '/.well-known/', '/sw.js')
-        if response.status_code == 404:
+        # Las APIs de dominio convierten objetos inexistentes o cross-tenant
+        # en 404 JSON controlados; no son fallos de infraestructura para Sentinel.
+        is_controlled_json_404 = (
+            response.status_code == 404
+            and (response.get('Content-Type') or '').split(';', 1)[0].lower() == 'application/json'
+        )
+        if response.status_code == 404 and not is_controlled_json_404:
             if not any(path.startswith(p) or path.endswith(p) for p in _404_IGNORE):
                 ns = self._resolver_namespace(request)
                 if ns:

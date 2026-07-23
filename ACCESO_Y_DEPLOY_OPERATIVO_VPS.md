@@ -1,6 +1,6 @@
 # Acceso y Deploy Operativo VPS
 
-Estado: vigente al 2026-06-20
+Estado: vigente al 2026-07-18
 
 ## Objetivo
 
@@ -18,6 +18,20 @@ Documentar el procedimiento no equivale a tener acceso remoto activo.
 - Codex puede dejar codigo, commits, push y documentacion listos
 - Claude puede auditar navegador y revisar flujos funcionales
 - solo quien tenga una sesion real al VPS puede ejecutar deploy
+
+## Estado operativo real al 2026-07-18
+
+La VPS productiva si tiene acceso SSH real con la llave local de esta sesion.
+
+Verificacion ejecutada:
+
+- host: `216.238.89.243`
+- usuario: `root`
+- shell: `/root`
+- ruta productiva: `/opt/prislab/app`
+- rama activa: `release/v1.0-local`
+- servicios activos: `prislab-gunicorn`, `prislab-celery`, `prislab-celerybeat`
+- URL viva: `https://prislab.labcorecloud.com`
 
 ## Quien puede ejecutar realmente en el VPS
 
@@ -73,13 +87,72 @@ Commits ya preparados y empujados:
 
 Estos cambios ya fueron empujados a GitHub y estan listos para bajarse al VPS con `git pull`.
 
+## Despliegue real ejecutado
+
+El despliegue operativo no se hace desde `/opt/prislab`, sino desde el arbol real en `/opt/prislab/app`.
+
+Secuencia realmente usada en esta sesion:
+
+```bash
+ssh -i ~/.ssh/id_ed25519 root@216.238.89.243
+cd /opt/prislab/app
+git status --short --branch
+cp core/models/catalogos.py /opt/prislab/app/core/models/catalogos.py
+cp core/views/motor_financiero.py /opt/prislab/app/core/views/motor_financiero.py
+cp core/views/reportes_financieros.py /opt/prislab/app/core/views/reportes_financieros.py
+cp core/templates/core/motor_financiero/reporte_caja_lite.html /opt/prislab/app/core/templates/core/motor_financiero/reporte_caja_lite.html
+.venv/bin/python scripts/run_manage_with_env.py check
+systemctl restart prislab-gunicorn
+systemctl restart prislab-celery
+systemctl restart prislab-celerybeat
+systemctl reload nginx
+curl -I https://prislab.labcorecloud.com
+```
+
+Resultado confirmado:
+
+- `manage.py check` en producción: OK
+- `prislab-gunicorn`: `active`
+- `prislab-celery`: `active`
+- `prislab-celerybeat`: `active`
+- `https://prislab.labcorecloud.com`: `HTTP/2 200`
+
+## Cuenta operativa de produccion
+
+Para verificacion funcional real en produccion, la cuenta que quedo validada es:
+
+- usuario: `admin_prislab`
+- uso: smoke test de interfaz y acceso a PDV
+- empresa asignada: `PRISLAB S.A. de C.V.` (`empresa_id = 1`)
+- rol operativo: `CAJERO`
+
+Motivo:
+
+- si `admin_prislab` queda sin empresa, `/farmacia/pdv/` rebota a `/home/` y se forma un bucle de redireccion
+- con empresa asignada, el login aterriza en `/farmacia/pdv/` y la ruta responde `200`
+
+Cuenta secundaria de respaldo:
+
+- `admin` como superusuario legacy de emergencia
+
+## Verificacion funcional ya confirmada
+
+Corrida real validada el 2026-07-18:
+
+- `POST /login/` con `admin_prislab` redirige a `/farmacia/pdv/`
+- `GET /farmacia/pdv/` responde `200`
+- `GET /home/` redirige a `/farmacia/pdv/`
+
+Esto deja el flujo estable para auditoria visual y prueba de usuario.
+
 ## Procedimiento exacto de deploy
 
 Abrir consola web de Vultr o una sesion SSH real al VPS y ejecutar:
 
 ```bash
-cd /opt/prislab
+cd /opt/prislab/app
 git pull origin release/v1.0-local
+python scripts/run_manage_with_env.py check
 systemctl restart prislab-gunicorn
 systemctl restart prislab-celery
 systemctl restart prislab-celerybeat
@@ -99,6 +172,8 @@ En esta instalacion productiva se detecto que:
 - por lo tanto `git pull` en `/opt/prislab` o `/opt/prislab/app` fallaba
 - fue necesario inicializar Git y apuntarlo al remoto
 - tambien fue necesario corregir ownership para que `prislab` pudiera aplicar el arbol descargado
+- el acceso SSH real queda disponible como `root@216.238.89.243` con la llave local de esta sesion
+- no existe persistencia automatica de acceso remoto entre sesiones: hay que revalidarlo cada vez
 
 Secuencia real que si funciono en este servidor:
 
@@ -119,6 +194,14 @@ Resultado real confirmado:
 - `HEAD` quedo en `e04ca4b`
 - `prislab-gunicorn`: `active`
 - `prislab-celery`: `active`
+- `https://prislab.labcorecloud.com`: `HTTP/2 200`
+
+Estado actualizado en esta sesión:
+
+- `HEAD` de producción tras el despliegue ejecutado: `release/v1.0-local` sobre el árbol `/opt/prislab/app`
+- `prislab-gunicorn`: `active`
+- `prislab-celery`: `active`
+- `prislab-celerybeat`: `active`
 - `https://prislab.labcorecloud.com`: `HTTP/2 200`
 
 ## Si `git pull` dice "not a git repository"
@@ -191,10 +274,23 @@ Usar este texto:
 
 ```text
 Deploy confirmado en VPS.
-Se ejecutó git pull origin release/v1.0-local y restart/reload de prislab-gunicorn, prislab-celery, prislab-celerybeat y nginx.
+Se ejecutó el flujo real sobre /opt/prislab/app:
+git pull origin release/v1.0-local, manage.py check, restart/reload de prislab-gunicorn, prislab-celery, prislab-celerybeat y nginx.
 Servicios activos.
 Puedes iniciar ya la auditoría funcional real sobre https://prislab.labcorecloud.com con los usuarios de auditoría.
 ```
+
+## Actualización operativa 2026-07-20
+
+Despliegue y validación de infraestructura confirmados otra vez en la VPS:
+
+- `crear_superusuario_prod` actualizó la contraseña de `admin_prislab`
+- `manage.py check` en producción: OK
+- servicios `prislab-gunicorn`, `prislab-celery` y `prislab-celerybeat`: `active`
+- `curl -I https://prislab.labcorecloud.com`: `HTTP/2 200`
+- login real con `admin_prislab` confirmó redirección final a `/farmacia/pdv/`
+
+La credencial de acceso humano se entrega fuera del repositorio por canal operativo.
 
 ## Nota de control
 

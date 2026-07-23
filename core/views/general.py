@@ -197,7 +197,6 @@ def crear_admin_rescate(request):
     try:
         usuario = Usuario.objects.get(username=username)
         usuario.set_password(password)
-        usuario.is_staff = True
         usuario.is_superuser = True
         usuario.is_active = True
         if not usuario.email:
@@ -229,13 +228,11 @@ def ingreso_magico(request):
         username=os.environ.get('DEV_ADMIN_USER', 'admin'),
         defaults={
             'email': os.environ.get('DEV_ADMIN_EMAIL', 'admin@prislab.com'),
-            'is_staff': True,
             'is_superuser': True,
             'is_active': True
         }
     )
     user.set_password(password)
-    user.is_staff = True
     user.is_superuser = True
     user.is_active = True
     user.save()
@@ -330,45 +327,25 @@ def get_redirect_url_by_role(user):
         # ==============================================================================
         # 1. VERIFICAR GRUPOS DE DJANGO (PRIORIDAD)
         # ==============================================================================
-        
-        # GERENCIA_OPERATIVA -> Dashboard General (Nancy, Gabriela)
-        # DEBE ir primero: tienen acceso a TODAS las areas pero su
-        # dashboard de inicio es el principal, no el de un area especifica
-        if user.groups.filter(name='GERENCIA_OPERATIVA').exists():
-            return reverse('dashboard')
-        
-        # Medicos -> Dashboard de Consultorio
-        if user.groups.filter(name='MEDICOS').exists():
-            return reverse('medico')
-        
-        # Laboratorio (Quimicos) -> Lista de Trabajo
-        if user.groups.filter(name='LABORATORIO').exists():
-            return reverse('lista_trabajo_lab')
-        
-        # Farmacia -> Punto de Venta
-        if user.groups.filter(name='FARMACIA').exists():
-            return reverse('pdv_farmacia')
-        
-        # Recepcion -> Dashboard del modulo de recepcion (PWA unificado)
-        if user.groups.filter(name='RECEPCION').exists():
-            return reverse('recepcion:dashboard_recepcion')
-        
-        # Enfermeria -> Recepcion
-        if user.groups.filter(name='ENFERMERIA').exists():
-            return reverse('recepcion_lab')
-        
-        # Gerencia -> Dashboard General
-        if user.groups.filter(name='GERENCIA').exists():
-            return reverse('dashboard')
-        
-        # ==============================================================================
-        # 2. VERIFICAR CAMPO 'ROL' (FALLBACK)
+        # 1. VERIFICAR CAMPO 'ROL'
         # ==============================================================================
         rol = getattr(user, 'rol', None)
         
         if rol:
             # Normalizar a mayúsculas para evitar problemas de case
             rol_upper = rol.upper().strip()
+            if rol_upper in {'GERENCIA_OPERATIVA', 'GERENTE', 'DIRECTOR', 'ADMIN', 'ADMINISTRADOR'}:
+                return reverse('dashboard')
+            if rol_upper in {'MEDICO', 'MEDICOS'}:
+                return reverse('medico')
+            if rol_upper in {'LABORATORIO', 'QUIMICO'}:
+                return reverse('lista_trabajo_lab')
+            if rol_upper == 'FARMACIA':
+                return reverse('pdv_farmacia')
+            if rol_upper == 'RECEPCION':
+                return reverse('recepcion:dashboard_recepcion')
+            if rol_upper == 'ENFERMERIA':
+                return reverse('recepcion_lab')
             # Mapeo de roles a dashboards (incluye variantes usadas en BD)
             role_redirects = {
                 'ADMIN': reverse('dashboard'),
@@ -384,18 +361,18 @@ def get_redirect_url_by_role(user):
                 'GERENTE': reverse('dashboard'),
                 'ENFERMERIA': reverse('recepcion_lab'),
             }
-            
+
             if rol_upper in role_redirects:
                 return role_redirects[rol_upper]
         
         # ==============================================================================
-        # 3. SUPERUSUARIO o STAFF
+        # 2. SUPERUSUARIO
         # ==============================================================================
-        if user.is_superuser or user.is_staff:
+        if user.is_superuser:
             return reverse('dashboard')
         
         # ==============================================================================
-        # 4. FALLBACK SEGURO (evitar loop /home/ -> /home/)
+        # 3. FALLBACK SEGURO (evitar loop /home/ -> /home/)
         # ==============================================================================
         # Redirigir a un dashboard real, NO a /home/
         return reverse('dashboard')
@@ -486,6 +463,15 @@ class CustomLoginView(LoginView):
         username_intentado = self.request.POST.get('username', '')
         # REMOTE_ADDR: IP real vista por Nginx, no falsificable — alimenta War Room.
         ip = self.request.META.get('REMOTE_ADDR', '0.0.0.0')
+        try:
+            logging.getLogger('core.login').warning(
+                'Login invalido: user=%s ip=%s errores=%s',
+                username_intentado,
+                ip,
+                form.errors.as_json(),
+            )
+        except Exception:
+            logging.getLogger(__name__).exception("Error inesperado registrando errores de login (general.py)")
         try:
             from seguridad.models import LogAccionSensible
             LogAccionSensible.objects.create(

@@ -104,7 +104,7 @@ def control_calidad(request):
                 messages.success(request, f'Control registrado: {parametro_nombre} = {valor_str}')
         except (IntegrityError, ValueError, TypeError) as _e:
             from django.contrib import messages
-            messages.error(request, 'No fue posible registrar.')
+            messages.error(request, f'Error al registrar: {_e}')
         return redirect('control_calidad')
 
     # GET: listar controles y preparar contexto para gráficas
@@ -469,7 +469,7 @@ def preparacion_toma(request, orden_id):
     try:
         from core.models import ConsentimientoInformado
         consentimiento_firmado = ConsentimientoInformado.objects.filter(
-            orden=orden, firmado=True
+            orden=orden, fecha_firma__isnull=False
         ).exists()
     except (ImportError, AttributeError, LookupError):
         pass

@@ -355,15 +355,31 @@ def _analitos_para_pdf_detalle(detalle):
 
 
 def _valor_referencia_analito_pdf(analito, edad_anios, sexo):
+    from django.db.models import Q
     from lims.models import ValorReferenciaAnalito
 
-    # We use our centralized method. Since we only have edad_anios here,
-    # we can pass it directly. Note that motor_reportes_lab.py only passes edad_anios,
-    # and doesn't pass edad_dias. The centralized method handles this.
-    return ValorReferenciaAnalito.aplica_para_paciente(
-        analito=analito,
-        edad_anios=edad_anios,
-        sexo=sexo
+    qs = ValorReferenciaAnalito.objects.filter(analito=analito)
+    sx = (sexo or '')[:1].upper() if sexo else ''
+    if sx in ('M', 'F'):
+        qs = qs.filter(Q(sexo=sx) | Q(sexo='I'))
+    else:
+        qs = qs.filter(sexo='I')
+    if edad_anios is None:
+        return None
+    try:
+        ea = int(float(edad_anios))
+        if ea < 1:
+            ea = 1
+    except (TypeError, ValueError):
+        return None
+    return (
+        qs.filter(
+            unidad_edad='ANOS',
+            edad_minima__lte=ea,
+            edad_maxima__gte=ea,
+        )
+        .order_by('edad_minima')
+        .first()
     )
 
 
@@ -1252,9 +1268,11 @@ def guardar_reporte_en_storage(orden, pdf_bytes):
         str: URL del archivo guardado, o None si falla
     """
     try:
+        import re
+
         filename = (
             f"resultados_pdf/"
-            f"{orden.folio_orden or f'ORD-{orden.id}'}"
+            f"{re.sub(r'[^A-Za-z0-9_-]+', '_', orden.folio_orden or f'ORD-{orden.id}')[:36]}"
             f"_{timezone.localtime(timezone.now()).strftime('%Y%m%d_%H%M%S')}.pdf"
         )
         

@@ -1,7 +1,9 @@
 """
 Servicios de catálogo PDV: búsqueda de productos y resolución de entidades operativas.
 """
+import difflib
 import logging
+import unicodedata
 from datetime import timedelta
 from decimal import Decimal
 
@@ -20,6 +22,13 @@ def _int_or_none(value):
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def _normalizar_texto(valor):
+    """Normaliza texto para búsquedas tolerantes a acentos y mayúsculas."""
+    texto = unicodedata.normalize("NFKD", str(valor or ""))
+    texto = "".join(ch for ch in texto if not unicodedata.combining(ch))
+    return " ".join(texto.lower().split())
 
 
 class CatalogoService:
@@ -96,6 +105,56 @@ class CatalogoService:
         if len(termino) < 2:
             return []
 
+        termino_norm = _normalizar_texto(termino)
+
+        def _score_producto(p):
+            nombre_norm = _normalizar_texto(p.nombre)
+            sustancia_norm = _normalizar_texto(p.sustancia_activa)
+            codigo_norm = _normalizar_texto(p.codigo_barras)
+            marca_norm = _normalizar_texto(getattr(p, "marca_laboratorio", ""))
+            piezas = [nombre_norm, sustancia_norm, codigo_norm, marca_norm]
+            base_texto = " ".join(part for part in piezas if part)
+
+            score = 0.0
+
+            if nombre_norm == termino_norm:
+                score = max(score, 1000.0)
+            if sustancia_norm == termino_norm:
+                score = max(score, 980.0)
+            if codigo_norm == termino_norm:
+                score = max(score, 970.0)
+            if marca_norm == termino_norm:
+                score = max(score, 960.0)
+
+            if nombre_norm.startswith(termino_norm):
+                score = max(score, 900.0 - min(len(nombre_norm) - len(termino_norm), 120))
+            if sustancia_norm.startswith(termino_norm):
+                score = max(score, 880.0 - min(len(sustancia_norm) - len(termino_norm), 120))
+            if codigo_norm.startswith(termino_norm):
+                score = max(score, 860.0 - min(len(codigo_norm) - len(termino_norm), 120))
+
+            if termino_norm in nombre_norm:
+                score = max(score, 800.0 - min(nombre_norm.index(termino_norm), 120))
+            if termino_norm in sustancia_norm:
+                score = max(score, 780.0 - min(sustancia_norm.index(termino_norm), 120))
+            if termino_norm in codigo_norm:
+                score = max(score, 760.0 - min(codigo_norm.index(termino_norm), 120))
+            if termino_norm in marca_norm:
+                score = max(score, 740.0 - min(marca_norm.index(termino_norm), 120))
+
+            # Fuzzy suave para rescatar errores tipográficos leves.
+            ratio = difflib.SequenceMatcher(None, termino_norm, base_texto).ratio()
+            ratio_nombre = difflib.SequenceMatcher(None, termino_norm, nombre_norm).ratio()
+            ratio_sust = difflib.SequenceMatcher(None, termino_norm, sustancia_norm).ratio()
+            fuzzy = max(ratio, ratio_nombre, ratio_sust)
+            if fuzzy >= 0.72:
+                score = max(score, 500.0 + (fuzzy * 100.0))
+
+            # Favorecer nombres simples y stock disponible cuando hay empate.
+            score += min(len(nombre_norm), 80) * 0.01
+            score += 1.0 if (p.stock or 0) > 0 else 0.0
+            return score
+
         productos = (
             Producto.objects_all.filter(empresa=empresa)
             .filter(
@@ -122,12 +181,104 @@ class CatalogoService:
         )
 
         resultados = []
-        for p in productos:
+        vistos = set()
+        productos_ordenados = sorted(
+            list(productos),
+            key=lambda p: (
+                -_score_producto(p),
+                _normalizar_texto(p.nombre).count(" "),
+                -int(p.stock or 0),
+                -int(p.id),
+            ),
+        )
+
+        for p in productos_ordenados:
             precio_venta = float(p.precio_publico) if p.precio_publico else 0
             costo = float(p.precio_compra) if p.precio_compra else 0
             stock_total = int(p.stock) if p.stock else 0
             alerta_precio_bajo = precio_venta > 0 and costo > 0 and precio_venta < costo
+            vistos.add(p.id)
 
+            resultados.append(
+                {
+                    "id": p.id,
+                    "nombre_comercial": p.nombre,
+                    "sustancia_activa": p.sustancia_activa or "",
+                    "codigo_barras": p.codigo_barras or "",
+                    "precio_base": precio_venta,
+                    "precio_venta": precio_venta,
+                    "precio_compra": costo,
+                    "costo_lote": costo,
+                    "stock": stock_total,
+                    "stock_total": stock_total,
+                    "proxima_caducidad": None,
+                    "dias_restantes_fefo": None,
+                    "numero_lote_proximo": None,
+                    "iva_pct": float(p.iva_porcentaje) if p.iva_porcentaje else 0,
+                    "es_controlado": bool(p.es_antibiotico),
+                    "es_antibiotico": bool(p.es_antibiotico),
+                    "requiere_receta": bool(
+                        getattr(p, "requiere_receta", False) or p.es_antibiotico
+                    ),
+                    "categoria": p.categoria or "",
+                    "dias_restantes": 999,
+                    "lote_id": None,
+                    "sin_stock_vigente": False,
+                    "alerta_precio_bajo": alerta_precio_bajo,
+                }
+            )
+
+        if resultados:
+            return resultados
+
+        # Fallback tolerante a errores de escritura:
+        # si el usuario escribe "paracetalmol", buscamos coincidencias cercanas
+        # sobre nombre, sustancia activa, código y marca.
+        candidatos = []
+        for p in (
+            Producto.objects_all.filter(empresa=empresa)
+            .only(
+                "id",
+                "nombre",
+                "sustancia_activa",
+                "codigo_barras",
+                "precio_publico",
+                "precio_compra",
+                "stock",
+                "iva_porcentaje",
+                "es_antibiotico",
+                "requiere_receta",
+                "categoria",
+                "empresa_id",
+                "marca_laboratorio",
+            )
+            .iterator(chunk_size=500)
+        ):
+            nombre_norm = _normalizar_texto(p.nombre)
+            sustancia_norm = _normalizar_texto(p.sustancia_activa)
+            codigo_norm = _normalizar_texto(p.codigo_barras)
+            marca_norm = _normalizar_texto(getattr(p, "marca_laboratorio", ""))
+
+            base_texto = " ".join(
+                part for part in [nombre_norm, sustancia_norm, codigo_norm, marca_norm] if part
+            )
+            ratio = difflib.SequenceMatcher(None, termino_norm, base_texto).ratio()
+            ratio_nombre = difflib.SequenceMatcher(None, termino_norm, nombre_norm).ratio()
+            ratio_sust = difflib.SequenceMatcher(None, termino_norm, sustancia_norm).ratio()
+            score = max(ratio, ratio_nombre, ratio_sust)
+
+            # Umbral conservador: evita ruido y solo rescata errores leves.
+            if score >= 0.72:
+                candidatos.append((score, p))
+
+        candidatos.sort(key=lambda item: (-item[0], _normalizar_texto(item[1].nombre).count(" "), -int(item[1].stock or 0), -item[1].id))
+        for _, p in candidatos[:40]:
+            if p.id in vistos:
+                continue
+            precio_venta = float(p.precio_publico) if p.precio_publico else 0
+            costo = float(p.precio_compra) if p.precio_compra else 0
+            stock_total = int(p.stock) if p.stock else 0
+            alerta_precio_bajo = precio_venta > 0 and costo > 0 and precio_venta < costo
             resultados.append(
                 {
                     "id": p.id,

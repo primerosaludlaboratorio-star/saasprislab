@@ -6,7 +6,7 @@ import json
 from decimal import Decimal
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.db import transaction
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -105,6 +105,8 @@ def cancelar_orden(request, orden_id):
             'orden_id': orden.id
         })
         
+    except Http404:
+        return JsonResponse({'status': 'error', 'mensaje': 'Orden no encontrada'}, status=404)
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en cancelar_orden (excepciones_lab.py)")
         return JsonResponse({
@@ -175,6 +177,8 @@ def editar_paciente_orden(request, orden_id):
             'nombre_nuevo': nombre_nuevo
         })
         
+    except Http404:
+        return JsonResponse({'status': 'error', 'mensaje': 'Orden no encontrada'}, status=404)
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en editar_paciente_orden (excepciones_lab.py)")
         return JsonResponse({
@@ -253,6 +257,8 @@ def validar_valor_critico(request, detalle_id):
             'mensaje': mensaje if es_valor_critico else 'Valor dentro de rango normal'
         })
         
+    except Http404:
+        return JsonResponse({'status': 'error', 'mensaje': 'Detalle de orden no encontrado'}, status=404)
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en validar_valor_critico (excepciones_lab.py)")
         return JsonResponse({
@@ -308,6 +314,8 @@ def rechazar_muestra(request, detalle_id):
             'detalle_id': detalle.id
         })
         
+    except Http404:
+        return JsonResponse({'status': 'error', 'mensaje': 'Detalle de orden no encontrado'}, status=404)
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en rechazar_muestra (excepciones_lab.py)")
         return JsonResponse({

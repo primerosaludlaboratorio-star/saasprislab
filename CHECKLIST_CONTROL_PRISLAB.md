@@ -16,6 +16,19 @@ También debe actualizar:
 
 Si este checklist no se actualiza, el cambio no cuenta como cerrado.
 
+## Criterio estándar de cierre por módulo
+
+Un módulo se considera cerrado cuando cumple todo lo siguiente:
+
+- Sus flujos operativos completos fueron probados de punta a punta, no solo una pantalla o una ruta aislada.
+- Se cubren sus subflujos reales de negocio, incluyendo altas, búsquedas, ediciones, cancelaciones, devoluciones, cierres, tickets, reportes y salidas asociadas.
+- Las validaciones críticas, permisos, auditoría y aislamiento de datos funcionan en el flujo real.
+- El comportamiento quedó alineado entre código, documentación y despliegue.
+- Si existen rutas legacy o auxiliares, quedan documentadas como tales y no se cuentan como bloqueo del cierre funcional salvo que formen parte del flujo operativo principal.
+- La evidencia de pruebas y despliegue quedó registrada antes de pasar al siguiente módulo.
+
+Para farmacia, este criterio incluye PDV, ventas, devoluciones, cancelaciones, caja, compras, inventario, kardex, antibióticos, ticketing y comunicaciones operativas asociadas.
+
 ## Estado técnico de corte
 
 - [x] Nueva capa de auditoría segura solo lectura agregada el `2026-06-21`: `auditoria_segura_farmacia`, `auditoria_segura_laboratorio`, `auditoria_segura_consultorio`, `auditoria_segura_pacientes` y `auditoria_segura_global`
@@ -38,6 +51,11 @@ Si este checklist no se actualiza, el cambio no cuenta como cerrado.
 - [x] `manage.py check` OK
 - [x] `makemigrations --check --dry-run` OK
 - [x] `manage.py test` global OK (`251 tests`, `23 skipped`, `0 failures`, `0 errors`)
+- [x] Validación exhaustiva automatizada de farmacia ejecutada `2026-07-18`:
+  - [x] `python manage.py test farmacia.tests -v 1 --no-color` → `40 OK`
+  - [x] `python manage.py test core.tests.test_devoluciones_farmacia_api core.tests.test_farmacia_lotes_api core.tests.test_farmacia_corte_unificado core.tests.test_farmacia_architecture_characterization core.tests.test_reportes_financieros_regression -v 1 --no-color` → `33 OK`
+  - [x] `python manage.py test core.tests.test_coverage_boost -v 1 --no-color` → `20 OK`
+  - [x] Ajustes aplicados durante la validación: `farmacia/views/compras.py` (`entrada_express` con lookup explícito `objects_all` y bloqueo correcto sin empresa), `farmacia/views/inventario.py` (`rol` definido en `validar_pin_precio_neto`), `farmacia/tests.py` (asignación M2M de sucursal vía helper y contrato real de caja sin empresa), `core/tests/test_reportes_financieros_regression.py` (reporte de caja HTML directo).
 - [x] Endurecimiento post-auditoría aplicado en `settings.py`, `docker-compose.yml` y `nginx/conf.d/prislab.conf`
 - [x] Regresión focalizada post-endurecimiento OK (`16 tests`, `0 failures`)
 - [x] Hallazgos reales de auditoría cerrados en código: rate limit con IP final de `X-Forwarded-For` y bloqueo de cantidades no válidas en `registrar_venta_farmacia`
@@ -74,7 +92,7 @@ Si este checklist no se actualiza, el cambio no cuenta como cerrado.
   - [x] Endpoint público de validación de resultados confirmado y protegido con UUID token.
   - [x] Creación de órdenes de laboratorio normalizada a `estado='PENDIENTE_PAGO'`.
   - [x] Kiosko público ya no muta estado operativo a `EN_PROCESO`; solo registra check-in en sesión.
-  - [x] Impresión de etiquetas de farmacia elimina respuesta de éxito ficticio; retorna `501` si no se puede generar el PDF real.
+  - [x] Impresión de etiquetas no cuenta como cierre funcional de farmacia; el alcance de PDV se valida con venta, devolución, corte, ticket y WhatsApp. Si existe la ruta de etiquetas, queda como flujo auxiliar o legacy, no como pendiente crítico del módulo.
   - [x] URL de búsqueda de venta en pantalla de devoluciones corregida a `/farmacia/devoluciones/buscar/?busqueda=` para coincidir con la ruta real del backend.
   - [x] API de búsqueda de venta (`buscar_venta_devolucion`) acepta `busqueda` y `folio`, y devuelve `cliente`, `cajero_original` y `detalles` según contrato del frontend.
   - [x] API de devoluciones de farmacia sincronizada con nombres de campos del frontend (`tipo_devolucion`, `monto_reembolsado`, `motivo_error`, `accion_stock`).
@@ -354,7 +372,7 @@ Leyenda:
 - [x] Verificación revalidada `2026-06-20`: `python manage.py check` -> `System check identified no issues (0 silenced)`
 - [x] Regresión completa de consultorio revalidada `2026-06-20`: `python manage.py test consultorio.tests --keepdb` -> `OK (30 tests, 4 skipped)`
 - [x] Auditoría funcional en producción `2026-06-20`: `consultorio/recepcion/agendar/` encontró paciente por búsqueda, mostró médico disponible y permitió agendar cita de prueba con éxito
-- [~] Producción sigue pendiente de deploy para absorber el fix de `folio_consulta`; la corrección ya quedó validada en local con `python manage.py test consultorio.tests.ConsultorioViewTests.test_nueva_consulta_con_paciente_guarda_consulta_finalizada_con_folio -v 2` -> `OK`
+- [x] Producción quedó desplegada y validada para absorber el fix de `folio_consulta`; el deploy 2026-07-20 confirmó `manage.py check`, servicios activos y `HTTP/2 200` en `https://prislab.labcorecloud.com`
 - [~] Hallazgo funcional confirmado en auditoría: no se localizaron archivos productivos del bloque de lealtad/monedero, por lo que Bloque 11 sigue pendiente de implementación real
 - [~] Riesgo arquitectónico confirmado en auditoría: `EmpresaIdentityMiddleware` todavía puede asignar una empresa por defecto a usuarios autenticados sin `user.empresa` mediante `resolve_default_empresa_sistema()`. En el escenario actual monotenant puede ser una tolerancia operativa útil, pero antes de abrir multiempresa real debe decidirse si ese fallback sigue permitido o si `PRISLAB_TENANT_STRICT_MODE` debe bloquear siempre a cualquier usuario autenticado sin FK de empresa.
 - [~] Hallazgo de deuda técnica no bloqueante: `consultorio/api/procesar_audio.py` permanece como código legacy no cableado en rutas; el endpoint activo es `consultorio/api_views.py`

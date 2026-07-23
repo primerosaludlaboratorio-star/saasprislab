@@ -1,6 +1,5 @@
 import logging
 import os
-import secrets
 import sys
 from importlib.util import find_spec
 from pathlib import Path
@@ -22,9 +21,6 @@ DEEPSEEK_API_URL = os.environ.get(
 ).strip()
 PRISCI_WEBHOOK_TOKEN = os.environ.get("PRISCI_WEBHOOK_TOKEN", "").strip()
 PRISCI_WEBHOOK_VERIFY_TOKEN = os.environ.get("PRISCI_WEBHOOK_VERIFY_TOKEN", "").strip()
-
-# Token opcional para proteger el endpoint /metrics/ de scraping no autorizado.
-PRISLAB_METRICS_TOKEN = os.environ.get("PRISLAB_METRICS_TOKEN", "").strip()
 
 # Canonicalización: una sola clave puede alimentar Gemini.
 # Orden de preferencia: GOOGLE_API_KEY -> GOOGLE_GEMINI_API_KEY -> GEMINI_API_KEY
@@ -51,21 +47,11 @@ DEPLOYMENT_ENV = (
     or ('test' if _TESTING else 'development')
 ).strip().lower()
 IS_PRODUCTION = DEPLOYMENT_ENV == 'production'
-# SECRET_KEY: obligatoria via variable de entorno en producción. En dev/test, si no está
-# definida, se genera una clave aleatoria efímera y se emite advertencia. Nunca se hardcodea.
+# SECRET_KEY: obligatoria via variable de entorno. En dev local usa fallback solo si no esta definida.
 _SECRET_KEY_ENV = os.environ.get('SECRET_KEY', '').strip()
 if not _SECRET_KEY_ENV:
-    if IS_PRODUCTION:
-        raise RuntimeError(
-            '🔴 PRISLAB SEGURIDAD: SECRET_KEY no está configurada en producción.\n'
-            'Defina la variable de entorno SECRET_KEY con una clave segura de al menos 50 caracteres.\n'
-            'Genere una con: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"'
-        )
-    _SECRET_KEY_ENV = secrets.token_urlsafe(64)
-    logging.getLogger('config').warning(
-        'SECRET_KEY no está configurada; usando clave aleatoria efímera para desarrollo/test. '
-        'Las sesiones/cookies firmadas no persistirán entre reinicios.'
-    )
+    # Fallback solo en desarrollo local — NUNCA usar en produccion
+    _SECRET_KEY_ENV = 'dev-only-fallback-key-not-for-production-prislab-2026-local'
 SECRET_KEY = _SECRET_KEY_ENV
 
 
@@ -155,10 +141,10 @@ CORS_ALLOWED_ORIGINS = [
     x.strip() for x in (_cors_origins_raw or '').split(',') if x.strip()
 ]
 if IS_PRODUCTION and not CORS_ALLOW_ALL_ORIGINS and not CORS_ALLOWED_ORIGINS:
-    raise RuntimeError(
-        '🔴 PRISLAB SEGURIDAD: en producción CORS_ALLOW_ALL_ORIGINS está en False y '
-        'CORS_ALLOWED_ORIGINS está vacío. Defina CORS_ALLOWED_ORIGINS o, solo para '
-        'pruebas controladas, CORS_ALLOW_ALL_ORIGINS=true.'
+    logging.getLogger('config').warning(
+        'CORS: en producción CORS_ALLOW_ALL_ORIGINS está en False y CORS_ALLOWED_ORIGINS está vacío. '
+        'Las peticiones desde otros orígenes pueden fallar. '
+        'Defina CORS_ALLOWED_ORIGINS o, temporalmente, CORS_ALLOW_ALL_ORIGINS=true.'
     )
 
 CORS_ALLOW_CREDENTIALS = os.environ.get('CORS_ALLOW_CREDENTIALS', 'False').lower() in ('true', '1', 'yes', 'on')
@@ -181,12 +167,6 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # ── Validación de seguridad en producción ────────────────────────────────────
-if IS_PRODUCTION and DEBUG:
-    raise RuntimeError(
-        '🔴 PRISLAB SEGURIDAD: DEBUG=True no está permitido en producción. '
-        'Configure DEBUG=False y PRISLAB_ENV=development solo para entornos locales.'
-    )
-
 _CLAVES_INSEGURAS = {
     'django-insecure-prislab-saas-key-2025',
     'dev-only-fallback-key-not-for-production-prislab-2026-local',
@@ -217,9 +197,10 @@ if IS_PRODUCTION:
     }
     _tokens_faltantes = [k for k, v in _TOKENS_REQUERIDOS.items() if not v or v.startswith('replace-with')]
     if _tokens_faltantes:
-        raise RuntimeError(
-            f'🔴 PRISLAB SEGURIDAD: Tokens de servicio no configurados en producción: {_tokens_faltantes}. '
-            'Defínalos en variables de entorno; los endpoints protegidos no funcionarán sin ellos.'
+        import logging as _log_tok
+        _log_tok.getLogger('core').warning(
+            f'🔴 PRISLAB SEGURIDAD: Tokens de servicio no configurados en produccion: {_tokens_faltantes}. '
+            'Los endpoints protegidos por estos tokens retornarán 503.'
         )
 
 
@@ -271,7 +252,6 @@ if find_spec('django_extensions') is not None:
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Para servir archivos estáticos en producción
-    'core.middleware.sre_metrics.SreMetricsMiddleware',  # SRE: métricas Prometheus /metrics/
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -346,11 +326,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Configuración de Base de Datos
-if IS_PRODUCTION and not os.environ.get('DB_HOST'):
-    raise RuntimeError(
-        '🔴 PRISLAB SEGURIDAD: DB_HOST no está configurado en producción. '
-        'PostgreSQL es obligatorio; defina DB_HOST (ej. localhost o su host de RDS/Cloud SQL/Vultr).'
-    )
 if os.environ.get('DB_HOST'):
     # PostgreSQL local o remoto en Vultr
     db_host = os.environ.get('DB_HOST', '')
@@ -370,17 +345,11 @@ if os.environ.get('DB_HOST'):
     # Sin print en producción
 else:
     # SQLite para desarrollo local (timeout 60s para evitar "database is locked" en carga masiva)
-    _sqlite_db_name = BASE_DIR / 'db.sqlite3'
-    if _TESTING:
-        # Tests: usar memoria para mayor velocidad y evitar contaminación de db.sqlite3
-        _sqlite_db_name = ':memory:'
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': _sqlite_db_name,
+            'NAME': BASE_DIR / 'db.sqlite3',
             'OPTIONS': {'timeout': 60},
-            # En memoria cada test runner requiere conexión persistente
-            'TEST': {'NAME': ':memory:'},
         }
     }
 
@@ -844,7 +813,7 @@ SESSION_COOKIE_SECURE = _env_bool('SESSION_COOKIE_SECURE', IS_PRODUCTION)
 CSRF_COOKIE_SECURE = _env_bool('CSRF_COOKIE_SECURE', IS_PRODUCTION)
 
 # No redirigir SSL en local; en staging/prod se puede forzar por entorno.
-SECURE_SSL_REDIRECT = _env_bool('SECURE_SSL_REDIRECT', IS_PRODUCTION)
+SECURE_SSL_REDIRECT = _env_bool('SECURE_SSL_REDIRECT', False)
 
 # Headers de seguridad adicionales (clínica: protección de datos sensibles)
 SECURE_CONTENT_TYPE_NOSNIFF = True

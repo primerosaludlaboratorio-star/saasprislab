@@ -45,6 +45,13 @@ def generar_resumen_bienestar(orden):
         str: Texto del resumen, o None si no se puede generar.
     """
     try:
+        from django.conf import settings
+
+        # La IA es opcional; no intentes una llamada externa ni generes ruido
+        # en cada PDF cuando el laboratorio no tiene proveedor configurado.
+        if not (getattr(settings, 'GOOGLE_API_KEY', '') or getattr(settings, 'DEEPSEEK_API_KEY', '')):
+            return None
+
         from core.models import ResultadoParametro
         
         # Obtener resultados de la orden

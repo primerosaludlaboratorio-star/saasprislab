@@ -10,7 +10,7 @@ import logging
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
@@ -84,7 +84,11 @@ def api_parametros_estudio(request, estudio_id):
 
     perfil = PerfilLims.objects.filter(pk=estudio_id, empresa=empresa, activo=True).first()
     if perfil:
-        analitos = perfil.analitos.filter(activo=True).order_by('nombre')
+        analitos = (
+            perfil.analitos.filter(activo=True)
+            .annotate(rangos_count=Count('rangos'))
+            .order_by('nombre')
+        )
         data = {
             'estudio': {'id': perfil.id, 'codigo': '', 'nombre': perfil.nombre},
             'parametros': [
@@ -94,7 +98,7 @@ def api_parametros_estudio(request, estudio_id):
                     'unidad': a.unidades or '',
                     'tipo_dato': a.tipo_resultado,
                     'orden': 0,
-                    'rangos_count': a.rangos.count(),
+                    'rangos_count': a.rangos_count,
                 }
                 for a in analitos
             ],

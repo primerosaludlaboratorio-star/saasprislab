@@ -274,9 +274,9 @@ class CorteCajaFarmaciaForm(forms.Form):
         cleaned_data = super().clean()
         
         # Validar que al menos haya efectivo o tarjeta
-        efectivo = cleaned_data.get('efectivo_declarado', Decimal('0'))
-        tarjeta = cleaned_data.get('tarjeta_declarada', Decimal('0'))
-        transferencia = cleaned_data.get('transferencia_declarada', Decimal('0'))
+        efectivo = cleaned_data.get('efectivo_declarado') or Decimal('0')
+        tarjeta = cleaned_data.get('tarjeta_declarada') or Decimal('0')
+        transferencia = cleaned_data.get('transferencia_declarada') or Decimal('0')
         
         total_declarado = efectivo + tarjeta + transferencia
         

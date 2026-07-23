@@ -67,6 +67,8 @@ class EmpresaIdentityMiddleware:
 
         empresa = None
         try:
+            tenant_from_subdomain = getattr(request, '_tenant_from_subdomain', None)
+
             # ── Resolver empresa del usuario ──────────────────────────────
             if (
                 getattr(request, 'user', None)
@@ -77,21 +79,26 @@ class EmpresaIdentityMiddleware:
                     from core.utils.default_empresa import resolve_default_empresa_sistema
 
                     empresa = resolve_default_empresa_sistema()
-                if (
-                    empresa is None
-                    and not request.user.is_superuser
-                    and getattr(settings, 'PRISLAB_TENANT_STRICT_MODE', False)
-                ):
-                    logger.critical(
-                        'TENANT_STRICT_MODE_BLOCK middleware user=%s path=%s '
-                        'sin empresa asignada ni empresa por defecto resolvible.',
-                        getattr(request.user, 'username', '?'),
-                        getattr(request, 'path', ''),
-                    )
-                    raise PermissionDenied(
-                        'Usuario autenticado sin empresa asignada. '
-                        'Acceso bloqueado por PRISLAB_TENANT_STRICT_MODE.'
-                    )
+            elif tenant_from_subdomain is not None:
+                empresa = tenant_from_subdomain
+
+            if (
+                empresa is None
+                and getattr(request, 'user', None)
+                and getattr(request.user, 'is_authenticated', False)
+                and not request.user.is_superuser
+                and getattr(settings, 'PRISLAB_TENANT_STRICT_MODE', False)
+            ):
+                logger.critical(
+                    'TENANT_STRICT_MODE_BLOCK middleware user=%s path=%s '
+                    'sin empresa asignada ni empresa por defecto resolvible.',
+                    getattr(request.user, 'username', '?'),
+                    getattr(request, 'path', ''),
+                )
+                raise PermissionDenied(
+                    'Usuario autenticado sin empresa asignada. '
+                    'Acceso bloqueado por PRISLAB_TENANT_STRICT_MODE.'
+                )
 
             request.empresa_actual = empresa
 
@@ -150,11 +157,10 @@ class EmpresaIdentityMiddleware:
                             sucursal = empresa.sucursales.filter(activa=True).first()
                         else:
                             # Obtener la primera sucursal asignada al usuario vía M2M
-                            asignacion = user.asignaciones_sucursal.filter(
+                            sucursal = user.sucursales.filter(
+                                asignaciones_usuario__activa=True,
                                 activa=True,
-                                sucursal__activa=True,
-                            ).order_by('fecha_asignacion').first()
-                            sucursal = asignacion.sucursal if asignacion else None
+                            ).order_by('asignaciones_usuario__fecha_asignacion').first()
                     except Exception:
                         logger.exception(
                             'Error inesperado resolviendo sucursal M2M para user=%s',

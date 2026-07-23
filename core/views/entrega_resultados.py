@@ -379,6 +379,9 @@ def resultados_publicos(request, token: str):
         payload = signing.loads(token, salt="resultados-publicos", max_age=_resultados_publicos_max_age())
         oid = int(payload.get("oid"))
         eid = int(payload.get("eid"))
+    except (signing.BadSignature, signing.SignatureExpired, TypeError, ValueError, AttributeError):
+        logger.warning("Token publico de resultados invalido o expirado en resultados_publicos")
+        return HttpResponse("Enlace inválido o expirado.", status=400)
     except Exception:
         logging.getLogger(__name__).exception("Error inesperado en resultados_publicos (entrega_resultados.py)")
         return HttpResponse("Enlace inválido o expirado.", status=400)
@@ -493,6 +496,9 @@ def resultados_publicos_pdf(request, token: str):
         payload = signing.loads(token, salt="resultados-publicos", max_age=_resultados_publicos_max_age())
         oid = int(payload.get("oid"))
         eid = int(payload.get("eid"))
+    except (signing.BadSignature, signing.SignatureExpired, TypeError, ValueError, AttributeError):
+        logger.warning("Token publico de resultados invalido o expirado en resultados_publicos_pdf")
+        return HttpResponse("Enlace inválido o expirado.", status=400)
     except Exception:
         logging.getLogger(__name__).exception("Error inesperado en resultados_publicos_pdf (entrega_resultados.py)")
         return HttpResponse("Enlace inválido o expirado.", status=400)

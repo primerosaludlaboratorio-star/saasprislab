@@ -143,6 +143,23 @@ class LabValidationPdfTest(TestCase):
         self.assertEqual(response.url, reverse('captura_resultados', args=[orden.id]))
         generar.assert_not_called()
 
+    def test_preparacion_toma_acepta_consentimiento_con_fecha_firma(self):
+        orden = self._crear_orden()
+        ConsentimientoInformado.objects.create(
+            empresa=self.empresa,
+            paciente=self.paciente,
+            orden=orden,
+            fecha_firma='2026-07-20T10:00:00Z',
+            firma_digital='data:image/png;base64,abc',
+            acepta_privacidad=True,
+            acepta_procesamiento=True,
+        )
+
+        response = self.client.get(reverse('preparacion_toma', args=[orden.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Labcore')
+
     def test_imprimir_resultados_no_expone_orden_de_otro_tenant(self):
         empresa_otra = Empresa.objects.create(nombre='Empresa Ajena', rfc='AJE260507TST')
         usuario_otro = Usuario.objects.create_user(

@@ -5,6 +5,7 @@ Fecha: 1 de Febrero de 2026
 Objetivo: Endpoints para imprimir etiquetas térmicas de laboratorio
 """
 
+import io
 import logging
 from django.http import FileResponse, JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
@@ -63,7 +64,7 @@ def imprimir_etiqueta_tubo(request, orden_id):
         
         # Crear respuesta de archivo
         response = FileResponse(
-            pdf_bytes,
+            io.BytesIO(pdf_bytes),
             content_type='application/pdf',
             as_attachment=False,
             filename=f'etiqueta_{folio}.pdf'
@@ -139,7 +140,7 @@ def imprimir_etiquetas_lote(request):
         
         # Crear respuesta
         response = FileResponse(
-            pdf_bytes,
+            io.BytesIO(pdf_bytes),
             content_type='application/pdf',
             as_attachment=False,
             filename=f'etiquetas_lote_{len(ordenes)}.pdf'
@@ -190,7 +191,7 @@ def imprimir_etiqueta_qr(request, orden_id):
         )
         
         response = FileResponse(
-            pdf_bytes,
+            io.BytesIO(pdf_bytes),
             content_type='application/pdf',
             as_attachment=False,
             filename=f'etiqueta_qr_{folio}.pdf'

@@ -318,7 +318,7 @@ def generar_etiqueta_con_qr(
     """
     try:
         import qrcode
-        from reportlab.platypus import Image
+        from reportlab.lib.utils import ImageReader
         
         buffer = io.BytesIO()
         c = canvas.Canvas(buffer, pagesize=(LABEL_WIDTH, LABEL_HEIGHT))
@@ -343,7 +343,7 @@ def generar_etiqueta_con_qr(
         qr_size = 15 * mm_unit
         qr_x = MARGIN_LEFT + (USABLE_WIDTH - qr_size) / 2
         qr_y = LABEL_HEIGHT / 2 - qr_size / 2
-        c.drawImage(qr_buffer, qr_x, qr_y, width=qr_size, height=qr_size)
+        c.drawImage(ImageReader(qr_buffer), qr_x, qr_y, width=qr_size, height=qr_size)
         
         # Folio y fecha
         if fecha is None:

@@ -60,11 +60,19 @@ def _resolve_empresa_by_slug(slug: str):
     """Busca la Empresa cuyo campo slug/subdominio coincide."""
     try:
         from core.models import Empresa
-        # El modelo Empresa tiene campo 'subdominio' o 'slug'
-        empresa = Empresa.objects.filter(subdominio=slug, activa=True).first()
+        empresa_model = Empresa
+        empresa = None
+
+        # Si el modelo tiene un campo de subdominio/slug, usarlo; si no, caer al nombre.
+        field_names = {f.name for f in empresa_model._meta.get_fields()}
+        if 'subdominio' in field_names:
+            empresa = empresa_model.objects.filter(subdominio=slug, activa=True).first()
+        elif 'slug' in field_names:
+            empresa = empresa_model.objects.filter(slug=slug, activa=True).first()
+
         if empresa is None:
-            # Fallback: buscar por nombre exacto o slug en nombre
-            empresa = Empresa.objects.filter(nombre__iexact=slug, activa=True).first()
+            # Fallback compatible con esquemas sin slug explícito.
+            empresa = empresa_model.objects.filter(nombre__iexact=slug, activa=True).first()
         return empresa
     except Exception as exc:
         logger.error("Error al resolver empresa por slug='%s': %s", slug, exc)

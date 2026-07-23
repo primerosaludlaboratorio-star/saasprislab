@@ -29,9 +29,8 @@ def dashboard_director(request):
     try:
         # Control de acceso: solo directivos, admin o gerencia
         user = request.user
-        if not (user.is_superuser or user.is_staff
-                or (getattr(user, 'rol', '') or '').upper().strip() in ('ADMIN', 'ADMINISTRADOR', 'GERENTE', 'DIRECTOR')
-                or user.groups.filter(name__in=['GERENCIA', 'GERENCIA_OPERATIVA', 'DIRECTOR']).exists()):
+        rol = (getattr(user, 'rol', '') or '').upper().strip()
+        if not (user.is_superuser or rol in ('ADMIN', 'ADMINISTRADOR', 'GERENTE', 'DIRECTOR')):
             from django.contrib import messages
             messages.warning(request, 'No tienes permisos para acceder al Dashboard de Dirección.')
             return redirect('home')
@@ -295,7 +294,6 @@ def dashboard_director(request):
     except Exception as exc:
         logging.getLogger(__name__).exception("Error inesperado en dashboard_director (director.py)")
         from django.contrib import messages
-        import logging
         logging.getLogger('core.director').error(
             'dashboard_director: error inesperado: %s',
             exc,
@@ -313,9 +311,8 @@ def dashboard_director(request):
 def _require_director(request):
     """Devuelve True si el usuario tiene acceso de dirección."""
     user = request.user
-    return (user.is_superuser or user.is_staff
-            or (getattr(user, 'rol', '') or '').upper().strip() in ('ADMIN', 'ADMINISTRADOR', 'GERENTE', 'DIRECTOR', 'QUIMICO', 'LABORATORIO')
-            or user.groups.filter(name__in=['GERENCIA', 'GERENCIA_OPERATIVA', 'LABORATORIO']).exists())
+    rol = (getattr(user, 'rol', '') or '').upper().strip()
+    return user.is_superuser or rol in ('ADMIN', 'ADMINISTRADOR', 'GERENTE', 'DIRECTOR', 'QUIMICO', 'LABORATORIO')
 
 
 @login_required
@@ -439,7 +436,7 @@ def director_analizadores_probar_conexion(request):
         return JsonResponse({'ok': result == 0, 'mensaje': 'Conectado' if result == 0 else 'Sin respuesta'})
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en director_analizadores_probar_conexion (director.py)")
-        return JsonResponse({'ok': False, 'mensaje': 'No fue posible procesar la solicitud'})
+        return JsonResponse({'ok': False, 'mensaje': str(e)})
 
 
 @login_required

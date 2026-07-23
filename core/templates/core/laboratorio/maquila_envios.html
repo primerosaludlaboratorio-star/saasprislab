@@ -61,9 +61,15 @@
                                     <td>{{ orden.paciente.nombre_completo }}</td>
                                     <td>{{ orden.fecha_creacion|date:"d/m/Y" }}</td>
                                     <td>
-                                        <a href="{% url 'enviar_a_maquila' orden.id %}" class="btn btn-sm btn-primary" style="pointer-events: auto; z-index: 10; position: relative;" onclick="return confirm('¿Confirmar envío de esta orden a maquila?');">
-                                            <i class="bi bi-send"></i> Enviar a Maquila
-                                        </a>
+                                        <form method="post" action="{% url 'enviar_a_maquila' orden.id %}" class="d-inline" onsubmit="return confirm('¿Confirmar envío de esta orden a maquila?');">
+                                            {% csrf_token %}
+                                            <input type="text" name="laboratorio_externo" class="form-control form-control-sm mb-1" placeholder="Laboratorio externo" required>
+                                            <input type="text" name="guia_rastreo" class="form-control form-control-sm mb-1" placeholder="Guía de rastreo (opcional)">
+                                            <input type="text" name="notas" class="form-control form-control-sm mb-1" placeholder="Notas (opcional)">
+                                            <button type="submit" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-send"></i> Enviar a Maquila
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -100,7 +106,7 @@
                                 <tr>
                                     <td><strong>{{ orden.folio_orden|default:orden.id }}</strong></td>
                                     <td>{{ orden.paciente.nombre_completo }}</td>
-                                    <td>{{ orden.fecha_envio_maquila|date:"d/m/Y"|default:"N/A" }}</td>
+                                    <td>{{ orden.envios_maquila.first.fecha_envio|date:"d/m/Y"|default:"N/A" }}</td>
                                     <td><span class="badge bg-info">En Maquila</span></td>
                                 </tr>
                                 {% endfor %}

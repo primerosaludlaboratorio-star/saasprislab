@@ -30,6 +30,7 @@ from core.models import (
 )
 from core.services.inventario.movimiento_inventario_service import MovimientoInventarioService
 from core.services.inventario.catalogo_farmacia_service import CatalogoFarmaciaService
+from core.tenant import get_current_empresa, set_current_empresa
 
 
 def _empresa_desde_request(request):
@@ -271,50 +272,55 @@ def libro_control_antibioticos(request):
     fecha_hasta_str = request.GET.get('fecha_hasta', '')
     producto_q = request.GET.get('producto', '').strip()
 
-    qs = RegistroAntibiotico.objects.filter(empresa=empresa).select_related(
-        'producto', 'paciente', 'usuario_vendedor', 'venta', 'lote_vendido'
-    ).order_by('-fecha_venta')
+    empresa_prev = get_current_empresa()
+    set_current_empresa(empresa)
+    try:
+        qs = RegistroAntibiotico.objects.filter(empresa=empresa).select_related(
+            'producto', 'paciente', 'usuario_vendedor', 'venta', 'lote_vendido'
+        ).order_by('-fecha_venta')
 
-    if fecha_desde_str:
-        try:
-            fd = date.fromisoformat(fecha_desde_str)
-            qs = qs.filter(fecha_venta__gte=fd)
-        except ValueError:
-            logger.info("Fecha desde invalida en libro de antibioticos: %s", fecha_desde_str)
-    if fecha_hasta_str:
-        try:
-            fh = date.fromisoformat(fecha_hasta_str)
-            qs = qs.filter(fecha_venta__lte=fh)
-        except ValueError:
-            logger.info("Fecha hasta invalida en libro de antibioticos: %s", fecha_hasta_str)
-    if producto_q:
-        qs = qs.filter(producto__nombre__icontains=producto_q)
+        if fecha_desde_str:
+            try:
+                fd = date.fromisoformat(fecha_desde_str)
+                qs = qs.filter(fecha_venta__gte=fd)
+            except ValueError:
+                logger.info("Fecha desde invalida en libro de antibioticos: %s", fecha_desde_str)
+        if fecha_hasta_str:
+            try:
+                fh = date.fromisoformat(fecha_hasta_str)
+                qs = qs.filter(fecha_venta__lte=fh)
+            except ValueError:
+                logger.info("Fecha hasta invalida en libro de antibioticos: %s", fecha_hasta_str)
+        if producto_q:
+            qs = qs.filter(producto__nombre__icontains=producto_q)
 
-    # Construir estructura de reporte agrupada por producto
-    from collections import defaultdict
-    grupos = defaultdict(lambda: {'producto': None, 'entradas': [], 'salidas': []})
+        # Construir estructura de reporte agrupada por producto
+        from collections import defaultdict
+        grupos = defaultdict(lambda: {'producto': None, 'entradas': [], 'salidas': []})
 
-    for reg in qs[:500]:
-        prod = reg.producto
-        key = prod.pk
-        if grupos[key]['producto'] is None:
-            grupos[key]['producto'] = prod
-        grupos[key]['salidas'].append({
-            'fecha_mov': reg.fecha_venta,
-            'tipo': 'VENTA',
-            'ref': reg.venta.folio_operacion if reg.venta else '---',
-            'lote_usado': reg.lote_vendido,
-            'cantidad': reg.cantidad_vendida,
-            'doctor': f"{reg.medico_nombre or ''} | Cédula: {reg.medico_cedula or ''}".strip('| '),
+        for reg in qs[:500]:
+            prod = reg.producto
+            key = prod.pk
+            if grupos[key]['producto'] is None:
+                grupos[key]['producto'] = prod
+            grupos[key]['salidas'].append({
+                'fecha_mov': reg.fecha_venta,
+                'tipo': 'VENTA',
+                'ref': reg.venta.folio_operacion if reg.venta else '---',
+                'lote_usado': reg.lote_vendido,
+                'cantidad': reg.cantidad_vendida,
+                'doctor': f"{reg.medico_nombre or ''} | Cédula: {reg.medico_cedula or ''}".strip('| '),
+            })
+
+        return render(request, 'core/libro_control_antibioticos.html', {
+            'empresa': empresa,
+            'grupos': dict(grupos),
+            'fecha_desde': fecha_desde_str,
+            'fecha_hasta': fecha_hasta_str,
+            'producto_q': producto_q,
         })
-
-    return render(request, 'core/libro_control_antibioticos.html', {
-        'empresa': empresa,
-        'grupos': dict(grupos),
-        'fecha_desde': fecha_desde_str,
-        'fecha_hasta': fecha_hasta_str,
-        'producto_q': producto_q,
-    })
+    finally:
+        set_current_empresa(empresa_prev)
 
 
 # ==============================================================================
@@ -480,7 +486,7 @@ def gestionar_politicas_descuento(request):
     rol = (getattr(request.user, 'rol', '') or '').upper().strip()
     _roles_permitidos = ('ADMIN', 'ADMINISTRADOR', 'GERENCIA', 'GERENCIA_OPERATIVA',
                          'DIRECTOR', 'FARMACIA_SUPERVISOR')
-    if not (request.user.is_superuser or request.user.is_staff or rol in _roles_permitidos):
+    if not (request.user.is_superuser or rol in _roles_permitidos):
         messages.warning(request, 'No tienes permisos para acceder a Políticas de Descuento.')
         return redirect('home')
 
@@ -562,7 +568,9 @@ def registro_gasto(request):
             else:
                 data = request.POST.dict()
 
-            concepto = str(data.get('concepto', '') or data.get('descripcion', '') or data.get('categoria', '')).strip()
+            concepto = (
+                str(data.get('concepto', '') or data.get('descripcion', '') or data.get('categoria', '')).strip()
+            )
             categoria = str(data.get('categoria', '') or '').strip().upper()
             if not concepto and categoria and categoria != 'OTRO':
                 concepto = dict(categorias).get(categoria, categoria.replace('_', ' ').title())
@@ -598,15 +606,14 @@ def registro_gasto(request):
             return redirect('registro_gasto')
         except ValidationError as e:
             err = getattr(e, 'message_dict', None) or str(e)
-            if contenido_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            if 'application/json' in (request.content_type or '') or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'status': 'error', 'mensaje': err}, status=400)
             messages.error(request, str(err))
             return redirect('registro_gasto')
-        except (DatabaseError, ValueError, TypeError, KeyError):
-            logger.exception("Error al registrar gasto de caja farmacia")
-            if contenido_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'status': 'error', 'mensaje': 'No fue posible registrar el gasto'}, status=400)
-            messages.error(request, 'No fue posible registrar el gasto')
+        except (DatabaseError, ValueError, TypeError, KeyError) as e:
+            if 'application/json' in (request.content_type or '') or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=400)
+            messages.error(request, str(e))
             return redirect('registro_gasto')
     return JsonResponse({'status': 'error'}, status=405)
 
@@ -696,11 +703,9 @@ def validar_pin_precio_neto(request):
         return JsonResponse({'status': 'error', 'mensaje': 'Sin empresa asignada'}, status=403)
     
     # Verificar que el usuario tiene permiso de acceder a esta función
-    ROLES_PRECIO_NETO = ['Administrador', 'FARMACIA', 'Gerente', 'Director']
+    ROLES_PRECIO_NETO = ['ADMIN', 'GERENTE', 'DIRECTOR', 'FARMACIA']
     puede_precio_neto = (
-        request.user.is_superuser or 
-        request.user.groups.filter(name__in=ROLES_PRECIO_NETO).exists() or
-        getattr(request.user, 'rol', '') in ['ADMIN', 'GERENTE', 'DIRECTOR', 'FARMACIA']
+        request.user.is_superuser or rol in ROLES_PRECIO_NETO
     )
     
     if not puede_precio_neto:
@@ -742,9 +747,8 @@ def imprimir_etiquetas(request):
                 'status': 'error',
                 'message': 'Generación de etiquetas de farmacia no implementada. Contacte al administrador.',
             }, status=501)
-        except (ValueError, TypeError, KeyError, json.JSONDecodeError):
-            logger.exception("Error al imprimir etiquetas de farmacia")
-            return JsonResponse({'error': 'No fue posible generar etiquetas'}, status=500)
+        except (ValueError, TypeError, KeyError, json.JSONDecodeError) as e:
+            return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 

@@ -32,6 +32,10 @@
         display: flex;
         flex-direction: column;
     }
+    .pdv-container .card-glass.flex-shrink-0 {
+        height: auto !important;
+        flex: 0 0 auto !important;
+    }
 
     /* Search Bar Gigante */
     .search-input-lg {
@@ -144,9 +148,15 @@
         min-height: 0;
         height: auto !important;
     }
+    .pdv-results-panel {
+        flex: 0 0 auto !important;
+        height: calc(100vh - 330px) !important;
+        min-height: 420px !important;
+        max-height: calc(100vh - 260px) !important;
+    }
     #search-results-container {
         flex: 1 1 auto;
-        min-height: 8rem;
+        min-height: 22rem;
     }
 
     /* Responsividad */
@@ -217,7 +227,7 @@
             </div>
 
             <!-- Resultados de Búsqueda -->
-            <div class="card-glass flex-grow-1 overflow-hidden d-flex flex-column">
+            <div class="card-glass overflow-hidden d-flex flex-column pdv-results-panel">
                 <div class="card-header bg-transparent border-bottom px-3 py-2">
                     <h6 class="m-0 fw-bold"><i class="bi bi-search"></i> Resultados</h6>
                 </div>
@@ -229,7 +239,7 @@
                     </div>
                 </div>
             </div>
-            {# Búsqueda: listeners + fetch en static/js/pdv_farmacia.js (un solo contrato; PDV_BUSCAR_FRAGMENT_URL en extra_js) #}
+            {# Búsqueda: listeners + fetch en static/js/pdv_farmacia_v74.js (un solo contrato; PDV_BUSCAR_FRAGMENT_URL en extra_js) #}
         </div>
 
         <!-- COLUMNA DERECHA: Carrito y Totales -->
@@ -402,7 +412,7 @@ window.PDV_BUSCAR_PACIENTES_URL = "{% url 'api_buscar_pacientes' %}";
 <!-- Dependencias para Impresión y Lógica -->
 <script src="https://cdn.jsdelivr.net/npm/rsvp@4.8.2/dist/rsvp.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.1.0/qz-tray.js"></script>
-<script src="{% static 'js/pdv_farmacia.js' %}?v=7.3-single-pipeline"></script>
+<script src="{% static 'js/pdv_farmacia.js' %}?v=7.10-scan-purification-cachebust"></script>
 
 <script>
     // === LÓGICA DE INTERFAZ & ATAJOS ===
@@ -490,6 +500,6 @@ window.PDV_BUSCAR_PACIENTES_URL = "{% url 'api_buscar_pacientes' %}";
         }
     });
 
-    {# Búsqueda: input/paste y debounce en static/js/pdv_farmacia.js #}
+    {# Búsqueda: input/paste y debounce en static/js/pdv_farmacia_v74.js #}
 </script>
 {% endblock %}

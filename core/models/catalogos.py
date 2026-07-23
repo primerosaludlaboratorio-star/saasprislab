@@ -178,7 +178,7 @@ class Lote(TenantModel):
     def save(self, *args, **kwargs):
         if self.producto_id:
             self.empresa_id = (
-                Producto.objects.filter(pk=self.producto_id).values_list("empresa_id", flat=True).first()
+                Producto.objects_all.filter(pk=self.producto_id).values_list("empresa_id", flat=True).first()
             )
         self.full_clean()
         super().save(*args, **kwargs)

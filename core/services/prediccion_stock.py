@@ -44,7 +44,7 @@ def calcular_consumo_diario(empresa, producto, dias_historico: int = 30) -> floa
             producto=producto,
             empresa=empresa,
             fecha__gte=desde,
-            tipo_ajuste__in=['SALIDA', 'CONSUMO', 'MERMA'],
+            tipo_movimiento__in=['USO_INTERNO', 'MERMA', 'CADUCIDAD', 'ROBO'],
         )
         consumo_ajustes = sum(abs(float(a.cantidad or 0)) for a in ajustes)
         consumo_total += consumo_ajustes

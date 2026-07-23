@@ -184,12 +184,13 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'core.middleware.canonical_host.CanonicalHostMiddleware',  # Unifica dominio publico para evitar sesiones divididas
+    'core.api_contracts.middleware.ApiRequestIdMiddleware',  # Correlación desde etapas tempranas del ciclo HTTP
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'core.api_contracts.middleware.ApiRequestIdMiddleware',  # Fase 3: X-Request-ID / correlación API
     'core.middleware.read_only.ReadOnlyMiddleware',  # DRP Punto 14: contingencia solo lectura (PRISLAB_READ_ONLY=1)
     'core.middleware.admin_access.AdminAccessMiddleware',  # Bastión 4: /admin/ por IP y grupo
     'core.middleware.rate_limit.RateLimitMiddleware',  # BLINDAJE R104: Rate limiting
+    'core.middleware.tenant_subdomain.TenantSubdomainMiddleware',  # Multi-tenant: resolución por subdominio/header
     'core.middleware.EmpresaIdentityMiddleware',  # V6.0: Identidad + set_current_empresa() para TenantManager ORM
     'core.middleware.suscripciones.SuscripcionMiddleware', # Módulo 1 Fase II: Bloqueo por falta de pago
     'core.middleware.feature_flags.FeatureFlagMiddleware',  # V6.0: Bloqueo HTTP por módulo apagado (403)

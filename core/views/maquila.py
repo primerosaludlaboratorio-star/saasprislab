@@ -5,9 +5,10 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
-from django.utils import timezone
+from django.views.decorators.http import require_http_methods
 
-from core.models import OrdenDeServicio, Empresa
+from core.models import OrdenDeServicio, Empresa, EnvioMaquila
+from core.utils.sucursal_helpers import get_request_sucursal
 
 
 @login_required
@@ -15,12 +16,11 @@ def maquila_envios(request):
     """Vista para gestionar envíos de muestras a maquila."""
     empresa = getattr(request.user, 'empresa', None)
     
-    # Órdenes pendientes de envío a maquila
-    # NOTA: Campo 'requiere_maquila' no existe en modelo actual, mostrando todas las órdenes
+    # Solo deben aparecer órdenes explícitamente marcadas para maquila externa.
     ordenes_pendientes = OrdenDeServicio.objects.filter(
         empresa=empresa,
+        requiere_maquila=True,
         estado__in=['PAGADO', 'EN_PROCESO']
-        # requiere_maquila=True  # Campo pendiente de agregar al modelo OrdenDeServicio.
     ).exclude(
         estado='EN_MAQUILA'
     ).select_related('paciente').order_by('-fecha_creacion')
@@ -51,6 +51,7 @@ def maquila_envios(request):
 
 
 @login_required
+@require_http_methods(["POST"])
 def enviar_a_maquila(request, orden_id):
     """Marca una orden como enviada a maquila."""
     orden = get_object_or_404(OrdenDeServicio, id=orden_id, empresa=getattr(request.user, 'empresa', None))
@@ -59,13 +60,25 @@ def enviar_a_maquila(request, orden_id):
         messages.error(request, 'Solo se pueden enviar órdenes pagadas o en proceso.')
         return redirect('maquila_envios')
     
-    # Campo 'requiere_maquila' no existe - comentado temporalmente
-    # if not orden.requiere_maquila:
-    #     messages.warning(request, 'Esta orden no está marcada como que requiere maquila.')
-    
+    if not orden.requiere_maquila:
+        messages.error(request, 'La orden no está marcada para maquila externa.')
+        return redirect('maquila_envios')
+
+    laboratorio_externo = (request.POST.get('laboratorio_externo') or '').strip()
+    if not laboratorio_externo:
+        messages.error(request, 'Indica el laboratorio externo antes de enviar la orden.')
+        return redirect('maquila_envios')
+
+    envio = EnvioMaquila.objects.create(
+        empresa=orden.empresa,
+        sucursal=get_request_sucursal(request),
+        laboratorio_externo=laboratorio_externo,
+        guia_rastreo=(request.POST.get('guia_rastreo') or '').strip() or None,
+        notas=(request.POST.get('notas') or '').strip() or None,
+    )
+    envio.ordenes.add(orden)
+
     orden.estado = 'EN_MAQUILA'
-    # Campo 'fecha_envio_maquila' no existe - comentado temporalmente
-    # orden.fecha_envio_maquila = timezone.now()
     orden.save()
     
     messages.success(request, f'Orden {orden.folio_orden} enviada a maquila.')

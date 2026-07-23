@@ -11,6 +11,7 @@ from datetime import date, datetime
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -51,6 +52,18 @@ class VentaFarmaciaService:
     @staticmethod
     def buscar_productos_pdv(empresa, termino):
         return CatalogoService.buscar_productos_pdv(empresa, termino)
+
+    @staticmethod
+    def cancelar_venta_resultado(request, empresa, venta_id: int):
+        from core.services.ventas.devolucion_service import DevolucionService
+
+        return DevolucionService.cancelar_venta_resultado(request, empresa, venta_id)
+
+    @staticmethod
+    def registrar_devolucion_resultado(request, empresa, data: dict):
+        from core.services.ventas.devolucion_service import DevolucionService
+
+        return DevolucionService.registrar_devolucion_resultado(request, empresa, data)
 
     # ── Core cobro method ────────────────────────────────────────────────────────
 
@@ -391,9 +404,9 @@ class VentaFarmaciaService:
 
                 for item_data in items:
                     producto_id = item_data.get('producto_id') or item_data.get('id')
-                    get_object_or_404(Producto, id=producto_id, empresa=empresa)
+                    get_object_or_404(Producto.objects_all, id=producto_id, empresa=empresa)
                     # ACAYUCAN v7.5: serializar ventas concurrentes por producto (junto con lotes bloqueados)
-                    producto = Producto.objects.select_for_update().get(pk=producto_id, empresa=empresa)
+                    producto = Producto.objects_all.select_for_update().get(pk=producto_id, empresa=empresa)
                     VentaFarmaciaService.materializar_lote_operativo_si_falta(producto, empresa)
 
                     cantidad = int(item_data.get('cantidad', 1))
@@ -646,50 +659,88 @@ class VentaFarmaciaService:
                 # 11. REGISTRAR ANTIBIÓTICOS EN LIBRO COFEPRIS (auto-trazabilidad)
                 try:
                     from farmacia.models import RegistroAntibiotico
-                    paciente_obj = None
-                    paciente_id = data.get('paciente_id')
-                    if paciente_id:
-                        paciente_obj = Paciente.objects.filter(pk=paciente_id, empresa=empresa).first()
+                    detalles_controlados = DetalleVenta.objects.filter(
+                        venta=venta
+                    ).filter(
+                        Q(producto__es_antibiotico=True) | Q(producto__requiere_receta=True)
+                    ).select_related('producto').prefetch_related('lotes_extraidos__lote')
 
-                    for detalle in DetalleVenta.objects.filter(venta=venta).select_related('producto').prefetch_related(
-                        'lotes_extraidos__lote'
-                    ):
-                        prod = detalle.producto
-                        if not (getattr(prod, 'es_antibiotico', False) or getattr(prod, 'es_controlado', False)):
-                            continue
-                        from core.utils.sucursal_helpers import get_user_primary_sucursal
-                        sucursal_actual = get_user_primary_sucursal(request.user)
-                        if not sucursal_actual:
-                            logger.warning(
-                                '[Farmacia-COFEPRIS] Usuario %s sin sucursal — registro omitido para %s',
-                                request.user,
-                                prod,
+                    if detalles_controlados.exists():
+                        paciente_obj = None
+                        paciente_id = data.get('paciente_id')
+                        if paciente_id:
+                            paciente_obj = Paciente.objects.filter(pk=paciente_id, empresa=empresa).first()
+                        receta_payload = data.get('receta') if isinstance(data.get('receta'), dict) else {}
+                        medico_nombre_reg = (
+                            (data.get('medico_nombre') or '').strip()
+                            or (data.get('nombre_medico') or '').strip()
+                            or (receta_payload.get('medico') or '').strip()
+                            or (getattr(venta.receta, 'medico_nombre_completo', '') or '').strip()
+                        )
+                        medico_cedula_reg = (
+                            (data.get('medico_cedula') or '').strip()
+                            or (data.get('cedula_medico') or '').strip()
+                            or (receta_payload.get('cedula') or '').strip()
+                            or (getattr(venta.receta, 'medico_cedula', '') or '').strip()
+                        )
+                        medico_rel = getattr(getattr(venta, 'receta', None), 'medico', None)
+                        if medico_rel:
+                            if not medico_nombre_reg or medico_nombre_reg.lower() == 'médico':
+                                medico_nombre_reg = (getattr(medico_rel, 'nombre_completo', '') or '').strip() or medico_nombre_reg
+                            if not medico_cedula_reg:
+                                medico_cedula_reg = (getattr(medico_rel, 'cedula_profesional', '') or '').strip() or medico_cedula_reg
+                        if not medico_nombre_reg or not medico_cedula_reg:
+                            raise ValueError(
+                                'No se pudo registrar el libro COFEPRIS de antibióticos: faltan datos del médico prescriptor.'
                             )
-                            continue
-                        pares_lote_cant = [
-                            (x.lote, x.cantidad_extraida) for x in detalle.lotes_extraidos.all()
-                        ]
-                        if not pares_lote_cant and detalle.lote_vendido_id:
-                            pares_lote_cant = [(detalle.lote_vendido, detalle.cantidad)]
-                        for lt, qty in pares_lote_cant:
-                            if lt is None:
+                        receta_fecha_reg = (
+                            data.get('receta_fecha')
+                            or receta_payload.get('fecha')
+                            or None
+                        )
+                        if isinstance(receta_fecha_reg, str):
+                            try:
+                                receta_fecha_reg = datetime.strptime(receta_fecha_reg[:10], '%Y-%m-%d').date()
+                            except ValueError:
+                                receta_fecha_reg = None
+
+                        for detalle in detalles_controlados:
+                            prod = detalle.producto
+                            from core.utils.sucursal_helpers import get_user_primary_sucursal
+                            sucursal_actual = get_user_primary_sucursal(request.user)
+                            if not sucursal_actual:
+                                logger.warning(
+                                    '[Farmacia-COFEPRIS] Usuario %s sin sucursal — registro omitido para %s',
+                                    request.user,
+                                    prod,
+                                )
                                 continue
-                            RegistroAntibiotico.objects.get_or_create(
-                                venta=venta,
-                                producto=prod,
-                                lote_vendido=lt,
-                                defaults={
-                                    'empresa': empresa,
-                                    'sucursal': sucursal_actual,
-                                    'paciente': paciente_obj,
-                                    'paciente_nombre': paciente_nombre or '',
-                                    'medico_nombre': data.get('nombre_medico', '') or '',
-                                    'medico_cedula': data.get('cedula_medico', '') or '',
-                                    'cantidad_vendida': qty,
-                                    'fecha_venta': timezone.now(),
-                                    'usuario_vendedor': request.user,
-                                },
-                            )
+                            pares_lote_cant = [
+                                (x.lote, x.cantidad_extraida) for x in detalle.lotes_extraidos.all()
+                            ]
+                            if not pares_lote_cant and detalle.lote_vendido_id:
+                                pares_lote_cant = [(detalle.lote_vendido, detalle.cantidad)]
+                            for lt, qty in pares_lote_cant:
+                                if lt is None:
+                                    continue
+                                RegistroAntibiotico.objects.get_or_create(
+                                    venta=venta,
+                                    producto=prod,
+                                    lote_vendido=lt,
+                                    defaults={
+                                        'empresa': empresa,
+                                        'sucursal': sucursal_actual,
+                                        'paciente': paciente_obj,
+                                        'paciente_nombre': paciente_nombre or '',
+                                        'medico_nombre': medico_nombre_reg,
+                                        'medico_cedula': medico_cedula_reg,
+                                        'cantidad_vendida': qty,
+                                        'fecha_venta': timezone.now(),
+                                        'usuario_vendedor': request.user,
+                                        'receta_folio': (data.get('numero_receta_externo') or receta_payload.get('folio') or '') or None,
+                                        'receta_fecha': receta_fecha_reg,
+                                    },
+                                )
                 except Exception as _abx_exc:
                     logger.error(f'[Farmacia-COFEPRIS] Error auto-registro antibiótico: {_abx_exc}', exc_info=True)
 
@@ -713,7 +764,7 @@ class VentaFarmaciaService:
             logging.getLogger(__name__).exception("Error inesperado en _moneto (cobro_service.py)")
             from django.core.exceptions import ValidationError
             if isinstance(e, ValidationError):
-                return JsonResponse({'status': 'error', 'mensaje': 'No fue posible procesar el cobro'}, status=400)
+                return JsonResponse({'status': 'error', 'mensaje': str(e.messages[0]) if e.messages else str(e)}, status=400)
             import traceback
             error_detail = traceback.format_exc()
             try:
@@ -730,7 +781,7 @@ class VentaFarmaciaService:
                     f"Usuario: {getattr(usuario_log, 'username', '?')} (ID: {getattr(usuario_log, 'id', '?')}) - "
                     f"Monto intentado: ${monto_intentado:.2f} - "
                     f"Error: {str(e)} - "
-                    "Tipo: error interno - "
+                    f"Tipo: {type(e).__name__} - "
                     f"Traceback: {error_detail[:500]} - "
                     f"Empresa: {empresa_nombre}"
                 )
@@ -741,7 +792,7 @@ class VentaFarmaciaService:
 
             return JsonResponse({
                 'status': 'error',
-                'mensaje': 'No fue posible procesar la venta.',
+                'mensaje': f'Error al procesar la venta: {str(e)}',
                 'detalle': error_detail
             }, status=500)
 

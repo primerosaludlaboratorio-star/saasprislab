@@ -151,8 +151,12 @@ class Command(BaseCommand):
 
         # Simular ventas
         self.stdout.write(self.style.SUCCESS("\n[FASE 1] Simulando ventas..."))
-        
-        for i in range(ventas_objetivo):
+
+        intentos_ventas = 0
+        max_intentos_ventas = ventas_objetivo * 10
+        while ventas_creadas < ventas_objetivo and intentos_ventas < max_intentos_ventas:
+            i = intentos_ventas
+            intentos_ventas += 1
             try:
                 # Determinar tipo de venta
                 tiene_paciente = random.random() * 100 < pct_con_paciente
@@ -164,21 +168,27 @@ class Command(BaseCommand):
                 paciente_id = None
                 cliente_nombre = 'PÚBLICO GENERAL'
                 tipo_paciente = None
+                venta_con_paciente = False
+                venta_con_receta = False
+                venta_pagos_mixtos = False
+                venta_es_empleado = False
+                venta_es_familia = False
+                venta_es_inapam = False
                 
                 if tiene_paciente:
                     rand_tipo = random.random()
                     if rand_tipo < 0.3 and pacientes_empleado:
                         paciente = random.choice(pacientes_empleado)
                         tipo_paciente = 'EMPLEADO'
-                        ventas_empleado += 1
+                        venta_es_empleado = True
                     elif rand_tipo < 0.5 and pacientes_familia:
                         paciente = random.choice(pacientes_familia)
                         tipo_paciente = 'FAMILIA'
-                        ventas_familia += 1
+                        venta_es_familia = True
                     elif rand_tipo < 0.7 and pacientes_inapam:
                         paciente = random.choice(pacientes_inapam)
                         tipo_paciente = 'INAPAM'
-                        ventas_inapam += 1
+                        venta_es_inapam = True
                     elif pacientes_general:
                         paciente = random.choice(pacientes_general)
                         tipo_paciente = 'GENERAL'
@@ -186,7 +196,7 @@ class Command(BaseCommand):
                     if paciente:
                         paciente_id = paciente.id
                         cliente_nombre = paciente.nombre_completo
-                        ventas_con_paciente += 1
+                        venta_con_paciente = True
 
                 # Armar carrito (productos con stock)
                 num_items = random.randint(min_items, max_items)
@@ -219,7 +229,15 @@ class Command(BaseCommand):
 
                 # Preparar datos de receta si aplica
                 receta_datos = None
-                if tiene_receta and any(p.es_antibiotico for p in [Producto.objects.get(id=item['producto_id']) for item in carrito]):
+                productos_carrito = list(Producto.objects.filter(
+                    id__in=[item['producto_id'] for item in carrito],
+                    empresa=empresa,
+                ))
+                requiere_receta_en_carrito = any(
+                    getattr(p, 'es_antibiotico', False) or getattr(p, 'requiere_receta', False)
+                    for p in productos_carrito
+                )
+                if tiene_receta or requiere_receta_en_carrito:
                     medico = random.choice(medicos)
                     receta_datos = {
                         'medico': medico.nombre_completo,
@@ -227,15 +245,21 @@ class Command(BaseCommand):
                         'folio': f'REC-{uuid.uuid4().hex[:8].upper()}',
                         'fecha': (timezone.now() - timedelta(days=random.randint(0, 7))).strftime('%Y-%m-%d')
                     }
-                    ventas_con_receta += 1
+                    venta_con_receta = True
 
                 # Preparar pagos
                 total_estimado = sum(item['precio_unitario'] * item['cantidad'] for item in carrito)
+                subtotal_estimado = Decimal(str(round(total_estimado, 2)))
+                iva_estimado = Decimal('0.00')
+                descuento_estimado = Decimal('0.00')
+                redondeo_estimado = Decimal('0.00')
+                total_final_estimado = subtotal_estimado + iva_estimado - descuento_estimado + redondeo_estimado
+                total_pago_estimado = float(total_final_estimado)
                 
-                if pago_mixto and total_estimado > 50:
+                if pago_mixto and total_pago_estimado > 50:
                     # Pago mixto: efectivo + tarjeta o transferencia
-                    efectivo = Decimal(str(round(total_estimado * random.uniform(0.3, 0.7), 2)))
-                    resto = Decimal(str(total_estimado)) - efectivo
+                    efectivo = Decimal(str(round(total_pago_estimado * random.uniform(0.3, 0.7), 2)))
+                    resto = Decimal(str(total_pago_estimado)) - efectivo
                     
                     if random.random() > 0.5:
                         pagos = {
@@ -247,26 +271,42 @@ class Command(BaseCommand):
                             'efectivo': float(efectivo),
                             'transferencia': float(resto)
                         }
-                    ventas_pagos_mixtos += 1
+                    venta_pagos_mixtos = True
                 else:
                     # Pago único
                     metodo = random.choice(['efectivo', 'tarjeta', 'transferencia'])
-                    pagos = {metodo: float(total_estimado)}
+                    pagos = {metodo: total_pago_estimado}
 
                 # Simular request para procesar_venta
                 request_mock = SimpleNamespace()
                 request_mock.user = user
                 request_mock.method = 'POST'
                 request_mock.headers = {'X-Requested-With': 'XMLHttpRequest'}
+                request_mock.META = {
+                    'REMOTE_ADDR': '127.0.0.1',
+                    'HTTP_USER_AGENT': 'simulador-farmacia-completo',
+                }
                 request_mock.body = json.dumps({
                     'items': carrito,
                     'pagos': pagos,
                     'cliente': cliente_nombre,
                     'paciente_id': paciente_id,
+                    'subtotal': float(subtotal_estimado),
+                    'iva_total': float(iva_estimado),
+                    'redondeo': float(redondeo_estimado),
+                    'descuento_aplicado': float(descuento_estimado),
                     'descuento_porcentaje': 0,
+                    'total_original': total_pago_estimado,
+                    'total_final': total_pago_estimado,
                     'tipo_descuento': '0',
                     'receta': receta_datos,
                     'es_controlada': bool(receta_datos),
+                    'medico_nombre': receta_datos['medico'] if receta_datos else '',
+                    'medico_cedula': receta_datos['cedula'] if receta_datos else '',
+                    'nombre_medico': receta_datos['medico'] if receta_datos else '',
+                    'cedula_medico': receta_datos['cedula'] if receta_datos else '',
+                    'receta_fecha': receta_datos['fecha'] if receta_datos else '',
+                    'numero_receta_externo': receta_datos['folio'] if receta_datos else '',
                     'efectivo_recibido': float(pagos.get('efectivo', 0)),
                     'cambio_entregado': 0
                 }).encode('utf-8')
@@ -280,13 +320,35 @@ class Command(BaseCommand):
                             data = json.loads(response.content)
                             if data.get('status') == 'success':
                                 ventas_creadas += 1
+                                if venta_con_paciente:
+                                    ventas_con_paciente += 1
+                                if venta_con_receta:
+                                    ventas_con_receta += 1
+                                if venta_pagos_mixtos:
+                                    ventas_pagos_mixtos += 1
+                                if venta_es_empleado:
+                                    ventas_empleado += 1
+                                if venta_es_familia:
+                                    ventas_familia += 1
+                                if venta_es_inapam:
+                                    ventas_inapam += 1
                                 venta_id = data.get('venta_id')
                                 if venta_id and random.random() < 0.3:  # 30% de ventas candidatas para devolución
                                     ventas_para_devolucion.append(venta_id)
                             else:
                                 errores.append(f"Venta {i+1}: {data.get('mensaje', 'Error desconocido')}")
                         else:
-                            errores.append(f"Venta {i+1}: HTTP {response.status_code}")
+                            detalle_respuesta = ''
+                            try:
+                                detalle_respuesta = response.content.decode('utf-8', errors='ignore').strip()
+                            except Exception:
+                                detalle_respuesta = ''
+                            if detalle_respuesta:
+                                errores.append(
+                                    f"Venta {i+1}: HTTP {response.status_code} - {detalle_respuesta[:500]}"
+                                )
+                            else:
+                                errores.append(f"Venta {i+1}: HTTP {response.status_code}")
                 except IntegrityError as e:
                     if 'folio_operacion' in str(e):
                         # Reintentar con delay
@@ -311,6 +373,14 @@ class Command(BaseCommand):
                 logging.getLogger(__name__).exception("Error inesperado en handle (simular_ventas_farmacia_completo.py)")
                 errores.append(f"Venta {i+1}: Excepción inesperada - {str(e)}")
                 continue
+
+        if ventas_creadas < ventas_objetivo:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"[AVISO] No se alcanzó el objetivo de {ventas_objetivo} ventas. "
+                    f"Se lograron {ventas_creadas} tras {intentos_ventas} intentos."
+                )
+            )
 
         # Simular devoluciones
         devoluciones_creadas = 0

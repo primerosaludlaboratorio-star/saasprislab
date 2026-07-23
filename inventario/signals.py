@@ -128,7 +128,7 @@ def _ejecutar_descuento_fefo(resultado):
         rp = (
             ResultadoParametro.objects
             .select_for_update(nowait=False)
-            .select_related('orden', 'orden__empresa', 'orden__sucursal')
+            .select_related('orden', 'orden__empresa')
             .get(pk=resultado.pk)
         )
         if not rp.validado or not rp.validado_por:

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reporte de Caja</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #22c55e;
+      --accent-2: #38bdf8;
+      --danger: #ef4444;
+      --border: rgba(255,255,255,.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(circle at top, #1e293b, var(--bg) 55%);
+      color: var(--text);
+    }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .head {
+      display: flex; justify-content: space-between; gap: 16px; align-items: center;
+      margin-bottom: 20px;
+    }
+    .title h1 { margin: 0; font-size: 28px; }
+    .title p { margin: 6px 0 0; color: var(--muted); }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 10px 14px; border-radius: 12px; text-decoration: none;
+      border: 1px solid var(--border); color: var(--text); background: rgba(255,255,255,.04);
+    }
+    .btn.primary { background: rgba(34,197,94,.14); border-color: rgba(34,197,94,.35); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      min-height: 110px;
+    }
+    .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+    .value { font-size: 28px; font-weight: 700; margin-top: 8px; }
+    .sub { color: var(--muted); margin-top: 6px; font-size: 13px; }
+    .panel {
+      background: rgba(17,24,39,.9);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      margin-top: 18px;
+    }
+    .panel h2 { margin: 0; padding: 16px 18px; border-bottom: 1px solid var(--border); font-size: 18px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+    .num { text-align: right; }
+    .ok { color: var(--accent); }
+    .bad { color: var(--danger); }
+    .note {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    @media (max-width: 980px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .head { flex-direction: column; align-items: flex-start; } }
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } .wrap { padding: 14px; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">
+      <div class="title">
+        <h1>Reporte de Caja</h1>
+        <p>{{ empresa.nombre }} · {{ fecha_inicio }} a {{ fecha_fin }}</p>
+      </div>
+      <div class="actions">
+        <a class="btn primary" href="?formato=pdf">PDF</a>
+        <a class="btn" href="?formato=excel">Excel</a>
+      </div>
+    </div>
+
+    {% if datos %}
+    <div class="grid">
+      <div class="card">
+        <div class="label">Total ventas</div>
+        <div class="value">${{ datos.total_ventas|floatformat:2 }}</div>
+        <div class="sub">{{ datos.num_ventas|default:0 }} ventas completadas</div>
+      </div>
+      <div class="card">
+        <div class="label">Total gastos</div>
+        <div class="value bad">${{ datos.total_gastos|floatformat:2 }}</div>
+        <div class="sub">{{ datos.num_gastos|default:0 }} egresos</div>
+      </div>
+      <div class="card">
+        <div class="label">Saldo neto</div>
+        <div class="value {% if datos.saldo_neto >= 0 %}ok{% else %}bad{% endif %}">${{ datos.saldo_neto|floatformat:2 }}</div>
+        <div class="sub">Ventas menos gastos</div>
+      </div>
+      <div class="card">
+        <div class="label">Cobro mixto</div>
+        <div class="value">${{ datos.pagos_efectivo|floatformat:2 }}</div>
+        <div class="sub">Efectivo registrado</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Desglose de pagos</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Método</th>
+              <th class="num">Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Efectivo</td>
+              <td class="num">${{ datos.pagos_efectivo|floatformat:2 }}</td>
+            </tr>
+            <tr>
+              <td>Tarjeta</td>
+              <td class="num">${{ datos.pagos_tarjeta|floatformat:2 }}</td>
+            </tr>
+            <tr>
+              <td>Transferencia</td>
+              <td class="num">${{ datos.pagos_transferencia|floatformat:2 }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="note">
+      Este reporte resume la operación de caja. Para el detalle diario completo usa Ingresos/Egresos o Flujo de Caja.
+    </div>
+    {% else %}
+    <div class="panel">
+      <h2>Sin datos</h2>
+      <div class="note" style="padding: 16px 18px;">No hay información disponible para el período seleccionado.</div>
+    </div>
+    {% endif %}
+  </div>
+</body>
+</html>

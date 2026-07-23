@@ -1228,7 +1228,7 @@ def control_calidad(request):
         except Exception as _e:
             logging.getLogger(__name__).exception("Error inesperado en control_calidad (laboratorio.py)")
             from django.contrib import messages
-            messages.error(request, 'No fue posible registrar.')
+            messages.error(request, f'Error al registrar: {_e}')
         return redirect('control_calidad')
 
     # GET: listar controles y preparar contexto para gráficas
@@ -1622,7 +1622,7 @@ def api_preordenes_pendientes(request):
     
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_preordenes_pendientes (laboratorio.py)")
-        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible consultar preórdenes'}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 
 @login_required
@@ -1699,7 +1699,7 @@ def api_cargar_preorden(request):
         return JsonResponse({'status': 'error', 'mensaje': 'Pre-orden no encontrada o ya fue procesada'}, status=404)
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_cargar_preorden (laboratorio.py)")
-        return JsonResponse({'status': 'error', 'mensaje': 'No fue posible cargar la preorden'}, status=500)
+        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=500)
 
 
 @login_required
@@ -1760,8 +1760,8 @@ def api_cobrar_orden(request, orden_id):
         # Parsear JSON
         try:
             data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({'status': 'error', 'mensaje': 'Error al procesar los datos JSON'}, status=400)
+        except json.JSONDecodeError as e:
+            return JsonResponse({'status': 'error', 'mensaje': f'Error al procesar los datos JSON: {str(e)}'}, status=400)
 
         try:
             cmid_pay = parse_optional_client_mutation_uuid(data.get('client_mutation_id'))
@@ -1925,7 +1925,7 @@ def api_cobrar_orden(request, orden_id):
         except Exception as log_error:
             logging.getLogger(__name__).exception("Error inesperado en _moneto (laboratorio.py)")
             pass
-        return JsonResponse({'status': 'error', 'mensaje': 'Error al procesar los datos JSON'}, status=400)
+        return JsonResponse({'status': 'error', 'mensaje': f'Error al procesar los datos JSON: {str(e)}'}, status=400)
     except ValueError as e:
         # BITÁCORA DE TRANSACCIÓN CRÍTICA: Fallo en cobro
         try:
@@ -1939,7 +1939,7 @@ def api_cobrar_orden(request, orden_id):
         except Exception as log_error:
             logging.getLogger(__name__).exception("Error inesperado en _moneto (laboratorio.py)")
             pass
-        return JsonResponse({'status': 'error', 'mensaje': 'Error de validación en el pago'}, status=400)
+        return JsonResponse({'status': 'error', 'mensaje': f'Error de validación: {str(e)}'}, status=400)
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en _moneto (laboratorio.py)")
         import traceback
@@ -1952,7 +1952,7 @@ def api_cobrar_orden(request, orden_id):
                 f"Usuario: {usuario.username} (ID: {usuario.id}) - "
                 f"Orden ID: {orden_id} - "
                 f"Error: {str(e)} - "
-                "Tipo: error interno - "
+                f"Tipo: {type(e).__name__} - "
                 f"Traceback: {error_details[:500]} - "
                 f"Empresa: {empresa.nombre}"
             )
@@ -1964,7 +1964,8 @@ def api_cobrar_orden(request, orden_id):
         logger_core.error(f"Error en api_cobrar_orden: {error_details}")
         return JsonResponse({
             'status': 'error', 
-            'mensaje': 'Error inesperado al procesar el pago',
+            'mensaje': f'Error inesperado al procesar el pago: {str(e)}',
+            'detalle': error_details if settings.DEBUG else None
         }, status=500)
 
 
@@ -2076,7 +2077,7 @@ Para estudios_detectados, lista todos los nombres de estudios, análisis o prueb
                     datos_extraidos = json.loads(json_match.group())
                 except json.JSONDecodeError:
                     return JsonResponse({
-                        'error': 'Error al parsear respuesta de Gemini'
+                        'error': f'Error al parsear respuesta de Gemini: {str(e)}. Respuesta recibida: {texto_respuesta[:200]}'
                     }, status=500)
             else:
                 return JsonResponse({
@@ -2126,7 +2127,7 @@ Para estudios_detectados, lista todos los nombres de estudios, análisis o prueb
         logging.getLogger(__name__).exception("Error inesperado en escanear_receta_ia (laboratorio.py)")
         import traceback
         return JsonResponse({
-            'error': 'Error al procesar la receta',
+            'error': f'Error al procesar la receta: {str(e)}',
             'traceback': traceback.format_exc() if settings.DEBUG else None
         }, status=500)
 
@@ -2158,7 +2159,7 @@ def escanear_identidad_ia(request):
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en escanear_identidad_ia (laboratorio.py)")
             return JsonResponse(
-                {"error": "Error al inicializar Gemini"},
+                {"error": f"Error al inicializar Gemini: {str(e)}"},
                 status=500,
             )
 
@@ -2194,7 +2195,7 @@ Reglas:
             Image.open(io.BytesIO(imagen_bytes)).verify()
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en escanear_identidad_ia (laboratorio.py)")
-            return JsonResponse({"error": "Error al procesar la imagen"}, status=400)
+            return JsonResponse({"error": f"Error al procesar la imagen: {str(e)}"}, status=400)
 
         from google.genai import types as genai_types
 
@@ -2241,7 +2242,7 @@ Reglas:
 
         return JsonResponse(
             {
-                "error": "Error al procesar la identificación",
+                "error": f"Error al procesar la identificación: {str(e)}",
                 "traceback": traceback.format_exc() if settings.DEBUG else None,
             },
             status=500,
@@ -2557,8 +2558,8 @@ def api_cancelar_pago(request, pago_id):
     Después de cancelar, si el saldo > 0 el Candado Financiero se reactiva
     automáticamente (porque candado_financiero.py lee total-anticipo en tiempo real).
     """
-    if not (request.user.is_superuser or
-            getattr(request.user, 'rol', '') in ['ADMIN', 'DIRECTOR', 'QUIMICO']):
+    rol = (getattr(request.user, 'rol', '') or '').upper().strip()
+    if not (request.user.is_superuser or rol in ['ADMIN', 'DIRECTOR', 'QUIMICO']):
         return JsonResponse({'ok': False, 'error': 'Sin permisos para cancelar pagos'}, status=403)
 
     empresa = getattr(request.user, 'empresa', None)
@@ -2918,10 +2919,9 @@ def preparacion_toma(request, orden_id):
     try:
         from core.models import ConsentimientoInformado
         consentimiento_firmado = ConsentimientoInformado.objects.filter(
-            orden=orden, firmado=True
+            orden=orden, fecha_firma__isnull=False
         ).exists()
-    except Exception:
-        logging.getLogger(__name__).exception("Error inesperado en preparacion_toma (laboratorio.py)")
+    except (ImportError, AttributeError, LookupError):
         pass
 
     return render(request, 'core/preparacion_toma.html', {
