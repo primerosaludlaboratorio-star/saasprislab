@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Case, CharField, F, Q, Value, When
+from django.db.models import Case, CharField, Count, F, Q, Value, When
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
@@ -85,7 +85,10 @@ def _fila_precio_ui(precio: PrecioItem) -> dict:
         if p:
             nombre = p.nombre
             codigo = p.id_perfil_legacy or ''
-            subtitulo = f'{p.analitos.count()} analitos'
+            analitos_count = getattr(precio, '_analitos_count', None)
+            if analitos_count is None:
+                analitos_count = p.analitos.count()
+            subtitulo = f'{analitos_count} analitos'
     else:
         qo = precio.paquete
         if qo:
@@ -142,6 +145,7 @@ def lista(request):
         )
 
     qs = qs.annotate(
+        _analitos_count=Count('perfil__analitos', distinct=True),
         _ord_nombre=Case(
             When(tipo='A', then=Coalesce(F('analito__nombre'), Value(''))),
             When(tipo='P', then=Coalesce(F('perfil__nombre'), Value(''))),
