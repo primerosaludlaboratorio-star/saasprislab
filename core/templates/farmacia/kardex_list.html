@@ -99,10 +99,11 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="mb-1">
+        <h2 class="mb-1">
                         <i class="fas fa-list-alt text-primary me-2"></i>
                         Kardex - Historial de Movimientos
-                    </h2>
+        </h2>
+        <p class="small text-primary mb-3">Cada movimiento identifica la marca/laboratorio y, cuando existe, sus equivalencias comerciales.</p>
                     <p class="text-muted mb-0">
                         <i class="fas fa-shield-alt me-1"></i> 
                         Trazabilidad forense completa | 
@@ -194,6 +195,7 @@
                             <th style="width: 10%;">Folio</th>
                             <th style="width: 12%;">Fecha/Hora</th>
                             <th style="width: 20%;">Producto</th>
+                            <th style="width: 15%;">Marca / laboratorio</th>
                             <th style="width: 8%;">Lote</th>
                             <th style="width: 15%;">Tipo</th>
                             <th style="width: 7%;" class="text-center">Cantidad</th>
@@ -219,6 +221,12 @@
                                 <strong>{{ mov.producto.nombre }}</strong>
                                 {% if mov.producto.codigo_barras %}
                                 <br><small class="text-muted">{{ mov.producto.codigo_barras }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong class="text-primary">{{ mov.producto.marca_laboratorio|default:"GENÉRICO" }}</strong>
+                                {% if mov.producto.equivalencias_comerciales %}
+                                <br><small class="text-muted">Equivalencias: {{ mov.producto.equivalencias_comerciales }}</small>
                                 {% endif %}
                             </td>
                             <td>
@@ -256,7 +264,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="10" class="text-center py-5">
+                            <td colspan="11" class="text-center py-5">
                                 <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                                 <p class="text-muted mb-0">No hay movimientos que coincidan con los filtros</p>
                             </td>
