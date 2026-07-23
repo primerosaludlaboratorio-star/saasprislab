@@ -555,6 +555,7 @@ def registro_resultados_entrada(request):
         return redirect('lista_trabajo_lab')
 
 
+@role_required('QUIMICO', 'ADMIN', 'DIRECTOR', 'LABORATORIO')
 @login_required
 def lista_trabajo_lab(request):
     """Dashboard operativo del laboratorio (Worklist) con filtros avanzados."""
