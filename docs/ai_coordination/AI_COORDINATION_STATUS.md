@@ -768,6 +768,6 @@ Correcciones incluidas en el corte:
 Hallazgos de datos que no se modificaron automaticamente:
 
 - una inspeccion anterior habia reportado 12 lotes caducados con existencia; la revalidacion posterior al despliegue encontro `0` en produccion, por lo que no queda lote caducado disponible para venta;
-- el reporte historico habia marcado 298 diferencias de Kardex; la revalidacion actual de la empresa auditada marca `20`. Se mantienen como conciliacion de saldos iniciales o catalogo historico y no se alteran existencias sin autorizacion y evidencia de inventario fisico.
+- el reporte historico habia marcado 298 diferencias de Kardex; la revalidacion actual de la empresa auditada marca `20`. El responsable confirma que corresponden a datos de prueba controlados para esta etapa; no son un bloqueo funcional y se limpiaran en el reinicio formal del catalogo.
 
-Estado de certificacion: el comportamiento de aplicacion queda corregido y la revalidacion productiva no detecta lotes caducados vendibles. Farmacia no debe declararse `100% cerrada` hasta conciliar formalmente las 20 diferencias de saldos iniciales y completar la prueba visual con una sesion autenticada del usuario final. Las operaciones mutables se ejecutaron de forma reversible para no contaminar produccion.
+Estado de certificacion: el comportamiento de aplicacion queda corregido y la revalidacion productiva no detecta lotes caducados vendibles. Las 20 diferencias quedan clasificadas como datos de prueba y no bloquean la auditoria funcional actual; se conservaran hasta concluir las pruebas y se limpiaran antes del arranque operativo definitivo. Las operaciones mutables se ejecutaron de forma reversible para no contaminar el escenario de prueba.
