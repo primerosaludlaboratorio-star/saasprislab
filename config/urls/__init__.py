@@ -24,6 +24,11 @@ from .api import urlpatterns as _api
 _core_catchall = [path('', include('core.urls', namespace='core'))]
 _inventory_aliases = [
     path(
+        'inventario/lab/',
+        RedirectView.as_view(url='/silo-lab/lab/', permanent=False),
+        name='inventario_lab_alias',
+    ),
+    path(
         'inventario/productos/',
         RedirectView.as_view(url='/silo-lab/lab/lotes/', permanent=False),
         name='inventario_productos_alias',
