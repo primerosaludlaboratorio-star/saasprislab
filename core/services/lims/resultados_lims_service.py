@@ -14,6 +14,7 @@ from core.models import AuditLog, DetalleOrden, OrdenDeServicio, ResultadoParame
 from core.utils.sucursal_helpers import get_request_sucursal
 from core.utils.trazabilidad import registrar_trazabilidad, serializar_modelo
 from core.services.lims.coherencia_clinica import evaluar_orden_canonica
+from core.services.lims.asistente_clinico import evaluar_asistencia_clinica_orden
 from lims.models import Analito
 from reglas_negocio.validadores import validar_triple_llave
 

@@ -486,14 +486,32 @@ def api_avanzar_estado(request):
                 'status': 'error',
                 'mensaje': f'No hay transición válida desde "{_orden_check.estado_clinico}"'
             }, status=400)
+        pdf_url = None
         if (
             TRANSICIONES_VALIDAS.get(_orden_check.estado_clinico) == 'COMPLETO'
             and not (_orden_check.archivo_resultado and _orden_check.archivo_resultado.name)
         ):
-            return JsonResponse({
-                'status': 'error',
-                'mensaje': 'Valida y genera primero el PDF de resultados desde Captura; Monitor no puede aprobar una orden sin documento adjunto.'
-            }, status=400)
+            # El cierre desde Monitor debe conservar el candado documental, pero
+            # no obligar al usuario a repetir la captura en otra pantalla.
+            try:
+                from core.services.motor_reportes_lab import (
+                    generar_reporte_pdf,
+                    guardar_reporte_en_storage,
+                )
+
+                pdf_bytes = generar_reporte_pdf(_orden_check, request=request)
+                pdf_url = guardar_reporte_en_storage(_orden_check, pdf_bytes)
+            except Exception:
+                logger.exception(
+                    'No se pudo preparar el PDF antes de completar la orden %s',
+                    _orden_check.id,
+                )
+
+            if not pdf_url:
+                return JsonResponse({
+                    'status': 'error',
+                    'mensaje': 'No se pudo generar y adjuntar el PDF de resultados; la orden permanece sin completar.'
+                }, status=400)
 
         with transaction.atomic():
             orden = OrdenDeServicio.objects.select_for_update().get(
@@ -547,8 +565,7 @@ def api_avanzar_estado(request):
         # ============================================================
         # TRIGGER: Generar PDF al marcar como COMPLETO (finalizado)
         # ============================================================
-        pdf_url = None
-        if sig_estado == 'COMPLETO':
+        if sig_estado == 'COMPLETO' and not pdf_url:
             try:
                 from core.services.motor_reportes_lab import (
                     generar_reporte_pdf,

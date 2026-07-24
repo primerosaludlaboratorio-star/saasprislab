@@ -9,6 +9,15 @@ Este documento existe para que Copilot, Claude, Cascada y Codex lean una sola ve
 
 Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no contra snapshots viejos o ramas vacias.
 
+## Corte de auditoria 2026-07-24
+
+- Laboratorio/LIMS continua `ABIERTO` hasta completar la verificacion humana en produccion; no se declara cerrado solo por pruebas locales.
+- La suite focalizada de Laboratorio/LIMS paso `64 tests OK` con `PRISLAB_TEST_NO_MIGRATIONS=1`; `manage.py check` y `makemigrations --check --noinput` tambien pasaron.
+- Se corrigio el cierre desde Monitor: ahora genera y adjunta el PDF antes de completar una orden cuando falta, y devuelve `400` controlado sin cambiar el estado si el PDF no puede generarse.
+- Se restauro el simbolo de compatibilidad `evaluar_asistencia_clinica_orden` en `core.services.lims.resultados_lims_service` para integraciones y pruebas que lo consumen.
+- La prueba `laboratorio.tests.test_cci_lj_postgres_guard` queda marcada como `SKIPPED` en SQLite local; requiere PostgreSQL real para su validacion efectiva.
+- Pendiente despues del despliegue: flujo humano productivo de recepcion, toma, captura, validacion, PDF, entrega, rechazo/repeticion, cancelacion/reembolso, calidad y consumo de reactivos/insumos; tambien equipos, impresoras y HL7 fisicos.
+
 ## Lectura obligatoria
 
 1. `CHECKLIST_CONTROL_PRISLAB.md`
