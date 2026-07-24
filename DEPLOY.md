@@ -12,6 +12,8 @@ La revision desplegada queda registrada en `/opt/prislab/app/DEPLOYED_REVISION`.
 
 ## Objetivo
 
+La unica ruta vigente esta documentada en [DESPLIEGUE_UNICO_PRISLAB_VPS_LOCAL.md](DESPLIEGUE_UNICO_PRISLAB_VPS_LOCAL.md). Ese documento es la fuente operativa para acceso, despliegue y verificacion.
+
 Dejar PRISLAB corriendo en una VPS limpia con:
 - Ubuntu
 - Nginx

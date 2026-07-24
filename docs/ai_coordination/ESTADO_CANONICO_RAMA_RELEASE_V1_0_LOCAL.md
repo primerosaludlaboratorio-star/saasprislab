@@ -17,6 +17,7 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 4. `docs/ai_coordination/GUIA_OPERATIVA_FINAL.md`
 5. `docs/ai_coordination/PROTOCOLO_AUDITORIA_MULTI_IA_PRISLAB.md`
 6. `docs/ai_coordination/PROCEDIMIENTO_VERIFICACION_HUMANA_UI.md`
+7. `DESPLIEGUE_UNICO_PRISLAB_VPS_LOCAL.md`
 
 ## Estado real confirmado
 
