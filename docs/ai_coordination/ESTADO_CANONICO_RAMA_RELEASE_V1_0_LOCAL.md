@@ -1,6 +1,6 @@
 # Estado Canonico de PRISLAB SaaS
 
-Fecha de consolidacion: 2026-07-21 (última actualización: auditoría humana UI en desarrollo de Laboratorio)
+Fecha de consolidacion: 2026-07-24 (última actualización: despliegue y prueba real DeepSeek V4)
 Rama canonica: `release/v1.0-local`
 
 ## Proposito
@@ -25,6 +25,9 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 - El historial reciente incluye `c802eb5` para endurecer 2FA y caducidad de resultados publicos.
 - El historial reciente incluye `a7b0d8b` para blindar el auto-repair de Sentinel por tenant.
 - No debe usarse `main` como fuente de verdad operativa.
+- El commit `2a7fe9d` deshabilita el razonamiento de DeepSeek en las respuestas operativas para evitar que `max_tokens` se consuma antes de entregar `content`.
+- Producción quedó desplegada en `2a7fe9d`; `prislab-gunicorn`, `prislab-celery`, `prislab-celerybeat` y `nginx` quedaron activos.
+- La prueba productiva de DeepSeek devolvió `OK` y JSON válido con `deepseek-v4-flash`. La clave se mantiene únicamente en el entorno de producción, no en Git.
 
 ## Modulos cerrados en esta linea de trabajo
 
@@ -86,6 +89,10 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 ## Modulos que siguen abiertos
 
 - Laboratorio: matriz de pruebas humanas con efectos laterales aún no ejecutada completamente; el catálogo LIMS autoritativo y la migración de relación perfil-analito ya están disponibles.
+- Laboratorio/LIMS: falta ejecutar con datos QA trazables la matriz completa de recepción, toma, captura, valores críticos, rechazo/repetición, cancelación/reembolso, entrega, control de calidad estricto Westgard y consumo de reactivos/insumos por analito.
+- Laboratorio/LIMS: faltan validar en sitio los equipos, impresoras, integración HL7 y la configuración real de reactivos/insumos; el código no puede sustituir esa verificación física.
+- IA documental: DeepSeek quedó operativo para texto y JSON. El OCR de recetas, facturas y notas sigue dependiendo del proveedor visual configurado en `core/services/ocr_documental.py`; debe probarse con imágenes reales y una credencial visual válida antes de declararlo cerrado.
+- Operación multi-tenant: `PRISLAB_DEFAULT_EMPRESA_ID` no está definido en el entorno de comandos manuales; no rompe la web autenticada actual, pero debe establecerse o documentarse explícitamente antes del cierre enterprise.
 - `branch protection` / `rulesets` en GitHub: verificados por evidencia funcional; `H-001` corregido en `release/v1.0-local`.
 - Laboratorio: la autenticación administrativa y navegación UI ya fueron verificadas; no se debe afirmar cierre humano total hasta ejecutar recepción, toma, captura, críticos, rechazo/repetición, cancelación/reembolso, entrega y control de calidad con datos QA trazables.
 - Laboratorio: la confirmación de recepción ya fue reproducida aceptando el modal y la ruta feliz quedó persistida; no contar esto como cierre total porque la matriz de excepciones continúa abierta.
