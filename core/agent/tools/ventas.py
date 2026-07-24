@@ -9,7 +9,7 @@ from django.db import transaction
 logger = logging.getLogger('core')
 
 
-def tool_registrar_venta_farmacia(args: dict, empresa, user) -> dict:
+def tool_registrar_venta_farmacia(args: dict, empresa, user, request=None) -> dict:
     """
     Registra una venta en farmacia PDV.
     Args: productos ([{"nombre": str, "cantidad": int}] o [{"id": int, "cantidad": int}]),
@@ -23,7 +23,7 @@ def tool_registrar_venta_farmacia(args: dict, empresa, user) -> dict:
     if not productos_req:
         return {"error": "Necesito la lista de productos para registrar la venta."}
 
-    from core.models import Producto, Venta, DetalleVenta, Lote
+    from core.models import Producto, Lote
 
     # Resolver productos
     items_resueltos = []
@@ -91,40 +91,60 @@ def tool_registrar_venta_farmacia(args: dict, empresa, user) -> dict:
             "plan": {"accion": "registrar_venta_farmacia", "datos": args},
         }
 
-    try:
-        with transaction.atomic():
-            venta = Venta.objects.create(
-                empresa=empresa,
-                usuario=user,
-                paciente_nombre=paciente_nombre or "Público general",
-                subtotal=total,
-                total=total,
-                impuestos_iva=0,
-                redondeo=0,
-                descuento_aplicado=0,
-            )
-            for item in items_resueltos:
-                DetalleVenta.objects.create(
-                    venta=venta,
-                    producto=item["producto"],
-                    lote_vendido=item["lote"],
-                    cantidad=item["cantidad"],
-                    precio_unitario=item["precio_unitario"],
-                    subtotal=item["subtotal"],
-                    costo_unitario_momento=float(item["lote"].costo_adquisicion or 0),
-                )
-                # Descontar stock del lote
-                item["lote"].cantidad -= item["cantidad"]
-                item["lote"].save(update_fields=["cantidad"])
+    if request is None:
+        return {"error": "El cobro IA debe ejecutarse desde una sesión autenticada del PDV."}
 
-        logger.info(f"PRIS registró venta farmacia ${total} por {user.username}")
+    try:
+        from core.services.ventas.venta_farmacia_service import VentaFarmaciaService
+
+        items = [
+            {
+                "producto_id": item["producto"].id,
+                "cantidad": item["cantidad"],
+                "cantidad_prescrita": item["cantidad"],
+                "precio_unitario": item["precio_unitario"],
+                "subtotal": item["subtotal"],
+                "iva_item": 0,
+                "lote_id": item["lote"].id,
+            }
+            for item in items_resueltos
+        ]
+        pagos = {
+            "efectivo": total if metodo_pago in {"EFECTIVO", "CASH"} else 0,
+            "tarjeta": total if metodo_pago in {"TARJETA", "CARD", "TC"} else 0,
+            "transferencia": total if metodo_pago in {"TRANSFERENCIA", "SPEI", "TRANSFER"} else 0,
+        }
+        respuesta = VentaFarmaciaService.ejecutar_venta_pdv(
+            request,
+            {
+                "items": items,
+                "pagos": pagos,
+                "subtotal": str(total),
+                "iva_total": "0",
+                "total_final": str(total),
+                "total_original": str(total),
+                "descuento_aplicado": "0",
+                "descuento_porcentaje": "0",
+                "cliente": paciente_nombre or "PÚBLICO GENERAL",
+                "es_controlada": any(i["producto"].necesita_receta() for i in items_resueltos),
+                "receta_id": args.get("receta_id"),
+                "medico_nombre": args.get("medico_nombre", ""),
+                "medico_cedula": args.get("medico_cedula", ""),
+                "receta_fecha": args.get("receta_fecha", ""),
+                "numero_receta_externo": args.get("numero_receta_externo", ""),
+            },
+            empresa,
+        )
+        data = respuesta.json() if hasattr(respuesta, "json") else respuesta
+        if data.get("status") != "success":
+            return {"error": data.get("mensaje", "No fue posible registrar la venta en el PDV.")}
         return {
             "exito": True,
-            "folio": venta.folio_operacion or str(venta.id),
+            "folio": data.get("folio") or data.get("venta_id"),
             "total": total,
             "metodo_pago": metodo_pago,
             "productos": [i["producto"].nombre for i in items_resueltos],
-            "mensaje": f"Venta registrada. Total: ${total:,.2f}. Folio: {venta.folio_operacion or venta.id}.",
+            "mensaje": data.get("mensaje", "Venta registrada en el PDV."),
         }
     except Exception as e:
         logger.exception("PRIS tool_registrar_venta_farmacia error")

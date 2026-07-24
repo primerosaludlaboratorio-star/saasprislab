@@ -34,7 +34,9 @@ def _verificar_rbac(tool_name: str, user, jarvis_mode: bool = False) -> tuple:
 
     if tool_name in _SUPERUSER_ONLY_TOOLS:
         return False, "Disculpe, esta acción requiere nivel de Superusuario (Director)."
-    grupos_req = _TOOL_RBAC.get(tool_name)
+    if tool_name not in _TOOL_RBAC:
+        return False, "Esta herramienta no está registrada en el catálogo seguro de PRIS."
+    grupos_req = _TOOL_RBAC[tool_name]
     if grupos_req is None:
         return True, ""
     if not grupos_req:

@@ -108,14 +108,14 @@ EJEMPLOS RÁPIDOS:
 # Lista de grupos = requiere pertenecer al menos a uno de ellos.
 _TOOL_RBAC = {
     # Consulta (sin restricción)
-    "buscar_paciente":                    None,
-    "obtener_estadisticas_dia":           None,
-    "buscar_ordenes":                     None,
-    "obtener_resultados_orden":           None,
-    "buscar_medicamento":                 None,
+    "buscar_paciente":                    ["RECEPCION", "FARMACIA", "LABORATORIO", "MEDICOS", "MEDICO", "ADMIN", "Administrador", "GERENCIA"],
+    "obtener_estadisticas_dia":           ["RECEPCION", "FARMACIA", "LABORATORIO", "GERENCIA_OPERATIVA", "GERENCIA", "ADMIN", "Administrador"],
+    "buscar_ordenes":                     ["RECEPCION", "LABORATORIO", "MEDICOS", "MEDICO", "ADMIN", "Administrador", "GERENCIA"],
+    "obtener_resultados_orden":           ["RECEPCION", "LABORATORIO", "MEDICOS", "MEDICO", "ADMIN", "Administrador", "GERENCIA"],
+    "buscar_medicamento":                 ["FARMACIA", "RECEPCION", "ADMIN", "Administrador", "GERENCIA"],
     "buscar_estudio":                     None,
-    "listar_ordenes_pendientes":          None,
-    "consultar_inventario":               None,
+    "listar_ordenes_pendientes":          ["RECEPCION", "LABORATORIO", "MEDICOS", "MEDICO", "ADMIN", "Administrador", "GERENCIA"],
+    "consultar_inventario":               ["FARMACIA", "LABORATORIO", "RECEPCION", "ADMIN", "Administrador", "GERENCIA"],
     # Consulta restringida
     "guardar_resultado":                  ["LABORATORIO", "GERENCIA_OPERATIVA", "Administrador"],
     "obtener_saldo_caja":                 ["FARMACIA", "GERENCIA_OPERATIVA", "GERENCIA", "Administrador"],
@@ -141,6 +141,13 @@ _TOOL_RBAC = {
     "consultar_indicadores_kpi":          ["GERENCIA_OPERATIVA", "GERENCIA", "GERENTE", "ADMIN", "Administrador"],
     "modificar_paciente":                 ["RECEPCION", "MEDICOS", "MEDICO", "ADMIN", "Administrador", "GERENCIA"],
     "gestionar_usuario":                  ["DIRECTOR", "ADMIN", "Administrador", "GERENCIA"],
+    # Herramientas de laboratorio y guía operativa
+    "buscar_reactivo_laboratorio":        ["LABORATORIO", "ADMIN", "Administrador", "GERENCIA"],
+    "consultar_stock_silos":              ["LABORATORIO", "FARMACIA", "ADMIN", "Administrador", "GERENCIA"],
+    "validar_orden_laboratorio":          ["LABORATORIO", "QUIMICO", "ADMIN", "Administrador", "GERENCIA"],
+    "notificar_resultados_whatsapp":      ["RECEPCION", "LABORATORIO", "ADMIN", "Administrador", "GERENCIA"],
+    "analizar_imagen_documento":          ["RECEPCION", "FARMACIA", "LABORATORIO", "ADMIN", "Administrador", "GERENCIA"],
+    "consultar_manual_lab":               None,
 }
 
 

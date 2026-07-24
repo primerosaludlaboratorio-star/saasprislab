@@ -110,6 +110,8 @@ def _ejecutar_herramienta(nombre_tool, args, request, jarvis_mode=True):
                                 f"Se requiere uno de: {', '.join(grupos_req)}."
                             ),
                         }
+                if nombre_tool == "registrar_venta_farmacia":
+                    return entry["ejecutor"](args, empresa, user, request=request)
                 return entry["ejecutor"](args, empresa, user)
             return {"error": f"Herramienta '{nombre_tool}' no disponible. Herramientas disponibles: {', '.join(TOOLS_OPERATIVOS.keys())}"}
     except Exception as e:
