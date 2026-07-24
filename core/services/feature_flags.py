@@ -183,7 +183,7 @@ FLAG_CATALOG: dict[str, dict] = {
             'Activa el panel /director/war-room/ con detección automática de anomalías: '
             'discrepancias de caja >2%, valores de pánico sin validar >15 min, '
             'intentos de acceso fallido a módulos cifrados y stock crítico de reactivos. '
-            'PRIS-Jarvis reporta solo lo que requiere acción inmediata.'
+            'PRIS reporta solo lo que requiere acción inmediata.'
         ),
     },
     'CADENA_FRIO_ACTIVO': {

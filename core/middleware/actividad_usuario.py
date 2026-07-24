@@ -1,6 +1,6 @@
 """
 Middleware para rastrear actividad del usuario y detectar sesiones intensas (4+ horas).
-El Guardián Jarvis: Sugiere descansos cuando se detecta actividad prolongada.
+PRIS: Sugiere descansos cuando se detecta actividad prolongada.
 """
 from django.utils import timezone
 from datetime import timedelta

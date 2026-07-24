@@ -1,5 +1,5 @@
 """
-PRIS-JARVIS — Gemini Bridge (Auditoría Externa Tier 3)
+PRIS — Bridge de proveedor (Auditoría Externa Tier 3)
 ======================================================
 Genera un paquete de auditoría ultra-comprimido para análisis externo con Gemini.
 SIN datos sensibles de pacientes (anonimizado).

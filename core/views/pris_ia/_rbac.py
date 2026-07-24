@@ -21,12 +21,14 @@ def _rol_aliases_usuario(user) -> set[str]:
     return {a for a in aliases if a}
 
 
-def _verificar_rbac(tool_name: str, user, jarvis_mode: bool = False) -> tuple:
+def _verificar_rbac(tool_name: str, user, pris_mode: bool = False, **legacy_kwargs) -> tuple:
     """
     Retorna (permitido, mensaje_denegacion).
-    El RBAC se aplica SIEMPRE, incluso en modo Jarvis.
+    El RBAC se aplica SIEMPRE, incluso en modo operativo completo.
     La confirmación humana es una capa ADICIONAL, no el único mecanismo de seguridad.
     """
+    # Acepta el nombre histórico solo para no romper integraciones existentes.
+    pris_mode = legacy_kwargs.get('jarvis_mode', pris_mode)
     if not user or not getattr(user, 'is_authenticated', False):
         return False, "No tienes autorizacion para hacer eso. Inicia sesion primero."
     if user.is_superuser:

@@ -642,19 +642,19 @@ urlpatterns = [
     # 19. SERVICE WORKER (PWA) - served from root for full scope
     path('sw.js', service_worker_view, name='service_worker'),
 
-    # 20. PRIS JARVIS — APIs de Dictado, Voz y Acciones (modelos reales activos)
-    path('api/pris/dictado/resultado/', __import__('core.views.pris_jarvis', fromlist=['api_dictado_resultado']).api_dictado_resultado, name='pris_dictado_resultado'),
-    path('api/pris/dictado/inventario/', __import__('core.views.pris_jarvis', fromlist=['api_dictado_inventario']).api_dictado_inventario, name='pris_dictado_inventario'),
-    path('api/pris/dictado/buscar/', __import__('core.views.pris_jarvis', fromlist=['api_dictado_busqueda']).api_dictado_busqueda, name='pris_dictado_busqueda'),
-    path('api/pris/dictado/validar-orden/', __import__('core.views.pris_jarvis', fromlist=['api_dictado_validar_orden']).api_dictado_validar_orden, name='pris_dictado_validar_orden'),
-    path('api/pris/ocr/', __import__('core.views.pris_jarvis', fromlist=['api_ocr_documento']).api_ocr_documento, name='pris_ocr_documento'),
-    path('api/pris/archivo-raw/', __import__('core.views.pris_jarvis', fromlist=['api_crear_archivo_raw']).api_crear_archivo_raw, name='pris_crear_archivo_raw'),
-    path('api/pris/consulta-voz/', __import__('core.views.pris_jarvis', fromlist=['api_consulta_voz']).api_consulta_voz, name='pris_consulta_voz'),
-    path('api/pris/hoja-trabajo/', __import__('core.views.pris_jarvis', fromlist=['api_generar_hoja_trabajo']).api_generar_hoja_trabajo, name='pris_hoja_trabajo'),
-    path('api/pris/alerta-clinica/', __import__('core.views.pris_jarvis', fromlist=['api_crear_alerta_clinica']).api_crear_alerta_clinica, name='pris_alerta_clinica'),
-    path('api/pris/coach-toma-muestra/', __import__('core.views.pris_jarvis', fromlist=['api_coach_toma_muestra']).api_coach_toma_muestra, name='pris_coach_toma_muestra'),
-    path('api/pris/accion/<int:accion_id>/confirmar/', __import__('core.views.pris_jarvis', fromlist=['api_confirmar_accion']).api_confirmar_accion, name='pris_jarvis_confirmar'),
-    path('api/pris/accion/<int:accion_id>/rechazar/', __import__('core.views.pris_jarvis', fromlist=['api_rechazar_accion']).api_rechazar_accion, name='pris_jarvis_rechazar'),
+    # PRIS unificada: capacidades conversacionales, voz, OCR y acciones.
+    path('api/pris/dictado/resultado/', __import__('core.views.pris_ia', fromlist=['api_dictado_resultado']).api_dictado_resultado, name='pris_dictado_resultado'),
+    path('api/pris/dictado/inventario/', __import__('core.views.pris_ia', fromlist=['api_dictado_inventario']).api_dictado_inventario, name='pris_dictado_inventario'),
+    path('api/pris/dictado/buscar/', __import__('core.views.pris_ia', fromlist=['api_dictado_busqueda']).api_dictado_busqueda, name='pris_dictado_busqueda'),
+    path('api/pris/dictado/validar-orden/', __import__('core.views.pris_ia', fromlist=['api_dictado_validar_orden']).api_dictado_validar_orden, name='pris_dictado_validar_orden'),
+    path('api/pris/ocr/', __import__('core.views.pris_ia', fromlist=['api_ocr_documento']).api_ocr_documento, name='pris_ocr_documento'),
+    path('api/pris/archivo-raw/', __import__('core.views.pris_ia', fromlist=['api_crear_archivo_raw']).api_crear_archivo_raw, name='pris_crear_archivo_raw'),
+    path('api/pris/consulta-voz/', __import__('core.views.pris_ia', fromlist=['api_consulta_voz']).api_consulta_voz, name='pris_consulta_voz'),
+    path('api/pris/hoja-trabajo/', __import__('core.views.pris_ia', fromlist=['api_generar_hoja_trabajo']).api_generar_hoja_trabajo, name='pris_hoja_trabajo'),
+    path('api/pris/alerta-clinica/', __import__('core.views.pris_ia', fromlist=['api_crear_alerta_clinica']).api_crear_alerta_clinica, name='pris_alerta_clinica'),
+    path('api/pris/coach-toma-muestra/', __import__('core.views.pris_ia', fromlist=['api_coach_toma_muestra']).api_coach_toma_muestra, name='pris_coach_toma_muestra'),
+    path('api/pris/accion/<int:accion_id>/confirmar/', __import__('core.views.pris_ia', fromlist=['api_confirmar_accion']).api_confirmar_accion, name='pris_jarvis_confirmar'),
+    path('api/pris/accion/<int:accion_id>/rechazar/', __import__('core.views.pris_ia', fromlist=['api_rechazar_accion']).api_rechazar_accion, name='pris_jarvis_rechazar'),
     # Nota: lista_acciones_pris y validar_accion_pris ya están definidas en líneas ~425-426
     # Se eliminaron duplicados para evitar conflicto en reverse()
 

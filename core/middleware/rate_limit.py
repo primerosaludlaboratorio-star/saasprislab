@@ -92,7 +92,7 @@ class RateLimitMiddleware:
                     'error': 'Limite de peticiones excedido. Reintenta en 60 segundos.'
                 }, status=429)
 
-        # Límite específico para el chat de PRIS-Jarvis (/ia/)
+        # Límite específico para el chat de PRIS (/ia/)
         if path.startswith('/ia/') and request.method == 'POST':
             ip = self._get_client_ip(request)
             key = f"rl:ia:{ip}"

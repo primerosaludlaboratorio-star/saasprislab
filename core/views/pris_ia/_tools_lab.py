@@ -118,7 +118,7 @@ def _tool_validar_orden_laboratorio(args, empresa, user):
         usuario_solicitante=user,
         tipo=AccionPRIS.TIPO_VALIDAR_RESULTADO,
         modulo_destino="laboratorio.validar_resultado",
-        instruccion_original=f"Jarvis: validar orden {folio}",
+        instruccion_original=f"PRIS: validar orden {folio}",
         payload={"orden_id": orden.id, "folio": orden.folio_orden or str(orden.id)},
     )
     return {

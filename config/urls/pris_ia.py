@@ -1,5 +1,5 @@
 from django.urls import path, include
-from core.views.pris_jarvis import (
+from core.views.pris_ia import (
     api_dictado_resultado,
     api_dictado_inventario,
     api_dictado_busqueda,
@@ -55,14 +55,14 @@ urlpatterns = [
     path('pris/api/consulta-voz/', lazy_view('core.views.pris_ia.api_consulta_voz'), name='api_consulta_voz'),
     path('pris/api/generar-hoja-trabajo/', lazy_view('core.views.pris_ia.api_generar_hoja_trabajo'), name='api_generar_hoja_trabajo'),
     path('pris/api/crear-alerta-clinica/', lazy_view('core.views.pris_ia.api_crear_alerta_clinica'), name='api_crear_alerta_clinica'),
-    path('pris/acciones/', lazy_view('core.views.pris_jarvis.lista_acciones_pris'), name='lista_acciones_pris'),
-    path('pris/acciones/<int:accion_id>/validar/', lazy_view('core.views.pris_jarvis.validar_accion_pris'), name='validar_accion_pris'),
+    path('pris/acciones/', lazy_view('core.views.pris_ia.lista_acciones_pris'), name='lista_acciones_pris'),
+    path('pris/acciones/<int:accion_id>/validar/', lazy_view('core.views.pris_ia.validar_accion_pris'), name='validar_accion_pris'),
 
     # Checklist Autónomo por Escucha Activa
     path('pris/api/checklist-nlp/', api_detectar_intents_checklist, name='pris_checklist_nlp'),
     path('pris/api/checklist-guia/', api_guia_preguntas, name='pris_checklist_guia'),
 
-    # 20. PRIS JARVIS — APIs de Dictado, Voz y Acciones
+    # PRIS unificada — APIs de Dictado, Voz y Acciones
     path('api/pris/dictado/resultado/', api_dictado_resultado, name='pris_dictado_resultado'),
     path('api/pris/dictado/inventario/', api_dictado_inventario, name='pris_dictado_inventario'),
     path('api/pris/dictado/buscar/', api_dictado_busqueda, name='pris_dictado_busqueda'),

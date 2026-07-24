@@ -35,8 +35,8 @@ from ._tools_lab import (
 logger = logging.getLogger('core')
 
 
-def _ejecutar_herramienta(nombre_tool, args, request, jarvis_mode=True):
-    """Punto de entrada centralizado de Prisci para ejecutar herramientas con RBAC."""
+def _ejecutar_herramienta(nombre_tool, args, request, pris_mode=True):
+    """Punto de entrada único de PRIS para ejecutar herramientas con RBAC."""
     user = request.user
     empresa = getattr(user, 'empresa', None)
 
@@ -47,7 +47,7 @@ def _ejecutar_herramienta(nombre_tool, args, request, jarvis_mode=True):
         }
 
     # Verificar permiso real del usuario humano que invoca Prisci.
-    permitido, msg_rbac = _verificar_rbac(nombre_tool, user, jarvis_mode=jarvis_mode)
+    permitido, msg_rbac = _verificar_rbac(nombre_tool, user, pris_mode=pris_mode)
     if not permitido:
         return {"denegado_rbac": True, "error": msg_rbac}
 
@@ -91,7 +91,7 @@ def _ejecutar_herramienta(nombre_tool, args, request, jarvis_mode=True):
             return _tool_notificar_resultados_whatsapp(args, empresa, user)
         elif nombre_tool == "consultar_manual_lab":
             return _tool_consultar_manual_lab(args, empresa)
-        # Herramientas operativas (escritura + nuevas Jarvis)
+        # Herramientas operativas: toda escritura queda sujeta a confirmación humana.
         else:
             from core.agent.pris_tools_operativos import TOOLS_OPERATIVOS
             if nombre_tool in TOOLS_OPERATIVOS:

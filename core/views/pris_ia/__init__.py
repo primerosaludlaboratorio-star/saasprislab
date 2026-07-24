@@ -31,6 +31,25 @@ from ._constants import (
     _PRISCI_EXTERNAL_ALLOWED_TOOLS,
 )
 
+# Capacidades heredadas expuestas bajo el mismo namespace de PRIS. Los paths
+# antiguos siguen funcionando, pero no crean un segundo asistente.
+from core.views.pris_jarvis import (
+    api_dictado_resultado,
+    api_dictado_inventario,
+    api_dictado_busqueda,
+    api_dictado_validar_orden,
+    api_ocr_documento,
+    api_crear_archivo_raw,
+    api_consulta_voz,
+    api_generar_hoja_trabajo,
+    api_crear_alerta_clinica,
+    api_coach_toma_muestra,
+    api_confirmar_accion,
+    api_rechazar_accion,
+    lista_acciones_pris,
+    validar_accion_pris,
+)
+
 __all__ = [
     # Públicas
     "asistente_page", "asistente_chat", "asistente_reset",
@@ -43,4 +62,9 @@ __all__ = [
     "TOOLS_DESCRIPCION", "_TOOL_TO_TIPO", "_TOOL_RBAC",
     "_SUPERUSER_ONLY_TOOLS", "_PRISCI_EXTERNAL_ALLOWED_TOOLS",
     "_PrisciSession",
+    "api_dictado_resultado", "api_dictado_inventario", "api_dictado_busqueda",
+    "api_dictado_validar_orden", "api_ocr_documento", "api_crear_archivo_raw",
+    "api_consulta_voz", "api_generar_hoja_trabajo", "api_crear_alerta_clinica",
+    "api_coach_toma_muestra", "api_confirmar_accion", "api_rechazar_accion",
+    "lista_acciones_pris", "validar_accion_pris",
 ]

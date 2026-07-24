@@ -1,7 +1,7 @@
 """
 core/views/pris_ia/views.py
 
-Vistas públicas y helpers de Prisci (PRIS-Jarvis).
+Vistas públicas y helpers de PRIS.
 """
 
 import json
@@ -242,7 +242,7 @@ def procesar_pregunta_con_ia(
     contexto_pagina: str = "",
     external_channel: bool = False,
 ) -> dict:
-    """Ejecuta el mismo asistente Prisci para canales internos o externos."""
+    """Ejecuta el mismo asistente PRIS para canales internos o externos."""
     from django.http import HttpRequest
 
     req = HttpRequest()
@@ -264,7 +264,7 @@ def procesar_pregunta_con_ia(
     except (json.JSONDecodeError, UnicodeDecodeError):
         return {
             "status": "error",
-            "respuesta": "Prisci no pudo procesar la respuesta del canal.",
+            "respuesta": "PRIS no pudo procesar la respuesta del canal.",
         }
 
 
@@ -315,7 +315,7 @@ def api_acciones_pendientes(request):
 @login_required
 @require_http_methods(["POST"])
 def api_confirmar_accion(request, accion_id):
-    """Confirma y ejecuta una AccionPRIS pendiente delegando en el motor del Jarvis."""
+    """Confirma y ejecuta una AccionPRIS pendiente delegando en el motor de PRIS."""
     empresa = getattr(request.user, 'empresa', None)
     accion = get_object_or_404(AccionPRIS, id=accion_id, empresa=empresa)
     if accion.estado != AccionPRIS.ESTADO_PENDIENTE:

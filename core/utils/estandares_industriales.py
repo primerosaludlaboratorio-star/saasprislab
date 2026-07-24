@@ -169,7 +169,7 @@ def calcular_delta_porcentaje(valor_actual, valor_anterior):
 
 def validar_rango_valor(valor, ref_min, ref_max):
     """
-    REGLA 5: Integración de Jarvis (PRIS)
+    REGLA 5: Integración de PRIS
     Valida si un valor está dentro del rango de referencia.
     
     Args:

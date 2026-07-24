@@ -1,6 +1,6 @@
 import os
 """
-PRIS — Sistema Nervioso Central v2 (Jarvis-Level)
+PRIS — Sistema Nervioso Central v2
 ==================================================
 Asistente omnipresente con acciones reales en PRISLAB.
 Usa el REST API de Gemini v1 directamente (sin dependencia del SDK)
@@ -145,7 +145,7 @@ def _gemini_rest_call(api_key: str, prompt_text: str, imagen_b64: str = "",
 # ─── Tools disponibles ─────────────────────────────────────────────────────────
 
 TOOLS_DESCRIPCION = """
-HERRAMIENTAS DISPONIBLES (PRIS-Jarvis — Acceso Irrestricto) — responde con JSON puro:
+HERRAMIENTAS DISPONIBLES (PRIS unificada) — responde con JSON puro:
 {"tool": "nombre_herramienta", "args": {"arg1": "valor1"}}
 
 ═══ CONSULTA (solo lectura — sin confirmación) ═══
@@ -264,7 +264,7 @@ def _build_system_prompt(request, contexto_pagina=""):
         else "CONTEXTO TENANT: sin empresa asignada; no inventes ni asumas otra empresa.\n"
     )
 
-    return f"""Eres PRIS-Jarvis — Agente Operativo Integral del laboratorio clínico {nombre_empresa}.
+    return f"""Eres PRIS — Agente Operativo Integral del laboratorio clínico {nombre_empresa}.
 Eres el copiloto del sistema: ejecutas cualquier acción en el sistema en nombre del usuario.
 No tienes restricciones de módulo. Tu única restricción es la confirmación humana obligatoria para escrituras.
 
@@ -272,7 +272,7 @@ No tienes restricciones de módulo. Tu única restricción es la confirmación h
 OPERADOR: {nombre_usuario} | Rol: {'SUPERUSUARIO' if es_superuser else rol_usuario} | Grupos: {grupos_str}
 EMPRESA: {nombre_empresa} | MÓDULO ACTIVO: {modulo_actual} | {fecha_hora}
 
-FILOSOFÍA JARVIS:
+FILOSOFÍA PRIS:
 - Cuando te piden algo, LO HACES. No rediriges al usuario a una pantalla.
 - Para acciones de escritura: primero muestras el plan (confirmado:false), luego ejecutas (confirmado:true).
 - Para consultas: respondes directamente sin pedir confirmación.
@@ -372,7 +372,7 @@ def _rol_aliases_usuario(user) -> set[str]:
 def _verificar_rbac(tool_name: str, user, jarvis_mode: bool = False) -> tuple:
     """
     Retorna (permitido, mensaje_denegacion).
-    El RBAC se aplica SIEMPRE, incluso en modo Jarvis.
+    El RBAC se aplica SIEMPRE, incluso en modo operativo completo.
     La confirmacion humana es una capa ADICIONAL, no el unico mecanismo de seguridad.
     """
     if not user or not getattr(user, 'is_authenticated', False):
@@ -456,7 +456,7 @@ def _ejecutar_herramienta(nombre_tool, args, request, jarvis_mode=True):
             return _tool_notificar_resultados_whatsapp(args, empresa, user)
         elif nombre_tool == "consultar_manual_lab":
             return _tool_consultar_manual_lab(args, empresa)
-        # ── Herramientas operativas (escritura + nuevas Jarvis) ──────────────
+        # ── Herramientas operativas (escritura + capacidades PRIS) ───────────
         else:
             from core.agent.pris_tools_operativos import TOOLS_OPERATIVOS
             if nombre_tool in TOOLS_OPERATIVOS:
@@ -1424,7 +1424,7 @@ def _tool_validar_orden_laboratorio(args, empresa, user):
         usuario_solicitante=user,
         tipo=AccionPRIS.TIPO_VALIDAR_RESULTADO,
         modulo_destino="laboratorio.validar_resultado",
-        instruccion_original=f"Jarvis: validar orden {folio}",
+        instruccion_original=f"PRIS: validar orden {folio}",
         payload={"orden_id": orden.id, "folio": orden.folio_orden or str(orden.id)},
     )
     return {
@@ -1590,7 +1590,7 @@ def api_acciones_pendientes(request):
 @login_required
 @require_http_methods(["POST"])
 def api_confirmar_accion(request, accion_id):
-    """Confirma y ejecuta una AccionPRIS pendiente delegando en el motor del Jarvis."""
+    """Confirma y ejecuta una AccionPRIS pendiente delegando en el motor de PRIS."""
     empresa = getattr(request.user, 'empresa', None)
     accion = get_object_or_404(AccionPRIS, id=accion_id, empresa=empresa)
     if accion.estado != AccionPRIS.ESTADO_PENDIENTE:

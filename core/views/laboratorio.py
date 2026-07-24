@@ -2138,7 +2138,7 @@ Para estudios_detectados, lista todos los nombres de estudios, análisis o prueb
 def escanear_identidad_ia(request):
     """
     RECEPCIÓN INTELIGENTE (OCR de Identidades)
-    Jarvis-Vision: Lee INE/Pasaporte y devuelve JSON para autocompletar Paciente.
+    PRIS Vision: Lee INE/Pasaporte y devuelve JSON para autocompletar Paciente.
     """
     try:
         if not settings.GOOGLE_API_KEY:
@@ -2253,7 +2253,7 @@ Reglas:
 @login_required
 def dashboard_pendientes(request):
     """
-    DASHBOARD DE PENDIENTES: Real-time con alertas Jarvis por tiempo excedido.
+    DASHBOARD DE PENDIENTES: Real-time con alertas PRIS por tiempo excedido.
     Muestra: Cultivos pendientes, folios sin validar, slides pendientes de revisión.
     """
     empresa = getattr(request.user, 'empresa', None)

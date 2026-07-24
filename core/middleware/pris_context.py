@@ -1,5 +1,5 @@
 """
-PRIS-JARVIS — Middleware de Contexto
+PRIS — Middleware de Contexto
 =====================================
 Inyecta en request.pris_context la información que PRIS necesita:
 - Quién habla (user)

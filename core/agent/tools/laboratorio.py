@@ -311,7 +311,7 @@ def tool_cancelar_orden(args: dict, empresa, user) -> dict:
     }
 
 
-# ─── NUEVAS HERRAMIENTAS JARVIS ────────────────────────────────────────────────
+# ─── NUEVAS HERRAMIENTAS PRIS ─────────────────────────────────────────────────
 
 
 def tool_actualizar_resultado_laboratorio(args: dict, empresa, user) -> dict:

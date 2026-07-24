@@ -1,7 +1,7 @@
 """
 MOTOR FINANCIERO (Cortes y Caja)
 REGLA: Reportes dinámicos con filtrado y exportación Excel/PDF.
-Jarvis-Financial: PRIS acceso a queries para resúmenes ejecutivos por voz (solo Dirección).
+PRIS Financiero: acceso a queries para resúmenes ejecutivos por voz (solo Dirección).
 """
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
@@ -247,7 +247,7 @@ def exportar_reporte_pdf(datos_reporte, empresa):
 def api_resumen_ejecutivo_pris(request):
     """
     API para PRIS: Resumen ejecutivo financiero por voz (solo Dirección).
-    Jarvis-Financial: Acceso exclusivo para rol de Dirección.
+    PRIS Financiero: Acceso exclusivo para rol de Dirección.
     """
     empresa = getattr(request.user, 'empresa', None)
     if not empresa:

@@ -6,7 +6,7 @@ PRISLAB V6.0 — PILAR 2: AMPUTACIÓN LÓGICA DE MÓDULOS
 Middleware guardián que bloquea peticiones HTTP a módulos que la empresa
 NO tiene contratados, devolviendo HTTP 403 con página informativa.
 
-PRIS-Jarvis también es consciente de este middleware: las herramientas de
+PRIS también es consciente de este middleware: las herramientas de
 módulos inactivos se filtran antes de enviarlas al LLM.
 
 MAPA DE RUTAS → MÓDULO:

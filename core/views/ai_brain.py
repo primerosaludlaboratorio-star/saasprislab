@@ -1,5 +1,5 @@
 """
-API del Cerebro Dual PRIS/LIA.
+API de compatibilidad para el asistente PRIS.
 """
 
 import json

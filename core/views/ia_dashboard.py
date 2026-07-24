@@ -14,8 +14,6 @@ from django.utils import timezone
 from django.utils.timezone import localdate
 from django.views.decorators.http import require_http_methods
 
-from core.ai_brain import responder
-
 logger = logging.getLogger(__name__)
 
 
@@ -216,29 +214,10 @@ def api_ia_chat(request):
     """
     POST /api/ia/chat/
     Body JSON: { mensaje: str }
-    Responde usando el Cerebro Dual (PRIS/LIA).
+    Alias retrocompatible del chat canónico de PRIS.
     """
-    try:
-        data = json.loads(request.body or "{}")
-    except Exception:
-        logging.getLogger(__name__).exception("Error inesperado en api_ia_chat (ia_dashboard.py)")
-        data = {}
-
-    mensaje = (data.get("mensaje") or "").strip()
-    if not mensaje:
-        return JsonResponse({"status": "error", "mensaje": "Mensaje vacio."}, status=400)
-
-    try:
-        out = responder(request.user, mensaje)
-    except Exception:
-        logger.exception("Error CRITICO en responder() desde api_ia_chat")
-        return JsonResponse({"status": "error", "mensaje": "Error interno en cerebro IA"}, status=500)
-
-    if out.get("ok") is False:
-        return JsonResponse({"status": "error", "mensaje": out.get("mensaje", "No se pudo responder.")}, status=400)
-
-    texto = out.get("respuesta") or out.get("mensaje") or ""
-    return JsonResponse({"status": "success", "respuesta": texto, "meta": out})
+    from core.views.pris_ia import asistente_chat
+    return asistente_chat(request)
 
 
 @login_required
@@ -364,7 +343,10 @@ def api_ia_consultar_negocios(request):
         mensaje += f" del periodo {fecha_inicio} al {fecha_fin}"
     mensaje += ". Proporciona un analisis completo con recomendaciones estrategicas."
 
-    out = responder(request.user, mensaje)
+    # Este endpoint conserva su contrato de respuesta, pero usa el mismo
+    # asistente, RBAC y confirmación humana que /ia/asistente/chat/.
+    from core.views.pris_ia import procesar_pregunta_con_ia
+    out = procesar_pregunta_con_ia(mensaje, request.user, contexto_pagina=request.path)
     
     if out.get("ok") is False:
         return JsonResponse({

@@ -1,5 +1,5 @@
 """
-PRIS Jarvis — Sistema Nervioso Central.
+PRIS — Compatibilidad de capacidades operativas.
 ════════════════════════════════════════════════════════════════════════════════
 Arquitectura Copiloto: PRIS procesa voz/texto → crea AccionPRIS (PENDIENTE)
 → el frontend muestra ventana "Validar indicación" → el humano confirma/rechaza.
@@ -229,7 +229,7 @@ def api_dictado_inventario(request):
 def api_dictado_busqueda(request):
     """
     PRIS busca existencias de un producto/reactivo.
-    Ejemplo: "Jarvis, busca existencias de Paracetamol"
+    Ejemplo: "PRIS, busca existencias de Paracetamol"
     """
     empresa = getattr(request.user, 'empresa', None)
     if not empresa:
@@ -278,7 +278,7 @@ def api_dictado_busqueda(request):
 def api_dictado_validar_orden(request):
     """
     PRIS valida el estudio/resultado de una orden.
-    Ejemplo: "Jarvis, valida Glucosa de la orden 105"
+    Ejemplo: "PRIS, valida Glucosa de la orden 105"
     Solo usuarios con rol QUIMICO, ADMIN o DIRECTOR pueden ejecutar validaciones.
     """
     empresa = getattr(request.user, 'empresa', None)

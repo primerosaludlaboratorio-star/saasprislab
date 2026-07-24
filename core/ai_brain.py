@@ -1,9 +1,7 @@
 """
-Cerebro Dual PRIS/LIA (IA Avanzada)
+Capa de compatibilidad para PRIS (IA Avanzada)
 
-- Prompt dinámico por empresa:
-  - Prislab -> PRIS (Ejecutivo, Rojo, Institucional)
-  - Laboratorio del Valle -> LIA (Cálido, Azul, Familiar)
+- El nombre operativo de la IA es siempre PRIS, independientemente de la empresa.
 - Function calling con permisos:
   - validar_folios(rango) -> permitido
   - consultar_ventas(fecha) -> SOLO Dirección (superadmin)
@@ -132,18 +130,11 @@ def _empresa_nombre(usuario) -> str:
 
 
 def build_system_prompt(usuario) -> str:
-    empresa = _empresa_nombre(usuario).lower()
-    if empresa == "laboratorio del valle":
-        nombre_ia = "LIA"
-        tono = "Cálido, Azul, Familiar"
-    else:
-        nombre_ia = "PRIS"
-        tono = "Ejecutivo, Rojo, Institucional"
-
     return (
-        f"Eres {nombre_ia}. Tu tono es {tono}. "
+        "Eres PRIS, la asistente operativa unificada del sistema. "
+        "Tu tono es profesional, claro y directo. "
         "Eres amable pero estricta con protocolos (FEFO, Triple Llave). "
-        "Responde claro, directo y con pasos operativos. "
+        "Responde claro, directo y con pasos operativos. Respeta siempre el RBAC del usuario y solicita confirmación humana para escrituras. "
         "Si te piden datos financieros o de RH y el usuario no es Dirección, deniega amablemente."
     )
 

@@ -31,7 +31,7 @@
 | 👥 **Pacientes** | `pacientes/` | Expediente clínico, portal del paciente |
 | 🔐 **Seguridad** | `seguridad/` | 2FA, sesiones, auditoría de accesos |
 | 💰 **Contabilidad** | `contabilidad/` | CFDI 4.0 (Facturama), reportes fiscales |
-| 🧠 **IA** | `ia/` + `core/views/ia*` | Chat, OCR, voz, RAG, PRIS-Jarvis |
+| 🧠 **IA** | `ia/` + `core/views/pris_ia/` | PRIS unificada: chat, OCR, voz y RAG |
 | 📊 **Nómina** | `core/views/nomina.py` | Periodos, recibos, cálculo |
 | 🤝 **CRM** | `core/views/crm.py` | Prospectos, kanban, seguimiento |
 | 🧘 **Bienestar** | `core/views/bienestar*` | NOM-035, diario emocional, alertas RRHH |

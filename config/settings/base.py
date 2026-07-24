@@ -198,7 +198,7 @@ MIDDLEWARE = [
     'core.middleware.actividad_usuario.ActividadUsuarioMiddleware',  # Rastreo de actividad y sugerencias de descanso
     'core.middleware.sentinel.SentinelTelemetryMiddleware',  # PRIS SENTINEL: Telemetría inteligente del consultorio
     'core.middleware.performance.PerformanceMiddleware',  # SENTINEL 2.0: Latencia y cuellos de botella
-    'core.middleware.pris_context.PrisContextMiddleware',  # PRIS-JARVIS: Contexto de usuario por request
+    'core.middleware.pris_context.PrisContextMiddleware',  # PRIS: Contexto de usuario por request
     'core.middleware.mantenimiento.MaintenanceModeMiddleware',  # FASE 5: Modo mantenimiento / Solo Lectura
     'core.middleware.seguridad.SessionTimeoutMiddleware',       # FASE 4: Auto-logout tras inactividad (8h)
     'core.middleware.seguridad.TenantStorageMiddleware',        # FASE 3: Inyecta empresa_slug en Drive storage

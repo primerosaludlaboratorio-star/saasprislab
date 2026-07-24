@@ -1,5 +1,5 @@
 """
-PRIS-JARVIS Agent — Motor de ejecución con RBAC
+PRIS Agent — Motor de ejecución con RBAC
 ================================================
 Registro de herramientas (Function Calling), escudo de permisos y contexto.
 Cada herramienta está mapeada a permisos Django; si el usuario no tiene permiso,
@@ -130,7 +130,7 @@ def get_pris_context(request) -> dict:
 
 class PrisAgent:
     """
-    Agente PRIS-JARVIS: ejecuta herramientas con validación RBAC.
+    Agente PRIS: ejecuta herramientas con validación RBAC.
     Uso:
         agent = PrisAgent(request)
         ok, result = agent.execute("consultar_inventario", {"producto": "paracetamol"})
@@ -164,7 +164,7 @@ class PrisAgent:
             resultado = executor(args, empresa, self.user)
             return True, resultado if isinstance(resultado, dict) else {"resultado": resultado}
         except Exception as e:
-            logger.exception(f"PRIS-JARVIS tool '{tool_name}' error")
+            logger.exception(f"PRIS tool '{tool_name}' error")
             return False, {"error": str(e)}
 
 

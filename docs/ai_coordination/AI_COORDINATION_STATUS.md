@@ -973,3 +973,15 @@ Limitaciones explícitas:
 - el OCR requiere `GOOGLE_API_KEY` o `GEMINI_API_KEY` configurada en producción; sin ella devuelve error controlado y no inventa datos;
 - el bloque actual cubre foto desde la recepción de la OC, igual que el lector de Farmacia; PDF, correo y WhatsApp quedan fuera;
 - no se modifica stock al analizar ni al preparar; el guardado final mantiene cuarentena, trazabilidad, FEFO y firma existentes.
+
+## PRIS unificada y control de capacidades - 2026-07-24
+
+PRIS es el nombre único de la asistente operativa del sistema. Las rutas de chat,
+panel, webhook, voz, OCR, RAG y acciones delegan en el mismo núcleo conversacional
+y en el mismo despachador con aislamiento por tenant y RBAC.
+
+- el acceso efectivo depende del rol y grupos del usuario; el superusuario conserva acceso total;
+- las escrituras requieren plan y confirmación humana; la IA no libera resultados clínicos por sí sola;
+- `/api/ia/chat/` se conserva como alias de compatibilidad, pero delega al chat canónico `/ia/asistente/chat/`;
+- las rutas históricas de capacidades se conservan únicamente para compatibilidad de clientes y no representan otro asistente;
+- la clave del proveedor se lee exclusivamente desde la configuración del entorno; nunca se incorpora al repositorio.

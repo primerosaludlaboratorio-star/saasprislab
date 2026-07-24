@@ -23,7 +23,7 @@ _TOOL_TO_TIPO = {
 
 
 TOOLS_DESCRIPCION = """
-HERRAMIENTAS DISPONIBLES (PRIS-Jarvis — Acceso Irrestricto) — responde con JSON puro:
+HERRAMIENTAS DISPONIBLES (PRIS unificada) — responde con JSON puro:
 {"tool": "nombre_herramienta", "args": {"arg1": "valor1"}}
 
 ═══ CONSULTA (solo lectura — sin confirmación) ═══
@@ -154,7 +154,7 @@ _TOOL_RBAC = {
 _SUPERUSER_ONLY_TOOLS = {"auditoria_sistema_completa"}
 
 
-# PRIS/Prisci: cada herramienta respeta el rol del usuario en sesión.
+# PRIS unificada: cada herramienta respeta el rol del usuario en sesión.
 # La confirmación humana es una capa adicional, no la única defensa.
 _PRISCI_EXTERNAL_ALLOWED_TOOLS = {
     "buscar_estudio",

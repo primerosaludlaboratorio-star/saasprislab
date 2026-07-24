@@ -184,7 +184,7 @@ class Command(BaseCommand):
         archivos_verificar = [
             ('core/views/coach.py', 'Coach Ejecutivo'),
             ('core/utils/rag_engine.py', 'RAG Engine'),
-            ('core/ai_brain.py', 'AI Brain (PRIS/LIA)'),
+            ('core/ai_brain.py', 'Capa de compatibilidad PRIS'),
             ('core/views/laboratorio.py', 'OCR Recetas'),
         ]
         

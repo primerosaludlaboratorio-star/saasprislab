@@ -1,5 +1,5 @@
 """
-PRIS-JARVIS Agent — Núcleo del asistente IA omnipresente
+PRIS Agent — Núcleo del asistente IA unificado
 ==========================================================
 Arquitectura base: Function Calling + RBAC + Contexto.
 """
