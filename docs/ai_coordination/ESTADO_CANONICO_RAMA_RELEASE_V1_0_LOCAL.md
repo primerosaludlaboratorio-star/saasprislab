@@ -17,6 +17,9 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 - Se restauro el simbolo de compatibilidad `evaluar_asistencia_clinica_orden` en `core.services.lims.resultados_lims_service` para integraciones y pruebas que lo consumen.
 - La prueba `laboratorio.tests.test_cci_lj_postgres_guard` queda marcada como `SKIPPED` en SQLite local; requiere PostgreSQL real para su validacion efectiva.
 - Pendiente despues del despliegue: flujo humano productivo de recepcion, toma, captura, validacion, PDF, entrega, rechazo/repeticion, cancelacion/reembolso, calidad y consumo de reactivos/insumos; tambien equipos, impresoras y HL7 fisicos.
+- Despliegue completado en produccion con `c94b92b`; migraciones sin pendientes, servicios activos y `/health/` correcto.
+- Verificacion humana productiva del 2026-07-24: `22` pantallas y rutas de Laboratorio/LIMS navegadas, formulario de nueva orden abierto correctamente y consola del navegador con `0` errores y `0` warnings.
+- La navegacion productiva no se contabiliza como cierre E2E: faltan ejecutar con datos QA controlados las operaciones con efectos laterales y las validaciones de equipos, impresoras, HL7 y consumo fisico.
 
 ## Lectura obligatoria
 

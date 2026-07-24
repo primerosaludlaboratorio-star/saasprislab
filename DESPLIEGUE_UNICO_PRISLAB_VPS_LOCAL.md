@@ -86,7 +86,9 @@ Invoke-WebRequest https://prislab.labcorecloud.com/health/
 
 ## Evidencia vigente
 
-El 2026-07-24 se desplego localmente la revision `325ee39c397edbb7ba2f32fe13842bb88d9e4527`. Migraciones, estaticos, servicios y health check fueron correctos. La interfaz de PRIS se verifico en produccion con escenarios de orientacion operativa, confirmacion humana, seguridad y criterio clinico.
+El 2026-07-24 se desplego localmente la revision `c94b92bf8162a56941cc79ef62f54bfd9293435c`. Migraciones, estaticos, servicios y health check fueron correctos. Laboratorio/LIMS se verifico en produccion navegando 22 pantallas y abriendo el formulario de nueva orden; la consola del navegador reporto 0 errores y 0 warnings.
+
+La verificacion anterior no sustituye la matriz E2E con efectos laterales. Esa matriz debe ejecutarse con datos QA controlados antes de marcar Laboratorio/LIMS como cerrado: recepcion, toma, captura, validacion, PDF, entrega, rechazo/repeticion, cancelacion/reembolso, calidad, reactivos/insumos, equipos, impresoras y HL7.
 
 ## Voz neural de PRIS
 
