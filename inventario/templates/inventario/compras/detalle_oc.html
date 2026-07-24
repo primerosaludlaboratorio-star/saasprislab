@@ -137,8 +137,12 @@
                 </td>
                 <td><input type="text" name="recibido_{{ l.pk }}_marca" class="form-control form-control-sm"
                            placeholder="Opcional" style="width:120px"></td>
-                <td><input type="date" name="recibido_{{ l.pk }}_fecha_compra" class="form-control form-control-sm"
-                           style="width:140px"></td>
+                <td>
+                  <input type="date" name="recibido_{{ l.pk }}_fecha_compra" class="form-control form-control-sm mb-1"
+                         style="width:140px">
+                  <input type="date" name="recibido_{{ l.pk }}_fecha_apertura" class="form-control form-control-sm"
+                         title="Fecha de apertura, opcional" style="width:140px">
+                </td>
                 <td>
                   <input type="text" name="recibido_{{ l.pk }}_factura_numero" class="form-control form-control-sm mb-1"
                          placeholder="Folio opcional" style="width:130px">
@@ -148,6 +152,8 @@
                     <option value="NO_DISPONIBLE">No disponible</option>
                     <option value="REGISTRADA">Registrada</option>
                   </select>
+                  <input type="file" name="recibido_{{ l.pk }}_factura_documento" class="form-control form-control-sm mb-1"
+                         accept=".pdf,.xml,image/*" title="Archivo de factura">
                   <input type="date" name="recibido_{{ l.pk }}_factura_fecha" class="form-control form-control-sm"
                          style="width:130px">
                 </td>
@@ -158,6 +164,8 @@
                     <option value="NO_DISPONIBLE">No disponible</option>
                     <option value="ADJUNTO">Adjunto</option>
                   </select>
+                  <input type="file" name="recibido_{{ l.pk }}_inserto_documento" class="form-control form-control-sm mt-1"
+                         accept=".pdf,image/*" title="Archivo del inserto">
                 </td>
                 <td>
                   <div class="input-group input-group-sm" style="width:130px">

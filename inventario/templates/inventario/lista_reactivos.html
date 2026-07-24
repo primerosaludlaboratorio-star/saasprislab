@@ -51,7 +51,7 @@
               <th>Código</th>
               <th>Nombre</th>
               <th>Tipo</th>
-              <th>Fabricante</th>
+              <th>Marca / Fabricante</th>
               <th>Unidad</th>
               <th class="text-end">Stock Actual</th>
               <th class="text-end">Mínimo</th>
@@ -75,7 +75,7 @@
                   {{ r.get_tipo_display }}
                 </span>
               </td>
-              <td class="small text-muted">{{ r.fabricante|default:"—" }}</td>
+              <td class="small text-muted">{{ r.marca|default:"—" }}{% if r.fabricante %} / {{ r.fabricante }}{% endif %}</td>
               <td class="small">{{ r.unidad_medida }}</td>
               <td class="text-end fw-bold
                 {% if r.stock_total <= r.stock_minimo %}text-danger

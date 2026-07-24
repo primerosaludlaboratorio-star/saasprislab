@@ -63,6 +63,11 @@
             </select>
           </div>
           <div class="col-md-4">
+            <label class="form-label fw-semibold">Marca</label>
+            <input type="text" name="marca" class="form-control"
+                   value="{{ reactivo.marca|default:'' }}" placeholder="Marca comercial">
+          </div>
+          <div class="col-md-4">
             <label class="form-label fw-semibold">Fabricante</label>
             <input type="text" name="fabricante" class="form-control"
                    value="{{ reactivo.fabricante|default:'' }}" placeholder="Roche, Mindray, Beckman…">

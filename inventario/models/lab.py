@@ -43,6 +43,7 @@ class CatalogoReactivoLab(models.Model):
         max_length=15, choices=TIPO_CHOICES, default="REACTIVO",
         verbose_name="Tipo de Artículo",
     )
+    marca                 = models.CharField(max_length=200, blank=True, default='', verbose_name="Marca")
     fabricante            = models.CharField(max_length=200, blank=True, null=True, verbose_name="Fabricante")
     referencia_fabricante = models.CharField(
         max_length=100, blank=True, null=True, verbose_name="Referencia del Fabricante",

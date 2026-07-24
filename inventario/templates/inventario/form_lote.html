@@ -35,10 +35,10 @@
 
           <div class="col-12">
             <label class="form-label fw-semibold">Reactivo <span class="text-danger">*</span></label>
-            <select name="reactivo" class="form-select" required>
+            <select name="reactivo" class="form-select" required {% if lote %}disabled{% endif %}>
               <option value="">— Seleccionar reactivo —</option>
               {% for r in reactivos %}
-                <option value="{{ r.pk }}">{{ r.get_tipo_display }} — {{ r.nombre }} ({{ r.unidad_medida }})</option>
+                <option value="{{ r.pk }}" {% if lote and lote.reactivo_id == r.pk %}selected{% endif %}>{{ r.get_tipo_display }} — {{ r.nombre }} ({{ r.unidad_medida }})</option>
               {% endfor %}
             </select>
           </div>
@@ -46,54 +46,76 @@
           <div class="col-md-6">
             <label class="form-label fw-semibold">Número de Lote <span class="text-danger">*</span></label>
             <input type="text" name="numero_lote" class="form-control" required maxlength="100"
+                   value="{{ lote.numero_lote|default:'' }}" {% if lote %}readonly{% endif %}
                    placeholder="Tal como aparece en el empaque">
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Marca</label>
             <input type="text" name="marca" class="form-control" maxlength="200"
+                   value="{{ lote.marca|default:'' }}"
                    placeholder="Marca comercial; opcional durante adaptación">
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Fecha de Caducidad <span class="text-danger">*</span></label>
-            <input type="date" name="fecha_caducidad" class="form-control" required>
+            <input type="date" name="fecha_caducidad" class="form-control" required
+                   value="{{ lote.fecha_caducidad|date:'Y-m-d' }}" {% if lote %}readonly{% endif %}>
           </div>
 
           <div class="col-md-6">
             <label class="form-label fw-semibold">Cantidad Inicial <span class="text-danger">*</span></label>
             <input type="number" name="cantidad_inicial" class="form-control" required step="0.001" min="0.001"
+                   value="{{ lote.cantidad_inicial|default:'' }}" {% if lote %}readonly{% endif %}
                    placeholder="Cantidad recibida">
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Fecha de Apertura</label>
-            <input type="date" name="fecha_apertura" class="form-control">
+            <input type="date" name="fecha_apertura" class="form-control" value="{{ lote.fecha_apertura|date:'Y-m-d' }}">
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Fecha de Compra</label>
-            <input type="date" name="fecha_compra" class="form-control">
+            <input type="date" name="fecha_compra" class="form-control" value="{{ lote.fecha_compra|date:'Y-m-d' }}">
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Precio Unitario de Compra ($)</label>
             <input type="number" name="precio_unitario_compra" class="form-control" step="0.01" min="0"
+                   value="{{ lote.precio_unitario_compra|default:'' }}" {% if lote %}readonly{% endif %}
                    placeholder="Costo por unidad (opcional)">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Proveedor</label>
+            <select name="proveedor" class="form-select">
+              <option value="">— Sin proveedor por ahora —</option>
+              {% for proveedor in proveedores %}
+                <option value="{{ proveedor.pk }}" {% if lote and lote.proveedor_id == proveedor.pk %}selected{% endif %}>{{ proveedor.razon_social }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Orden de compra de origen</label>
+            <select name="orden_compra" class="form-select">
+              <option value="">— Sin orden asociada por ahora —</option>
+              {% for oc in ordenes_compra %}
+                <option value="{{ oc.pk }}" {% if lote and lote.orden_compra_id == oc.pk %}selected{% endif %}>{{ oc.folio }} — {{ oc.proveedor.razon_social }}</option>
+              {% endfor %}
+            </select>
           </div>
 
           <div class="col-md-6">
             <label class="form-label fw-semibold">Factura / Folio</label>
             <input type="text" name="factura_numero" class="form-control" maxlength="100"
+                   value="{{ lote.factura_numero|default:'' }}"
                    placeholder="Pendiente si aún no existe">
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Estado de factura</label>
             <select name="factura_estado" class="form-select">
-              <option value="PENDIENTE">Pendiente de localizar</option>
-              <option value="NO_APLICA">No aplica</option>
-              <option value="NO_DISPONIBLE">No disponible durante la migración</option>
-              <option value="REGISTRADA">Registrada</option>
+              {% for val, label in factura_choices %}<option value="{{ val }}" {% if lote and lote.factura_estado == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
             </select>
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Fecha de Factura</label>
-            <input type="date" name="factura_fecha" class="form-control">
+            <input type="date" name="factura_fecha" class="form-control" value="{{ lote.factura_fecha|date:'Y-m-d' }}">
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Archivo de Factura</label>
@@ -102,12 +124,12 @@
           <div class="col-md-6">
             <label class="form-label fw-semibold">Inserto</label>
             <select name="inserto_estado" class="form-select">
-              {% for val, label in inserto_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+              {% for val, label in inserto_choices %}<option value="{{ val }}" {% if lote and lote.inserto_estado == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
             </select>
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Versión del Inserto</label>
-            <input type="text" name="inserto_version" class="form-control" maxlength="80">
+            <input type="text" name="inserto_version" class="form-control" maxlength="80" value="{{ lote.inserto_version|default:'' }}">
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Archivo del Inserto</label>
@@ -116,7 +138,7 @@
           <div class="col-12">
             <label class="form-label fw-semibold">Observación de adaptación</label>
             <textarea name="trazabilidad_observaciones" class="form-control" rows="2"
-                      placeholder="Ej. Factura pendiente de recuperar del archivo físico."></textarea>
+                      placeholder="Ej. Factura pendiente de recuperar del archivo físico.">{{ lote.trazabilidad_observaciones|default:'' }}</textarea>
           </div>
 
           <div class="col-12">
@@ -128,7 +150,7 @@
           <div class="col-12 d-flex justify-content-end gap-2 mt-2">
             <a href="{% url 'inventario:lista_lotes' %}" class="btn btn-outline-secondary">Cancelar</a>
             <button type="submit" class="btn btn-success">
-              <i class="bi bi-save me-1"></i>Registrar Lote (→ Cuarentena)
+              <i class="bi bi-save me-1"></i>{% if lote %}{{ accion }}{% else %}Registrar Lote (→ Cuarentena){% endif %}
             </button>
           </div>
         </div>

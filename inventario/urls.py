@@ -35,6 +35,7 @@ urlpatterns = [
     path("lab/lotes/",                                  views.lista_lotes,              name="lista_lotes"),
     path("lab/lotes/nuevo/",                            views.crear_lote,               name="crear_lote"),
     path("lab/lotes/<int:pk>/",                         views.detalle_lote,             name="detalle_lote"),
+    path("lab/lotes/<int:pk>/editar/",                 views.editar_lote,              name="editar_lote"),
     path("lab/lotes/<int:pk>/liberar/",                 views.liberar_lote_qc,          name="liberar_lote_qc"),
     path("lab/lotes/<int:pk>/baja/",                    views.baja_lote,                name="baja_lote"),
 

@@ -20,7 +20,7 @@ import logging
 from lims.models import Analito as AnalitoLims
 from inventario.models import (
     CatalogoReactivoLab, LoteReactivoLab, ConsumoEstudioReactivo,
-    SalidaAnaliticaLab, SalidaTecnicaLab, UNIDAD_CHOICES,
+    SalidaAnaliticaLab, SalidaTecnicaLab, ProveedorCompras, OrdenDeCompra, UNIDAD_CHOICES,
 )
 from .helpers import _get_empresa, _empresa_required
 
@@ -148,6 +148,7 @@ def lista_reactivos(request, empresa):
         qs = qs.filter(
             Q(nombre__icontains=busqueda) |
             Q(codigo_interno__icontains=busqueda) |
+            Q(marca__icontains=busqueda) |
             Q(fabricante__icontains=busqueda)
         )
 
@@ -172,6 +173,7 @@ def crear_reactivo(request, empresa):
                 nombre=d['nombre'].strip(),
                 descripcion=d.get('descripcion', ''),
                 tipo=d['tipo'],
+                marca=d.get('marca', '').strip(),
                 fabricante=d.get('fabricante', ''),
                 referencia_fabricante=d.get('referencia_fabricante', ''),
                 unidad_medida=d['unidad_medida'],
@@ -206,6 +208,7 @@ def editar_reactivo(request, empresa, pk):
             reactivo.nombre                  = d['nombre'].strip()
             reactivo.descripcion             = d.get('descripcion', '')
             reactivo.tipo                    = d['tipo']
+            reactivo.marca                   = d.get('marca', '').strip()
             reactivo.fabricante              = d.get('fabricante', '')
             reactivo.referencia_fabricante   = d.get('referencia_fabricante', '')
             reactivo.unidad_medida           = d['unidad_medida']
@@ -289,6 +292,12 @@ def crear_lote(request, empresa):
             except (ValueError, TypeError):
                 messages.error(request, 'Cantidad inicial inválida.')
                 return redirect('inventario:crear_lote')
+            proveedor = None
+            if d.get('proveedor'):
+                proveedor = get_object_or_404(ProveedorCompras, pk=d['proveedor'], empresa=empresa, activo=True)
+            orden_compra = None
+            if d.get('orden_compra'):
+                orden_compra = get_object_or_404(OrdenDeCompra, pk=d['orden_compra'], empresa=empresa)
             lote_data = dict(
                 empresa=empresa,
                 reactivo=reactivo,
@@ -309,6 +318,8 @@ def crear_lote(request, empresa):
                 inserto_documento=request.FILES.get('inserto_documento'),
                 estado='CUARENTENA',
                 recibido_por=request.user,
+                proveedor=proveedor,
+                orden_compra=orden_compra,
                 observaciones_qc=d.get('observaciones_qc', ''),
                 trazabilidad_observaciones=d.get('trazabilidad_observaciones', '').strip(),
             )
@@ -335,8 +346,59 @@ def crear_lote(request, empresa):
         'reactivos': reactivos,
         'empresa': empresa,
         'inserto_choices': LoteReactivoLab.INSERTO_ESTADO_CHOICES,
+        'factura_choices': LoteReactivoLab.FACTURA_ESTADO_CHOICES,
+        'proveedores': ProveedorCompras.objects.filter(empresa=empresa, activo=True).order_by('razon_social'),
+        'ordenes_compra': OrdenDeCompra.objects.filter(empresa=empresa).order_by('-fecha_generacion')[:100],
     }
     return render(request, 'inventario/form_lote.html', ctx)
+
+
+@_empresa_required
+def editar_lote(request, empresa, pk):
+    """Completa datos de trazabilidad sin alterar cantidad, lote o caducidad."""
+    lote = get_object_or_404(LoteReactivoLab, pk=pk, empresa=empresa)
+    if request.method == 'POST':
+        d = request.POST
+        lote.marca = d.get('marca', '').strip()
+        lote.fecha_apertura = d.get('fecha_apertura') or None
+        lote.fecha_compra = d.get('fecha_compra') or None
+        lote.proveedor = (
+            get_object_or_404(ProveedorCompras, pk=d['proveedor'], empresa=empresa, activo=True)
+            if d.get('proveedor') else None
+        )
+        lote.orden_compra = (
+            get_object_or_404(OrdenDeCompra, pk=d['orden_compra'], empresa=empresa)
+            if d.get('orden_compra') else None
+        )
+        lote.factura_numero = d.get('factura_numero', '').strip()
+        lote.factura_estado = d.get('factura_estado', 'PENDIENTE')
+        lote.factura_fecha = d.get('factura_fecha') or None
+        lote.inserto_estado = d.get('inserto_estado', 'PENDIENTE')
+        lote.inserto_version = d.get('inserto_version', '').strip()
+        lote.trazabilidad_observaciones = d.get('trazabilidad_observaciones', '').strip()
+        if request.FILES.get('factura_documento'):
+            lote.factura_documento = request.FILES['factura_documento']
+        if request.FILES.get('inserto_documento'):
+            lote.inserto_documento = request.FILES['inserto_documento']
+        pendientes = lote.obtener_campos_pendientes()
+        if not empresa.inventario_modo_adaptacion and pendientes:
+            messages.error(request, 'La empresa está en trazabilidad estricta. Completa: ' + ', '.join(pendientes))
+        else:
+            lote.save()
+            messages.success(request, 'Trazabilidad del lote actualizada.')
+            return redirect('inventario:detalle_lote', pk=lote.pk)
+
+    return render(request, 'inventario/form_lote.html', {
+        'titulo': f'Completar trazabilidad — Lote {lote.numero_lote}',
+        'accion': 'Guardar trazabilidad',
+        'lote': lote,
+        'reactivos': [lote.reactivo],
+        'empresa': empresa,
+        'inserto_choices': LoteReactivoLab.INSERTO_ESTADO_CHOICES,
+        'factura_choices': LoteReactivoLab.FACTURA_ESTADO_CHOICES,
+        'proveedores': ProveedorCompras.objects.filter(empresa=empresa, activo=True).order_by('razon_social'),
+        'ordenes_compra': OrdenDeCompra.objects.filter(empresa=empresa).order_by('-fecha_generacion')[:100],
+    })
 
 
 @_empresa_required

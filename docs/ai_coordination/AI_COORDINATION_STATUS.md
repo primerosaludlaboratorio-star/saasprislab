@@ -848,3 +848,14 @@ Verificación local:
 - regresión de seguridad LIMS: `5/5` verdes.
 
 Este bloque aún no está desplegado en producción. Antes del despliegue quedan por integrar los mismos estados en los silos de consultorio/general, relacionar el consumo con el equipo ejecutor y conectar los materiales CCI con el inventario de controles. No se deben cargar consumos definitivos por equipo hasta completar esas relaciones.
+
+## Cierre previo al despliegue de trazabilidad de reactivos - 2026-07-24
+
+La revisión de requisitos detectó y corrigió cuatro omisiones antes de publicar:
+
+- la marca ahora existe en el catálogo y puede sobrescribirse por lote;
+- el alta manual permite proveedor y orden de compra, con validación de tenant;
+- la recepción desde OC hereda el proveedor y permite adjuntar factura e inserto por línea;
+- cada lote tiene una ficha para completar posteriormente la trazabilidad sin modificar stock, lote, caducidad ni consumo.
+
+También se corrigió la exportación de la nueva vista en el paquete de URLs: el primer `manage.py check` detectó el fallo antes del commit. Después de corregirlo, el sistema volvió a pasar `manage.py check`, `makemigrations --check` y `39/39` pruebas de inventario, FEFO, consumos, stock crítico, aislamiento y trazabilidad.

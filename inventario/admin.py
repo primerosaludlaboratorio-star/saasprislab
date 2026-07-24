@@ -57,7 +57,7 @@ class CatalogoReactivoLabAdmin(admin.ModelAdmin):
         "stock_minimo", "requiere_cadena_frio", "activo", "empresa",
     ]
     list_filter   = ["tipo", "activo", "requiere_cadena_frio", "empresa"]
-    search_fields = ["codigo_interno", "nombre", "fabricante", "referencia_fabricante"]
+    search_fields = ["codigo_interno", "nombre", "marca", "fabricante", "referencia_fabricante"]
     inlines       = [ConsumoEstudioReactivoInline]
 
     def stock_actual(self, obj):

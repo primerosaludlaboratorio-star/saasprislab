@@ -39,6 +39,25 @@
             <dt class="col-6 text-muted small">Fabricante</dt>
             <dd class="col-6">{{ lote.reactivo.fabricante|default:"—" }}</dd>
 
+            <dt class="col-6 text-muted small">Marca</dt>
+            <dd class="col-6">{{ lote.marca|default:lote.reactivo.marca|default:"—" }}</dd>
+
+            <dt class="col-6 text-muted small">Trazabilidad</dt>
+            <dd class="col-6">
+              {% if lote.trazabilidad_estado == 'COMPLETA' %}<span class="badge bg-success">Completa</span>
+              {% else %}<span class="badge bg-warning text-dark">Adaptación</span>{% endif %}
+              {% if lote.campos_pendientes %}<small class="d-block text-muted">Pendiente: {{ lote.campos_pendientes|join:", " }}</small>{% endif %}
+            </dd>
+
+            <dt class="col-6 text-muted small">Proveedor</dt>
+            <dd class="col-6">{{ lote.proveedor.razon_social|default:"—" }}</dd>
+
+            <dt class="col-6 text-muted small">Factura</dt>
+            <dd class="col-6">{{ lote.factura_numero|default:lote.get_factura_estado_display }}</dd>
+
+            <dt class="col-6 text-muted small">Fecha de compra</dt>
+            <dd class="col-6">{{ lote.fecha_compra|date:"d/m/Y"|default:"—" }}</dd>
+
             <dt class="col-6 text-muted small">Caducidad</dt>
             <dd class="col-6 {% if lote.fecha_caducidad < hoy %}text-danger fw-bold{% endif %}">
               {{ lote.fecha_caducidad|date:"d/m/Y"|default:"—" }}
@@ -111,6 +130,9 @@
             <i class="bi bi-trash me-1"></i>Dar de Baja
           </button>
           {% endif %}
+          <a href="{% url 'inventario:editar_lote' lote.pk %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-pencil-square me-1"></i>Completar trazabilidad
+          </a>
           <a href="{% url 'inventario:crear_salida_tecnica' %}?lote={{ lote.pk }}"
              class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-dash-circle me-1"></i>Descuento Técnico

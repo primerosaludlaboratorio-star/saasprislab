@@ -278,6 +278,7 @@ def _recibir_mercancia(request, oc, empresa):
                         continue
                     lote_data.update({
                         'reactivo': catalogo_item,
+                        'proveedor': oc.proveedor,
                         'marca': d.get(f'recibido_{linea.pk}_marca', '').strip(),
                         'numero_lote': numero_lote,
                         'fecha_caducidad': caducidad,
