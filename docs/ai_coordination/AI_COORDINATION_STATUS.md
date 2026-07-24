@@ -859,3 +859,12 @@ La revisión de requisitos detectó y corrigió cuatro omisiones antes de public
 - cada lote tiene una ficha para completar posteriormente la trazabilidad sin modificar stock, lote, caducidad ni consumo.
 
 También se corrigió la exportación de la nueva vista en el paquete de URLs: el primer `manage.py check` detectó el fallo antes del commit. Después de corregirlo, el sistema volvió a pasar `manage.py check`, `makemigrations --check` y `39/39` pruebas de inventario, FEFO, consumos, stock crítico, aislamiento y trazabilidad.
+
+Despliegue productivo confirmado en `4481feb`:
+
+- migraciones `core.0086`, `inventario.0010`, `inventario.0011` e `inventario.0012` aplicadas;
+- `manage.py check` sin errores;
+- Gunicorn, Celery y Celery Beat activos;
+- árbol de producción sincronizado con `release/v1.0-local` y sin cambios locales.
+
+La verificación humana productiva debe confirmar ahora el acceso a catálogo, alta de lote, ficha para completar trazabilidad, recepción desde OC y conservación del flujo de cuarentena/consumo. No se cargaron lotes ni documentos de prueba en producción para no contaminar los datos del laboratorio.
