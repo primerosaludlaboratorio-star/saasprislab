@@ -35,8 +35,9 @@ def synthesize_pris_voice(text):
         payload = {
             "input": {"text": text[:MAX_TEXT_LENGTH]},
             "voice": {
-                "languageCode": "es-MX",
-                "name": os.environ.get("PRIS_TTS_VOICE", "es-MX-Neural2-A"),
+                # Google ofrece la voz neural latinoamericana bajo es-US.
+                "languageCode": os.environ.get("PRIS_TTS_LANGUAGE", "es-US"),
+                "name": os.environ.get("PRIS_TTS_VOICE", "es-US-Neural2-A"),
                 "ssmlGender": "FEMALE",
             },
             "audioConfig": {

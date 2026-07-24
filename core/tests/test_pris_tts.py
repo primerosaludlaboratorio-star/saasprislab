@@ -21,7 +21,7 @@ class PrisTtsTests(SimpleTestCase):
 
         self.assertEqual(synthesize_pris_voice("Hola, soy PRIS."), b"mp3")
         payload = mock_post.call_args.kwargs["json"]
-        self.assertEqual(payload["voice"]["languageCode"], "es-MX")
+        self.assertEqual(payload["voice"]["languageCode"], "es-US")
         self.assertEqual(payload["audioConfig"]["speakingRate"], 0.93)
 
     @patch.dict("os.environ", {"GOOGLE_APPLICATION_CREDENTIALS": ""}, clear=False)
