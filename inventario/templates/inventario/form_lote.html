@@ -17,6 +17,7 @@
       <strong>Regla de Cuarentena ISO 15189</strong><br>
       Todo lote nuevo entra automáticamente en estado <strong>CUARENTENA</strong>.
       Solo personal autorizado puede liberarlo tras verificar el Certificado de Análisis del fabricante.
+      {% if empresa.inventario_modo_adaptacion %}<br><strong>Modo adaptación activo:</strong> factura, fecha de compra, marca e inserto pueden completarse después y quedarán marcados como pendientes.{% endif %}
     </div>
   </div>
 
@@ -28,7 +29,7 @@
 
   <div class="card border-0 shadow-sm">
     <div class="card-body">
-      <form method="post" novalidate>
+      <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
         <div class="row g-3">
 
@@ -48,6 +49,11 @@
                    placeholder="Tal como aparece en el empaque">
           </div>
           <div class="col-md-6">
+            <label class="form-label fw-semibold">Marca</label>
+            <input type="text" name="marca" class="form-control" maxlength="200"
+                   placeholder="Marca comercial; opcional durante adaptación">
+          </div>
+          <div class="col-md-6">
             <label class="form-label fw-semibold">Fecha de Caducidad <span class="text-danger">*</span></label>
             <input type="date" name="fecha_caducidad" class="form-control" required>
           </div>
@@ -58,9 +64,59 @@
                    placeholder="Cantidad recibida">
           </div>
           <div class="col-md-6">
+            <label class="form-label fw-semibold">Fecha de Apertura</label>
+            <input type="date" name="fecha_apertura" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Fecha de Compra</label>
+            <input type="date" name="fecha_compra" class="form-control">
+          </div>
+          <div class="col-md-6">
             <label class="form-label fw-semibold">Precio Unitario de Compra ($)</label>
             <input type="number" name="precio_unitario_compra" class="form-control" step="0.01" min="0"
                    placeholder="Costo por unidad (opcional)">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Factura / Folio</label>
+            <input type="text" name="factura_numero" class="form-control" maxlength="100"
+                   placeholder="Pendiente si aún no existe">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Estado de factura</label>
+            <select name="factura_estado" class="form-select">
+              <option value="PENDIENTE">Pendiente de localizar</option>
+              <option value="NO_APLICA">No aplica</option>
+              <option value="NO_DISPONIBLE">No disponible durante la migración</option>
+              <option value="REGISTRADA">Registrada</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Fecha de Factura</label>
+            <input type="date" name="factura_fecha" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Archivo de Factura</label>
+            <input type="file" name="factura_documento" class="form-control" accept=".pdf,.xml,image/*">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Inserto</label>
+            <select name="inserto_estado" class="form-select">
+              {% for val, label in inserto_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Versión del Inserto</label>
+            <input type="text" name="inserto_version" class="form-control" maxlength="80">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Archivo del Inserto</label>
+            <input type="file" name="inserto_documento" class="form-control" accept=".pdf,image/*">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Observación de adaptación</label>
+            <textarea name="trazabilidad_observaciones" class="form-control" rows="2"
+                      placeholder="Ej. Factura pendiente de recuperar del archivo físico."></textarea>
           </div>
 
           <div class="col-12">

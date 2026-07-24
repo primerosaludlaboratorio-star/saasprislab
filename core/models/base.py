@@ -84,6 +84,15 @@ class Empresa(models.Model):
     css_personalizado = models.TextField(blank=True, null=True, verbose_name="CSS Personalizado", help_text="Estilos CSS adicionales para personalización avanzada")
     activa = models.BooleanField(default=True, verbose_name="Empresa Activa")
 
+    inventario_modo_adaptacion = models.BooleanField(
+        default=True,
+        verbose_name="Inventario en modo adaptación",
+        help_text=(
+            "Permite operar con trazabilidad administrativa incompleta durante la migración. "
+            "Los faltantes quedan registrados por lote; al desactivarlo se exigirá la trazabilidad completa."
+        ),
+    )
+
     # ── Responsable Sanitario (ISO 15189 / COFEPRIS) — datos dinámicos ────────
     responsable_sanitaria_nombre = models.CharField(
         max_length=200, blank=True, default='',

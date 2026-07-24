@@ -165,6 +165,23 @@ class ConsumoEstudioReactivo(models.Model):
 
 class LoteReactivoLab(models.Model):
     """Lote físico de un reactivo recibido en el almacén. FEFO."""
+    TRAZABILIDAD_ESTADO_CHOICES = [
+        ('ADAPTACION', 'Adaptación — faltan datos documentales'),
+        ('COMPLETA', 'Completa'),
+    ]
+    INSERTO_ESTADO_CHOICES = [
+        ('PENDIENTE', 'Pendiente de cargar'),
+        ('NO_APLICA', 'No aplica'),
+        ('NO_DISPONIBLE', 'No disponible durante la migración'),
+        ('ADJUNTO', 'Adjunto'),
+        ('VERIFICADO', 'Verificado'),
+    ]
+    FACTURA_ESTADO_CHOICES = [
+        ('PENDIENTE', 'Pendiente de localizar'),
+        ('NO_APLICA', 'No aplica'),
+        ('NO_DISPONIBLE', 'No disponible durante la migración'),
+        ('REGISTRADA', 'Registrada'),
+    ]
     ESTADO_CHOICES = [
         ('CUARENTENA', 'En Cuarentena (Pendiente de QC)'),
         ('ACTIVO',     'Activo — En Uso'),
@@ -185,11 +202,19 @@ class LoteReactivoLab(models.Model):
         related_name="lotes",
         verbose_name="Reactivo",
     )
+    marca = models.CharField(
+        max_length=200, blank=True, default='', verbose_name="Marca",
+        help_text="Marca comercial del producto; puede diferir del fabricante legal.",
+    )
     numero_lote    = models.CharField(max_length=120, verbose_name="Número de Lote")
     fecha_caducidad = models.DateField(verbose_name="Fecha de Caducidad")
     fecha_apertura  = models.DateField(
         blank=True, null=True, verbose_name="Fecha de Apertura",
         help_text="Fecha en que se abrió/comenzó a usar el lote.",
+    )
+    fecha_compra = models.DateField(
+        blank=True, null=True, verbose_name="Fecha de Compra",
+        help_text="Puede quedar pendiente durante la migración.",
     )
     cantidad_inicial = models.DecimalField(
         max_digits=12, decimal_places=4,
@@ -219,6 +244,41 @@ class LoteReactivoLab(models.Model):
         on_delete=models.SET_NULL, null=True, blank=True,
         related_name="lotes_reactivo_generados",
         verbose_name="Orden de Compra de Origen",
+    )
+    factura_numero = models.CharField(
+        max_length=100, blank=True, default='', verbose_name="Factura / Folio",
+    )
+    factura_estado = models.CharField(
+        max_length=20, choices=FACTURA_ESTADO_CHOICES, default='PENDIENTE',
+        verbose_name="Estado de factura",
+    )
+    factura_fecha = models.DateField(
+        blank=True, null=True, verbose_name="Fecha de Factura",
+    )
+    factura_documento = models.FileField(
+        upload_to='inventario/facturas/reactivos/%Y/%m/',
+        blank=True, null=True, verbose_name="Factura del lote",
+    )
+    inserto_estado = models.CharField(
+        max_length=20, choices=INSERTO_ESTADO_CHOICES, default='PENDIENTE',
+        verbose_name="Estado del inserto",
+    )
+    inserto_version = models.CharField(
+        max_length=80, blank=True, default='', verbose_name="Versión del inserto",
+    )
+    inserto_documento = models.FileField(
+        upload_to='inventario/insertos/reactivos/%Y/%m/',
+        blank=True, null=True, verbose_name="Inserto del fabricante",
+    )
+    trazabilidad_estado = models.CharField(
+        max_length=15, choices=TRAZABILIDAD_ESTADO_CHOICES, default='ADAPTACION',
+        verbose_name="Estado de trazabilidad",
+    )
+    campos_pendientes = models.JSONField(
+        default=list, blank=True, verbose_name="Campos pendientes de trazabilidad",
+    )
+    trazabilidad_observaciones = models.TextField(
+        blank=True, default='', verbose_name="Observaciones de adaptación",
     )
 
     lote_aprobado_qc   = models.BooleanField(default=False, verbose_name="Aprobado por QC")
@@ -259,6 +319,28 @@ class LoteReactivoLab(models.Model):
     def __str__(self):
         return f"{self.reactivo.codigo_interno} / L:{self.numero_lote} — cad:{self.fecha_caducidad}"
 
+    def obtener_campos_pendientes(self):
+        """Devuelve faltantes administrativos sin bloquear el consumo en adaptación."""
+        faltantes = []
+        if not self.marca:
+            faltantes.append('marca')
+        if not self.fecha_compra:
+            faltantes.append('fecha_compra')
+        if (
+            not self.factura_numero
+            and not self.factura_documento
+            and self.factura_estado not in ('NO_APLICA', 'NO_DISPONIBLE')
+        ):
+            faltantes.append('factura')
+        if self.reactivo.tipo in ('REACTIVO', 'CALIBRADOR', 'CONTROL_QC'):
+            if self.inserto_estado == 'PENDIENTE' and not self.inserto_documento:
+                faltantes.append('inserto')
+        return faltantes
+
+    def actualizar_estado_trazabilidad(self):
+        self.campos_pendientes = self.obtener_campos_pendientes()
+        self.trazabilidad_estado = 'COMPLETA' if not self.campos_pendientes else 'ADAPTACION'
+
     def clean(self):
         if self.cantidad_actual < 0:
             raise ValidationError("La cantidad actual no puede ser negativa.")
@@ -268,6 +350,7 @@ class LoteReactivoLab(models.Model):
             )
 
     def save(self, *args, **kwargs):
+        self.actualizar_estado_trazabilidad()
         self.costo_total_lote = self.cantidad_inicial * self.precio_unitario_compra
         super().save(*args, **kwargs)
 

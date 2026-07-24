@@ -70,11 +70,11 @@ class CatalogoReactivoLabAdmin(admin.ModelAdmin):
 @admin.register(LoteReactivoLab)
 class LoteReactivoLabAdmin(admin.ModelAdmin):
     list_display  = [
-        "reactivo", "numero_lote", "fecha_caducidad",
-        "cantidad_actual", "estado", "lote_aprobado_qc", "empresa",
+        "reactivo", "marca", "numero_lote", "fecha_caducidad",
+        "cantidad_actual", "estado", "trazabilidad_estado", "lote_aprobado_qc", "empresa",
     ]
-    list_filter   = ["estado", "lote_aprobado_qc", "empresa"]
-    search_fields = ["numero_lote", "reactivo__nombre", "reactivo__codigo_interno"]
+    list_filter   = ["estado", "trazabilidad_estado", "factura_estado", "inserto_estado", "lote_aprobado_qc", "empresa"]
+    search_fields = ["numero_lote", "marca", "factura_numero", "reactivo__nombre", "reactivo__codigo_interno"]
     readonly_fields = ["fecha_recepcion", "costo_total_lote"]
 
 

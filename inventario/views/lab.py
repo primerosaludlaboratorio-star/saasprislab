@@ -289,19 +289,36 @@ def crear_lote(request, empresa):
             except (ValueError, TypeError):
                 messages.error(request, 'Cantidad inicial inválida.')
                 return redirect('inventario:crear_lote')
+            lote_data = dict(
+                empresa=empresa,
+                reactivo=reactivo,
+                marca=d.get('marca', '').strip(),
+                numero_lote=d['numero_lote'].strip(),
+                fecha_caducidad=d['fecha_caducidad'],
+                fecha_apertura=d.get('fecha_apertura') or None,
+                fecha_compra=d.get('fecha_compra') or None,
+                cantidad_inicial=cantidad,
+                cantidad_actual=cantidad,
+                precio_unitario_compra=d.get('precio_unitario_compra') or 0,
+                factura_numero=d.get('factura_numero', '').strip(),
+                factura_estado=d.get('factura_estado', 'PENDIENTE'),
+                factura_fecha=d.get('factura_fecha') or None,
+                factura_documento=request.FILES.get('factura_documento'),
+                inserto_estado=d.get('inserto_estado', 'PENDIENTE'),
+                inserto_version=d.get('inserto_version', '').strip(),
+                inserto_documento=request.FILES.get('inserto_documento'),
+                estado='CUARENTENA',
+                recibido_por=request.user,
+                observaciones_qc=d.get('observaciones_qc', ''),
+                trazabilidad_observaciones=d.get('trazabilidad_observaciones', '').strip(),
+            )
+            lote_preview = LoteReactivoLab(**lote_data)
+            pendientes = lote_preview.obtener_campos_pendientes()
+            if not empresa.inventario_modo_adaptacion and pendientes:
+                messages.error(request, 'La empresa está en trazabilidad estricta. Completa: ' + ', '.join(pendientes))
+                return redirect('inventario:crear_lote')
             with transaction.atomic():
-                lote = LoteReactivoLab.objects.create(
-                    empresa=empresa,
-                    reactivo=reactivo,
-                    numero_lote=d['numero_lote'].strip(),
-                    fecha_caducidad=d['fecha_caducidad'],
-                    cantidad_inicial=cantidad,
-                    cantidad_actual=cantidad,
-                    precio_unitario_compra=d.get('precio_unitario_compra') or 0,
-                    estado='CUARENTENA',   # Siempre inicia en cuarentena
-                    recibido_por=request.user,
-                    observaciones_qc=d.get('observaciones_qc', ''),
-                )
+                lote = LoteReactivoLab.objects.create(**lote_data)
                 # Actualizar precio última compra en catálogo
                 reactivo.precio_ultima_compra = lote.precio_unitario_compra
                 reactivo.save(update_fields=['precio_ultima_compra'])
@@ -316,6 +333,8 @@ def crear_lote(request, empresa):
     ctx = {
         'titulo': 'Registrar Nuevo Lote',
         'reactivos': reactivos,
+        'empresa': empresa,
+        'inserto_choices': LoteReactivoLab.INSERTO_ESTADO_CHOICES,
     }
     return render(request, 'inventario/form_lote.html', ctx)
 

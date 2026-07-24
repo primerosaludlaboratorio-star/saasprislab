@@ -278,10 +278,26 @@ def _recibir_mercancia(request, oc, empresa):
                         continue
                     lote_data.update({
                         'reactivo': catalogo_item,
+                        'marca': d.get(f'recibido_{linea.pk}_marca', '').strip(),
                         'numero_lote': numero_lote,
                         'fecha_caducidad': caducidad,
+                        'fecha_apertura': d.get(f'recibido_{linea.pk}_fecha_apertura') or None,
+                        'fecha_compra': d.get(f'recibido_{linea.pk}_fecha_compra') or None,
+                        'factura_numero': d.get(f'recibido_{linea.pk}_factura_numero', '').strip(),
+                        'factura_estado': d.get(f'recibido_{linea.pk}_factura_estado', 'PENDIENTE'),
+                        'factura_fecha': d.get(f'recibido_{linea.pk}_factura_fecha') or None,
+                        'factura_documento': request.FILES.get(f'recibido_{linea.pk}_factura_documento'),
+                        'inserto_estado': d.get(f'recibido_{linea.pk}_inserto_estado', 'PENDIENTE'),
+                        'inserto_version': d.get(f'recibido_{linea.pk}_inserto_version', '').strip(),
+                        'inserto_documento': request.FILES.get(f'recibido_{linea.pk}_inserto_documento'),
                         'estado': 'CUARENTENA',
+                        'trazabilidad_observaciones': d.get(f'recibido_{linea.pk}_trazabilidad_observaciones', '').strip(),
                     })
+                    lote_preview = LoteModel(**lote_data)
+                    pendientes = lote_preview.obtener_campos_pendientes()
+                    if not empresa.inventario_modo_adaptacion and pendientes:
+                        errores.append(f'{linea.descripcion_snapshot}: trazabilidad incompleta ({", ".join(pendientes)})')
+                        continue
                 elif linea.silo == 'CONSULTORIO':
                     lote_data.update({
                         'insumo': catalogo_item,

@@ -98,20 +98,20 @@
       <i class="bi bi-box-arrow-in-down me-2"></i>Recibir Mercancía — Crear Lotes Automáticamente
     </div>
     <div class="card-body">
-      <form method="post">{% csrf_token %}
+      <form method="post" enctype="multipart/form-data">{% csrf_token %}
         <input type="hidden" name="accion" value="recibir_mercancia">
-        <div class="alert alert-info py-2 small mb-3">
+          <div class="alert alert-info py-2 small mb-3">
           <i class="bi bi-info-circle me-1"></i>
           Ingresa las cantidades realmente recibidas. El sistema creará los lotes en los silos correspondientes.
           <strong>Reactivos LAB requieren número de lote y caducidad.</strong>
         </div>
         <div class="table-responsive">
-          <table class="table table-sm table-bordered">
+          <table class="table table-sm table-bordered align-middle">
             <thead class="table-light">
               <tr>
                 <th>Silo</th><th>Artículo</th>
                 <th>Cant. Recibida</th><th>N° Lote</th>
-                <th>Caducidad</th><th>Precio Real</th>
+                <th>Caducidad</th><th>Marca</th><th>Compra</th><th>Factura</th><th>Inserto</th><th>Precio Real</th>
               </tr>
             </thead>
             <tbody>
@@ -134,6 +134,30 @@
                 <td>
                   <input type="date" name="recibido_{{ l.pk }}_caducidad" class="form-control form-control-sm"
                          style="width:140px">
+                </td>
+                <td><input type="text" name="recibido_{{ l.pk }}_marca" class="form-control form-control-sm"
+                           placeholder="Opcional" style="width:120px"></td>
+                <td><input type="date" name="recibido_{{ l.pk }}_fecha_compra" class="form-control form-control-sm"
+                           style="width:140px"></td>
+                <td>
+                  <input type="text" name="recibido_{{ l.pk }}_factura_numero" class="form-control form-control-sm mb-1"
+                         placeholder="Folio opcional" style="width:130px">
+                  <select name="recibido_{{ l.pk }}_factura_estado" class="form-select form-select-sm mb-1" style="width:130px">
+                    <option value="PENDIENTE">Pendiente</option>
+                    <option value="NO_APLICA">No aplica</option>
+                    <option value="NO_DISPONIBLE">No disponible</option>
+                    <option value="REGISTRADA">Registrada</option>
+                  </select>
+                  <input type="date" name="recibido_{{ l.pk }}_factura_fecha" class="form-control form-control-sm"
+                         style="width:130px">
+                </td>
+                <td>
+                  <select name="recibido_{{ l.pk }}_inserto_estado" class="form-select form-select-sm" style="width:150px">
+                    <option value="PENDIENTE">Pendiente</option>
+                    <option value="NO_APLICA">No aplica</option>
+                    <option value="NO_DISPONIBLE">No disponible</option>
+                    <option value="ADJUNTO">Adjunto</option>
+                  </select>
                 </td>
                 <td>
                   <div class="input-group input-group-sm" style="width:130px">

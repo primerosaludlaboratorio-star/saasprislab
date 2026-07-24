@@ -827,3 +827,24 @@ Evidencia posterior al cambio:
 Observación operativa: la ruta `/laboratorio/` registró una medición aislada de `865 ms`, con `12` consultas y respuesta `200`; no es una falla funcional ni un exceso de consultas, pero queda como métrica para seguimiento de rendimiento.
 
 Límite de cierre clínico: la fachada centraliza la evaluación, pero no convierte el sistema en diagnóstico autónomo. Las recomendaciones siguen siendo asistidas y la liberación requiere intervención humana. CCI/Westgard estricto permanece desactivado hasta que el laboratorio configure materiales, lotes, equipos, medias y desviaciones reales; no se inventan esos datos en producción.
+
+## Trazabilidad progresiva de reactivos - 2026-07-24
+
+Se incorporó el primer bloque de inventario de laboratorio para permitir una migración gradual sin perder control operativo:
+
+- `Empresa.inventario_modo_adaptacion` permite trabajar temporalmente con datos administrativos incompletos;
+- `LoteReactivoLab` conserva marca, fecha de compra, factura/folio, fecha de factura, archivos de factura e inserto, versión del inserto y observaciones;
+- factura e inserto tienen estados explícitos, incluyendo `NO_APLICA` y `NO_DISPONIBLE`;
+- cada lote calcula y conserva sus campos pendientes, y muestra `ADAPTACION` o `COMPLETA`;
+- lote, caducidad y cantidad siguen siendo datos operativos; el lote continúa entrando en cuarentena y el descuento automático por consumo no se desactiva;
+- recepción manual y recepción desde orden de compra aceptan los nuevos datos sin romper el FEFO ni el flujo de QC;
+- al desactivar el modo adaptación, la creación/recepción de lotes de laboratorio rechaza los faltantes documentales en lugar de ocultarlos.
+
+Verificación local:
+
+- `manage.py check`: sin errores;
+- `makemigrations --check --noinput`: sin cambios pendientes;
+- pruebas de trazabilidad progresiva: `2/2` verdes;
+- regresión de seguridad LIMS: `5/5` verdes.
+
+Este bloque aún no está desplegado en producción. Antes del despliegue quedan por integrar los mismos estados en los silos de consultorio/general, relacionar el consumo con el equipo ejecutor y conectar los materiales CCI con el inventario de controles. No se deben cargar consumos definitivos por equipo hasta completar esas relaciones.
