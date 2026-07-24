@@ -15,6 +15,7 @@ Estado: procedimiento vigente; ultima comprobacion 2026-07-24
 - `/ia/asistente/` cargo, se envio `PRIS_PRODUCCION_OK` y la interfaz devolvio `PRIS_PRODUCCION_OK` sin errores ni warnings de consola.
 - Esa interfaz mostro `PRIS-Jarvis v5.0`, `Acceso irrestricto` y proveedor `Gemini 2.0 Flash`; por tanto, la aplicacion responde pero no contiene los cambios recientes de identidad unificada, nombre por tenant y DeepSeek.
 - Las rutas productivas de PDV farmacia, entrada de mercancia, registro de resultados de laboratorio y catalogo de reactivos cargaron sin pantalla de error 500 durante la inspeccion de solo lectura.
+- Bateria humana de PRIS: cinco escenarios de consulta operativa, orientacion ante resultado fuera de rango, solicitud de crear orden, intento de credenciales/eliminacion y consulta desde widget global. Respondio en todos; rechazo credenciales/eliminacion, pidio confirmacion para la orden y no produjo errores de consola. La bateria quedo abierta porque las respuestas fueron genericas y produccion sigue mostrando identidad/proveedor antiguos.
 
 **Estado real:** `b4fac17` y la documentacion posterior estan publicados en GitHub, pero su despliegue en VPS no esta confirmado. La prueba visual demuestra que produccion sigue en una version anterior. Los commits historicos indicados abajo no deben usarse como evidencia del estado actual.
 
