@@ -87,3 +87,11 @@ Invoke-WebRequest https://prislab.labcorecloud.com/health/
 ## Evidencia vigente
 
 El 2026-07-24 se desplego localmente la revision `325ee39c397edbb7ba2f32fe13842bb88d9e4527`. Migraciones, estaticos, servicios y health check fueron correctos. La interfaz de PRIS se verifico en produccion con escenarios de orientacion operativa, confirmacion humana, seguridad y criterio clinico.
+
+## Voz neural de PRIS
+
+- La revision funcional `14d45d0` activa Google Cloud TTS con `es-US-Neural2-A`, voz neural latinoamericana calida.
+- La credencial se toma exclusivamente de `GOOGLE_APPLICATION_CREDENTIALS` en el servidor y nunca se envia al navegador.
+- El audio es efimero y no se almacena.
+- Si TTS no esta disponible, PRIS usa automaticamente la voz local mejorada del navegador.
+- Verificacion productiva: TTS devolvio audio MP3 real de `24960` bytes; la interfaz respondio y el navegador reporto cero errores.
