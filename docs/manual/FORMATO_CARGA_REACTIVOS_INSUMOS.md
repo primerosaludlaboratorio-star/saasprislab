@@ -232,3 +232,90 @@ El inventario no se considera cerrado solo porque los artículos aparezcan en pa
 - los consumos LIMS están configurados y probados;
 - una salida de prueba descuenta del lote correcto;
 - el responsable sanitario valida el conjunto.
+
+## 13. Regla de descuento automático por prueba
+
+El descuento debe trabajar con una **receta de consumo persistente**, no con texto libre ni con una selección temporal de pantalla.
+
+### 13.1 Componentes obligatorios y alternativas
+
+Una prueba puede tener varios componentes obligatorios:
+
+| Grupo de consumo | Ejemplo para hemoglobina glucosilada | Regla |
+|---|---|---|
+| Reactivo principal | Kit Wondfo para HbA1c | Se descuenta una opción seleccionada |
+| Consumible | Punta o cubeta | Se descuenta si está configurado |
+| Líquido del equipo | Diluyente específico del analizador | Se descuenta si aplica |
+| Control/calibración | Material QC o calibrador | Se registra como consumo técnico o QC según el procedimiento |
+
+Dentro de un mismo grupo pueden existir alternativas. Por ejemplo, dos marcas compatibles para HbA1c. Solo una debe estar marcada como **seleccionada para uso**; la otra permanece disponible, pero no descuenta mientras no sea activada.
+
+### 13.2 Cambio de reactivo en operación
+
+El cambio de marca o reactivo no debe borrar el historial. El flujo esperado es:
+
+1. Registrar el nuevo artículo y su lote.
+2. Liberar el lote mediante QC.
+3. Seleccionarlo como alternativa activa para ese grupo, analito y equipo.
+4. Registrar fecha, usuario y motivo del cambio.
+5. Las nuevas pruebas descuentan el nuevo reactivo.
+6. Las salidas históricas conservan el reactivo y lote que realmente se usaron.
+
+La marca puede cambiar entre lotes sin crear otro analito. Si cambia la composición, método o compatibilidad, debe crearse una fórmula alternativa nueva y no editar destructivamente la fórmula histórica.
+
+### 13.3 Cantidad por prueba y presentaciones
+
+El inventario debe aceptar tanto presentaciones como consumo operativo. Ejemplo:
+
+| Dato | Valor |
+|---|---:|
+| Presentación recibida | Caja de 24 pruebas |
+| Cantidad inicial del lote | `24 UNIDADES` |
+| Consumo por resultado | `1 UNIDAD` |
+| Repetición | `1 UNIDAD` adicional |
+| Saldo después de una prueba | `23 UNIDADES` |
+
+Si el fabricante expresa el rendimiento como `24 pruebas por caja`, la caja no debe registrarse como una sola unidad consumible si el descuento se hará prueba por prueba. Se debe registrar la equivalencia de presentación y la unidad operativa que realmente se descuenta.
+
+### 13.4 Repetición de una prueba
+
+Una repetición no debe editar ni duplicar silenciosamente el resultado original. Debe crear un **evento de repetición** con:
+
+- resultado o analito relacionado;
+- motivo de la repetición;
+- usuario que la autorizó y usuario que la ejecutó;
+- fecha y hora;
+- reactivos/lotes descontados;
+- cantidad adicional consumida;
+- clave de idempotencia para impedir doble descuento por reenvío.
+
+La prueba inicial descuenta una vez. Cada repetición autorizada descuenta una vez adicional. Cancelar o corregir un evento no debe borrar historial: debe generar una reversa trazable cuando corresponda.
+
+### 13.5 Equipos e interfaces
+
+La receta de consumo debe poder asociarse a:
+
+- empresa y sucursal;
+- analito LIMS;
+- equipo o analizador;
+- código que envía el equipo por HL7/ASTM;
+- grupo de consumo;
+- reactivo o consumible;
+- unidad y cantidad por ejecución;
+- alternativa seleccionada;
+- vigencia desde/hasta;
+- usuario y motivo del cambio.
+
+Si un analito se procesa en dos equipos, cada equipo puede tener una receta diferente. Si no se especifica equipo, la receta solo debe usarse como configuración genérica cuando no exista una receta específica para el equipo utilizado.
+
+### 13.6 Estado actual de implementación
+
+El sistema ya cuenta con descuento FEFO idempotente al validar `ResultadoParametro`, fórmulas por analito y salidas ligadas a lote. Antes de declarar este flujo cerrado aún deben implementarse y probarse:
+
+- grupos de consumo con alternativas seleccionables;
+- selección persistente por analito y equipo;
+- vínculo del resultado con el equipo de origen;
+- evento formal de repetición con descuento adicional;
+- reversa trazable de una repetición;
+- pantalla para cambiar de reactivo sin perder el historial;
+- pruebas de caja de 24 pruebas, consumo inicial, cambio de marca, cambio de lote y repetición.
