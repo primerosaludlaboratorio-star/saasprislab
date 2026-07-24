@@ -920,3 +920,30 @@ Verificación y despliegue:
 - el archivo versionado `farmacia_receta_ocr.7df278bea058.js` quedó presente en producción.
 
 Límite pendiente: no existe actualmente un webhook de WhatsApp Business para recibir imágenes entrantes de pacientes. El flujo publicado cubre cámara/carga desde el PDV; la recepción automática por WhatsApp requiere definir proveedor (Meta Cloud API o Twilio), webhook HTTPS, verificación de firma, consentimiento y reglas de identificación del paciente. No se simula esa integración con un enlace `wa.me`.
+
+## Lector asistido de facturas y notas de compra - 2026-07-24
+
+Se extendió el patrón de visor a Inventario de Farmacia mediante `LecturaCompraFarmacia` y el commit `fccbef1`:
+
+- botón `Leer factura` en Registrar Compra, con cámara/carga de imagen;
+- extracción estructurada de proveedor, RFC, folio, fecha, subtotal, IVA, total y líneas de producto;
+- conciliación de cada línea contra nombre comercial, sustancia activa, marca, concentración y presentación;
+- revisión y corrección humana de proveedor, folio, fecha, producto, cantidad, costo, lote, caducidad y marca;
+- las líneas confirmadas se colocan en `items_compra_temp` para reutilizar la compra multi-lote existente;
+- el movimiento de Kardex solo se crea al guardar la compra completa; analizar o confirmar el OCR nunca modifica inventario;
+- aislamiento por empresa y rechazo de productos pertenecientes a otro tenant;
+- registro auditable de imagen, extracción, sugerencias, usuario y confirmación.
+
+Producción:
+
+- migración `farmacia.0007_lecturacomprafarmacia` aplicada;
+- `manage.py check` y `makemigrations --check` sin errores;
+- producción sincronizada en `fccbef1`, servicios activos;
+- pantalla `/farmacia/erp/compras/registrar/` verificada autenticada: botón, modal, carga de archivo y confirmación presentes;
+- no se creó ninguna entrada ni movimiento de inventario durante la prueba.
+
+Limitaciones verificadas:
+
+- el OCR real no puede procesarse todavía porque producción no tiene `GOOGLE_API_KEY` ni `GEMINI_API_KEY`; la aplicación devuelve error controlado y no inventa productos;
+- la pantalla exige seleccionar el proveedor registrado, aunque conserva el texto detectado como referencia;
+- notas/facturas PDF y recepción automática por correo/WhatsApp quedan para una fase posterior; el bloque actual cubre foto desde la pantalla de compras.
