@@ -167,6 +167,8 @@ Si el Programador exige aplicar el esquema **antes** de exponer la nueva revisi�
 python manage.py migrate core 0067_resultadoparametro_ia_ethics_p18 --noinput
 # o migración completa:
 python manage.py migrate --noinput
+
+> **VPS con systemd:** nunca ejecutar la migración desde una shell sin el entorno del servicio. En PRISLAB el comando manual puede caer en SQLite mientras Gunicorn usa PostgreSQL. Ejecutar el comando mediante la unidad que carga `/opt/prislab/app/.env` (`EnvironmentFile`) y comprobar después `settings.DATABASES['default']['ENGINE']` antes de validar el despliegue.
 ```
 
 4. Verificar: **`python manage.py showmigrations core`** → **`0067`** marcada con **`[X]`**.
