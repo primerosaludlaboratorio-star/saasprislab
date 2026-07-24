@@ -3,13 +3,13 @@
 ## Corte vigente 2026-07-24
 
 - Rama: `release/v1.0-local`.
-- Commit publicado actual: `50fca10` (documentacion); codigo funcional objetivo: `b4fac17`.
-- Run de deploy: `30122961837` -> `failure` en `Validate deploy secrets`; no llego a SSH, migraciones ni smoke tests.
+- Commit publicado actual: `a13d15b` (documentacion); codigo funcional objetivo: `551eaaa`.
+- Run de deploy: `30124872712` -> `failure` en `Validate deploy secrets`; no llego a SSH, migraciones ni smoke tests.
 - Salud publica: `/health/`, `/live/` y `/ready/` -> HTTP 200.
 - Commit en VPS: **NO CONFIRMADO**. La prueba SSH desde esta maquina devuelve `Permission denied (publickey,password)`.
 - Verificacion humana productiva 2026-07-24: `/ia/asistente/` respondio correctamente a `PRIS_PRODUCCION_OK`, pero mostro `PRIS-Jarvis v5.0` y `Gemini 2.0 Flash`; esto confirma que produccion sigue en una version anterior al cierre PRIS/DeepSeek.
 - Rutas inspeccionadas sin error 500 en lectura: `/farmacia/pdv/`, `/farmacia/almacen/entradas/`, `/laboratorio/registro-resultados/` y `/silo-lab/lab/catalogo/`.
-- Validacion CI de `551eaaa`: Quality Gate, SBOM, CodeQL y Secret Scan en verde. Deploy VPS `30124872712` sigue fallando en `Validate deploy secrets`, antes de SSH.
+- Validacion CI de `551eaaa`: Quality Gate, SBOM, CodeQL y Secret Scan en verde. Deploy VPS `30124872712` sigue fallando en `Validate deploy secrets`, antes de SSH. La inspeccion productiva actual sigue mostrando `PRIS-Jarvis` y `Gemini 2.0 Flash`.
 - Criterio para cerrar deploy: obtener `git rev-parse HEAD` en `/opt/prislab/app`, aplicar `migrate`, reiniciar los tres servicios y repetir health checks.
 
 Ultima actualizacion: 2026-06-25T00:00:00

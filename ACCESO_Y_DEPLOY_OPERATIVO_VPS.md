@@ -4,10 +4,10 @@ Estado: procedimiento vigente; ultima comprobacion 2026-07-24
 
 ## Corte de verificacion 2026-07-24
 
-### Corte vigente posterior a `b4fac17`
+### Corte vigente posterior a `551eaaa`
 
-- El ultimo commit de la rama `release/v1.0-local` es `b4fac17`.
-- El workflow `PRISLAB Deploy to VPS` correspondiente es el run `30122961837`.
+- El ultimo commit de la rama `release/v1.0-local` es `a13d15b` (documentacion); el ultimo commit funcional es `551eaaa`.
+- El workflow `PRISLAB Deploy to VPS` correspondiente al codigo funcional es el run `30124872712`.
 - Ese run termino en `failure` durante `Validate deploy secrets`; no ejecuto `Setup SSH`, `Deploy on VPS`, migraciones ni smoke tests.
 - `/health/`, `/live/` y `/ready/` del dominio publico responden HTTP 200, pero esa evidencia no identifica el commit desplegado.
 - La prueba SSH desde esta maquina al host documentado (`216.238.89.243`) responde `Permission denied (publickey,password)` con `~/.ssh/id_ed25519`.
@@ -17,7 +17,7 @@ Estado: procedimiento vigente; ultima comprobacion 2026-07-24
 - Las rutas productivas de PDV farmacia, entrada de mercancia, registro de resultados de laboratorio y catalogo de reactivos cargaron sin pantalla de error 500 durante la inspeccion de solo lectura.
 - Bateria humana de PRIS: cinco escenarios de consulta operativa, orientacion ante resultado fuera de rango, solicitud de crear orden, intento de credenciales/eliminacion y consulta desde widget global. Respondio en todos; rechazo credenciales/eliminacion, pidio confirmacion para la orden y no produjo errores de consola. La bateria quedo abierta porque las respuestas fueron genericas y produccion sigue mostrando identidad/proveedor antiguos.
 
-**Estado real:** `b4fac17` y la documentacion posterior estan publicados en GitHub, pero su despliegue en VPS no esta confirmado. La prueba visual demuestra que produccion sigue en una version anterior. Los commits historicos indicados abajo no deben usarse como evidencia del estado actual.
+**Estado real:** `551eaaa` y la documentacion posterior estan publicados en GitHub, pero su despliegue en VPS no esta confirmado. La prueba visual actual demuestra que produccion sigue en una version anterior. Los commits historicos indicados abajo no deben usarse como evidencia del estado actual.
 
 ### Corte historico, no vigente
 
@@ -32,7 +32,7 @@ La documentacion del procedimiento existe y se conserva. El siguiente bloque se 
 
 Bloqueador actual: configurar en el Environment `production` de GitHub `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` y `DEPLOY_KNOWN_HOSTS`. Las variables opcionales son `DEPLOY_ROOT_DIR=/opt/prislab`, `DEPLOY_APP_DIR=/opt/prislab/app` y `DEPLOY_APP_USER=prislab`.
 
-El deploy manual de `8194e85` queda como evidencia historica. No debe usarse para afirmar que `b4fac17` o posteriores estan desplegados.
+El deploy manual de `8194e85` queda como evidencia historica. No debe usarse para afirmar que `551eaaa` o posteriores estan desplegados.
 
 ### Bloqueador actual de despliegue
 
@@ -110,7 +110,7 @@ Commits historicos ya preparados y empujados:
 - `5650acb` - Bloque B - Codex
 - `e04ca4b` - Bloque C - Documentacion
 
-El listado anterior corresponde a un corte historico. Para el corte actual, el commit fuente que debe desplegarse es `b4fac17` o posterior. No existe evidencia vigente de que ese commit este en VPS.
+El listado anterior corresponde a un corte historico. Para el corte actual, el commit fuente que debe desplegarse es `551eaaa` o posterior. No existe evidencia vigente de que ese commit este en VPS.
 
 ## Procedimiento exacto de deploy
 
