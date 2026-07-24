@@ -54,7 +54,7 @@ RELEASE_DIR="/opt/prislab/releases/$REVISION"
 mkdir -p "$RELEASE_DIR"
 tar -xzf "$ARCHIVE" -C "$RELEASE_DIR"
 rsync -a --delete \
-  --exclude='.env' --exclude='.venv' --exclude='media/' \
+  --exclude='.git/' --exclude='.env' --exclude='.venv' --exclude='media/' \
   --exclude='staticfiles/' --exclude='logs/' \
   "$RELEASE_DIR/" "$APP_DIR/"
 printf '%s\n' "$REVISION" > "$APP_DIR/DEPLOYED_REVISION"
