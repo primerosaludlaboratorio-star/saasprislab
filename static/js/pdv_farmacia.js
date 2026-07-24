@@ -477,9 +477,9 @@ function _agregarAlCarrito(prod) {
     if (pv > 0 && costo > 0 && pv < costo) { _mostrarAlerta("Precio bajo costo", prod.nombre_comercial + ": precio=" + _fmt(pv) + " < costo=" + _fmt(costo) + ". Verifique tarifa.", "warning"); }
     var idx = window.carrito.findIndex(function(i){ return i.id===prod.id && i.lote_id===(prod.lote_id||null); });
     if (idx >= 0) {
-        if (window.carrito[idx].cantidad < stock) { window.carrito[idx].cantidad++; } else { _mostrarAlerta("Stock maximo","No hay mas unidades.","warning"); return; }
+        if (window.carrito[idx].cantidad < stock) { window.carrito[idx].cantidad++; window.carrito[idx].cantidad_prescrita++; } else { _mostrarAlerta("Stock maximo","No hay mas unidades.","warning"); return; }
     } else {
-        window.carrito.push({id:prod.id,nombre:prod.nombre_comercial||"",sustancia:prod.sustancia_activa||"",precio_base:parseFloat(prod.precio_base)||0,precio_neto:parseFloat(prod.precio_compra)||0,precio_venta:pv,iva_pct:parseFloat(prod.iva_pct)||0,cantidad:1,lote_id:prod.lote_id||null,lote_num:prod.numero_lote_proximo||"",stock:stock,dias_restantes:diasRestantes,es_antibiotico:!!prod.es_antibiotico,es_controlado:!!prod.es_controlado,requiere_receta:!!(prod.requiere_receta||prod.es_antibiotico||prod.es_controlado),costo:costo});
+        window.carrito.push({id:prod.id,nombre:prod.nombre_comercial||"",sustancia:prod.sustancia_activa||"",precio_base:parseFloat(prod.precio_base)||0,precio_neto:parseFloat(prod.precio_compra)||0,precio_venta:pv,iva_pct:parseFloat(prod.iva_pct)||0,cantidad:1,cantidad_prescrita:1,motivo_surtido_parcial:'',lote_id:prod.lote_id||null,lote_num:prod.numero_lote_proximo||"",stock:stock,dias_restantes:diasRestantes,es_antibiotico:!!prod.es_antibiotico,es_controlado:!!prod.es_controlado,requiere_receta:!!(prod.requiere_receta||prod.es_antibiotico||prod.es_controlado),costo:costo});
     }
     renderCarrito();
     _renderTabs();
@@ -496,7 +496,10 @@ window.renderCarrito = function() {
     var html = '';
     window.carrito.forEach(function(item,i) {
         var sub = item.precio_venta * item.cantidad;
-        html += '<tr><td class="text-muted small">'+(i+1)+'</td><td><div class="fw-bold" style="font-size:.85rem">'+item.nombre+'</div><small class="text-muted">'+item.sustancia+'</small>'+(item.lote_num?'<br><span class="badge bg-light text-dark" style="font-size:.7rem">Lote:'+item.lote_num+'</span>':'')+(item.es_antibiotico?'<span class="badge bg-danger ms-1" style="font-size:.65rem">AB</span>':'')+'</td><td><small class="text-muted">'+(item.lote_num||'&mdash;')+'</small></td><td class="text-center"><div class="input-group input-group-sm" style="max-width:90px;margin:0 auto"><button class="btn btn-outline-secondary btn-sm py-0 px-1" onclick="cambiarCantidad('+i+',-1)">&minus;</button><input type="number" class="form-control text-center py-0" style="font-size:.85rem" value="'+item.cantidad+'" min="1" max="'+item.stock+'" onchange="setCantidad('+i+',this.value)"><button class="btn btn-outline-secondary btn-sm py-0 px-1" onclick="cambiarCantidad('+i+',1)">+</button></div></td><td class="text-end"><small class="text-muted d-block">'+_fmt(item.precio_venta)+'</small></td><td class="text-end fw-bold">'+_fmt(sub)+'</td><td><button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="quitarItem('+i+')"><i class="bi bi-trash3"></i></button></td></tr>';
+        var prescrita = item.cantidad_prescrita || item.cantidad;
+        var parcial = prescrita > item.cantidad;
+        var motivo = parcial ? '<select class="form-select form-select-sm mt-1" onchange="setMotivoSurtido('+i+',this.value)" aria-label="Motivo de surtido parcial"><option value="">Motivo requerido</option><option value="PRESUPUESTO_INSUFICIENTE"'+(item.motivo_surtido_parcial==='PRESUPUESTO_INSUFICIENTE'?' selected':'')+'>Presupuesto insuficiente</option><option value="DECISION_PACIENTE"'+(item.motivo_surtido_parcial==='DECISION_PACIENTE'?' selected':'')+'>Decisión del paciente</option><option value="SIN_EXISTENCIA"'+(item.motivo_surtido_parcial==='SIN_EXISTENCIA'?' selected':'')+'>Sin existencia</option><option value="OTRO"'+(item.motivo_surtido_parcial==='OTRO'?' selected':'')+'>Otro</option></select>' : '';
+        html += '<tr><td class="text-muted small">'+(i+1)+'</td><td><div class="fw-bold" style="font-size:.85rem">'+item.nombre+'</div><small class="text-muted">'+item.sustancia+'</small>'+(item.lote_num?'<br><span class="badge bg-light text-dark" style="font-size:.7rem">Lote:'+item.lote_num+'</span>':'')+(item.es_antibiotico?'<span class="badge bg-danger ms-1" style="font-size:.65rem">AB</span>':'')+(parcial?'<br><span class="badge bg-warning text-dark mt-1">Prescrita: '+prescrita+' | Surtir: '+item.cantidad+'</span>'+motivo:'')+'</td><td><small class="text-muted">'+(item.lote_num||'&mdash;')+'</small></td><td class="text-center"><div class="input-group input-group-sm" style="max-width:90px;margin:0 auto"><button class="btn btn-outline-secondary btn-sm py-0 px-1" onclick="cambiarCantidad('+i+',-1)">&minus;</button><input type="number" class="form-control text-center py-0" style="font-size:.85rem" value="'+item.cantidad+'" min="1" max="'+item.stock+'" onchange="setCantidad('+i+',this.value)"><button class="btn btn-outline-secondary btn-sm py-0 px-1" onclick="cambiarCantidad('+i+',1)">+</button></div></td><td class="text-end"><small class="text-muted d-block">'+_fmt(item.precio_venta)+'</small></td><td class="text-end fw-bold">'+_fmt(sub)+'</td><td><button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="quitarItem('+i+')"><i class="bi bi-trash3"></i></button></td></tr>';
     });
     tbody.innerHTML = html;
     var t = _calcTotales(); _actualizarTotalesPanel(t.subtotal, t.iva, t.total);
@@ -528,6 +531,9 @@ window.setCantidad = function(idx, val) {
     }
     window.carrito[idx].cantidad = n;
     renderCarrito();
+};
+window.setMotivoSurtido = function(idx, motivo) {
+    if (window.carrito[idx]) window.carrito[idx].motivo_surtido_parcial = motivo || '';
 };
 window.quitarItem = function(idx){window.carrito.splice(idx,1);renderCarrito();};
 window.limpiarCarrito = function(){
@@ -574,7 +580,7 @@ window.enviarVenta = function(){
     var ec=document.getElementById('toggle-cortesia')?.checked||false;
     var cl=document.getElementById('p-cliente');var pid=document.getElementById('p-paciente-id');var sel=document.getElementById('selector-descuento');
     var pd=(sel?(parseFloat(sel.value)||0):0)*100;
-    var items=window.carrito.map(function(item){return{producto_id:item.id,cantidad:item.cantidad,precio_unitario:item.precio_venta,subtotal:item.precio_venta*item.cantidad,iva_item:(item.precio_venta*item.cantidad)*(item.iva_pct/100),lote_id:item.lote_id||null};});
+    var items=window.carrito.map(function(item){return{producto_id:item.id,cantidad:item.cantidad,cantidad_prescrita:item.cantidad_prescrita||item.cantidad,motivo_surtido_parcial:item.motivo_surtido_parcial||'',precio_unitario:item.precio_venta,subtotal:item.precio_venta*item.cantidad,iva_item:(item.precio_venta*item.cantidad)*(item.iva_pct/100),lote_id:item.lote_id||null};});
     var payload={items:items,pagos:pagos,subtotal:t.subtotal.toFixed(2),iva_total:t.iva.toFixed(2),redondeo:'0',total_final:t.total.toFixed(2),descuento_aplicado:t.descuento.toFixed(2),descuento_porcentaje:pd,total_original:t.subtotal.toFixed(2),cliente:(cl?.value?.trim()||'PUBLICO GENERAL'),paciente_id:pid?.value||null,efectivo_recibido:ef.toFixed(2),cambio_entregado:cambio.toFixed(2),es_cortesia:ec,motivo_cortesia:document.getElementById('motivo-cortesia')?.value||'',autorizado_por_cortesia:document.getElementById('autorizado-por-cortesia')?.value||'',codigo_cupon:window.cuponAplicado?.codigo||'',receta_id:window.recetaActual?window.recetaActual.id||null:null,medico_nombre:window.recetaActual?window.recetaActual.medico||'':'',medico_cedula:window.recetaActual?window.recetaActual.cedula||'':'',receta_fecha:window.recetaActual?window.recetaActual.fecha||'':'',numero_receta_externo:window.recetaActual?window.recetaActual.numero_externo||'':'',informacion_adicional:window.recetaActual?window.recetaActual.info_adicional||'':'',es_controlada:window.carrito.some(function(i){return !!(i.requiere_receta||i.es_antibiotico);})};
     fetch('/farmacia/pdv/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':_csrf(),'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin',body:JSON.stringify(payload)})
     .then(function(r){return r.json();})

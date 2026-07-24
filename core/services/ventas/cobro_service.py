@@ -11,7 +11,7 @@ from datetime import date, datetime
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -20,6 +20,8 @@ from core.models import (
     AuditLog,
     DetalleVenta,
     DetalleVentaLote,
+    DispensacionReceta,
+    DemandaInsatisfecha,
     Lote,
     Medico,
     MetaVenta,
@@ -27,6 +29,7 @@ from core.models import (
     Pago,
     Producto,
     Receta,
+    RecetaItem,
     Venta,
 )
 from core.utils.trazabilidad import registrar_trazabilidad
@@ -243,6 +246,34 @@ class VentaFarmaciaService:
                             numero_receta_externo=data.get('numero_receta_externo', '') or None,
                             informacion_adicional=data.get('informacion_adicional', '') or None,
                         )
+
+                # Validar surtido parcial antes de tocar inventario. La receta
+                # original se conserva y solo se registra la cantidad entregada.
+                for idx, raw_item in enumerate(items, start=1):
+                    cantidad_item = int(raw_item.get('cantidad', 1))
+                    try:
+                        cantidad_prescrita = int(raw_item.get('cantidad_prescrita', cantidad_item))
+                    except (TypeError, ValueError, AttributeError):
+                        return JsonResponse({
+                            'status': 'error',
+                            'mensaje': f'La cantidad prescrita del producto #{idx} no es válida.',
+                        }, status=400)
+                    if cantidad_prescrita < cantidad_item:
+                        return JsonResponse({
+                            'status': 'error',
+                            'mensaje': f'La cantidad surtida del producto #{idx} supera la cantidad prescrita.',
+                        }, status=400)
+                    if cantidad_prescrita > cantidad_item:
+                        if not receta:
+                            return JsonResponse({
+                                'status': 'error',
+                                'mensaje': 'El surtido parcial requiere una receta vinculada.',
+                            }, status=400)
+                        if not raw_item.get('motivo_surtido_parcial'):
+                            return JsonResponse({
+                                'status': 'error',
+                                'mensaje': f'Capture el motivo del surtido parcial del producto #{idx}.',
+                            }, status=400)
 
                 # 4.5. Verificar cupón de marketing (si existe)
                 cupon_marketing = None
@@ -514,6 +545,70 @@ class VentaFarmaciaService:
                             lote_id=uso['lote_id'],
                             cantidad_extraida=int(uso['cantidad_descontada']),
                         )
+
+                    # Registro por venta del surtido completo o parcial.
+                    cantidad_prescrita_solicitada = int(item_data.get('cantidad_prescrita', cantidad))
+                    if receta:
+                        receta_item = RecetaItem.objects.filter(
+                            receta=receta,
+                            medicamento=producto,
+                        ).order_by('id').first()
+                        if receta_item is None:
+                            receta_item = RecetaItem.objects.create(
+                                receta=receta,
+                                medicamento=producto,
+                                cantidad=cantidad_prescrita_solicitada,
+                                precio_momento=precio_unitario,
+                                estado='PROCESADO',
+                            )
+                        elif cantidad_prescrita_solicitada > receta_item.cantidad:
+                            raise ValueError(
+                                f'La cantidad de {producto.nombre} supera la receta registrada.'
+                            )
+                        else:
+                            receta_item.estado = 'PROCESADO'
+                            receta_item.save(update_fields=['estado'])
+
+                        previo_surtido = DispensacionReceta.objects.filter(
+                            receta_item=receta_item,
+                        ).aggregate(total=Sum('cantidad_surtida')).get('total') or 0
+                        if previo_surtido + cantidad > receta_item.cantidad:
+                            raise ValueError(
+                                f'La cantidad de {producto.nombre} supera el saldo pendiente de la receta.'
+                            )
+                        cantidad_prescrita = receta_item.cantidad
+                        cantidad_pendiente = cantidad_prescrita - (previo_surtido + cantidad)
+
+                        DispensacionReceta.objects.create(
+                            empresa=empresa,
+                            sucursal=sucursal_operativa,
+                            receta=receta,
+                            receta_item=receta_item,
+                            venta=venta,
+                            detalle_venta=detalle_row,
+                            producto=producto,
+                            cantidad_prescrita=cantidad_prescrita,
+                            cantidad_surtida=cantidad,
+                            cantidad_pendiente=cantidad_pendiente,
+                            motivo_parcial=item_data.get('motivo_surtido_parcial') or None,
+                            observaciones=item_data.get('observaciones_surtido_parcial') or '',
+                            usuario=request.user,
+                        )
+                        if cantidad_pendiente:
+                            DemandaInsatisfecha.objects.create(
+                                empresa=empresa,
+                                sucursal=sucursal_operativa,
+                                producto_nombre=producto.nombre,
+                                cantidad_dejada=cantidad_pendiente,
+                                causa=(
+                                    'PRECIO_INACEPTABLE'
+                                    if item_data.get('motivo_surtido_parcial') == 'PRESUPUESTO_INSUFICIENTE'
+                                    else 'OTRO'
+                                ),
+                                usuario=request.user,
+                                receta_item=receta_item,
+                                observaciones=item_data.get('observaciones_surtido_parcial') or '',
+                            )
 
                     # Agregar a lista de lotes afectados para auditoría
                     lotes_afectados.append({

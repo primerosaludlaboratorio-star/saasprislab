@@ -194,6 +194,61 @@ class DemandaInsatisfecha(models.Model):
         return f"{self.producto_nombre} - {self.cantidad_dejada} unidades - {self.causa}"
 
 
+class DispensacionReceta(models.Model):
+    """Historial inmutable de cada surtido, completo o parcial, de una receta."""
+
+    MOTIVO_CHOICES = [
+        ('PRESUPUESTO_INSUFICIENTE', 'Presupuesto insuficiente'),
+        ('DECISION_PACIENTE', 'Decisión del paciente'),
+        ('SIN_EXISTENCIA', 'Existencia insuficiente'),
+        ('OTRO', 'Otro'),
+    ]
+
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='dispensaciones_receta')
+    sucursal = models.ForeignKey(Sucursal, on_delete=models.PROTECT, null=True, blank=True)
+    receta = models.ForeignKey(Receta, on_delete=models.PROTECT, related_name='dispensaciones')
+    receta_item = models.ForeignKey(
+        RecetaItem, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='dispensaciones',
+    )
+    venta = models.ForeignKey('Venta', on_delete=models.PROTECT, related_name='dispensaciones_receta')
+    detalle_venta = models.ForeignKey(
+        'DetalleVenta', on_delete=models.PROTECT, related_name='dispensaciones_receta',
+    )
+    producto = models.ForeignKey('Producto', on_delete=models.PROTECT)
+    cantidad_prescrita = models.PositiveIntegerField()
+    cantidad_surtida = models.PositiveIntegerField()
+    cantidad_pendiente = models.PositiveIntegerField(default=0)
+    motivo_parcial = models.CharField(max_length=40, choices=MOTIVO_CHOICES, blank=True, null=True)
+    observaciones = models.TextField(blank=True, default='')
+    usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name='dispensaciones_receta')
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        app_label = 'core'
+        ordering = ['-creado_en']
+        indexes = [
+            models.Index(fields=['empresa', 'receta', 'producto']),
+            models.Index(fields=['venta', 'producto']),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(cantidad_surtida__lte=models.F('cantidad_prescrita')),
+                name='dispensacion_surtida_no_supera_prescrita',
+            ),
+            models.CheckConstraint(
+                check=models.Q(cantidad_pendiente__lte=models.F('cantidad_prescrita')),
+                name='dispensacion_pendiente_no_supera_prescrita',
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f'{self.receta_id} | {self.producto_id} | '
+            f'{self.cantidad_surtida}/{self.cantidad_prescrita}'
+        )
+
+
 # ==============================================================================
 # 5. VENTAS Y FINANZAS: RIGOR FISCAL Y SEGURIDAD
 # ==============================================================================

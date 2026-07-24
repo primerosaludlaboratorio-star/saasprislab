@@ -56,22 +56,30 @@ def asistente_chat(request):
 
         start = time.time()
 
-        # Ruta legacy opcional: DeepSeek si el entorno lo pide explícitamente.
-        # Por defecto, PRIS ejecuta el flujo real con Gemini + function calling.
-        if _get_ai_provider() == 'deepseek':
-            from core.utils.deepseek_client import generate_content as _deepseek_generate
-            respuesta = _deepseek_generate(mensaje, max_tokens=300)
-            return JsonResponse({
-                'status': 'success',
-                'respuesta': respuesta,
-                'tiempo_ms': int((time.time() - start) * 1000),
-                'herramientas_ejecutadas': [],
-            })
-
+        provider = _get_ai_provider()
         from core.utils.gemini_client import _get_api_key
         api_key = _get_api_key()
+        if imagen_b64 and provider == 'deepseek':
+            return JsonResponse({
+                'status': 'error',
+                'respuesta': (
+                    'El asistente de texto está conectado a DeepSeek, pero esta API no recibe imágenes. '
+                    'Para analizar una imagen debe habilitarse un proveedor multimodal autorizado.'
+                ),
+            }, status=422)
         if imagen_b64 and not api_key:
             raise ValueError("GOOGLE_API_KEY no configurada para analizar imagenes.")
+
+        def _llamar_modelo(prompt_texto):
+            """Usa el proveedor activo sin saltarse el contexto ni las herramientas."""
+            if provider == 'deepseek':
+                from core.utils.deepseek_client import generate_content as _deepseek_generate
+                return _deepseek_generate(
+                    prompt_texto,
+                    model_name=getattr(settings, 'DEEPSEEK_MODEL', 'deepseek-v4-flash'),
+                    max_tokens=1200,
+                )
+            return _gemini_rest_call(api_key, prompt_texto)
 
         system_prompt = _build_system_prompt(request, contexto_pagina)
         herramientas_ejecutadas = []
@@ -88,7 +96,7 @@ def asistente_chat(request):
         prompt_texto = ''.join(partes_prompt)
 
         # Primera llamada via REST API v1
-        respuesta_raw = _gemini_rest_call(api_key, prompt_texto, imagen_b64=imagen_b64)
+        respuesta_raw = _llamar_modelo(prompt_texto)
 
         # Ciclo de function calling manual (hasta 8 iteraciones para tareas multi-paso)
         for iteracion in range(8):
@@ -137,7 +145,7 @@ def asistente_chat(request):
                     f"Presenta el resumen del plan al usuario en español, de forma clara y amigable, "
                     f"y pide que confirme con 'sí' para proceder:\nPRIS:"
                 )
-                respuesta_raw = _gemini_rest_call(api_key, ''.join(partes_prompt))
+                respuesta_raw = _llamar_modelo(''.join(partes_prompt))
                 break
 
             # Aclaración necesaria: usuario debe proporcionar más info
@@ -148,7 +156,7 @@ def asistente_chat(request):
                     f"Resultado: {resultado_txt}]\n"
                     f"Pide al usuario la información necesaria para continuar:\nPRIS:"
                 )
-                respuesta_raw = _gemini_rest_call(api_key, ''.join(partes_prompt))
+                respuesta_raw = _llamar_modelo(''.join(partes_prompt))
                 break
 
             # Añadir resultado y continuar ciclo (tool ejecutada correctamente)
@@ -178,7 +186,7 @@ def asistente_chat(request):
                 f"Resultado: {resultado_txt}]\n"
                 f"Continúa con el siguiente paso si lo hay, o responde al usuario de forma natural y concisa:\nPRIS:"
             )
-            respuesta_raw = _gemini_rest_call(api_key, ''.join(partes_prompt))
+            respuesta_raw = _llamar_modelo(''.join(partes_prompt))
 
         respuesta_texto = respuesta_raw or "No pude procesar tu solicitud. Intenta de nuevo."
 
@@ -211,10 +219,10 @@ def asistente_chat(request):
                 'status': 'error',
                 'respuesta': 'Demasiadas consultas en este momento. Espera 30 segundos e intenta de nuevo.',
             }, status=200)
-        if 'API key' in error_msg or 'api_key' in error_msg.lower():
+        if 'API key' in error_msg or 'api_key' in error_msg.lower() or 'DEEPSEEK_API_KEY' in error_msg:
             return JsonResponse({
                 'status': 'error',
-                'respuesta': 'La clave de Gemini no está configurada. Contacta al administrador.',
+                'respuesta': 'La clave del proveedor de IA no está configurada. Contacta al administrador.',
             }, status=200)
         return JsonResponse({
             'status': 'error',

@@ -45,6 +45,7 @@ from .ventas import (
     Receta,
     RecetaItem,
     DemandaInsatisfecha,
+    DispensacionReceta,
     Venta,
     DetalleVenta,
     DetalleVentaLote,
@@ -180,7 +181,7 @@ __all__ = [
     # pacientes
     'Paciente',
     # ventas
-    'Receta', 'RecetaItem', 'DemandaInsatisfecha',
+    'Receta', 'RecetaItem', 'DemandaInsatisfecha', 'DispensacionReceta',
     'Venta', 'DetalleVenta', 'DetalleVentaLote', 'DevolucionVenta',
     'Pago', 'PagoOrden', 'Gasto', 'AjusteInventario',
     'GastoCaja', 'MovimientoCaja', 'GastoOperativo', 'FacturaSAT',
