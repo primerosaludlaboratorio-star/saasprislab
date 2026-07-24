@@ -659,20 +659,47 @@
     // ============================================================
     // SPEECH SYNTHESIS (PRIS habla)
     // ============================================================
+    function textoParaVoz(text) {
+        return String(text || '')
+            .replace(/```[\s\S]*?```/g, '')
+            .replace(/https?:\/\/\S+/g, '')
+            .replace(/[`*_#>]/g, '')
+            .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+            .replace(/\s*[-•]\s+/g, '. ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function seleccionarVozEspanol(voices) {
+        const normalized = voices.map(v => ({ voice: v, key: `${v.name} ${v.lang}`.toLowerCase() }));
+        const preferred = [
+            item => item.voice.lang.toLowerCase() === 'es-mx' && /google|microsoft|sabina|dalia|jorge/.test(item.key),
+            item => item.voice.lang.toLowerCase() === 'es-mx',
+            item => /^es[-_]/i.test(item.voice.lang) && /google|microsoft|natural|online/.test(item.key),
+            item => /^es[-_]/i.test(item.voice.lang),
+        ];
+        for (const rule of preferred) {
+            const match = normalized.find(rule);
+            if (match) return match.voice;
+        }
+        return null;
+    }
+
     function speakText(text) {
         if (!synth) return;
         synth.cancel();  // Cancelar cualquier habla anterior
 
-        currentUtterance = new SpeechSynthesisUtterance(text);
+        const spokenText = textoParaVoz(text);
+        if (!spokenText) return;
+        currentUtterance = new SpeechSynthesisUtterance(spokenText);
         currentUtterance.lang = 'es-MX';
-        currentUtterance.rate = 1.05;
-        currentUtterance.pitch = 1.0;
+        // Una velocidad moderada y un tono ligeramente cálido reducen el efecto mecánico.
+        currentUtterance.rate = 0.94;
+        currentUtterance.pitch = 1.04;
+        currentUtterance.volume = 0.96;
 
-        // Buscar voz en espanol
-        const voices = synth.getVoices();
-        const esVoice = voices.find(v => v.lang.startsWith('es') && v.name.includes('female'))
-            || voices.find(v => v.lang.startsWith('es-MX'))
-            || voices.find(v => v.lang.startsWith('es'));
+        // Priorizar voces naturales en espanol de Mexico y despues cualquier voz espanola.
+        const esVoice = seleccionarVozEspanol(synth.getVoices());
         if (esVoice) currentUtterance.voice = esVoice;
 
         currentUtterance.onstart = () => speakingDiv.classList.add('active');

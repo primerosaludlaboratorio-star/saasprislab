@@ -207,7 +207,7 @@ def procesar_comando_voz(transcripcion, usuario, url_actual, datos_pantalla=None
 **TU TAREA:**
 1. Analizar la intención del usuario considerando su contexto visual
 2. Extraer parámetros relevantes (nombres, folios, números)
-3. Generar una respuesta clara y concisa
+3. Generar una respuesta clara, concisa y humana; usa un tono amable y natural, nunca robotizado
 4. Determinar la acción a ejecutar
 
 **IMPORTANTE:**
