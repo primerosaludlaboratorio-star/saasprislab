@@ -16,6 +16,8 @@ urlpatterns = [
     path('farmacia/pdv/', farmacia_pdv.pdv_farmacia, name='pdv_farmacia'),
     path('farmacia/pdv/buscar-fragmento/', farmacia_pdv.pdv_buscar_fragmento, name='pdv_buscar_fragmento'),
     path('farmacia/historial-ventas/', farmacia_reportes.lista_ventas_farmacia, name='lista_ventas_farmacia'),
+    # Compatibilidad con comandos de voz y clientes legacy que aún apuntan a ventas.
+    path('farmacia/ventas/', RedirectView.as_view(pattern_name='lista_ventas_farmacia', permanent=False), name='farmacia_ventas_legacy'),
     path('farmacia/dashboard/', farmacia_inventario.dashboard_farmacia, name='dashboard_farmacia_v2'),
     path('farmacia/libro-control/', farmacia_inventario.libro_control_antibioticos, name='libro_control'),
     path('farmacia/inventario/', views.farmacia_inventario_general, name='farmacia_inventario_general'),
@@ -36,6 +38,7 @@ urlpatterns = [
     path('farmacia/reporte/valorizacion/', RedirectView.as_view(pattern_name='farmacia:reporte_valorizacion', permanent=False), name='farmacia_valorizacion_legacy'),
     path('farmacia/semaforo-caducidad/', RedirectView.as_view(pattern_name='farmacia:dashboard_semaforo_caducidad', permanent=False), name='farmacia_semaforo_legacy'),
     path('farmacia/stock-critico/', RedirectView.as_view(pattern_name='farmacia:dashboard_stock_critico', permanent=False), name='farmacia_stock_legacy'),
+    path('farmacia/stock/', RedirectView.as_view(pattern_name='farmacia:dashboard_stock_critico', permanent=False), name='farmacia_stock_short_legacy'),
     path('farmacia/antibioticos/reporte-cofepris/', RedirectView.as_view(pattern_name='farmacia:reporte_cofepris', permanent=False), name='farmacia_cofepris_legacy'),
 
     # 2. MÓDULO ALMACÉN (Entradas de Mercancía)
