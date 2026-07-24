@@ -5,6 +5,7 @@ Configuración de base de datos.
 Consume: BASE_DIR, IS_PRODUCTION, _env_bool, _env_int (de base.py via namespace)
 """
 import os
+import sys
 
 from .base import BASE_DIR, IS_PRODUCTION, _env_bool, _env_int
 
@@ -31,3 +32,21 @@ else:
             'OPTIONS': {'timeout': 60},
         }
     }
+
+    # Los tests locales no deben reutilizar el SQLite operativo del workspace.
+    # Esto aisla la suite de cualquier servidor de desarrollo abierto.
+    if 'test' in sys.argv:
+        DATABASES['default']['TEST'] = {'NAME': ':memory:'}
+
+
+# Opt-in para pruebas unitarias locales que no necesitan ejecutar la historia
+# completa de migraciones. Las pruebas de migraciones deben ejecutarse sin él.
+if 'test' in sys.argv and os.environ.get('PRISLAB_TEST_NO_MIGRATIONS') == '1':
+    class _DisableMigrations(dict):
+        def __contains__(self, item):
+            return True
+
+        def __getitem__(self, item):
+            return None
+
+    MIGRATION_MODULES = _DisableMigrations()

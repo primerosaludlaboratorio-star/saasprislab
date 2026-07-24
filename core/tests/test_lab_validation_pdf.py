@@ -155,10 +155,10 @@ class LabValidationPdfTest(TestCase):
             acepta_procesamiento=True,
         )
 
-        response = self.client.get(reverse('preparacion_toma', args=[orden.id]))
+        response = self.client.get(reverse('laboratorio:preparacion_toma', args=[orden.id]))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Labcore')
+        self.assertContains(response, 'LABCORE')
 
     def test_imprimir_resultados_no_expone_orden_de_otro_tenant(self):
         empresa_otra = Empresa.objects.create(nombre='Empresa Ajena', rfc='AJE260507TST')
