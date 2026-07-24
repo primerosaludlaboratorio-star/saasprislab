@@ -162,7 +162,7 @@ def generate_content(prompt: str, model_name: str = 'gemini-2.0-flash',
         from core.utils.deepseek_client import generate_content as _deepseek_generate
         return _deepseek_generate(
             prompt,
-            model_name=getattr(settings, 'DEEPSEEK_MODEL', 'deepseek-chat'),
+            model_name=getattr(settings, 'DEEPSEEK_MODEL', 'deepseek-v4-flash'),
             temperature=temperature,
             max_tokens=max_tokens,
         )

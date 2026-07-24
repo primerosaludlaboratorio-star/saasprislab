@@ -54,7 +54,7 @@ def generate_content(
     if not api_key:
         raise ValueError("DEEPSEEK_API_KEY no configurada.")
 
-    model = model_name or getattr(settings, "DEEPSEEK_MODEL", "deepseek-chat")
+    model = model_name or getattr(settings, "DEEPSEEK_MODEL", "deepseek-v4-flash")
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
@@ -124,7 +124,7 @@ def test_deepseek_connection() -> dict:
         return {
             "success": bool(text),
             "message": "Conexion exitosa con DeepSeek",
-            "model": getattr(settings, "DEEPSEEK_MODEL", "deepseek-chat"),
+            "model": getattr(settings, "DEEPSEEK_MODEL", "deepseek-v4-flash"),
             "response": text,
         }
     except Exception as exc:
@@ -132,5 +132,5 @@ def test_deepseek_connection() -> dict:
         return {
             "success": False,
             "message": str(exc),
-            "model": getattr(settings, "DEEPSEEK_MODEL", "deepseek-chat"),
+            "model": getattr(settings, "DEEPSEEK_MODEL", "deepseek-v4-flash"),
         }

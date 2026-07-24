@@ -15,7 +15,7 @@ class PRISNLPEngine:
         self.api_key = os.environ.get('DEEPSEEK_API_KEY', '')
         # DeepSeek usa formato compatible con OpenAI
         self.base_url = os.environ.get('DEEPSEEK_BASE_URL', 'https://api.deepseek.com/v1')
-        self.model_name = os.environ.get('DEEPSEEK_MODEL', 'deepseek-chat')
+        self.model_name = os.environ.get('DEEPSEEK_MODEL', 'deepseek-v4-flash')
         
         self.client = None
         if self.api_key:

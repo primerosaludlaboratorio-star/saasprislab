@@ -24,7 +24,7 @@ if not GEMINI_API_KEY:
 
 # ── DeepSeek ──────────────────────────────────────────────────────────────────
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "").strip().replace('\r', '').replace('\n', '')
-DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat").strip()
+DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-flash").strip()
 DEEPSEEK_API_URL = os.environ.get(
     "DEEPSEEK_API_URL",
     "https://api.deepseek.com/v1/chat/completions",
