@@ -12,7 +12,9 @@ def _normalizar(valor):
 
 def conciliar_compra_laboratorio(empresa, datos):
     lineas = datos.get("productos") if isinstance(datos, dict) else []
-    catalogo = list(CatalogoReactivoLab.objects_all.filter(empresa=empresa, activo=True).only(
+    # The catalog is a regular model; keep the explicit tenant filter here so
+    # OCR suggestions never cross company boundaries.
+    catalogo = list(CatalogoReactivoLab.objects.filter(empresa=empresa, activo=True).only(
         "id", "codigo_interno", "nombre", "marca", "fabricante", "unidad_medida", "tipo",
     ))
     resultado = []
