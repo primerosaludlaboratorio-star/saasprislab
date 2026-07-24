@@ -6,6 +6,9 @@ Incluye: entrada de mercancía, compras, carga masiva, libro de control, dashboa
 import json
 import logging
 import csv
+import difflib
+import re
+import unicodedata
 from datetime import datetime, timedelta, date
 from decimal import Decimal
 
@@ -36,6 +39,33 @@ from core.tenant import get_current_empresa, set_current_empresa
 def _empresa_desde_request(request):
     """Empresa efectiva: EmpresaIdentityMiddleware (fallback principal) o FK del usuario."""
     return getattr(request, 'empresa_actual', None) or getattr(request.user, 'empresa', None)
+
+
+def _normalizar_busqueda(valor):
+    texto = unicodedata.normalize('NFKD', str(valor or ''))
+    texto = ''.join(c for c in texto if not unicodedata.combining(c))
+    return re.sub(r'[^a-z0-9]+', ' ', texto.lower()).strip()
+
+
+def _coincidencia_aproximada(termino, producto):
+    """Rescata errores leves y nombres comerciales usados en mostrador."""
+    consulta = _normalizar_busqueda(termino)
+    tokens_consulta = [t for t in consulta.split() if len(t) >= 3]
+    campos = [producto.nombre, producto.sustancia_activa, producto.marca_laboratorio,
+              producto.equivalencias_comerciales, producto.codigo_barras]
+    tokens_producto = set()
+    for campo in campos:
+        tokens_producto.update(t for t in _normalizar_busqueda(campo).split() if len(t) >= 3)
+    if not tokens_consulta or not tokens_producto:
+        return 0.0
+    coincidencias = [
+        max(difflib.SequenceMatcher(None, token, candidato).ratio() for candidato in tokens_producto)
+        for token in tokens_consulta
+    ]
+    relevantes = [score for score in coincidencias if score >= 0.80]
+    if not relevantes or (len(tokens_consulta) > 1 and len(relevantes) < 2):
+        return 0.0
+    return sum(relevantes) / len(tokens_consulta)
 
 
 # ==============================================================================
@@ -115,7 +145,7 @@ def api_buscar_productos_compra(request):
         return JsonResponse({'productos': []})
     
     # Buscar productos por nombre, código de barras o sustancia activa
-    productos = Producto.objects.filter(
+    productos = Producto.objects_all.filter(
         empresa=empresa
     ).filter(
         Q(nombre__icontains=termino) |
@@ -126,7 +156,9 @@ def api_buscar_productos_compra(request):
     )[:20]  # Limitar a 20 resultados
     
     resultados = []
+    vistos = set()
     for p in productos:
+        vistos.add(p.id)
         resultados.append({
             'id': p.id,
             'nombre': p.nombre,
@@ -138,7 +170,33 @@ def api_buscar_productos_compra(request):
             'precio_publico': float(p.precio_publico or 0),
             'stock': int(p.stock or 0),
         })
-    
+
+    if not resultados:
+        candidatos = []
+        for p in Producto.objects_all.filter(empresa=empresa).only(
+            'id', 'nombre', 'sustancia_activa', 'marca_laboratorio',
+            'equivalencias_comerciales', 'codigo_barras', 'precio_compra',
+            'precio_publico', 'stock'
+        ).iterator(chunk_size=500):
+            score = _coincidencia_aproximada(termino, p)
+            if score >= 0.80:
+                candidatos.append((score, p))
+        candidatos.sort(key=lambda item: (-item[0], item[1].nombre.lower(), -item[1].id))
+        for _, p in candidatos[:20]:
+            if p.id in vistos:
+                continue
+            resultados.append({
+                'id': p.id,
+                'nombre': p.nombre,
+                'codigo_barras': p.codigo_barras,
+                'sustancia_activa': p.sustancia_activa or '',
+                'marca': p.marca_laboratorio or '',
+                'equivalencias_comerciales': p.equivalencias_comerciales or '',
+                'precio_compra': float(p.precio_compra or 0),
+                'precio_publico': float(p.precio_publico or 0),
+                'stock': int(p.stock or 0),
+            })
+
     return JsonResponse({'productos': resultados})
 
 

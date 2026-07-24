@@ -79,12 +79,14 @@ def api_lotes_producto(request, producto_id):
         return JsonResponse({'error': 'Sin empresa'}, status=403)
 
     try:
-        p = Producto.objects.prefetch_related('lotes').get(id=producto_id, empresa=empresa)
+        # El catálogo y los lotes se comparten a nivel tenant. El filtro de
+        # sucursal ocultaba productos válidos del PDV y de entrada de mercancía.
+        p = Producto.objects_all.prefetch_related('lotes').get(id=producto_id, empresa=empresa)
     except Producto.DoesNotExist:
         return JsonResponse({'error': 'Producto no encontrado'}, status=404)
 
     VentaFarmaciaService.materializar_lote_operativo_si_falta(p, empresa)
-    p = Producto.objects.prefetch_related('lotes').get(id=producto_id, empresa=empresa)
+    p = Producto.objects_all.prefetch_related('lotes').get(id=producto_id, empresa=empresa)
 
     hoy_fefo = date.today()
     lotes_cache = list(p.lotes.all())

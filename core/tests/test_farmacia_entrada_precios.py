@@ -1,3 +1,5 @@
+import json
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -5,7 +7,7 @@ from django.test import Client, TestCase
 from django.test.utils import CaptureQueriesContext
 from django.db import connection
 
-from core.models import Empresa, Producto, Sucursal
+from core.models import Empresa, Lote, Producto, Sucursal
 
 
 User = get_user_model()
@@ -46,6 +48,60 @@ class EntradaMercanciaPreciosTest(TestCase):
         producto = response.json()['productos'][0]
         self.assertEqual(producto['precio_compra'], 23.5)
         self.assertEqual(producto['precio_publico'], 41.9)
+
+    def test_entrada_reconoce_variante_y_producto_de_otra_sucursal_del_tenant(self):
+        otra_sucursal = Sucursal.objects.create(
+            empresa=self.empresa,
+            nombre='Sucursal Catalogo',
+            codigo_sucursal='SUC-PRE-002',
+        )
+        producto = Producto.objects.create(
+            empresa=self.empresa,
+            sucursal=otra_sucursal,
+            nombre='KETOROLACO 30MG TABLETA SUBLINGUAL (4)',
+            codigo_barras='785120754759',
+            forma_farmaceutica='Tableta sublingual',
+            concentracion='30 mg',
+            presentacion='4 tabletas',
+            precio_compra=Decimal('11.49'),
+            precio_publico=Decimal('75.00'),
+            stock=0,
+        )
+        Lote.objects.create(
+            empresa=self.empresa,
+            producto=producto,
+            numero_lote='KET-TEST-01',
+            fecha_caducidad=date.today() + timedelta(days=365),
+            cantidad=0,
+            costo_adquisicion=Decimal('11.49'),
+        )
+
+        busqueda = self.client.get(
+            '/farmacia/api/buscar-productos-compra/',
+            {'q': 'esketorolaco sublingual 4 tabletas'},
+        )
+        self.assertEqual(busqueda.status_code, 200)
+        self.assertEqual(busqueda.json()['productos'][0]['id'], producto.id)
+
+        entrada = self.client.post(
+            '/farmacia/almacen/entradas/',
+            data=json.dumps({
+                'producto_id': producto.id,
+                'codigo': producto.codigo_barras,
+                'nombre': producto.nombre,
+                'lote': 'KET-TEST-01',
+                'caducidad': (date.today() + timedelta(days=365)).isoformat(),
+                'cantidad': 4,
+                'costo_unitario': '11.49',
+                'precio_venta': '75.00',
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(entrada.status_code, 200)
+        self.assertEqual(entrada.json()['status'], 'success')
+
+        lotes = self.client.get(f'/farmacia/api/lotes-producto/{producto.id}/?modo=entrada')
+        self.assertEqual(lotes.status_code, 200)
 
     def test_formulario_precarga_ambos_precios_al_seleccionar_existente(self):
         response = self.client.get('/farmacia/almacen/entradas/')

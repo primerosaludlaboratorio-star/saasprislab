@@ -66,14 +66,16 @@ class MovimientoInventarioService:
                 producto = None
                 if producto_id:
                     try:
-                        producto = Producto.objects.get(pk=producto_id, empresa=empresa)
+                        # La entrada es por tenant; no debe desaparecer un producto
+                        # solo porque fue catalogado desde otra sucursal.
+                        producto = Producto.objects_all.get(pk=producto_id, empresa=empresa)
                     except (Producto.DoesNotExist, TypeError, ValueError):
                         return cls._json_result(404, {
                             'status': 'error',
                             'mensaje': 'El producto seleccionado no pertenece a esta empresa o ya no existe.',
                         })
                 if not producto and codigo:
-                    producto = Producto.objects.filter(
+                    producto = Producto.objects_all.filter(
                         empresa=empresa,
                         codigo_barras=codigo,
                     ).first()
