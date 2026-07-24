@@ -11,10 +11,16 @@ Estado: procedimiento vigente; ultima comprobacion 2026-07-24
 - Ese run termino en `failure` durante `Validate deploy secrets`; no ejecuto `Setup SSH`, `Deploy on VPS`, migraciones ni smoke tests.
 - `/health/`, `/live/` y `/ready/` del dominio publico responden HTTP 200, pero esa evidencia no identifica el commit desplegado.
 - La prueba SSH desde esta maquina al host documentado (`216.238.89.243`) responde `Permission denied (publickey,password)` con `~/.ssh/id_ed25519`.
+- La verificacion humana real en `https://prislab.labcorecloud.com` se ejecuto con el usuario visible `Administracion Auditoria`.
+- `/ia/asistente/` cargo, se envio `PRIS_PRODUCCION_OK` y la interfaz devolvio `PRIS_PRODUCCION_OK` sin errores ni warnings de consola.
+- Esa interfaz mostro `PRIS-Jarvis v5.0`, `Acceso irrestricto` y proveedor `Gemini 2.0 Flash`; por tanto, la aplicacion responde pero no contiene los cambios recientes de identidad unificada, nombre por tenant y DeepSeek.
+- Las rutas productivas de PDV farmacia, entrada de mercancia, registro de resultados de laboratorio y catalogo de reactivos cargaron sin pantalla de error 500 durante la inspeccion de solo lectura.
 
-**Estado real:** `b4fac17` esta publicado en GitHub, pero su despliegue en VPS no esta confirmado. Los commits historicos indicados abajo no deben usarse como evidencia del estado actual.
+**Estado real:** `b4fac17` y la documentacion posterior estan publicados en GitHub, pero su despliegue en VPS no esta confirmado. La prueba visual demuestra que produccion sigue en una version anterior. Los commits historicos indicados abajo no deben usarse como evidencia del estado actual.
 
-La documentacion del procedimiento existe y se conserva. Lo que no estaba alineado era la evidencia actual de acceso y ejecucion:
+### Corte historico, no vigente
+
+La documentacion del procedimiento existe y se conserva. El siguiente bloque se mantiene solo como trazabilidad historica y no acredita el estado actual:
 
 - El codigo corregido de seguridad quedo publicado en `10d1156`, en `release/v1.0-local`.
 - El workflow `PRISLAB Deploy to VPS` se disparo como run `30120009575`, pero fallo en `Validate deploy secrets`.
@@ -25,7 +31,14 @@ La documentacion del procedimiento existe y se conserva. Lo que no estaba alinea
 
 Bloqueador actual: configurar en el Environment `production` de GitHub `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` y `DEPLOY_KNOWN_HOSTS`. Las variables opcionales son `DEPLOY_ROOT_DIR=/opt/prislab`, `DEPLOY_APP_DIR=/opt/prislab/app` y `DEPLOY_APP_USER=prislab`.
 
-El deploy manual de `8194e85` queda `CONFIRMADO` en VPS. El unico pendiente separado es automatizar el mismo despliegue en GitHub Environment `production` agregando `DEPLOY_KNOWN_HOSTS`.
+El deploy manual de `8194e85` queda como evidencia historica. No debe usarse para afirmar que `b4fac17` o posteriores estan desplegados.
+
+### Bloqueador actual de despliegue
+
+El run `30122961837` falla antes de abrir SSH porque faltan secretos del Environment `production`. La prueba SSH local tampoco tiene autenticacion valida. Sin una de estas dos vias no es posible ejecutar ni confirmar el despliegue desde esta sesion:
+
+1. Completar en GitHub Environment `production`: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` y `DEPLOY_KNOWN_HOSTS`.
+2. Abrir la consola web de Vultr o proporcionar una clave SSH autorizada para `prislab@216.238.89.243`.
 
 ## Objetivo
 
@@ -90,13 +103,13 @@ No puede:
 
 ## Estado actual del repositorio
 
-Commits ya preparados y empujados:
+Commits historicos ya preparados y empujados:
 
 - `d159850` - Bloque A - Claude
 - `5650acb` - Bloque B - Codex
 - `e04ca4b` - Bloque C - Documentacion
 
-El listado anterior corresponde a un corte historico. Para el corte actual, el commit desplegado y que debe conservarse es `e8a4d21`.
+El listado anterior corresponde a un corte historico. Para el corte actual, el commit fuente que debe desplegarse es `b4fac17` o posterior. No existe evidencia vigente de que ese commit este en VPS.
 
 ## Procedimiento exacto de deploy
 

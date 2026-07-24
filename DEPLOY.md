@@ -6,7 +6,7 @@
 
 ### Estado vigente del ultimo cambio
 
-El ultimo commit de `release/v1.0-local` es `b4fac17`. El run automatico `30122961837`
+El ultimo commit de `release/v1.0-local` es `50fca10` (documentacion); el codigo funcional objetivo es `b4fac17`. El run automatico `30122961837`
 termino en `failure` en `Validate deploy secrets`, antes de abrir SSH. Los endpoints
 publicos `/live/`, `/ready/` y `/health/` responden 200, pero no existe evidencia publica
 del commit que ejecuta la VPS. La conexion SSH documentada responde `Permission denied`.

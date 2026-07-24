@@ -3,10 +3,12 @@
 ## Corte vigente 2026-07-24
 
 - Rama: `release/v1.0-local`.
-- Commit publicado actual: `b4fac17`.
+- Commit publicado actual: `50fca10` (documentacion); codigo funcional objetivo: `b4fac17`.
 - Run de deploy: `30122961837` -> `failure` en `Validate deploy secrets`; no llego a SSH, migraciones ni smoke tests.
 - Salud publica: `/health/`, `/live/` y `/ready/` -> HTTP 200.
 - Commit en VPS: **NO CONFIRMADO**. La prueba SSH desde esta maquina devuelve `Permission denied (publickey,password)`.
+- Verificacion humana productiva 2026-07-24: `/ia/asistente/` respondio correctamente a `PRIS_PRODUCCION_OK`, pero mostro `PRIS-Jarvis v5.0` y `Gemini 2.0 Flash`; esto confirma que produccion sigue en una version anterior al cierre PRIS/DeepSeek.
+- Rutas inspeccionadas sin error 500 en lectura: `/farmacia/pdv/`, `/farmacia/almacen/entradas/`, `/laboratorio/registro-resultados/` y `/silo-lab/lab/catalogo/`.
 - Criterio para cerrar deploy: obtener `git rev-parse HEAD` en `/opt/prislab/app`, aplicar `migrate`, reiniciar los tres servicios y repetir health checks.
 
 Ultima actualizacion: 2026-06-25T00:00:00
@@ -41,9 +43,9 @@ Foco actual: Consolidacion canonica, cierres modulares reales y limpieza de pend
 
 ## Pendiente
 
-- Auditoria funcional humana completa de Laboratorio
-- Deploy VPS del cierre LIMS/legacy 2026-06-21
-- Confirmar despliegue VPS de efa5c2f y b4f210c
+- Desplegar y confirmar `b4fac17`/`50fca10` en VPS; el run automatico esta bloqueado por secretos y SSH local no autorizado
+- Repetir auditoria humana completa de Laboratorio y Farmacia sobre el commit realmente desplegado
+- Confirmar que produccion muestre PRIS unificada, nombre por tenant y proveedor DeepSeek
 - Validar cancelacion con devolucion financiera
 - Definir/probar storage final: Vultr Object Storage, Drive o buffer local
 - Monitorear conexiones idle PostgreSQL
