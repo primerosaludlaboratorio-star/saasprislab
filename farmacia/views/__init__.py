@@ -22,3 +22,4 @@ from farmacia.views.devoluciones import (
 )
 from farmacia.views.semaforo import dashboard_semaforo_caducidad, dashboard_stock_critico
 from farmacia.views.receta_ocr import api_analizar_receta, api_confirmar_receta
+from farmacia.views.compra_ocr import api_analizar_compra, api_confirmar_compra

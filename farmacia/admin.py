@@ -7,6 +7,7 @@ from .models import (
     Proveedor, MotivoAjuste, MovimientoInventario,
     MermaFarmacia, CierreTurnoFarmacia, AperturaCaja,
     DevolucionVenta, RegistroAntibiotico,
+    LecturaCompraFarmacia,
 )
 
 
@@ -76,3 +77,11 @@ class RegistroAntibioticoAdmin(admin.ModelAdmin):
     list_filter = ('empresa', 'fecha_venta')
     search_fields = ('folio', 'producto__nombre', 'medico_cedula', 'medico_nombre')
     date_hierarchy = 'fecha_venta'
+
+
+@admin.register(LecturaCompraFarmacia)
+class LecturaCompraFarmaciaAdmin(admin.ModelAdmin):
+    list_display = ('id', 'estado', 'empresa', 'usuario', 'confianza', 'creado_en', 'confirmado_en')
+    list_filter = ('estado', 'empresa', 'creado_en')
+    search_fields = ('id', 'datos_extraidos', 'texto_extraido')
+    readonly_fields = ('empresa', 'usuario', 'imagen', 'texto_extraido', 'datos_extraidos', 'sugerencias', 'items_confirmados', 'estado', 'confianza', 'error', 'confirmado_en', 'confirmado_por', 'creado_en')

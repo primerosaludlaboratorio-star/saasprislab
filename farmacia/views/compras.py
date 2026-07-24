@@ -97,6 +97,7 @@ def registrar_compra(request):
                         total_valor += cantidad * costo_unitario
                     
                     request.session['items_compra_temp'] = []
+                    request.session.pop('items_compra_ocr', None)
                     
                     from core.models import AuditLog
                     AuditLog.objects.create(
@@ -130,7 +131,14 @@ def registrar_compra(request):
                 messages.error(request, 'No fue posible registrar la compra.')
                 return redirect('farmacia:registrar_compra')
     
-    form_compra = RegistrarCompraForm(empresa=empresa)
+    ocr_meta = request.session.get('items_compra_ocr', {})
+    form_compra = RegistrarCompraForm(
+        empresa=empresa,
+        initial={
+            'documento_compra': ocr_meta.get('documento_compra', ''),
+            'fecha_compra': ocr_meta.get('fecha_compra') or None,
+        },
+    )
     form_detalle = DetalleCompraForm(empresa=empresa)
     
     items_temp = request.session.get('items_compra_temp', [])
@@ -143,7 +151,8 @@ def registrar_compra(request):
         'form_compra': form_compra,
         'form_detalle': form_detalle,
         'items_temp': items_temp,
-        'total_temp': total_temp
+        'total_temp': total_temp,
+        'ocr_meta': ocr_meta,
     })
 
 

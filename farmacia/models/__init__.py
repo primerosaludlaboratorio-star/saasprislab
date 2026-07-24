@@ -4,6 +4,7 @@ from .caja import CierreTurnoFarmacia, AperturaCaja
 from .devoluciones import DevolucionVenta
 from .antibiotico import RegistroAntibiotico
 from .receta_ocr import LecturaRecetaFarmacia
+from .compra_ocr import LecturaCompraFarmacia
 
 __all__ = [
     'Proveedor',
@@ -15,4 +16,5 @@ __all__ = [
     'DevolucionVenta',
     'RegistroAntibiotico',
     'LecturaRecetaFarmacia',
+    'LecturaCompraFarmacia',
 ]

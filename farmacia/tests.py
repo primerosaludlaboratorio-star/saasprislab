@@ -226,6 +226,51 @@ class FarmaciaRecetaOCRTests(TestCase):
         self.assertEqual(lectura.productos_confirmados, [{"producto_id": self.producto.id, "cantidad": 2}])
 
 
+class FarmaciaCompraOCRTests(TestCase):
+    """La factura prepara la compra en sesión; el Kardex requiere el guardado final."""
+
+    _PNG_1X1 = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    )
+
+    def setUp(self):
+        self.empresa = Empresa.objects.create(nombre="Farmacia Compra OCR", rfc="FCOR010101AA1")
+        self.usuario = User.objects.create_user(
+            username="farmacia_compra_ocr", password="test123", empresa=self.empresa, rol="FARMACIA"
+        )
+        self.producto = Producto.objects.create(
+            empresa=self.empresa, nombre="Paracetamol 500mg", sustancia_activa="Paracetamol",
+            codigo_barras=_codigo_barras_unico(), forma_farmaceutica="Tabletas",
+            concentracion="500mg", presentacion="20 tabletas", precio_publico=Decimal("50.00"),
+        )
+        self.client = Client()
+        self.client.force_login(self.usuario)
+
+    def test_compra_ocr_prepara_sesion_sin_crear_movimiento(self):
+        respuesta = {
+            "activo": True, "tipo_documento": "NOTA_VENTA", "confianza": 0.88,
+            "datos_extraidos": {"proveedor": {"nombre": "Proveedor Test"}, "productos": [{"texto": "Paracetamol 500mg", "cantidad": 10, "costo_unitario": "4.50", "numero_lote": "L-1", "fecha_caducidad": "2027-01-01"}]},
+            "texto_extraido": "Paracetamol 500mg",
+        }
+        archivo = SimpleUploadedFile("compra.png", self._PNG_1X1, content_type="image/png")
+        with patch("farmacia.views.compra_ocr.analizar_compra_farmacia", return_value=respuesta):
+            response = self.client.post(reverse("farmacia:api_analizar_compra"), {"documento_compra": archivo})
+        self.assertEqual(response.status_code, 200)
+        sugerencia = response.json()["sugerencias"][0]
+        confirm = self.client.post(
+            reverse("farmacia:api_confirmar_compra"),
+            data=json.dumps({
+                "lectura_id": response.json()["lectura_id"], "proveedor": "Proveedor Test",
+                "documento_compra": "N-1", "fecha_compra": "2026-07-24",
+                "items": [{"producto_id": sugerencia["candidatos"][0]["producto_id"], "cantidad": 10,
+                           "costo_unitario": "4.50", "numero_lote": "L-1", "fecha_caducidad": "2027-01-01"}],
+            }), content_type="application/json",
+        )
+        self.assertEqual(confirm.status_code, 200)
+        self.assertEqual(MovimientoInventario.objects.count(), 0)
+        self.assertEqual(self.client.session["items_compra_temp"][0]["numero_lote"], "L-1")
+
+
 class FarmaciaViewTests(TestCase):
     """Test farmacia views (URLs actuales en config/urls y farmacia.urls)."""
 
