@@ -895,3 +895,28 @@ Estado honesto del cierre:
 - el bloque de trazabilidad progresiva de reactivos queda desplegado y verificado en las pantallas productivas disponibles;
 - no se declara cerrado el flujo de edición/recepción sobre un lote real hasta contar con un registro operativo autorizado;
 - permanecen fuera de este bloque la extensión equivalente a los silos consultorio/general, la relación consumo-equipo ejecutor y la integración completa de materiales CCI/Westgard con inventario de controles. Esos puntos siguen siendo pendientes de alcance y no deben marcarse como completados.
+
+## Lector asistido de recetas en Farmacia - 2026-07-24
+
+La revisión confirmó que el OCR anterior era de Laboratorio, detectaba estudios y usaba un fallback simulado; no existía un flujo productivo para convertir una foto de receta en propuestas de medicamentos del PDV. Se implementó el primer bloque seguro:
+
+- botón `Foto receta` en el PDV, con captura desde cámara o carga de imagen;
+- lectura estructurada de receta mediante el motor de visión configurado;
+- conciliación contra nombre comercial, sustancia activa, marca, concentración y presentación del catálogo de la empresa;
+- selección explícita de un candidato por medicamento;
+- confirmación auditada antes de agregar líneas al carrito;
+- ningún OCR crea ventas, descuenta inventario ni decide lotes automáticamente;
+- antibióticos/controlados continúan pasando por la validación sanitaria existente;
+- imagen, resultado, sugerencias y usuario quedan en `LecturaRecetaFarmacia`.
+
+Verificación y despliegue:
+
+- commit `7fc3e5a` desplegado en producción;
+- migración `farmacia.0006_lecturarecetafarmacia` aplicada;
+- `manage.py check` productivo sin errores;
+- Gunicorn, Celery y Celery Beat activos;
+- la interfaz productiva carga el botón, modal, selector de archivo y confirmación;
+- Sentinel detectó inicialmente un `503` por manifiesto estático no reconstruido; se corrigió ejecutando `collectstatic` con `PRISLAB_ENV=production` y las variables seguras del servicio;
+- el archivo versionado `farmacia_receta_ocr.7df278bea058.js` quedó presente en producción.
+
+Límite pendiente: no existe actualmente un webhook de WhatsApp Business para recibir imágenes entrantes de pacientes. El flujo publicado cubre cámara/carga desde el PDV; la recepción automática por WhatsApp requiere definir proveedor (Meta Cloud API o Twilio), webhook HTTPS, verificación de firma, consentimiento y reglas de identificación del paciente. No se simula esa integración con un enlace `wa.me`.
