@@ -4,9 +4,9 @@
 
 ## Estado verificado 2026-07-24
 
-El commit de seguridad `10d1156` esta publicado en `release/v1.0-local`. El run de GitHub `30120009575` fallo antes de abrir SSH porque el Environment `production` no entrego `DEPLOY_KNOWN_HOSTS`; por tanto, este commit aun no se declara desplegado en VPS.
+El commit de seguridad `10d1156` y la documentacion asociada quedaron publicados en `release/v1.0-local`. El run automatizado `30120009575` fallo antes de abrir SSH porque el Environment `production` no entrego `DEPLOY_KNOWN_HOSTS`. El despliegue manual posterior dejo la VPS en `8194e85`, con servicios activos y `/live/`, `/ready/` y `/health/` publicos en HTTP 200.
 
-El pendiente operativo es configurar los cuatro secretos del Environment `production`: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` y `DEPLOY_KNOWN_HOSTS`, y repetir el workflow hasta obtener smoke test exitoso.
+El pendiente operativo separado es configurar los cuatro secretos del Environment `production`: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` y `DEPLOY_KNOWN_HOSTS`, y repetir el workflow para automatizar un despliegue ya validado manualmente.
 
 ## Objetivo
 

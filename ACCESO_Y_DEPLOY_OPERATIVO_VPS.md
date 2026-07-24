@@ -10,11 +10,12 @@ La documentacion del procedimiento existe y se conserva. Lo que no estaba alinea
 - El workflow `PRISLAB Deploy to VPS` se disparo como run `30120009575`, pero fallo en `Validate deploy secrets`.
 - El workflow no llego a `Setup SSH`, `Deploy on VPS` ni al smoke test; la automatizacion sigue pendiente de secretos.
 - El run fallo porque falta `DEPLOY_KNOWN_HOSTS`, requisito agregado para impedir SSH sin verificacion de host.
-- No se declara el commit `10d1156` como desplegado en VPS hasta completar esa variable y obtener un smoke test exitoso.
+- El despliegue manual posterior corrigio la propiedad del checkout remoto y dejo la VPS en `8194e85`.
+- Evidencia: `prislab-gunicorn`, `prislab-celery` y `prislab-celerybeat` activos; `/live/`, `/ready/` y `/health/` publicos devuelven HTTP 200.
 
 Bloqueador actual: configurar en el Environment `production` de GitHub `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` y `DEPLOY_KNOWN_HOSTS`. Las variables opcionales son `DEPLOY_ROOT_DIR=/opt/prislab`, `DEPLOY_APP_DIR=/opt/prislab/app` y `DEPLOY_APP_USER=prislab`.
 
-El deploy de `10d1156` queda `PENDIENTE` hasta que el workflow se ejecute con los cuatro valores y confirme el commit en VPS.
+El deploy manual de `8194e85` queda `CONFIRMADO` en VPS. El unico pendiente separado es automatizar el mismo despliegue en GitHub Environment `production` agregando `DEPLOY_KNOWN_HOSTS`.
 
 ## Objetivo
 
