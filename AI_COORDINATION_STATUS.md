@@ -1,5 +1,14 @@
 # AI Coordination Status - PRISLAB
 
+## Corte vigente 2026-07-24
+
+- Rama: `release/v1.0-local`.
+- Commit publicado actual: `b4fac17`.
+- Run de deploy: `30122961837` -> `failure` en `Validate deploy secrets`; no llego a SSH, migraciones ni smoke tests.
+- Salud publica: `/health/`, `/live/` y `/ready/` -> HTTP 200.
+- Commit en VPS: **NO CONFIRMADO**. La prueba SSH desde esta maquina devuelve `Permission denied (publickey,password)`.
+- Criterio para cerrar deploy: obtener `git rev-parse HEAD` en `/opt/prislab/app`, aplicar `migrate`, reiniciar los tres servicios y repetir health checks.
+
 Ultima actualizacion: 2026-06-25T00:00:00
 Foco actual: Consolidacion canonica, cierres modulares reales y limpieza de pendientes vivos contra `release/v1.0-local`
 

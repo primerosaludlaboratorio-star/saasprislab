@@ -4,6 +4,15 @@
 
 ## Estado verificado 2026-07-24
 
+### Estado vigente del ultimo cambio
+
+El ultimo commit de `release/v1.0-local` es `b4fac17`. El run automatico `30122961837`
+termino en `failure` en `Validate deploy secrets`, antes de abrir SSH. Los endpoints
+publicos `/live/`, `/ready/` y `/health/` responden 200, pero no existe evidencia publica
+del commit que ejecuta la VPS. La conexion SSH documentada responde `Permission denied`.
+Por tanto, no se declara desplegado `b4fac17` hasta ejecutar el procedimiento manual o
+corregir los cuatro secretos del Environment `production`.
+
 El commit de seguridad `10d1156` y la documentacion asociada quedaron publicados en `release/v1.0-local`. El run automatizado `30120009575` fallo antes de abrir SSH porque el Environment `production` no entrego `DEPLOY_KNOWN_HOSTS`. El despliegue manual posterior dejo la VPS en `8194e85`, con servicios activos y `/live/`, `/ready/` y `/health/` publicos en HTTP 200.
 
 El pendiente operativo separado es configurar los cuatro secretos del Environment `production`: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` y `DEPLOY_KNOWN_HOSTS`, y repetir el workflow para automatizar un despliegue ya validado manualmente.

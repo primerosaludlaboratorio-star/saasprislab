@@ -4,6 +4,16 @@ Estado: procedimiento vigente; ultima comprobacion 2026-07-24
 
 ## Corte de verificacion 2026-07-24
 
+### Corte vigente posterior a `b4fac17`
+
+- El ultimo commit de la rama `release/v1.0-local` es `b4fac17`.
+- El workflow `PRISLAB Deploy to VPS` correspondiente es el run `30122961837`.
+- Ese run termino en `failure` durante `Validate deploy secrets`; no ejecuto `Setup SSH`, `Deploy on VPS`, migraciones ni smoke tests.
+- `/health/`, `/live/` y `/ready/` del dominio publico responden HTTP 200, pero esa evidencia no identifica el commit desplegado.
+- La prueba SSH desde esta maquina al host documentado (`216.238.89.243`) responde `Permission denied (publickey,password)` con `~/.ssh/id_ed25519`.
+
+**Estado real:** `b4fac17` esta publicado en GitHub, pero su despliegue en VPS no esta confirmado. Los commits historicos indicados abajo no deben usarse como evidencia del estado actual.
+
 La documentacion del procedimiento existe y se conserva. Lo que no estaba alineado era la evidencia actual de acceso y ejecucion:
 
 - El codigo corregido de seguridad quedo publicado en `10d1156`, en `release/v1.0-local`.
