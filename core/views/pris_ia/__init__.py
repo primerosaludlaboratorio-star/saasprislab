@@ -8,6 +8,7 @@ para que urls.py y cualquier otro import existente sigan funcionando sin cambios
 # Vistas públicas (urls.py)
 from .views import (
     asistente_page,
+    asistente_tts,
     asistente_chat,
     asistente_reset,
     api_acciones_pendientes,
@@ -52,7 +53,7 @@ from core.views.pris_jarvis import (
 
 __all__ = [
     # Públicas
-    "asistente_page", "asistente_chat", "asistente_reset",
+    "asistente_page", "asistente_tts", "asistente_chat", "asistente_reset",
     "api_acciones_pendientes", "api_confirmar_accion", "api_rechazar_accion",
     "procesar_pregunta_con_ia",
     # Internals

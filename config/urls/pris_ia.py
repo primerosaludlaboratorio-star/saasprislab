@@ -36,6 +36,7 @@ urlpatterns = [
     # PRIS IA: ASISTENTE CONVERSACIONAL
     path('ia/asistente/', lazy_view('core.views.pris_ia.asistente_page'), name='pris_ia_asistente'),
     path('ia/asistente/chat/', lazy_view('core.views.pris_ia.asistente_chat'), name='pris_ia_chat'),
+    path('ia/asistente/tts/', lazy_view('core.views.pris_ia.asistente_tts'), name='pris_ia_tts'),
     path('ia/asistente/reset/', lazy_view('core.views.pris_ia.asistente_reset'), name='pris_ia_reset'),
 
     # Webhooks PRISCI

@@ -5,6 +5,8 @@ Vistas públicas y helpers de PRIS.
 """
 
 import json
+from django.http import HttpResponse
+from django.views.decorators.http import require_POST
 import logging
 import time
 import traceback
@@ -34,6 +36,28 @@ def asistente_page(request):
     return render(request, 'core/pris_ia_assistant.html', {
         'nombre_ia': nombre_asistente_ia(getattr(request.user, 'empresa', None)),
     })
+
+
+@login_required
+@require_POST
+def asistente_tts(request):
+    """Genera audio neural efímero para la respuesta visible de PRIS."""
+    try:
+        data = json.loads(request.body or "{}")
+        texto = (data.get("texto") or "").strip()
+        if not texto:
+            return JsonResponse({"error": "Texto vacío"}, status=400)
+
+        from core.services.pris_tts import synthesize_pris_voice
+
+        audio = synthesize_pris_voice(texto)
+        if not audio:
+            return JsonResponse({"available": False}, status=503)
+        response = HttpResponse(audio, content_type="audio/mpeg")
+        response["Cache-Control"] = "no-store"
+        return response
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return JsonResponse({"error": "Solicitud inválida"}, status=400)
 
 
 @login_required

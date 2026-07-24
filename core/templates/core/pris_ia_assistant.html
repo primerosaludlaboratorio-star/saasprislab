@@ -685,13 +685,41 @@
         return null;
     }
 
-    function speakText(text) {
+    async function speakText(text) {
+        const spokenText = textoParaVoz(text);
+        if (!spokenText) return;
+        try {
+            const response = await fetch('/ia/asistente/tts/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                body: JSON.stringify({ texto: spokenText }),
+            });
+            if (response.ok && response.headers.get('content-type')?.includes('audio')) {
+                const audio = new Audio(URL.createObjectURL(await response.blob()));
+                speakingDiv.classList.add('active');
+                audio.onended = () => {
+                    speakingDiv.classList.remove('active');
+                    URL.revokeObjectURL(audio.src);
+                };
+                audio.onerror = () => {
+                    speakingDiv.classList.remove('active');
+                    URL.revokeObjectURL(audio.src);
+                    speakTextLocal(spokenText);
+                };
+                await audio.play();
+                return;
+            }
+        } catch (error) {
+            console.info('PRIS TTS neural no disponible; usando voz local.', error);
+        }
+        speakTextLocal(spokenText);
+    }
+
+    function speakTextLocal(text) {
         if (!synth) return;
         synth.cancel();  // Cancelar cualquier habla anterior
 
-        const spokenText = textoParaVoz(text);
-        if (!spokenText) return;
-        currentUtterance = new SpeechSynthesisUtterance(spokenText);
+        currentUtterance = new SpeechSynthesisUtterance(text);
         currentUtterance.lang = 'es-MX';
         // Una velocidad moderada y un tono ligeramente cálido reducen el efecto mecánico.
         currentUtterance.rate = 0.94;
