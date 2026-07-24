@@ -38,8 +38,9 @@ def _get_lab_models():
     from core.models.laboratorio import ResultadoParametro
     from .models import (
         ConsumoEstudioReactivo, LoteReactivoLab, SalidaAnaliticaLab,
+        RepeticionAnaliticaLab,
     )
-    return ResultadoParametro, ConsumoEstudioReactivo, LoteReactivoLab, SalidaAnaliticaLab
+    return ResultadoParametro, ConsumoEstudioReactivo, LoteReactivoLab, SalidaAnaliticaLab, RepeticionAnaliticaLab
 
 
 def _get_consultorio_models():
@@ -119,16 +120,14 @@ def descontar_reactivos_fefo(sender, instance, created, **kwargs):
 
 
 def _ejecutar_descuento_fefo(resultado):
-    (ResultadoParametro,
-     ConsumoEstudioReactivo,
-     LoteReactivoLab,
-     SalidaAnaliticaLab) = _get_lab_models()
+    (ResultadoParametro, _ConsumoEstudioReactivo, _LoteReactivoLab,
+     _SalidaAnaliticaLab, _RepeticionAnaliticaLab) = _get_lab_models()
 
     with transaction.atomic():
         rp = (
             ResultadoParametro.objects
             .select_for_update(nowait=False)
-            .select_related('orden', 'orden__empresa')
+            .select_related('orden', 'orden__empresa', 'equipo')
             .get(pk=resultado.pk)
         )
         if not rp.validado or not rp.validado_por:
@@ -148,92 +147,129 @@ def _ejecutar_descuento_fefo(resultado):
                 rp.pk,
             )
             return
-        empresa = orden.empresa
-
-        formulas = list(
-            ConsumoEstudioReactivo.objects
-            .filter(empresa=empresa, analito=analito, activo=True)
-            .select_related('reactivo')
+        _consumir_formulas_resultado(
+            rp,
+            prefix=f'lab_rp{rp.pk}_',
+            multiplicador=Decimal('1'),
+            actor=rp.validado_por,
         )
-        if not formulas:
-            return
 
-        for formula in formulas:
-            reactivo = formula.reactivo
-            cantidad_total = formula.cantidad_por_prueba
-            if not isinstance(cantidad_total, Decimal):
-                cantidad_total = Decimal(str(cantidad_total))
 
-            prefix = f'lab_rp{rp.pk}_f{formula.pk}_'
-            ya_consumido = (
-                SalidaAnaliticaLab.objects.filter(
-                    idempotency_key__startswith=prefix,
-                ).aggregate(s=Sum('cantidad_consumida'))['s']
-            ) or Decimal('0')
-            restante = cantidad_total - ya_consumido
+def _formulas_aplicables(formulas, equipo_id):
+    """Selecciona componentes obligatorios y una alternativa por grupo."""
+    por_grupo = {}
+    for formula in formulas:
+        por_grupo.setdefault(formula.grupo_consumo or 'PRINCIPAL', []).append(formula)
+
+    seleccionadas = []
+    for grupo, grupo_formulas in por_grupo.items():
+        especificas = [f for f in grupo_formulas if f.equipo_id == equipo_id] if equipo_id else []
+        genericas = [f for f in grupo_formulas if f.equipo_id is None]
+        candidatas = especificas or genericas
+        if not candidatas:
+            continue
+
+        seleccionadas.extend(f for f in candidatas if not f.es_alternativa)
+        alternativas = [f for f in candidatas if f.es_alternativa]
+        if alternativas:
+            activas = [f for f in alternativas if f.seleccionada]
+            if activas:
+                seleccionadas.append(sorted(activas, key=lambda f: (f.prioridad, f.pk))[0])
+    return seleccionadas
+
+
+def _consumir_formulas_resultado(resultado, prefix, multiplicador, actor):
+    (_ResultadoParametro, ConsumoEstudioReactivo, LoteReactivoLab,
+     SalidaAnaliticaLab, _RepeticionAnaliticaLab) = _get_lab_models()
+    orden = resultado.orden
+    empresa = orden.empresa
+    formulas = list(
+        ConsumoEstudioReactivo.objects
+        .filter(empresa=empresa, analito=resultado.analito, activo=True)
+        .select_related('reactivo', 'equipo')
+    )
+    for formula in _formulas_aplicables(formulas, getattr(resultado, 'equipo_id', None)):
+        reactivo = formula.reactivo
+        cantidad_total = Decimal(str(formula.cantidad_por_prueba)) * Decimal(str(multiplicador))
+        formula_prefix = f'{prefix}f{formula.pk}_'
+        ya_consumido = (
+            SalidaAnaliticaLab.objects.filter(idempotency_key__startswith=formula_prefix)
+            .aggregate(s=Sum('cantidad_consumida'))['s']
+        ) or Decimal('0')
+        restante = cantidad_total - ya_consumido
+        if restante <= 0:
+            continue
+
+        lotes_fefo = (
+            LoteReactivoLab.objects
+            .filter(empresa=empresa, reactivo=reactivo, estado='ACTIVO', cantidad_actual__gt=0)
+            .order_by('fecha_caducidad', 'pk')
+            .select_for_update(nowait=False)
+        )
+        for lote in lotes_fefo:
             if restante <= 0:
+                break
+            disponible = Decimal(str(lote.cantidad_actual))
+            a_descontar = min(disponible, restante)
+            if a_descontar <= 0:
                 continue
-
-            lotes_fefo = (
-                LoteReactivoLab.objects
-                .filter(
-                    empresa=empresa,
-                    reactivo=reactivo,
-                    estado='ACTIVO',
-                    cantidad_actual__gt=0,
+            idem = f'{formula_prefix}l{lote.pk}'
+            _obj, created = SalidaAnaliticaLab.objects.get_or_create(
+                idempotency_key=idem,
+                defaults={
+                    'empresa': empresa,
+                    'lote': lote,
+                    'orden': orden,
+                    'analito': resultado.analito,
+                    'formula_consumo': formula,
+                    'cantidad_consumida': a_descontar,
+                    'validado_por': actor,
+                },
+            )
+            if created:
+                nuevo = disponible - a_descontar
+                lote.cantidad_actual = max(Decimal('0'), nuevo)
+                if lote.cantidad_actual <= 0:
+                    lote.estado = 'AGOTADO'
+                lote.save(update_fields=['cantidad_actual', 'estado'])
+                restante -= a_descontar
+                logger.info(
+                    'FEFO-LAB: -%s %s de lote %s (reactivo=%s, orden=%s, origen=%s)',
+                    a_descontar, reactivo.unidad_medida, lote.numero_lote,
+                    reactivo.nombre, orden.pk, prefix.split('_', 1)[0],
                 )
-                .order_by('fecha_caducidad')
-                .select_for_update(nowait=False)
+        if restante > 0:
+            logger.warning(
+                "FEFO-LAB: Stock insuficiente para '%s'. Faltaron %s %s. Orden: %s.",
+                reactivo.nombre, restante, reactivo.unidad_medida, orden.pk,
             )
 
-            for lote in lotes_fefo:
-                if restante <= 0:
-                    break
-                disponible = lote.cantidad_actual
-                if not isinstance(disponible, Decimal):
-                    disponible = Decimal(str(disponible))
-                a_descontar = min(disponible, restante)
-                if a_descontar <= 0:
-                    continue
 
-                idem = f'lab_rp{rp.pk}_f{formula.pk}_l{lote.pk}'
-                _obj, created = SalidaAnaliticaLab.objects.get_or_create(
-                    idempotency_key=idem,
-                    defaults={
-                        'empresa': empresa,
-                        'lote': lote,
-                        'orden': orden,
-                        'analito': analito,
-                        'formula_consumo': formula,
-                        'cantidad_consumida': a_descontar,
-                        'validado_por': rp.validado_por,
-                    },
-                )
-                if created:
-                    nuevo = disponible - a_descontar
-                    lote.cantidad_actual = nuevo
-                    if nuevo <= 0:
-                        lote.cantidad_actual = Decimal('0')
-                        lote.estado = 'AGOTADO'
-                    lote.save(update_fields=['cantidad_actual', 'estado'])
-                    restante -= a_descontar
-                    logger.info(
-                        "FEFO-LAB: -%s %s de lote '%s' (reactivo: %s, orden: %s)",
-                        a_descontar,
-                        reactivo.unidad_medida,
-                        lote.numero_lote,
-                        reactivo.nombre,
-                        orden.pk,
-                    )
-
-            if restante > 0:
-                logger.warning(
-                    "FEFO-LAB: Stock insuficiente para '%s'. Faltaron %s %s. Orden: %s.",
-                    reactivo.nombre,
-                    restante,
-                    reactivo.unidad_medida,
-                    orden.pk,
-                )
+@receiver(post_save, sender='inventario.RepeticionAnaliticaLab')
+def descontar_repeticion_analitica(sender, instance, created, **kwargs):
+    if not created:
+        return
+    try:
+        (ResultadoParametro, _Consumo, _Lote, _Salida, RepeticionAnaliticaLab) = _get_lab_models()
+        with transaction.atomic():
+            repeticion = (
+                RepeticionAnaliticaLab.objects.select_for_update()
+                .select_related('resultado__orden', 'resultado__orden__empresa', 'resultado__analito', 'resultado__equipo')
+                .get(pk=instance.pk)
+            )
+            resultado = repeticion.resultado
+            if not resultado.validado or not resultado.validado_por:
+                return
+            if not _orden_lab_gestion_inventario_activa(resultado.orden):
+                return
+            _consumir_formulas_resultado(
+                resultado,
+                prefix=f'lab_rep{repeticion.pk}_',
+                multiplicador=Decimal(repeticion.cantidad_pruebas),
+                actor=repeticion.registrada_por,
+            )
+    except (DatabaseError, ValidationError, ObjectDoesNotExist) as exc:
+        logger.error('INVENTARIO FEFO: error en repetición %s: %s', instance.pk, exc, exc_info=True)
 
 
 @receiver(post_delete, sender='core.ResultadoParametro')
@@ -250,7 +286,7 @@ def revertir_descuento_al_eliminar(sender, instance, **kwargs):
 
 
 def _revertir_descuento(resultado):
-    (_, _, LoteReactivoLab, SalidaAnaliticaLab) = _get_lab_models()
+    (_, _, LoteReactivoLab, SalidaAnaliticaLab, _) = _get_lab_models()
 
     with transaction.atomic():
         salidas = list(

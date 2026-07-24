@@ -500,6 +500,15 @@
                             </td>
                             <td class="col-estatus">
                                 <span class="badge badge-estatus bg-secondary" id="badge_{{ item.detalle.id }}_{{ param.parametro_id }}">P</span>
+                                {% if esta_validado and param.resultado_id %}
+                                <button type="button"
+                                        class="btn btn-outline-warning btn-sm mt-1"
+                                        title="Registrar repetición y descontar una ejecución adicional"
+                                        onclick="registrarRepeticion({{ param.resultado_id }}, this)">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                    Repetir{% if param.repeticiones %} ({{ param.repeticiones }}){% endif %}
+                                </button>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -525,6 +534,35 @@
 <script>
 const ordenId = {{ orden.id }};
 const csrfToken = '{{ csrf_token }}';
+
+async function registrarRepeticion(resultadoId, button) {
+    const motivo = window.prompt('Motivo obligatorio de la repetición:');
+    if (!motivo || !motivo.trim()) return;
+    const cantidadRaw = window.prompt('¿Cuántas pruebas adicionales se realizarán?', '1');
+    const cantidad = Number.parseInt(cantidadRaw || '1', 10);
+    if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > 10) {
+        window.alert('La cantidad debe ser un número entero entre 1 y 10.');
+        return;
+    }
+    button.disabled = true;
+    const body = new URLSearchParams({ motivo: motivo.trim(), cantidad_pruebas: String(cantidad) });
+    try {
+        const response = await fetch(`/laboratorio/resultado/${resultadoId}/repetir/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body,
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.error || 'No fue posible registrar la repetición.');
+        window.alert(data.mensaje);
+        button.innerHTML = '<i class="bi bi-check-circle"></i> Registrada';
+        button.classList.remove('btn-outline-warning');
+        button.classList.add('btn-outline-success');
+    } catch (error) {
+        button.disabled = false;
+        window.alert(error.message);
+    }
+}
 
 /* Previsualización de analitos es_calculado (servidor, sin persistir) */
 let _previewFormulasTimer = null;

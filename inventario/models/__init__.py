@@ -9,6 +9,7 @@ from .lab import (
     ConsumoEstudioReactivo,
     LoteReactivoLab,
     SalidaAnaliticaLab,
+    RepeticionAnaliticaLab,
     SalidaTecnicaLab,
 )
 from .consultorio import (
@@ -34,6 +35,7 @@ __all__ = [
     "ConsumoEstudioReactivo",
     "LoteReactivoLab",
     "SalidaAnaliticaLab",
+    "RepeticionAnaliticaLab",
     "SalidaTecnicaLab",
     "CatalogoInsumoConsultorio",
     "LoteInsumoConsultorio",

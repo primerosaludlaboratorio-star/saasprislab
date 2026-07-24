@@ -14,6 +14,7 @@ from .models import (
     ConsumoEstudioReactivo,
     LoteReactivoLab,
     SalidaAnaliticaLab,
+    RepeticionAnaliticaLab,
     SalidaTecnicaLab,
     # Silo Consultorio
     CatalogoInsumoConsultorio,
@@ -47,7 +48,11 @@ class ProveedorComprasAdmin(admin.ModelAdmin):
 class ConsumoEstudioReactivoInline(admin.TabularInline):
     model  = ConsumoEstudioReactivo
     extra  = 0
-    fields = ["analito", "cantidad_por_prueba", "unidad", "activo"]
+    fields = [
+        "analito", "equipo", "grupo_consumo",
+        "cantidad_por_prueba", "unidad", "es_alternativa",
+        "seleccionada", "prioridad", "activo",
+    ]
 
 
 @admin.register(CatalogoReactivoLab)
@@ -84,6 +89,14 @@ class SalidaAnaliticaLabAdmin(admin.ModelAdmin):
     list_filter   = ["empresa", "fecha"]
     search_fields = ["orden__id", "lote__numero_lote", "idempotency_key"]
     readonly_fields = ["fecha", "idempotency_key"]
+
+
+@admin.register(RepeticionAnaliticaLab)
+class RepeticionAnaliticaLabAdmin(admin.ModelAdmin):
+    list_display = ["resultado", "cantidad_pruebas", "registrada_por", "fecha"]
+    list_filter = ["fecha"]
+    search_fields = ["resultado__orden__id", "resultado__analito__nombre", "motivo"]
+    readonly_fields = ["fecha"]
 
 
 @admin.register(SalidaTecnicaLab)

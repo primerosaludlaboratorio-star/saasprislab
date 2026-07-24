@@ -115,7 +115,7 @@ class CatalogoReactivoLab(models.Model):
 
 
 class ConsumoEstudioReactivo(models.Model):
-    """Fórmula de consumo ISO 15189: cuánto reactivo consume cada analito LIMS."""
+    """Fórmula persistente de consumo por analito, equipo y componente."""
     empresa = models.ForeignKey(
         "core.Empresa",
         on_delete=models.CASCADE,
@@ -133,6 +133,36 @@ class ConsumoEstudioReactivo(models.Model):
         on_delete=models.CASCADE,
         related_name="consumos_por_estudio",
         verbose_name="Reactivo",
+    )
+    equipo = models.ForeignKey(
+        "laboratorio.Equipo",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="formulas_consumo_reactivo",
+        verbose_name="Equipo / Analizador",
+        help_text="Vacío = fórmula genérica; si existe una fórmula específica para el equipo, esa tiene prioridad.",
+    )
+    grupo_consumo = models.CharField(
+        max_length=80,
+        default="PRINCIPAL",
+        verbose_name="Grupo de Consumo",
+        help_text="Ej.: REACTIVO_PRINCIPAL, PUNTAS, DILUYENTE, CALIBRADOR.",
+    )
+    es_alternativa = models.BooleanField(
+        default=False,
+        verbose_name="Es alternativa",
+        help_text="Las alternativas compiten dentro de su grupo; solo la seleccionada descuenta.",
+    )
+    seleccionada = models.BooleanField(
+        default=True,
+        verbose_name="Seleccionada para uso",
+        help_text="Solo aplica a alternativas. El cambio conserva el historial de salidas anteriores.",
+    )
+    prioridad = models.PositiveIntegerField(
+        default=100,
+        verbose_name="Prioridad",
+        help_text="Menor número = mayor prioridad cuando se requiere desempate.",
     )
     cantidad_por_prueba = models.DecimalField(
         max_digits=10, decimal_places=4,
@@ -155,13 +185,19 @@ class ConsumoEstudioReactivo(models.Model):
         verbose_name_plural = "Fórmulas de Consumo Reactivo por Estudio"
         constraints = [
             models.UniqueConstraint(
-                fields=["empresa", "analito", "reactivo"],
+                fields=["empresa", "analito", "reactivo", "equipo", "grupo_consumo"],
                 name="inventario_consumo_estudio_reactivo_uniq",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["empresa", "analito", "equipo", "grupo_consumo"],
+                condition=models.Q(es_alternativa=True, seleccionada=True),
+                name="inventario_consumo_alternativa_activa_uniq",
+            ),
         ]
 
     def __str__(self):
-        return f"{self.analito} → {self.cantidad_por_prueba} {self.unidad} de {self.reactivo}"
+        equipo = f" [{self.equipo}]" if self.equipo_id else ""
+        return f"{self.analito} → {self.cantidad_por_prueba} {self.unidad} de {self.reactivo}{equipo}"
 
 
 class LoteReactivoLab(models.Model):
@@ -430,6 +466,48 @@ class SalidaAnaliticaLab(models.Model):
 
     def __str__(self):
         return f"Orden #{self.orden_id} → {self.cantidad_consumida} de {self.lote}"
+
+
+class RepeticionAnaliticaLab(models.Model):
+    """Evento auditable que consume una ejecución adicional de un analito."""
+    resultado = models.ForeignKey(
+        "core.ResultadoParametro",
+        on_delete=models.PROTECT,
+        related_name="repeticiones_analiticas",
+        verbose_name="Resultado repetido",
+    )
+    cantidad_pruebas = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Pruebas adicionales",
+        help_text="Normalmente 1; permite registrar más de una repetición explícita.",
+    )
+    motivo = models.TextField(verbose_name="Motivo de repetición")
+    registrada_por = models.ForeignKey(
+        "core.Usuario",
+        on_delete=models.PROTECT,
+        related_name="repeticiones_analiticas_registradas",
+        verbose_name="Registrada por",
+    )
+    fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha / Hora")
+
+    class Meta:
+        verbose_name = "Repetición Analítica"
+        verbose_name_plural = "Repeticiones Analíticas"
+        ordering = ["-fecha"]
+        indexes = [
+            models.Index(fields=["resultado", "fecha"]),
+        ]
+
+    def clean(self):
+        if self.cantidad_pruebas < 1:
+            raise ValidationError("La repetición debe contener al menos una prueba adicional.")
+        if not self.motivo or not self.motivo.strip():
+            raise ValidationError("El motivo de repetición es obligatorio.")
+        if self.resultado_id and not self.resultado.validado:
+            raise ValidationError("Solo se puede repetir un resultado ya validado.")
+
+    def __str__(self):
+        return f"Repetición #{self.pk} de resultado #{self.resultado_id} × {self.cantidad_pruebas}"
 
 
 class SalidaTecnicaLab(models.Model):

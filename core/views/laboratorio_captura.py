@@ -21,6 +21,7 @@ from django.views.decorators.http import require_http_methods
 from datetime import date
 
 from core.models import OrdenDeServicio, DetalleOrden, ResultadoParametro, AuditLog
+from inventario.models import RepeticionAnaliticaLab
 from core.lims_cart import detalle_orden_etiqueta
 from core.services.ia_clinical_governance import METODO_IA_BORRADOR
 from lims.models import Analito, ValorReferenciaAnalito
@@ -181,6 +182,8 @@ def captura_resultados_industrial(request, orden_id):
                 'panico_fuera_ref': panico_fuera_ref,
                 'formula': an.formula or '',
                 'valor_previo': valor_prev,
+                'resultado_id': rp.pk if rp else None,
+                'repeticiones': rp.repeticiones_analiticas.count() if rp else 0,
                 'escudo_ia_advertencia': escudo_ia_advertencia,
                 'resultado_anterior': {
                     'valor': resultado_anterior.valor if resultado_anterior else '',
@@ -269,6 +272,40 @@ def captura_resultados_industrial(request, orden_id):
     }
 
     return render(request, 'core/captura_resultados_industrial.html', context)
+
+
+@login_required
+@require_http_methods(['POST'])
+def repetir_resultado_analitico(request, resultado_id):
+    """Registra una repetición validada y dispara el descuento adicional idempotente."""
+    empresa = getattr(request.user, 'empresa', None)
+    resultado = get_object_or_404(
+        ResultadoParametro.objects.select_related('orden', 'analito'),
+        pk=resultado_id,
+        orden__empresa=empresa,
+    )
+    if not resultado.validado or not resultado.validado_por:
+        return JsonResponse({'ok': False, 'error': 'El resultado debe estar validado antes de repetirse.'}, status=400)
+    motivo = (request.POST.get('motivo') or '').strip()
+    if not motivo:
+        return JsonResponse({'ok': False, 'error': 'El motivo de repetición es obligatorio.'}, status=400)
+    try:
+        cantidad = int(request.POST.get('cantidad_pruebas') or 1)
+    except (TypeError, ValueError):
+        cantidad = 0
+    if cantidad < 1 or cantidad > 10:
+        return JsonResponse({'ok': False, 'error': 'La cantidad debe estar entre 1 y 10.'}, status=400)
+    repeticion = RepeticionAnaliticaLab.objects.create(
+        resultado=resultado,
+        cantidad_pruebas=cantidad,
+        motivo=motivo,
+        registrada_por=request.user,
+    )
+    return JsonResponse({
+        'ok': True,
+        'repeticion_id': repeticion.pk,
+        'mensaje': f'Repetición registrada: {cantidad} prueba(s) adicional(es).',
+    })
 
 
 @login_required

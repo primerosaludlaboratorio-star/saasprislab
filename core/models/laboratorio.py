@@ -206,6 +206,15 @@ class ResultadoParametro(models.Model):
         related_name='resultados_core',
         verbose_name="Analito LIMS",
     )
+    equipo = models.ForeignKey(
+        'laboratorio.Equipo',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='resultados_parametro',
+        verbose_name="Equipo / Analizador",
+        help_text="Equipo que produjo el resultado; determina la receta de consumo específica cuando existe.",
+    )
     valor = models.CharField(max_length=500, help_text="Valor capturado del resultado (numérico o texto)")
 
     capturado_por = models.ForeignKey(
