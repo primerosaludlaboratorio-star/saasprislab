@@ -8,6 +8,7 @@ import uuid
 
 from core.validators import validate_backup_upload, validate_audio_upload
 from .base import Empresa, Sucursal, Usuario
+from .append_only import AppendOnlyManager, reject_append_only_mutation
 
 
 # ==============================================================================
@@ -44,6 +45,8 @@ class AuditLog(models.Model):
     user_agent = models.CharField(max_length=255, blank=True, null=True, verbose_name="User Agent")
     hash_verificacion = models.CharField(max_length=64, blank=True, null=True, verbose_name="Hash SHA-256", help_text="Para prevenir alteraciones")
 
+    objects = AppendOnlyManager()
+
     class Meta:
         app_label = 'core'
         verbose_name = "Log de Auditoría"
@@ -57,6 +60,13 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"{self.get_accion_display()} {self.modelo_afectado} #{self.objeto_id} - {self.usuario} - {self.fecha_cierta.strftime('%Y-%m-%d %H:%M')}"
+
+    def save(self, *args, **kwargs):
+        reject_append_only_mutation(self, 'actualizacion')
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        reject_append_only_mutation(self, 'borrado')
 
 
 # ==============================================================================

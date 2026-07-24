@@ -122,7 +122,7 @@ class Command(BaseCommand):
         try:
             from core.models import AuditLog
             cutoff = timezone.now() - timedelta(days=months * 30)
-            old_logs = AuditLog.objects.filter(fecha__lt=cutoff)
+            old_logs = AuditLog.objects.filter(fecha_cierta__lt=cutoff)
             count = old_logs.count()
 
             if count == 0:
@@ -144,14 +144,14 @@ class Command(BaseCommand):
                     f'  ✓ {count} logs archivados en core_auditlog_historico'
                 ))
             else:
-                # Si no existe tabla historica, solo eliminamos los muy viejos (>12m)
+                # Append-only: si no existe tabla historica, nunca se eliminan
+                # registros; se conservan en la tabla primaria.
                 very_old_cutoff = timezone.now() - timedelta(days=365)
-                very_old = AuditLog.objects.filter(fecha__lt=very_old_cutoff)
+                very_old = AuditLog.objects.filter(fecha_cierta__lt=very_old_cutoff)
                 very_old_count = very_old.count()
                 if very_old_count > 0:
-                    very_old.delete()
                     self.stdout.write(self.style.SUCCESS(
-                        f'  ✓ {very_old_count} logs >12 meses eliminados (sin tabla historica)'
+                        f'  ✓ {very_old_count} logs >12 meses conservados (sin tabla historica)'
                     ))
                 else:
                     self.stdout.write('  ✓ Logs entre 6-12 meses conservados')
@@ -197,14 +197,11 @@ class Command(BaseCommand):
                     INSERT INTO core_auditlog_historico 
                     SELECT *, NOW() as archivado_en
                     FROM core_auditlog 
-                    WHERE fecha < %s
+                    WHERE fecha_cierta < %s
                 """, [cutoff])
 
-                # Eliminar originales
-                cursor.execute("""
-                    DELETE FROM core_auditlog WHERE fecha < %s
-                """, [cutoff])
-
+                # Nunca eliminar originales: la tabla primaria es el registro
+                # forense de autoridad y permanece append-only.
                 return True
         except Exception as e:
             logger.warning(f'SENTINEL-CLEANUP: No se pudo crear tabla historica: {e}')

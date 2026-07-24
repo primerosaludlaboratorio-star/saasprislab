@@ -7,6 +7,7 @@ solo identificadores referenciales y metadatos técnicos/consentimiento (bandera
 from django.db import models
 
 from .base import Empresa
+from .append_only import AppendOnlyManager, reject_append_only_mutation
 
 
 class ForenseAcceso(models.Model):
@@ -68,6 +69,8 @@ class ForenseAcceso(models.Model):
     metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
+    objects = AppendOnlyManager()
+
     class Meta:
         app_label = 'core'
         verbose_name = 'Acceso forense'
@@ -80,3 +83,10 @@ class ForenseAcceso(models.Model):
 
     def __str__(self):
         return f'{self.accion} empresa={self.empresa_id} p={self.paciente_id} o={self.orden_id} @ {self.created_at}'
+
+    def save(self, *args, **kwargs):
+        reject_append_only_mutation(self, 'actualizacion')
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        reject_append_only_mutation(self, 'borrado')
