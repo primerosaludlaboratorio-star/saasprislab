@@ -24,8 +24,18 @@
         <div class="row g-3">
 
           <div class="col-12">
+            <label class="form-label fw-semibold">Nivel de aplicación <span class="text-danger">*</span></label>
+            <select name="aplicacion" class="form-select" required>
+              {% for val, lbl in aplicacion_choices %}
+                <option value="{{ val }}" {% if consumo.aplicacion == val or not consumo and val == 'ANALITO' %}selected{% endif %}>{{ lbl }}</option>
+              {% endfor %}
+            </select>
+            <small class="text-muted">Use MUESTRA para tubo, aguja, torunda o alcohol: se descuenta una sola vez por orden/muestra, aunque tenga seis analitos.</small>
+          </div>
+
+          <div class="col-12">
             <label class="form-label fw-semibold">Analito LIMS <span class="text-danger">*</span></label>
-            <select name="analito" class="form-select" required>
+            <select name="analito" class="form-select">
               <option value="">— Seleccionar analito —</option>
               {% for e in analitos %}
                 <option value="{{ e.pk }}" {% if consumo.analito_id == e.pk %}selected{% endif %}>
@@ -33,7 +43,7 @@
                 </option>
               {% endfor %}
             </select>
-            <small class="text-muted">Al validar resultados de este analito, se descuentan los reactivos indicados.</small>
+            <small class="text-muted">Obligatorio para ANALITO. Déjelo vacío para MUESTRA.</small>
           </div>
 
           <div class="col-12">

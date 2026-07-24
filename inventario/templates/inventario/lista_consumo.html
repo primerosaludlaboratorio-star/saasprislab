@@ -32,7 +32,8 @@
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
-              <th>Estudio</th>
+              <th>Aplicación</th>
+              <th>Analito</th>
               <th>Reactivo</th>
               <th class="text-end">Cantidad / Prueba</th>
               <th>Unidad</th>
@@ -45,13 +46,14 @@
             {% regroup consumos by analito as estudios_list %}
             {% for grupo in estudios_list %}
             <tr class="table-primary table-sm">
-              <td colspan="7" class="fw-bold py-1">
-                <i class="bi bi-flask me-2"></i>{{ grupo.grouper.nombre }}
+              <td colspan="8" class="fw-bold py-1">
+                <i class="bi bi-flask me-2"></i>{{ grupo.grouper.nombre|default:"MATERIALES DE MUESTRA" }}
               </td>
             </tr>
             {% for c in grupo.list %}
             <tr>
-              <td></td>
+              <td><span class="badge {% if c.aplicacion == 'MUESTRA' %}bg-info{% else %}bg-secondary{% endif %}">{{ c.get_aplicacion_display }}</span></td>
+              <td>{{ c.analito.nombre|default:"Muestra / común" }}</td>
               <td class="fw-semibold">
                 <span class="badge bg-secondary me-1">{{ c.reactivo.get_tipo_display }}</span>
                 {{ c.reactivo.nombre }}
@@ -90,7 +92,7 @@
             {% endfor %}
             {% empty %}
             <tr>
-              <td colspan="7" class="text-center text-muted py-4">
+              <td colspan="8" class="text-center text-muted py-4">
                 <i class="bi bi-diagram-3 display-6 d-block mb-2 opacity-25"></i>
                 No hay fórmulas configuradas. El motor FEFO no realizará descuentos automáticos.
                 <a href="{% url 'inventario:crear_consumo' %}">Crear primera fórmula</a>.

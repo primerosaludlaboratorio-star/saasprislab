@@ -10,6 +10,7 @@ from inventario.models import (
     LoteReactivoLab,
     RepeticionAnaliticaLab,
     SalidaAnaliticaLab,
+    CosteoEjecucionAnaliticaLab,
 )
 from laboratorio.models import Equipo
 from lims.models import Analito
@@ -210,3 +211,63 @@ class ConsumoAnaliticoPersistenteTests(TestCase):
         repeticion.save()
         lote.refresh_from_db()
         self.assertEqual(lote.cantidad_actual, Decimal("8"))
+
+    def test_consumo_comun_de_muestra_no_se_duplica_en_qsc_de_seis_analitos(self):
+        tubo = self._reactivo("TUBO-DORADO", "Tubo dorado")
+        self._lote(tubo, "T-01", "1")
+        ConsumoEstudioReactivo.objects.create(
+            empresa=self.empresa,
+            analito=None,
+            reactivo=tubo,
+            aplicacion="MUESTRA",
+            grupo_consumo="TOMA_MUESTRA",
+            cantidad_por_prueba=Decimal("1"),
+            unidad="UNIDAD",
+        )
+        analitos = []
+        lotes = []
+        for idx in range(6):
+            analito = Analito.objects.create(
+                empresa=self.empresa,
+                codigo=f"QSC-{idx}",
+                abreviatura=f"Q{idx}",
+                nombre=f"Analito QSC {idx}",
+                departamento="Quimica",
+                es_calculado=False,
+            )
+            reactivo = self._reactivo(f"QSC-R-{idx}", f"Reactivo QSC {idx}")
+            lotes.append(self._lote(reactivo, f"Q-{idx}", "10"))
+            ConsumoEstudioReactivo.objects.create(
+                empresa=self.empresa,
+                analito=analito,
+                reactivo=reactivo,
+                cantidad_por_prueba=Decimal("1"),
+                unidad="UNIDAD",
+            )
+            analitos.append(analito)
+
+        for idx, analito in enumerate(analitos):
+            ResultadoParametro.objects.create(
+                orden=self.orden,
+                analito=analito,
+                equipo=self.equipo,
+                valor=str(idx + 1),
+                capturado_por=self.usuario,
+                validado=True,
+                validado_por=self.usuario,
+                aprobado_por_humano=True,
+            )
+
+        tubo.refresh_from_db()
+        self.assertEqual(tubo.lotes.get(numero_lote="T-01").cantidad_actual, Decimal("0"))
+        for lote in lotes:
+            lote.refresh_from_db()
+            self.assertEqual(lote.cantidad_actual, Decimal("9"))
+        self.assertEqual(
+            SalidaAnaliticaLab.objects.filter(orden=self.orden, analito__isnull=True).count(),
+            1,
+        )
+        self.assertEqual(
+            CosteoEjecucionAnaliticaLab.objects.filter(orden=self.orden, tipo="INICIAL").count(),
+            6,
+        )

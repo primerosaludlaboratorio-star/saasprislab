@@ -18,7 +18,7 @@ CONECTAR en inventario/apps.py → def ready(): import inventario.signals
 from decimal import Decimal
 
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.db.utils import DatabaseError
@@ -38,9 +38,9 @@ def _get_lab_models():
     from core.models.laboratorio import ResultadoParametro
     from .models import (
         ConsumoEstudioReactivo, LoteReactivoLab, SalidaAnaliticaLab,
-        RepeticionAnaliticaLab,
+        RepeticionAnaliticaLab, CosteoEjecucionAnaliticaLab,
     )
-    return ResultadoParametro, ConsumoEstudioReactivo, LoteReactivoLab, SalidaAnaliticaLab, RepeticionAnaliticaLab
+    return ResultadoParametro, ConsumoEstudioReactivo, LoteReactivoLab, SalidaAnaliticaLab, RepeticionAnaliticaLab, CosteoEjecucionAnaliticaLab
 
 
 def _get_consultorio_models():
@@ -121,7 +121,7 @@ def descontar_reactivos_fefo(sender, instance, created, **kwargs):
 
 def _ejecutar_descuento_fefo(resultado):
     (ResultadoParametro, _ConsumoEstudioReactivo, _LoteReactivoLab,
-     _SalidaAnaliticaLab, _RepeticionAnaliticaLab) = _get_lab_models()
+     _SalidaAnaliticaLab, _RepeticionAnaliticaLab, _Costeo) = _get_lab_models()
 
     with transaction.atomic():
         rp = (
@@ -153,6 +153,7 @@ def _ejecutar_descuento_fefo(resultado):
             multiplicador=Decimal('1'),
             actor=rp.validado_por,
         )
+        _registrar_costeo_ejecucion(rp, f'lab_rp{rp.pk}_', rp.validado_por)
 
 
 def _formulas_aplicables(formulas, equipo_id):
@@ -180,18 +181,33 @@ def _formulas_aplicables(formulas, equipo_id):
 
 def _consumir_formulas_resultado(resultado, prefix, multiplicador, actor):
     (_ResultadoParametro, ConsumoEstudioReactivo, LoteReactivoLab,
-     SalidaAnaliticaLab, _RepeticionAnaliticaLab) = _get_lab_models()
+     SalidaAnaliticaLab, _RepeticionAnaliticaLab, _Costeo) = _get_lab_models()
     orden = resultado.orden
     empresa = orden.empresa
+    formulas_qs = ConsumoEstudioReactivo.objects.filter(
+        empresa=empresa,
+        activo=True,
+    ).filter(
+        Q(analito=resultado.analito, aplicacion='ANALITO')
+        | Q(analito__isnull=True, aplicacion='MUESTRA')
+    )
+    # A collection consumable belongs to the sample, not to every analyte.
+    # Repetitions consume the analyte formula only; they do not consume a
+    # second tube/needle unless a new sample event is explicitly created.
+    if multiplicador != Decimal('1'):
+        formulas_qs = formulas_qs.filter(aplicacion='ANALITO')
     formulas = list(
-        ConsumoEstudioReactivo.objects
-        .filter(empresa=empresa, analito=resultado.analito, activo=True)
+        formulas_qs
         .select_related('reactivo', 'equipo')
     )
     for formula in _formulas_aplicables(formulas, getattr(resultado, 'equipo_id', None)):
         reactivo = formula.reactivo
         cantidad_total = Decimal(str(formula.cantidad_por_prueba)) * Decimal(str(multiplicador))
-        formula_prefix = f'{prefix}f{formula.pk}_'
+        formula_prefix = (
+            f'lab_muestra{orden.pk}_f{formula.pk}_'
+            if formula.aplicacion == 'MUESTRA'
+            else f'{prefix}f{formula.pk}_'
+        )
         ya_consumido = (
             SalidaAnaliticaLab.objects.filter(idempotency_key__startswith=formula_prefix)
             .aggregate(s=Sum('cantidad_consumida'))['s']
@@ -220,7 +236,7 @@ def _consumir_formulas_resultado(resultado, prefix, multiplicador, actor):
                     'empresa': empresa,
                     'lote': lote,
                     'orden': orden,
-                    'analito': resultado.analito,
+                    'analito': resultado.analito if formula.aplicacion == 'ANALITO' else None,
                     'formula_consumo': formula,
                     'cantidad_consumida': a_descontar,
                     'validado_por': actor,
@@ -245,12 +261,61 @@ def _consumir_formulas_resultado(resultado, prefix, multiplicador, actor):
             )
 
 
+def _registrar_costeo_ejecucion(resultado, prefix, actor, tipo='INICIAL', cantidad=1, repeticion=None):
+    """Congela el costo real de lotes consumidos en una ejecución."""
+    (_, _, _, SalidaAnaliticaLab, _, CosteoEjecucionAnaliticaLab) = _get_lab_models()
+    event_key = prefix.rstrip('_')
+    prefixes = [prefix]
+    if tipo == 'INICIAL' and not CosteoEjecucionAnaliticaLab.objects.filter(
+        orden=resultado.orden, tipo='INICIAL'
+    ).exists():
+        prefixes.append(f'lab_muestra{resultado.orden_id}_')
+    salida_filter = Q(idempotency_key__startswith=prefixes[0])
+    if len(prefixes) > 1:
+        salida_filter |= Q(idempotency_key__startswith=prefixes[1])
+    salidas = list(
+        SalidaAnaliticaLab.objects.filter(empresa=resultado.orden.empresa)
+        .filter(salida_filter)
+        .select_related('lote__reactivo')
+    )
+    detalle = [
+        {
+            'salida_id': salida.pk,
+            'reactivo': salida.lote.reactivo.codigo_interno,
+            'lote': salida.lote.numero_lote,
+            'cantidad': str(salida.cantidad_consumida),
+            'costo_unitario': str(salida.lote.precio_unitario_compra),
+            'costo': str(salida.cantidad_consumida * salida.lote.precio_unitario_compra),
+        }
+        for salida in salidas
+    ]
+    costo = sum((Decimal(item['costo']) for item in detalle), Decimal('0'))
+    detalle_orden = resultado.orden.detalles.filter(analito=resultado.analito).first()
+    ingreso = getattr(detalle_orden, 'precio_momento', Decimal('0')) or Decimal('0')
+    CosteoEjecucionAnaliticaLab.objects.update_or_create(
+        evento_key=event_key,
+        defaults={
+            'empresa': resultado.orden.empresa,
+            'orden': resultado.orden,
+            'paciente': resultado.orden.paciente,
+            'resultado': resultado,
+            'repeticion': repeticion,
+            'analito': resultado.analito,
+            'tipo': tipo,
+            'cantidad_ejecuciones': cantidad,
+            'costo_materiales': costo,
+            'ingreso_asignado': ingreso,
+            'detalle_costos': detalle,
+        },
+    )
+
+
 @receiver(post_save, sender='inventario.RepeticionAnaliticaLab')
 def descontar_repeticion_analitica(sender, instance, created, **kwargs):
     if not created:
         return
     try:
-        (ResultadoParametro, _Consumo, _Lote, _Salida, RepeticionAnaliticaLab) = _get_lab_models()
+        (ResultadoParametro, _Consumo, _Lote, _Salida, RepeticionAnaliticaLab, _Costeo) = _get_lab_models()
         with transaction.atomic():
             repeticion = (
                 RepeticionAnaliticaLab.objects.select_for_update()
@@ -267,6 +332,14 @@ def descontar_repeticion_analitica(sender, instance, created, **kwargs):
                 prefix=f'lab_rep{repeticion.pk}_',
                 multiplicador=Decimal(repeticion.cantidad_pruebas),
                 actor=repeticion.registrada_por,
+            )
+            _registrar_costeo_ejecucion(
+                resultado,
+                f'lab_rep{repeticion.pk}_',
+                repeticion.registrada_por,
+                tipo='REPETICION',
+                cantidad=repeticion.cantidad_pruebas,
+                repeticion=repeticion,
             )
     except (DatabaseError, ValidationError, ObjectDoesNotExist) as exc:
         logger.error('INVENTARIO FEFO: error en repetición %s: %s', instance.pk, exc, exc_info=True)
@@ -286,7 +359,7 @@ def revertir_descuento_al_eliminar(sender, instance, **kwargs):
 
 
 def _revertir_descuento(resultado):
-    (_, _, LoteReactivoLab, SalidaAnaliticaLab, _) = _get_lab_models()
+    (ResultadoParametro, _, LoteReactivoLab, SalidaAnaliticaLab, _, _) = _get_lab_models()
 
     with transaction.atomic():
         salidas = list(
@@ -298,6 +371,19 @@ def _revertir_descuento(resultado):
             .select_for_update(nowait=False)
             .select_related('lote')
         )
+
+        quedan_resultados = ResultadoParametro.objects.filter(
+            orden=resultado.orden,
+            validado=True,
+        ).exclude(pk=resultado.pk).exists()
+        if not quedan_resultados:
+            salidas.extend(list(
+                SalidaAnaliticaLab.objects.filter(
+                    empresa=resultado.orden.empresa,
+                    orden=resultado.orden,
+                    analito__isnull=True,
+                ).select_for_update(nowait=False).select_related('lote')
+            ))
 
         if not salidas:
             return

@@ -7,6 +7,7 @@ from .base import UNIDAD_CHOICES, AREA_CHOICES, ProveedorCompras
 from .lab import (
     CatalogoReactivoLab,
     ConsumoEstudioReactivo,
+    CosteoEjecucionAnaliticaLab,
     LoteReactivoLab,
     SalidaAnaliticaLab,
     RepeticionAnaliticaLab,
@@ -33,6 +34,7 @@ __all__ = [
     "ProveedorCompras",
     "CatalogoReactivoLab",
     "ConsumoEstudioReactivo",
+    "CosteoEjecucionAnaliticaLab",
     "LoteReactivoLab",
     "SalidaAnaliticaLab",
     "RepeticionAnaliticaLab",

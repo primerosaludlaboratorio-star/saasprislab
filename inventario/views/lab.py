@@ -567,7 +567,7 @@ def lista_consumo(request, empresa):
         ConsumoEstudioReactivo.objects
         .filter(empresa=empresa)
         .select_related('analito', 'reactivo')
-        .order_by('analito__nombre', 'reactivo__nombre')
+        .order_by('aplicacion', 'analito__nombre', 'reactivo__nombre')
     )
     ctx = {
         'titulo': 'Fórmulas de Consumo por Analito (LIMS)',
@@ -581,12 +581,18 @@ def crear_consumo(request, empresa):
     if request.method == 'POST':
         d = request.POST
         try:
-            get_object_or_404(AnalitoLims, pk=d['analito'], empresa=empresa, activo=True)
+            analito_id = d.get('analito') or None
+            aplicacion = d.get('aplicacion', 'ANALITO')
+            if aplicacion == 'ANALITO':
+                get_object_or_404(AnalitoLims, pk=analito_id, empresa=empresa, activo=True)
+            elif analito_id:
+                raise ValidationError('Un consumo por muestra no debe ligarse a un analito.')
             get_object_or_404(CatalogoReactivoLab, pk=d['reactivo'], empresa=empresa, activo=True)
             ConsumoEstudioReactivo.objects.create(
                 empresa=empresa,
-                analito_id=d['analito'],
+                analito_id=analito_id,
                 reactivo_id=d['reactivo'],
+                aplicacion=aplicacion,
                 cantidad_por_prueba=d['cantidad_por_prueba'],
                 unidad=d['unidad'],
                 incluye_overhead_qc=bool(d.get('incluye_overhead_qc')),
@@ -603,6 +609,7 @@ def crear_consumo(request, empresa):
         'titulo': 'Nueva Fórmula de Consumo',
         'analitos': analitos,
         'reactivos': reactivos,
+        'aplicacion_choices': ConsumoEstudioReactivo.APLICACION_CHOICES,
         'unidad_choices': UNIDAD_CHOICES,
     }
     return render(request, 'inventario/form_consumo.html', ctx)
@@ -614,10 +621,16 @@ def editar_consumo(request, empresa, pk):
     if request.method == 'POST':
         d = request.POST
         try:
-            get_object_or_404(AnalitoLims, pk=d['analito'], empresa=empresa, activo=True)
+            analito_id = d.get('analito') or None
+            aplicacion = d.get('aplicacion', 'ANALITO')
+            if aplicacion == 'ANALITO':
+                get_object_or_404(AnalitoLims, pk=analito_id, empresa=empresa, activo=True)
+            elif analito_id:
+                raise ValidationError('Un consumo por muestra no debe ligarse a un analito.')
             get_object_or_404(CatalogoReactivoLab, pk=d['reactivo'], empresa=empresa, activo=True)
-            consumo.analito_id = d['analito']
+            consumo.analito_id = analito_id
             consumo.reactivo_id        = d['reactivo']
+            consumo.aplicacion         = aplicacion
             consumo.cantidad_por_prueba = d['cantidad_por_prueba']
             consumo.unidad             = d['unidad']
             consumo.incluye_overhead_qc = bool(d.get('incluye_overhead_qc'))
@@ -635,6 +648,7 @@ def editar_consumo(request, empresa, pk):
         'consumo': consumo,
         'analitos': analitos,
         'reactivos': reactivos,
+        'aplicacion_choices': ConsumoEstudioReactivo.APLICACION_CHOICES,
         'unidad_choices': UNIDAD_CHOICES,
     }
     return render(request, 'inventario/form_consumo.html', ctx)

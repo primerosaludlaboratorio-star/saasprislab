@@ -12,6 +12,7 @@ from .models import (
     # Silo Laboratorio
     CatalogoReactivoLab,
     ConsumoEstudioReactivo,
+    CosteoEjecucionAnaliticaLab,
     LoteReactivoLab,
     SalidaAnaliticaLab,
     RepeticionAnaliticaLab,
@@ -49,7 +50,7 @@ class ConsumoEstudioReactivoInline(admin.TabularInline):
     model  = ConsumoEstudioReactivo
     extra  = 0
     fields = [
-        "analito", "equipo", "grupo_consumo",
+        "analito", "aplicacion", "equipo", "grupo_consumo",
         "cantidad_por_prueba", "unidad", "es_alternativa",
         "seleccionada", "prioridad", "activo",
     ]
@@ -70,6 +71,14 @@ class CatalogoReactivoLabAdmin(admin.ModelAdmin):
         color = "red" if obj.necesita_reorden else "green"
         return format_html('<span style="color:{}">{}</span>', color, stock)
     stock_actual.short_description = "Stock Actual"
+
+
+@admin.register(CosteoEjecucionAnaliticaLab)
+class CosteoEjecucionAnaliticaLabAdmin(admin.ModelAdmin):
+    list_display = ["orden", "paciente", "analito", "tipo", "cantidad_ejecuciones", "costo_materiales", "ingreso_asignado", "fecha"]
+    list_filter = ["empresa", "tipo", "fecha"]
+    search_fields = ["orden__folio_orden", "paciente__nombre_completo", "analito__nombre", "evento_key"]
+    readonly_fields = ["fecha", "evento_key", "detalle_costos", "costo_materiales"]
 
 
 @admin.register(LoteReactivoLab)

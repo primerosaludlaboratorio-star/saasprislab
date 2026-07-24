@@ -4,6 +4,25 @@
 **Rama auditada:** `release/v1.0-local`  
 **Commit de documentacion previo:** `976ed0b`
 
+## Actualizacion de logica de consumo y costeo
+
+Se incorporo la distincion operativa entre consumo por analito y consumo comun por muestra:
+
+- `ANALITO`: una formula independiente para glucosa, urea, creatinina y cada analito fisico.
+- `MUESTRA`: una formula para tubo dorado, aguja, torunda, alcohol u otro material comun; se descuenta una vez por orden/muestra y no una vez por cada analito del perfil.
+- Una repeticion consume la formula del analito repetido y no vuelve a descontar los materiales comunes de toma.
+- `CosteoEjecucionAnaliticaLab` congela el costo usando el lote y el precio unitario de compra realmente consumidos, con vinculo a orden, paciente, analito, tipo de ejecucion y detalle de lotes.
+
+La receta comercial `QSC` no es un articulo de inventario. Solo referencia la orden comercial; sus consumos se registran como materiales comunes y analitos atomicos. La asignacion del ingreso de un paquete entre analitos queda como regla financiera pendiente de confirmacion, para no inventar margen por analito.
+
+Las migraciones funcionales generadas son `inventario/migrations/0015_costeoejecucionanaliticalab_and_more.py`, `0016_alter_costeoejecucionanaliticalab_repeticion_and_more.py` y `0017_remove_consumoestudioreactivo_inventario_consumo_estudio_reactivo_uniq_and_more.py`.
+
+## Evidencia adicional
+
+- 6 pruebas de inventario/FEFO/costeo en verde, incluyendo un escenario de seis analitos: un solo descuento comun, seis descuentos analiticos, costeo de las seis ejecuciones y repeticion idempotente. La suite dirigida completa de esta ronda quedo en 46 pruebas OK.
+- Plantilla regenerada sin errores de formulas. Se agregaron `bom_consumo_prueba` y `costeo_por_prueba`.
+- Archivo entregable nuevo: `docs/manual/Plantilla_Carga_Reactivos_Insumos_Prislab_v2_2026-07-24.xlsx`.
+
 ## Alcance ejecutado
 
 Se verifico el flujo de laboratorio/LIMS y los componentes de inventario relacionados en codigo, con base local aislada para pruebas. Tambien se intento la verificacion humana desde navegador.

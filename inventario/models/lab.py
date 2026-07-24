@@ -115,7 +115,16 @@ class CatalogoReactivoLab(models.Model):
 
 
 class ConsumoEstudioReactivo(models.Model):
-    """Fórmula persistente de consumo por analito, equipo y componente."""
+    """Fórmula persistente de consumo por analito o por muestra.
+
+    ``MUESTRA`` is used for collection materials shared by several analytes
+    in the same order. It is intentionally independent from the commercial
+    profile/package so a QSC never becomes an inventory item.
+    """
+    APLICACION_CHOICES = [
+        ('ANALITO', 'Por analito / determinación'),
+        ('MUESTRA', 'Una vez por muestra / orden'),
+    ]
     empresa = models.ForeignKey(
         "core.Empresa",
         on_delete=models.CASCADE,
@@ -126,7 +135,10 @@ class ConsumoEstudioReactivo(models.Model):
         "lims.Analito",
         on_delete=models.CASCADE,
         related_name="consumos_reactivos",
+        null=True,
+        blank=True,
         verbose_name="Analito LIMS",
+        help_text="Vacío únicamente para un consumible común de muestra.",
     )
     reactivo = models.ForeignKey(
         CatalogoReactivoLab,
@@ -148,6 +160,13 @@ class ConsumoEstudioReactivo(models.Model):
         default="PRINCIPAL",
         verbose_name="Grupo de Consumo",
         help_text="Ej.: REACTIVO_PRINCIPAL, PUNTAS, DILUYENTE, CALIBRADOR.",
+    )
+    aplicacion = models.CharField(
+        max_length=10,
+        choices=APLICACION_CHOICES,
+        default='ANALITO',
+        verbose_name='Nivel de aplicación',
+        help_text='MUESTRA evita descontar tubo/aguja/etc. una vez por cada analito del perfil.',
     )
     es_alternativa = models.BooleanField(
         default=False,
@@ -185,8 +204,14 @@ class ConsumoEstudioReactivo(models.Model):
         verbose_name_plural = "Fórmulas de Consumo Reactivo por Estudio"
         constraints = [
             models.UniqueConstraint(
-                fields=["empresa", "analito", "reactivo", "equipo", "grupo_consumo"],
+                fields=["empresa", "analito", "reactivo", "equipo", "grupo_consumo", "aplicacion"],
+                condition=models.Q(analito__isnull=False),
                 name="inventario_consumo_estudio_reactivo_uniq",
+            ),
+            models.UniqueConstraint(
+                fields=["empresa", "reactivo", "equipo", "grupo_consumo", "aplicacion"],
+                condition=models.Q(aplicacion="MUESTRA"),
+                name="inventario_consumo_muestra_reactivo_uniq",
             ),
             models.UniqueConstraint(
                 fields=["empresa", "analito", "equipo", "grupo_consumo"],
@@ -197,7 +222,46 @@ class ConsumoEstudioReactivo(models.Model):
 
     def __str__(self):
         equipo = f" [{self.equipo}]" if self.equipo_id else ""
-        return f"{self.analito} → {self.cantidad_por_prueba} {self.unidad} de {self.reactivo}{equipo}"
+        origen = self.analito or 'MUESTRA'
+        return f"{origen} → {self.cantidad_por_prueba} {self.unidad} de {self.reactivo}{equipo}"
+
+
+class CosteoEjecucionAnaliticaLab(models.Model):
+    """Snapshot auditable del costo de una ejecución de laboratorio.
+
+    The source of truth for material cost remains SalidaAnaliticaLab and the
+    lot purchase price. This snapshot makes reporting stable even after later
+    catalog or price changes.
+    """
+    TIPO_CHOICES = [
+        ('INICIAL', 'Determinación inicial'),
+        ('REPETICION', 'Repetición'),
+    ]
+    empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="costeos_analiticos_lab")
+    orden = models.ForeignKey("core.OrdenDeServicio", on_delete=models.PROTECT, related_name="costeos_analiticos_lab")
+    paciente = models.ForeignKey("core.Paciente", on_delete=models.PROTECT, related_name="costeos_analiticos_lab")
+    resultado = models.ForeignKey("core.ResultadoParametro", on_delete=models.SET_NULL, null=True, blank=True, related_name="costeos_lab")
+    repeticion = models.ForeignKey("inventario.RepeticionAnaliticaLab", on_delete=models.SET_NULL, null=True, blank=True, related_name="costeos_lab")
+    analito = models.ForeignKey("lims.Analito", on_delete=models.PROTECT, related_name="costeos_lab")
+    tipo = models.CharField(max_length=12, choices=TIPO_CHOICES)
+    cantidad_ejecuciones = models.PositiveIntegerField(default=1)
+    costo_materiales = models.DecimalField(max_digits=14, decimal_places=4, default=0)
+    ingreso_asignado = models.DecimalField(max_digits=14, decimal_places=4, default=0)
+    detalle_costos = models.JSONField(default=list, blank=True)
+    evento_key = models.CharField(max_length=190, unique=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha']
+        indexes = [
+            models.Index(fields=['empresa', '-fecha']),
+            models.Index(fields=['orden', 'tipo']),
+            models.Index(fields=['paciente', '-fecha']),
+        ]
+
+    @property
+    def margen_materiales(self):
+        return self.ingreso_asignado - self.costo_materiales
 
 
 class LoteReactivoLab(models.Model):
