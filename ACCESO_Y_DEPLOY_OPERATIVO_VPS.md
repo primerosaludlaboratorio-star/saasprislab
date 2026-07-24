@@ -1,20 +1,20 @@
 # Acceso y Deploy Operativo VPS
 
-Estado: procedimiento vigente; estado operativo verificado 2026-07-21
+Estado: procedimiento vigente; ultima comprobacion 2026-07-24
 
-## Corte de verificacion 2026-07-21
+## Corte de verificacion 2026-07-24
 
 La documentacion del procedimiento existe y se conserva. Lo que no estaba alineado era la evidencia actual de acceso y ejecucion:
 
-- El codigo probado de Laboratorio y los cambios locales preservados quedaron consolidados en `e8a4d21`, publicado en `release/v1.0-local`.
-- El workflow `PRISLAB Deploy to VPS` se disparo en GitHub como run `29855825290`, pero fallo en `Validate deploy secrets`.
+- El codigo corregido de seguridad quedo publicado en `10d1156`, en `release/v1.0-local`.
+- El workflow `PRISLAB Deploy to VPS` se disparo como run `30120009575`, pero fallo en `Validate deploy secrets`.
 - El workflow no llego a `Setup SSH`, `Deploy on VPS` ni al smoke test; la automatizacion sigue pendiente de secretos.
-- El despliegue manual documentado si se ejecuto con `C:\Users\jonil\.ssh\id_ed25519`: la VPS quedo en `e8a4d21`, migraciones sin cambios, estaticos actualizados, servicios activos y dominio publico `HTTP 200`.
-- `key.pem` no fue la llave autorizada. La llave operativa vigente es `id_ed25519` y fue verificada contra `root@216.238.89.243`.
+- El run fallo porque falta `DEPLOY_KNOWN_HOSTS`, requisito agregado para impedir SSH sin verificacion de host.
+- No se declara el commit `10d1156` como desplegado en VPS hasta completar esa variable y obtener un smoke test exitoso.
 
-Bloqueador actual: configurar en el Environment `production` de GitHub los valores vigentes `DEPLOY_HOST`, `DEPLOY_USER` y `DEPLOY_SSH_KEY`. Las variables opcionales son `DEPLOY_ROOT_DIR=/opt/prislab`, `DEPLOY_APP_DIR=/opt/prislab/app` y `DEPLOY_APP_USER=prislab`.
+Bloqueador actual: configurar en el Environment `production` de GitHub `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` y `DEPLOY_KNOWN_HOSTS`. Las variables opcionales son `DEPLOY_ROOT_DIR=/opt/prislab`, `DEPLOY_APP_DIR=/opt/prislab/app` y `DEPLOY_APP_USER=prislab`.
 
-El deploy manual queda `CONFIRMADO` en `e8a4d21`. El unico pendiente separado es automatizarlo en GitHub Environment `production`; el HTTP 200 se acompana ahora de la verificacion del commit y los servicios.
+El deploy de `10d1156` queda `PENDIENTE` hasta que el workflow se ejecute con los cuatro valores y confirme el commit en VPS.
 
 ## Objetivo
 

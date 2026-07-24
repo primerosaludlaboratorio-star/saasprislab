@@ -38,6 +38,7 @@ Ir a **Settings > Secrets and variables > Actions** y agregar:
 | `DEPLOY_HOST` | IP o dominio del VPS (ej. `vps.prislab.app`) |
 | `DEPLOY_USER` | Usuario SSH en el VPS (ej. `deploy`) |
 | `DEPLOY_SSH_KEY` | Clave privada SSH completa (incluyendo `BEGIN OPENSSH PRIVATE KEY`) |
+| `DEPLOY_KNOWN_HOSTS` | Linea(s) de `known_hosts` para el VPS, obtenidas y verificadas por el administrador |
 
 ### Variables de repositorio (opcionales)
 
@@ -54,7 +55,9 @@ Ir a **Settings > Secrets and variables > Actions > Variables**:
 
 Crear los entornos: **staging** y **production** en **Settings > Environments**.
 
-Cada entorno debe tener sus propios secretos `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` si difieren del entorno general.
+Cada entorno debe tener sus propios secretos `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` y `DEPLOY_KNOWN_HOSTS` si difieren del entorno general.
+
+`DEPLOY_KNOWN_HOSTS` es obligatorio. No se permite `StrictHostKeyChecking no`, `ssh-keyscan` en tiempo de deploy ni `UserKnownHostsFile=/dev/null`.
 
 ---
 
