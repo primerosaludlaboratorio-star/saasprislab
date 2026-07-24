@@ -85,6 +85,8 @@ urlpatterns = [
     # ======================================================================
     path('pdv/', pdv.pdv_farmacia, name='pdv_farmacia'),
     path('api/buscar-producto-pdv/', pdv.api_buscar_producto_pdv, name='api_buscar_producto_pdv'),
+    path('api/receta/analizar/', views.api_analizar_receta, name='api_analizar_receta'),
+    path('api/receta/confirmar/', views.api_confirmar_receta, name='api_confirmar_receta'),
     path('pdv/buscar-fragmento/', pdv.pdv_buscar_fragmento, name='pdv_buscar_fragmento'),
     # H1 RESUELTO: ruta duplicada eliminada — consolidada en línea 53 como 'api_lotes_producto'
     

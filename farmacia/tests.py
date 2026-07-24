@@ -4,6 +4,8 @@ Unit tests for the farmacia module.
 import io
 import json
 import uuid
+import base64
+from unittest.mock import patch
 from copy import copy
 from datetime import date, timedelta
 from decimal import Decimal
@@ -12,6 +14,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.test import Client, TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
 # Python 3.14 + Django 5.0.x: copy.copy(RenderContext) rompe en Context.__copy__;
@@ -159,6 +162,68 @@ class FarmaciaModelTests(TestCase):
         )
         nuevo.refresh_from_db()
         self.assertEqual(nuevo.empresa_id, self.producto.empresa_id)
+
+
+class FarmaciaRecetaOCRTests(TestCase):
+    """La lectura propone; la confirmación es explícita y tenant-safe."""
+
+    _PNG_1X1 = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    )
+
+    def setUp(self):
+        self.empresa = Empresa.objects.create(nombre="Farmacia OCR", rfc="FOCR010101AA1")
+        self.usuario = User.objects.create_user(
+            username="farmacia_ocr", password="test123", empresa=self.empresa, rol="FARMACIA"
+        )
+        self.producto = Producto.objects.create(
+            empresa=self.empresa,
+            nombre="Paracetamol 500mg",
+            sustancia_activa="Paracetamol",
+            marca_laboratorio="Marca Test",
+            codigo_barras=_codigo_barras_unico(),
+            forma_farmaceutica="Tabletas",
+            concentracion="500mg",
+            presentacion="20 tabletas",
+            precio_publico=Decimal("50.00"),
+        )
+        self.client = Client()
+        self.client.force_login(self.usuario)
+
+    def test_analizar_receta_solo_propone_y_guarda_captura(self):
+        respuesta = {
+            "activo": True,
+            "tipo_documento": "RECETA_MEDICA",
+            "confianza": 0.91,
+            "datos_extraidos": {"medicamentos": [{"texto": "Paracetamol 500mg", "cantidad": 2}]},
+            "texto_extraido": "Paracetamol 500mg",
+        }
+        archivo = SimpleUploadedFile("receta.png", self._PNG_1X1, content_type="image/png")
+        with patch("farmacia.views.receta_ocr.analizar_receta_farmacia", return_value=respuesta):
+            response = self.client.post(reverse("farmacia:api_analizar_receta"), {"imagen_receta": archivo})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["requiere_revision_humana"])
+        self.assertEqual(response.json()["sugerencias"][0]["candidatos"][0]["producto_id"], self.producto.id)
+        self.assertEqual(Venta.objects.count(), 0)
+
+    def test_confirmar_receta_registra_seleccion_y_rechaza_producto_de_otro_tenant(self):
+        from farmacia.models import LecturaRecetaFarmacia
+
+        lectura = LecturaRecetaFarmacia.objects_all.create(
+            empresa=self.empresa,
+            usuario=self.usuario,
+            imagen=SimpleUploadedFile("receta.png", self._PNG_1X1, content_type="image/png"),
+            sugerencias=[],
+        )
+        response = self.client.post(
+            reverse("farmacia:api_confirmar_receta"),
+            data=json.dumps({"lectura_id": lectura.id, "items": [{"producto_id": self.producto.id, "cantidad": 2}]}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        lectura.refresh_from_db()
+        self.assertEqual(lectura.estado, "CONFIRMADA")
+        self.assertEqual(lectura.productos_confirmados, [{"producto_id": self.producto.id, "cantidad": 2}])
 
 
 class FarmaciaViewTests(TestCase):

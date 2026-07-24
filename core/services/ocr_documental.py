@@ -159,6 +159,25 @@ Responde SOLO con JSON válido:
 }
 Si no puedes leer algún campo, usa null."""
 
+_PROMPT_RECETA_FARMACIA = """Lee esta receta médica mexicana para auxiliar a un farmacéutico.
+Responde SOLO con JSON válido y no inventes datos ilegibles:
+{
+  "tipo_documento": "RECETA_MEDICA" | "OTRO",
+  "confianza": 0.0 a 1.0,
+  "nombre_paciente": "string o null",
+  "fecha_receta": "YYYY-MM-DD o null",
+  "medico_nombre": "string o null",
+  "cedula_profesional": "string o null",
+  "medicamentos": [
+    {"texto": "texto tal como aparece", "nombre_comercial": "string o null",
+     "sustancia_activa": "string o null", "concentracion": "string o null",
+     "forma_farmaceutica": "string o null", "cantidad": número entero o null,
+     "indicaciones": "string o null", "confianza": 0.0 a 1.0}
+  ],
+  "observaciones": "string o null"
+}
+Reglas: una línea por medicamento; no conviertas dosis o frecuencia en cantidad de cajas; si no puedes leer el nombre, conserva el texto parcial y baja la confianza."""
+
 _PROMPT_RECETA = """Extrae los datos de esta receta médica mexicana.
 Responde SOLO con JSON válido:
 {
@@ -313,6 +332,29 @@ def analizar_documento(imagen_b64: str, empresa=None, usuario=None) -> dict:
         'prefill': prefill,
         'sugerencias_negocio': sugerencias,
         'validacion_sep': validacion_sep,
+    }
+
+
+def analizar_receta_farmacia(imagen_b64: str, empresa=None, usuario=None) -> dict:
+    """Extrae medicamentos para Farmacia; siempre devuelve propuestas, nunca una venta."""
+    from core.services.feature_flags import flag_activo
+
+    if not flag_activo('OCR_CLASIFICACION_ACTIVO', empresa):
+        return {'activo': False, 'mensaje': 'Motor OCR desactivado desde configuración.'}
+    api_key = getattr(settings, 'GOOGLE_API_KEY', '') or getattr(settings, 'GEMINI_API_KEY', '')
+    if not api_key:
+        return {'activo': True, 'error': 'OCR de recetas no disponible: falta configurar GOOGLE_API_KEY o GEMINI_API_KEY.'}
+    respuesta = _gemini_vision_call(imagen_b64, _PROMPT_RECETA_FARMACIA, api_key)
+    datos = _parse_json_respuesta(respuesta)
+    if not datos:
+        return {'activo': True, 'error': 'El motor OCR no devolvió una lectura estructurada.'}
+    datos['medicamentos'] = datos.get('medicamentos') if isinstance(datos.get('medicamentos'), list) else []
+    return {
+        'activo': True,
+        'tipo_documento': datos.get('tipo_documento', 'OTRO'),
+        'confianza': datos.get('confianza', 0),
+        'datos_extraidos': datos,
+        'texto_extraido': respuesta,
     }
 
 
