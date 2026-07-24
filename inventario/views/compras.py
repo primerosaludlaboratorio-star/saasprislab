@@ -200,6 +200,7 @@ def detalle_oc(request, empresa, pk):
         'oc': oc,
         'lineas': lineas,
         'puede_recibir': oc.estado in ('ENVIADA', 'PARCIALMENTE_RECIBIDA'),
+        'ocr_prefill': request.session.get(f'inventario_lab_ocr_{oc.id}', {}),
     }
     return render(request, 'inventario/compras/detalle_oc.html', ctx)
 
@@ -359,6 +360,8 @@ def _recibir_mercancia(request, oc, empresa):
         )
     else:
         messages.success(request, f'✅ {lotes_creados} lotes creados por {receptor.get_full_name() or receptor.username}.')
+        request.session.pop(f'inventario_lab_ocr_{oc.id}', None)
+        request.session.modified = True
 
 
 # =============================================================================

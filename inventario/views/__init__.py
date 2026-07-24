@@ -73,6 +73,7 @@ from .traspasos import (
     resolver_notificacion,
     api_lotes_silo,
 )
+from .compra_ocr import api_analizar_compra_laboratorio, api_confirmar_compra_laboratorio
 
 __all__ = [
     "_get_empresa",
@@ -127,4 +128,6 @@ __all__ = [
     "lista_notificaciones",
     "resolver_notificacion",
     "api_lotes_silo",
+    "api_analizar_compra_laboratorio",
+    "api_confirmar_compra_laboratorio",
 ]

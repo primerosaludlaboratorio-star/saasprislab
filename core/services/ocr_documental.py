@@ -196,6 +196,22 @@ Responde SOLO con JSON válido y no inventes datos ilegibles:
 }
 Reglas: no conviertas el total de la factura en costo unitario; no conviertas piezas o cajas ambiguas sin indicarlo; deja null si no se ve."""
 
+_PROMPT_COMPRA_LABORATORIO = """Lee esta factura o nota de compra de reactivos e insumos de laboratorio.
+Responde SOLO con JSON válido y no inventes datos ilegibles:
+{
+  "tipo_documento": "FACTURA" | "NOTA_VENTA" | "OTRO", "confianza": 0.0 a 1.0,
+  "proveedor": {"nombre": "string o null", "rfc": "string o null"},
+  "folio": "string o null", "fecha_compra": "YYYY-MM-DD o null",
+  "subtotal": "string o null", "iva": "string o null", "total": "string o null",
+  "productos": [{"texto": "texto de la línea", "nombre": "string o null",
+    "codigo": "string o null", "tipo": "REACTIVO|CALIBRADOR|CONTROL_QC|CONSUMIBLE|REFACCION|OTRO",
+    "marca": "string o null", "fabricante": "string o null", "cantidad": "string o null",
+    "costo_unitario": "string o null", "numero_lote": "string o null",
+    "fecha_caducidad": "YYYY-MM-DD o null", "inserto_version": "string o null",
+    "confianza": 0.0 a 1.0}]
+}
+Reglas: no conviertas el total en costo unitario; conserva el texto original si no identificas el catálogo; deja null si no se ve."""
+
 _PROMPT_RECETA = """Extrae los datos de esta receta médica mexicana.
 Responde SOLO con JSON válido:
 {
@@ -397,6 +413,25 @@ def analizar_compra_farmacia(imagen_b64: str, empresa=None, usuario=None) -> dic
         'datos_extraidos': datos,
         'texto_extraido': respuesta,
     }
+
+
+def analizar_compra_laboratorio(imagen_b64: str, empresa=None, usuario=None) -> dict:
+    """Extrae una compra de laboratorio para conciliación; nunca crea un lote."""
+    from core.services.feature_flags import flag_activo
+
+    if not flag_activo('OCR_CLASIFICACION_ACTIVO', empresa):
+        return {'activo': False, 'mensaje': 'Motor OCR desactivado desde configuración.'}
+    api_key = getattr(settings, 'GOOGLE_API_KEY', '') or getattr(settings, 'GEMINI_API_KEY', '')
+    if not api_key:
+        return {'activo': True, 'error': 'OCR de compras de laboratorio no disponible: falta configurar GOOGLE_API_KEY o GEMINI_API_KEY.'}
+    respuesta = _gemini_vision_call(imagen_b64, _PROMPT_COMPRA_LABORATORIO, api_key)
+    datos = _parse_json_respuesta(respuesta)
+    if not datos:
+        return {'activo': True, 'error': 'El motor OCR no devolvió una compra de laboratorio estructurada.'}
+    datos['productos'] = datos.get('productos') if isinstance(datos.get('productos'), list) else []
+    return {'activo': True, 'tipo_documento': datos.get('tipo_documento', 'OTRO'),
+            'confianza': datos.get('confianza', 0), 'datos_extraidos': datos,
+            'texto_extraido': respuesta}
 
 
 def _construir_prefill(tipo: str, datos: dict) -> dict:

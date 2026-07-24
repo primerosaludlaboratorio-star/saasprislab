@@ -947,3 +947,29 @@ Limitaciones verificadas:
 - el OCR real no puede procesarse todavía porque producción no tiene `GOOGLE_API_KEY` ni `GEMINI_API_KEY`; la aplicación devuelve error controlado y no inventa productos;
 - la pantalla exige seleccionar el proveedor registrado, aunque conserva el texto detectado como referencia;
 - notas/facturas PDF y recepción automática por correo/WhatsApp quedan para una fase posterior; el bloque actual cubre foto desde la pantalla de compras.
+
+## Lector asistido de facturas y notas de reactivos e insumos de Laboratorio - 2026-07-24
+
+Se replicó el flujo de Farmacia sobre el motor de compras y recepción del silo de Laboratorio, sin crear un inventario paralelo:
+
+- botón `Leer factura o nota` en la recepción de una orden de compra enviada;
+- lectura estructurada de proveedor, folio, fecha, totales y líneas de reactivos/insumos;
+- conciliación contra `CatalogoReactivoLab` por código, nombre, marca y fabricante;
+- propuesta editable de cantidad, costo, lote, caducidad, marca y datos documentales;
+- confirmación humana que solo precarga la recepción existente;
+- creación de `LoteReactivoLab` únicamente al confirmar la recepción con firma del receptor;
+- aislamiento por empresa y rechazo si la línea no corresponde al catálogo de la orden;
+- `LecturaCompraLaboratorio` conserva imagen, extracción, sugerencias, usuario y confirmación para auditoría.
+
+Controles verificados antes del despliegue:
+
+- `manage.py check`: sin errores;
+- `makemigrations --check --noinput`: sin cambios pendientes;
+- `git diff --check`: sin errores de formato;
+- la prueba focalizada quedó bloqueada durante la creación de la base de pruebas local; no se marca como verde.
+
+Limitaciones explícitas:
+
+- el OCR requiere `GOOGLE_API_KEY` o `GEMINI_API_KEY` configurada en producción; sin ella devuelve error controlado y no inventa datos;
+- el bloque actual cubre foto desde la recepción de la OC, igual que el lector de Farmacia; PDF, correo y WhatsApp quedan fuera;
+- no se modifica stock al analizar ni al preparar; el guardado final mantiene cuarentena, trazabilidad, FEFO y firma existentes.

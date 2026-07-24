@@ -23,6 +23,7 @@ from .generales import (
     LineaValeRequisicion,
 )
 from .compras import OrdenDeCompra, LineaOrdenCompra
+from .compra_ocr import LecturaCompraLaboratorio
 from .logistica import TraspasoInventario, LineaTraspasoInventario, NotificacionDiscrepancia
 
 __all__ = [
@@ -43,6 +44,7 @@ __all__ = [
     "LineaValeRequisicion",
     "OrdenDeCompra",
     "LineaOrdenCompra",
+    "LecturaCompraLaboratorio",
     "TraspasoInventario",
     "LineaTraspasoInventario",
     "NotificacionDiscrepancia",

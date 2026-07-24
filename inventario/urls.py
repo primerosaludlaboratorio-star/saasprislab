@@ -94,6 +94,8 @@ urlpatterns = [
     path("compras/proveedores/",                        vcp.lista_proveedores,              name="lista_proveedores"),
     path("compras/proveedores/nuevo/",                  vcp.crear_proveedor,                name="crear_proveedor"),
     path("compras/api/criticos/",                       vcp.api_articulos_criticos,         name="api_articulos_criticos"),
+    path("compras/api/laboratorio/analizar/",          views.api_analizar_compra_laboratorio, name="api_analizar_compra_laboratorio"),
+    path("compras/api/laboratorio/confirmar/",         views.api_confirmar_compra_laboratorio, name="api_confirmar_compra_laboratorio"),
 
     # ═══════════════════════════════════════════════════════════════
     # LOGÍSTICA INTER-SEDES — TRASPASOS V8.3
