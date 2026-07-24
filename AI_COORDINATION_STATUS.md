@@ -3,14 +3,14 @@
 ## Corte vigente 2026-07-24
 
 - Rama: `release/v1.0-local`.
-- Commit publicado actual: `a13d15b` (documentacion); codigo funcional objetivo: `551eaaa`.
-- Run de deploy: `30124872712` -> `failure` en `Validate deploy secrets`; no llego a SSH, migraciones ni smoke tests.
+- Revision local desplegada: `1ea5bcb`; el artefacto se transfirio directamente al VPS sin GitHub.
+- Revision confirmada en VPS: `1ea5bcbf204d282606118af58d908d8d4a2cccd9`; migraciones y servicios verificados.
 - Salud publica: `/health/`, `/live/` y `/ready/` -> HTTP 200.
-- Commit en VPS: **NO CONFIRMADO**. La prueba SSH desde esta maquina devuelve `Permission denied (publickey,password)`.
-- Verificacion humana productiva 2026-07-24: `/ia/asistente/` respondio correctamente a `PRIS_PRODUCCION_OK`, pero mostro `PRIS-Jarvis v5.0` y `Gemini 2.0 Flash`; esto confirma que produccion sigue en una version anterior al cierre PRIS/DeepSeek.
+- `/health/`: `status=ok`, `database=ok`, `cache=ok`; Gunicorn, Celery y Celery Beat activos.
+- Verificacion humana productiva 2026-07-24: PRIS mostro identidad unificada, respondio cuatro escenarios y el navegador reporto cero errores y warnings.
 - Rutas inspeccionadas sin error 500 en lectura: `/farmacia/pdv/`, `/farmacia/almacen/entradas/`, `/laboratorio/registro-resultados/` y `/silo-lab/lab/catalogo/`.
-- Validacion CI de `551eaaa`: Quality Gate, SBOM, CodeQL y Secret Scan en verde. Deploy VPS `30124872712` sigue fallando en `Validate deploy secrets`, antes de SSH. La inspeccion productiva actual sigue mostrando `PRIS-Jarvis` y `Gemini 2.0 Flash`.
-- Criterio para cerrar deploy: obtener `git rev-parse HEAD` en `/opt/prislab/app`, aplicar `migrate`, reiniciar los tres servicios y repetir health checks.
+- Validacion local: `manage.py check`, compilacion de PRIS y 10 pruebas PRIS verdes antes del despliegue.
+- Criterio de cierre de deploy cumplido: revision remota, migraciones, servicios, health check y pruebas humanas confirmados.
 
 Ultima actualizacion: 2026-06-25T00:00:00
 Foco actual: Consolidacion canonica, cierres modulares reales y limpieza de pendientes vivos contra `release/v1.0-local`
@@ -44,9 +44,7 @@ Foco actual: Consolidacion canonica, cierres modulares reales y limpieza de pend
 
 ## Pendiente
 
-- Desplegar y confirmar `b4fac17`/`50fca10` en VPS; el run automatico esta bloqueado por secretos y SSH local no autorizado
-- Repetir auditoria humana completa de Laboratorio y Farmacia sobre el commit realmente desplegado
-- Confirmar que produccion muestre PRIS unificada, nombre por tenant y proveedor DeepSeek
+- Repetir auditoria humana completa de Laboratorio y Farmacia sobre la revision realmente desplegada
 - Validar cancelacion con devolucion financiera
 - Definir/probar storage final: Vultr Object Storage, Drive o buffer local
 - Monitorear conexiones idle PostgreSQL

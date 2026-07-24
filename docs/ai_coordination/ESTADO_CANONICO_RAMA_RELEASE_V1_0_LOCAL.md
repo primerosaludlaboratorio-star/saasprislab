@@ -26,9 +26,10 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 - El historial reciente incluye `a7b0d8b` para blindar el auto-repair de Sentinel por tenant.
 - No debe usarse `main` como fuente de verdad operativa.
 - El commit `2a7fe9d` deshabilita el razonamiento de DeepSeek en las respuestas operativas para evitar que `max_tokens` se consuma antes de entregar `content`.
-- El código funcional actual de la rama es `551eaaa`; Quality Gate, SBOM, CodeQL y Secret Scan están en verde.
-- El despliegue productivo de `551eaaa` no está confirmado: el run `30124872712` falló en `Validate deploy secrets` antes de SSH, migraciones y reinicio de servicios.
-- La inspección humana actual de producción todavía muestra `PRIS-Jarvis` y `Gemini 2.0 Flash`; no debe usarse como evidencia del código actual.
+- El código funcional actual de la rama es `1ea5bcb`; las validaciones locales de Django y PRIS están verdes.
+- `1ea5bcb` esta desplegado en produccion mediante artefacto local directo; `/opt/prislab/app/DEPLOYED_REVISION` lo confirma.
+- La interfaz productiva muestra PRIS unificada y no muestra `PRIS-Jarvis` ni `Gemini`.
+- La bateria humana de PRIS paso cuatro escenarios de orientacion, accion con confirmacion, seguridad y criterio clinico; el navegador no reporto errores ni warnings.
 
 ## Modulos cerrados en esta linea de trabajo
 

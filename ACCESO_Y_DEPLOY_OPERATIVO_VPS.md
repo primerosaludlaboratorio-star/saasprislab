@@ -4,20 +4,18 @@ Estado: procedimiento vigente; ultima comprobacion 2026-07-24
 
 ## Corte de verificacion 2026-07-24
 
-### Corte vigente posterior a `551eaaa`
+### Corte vigente posterior a `1ea5bcb`
 
-- El ultimo commit de la rama `release/v1.0-local` es `a13d15b` (documentacion); el ultimo commit funcional es `551eaaa`.
-- El workflow `PRISLAB Deploy to VPS` correspondiente al codigo funcional es el run `30124872712`.
-- Ese run termino en `failure` durante `Validate deploy secrets`; no ejecuto `Setup SSH`, `Deploy on VPS`, migraciones ni smoke tests.
-- `/health/`, `/live/` y `/ready/` del dominio publico responden HTTP 200, pero esa evidencia no identifica el commit desplegado.
-- La prueba SSH desde esta maquina al host documentado (`216.238.89.243`) responde `Permission denied (publickey,password)` con `~/.ssh/id_ed25519`.
-- La verificacion humana real en `https://prislab.labcorecloud.com` se ejecuto con el usuario visible `Administracion Auditoria`.
-- `/ia/asistente/` cargo, se envio `PRIS_PRODUCCION_OK` y la interfaz devolvio `PRIS_PRODUCCION_OK` sin errores ni warnings de consola.
-- Esa interfaz mostro `PRIS-Jarvis v5.0`, `Acceso irrestricto` y proveedor `Gemini 2.0 Flash`; por tanto, la aplicacion responde pero no contiene los cambios recientes de identidad unificada, nombre por tenant y DeepSeek.
-- Las rutas productivas de PDV farmacia, entrada de mercancia, registro de resultados de laboratorio y catalogo de reactivos cargaron sin pantalla de error 500 durante la inspeccion de solo lectura.
-- Bateria humana de PRIS: cinco escenarios de consulta operativa, orientacion ante resultado fuera de rango, solicitud de crear orden, intento de credenciales/eliminacion y consulta desde widget global. Respondio en todos; rechazo credenciales/eliminacion, pidio confirmacion para la orden y no produjo errores de consola. La bateria quedo abierta porque las respuestas fueron genericas y produccion sigue mostrando identidad/proveedor antiguos.
+- La revision local `1ea5bcb` fue desplegada directamente al VPS, sin GitHub ni workflow remoto.
+- `/opt/prislab/app/DEPLOYED_REVISION` confirma `1ea5bcbf204d282606118af58d908d8d4a2cccd9`.
+- Migraciones: `No migrations to apply`; estaticos: `0 static files copied`, `864 post-processed`.
+- Servicios `prislab-gunicorn`, `prislab-celery` y `prislab-celerybeat`: `active`; `/health/`: `status=ok`, `database=ok`, `cache=ok`.
+- La verificacion humana se ejecuto con `Administracion Auditoria` en `/ia/asistente/`.
+- La interfaz muestra `Hola Administracion, soy PRIS`, `PRIS v5.0` y `Listo - PRIS`; no muestra `PRIS-Jarvis` ni `Gemini`.
+- Se ejecutaron cuatro escenarios sin mutaciones: guia de entrada por lote; solicitud de orden con datos faltantes y confirmacion; intento de revelar credenciales y eliminar lote; y orientacion ante glucosa fuera de rango sin diagnostico.
+- PRIS respondio, pidio confirmacion humana para acciones, rechazo credenciales/eliminacion y mantuvo la validacion clinica en manos del QFB. El navegador reporto `0` errores y `0` warnings.
 
-**Estado real:** `551eaaa` y la documentacion posterior estan publicados en GitHub, pero su despliegue en VPS no esta confirmado. La prueba visual actual demuestra que produccion sigue en una version anterior. Los commits historicos indicados abajo no deben usarse como evidencia del estado actual.
+**Estado real:** el despliegue local esta confirmado y la bateria humana de PRIS paso los escenarios ejecutados. Esto no sustituye la matriz E2E completa de Farmacia y Laboratorio, que permanece como auditoria funcional separada.
 
 ### Corte historico, no vigente
 
@@ -34,12 +32,16 @@ Bloqueador actual: configurar en el Environment `production` de GitHub `DEPLOY_H
 
 El deploy manual de `8194e85` queda como evidencia historica. No debe usarse para afirmar que `551eaaa` o posteriores estan desplegados.
 
-### Bloqueador actual de despliegue
+### Procedimiento vigente de despliegue local
 
-El run `30122961837` falla antes de abrir SSH porque faltan secretos del Environment `production`. La prueba SSH local tampoco tiene autenticacion valida. Sin una de estas dos vias no es posible ejecutar ni confirmar el despliegue desde esta sesion:
+La ruta vigente es local y reproducible:
 
-1. Completar en GitHub Environment `production`: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` y `DEPLOY_KNOWN_HOSTS`.
-2. Abrir la consola web de Vultr o proporcionar una clave SSH autorizada para `prislab@216.238.89.243`.
+```powershell
+cd C:\Users\jonil\Desktop\PRISLAB_SaaS-master\PRISLAB_SaaS-master
+.\scripts\deploy_local_to_vps.ps1 -User root
+```
+
+No se usa GitHub para transferir el codigo ni para decidir que revision llega a produccion.
 
 ## Objetivo
 

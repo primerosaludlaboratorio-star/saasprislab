@@ -6,16 +6,9 @@
 
 ### Estado vigente del ultimo cambio
 
-El ultimo commit de `release/v1.0-local` es `a13d15b` (documentacion); el codigo funcional objetivo es `551eaaa`. El run automatico `30124872712`
-termino en `failure` en `Validate deploy secrets`, antes de abrir SSH. Los endpoints
-publicos `/live/`, `/ready/` y `/health/` responden 200, pero no existe evidencia publica
-del commit que ejecuta la VPS. La conexion SSH documentada responde `Permission denied`.
-Por tanto, no se declara desplegado `b4fac17` hasta ejecutar el procedimiento manual o
-corregir los cuatro secretos del Environment `production`.
-
-El commit de seguridad `10d1156` y la documentacion asociada quedaron publicados en `release/v1.0-local`. El run automatizado `30120009575` fallo antes de abrir SSH porque el Environment `production` no entrego `DEPLOY_KNOWN_HOSTS`. El despliegue manual posterior dejo la VPS en `8194e85`, con servicios activos y `/live/`, `/ready/` y `/health/` publicos en HTTP 200.
-
-El pendiente operativo separado es configurar los cuatro secretos del Environment `production`: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` y `DEPLOY_KNOWN_HOSTS`, y repetir el workflow para automatizar un despliegue ya validado manualmente.
+El checkout local `release/v1.0-local` en `1ea5bcb` fue desplegado directamente desde esta maquina al VPS el 2026-07-24 mediante `scripts/deploy_local_to_vps.ps1 -User root`.
+La evidencia remota confirma migraciones sin pendientes, `collectstatic` correcto, Gunicorn/Celery/Celery Beat activos y `/health/` publico en estado `ok` con base de datos y cache disponibles.
+La revision desplegada queda registrada en `/opt/prislab/app/DEPLOYED_REVISION`.
 
 ## Objetivo
 
@@ -94,17 +87,7 @@ Nota operativa real:
 - en esta VPS el codigo productivo vive en `/opt/prislab/app`
 - no asumir que `/opt/prislab` es el repo Git
 - si `git pull` falla con `not a git repository`, revisar si `/opt/prislab/app/.git` existe
-- si no existe, inicializar el repo y hacer `fetch + reset` contra `release/v1.0-local`
-
-Secuencia de recuperacion ya validada:
-
-```bash
-sudo -u prislab git -C /opt/prislab/app init
-sudo -u prislab git -C /opt/prislab/app remote add origin https://github.com/primerosaludlaboratorio-star/saasprislab.git
-sudo -u prislab git -C /opt/prislab/app fetch --depth 1 origin release/v1.0-local
-chown -R prislab:prislab /opt/prislab/app
-sudo -u prislab git -C /opt/prislab/app reset --hard FETCH_HEAD
-```
+- si no existe, no se debe inicializar ni reconstruir un repositorio remoto: el script de despliegue sincroniza el artefacto local y conserva los metadatos operativos de la VPS
 
 ### 5. Configurar `.env`
 
@@ -116,7 +99,7 @@ Variables mínimas:
 - `DB_NAME=prislab_db`
 - `DB_USER=prislab_user`
 - `DB_PASSWORD=...`
-- `GOOGLE_API_KEY=...` si usas Gemini
+- `DEEPSEEK_API_KEY=...` si se usa DeepSeek como proveedor de PRIS
 - `GOOGLE_DRIVE_FOLDER_ID=...` si vas a guardar archivos en Drive
 - `GOOGLE_APPLICATION_CREDENTIALS=/opt/prislab/credentials/google-drive.json`
 
