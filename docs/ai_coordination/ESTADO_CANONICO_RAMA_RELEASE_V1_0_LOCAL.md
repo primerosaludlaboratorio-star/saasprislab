@@ -1,6 +1,6 @@
 # Estado Canonico de PRISLAB SaaS
 
-Fecha de consolidacion: 2026-07-24 (última actualización: despliegue y prueba real DeepSeek V4)
+Fecha de consolidacion: 2026-07-24 (última actualización: auditoría de despliegue y producción)
 Rama canonica: `release/v1.0-local`
 
 ## Proposito
@@ -26,8 +26,9 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 - El historial reciente incluye `a7b0d8b` para blindar el auto-repair de Sentinel por tenant.
 - No debe usarse `main` como fuente de verdad operativa.
 - El commit `2a7fe9d` deshabilita el razonamiento de DeepSeek en las respuestas operativas para evitar que `max_tokens` se consuma antes de entregar `content`.
-- Producción quedó desplegada en `2a7fe9d`; `prislab-gunicorn`, `prislab-celery`, `prislab-celerybeat` y `nginx` quedaron activos.
-- La prueba productiva de DeepSeek devolvió `OK` y JSON válido con `deepseek-v4-flash`. La clave se mantiene únicamente en el entorno de producción, no en Git.
+- El código funcional actual de la rama es `551eaaa`; Quality Gate, SBOM, CodeQL y Secret Scan están en verde.
+- El despliegue productivo de `551eaaa` no está confirmado: el run `30124872712` falló en `Validate deploy secrets` antes de SSH, migraciones y reinicio de servicios.
+- La inspección humana actual de producción todavía muestra `PRIS-Jarvis` y `Gemini 2.0 Flash`; no debe usarse como evidencia del código actual.
 
 ## Modulos cerrados en esta linea de trabajo
 
@@ -109,7 +110,7 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 - `_requiere_lims_captura` ya no permite `is_staff` como bypass.
 - `AuditLog` y `ForenseAcceso` ya son append-only a nivel modelo mediante `save()` y `delete()`.
 - `chromadb` ya no forma parte del baseline de `requirements.txt`; el motor RAG lo trata como opcional con activacion explicita.
-- El despliegue vigente tiene dos rutas: `deploy.sh` para Docker Compose local/staging y `scripts/deploy_vps.sh` para VPS; el supuesto `deploy-vps.yml` citado en la auditoria anterior no existe en este checkout.
+- El despliegue vigente tiene dos rutas: `deploy.sh` para Docker Compose local/staging y `scripts/deploy_vps.sh` para ejecutarse dentro de la VPS. `.github/workflows/deploy-vps.yml` automatiza la segunda ruta, pero requiere los secretos/variables del Environment `production`.
 - El `NameError path` del middleware Sentinel no se reproduce en el arbol actual: `path` queda definido antes de cada uso relevante.
 
 ### Consultorio PDF / tenant efectivo
