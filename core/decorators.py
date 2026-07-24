@@ -386,7 +386,8 @@ def role_required(*allowed_roles):
     """
     Decorador que restringe acceso a vistas según el rol del usuario.
 
-    Permite acceso a superusers y is_staff siempre.
+    Permite acceso a superusers y a los roles declarados.
+    ``is_staff`` por si solo no concede acceso funcional.
     Los roles se comparan en mayúsculas contra usuario.rol.
 
     Uso:
@@ -404,7 +405,7 @@ def role_required(*allowed_roles):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
             user = request.user
-            if user.is_superuser or user.is_staff:
+            if user.is_superuser:
                 return view_func(request, *args, **kwargs)
 
             user_rol = (getattr(user, 'rol', '') or '').upper().strip()

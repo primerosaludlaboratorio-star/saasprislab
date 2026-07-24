@@ -59,7 +59,7 @@ def _requiere_lims_captura(user) -> bool:
     """Misma regla que @role_required('QUIMICO', 'ADMIN', 'LABORATORIO') en api_guardar_resultados."""
     if not getattr(user, "is_authenticated", False):
         return False
-    if user.is_superuser or user.is_staff:
+    if user.is_superuser:
         return True
     allowed_upper = {"QUIMICO", "ADMIN", "LABORATORIO"}
     user_rol = (getattr(user, "rol", "") or "").upper().strip()

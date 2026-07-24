@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.core.exceptions import PermissionDenied
+from django.http import HttpResponse
 from django.test import RequestFactory, TestCase
 from django.test import TestCase
 
@@ -51,7 +52,7 @@ class AutoRepairTenantGuardTest(TestCase):
         self.assertTrue(result)
         regen.assert_called_once()
 
-    def test_sentinel_permission_denied_no_repite_redirect_en_loop(self):
+    def test_sentinel_permission_denied_no_auto_repair(self):
         empresa = Empresa.objects.create(nombre="Empresa Sentinel", rfc="SEN260623TST")
         user = SimpleNamespace(
             username="sentinel_user",
@@ -70,14 +71,16 @@ class AutoRepairTenantGuardTest(TestCase):
         with patch("core.services.auto_repair.reparar_permisos_sesion", return_value=True) as repair, \
              patch.object(SentinelTelemetryMiddleware, "_resolver_namespace", return_value="director"), \
              patch.object(SentinelTelemetryMiddleware, "_registrar_incidencia_async"), \
-             patch.object(SentinelTelemetryMiddleware, "_render_error_page", return_value="error-page"):
+             patch.object(
+                 SentinelTelemetryMiddleware,
+                 "_render_error_page",
+                 return_value=HttpResponse(status=403),
+             ) as render_error:
             first = middleware.process_exception(request, PermissionDenied("denied"))
-            second = middleware.process_exception(request, PermissionDenied("denied"))
 
-        self.assertEqual(repair.call_count, 1)
-        self.assertEqual(_error_cache.get("sentinel_permdenied:77:/director/analizadores/"), 1)
-        self.assertEqual(first.status_code, 302)
-        self.assertEqual(second, "error-page")
+        repair.assert_not_called()
+        render_error.assert_called_once()
+        self.assertEqual(first.status_code, 403)
 
     def test_sentinel_error_page_responde_503_y_headers_degradados(self):
         request = self.factory.get("/director/analizadores/")
@@ -98,7 +101,7 @@ class AutoRepairTenantGuardTest(TestCase):
             PermissionDenied("denied"),
         )
 
-        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.status_code, 403)
         self.assertEqual(response["X-Sentinel-Degraded"], "1")
         self.assertEqual(response["X-Sentinel-Error-Type"], "PermissionDenied")
         self.assertIn("Retry-After", response)

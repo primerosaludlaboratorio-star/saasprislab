@@ -3,7 +3,7 @@ PRIS SENTINEL - Middleware de Telemetria Inteligente (v5.0 — AIOps Supremo)
 ================================================================================
 Intercepta excepciones (500, 404, 403, DatabaseErrors) en TODOS los modulos
 de PRISLAB, crea IncidenciaSentinel con analisis IA, y EJECUTA
-auto-reparacion en tiempo real.
+reparaciones limitadas a fallos tecnicos de infraestructura.
 
 v5.0 CAMBIOS (Revision 128 — AIOps):
 - AI HOTFIX SUGGESTION: Gemini genera SUGGESTED_FIX en GitHub Issues
@@ -12,7 +12,7 @@ v5.0 CAMBIOS (Revision 128 — AIOps):
 - AUTO-CLEANUP: Latencia >2s dispara limpieza automatica (sesiones, audit, VACUUM)
 - GUNICORN SOFT RESTART: 3+ Timeout/MemoryError consecutivos → SIGHUP al master
 - DB CONNECTION RECOVERY: "Too many connections" → mata conexiones idle automaticamente
-- AUTO-FIX PERMISSIONS: 403 en rutas permitidas por rol → regenera permisos de sesion
+- 403: conserva la respuesta de autorizacion para que RBAC sea observable y auditable
 """
 import logging
 import time
@@ -78,13 +78,38 @@ SAFE_ROUTE_MAP = {
 
 # Cache de errores recientes para evitar loops
 _error_cache = {}
+_error_cache_lock = threading.RLock()
 _MAX_RETRIES = 2
+
+
+def _error_cache_get(key, default=0):
+    with _error_cache_lock:
+        return _error_cache.get(key, default)
+
+
+def _error_cache_set(key, value):
+    with _error_cache_lock:
+        _error_cache[key] = value
+
+
+def _error_cache_trim(max_size=50, remove_count=25):
+    with _error_cache_lock:
+        if len(_error_cache) <= max_size:
+            return
+        for key in list(_error_cache)[:remove_count]:
+            _error_cache.pop(key, None)
+
+
+def _error_cache_clear_if_over(max_size=20):
+    with _error_cache_lock:
+        if len(_error_cache) > max_size:
+            _error_cache.clear()
 
 
 class SentinelTelemetryMiddleware:
     """
     Middleware que captura errores en TODOS los modulos de PRISLAB y genera
-    incidencias con analisis IA + AUTO-REPARACION en tiempo real.
+    incidencias con analisis IA y reparaciones limitadas a fallos tecnicos.
     """
 
     TAG_MAP = {
@@ -178,44 +203,23 @@ class SentinelTelemetryMiddleware:
                     )
 
         # ===================================================================
-        # AUTO-FIX PERMISSIONS: Capturar 403 y regenerar permisos si procede
+        # Las respuestas 403 deben conservarse para que el RBAC sea observable.
+        # Sentinel registra la incidencia; no cambia permisos ni redirige.
         # ===================================================================
         if response.status_code == 403:
             path = request.get_full_path()
-            ns = self._resolver_namespace(request)
-            cache_key = f"sentinel_403:{getattr(request.user, 'id', 0)}:{path}"
-            retries_403 = _error_cache.get(cache_key, 0)
-            if retries_403 < 1:
-                try:
-                    from core.services.auto_repair import reparar_permisos_sesion
-                    if reparar_permisos_sesion(request, path):
-                        _error_cache[cache_key] = retries_403 + 1
-                        logger.info(
-                            f"SENTINEL AUTO-FIX [403]: Permisos regenerados para "
-                            f"{getattr(request.user, 'username', '?')}, "
-                            f"reenviando a {path}"
-                        )
-                        try:
-                            from django.contrib import messages
-                            messages.info(
-                                request,
-                                "PRIS Sentinel detecto un problema de permisos y lo corrigio automaticamente."
-                            )
-                        except Exception as message_error:
-                            logging.getLogger(__name__).exception("Error inesperado en __call__ (sentinel.py)")
-                            logger.debug(f"SENTINEL AUTO-FIX [403]: mensajes no disponibles: {message_error}")
-                        return HttpResponseRedirect(path)
-                except Exception as e:
-                    logger.warning(f"SENTINEL AUTO-FIX [403]: Error en reparacion: {e}")
-            else:
-                logger.warning(f"SENTINEL AUTO-FIX [403]: Loop detectado para {path}, skip redirect")
+            logger.info(
+                "SENTINEL 403 observado sin auto-reparacion: usuario=%s ruta=%s",
+                getattr(request.user, 'username', '?'),
+                path,
+            )
 
         return response
 
     def process_exception(self, request, exception):
         """
         Hook de Django: captura excepciones no manejadas.
-        LOGICA v4.1: Auto-reparación con Gunicorn restart, DB recovery y permisos.
+        LOGICA v4.1: Auto-reparacion limitada a Gunicorn restart y DB recovery.
         """
         ns = self._resolver_namespace(request)
         if not ns:
@@ -285,38 +289,8 @@ class SentinelTelemetryMiddleware:
                 logging.getLogger(__name__).exception("Error inesperado en process_exception (sentinel.py)")
                 logger.debug(f"SENTINEL INFRA: Error en check DB: {e}")
 
-        # 3. AUTO-FIX PERMISSIONS: 403 via PermissionDenied exception
-        if isinstance(exception, PermissionDenied):
-            cache_key = f"sentinel_permdenied:{getattr(request.user, 'id', 0)}:{path}"
-            retries_perm = _error_cache.get(cache_key, 0)
-            if retries_perm < 1:
-                try:
-                    from core.services.auto_repair import reparar_permisos_sesion
-                    if reparar_permisos_sesion(request, path):
-                        _error_cache[cache_key] = retries_perm + 1
-                        logger.info(
-                            f"SENTINEL INFRA [Permisos]: Reparado 403 para "
-                            f"{getattr(request.user, 'username', '?')} en {path}"
-                        )
-                        try:
-                            from django.contrib import messages
-                            messages.info(
-                                request,
-                                "PRIS Sentinel detecto un problema de permisos y lo corrigio. "
-                                "Reintentando..."
-                            )
-                        except Exception as message_error:
-                            logging.getLogger(__name__).exception("Error inesperado en process_exception (sentinel.py)")
-                            logger.debug(f"SENTINEL INFRA [Permisos]: mensajes no disponibles: {message_error}")
-                        return HttpResponseRedirect(path)
-                except Exception as e:
-                    logging.getLogger(__name__).exception("Error inesperado en process_exception (sentinel.py)")
-                    logger.debug(f"SENTINEL INFRA: Error en check permisos: {e}")
-            else:
-                logger.warning(
-                    f"SENTINEL INFRA [Permisos]: Loop detectado para "
-                    f"{getattr(request.user, 'username', '?')} en {path}, skip redirect"
-                )
+        # PermissionDenied conserva semántica HTTP 403. Sentinel lo registra,
+        # pero nunca modifica la sesión ni intenta elevar permisos.
 
         # Registrar incidencia de forma asincrona
         self._registrar_incidencia_async(
@@ -352,18 +326,13 @@ class SentinelTelemetryMiddleware:
         """
         # Anti-loop: si ya fallamos en esta URL, no reintentar infinitamente
         cache_key = f"{path}:{tipo_exc}"
-        retries = _error_cache.get(cache_key, 0)
+        retries = _error_cache_get(cache_key, 0)
         if retries >= _MAX_RETRIES:
             logger.warning(f"SENTINEL REPAIR: Max retries alcanzado para {cache_key}")
             return None
 
-        _error_cache[cache_key] = retries + 1
-
-        # Limpiar cache vieja (solo mantener ultimos 50)
-        if len(_error_cache) > 50:
-            keys = list(_error_cache.keys())
-            for k in keys[:25]:
-                _error_cache.pop(k, None)
+        _error_cache_set(cache_key, retries + 1)
+        _error_cache_trim()
 
         try:
             # --- ESTRATEGIA 1: NoReverseMatch ---
@@ -578,10 +547,8 @@ class SentinelTelemetryMiddleware:
                 logger.debug(f"SENTINEL AUTO-CLEANUP: Error cerrando conexiones: {e}")
 
             # 3. Limpiar cache de errores del middleware
-            global _error_cache
-            if len(_error_cache) > 20:
-                _error_cache.clear()
-                logger.info("SENTINEL AUTO-CLEANUP: Cache de errores limpiada")
+            _error_cache_clear_if_over()
+            logger.info("SENTINEL AUTO-CLEANUP: Cache de errores revisada")
 
             logger.info("SENTINEL AUTO-CLEANUP: Limpieza completada")
 
