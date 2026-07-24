@@ -868,3 +868,30 @@ Despliegue productivo confirmado en `4481feb`:
 - árbol de producción sincronizado con `release/v1.0-local` y sin cambios locales.
 
 La verificación humana productiva debe confirmar ahora el acceso a catálogo, alta de lote, ficha para completar trazabilidad, recepción desde OC y conservación del flujo de cuarentena/consumo. No se cargaron lotes ni documentos de prueba en producción para no contaminar los datos del laboratorio.
+
+## Verificación productiva posterior al despliegue - 2026-07-23
+
+La primera comprobación humana posterior al despliegue detectó un problema real de operación: la migración inicial se ejecutó contra la SQLite por defecto del proceso administrativo, mientras que Gunicorn utiliza PostgreSQL mediante las variables del servicio. La pantalla `/silo-lab/lab/` respondió `500` por ausencia de `core_empresa.inventario_modo_adaptacion`. No se ocultó ni se clasificó como falso positivo.
+
+Corrección aplicada:
+
+- las migraciones se ejecutaron nuevamente como usuario `prislab` contra la PostgreSQL productiva;
+- quedaron aplicadas `core.0086`, `inventario.0010`, `inventario.0011` e `inventario.0012`;
+- `manage.py check` productivo quedó sin errores;
+- Gunicorn, Celery y Celery Beat fueron reiniciados y quedaron `active`;
+- producción quedó sincronizada en `7cb6e08`, sin cambios locales.
+
+Verificación humana autenticada, sin crear ni modificar datos productivos:
+
+- dashboard de Laboratorio: carga correcta;
+- catálogo y alta de reactivo: `200`, con marca visible;
+- alta de lote: `200`, con reactivo, lote, marca, caducidad, cantidad, fecha de apertura/compra, proveedor, orden de compra, factura, inserto y observaciones;
+- lotes FEFO: `200`, sin registros productivos actualmente cargados;
+- órdenes de compra, proveedores y trazabilidad forense: `200`;
+- la edición de un lote existente no pudo ejecutarse sobre la interfaz porque producción no tiene lotes registrados; no se fabricaron datos para forzar ese flujo.
+
+Estado honesto del cierre:
+
+- el bloque de trazabilidad progresiva de reactivos queda desplegado y verificado en las pantallas productivas disponibles;
+- no se declara cerrado el flujo de edición/recepción sobre un lote real hasta contar con un registro operativo autorizado;
+- permanecen fuera de este bloque la extensión equivalente a los silos consultorio/general, la relación consumo-equipo ejecutor y la integración completa de materiales CCI/Westgard con inventario de controles. Esos puntos siguen siendo pendientes de alcance y no deben marcarse como completados.
