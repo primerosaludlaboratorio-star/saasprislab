@@ -41,7 +41,7 @@ El costo material real por ejecucion ya queda disponible. La utilidad material s
 
 ## Captura operativa
 
-La plantilla `Plantilla_Carga_Reactivos_Insumos_Prislab_v3_2026-07-24.xlsx` contiene:
+La plantilla `Plantilla_Carga_Reactivos_Insumos_Prislab_v5_2026-07-24.xlsx` contiene el prellenado completo del catalogo disponible:
 
 - `bom_consumo_prueba`: receta por muestra y analito.
 - `consumo_por_analito`: precarga de los analitos del catalogo LIMS.
@@ -50,6 +50,10 @@ La plantilla `Plantilla_Carga_Reactivos_Insumos_Prislab_v3_2026-07-24.xlsx` cont
 - `captura_consumibles`: tubo dorado, tubo lila EDTA, tubo verde heparina, aguja, puntilla, torunda y alcohol.
 - `catalogo_equipos`: procesos de aglutinacion en placa y analisis de quimica clinica, ambos marcados para completar con el equipo fisico real.
 - `catalogo_pruebas`: relaciones precargadas entre perfiles y analitos tomadas de `Examenes_Perfil.csv`.
+- 806 filas de parametros LIMS, 101 pruebas del catalogo y 755 relaciones perfil/prueba-analito precargadas.
+- Reactivos, controles y calibradores precargados por cada parametro para confirmar si aplican fisicamente; no se presentan como existencia disponible.
+- Consumibles precargados por los tipos de muestra reales del catalogo, ademas de los materiales comunes de toma.
+- Equipos precargados por metodo analitico como `EQUIPO_POR_CONFIRMAR`; el nombre, marca, modelo, serie e interfaz se completan con el inventario fisico.
 
 Las filas precargadas con sufijo `-CONFIRMAR` son guias de captura y no deben importarse como articulos definitivos hasta completar marca, fabricante, presentacion, lote, equipo, costo y responsable. Las filas de QSC incluidas en la BOM son ejemplos marcados `PENDIENTE_LIGAR`; deben sustituirse por los codigos reales del catalogo antes de importar a produccion.
 
