@@ -50,3 +50,7 @@ class DeepSeekProviderTests(SimpleTestCase):
     )
     def test_provider_falls_back_to_deepseek_when_gemini_key_missing(self):
         self.assertEqual(_get_ai_provider(), "deepseek")
+
+    @override_settings(AI_PROVIDER="deepseek", DEEPSEEK_API_KEY="sk-test", DEEPSEEK_TIMEOUT=999)
+    def test_deepseek_timeout_is_bounded(self):
+        self.assertEqual(deepseek_client._get_timeout(), 120)

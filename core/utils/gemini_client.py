@@ -29,7 +29,7 @@ _MIGRATION_MAP = {
 def _get_ai_provider() -> str:
     provider = (getattr(settings, 'AI_PROVIDER', '') or '').strip().lower()
     has_gemini = bool(_get_api_key())
-    has_deepseek = bool(getattr(settings, 'DEEPSEEK_API_KEY', '').strip())
+    has_deepseek = bool((getattr(settings, 'DEEPSEEK_API_KEY', '') or '').strip())
 
     if provider == 'deepseek':
         if has_deepseek:

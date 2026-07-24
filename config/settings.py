@@ -19,6 +19,7 @@ DEEPSEEK_API_URL = os.environ.get(
     "DEEPSEEK_API_URL",
     "https://api.deepseek.com/v1/chat/completions",
 ).strip()
+DEEPSEEK_TIMEOUT = int(os.environ.get("DEEPSEEK_TIMEOUT", "30"))
 PRISCI_WEBHOOK_TOKEN = os.environ.get("PRISCI_WEBHOOK_TOKEN", "").strip()
 PRISCI_WEBHOOK_VERIFY_TOKEN = os.environ.get("PRISCI_WEBHOOK_VERIFY_TOKEN", "").strip()
 

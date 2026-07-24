@@ -28,6 +28,12 @@ def _get_api_url() -> str:
     ).strip()
 
 
+def _get_timeout(timeout: int | None = None) -> int:
+    """Acota el timeout para que una petición no bloquee el asistente."""
+    configured = timeout or getattr(settings, "DEEPSEEK_TIMEOUT", 30)
+    return max(5, min(int(configured), 120))
+
+
 def _normalizar_prompt(contents: Any) -> str:
     if isinstance(contents, str):
         return contents
@@ -47,7 +53,7 @@ def generate_content(
     model_name: str | None = None,
     temperature: float = 0.2,
     max_tokens: int = 2048,
-    timeout: int = 30,
+    timeout: int | None = None,
 ) -> str:
     """Genera texto con DeepSeek y retorna solo el contenido."""
     api_key = _get_api_key()
@@ -71,7 +77,7 @@ def generate_content(
             "Content-Type": "application/json",
         },
         json=payload,
-        timeout=timeout,
+        timeout=_get_timeout(timeout),
     )
     response.raise_for_status()
     data = response.json()
@@ -130,8 +136,21 @@ def test_deepseek_connection() -> dict:
             "model": getattr(settings, "DEEPSEEK_MODEL", "deepseek-v4-flash"),
             "response": text,
         }
+    except requests.HTTPError as exc:
+        status = getattr(exc.response, "status_code", None)
+        return {
+            "success": False,
+            "message": f"DeepSeek rechazo la solicitud (HTTP {status or 'desconocido'}).",
+            "model": getattr(settings, "DEEPSEEK_MODEL", "deepseek-v4-flash"),
+        }
+    except requests.RequestException as exc:
+        return {
+            "success": False,
+            "message": f"No se pudo conectar con DeepSeek: {type(exc).__name__}.",
+            "model": getattr(settings, "DEEPSEEK_MODEL", "deepseek-v4-flash"),
+        }
     except Exception as exc:
-        logging.getLogger(__name__).exception("Error inesperado en test_deepseek_connection (deepseek_client.py)")
+        logger.warning("DeepSeek health check failed: %s", type(exc).__name__)
         return {
             "success": False,
             "message": str(exc),
