@@ -12,7 +12,7 @@ def install_append_only_triggers(apps, schema_editor):
         LANGUAGE plpgsql
         AS $$
         BEGIN
-            RAISE EXCEPTION 'Append-only table % cannot be updated or deleted', TG_TABLE_NAME
+            RAISE EXCEPTION 'Append-only table %% cannot be updated or deleted', TG_TABLE_NAME
                 USING ERRCODE = 'restrict_violation';
         END;
         $$;
