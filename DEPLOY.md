@@ -41,6 +41,18 @@ Producción actual:
 
 ## Flujo recomendado
 
+### Deploy directo desde el checkout local, sin GitHub
+
+La ruta local empaqueta el checkout actual y lo transfiere por SSH. No hace `git pull` en la VPS ni depende de GitHub Actions. Requiere que la clave SSH de esta maquina este autorizada para `prislab@216.238.89.243`:
+
+```powershell
+.\scripts\deploy_local_to_vps.ps1
+```
+
+El script conserva `.env`, `.venv`, `media`, `staticfiles` y `logs` del servidor; actualiza el codigo, escribe `DEPLOYED_REVISION`, ejecuta migraciones y `collectstatic`, reinicia Gunicorn/Celery/Celery Beat, recarga Nginx y valida `/health/`.
+
+Si el preflight responde `Permission denied`, no se transfiere ningun archivo. Debe autorizarse la clave en `/home/prislab/.ssh/authorized_keys` desde la consola de Vultr o usarse una clave que ya este autorizada.
+
 ### 1. Preparar el sistema
 
 ```bash
