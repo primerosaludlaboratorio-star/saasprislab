@@ -71,7 +71,7 @@ class CustomUsuarioAdmin(UserAdmin):
 @admin.register(Empresa)
 class EmpresaAdmin(admin.ModelAdmin):
     """Configuración de la identidad institucional (PRISLAB, Clínica del Valle)."""
-    list_display = ('nombre', 'rfc', 'periodo_vigencia', 'telefono')
+    list_display = ('nombre', 'nombre_asistente_ia', 'rfc', 'periodo_vigencia', 'telefono')
     search_fields = ('nombre', 'rfc')
 
 # ==============================================================================

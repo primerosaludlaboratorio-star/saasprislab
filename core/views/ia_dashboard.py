@@ -13,6 +13,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.utils.timezone import localdate
 from django.views.decorators.http import require_http_methods
+from core.utils.pris_identity import nombre_asistente_ia
 
 logger = logging.getLogger(__name__)
 
@@ -198,6 +199,7 @@ def ia_dashboard(request):
         "core/ia_dashboard.html",
         {
             "empresa_nombre": empresa_nombre,
+            "nombre_ia": nombre_asistente_ia(empresa),
             "contadores": contadores,
             "ultimos_pacientes": ultimos_pacientes,
             "ultimos_estudios": ultimos_estudios,

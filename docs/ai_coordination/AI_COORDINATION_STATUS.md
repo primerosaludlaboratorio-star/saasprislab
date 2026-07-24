@@ -985,3 +985,5 @@ y en el mismo despachador con aislamiento por tenant y RBAC.
 - `/api/ia/chat/` se conserva como alias de compatibilidad, pero delega al chat canónico `/ia/asistente/chat/`;
 - las rutas históricas de capacidades se conservan únicamente para compatibilidad de clientes y no representan otro asistente;
 - la clave del proveedor se lee exclusivamente desde la configuración del entorno; nunca se incorpora al repositorio.
+- el nombre visible se configura por tenant en `Empresa.nombre_asistente_ia`: Primero Salud/PRISLAB usa PRIS y Clínica del Valle parte con LIA;
+- PRIS y LIA no son motores distintos: comparten proveedor, herramientas, RBAC, aislamiento tenant y confirmación humana.

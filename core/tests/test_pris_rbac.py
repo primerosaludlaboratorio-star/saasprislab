@@ -3,6 +3,7 @@ from unittest.mock import Mock
 from django.test import SimpleTestCase
 
 from core.views.pris_ia._rbac import _verificar_rbac
+from core.utils.pris_identity import nombre_asistente_ia
 
 
 class PrisRbacTests(SimpleTestCase):
@@ -30,3 +31,13 @@ class PrisRbacTests(SimpleTestCase):
         permitido, mensaje = _verificar_rbac('herramienta_no_registrada', self._user(rol='ADMIN'))
         self.assertFalse(permitido)
         self.assertIn('no está registrada', mensaje)
+
+    def test_assistant_name_is_tenant_customizable(self):
+        empresa = Mock(nombre='Primero Salud Laboratorio', nombre_asistente_ia='')
+        self.assertEqual(nombre_asistente_ia(empresa), 'PRIS')
+        empresa.nombre_asistente_ia = 'LIA'
+        self.assertEqual(nombre_asistente_ia(empresa), 'LIA')
+
+    def test_valle_gets_legacy_brand_default(self):
+        empresa = Mock(nombre='Clinica del Valle', nombre_asistente_ia='')
+        self.assertEqual(nombre_asistente_ia(empresa), 'LIA')

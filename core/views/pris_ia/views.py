@@ -17,6 +17,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from core.models import AccionPRIS
+from core.utils.pris_identity import nombre_asistente_ia
 
 from ._constants import _TOOL_TO_TIPO
 from ._dispatcher import _ejecutar_herramienta
@@ -29,7 +30,9 @@ logger = logging.getLogger('core')
 
 @login_required
 def asistente_page(request):
-    return render(request, 'core/pris_ia_assistant.html')
+    return render(request, 'core/pris_ia_assistant.html', {
+        'nombre_ia': nombre_asistente_ia(getattr(request.user, 'empresa', None)),
+    })
 
 
 @login_required
@@ -55,6 +58,7 @@ def asistente_chat(request):
             mensaje = "Analiza esta imagen y dime qué ves con detalle."
 
         start = time.time()
+        nombre_ia = nombre_asistente_ia(getattr(request.user, 'empresa', None))
 
         provider = _get_ai_provider()
         from core.utils.gemini_client import _get_api_key
@@ -87,11 +91,11 @@ def asistente_chat(request):
         # Construir prompt completo con historial
         partes_prompt = [system_prompt, "\n\n"]
         for msg in historial[-12:]:
-            rol = "Usuario" if msg.get('rol') == 'user' else "PRIS"
+            rol = "Usuario" if msg.get('rol') == 'user' else nombre_ia
             texto = msg.get('texto', '')
             if texto:
                 partes_prompt.append(f"{rol}: {texto}\n")
-        partes_prompt.append(f"\nUsuario: {mensaje}\nPRIS:")
+        partes_prompt.append(f"\nUsuario: {mensaje}\n{nombre_ia}:")
 
         prompt_texto = ''.join(partes_prompt)
 
@@ -143,7 +147,7 @@ def asistente_chat(request):
                     f"\n[Sistema: la herramienta '{tool_name}' requiere confirmación. "
                     f"Resultado: {resultado_txt}]\n"
                     f"Presenta el resumen del plan al usuario en español, de forma clara y amigable, "
-                    f"y pide que confirme con 'sí' para proceder:\nPRIS:"
+                    f"y pide que confirme con 'sí' para proceder:\n{nombre_ia}:"
                 )
                 respuesta_raw = _llamar_modelo(''.join(partes_prompt))
                 break
@@ -154,7 +158,7 @@ def asistente_chat(request):
                 partes_prompt.append(
                     f"\n[Sistema: herramienta '{tool_name}' necesita aclaración. "
                     f"Resultado: {resultado_txt}]\n"
-                    f"Pide al usuario la información necesaria para continuar:\nPRIS:"
+                    f"Pide al usuario la información necesaria para continuar:\n{nombre_ia}:"
                 )
                 respuesta_raw = _llamar_modelo(''.join(partes_prompt))
                 break
@@ -184,7 +188,7 @@ def asistente_chat(request):
             partes_prompt.append(
                 f"\n[Sistema: herramienta '{tool_name}' ejecutada exitosamente. "
                 f"Resultado: {resultado_txt}]\n"
-                f"Continúa con el siguiente paso si lo hay, o responde al usuario de forma natural y concisa:\nPRIS:"
+                f"Continúa con el siguiente paso si lo hay, o responde al usuario de forma natural y concisa:\n{nombre_ia}:"
             )
             respuesta_raw = _llamar_modelo(''.join(partes_prompt))
 

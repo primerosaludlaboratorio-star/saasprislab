@@ -67,6 +67,16 @@ class AuditoriaModel(models.Model):
 class Empresa(models.Model):
     """Define la identidad de la clínica o farmacia (ej. PRISLAB, Clínica del Valle)."""
     nombre = models.CharField(max_length=255, verbose_name="Nombre de la Institución")
+    nombre_asistente_ia = models.CharField(
+        max_length=80,
+        blank=True,
+        default="",
+        verbose_name="Nombre visible del asistente IA",
+        help_text=(
+            "Nombre de marca que verá el personal. Vacío usa PRIS; para una empresa "
+            "cuyo nombre contiene Valle se usa LIA como valor inicial compatible."
+        ),
+    )
     rfc = models.CharField(max_length=20, blank=True, null=True, verbose_name="RFC")
     direccion = models.TextField(blank=True, null=True, verbose_name="Dirección Fiscal")
     telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono")

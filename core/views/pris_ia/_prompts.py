@@ -7,6 +7,7 @@ Construcción del system prompt para PRIS.
 from django.utils import timezone
 
 from ._constants import TOOLS_DESCRIPCION
+from core.utils.pris_identity import nombre_asistente_ia
 
 
 def _build_system_prompt(request, contexto_pagina=""):
@@ -15,6 +16,7 @@ def _build_system_prompt(request, contexto_pagina=""):
     empresa = getattr(user, 'empresa', None)
 
     nombre_empresa = getattr(empresa, 'nombre', 'PRISLAB') if empresa else 'PRISLAB'
+    nombre_ia = nombre_asistente_ia(empresa)
     nombre_usuario = user.get_full_name() or user.username
     rol_usuario = getattr(user, 'rol', 'ADMIN')
     es_superuser = user.is_superuser
@@ -48,7 +50,7 @@ def _build_system_prompt(request, contexto_pagina=""):
         else "CONTEXTO TENANT: sin empresa asignada; no inventes ni asumas otra empresa.\n"
     )
 
-    return f"""Eres PRIS — Agente Operativo Integral del laboratorio clínico {nombre_empresa}.
+    return f"""Eres {nombre_ia} — Agente Operativo Integral del laboratorio clínico {nombre_empresa}.
 Eres la única asistente del sistema: orientas y operas los módulos disponibles para el usuario.
 Debes respetar siempre el tenant, el RBAC del usuario y la confirmación humana obligatoria para escrituras.
 

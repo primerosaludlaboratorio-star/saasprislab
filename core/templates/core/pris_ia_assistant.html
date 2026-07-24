@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}PRIS IA - Asistente{% endblock %}
+{% block title %}{{ nombre_ia|default:"PRIS" }} IA - Asistente{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -361,8 +361,8 @@
         <div class="logo">
             <div class="logo-icon"><i class="fas fa-brain"></i></div>
             <div>
-                <h6>PRIS IA</h6>
-                <div class="subtitle">Asistente Inteligente de PRISLAB</div>
+                <h6>{{ nombre_ia|default:"PRIS" }} IA</h6>
+                <div class="subtitle">Asistente inteligente de {{ nombre_ia|default:"PRIS" }}</div>
             </div>
         </div>
         <button class="btn-close-ia" onclick="window.location.href='/'"><i class="fas fa-times"></i></button>
@@ -372,7 +372,7 @@
     <div class="ia-conversation" id="iaConversation">
         <div class="ia-welcome" id="iaWelcome">
             <div class="orb"></div>
-            <h3>Hola {{ request.user.first_name|default:request.user.username }}, soy PRIS</h3>
+            <h3>Hola {{ request.user.first_name|default:request.user.username }}, soy {{ nombre_ia|default:"PRIS" }}</h3>
             <p>Tu asistente de laboratorio clinico. Preguntame lo que necesites, por texto o por voz.</p>
             <div class="ia-suggestions">
                 <div class="ia-suggestion" data-msg="necesito crear una orden de laboratorio">Crear orden de lab</div>
@@ -389,7 +389,7 @@
     <div style="text-align:center;">
         <div class="ia-speaking" id="iaSpeaking">
             <div class="wave"><span></span><span></span><span></span><span></span></div>
-            PRIS esta hablando...
+                {{ nombre_ia|default:"PRIS" }} esta hablando...
             <button onclick="stopSpeaking()" style="background:none;border:none;color:var(--ia-accent);cursor:pointer;font-size:.8rem;"><i class="fas fa-stop"></i></button>
         </div>
     </div>
@@ -418,7 +418,7 @@
             <button class="ia-btn ia-btn-send" id="iaBtnSend" title="Enviar" disabled><i class="fas fa-arrow-up"></i></button>
         </div>
         <div style="text-align:center;font-size:.72rem;color:var(--ia-text-dim);margin-top:6px;">
-            PRIS v5.0 &nbsp;|&nbsp; Ctrl+Shift+M = micrófono &nbsp;|&nbsp; Acceso según rol con confirmación humana
+            {{ nombre_ia|default:"PRIS" }} v5.0 &nbsp;|&nbsp; Ctrl+Shift+M = micrófono &nbsp;|&nbsp; Acceso según rol con confirmación humana
         </div>
     </div>
 </div>
@@ -573,7 +573,7 @@
             if (text.includes('Confirmas') || text.includes('confirmas') || (text.includes('sí') && text.includes('proceder'))) {
                 const id = 'icard-' + Date.now();
                 confirmHtml = `<div style="background:#1e2535;border:1px solid #4f6a9a;border-radius:12px;padding:12px;margin-top:10px;">
-                    <div style="font-size:.8rem;opacity:.7;margin-bottom:6px;">PRIS propone esta acción:</div>
+                    <div style="font-size:.8rem;opacity:.7;margin-bottom:6px;">{{ nombre_ia|default:"PRIS" }} propone esta acción:</div>
                     <div style="display:flex;gap:8px;margin-top:8px;">
                         <button id="${id}-si" style="flex:1;background:#27ae60;border:none;color:#fff;padding:9px;border-radius:8px;font-weight:600;font-size:.85rem;cursor:pointer;">
                             <i class="fas fa-check me-1"></i>Sí, confirmo
@@ -627,13 +627,13 @@
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;">
                 <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-                <span id="${id}-label" style="font-size:.75rem;color:#9aa0a6;font-style:italic;">PRIS esta pensando...</span>
+                <span id="${id}-label" style="font-size:.75rem;color:#9aa0a6;font-style:italic;">{{ nombre_ia|default:"PRIS" }} esta pensando...</span>
             </div>`;
         conversation.appendChild(div);
         conversation.scrollTop = conversation.scrollHeight;
         // Mensajes progresivos para que el usuario sepa que no se colgó
         const msgs = [
-            'PRIS esta pensando...',
+            '{{ nombre_ia|default:"PRIS"|escapejs }} esta pensando...',
             'Consultando la inteligencia artificial...',
             'Analizando tu pregunta...',
             'Casi listo, un momento...',

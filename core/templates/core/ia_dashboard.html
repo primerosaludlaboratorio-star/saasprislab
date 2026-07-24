@@ -303,13 +303,7 @@
 
   <!-- ============ ASISTENTE IA ============ -->
   <div class="ia-header">
-    {% with emp=empresa_nombre|lower %}
-      {% if emp == "laboratorio del valle" or "valle" in emp %}
-        <div class="ia-badge pris">Hola, soy PRIS</div>
-      {% else %}
-        <div class="ia-badge pris">Hola, soy PRIS</div>
-      {% endif %}
-    {% endwith %}
+    <div class="ia-badge pris">Hola, soy {{ nombre_ia|default:"PRIS" }}</div>
     <div class="text-muted">Tu Consultora de Salud y Negocios &mdash; {{ fecha_hoy }}</div>
   </div>
 
