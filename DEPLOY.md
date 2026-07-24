@@ -53,6 +53,8 @@ El script conserva `.env`, `.venv`, `media`, `staticfiles` y `logs` del servidor
 
 Si el preflight responde `Permission denied`, no se transfiere ningun archivo. Debe autorizarse la clave en `/home/prislab/.ssh/authorized_keys` desde la consola de Vultr o usarse una clave que ya este autorizada.
 
+Los archivos `DESPLEGAR_A_PRODUCCION.bat`, `EJECUTAR_EN_SERVIDOR.sh` y `docs/manual/SOP_DESPLIEGUE_SEGURO.md` contienen instrucciones historicas de Google Cloud/Cloud Run y no son el procedimiento vigente para `prislab.labcorecloud.com` en Vultr. No usar sus credenciales temporales ni sus comandos para este servidor.
+
 ### 1. Preparar el sistema
 
 ```bash
