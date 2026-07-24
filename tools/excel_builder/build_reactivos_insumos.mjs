@@ -105,6 +105,7 @@ const controlCarga = wb.worksheets.add("control_completitud");
 const prefillPruebas = wb.worksheets.add("prefill_pruebas_lims");
 const prefillAnalitos = wb.worksheets.add("prefill_analitos_lims");
 const prefillTarifas = wb.worksheets.add("prefill_tarifas_lims");
+const consumoAnalitos = wb.worksheets.add("consumo_por_analito");
 
 title(lists, "G", "Listas permitidas y definiciones");
 lists.getRange("A3:D3").values = [["tipo", "unidad_medida", "estado_lote", "estado_factura"]];
@@ -146,8 +147,8 @@ readme.getRange("A15:B19").values = [["Leyenda", "Significado"], ["Amarillo", "C
 readme.getRange("A15:B15").format = { fill: C.teal, font: { bold: true, color: C.white } }; readme.getRange("A16").format.fill = C.yellow; readme.getRange("A17").format.fill = C.blue; readme.getRange("A18").format.fill = C.orange; readme.getRange("A15:B19").format.borders = { preset: "all", style: "thin", color: C.border }; readme.showGridLines = false;
 readme.getRange("D5:E13").values = [["Hoja", "Qué debe llenar el personal"], ["captura_reactivos", "Identidad completa, marca/fabricante, lote, caducidad, apertura, almacenamiento, cadena de frío, proveedor, factura, SDS/inserto, estado, prueba, equipo y cantidades por prueba, repetición y QC."], ["captura_controles_qc", "Control, nivel, analito, matriz, equipo, lote, valores objetivo, rango, frecuencia, cantidad por corrida/repetición, estabilidad, frío, inserto y validación."], ["captura_calibradores", "Calibrador, analito, equipo, método, niveles, trazabilidad, lote, cantidad por calibración/repetición, frecuencia, estabilidad, frío, inserto y validación."], ["captura_consumibles", "Consumible, marca, presentación, lote/caducidad, equipo, prueba/proceso, cantidades por determinación, repetición y QC, esterilidad, ficha y estado."], ["captura_refacciones", "Equipo, marca/modelo/serie, parte y marca, cantidad, condición, ubicación, compra/garantía, instalación, vida útil, ficha y mantenimiento."], ["captura_insumos_generales", "Insumo, categoría, área, marca, presentación, existencias, mínimos/máximos, proveedor, recepción, uso específico, lote, reposición, soporte y estado."], ["consumo_por_prueba", "Prueba LIMS, analito, artículo, equipo, método, etapa, grupo, alternativa, seleccionado, cantidad por determinación, repetición, QC, unidad, conversión, lote, vigencia y responsable."], ["documentos", "Facturas, notas, insertos, SDS, fichas técnicas, fotografías y evidencias vinculadas al artículo y lote."]];
 readme.getRange("D5:E5").format = { fill: C.teal, font: { bold: true, color: C.white } }; readme.getRange("D5:E13").format.wrapText = true; readme.getRange("D5:E13").format.borders = { preset: "all", style: "thin", color: C.border }; readme.getRange("D:D").format.columnWidth = 30; readme.getRange("E:E").format.columnWidth = 72;
-readme.getRange("D14:E21").values = [["catalogo_pruebas", "Catálogo de pruebas, analitos, muestras, método, criterios, calibración, QC, repeticiones y SOP."], ["catalogo_equipos", "Equipos, interfaces, pruebas soportadas, materiales ligados, mantenimiento y calibración."], ["catalogo_proveedores", "Datos fiscales, contacto, marcas, suministro, documentos, evaluación y estado del proveedor."], ["conversiones_unidades", "Conversión de caja/kit/frasco a piezas, mL, pruebas o determinaciones; rendimiento, merma y factor."], ["control_completitud", "Pendientes por artículo antes de importar: lote, documento, prueba, equipo, consumo, responsable y fecha compromiso."], ["prefill_pruebas_lims", "Pruebas precargadas desde Examenes.csv. Completar reactivo, equipo, consumos, QC y calibración."], ["prefill_analitos_lims", "Analitos precargados desde Parametros.csv. Completar prueba, reactivo, equipo y cantidad."], ["prefill_tarifas_lims", "Tarifas precargadas desde la lista vigente. Confirmar precio, vigencia y código real."]];
-readme.getRange("D14:E21").format.wrapText = true; readme.getRange("D14:E21").format.borders = { preset: "all", style: "thin", color: C.border };
+readme.getRange("D14:E22").values = [["catalogo_pruebas", "Catálogo de pruebas, analitos, muestras, método, criterios, calibración, QC, repeticiones y SOP."], ["catalogo_equipos", "Equipos, interfaces, pruebas soportadas, materiales ligados, mantenimiento y calibración."], ["catalogo_proveedores", "Datos fiscales, contacto, marcas, suministro, documentos, evaluación y estado del proveedor."], ["conversiones_unidades", "Conversión de caja/kit/frasco a piezas, mL, pruebas o determinaciones; rendimiento, merma y factor."], ["control_completitud", "Pendientes por artículo antes de importar: lote, documento, prueba, equipo, consumo, responsable y fecha compromiso."], ["prefill_pruebas_lims", "Pruebas precargadas desde Examenes.csv. Completar reactivo, equipo, consumos, QC y calibración."], ["prefill_analitos_lims", "Analitos precargados desde Parametros.csv. Completar prueba, reactivo, equipo y cantidad."], ["prefill_tarifas_lims", "Tarifas precargadas desde la lista vigente. Confirmar precio, vigencia y código real."], ["consumo_por_analito", "Hoja operativa principal: una fila por analito consumible. Glucosa, urea y creatinina se capturan por separado; los paquetes no se inventarían."]];
+readme.getRange("D14:E22").format.wrapText = true; readme.getRange("D14:E22").format.borders = { preset: "all", style: "thin", color: C.border };
 
 const altaHeaders = ["tenant_id", "accion_catalogo", "tipo_articulo", "codigo_interno_existente", "nombre", "descripcion", "marca", "fabricante", "referencia_fabricante", "unidad_medida", "requiere_cadena_frio", "motivo_alta_o_cambio", "proveedor", "fecha_solicitud", "solicitado_por", "revisado_por", "estado_revision", "observaciones"];
 setup(altaNuevo, "R", "Alta de nuevo reactivo, insumo o consumible", "Usar esta pestaña cuando se compre algo nuevo. NUEVO crea un artículo; ACTUALIZAR_EXISTENTE modifica uno localizado; NO_DUPLICAR detiene altas repetidas.", altaHeaders, [12,22,18,24,30,34,20,24,22,18,22,34,24,18,24,24,20,36]); tenant(altaNuevo); listValidation(altaNuevo, "B6:B205", ["NUEVO", "ACTUALIZAR_EXISTENTE", "NO_DUPLICAR"]); listValidation(altaNuevo, "C6:C205", ["REACTIVO", "CALIBRADOR", "CONTROL_QC", "CONSUMIBLE", "REFACCION", "INSUMO_GENERAL"]); listValidation(altaNuevo, "K6:K205", ["Sí", "No"]); listValidation(altaNuevo, "Q6:Q205", ["PENDIENTE", "APROBADO", "RECHAZADO"]); altaNuevo.getRange("N6:N205").format.numberFormat = "yyyy-mm-dd";
@@ -275,7 +276,54 @@ if (prefillTarifasRows.length) {
 }
 prefillTarifas.getRange(`F6:F${5 + prefillTarifasRows.length}`).format.numberFormat = "$#,##0.00";
 
-for (const [sheet, name] of [[lists, "Listas y definiciones"], [readme, "LEEME"], [altaNuevo, "alta_nuevo_articulo"], [catalogoLab, "catalogo_lab"], [lotesLab, "lotes_lab"], [catalogoGeneral, "catalogo_general"], [lotesGeneral, "lotes_general"], [consumoLims, "consumo_lims"], [documentos, "documentos"], [reactivos, "captura_reactivos"], [controlesQc, "captura_controles_qc"], [calibradores, "captura_calibradores"], [consumibles, "captura_consumibles"], [refacciones, "captura_refacciones"], [insumosGenerales, "captura_insumos_generales"], [consumoPrueba, "consumo_por_prueba"], [pruebas, "catalogo_pruebas"], [equipos, "catalogo_equipos"], [proveedores, "catalogo_proveedores"], [conversiones, "conversiones_unidades"], [controlCarga, "control_completitud"], [prefillPruebas, "prefill_pruebas_lims"], [prefillAnalitos, "prefill_analitos_lims"], [prefillTarifas, "prefill_tarifas_lims"]]) {
+const consumoAnalitoHeaders = ["tenant_id", "codigo_analito", "analito", "departamento", "tipo_muestra", "metodo", "unidad_resultado", "prueba_o_paquete_comercial_referencia", "codigo_reactivo", "nombre_reactivo", "marca", "fabricante", "presentacion", "lote", "caducidad", "equipo", "fase_proceso", "volumen_existencia", "unidad_existencia", "consumo_por_determinacion", "unidad_consumo", "consumo_por_repeticion", "consumo_por_qc", "consumo_por_calibracion", "factor_conversion", "rendimiento_teorico", "rendimiento_real", "stock_minimo", "stock_actual", "responsable_validacion", "estado_ligado", "regla_inventario", "observaciones"];
+setup(consumoAnalitos, "AG", "Consumo e inventario por analito", "Esta es la hoja operativa principal: una fila por analito que realmente consume material. No inventariar quimica de 3, perfil o paquete; capturar por separado glucosa, urea, creatinina, colesterol, etc.", consumoAnalitoHeaders, [12,18,28,24,22,30,18,36,20,32,20,24,24,18,16,24,20,20,18,26,20,26,20,24,18,22,20,16,16,24,20,22,40], [], Math.max(205, 5 + limsParametros.length));
+const consumoAnalitoRows = limsParametros.map(row => [
+  1,
+  row.Codigo,
+  row.Descripcion,
+  row.Departamento,
+  row.Tipo_muestra,
+  row.Metodo,
+  row.Unidades,
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "PENDIENTE_LIGAR",
+  "INVENTARIAR_ANALITO",
+  "Precargado desde Parametros.csv. Ligar reactivo, equipo y cantidades reales; el paquete comercial solo sirve como referencia de venta."
+]);
+if (consumoAnalitoRows.length) {
+  consumoAnalitos.getRange(`A6:AG${5 + consumoAnalitoRows.length}`).values = consumoAnalitoRows;
+  consumoAnalitos.getRange(`A6:AG${5 + consumoAnalitoRows.length}`).format.fill = C.blue;
+  consumoAnalitos.getRange(`H6:AF${5 + consumoAnalitoRows.length}`).format.fill = C.yellow;
+}
+listValidation(consumoAnalitos, `AE6:AE${5 + Math.max(205, limsParametros.length)}`, ["PENDIENTE_LIGAR", "REVISADO", "LISTO_PARA_DESCUENTO", "BLOQUEADO"]);
+consumoAnalitos.getRange(`O6:O${5 + consumoAnalitoRows.length}`).format.numberFormat = "yyyy-mm-dd";
+consumoAnalitos.getRange(`T6:X${5 + consumoAnalitoRows.length}`).format.numberFormat = "#,##0.0000";
+consumoAnalitos.getRange(`Y6:AA${5 + consumoAnalitoRows.length}`).format.numberFormat = "#,##0.0000";
+
+for (const [sheet, name] of [[lists, "Listas y definiciones"], [readme, "LEEME"], [altaNuevo, "alta_nuevo_articulo"], [catalogoLab, "catalogo_lab"], [lotesLab, "lotes_lab"], [catalogoGeneral, "catalogo_general"], [lotesGeneral, "lotes_general"], [consumoLims, "consumo_lims"], [documentos, "documentos"], [reactivos, "captura_reactivos"], [controlesQc, "captura_controles_qc"], [calibradores, "captura_calibradores"], [consumibles, "captura_consumibles"], [refacciones, "captura_refacciones"], [insumosGenerales, "captura_insumos_generales"], [consumoPrueba, "consumo_por_prueba"], [pruebas, "catalogo_pruebas"], [equipos, "catalogo_equipos"], [proveedores, "catalogo_proveedores"], [conversiones, "conversiones_unidades"], [controlCarga, "control_completitud"], [prefillPruebas, "prefill_pruebas_lims"], [prefillAnalitos, "prefill_analitos_lims"], [prefillTarifas, "prefill_tarifas_lims"], [consumoAnalitos, "consumo_por_analito"]]) {
   const preview = await wb.render({ sheetName: name, range: "A1:H18", scale: 1, format: "png" });
   await fs.writeFile(`${outputDir}/${name}.png`, new Uint8Array(await preview.arrayBuffer()));
 }
