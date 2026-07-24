@@ -28,6 +28,7 @@ class DeepSeekProviderTests(SimpleTestCase):
         payload = mock_post.call_args.kwargs["json"]
         self.assertEqual(payload["model"], "deepseek-chat")
         self.assertEqual(payload["messages"][0]["content"], "hola")
+        self.assertEqual(payload["thinking"], {"type": "disabled"})
 
     @override_settings(DEEPSEEK_API_KEY="")
     def test_deepseek_requires_key(self):

@@ -58,6 +58,9 @@ def generate_content(
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
+        # Los flujos de PRISLAB esperan el resultado en `content`; el modo de
+        # razonamiento puede consumir todo max_tokens antes de entregarlo.
+        "thinking": {"type": "disabled"},
         "temperature": temperature,
         "max_tokens": max_tokens,
     }
