@@ -39,7 +39,7 @@
       <span class="pris-avatar">🧠</span>
       <div>
         <div class="pris-title">PRIS — Copiloto IA</div>
-        <div class="pris-subtitle" id="pris-status-txt">Listo · Gemini 2.0 Flash</div>
+        <div class="pris-subtitle" id="pris-status-txt">Listo · PRIS</div>
       </div>
     </div>
     <div class="d-flex gap-1">
@@ -412,7 +412,7 @@ const prisWidget = (() => {
       f.style.animation = '';
       f.title = 'Hablar con PRIS';
     }
-    statusTxt().textContent = 'Listo · Gemini 2.0 Flash';
+    statusTxt().textContent = 'Listo · PRIS';
   }
 
   function _renderMenuContingencia() {
@@ -487,7 +487,7 @@ const prisWidget = (() => {
       const reply = data.respuesta || data.mensaje || 'Sin respuesta';
       addMsg(reply, 'pris');
       historial.push({ rol: 'pris', texto: reply });
-      statusTxt().textContent = data.tiempo_ms ? `${data.tiempo_ms}ms · Gemini 2.0 Flash` : 'Listo';
+      statusTxt().textContent = data.tiempo_ms ? `${data.tiempo_ms}ms · PRIS` : 'Listo · PRIS';
       // Reconectar si volvió de contingencia
       if (_orbModo === 'contingencia') _desactivarContingencia();
       // Si hay herramientas ejecutadas con pendiente, refrescar badge
