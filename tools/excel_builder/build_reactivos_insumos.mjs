@@ -48,6 +48,10 @@ async function loadCsv(relativePath, headerIndex = 0) {
 
 const limsExamenes = await loadCsv("../../datos_lims/Examenes.csv");
 const limsParametros = await loadCsv("../../datos_lims/Parametros.csv");
+const perfilRaw = parseCsv(await fs.readFile(new URL("../../datos_lims/Examenes_Perfil.csv", import.meta.url), "utf8"));
+const limsPerfilRows = perfilRaw.slice(2).filter(row => row[0] && row[3]).map(row => ({
+  codigoExamen: row[0], abreviaturaExamen: row[1], descripcionExamen: row[2], codigoAnalito: row[3], descripcionAnalito: row[4],
+}));
 const tariffRows = parseCsv(await fs.readFile(new URL("../../datos_lims/Tarifa_estudios de laboratorio.csv", import.meta.url), "utf8"));
 const tariffHeaderIndex = tariffRows.findIndex(row => row[0] === "Tipo" && row[1] === "Código");
 const limsTarifas = tariffHeaderIndex >= 0
@@ -209,8 +213,8 @@ const catalogoPruebasPrefill = limsExamenes.slice(0, 200).map(row => [
   row.Codigo,
   row.Descripcion || row.Titulo,
   row.Abreviatura,
-  "",
-  row.Sexo,
+  [...new Set(limsPerfilRows.filter(p => p.abreviaturaExamen === row.Abreviatura || p.codigoExamen === row.Codigo).map(p => `${p.codigoAnalito}: ${p.descripcionAnalito}`))].join("; "),
+  "SUERO / confirmar recipiente",
   "",
   "",
   "",
@@ -237,6 +241,34 @@ if (catalogoPruebasPrefill.length) pruebas.getRange(`A6:AA${5 + catalogoPruebasP
 pruebas.getRange(`A6:AA${5 + catalogoPruebasPrefill.length}`).format.fill = C.blue;
 pruebas.getRange(`J6:J${5 + catalogoPruebasPrefill.length}`).format.fill = C.yellow;
 pruebas.getRange(`O6:X${5 + catalogoPruebasPrefill.length}`).format.fill = C.yellow;
+
+const reactivoPrefill = [
+  [1, "RF-REACTIVO-CONFIRMAR", "Reactivo Factor reumatoide", "Factor reumatoide", "", "", "85/FR", "Confirmar presentación", "UNIDAD", "", "", "", "", "", "", "", "", "", "", "Factor reumatoide", "Precargado desde Parametros.csv; confirmar marca, fabricante, lote, costo y equipo.", "REACTIVO", "FR", "", "Inmunoturbidimetría", "REACTIVO_PRINCIPAL", "", "", "", "", "", "PENDIENTE", "PENDIENTE", "PENDIENTE", "PENDIENTE_VALIDAR"],
+  ...[
+    ["TIFICO O", "TO", "Tífico O"], ["TIFICO H", "TH", "Tífico H"], ["PARATIFICO B", "PB", "Paratífico B"], ["PARATIFICO A", "PA", "Paratífico A"], ["BRUCELLA ABORTUS", "BA", "Brucella abortus"], ["PROTEUS", "PT", "Proteus"],
+  ].map(([codigo, abreviatura, nombre]) => [1, `RF-${codigo.replace(/\s+/g, "-")}-CONFIRMAR`, `Reactivo ${nombre}`, "Reacciones febriles", "", "", codigo, "Confirmar presentación", "UNIDAD", "", "", "", "", "", "", "", "", "", "", "Reacciones febriles", "Precargado desde Examenes_Perfil.csv y Parametros.csv; confirmar marca, fabricante, lote, costo y equipo.", "REACTIVO", abreviatura, "", "Inmunoaglutinación", "ANTIGENO_REACCIONES_FEBRILES", "", "", "", "", "", "PENDIENTE", "PENDIENTE", "PENDIENTE", "PENDIENTE_VALIDAR"]),
+];
+reactivos.getRange(`A6:AI${5 + reactivoPrefill.length}`).values = reactivoPrefill;
+reactivos.getRange(`A6:AI${5 + reactivoPrefill.length}`).format.fill = C.orange;
+
+const consumiblePrefill = [
+  [1, "TUBO-DORADO-CONFIRMAR", "Tubo dorado", "TUBO_RECOLECCION", "", "", "Confirmar capacidad", "UNIDAD", "", "", "", "Toma de muestra / suero", "", "", "", "UNIDAD", "No", "", "", "", "Fuente: Examenes.csv/Parametros.csv y regla operativa confirmada por usuario; completar marca, lote, caducidad y cantidad.", "MUESTRA", "", "", "", "Sí", "PENDIENTE", "PENDIENTE_VALIDAR", "", ""],
+  [1, "TUBO-LILA-CONFIRMAR", "Tubo lila EDTA", "TUBO_RECOLECCION", "", "", "Confirmar capacidad", "UNIDAD", "", "", "", "Muestra plasma/EDTA", "", "", "", "UNIDAD", "No", "", "", "", "Muestra documentada para estudios con EDTA; completar marca, lote, caducidad y cantidad.", "MUESTRA", "", "", "", "Sí", "PENDIENTE", "PENDIENTE_VALIDAR", "", ""],
+  [1, "TUBO-VERDE-CONFIRMAR", "Tubo verde heparina", "TUBO_RECOLECCION", "", "", "Confirmar capacidad", "UNIDAD", "", "", "", "Muestra plasma/heparina", "", "", "", "UNIDAD", "No", "", "", "", "Muestra documentada para estudios especiales; completar marca, lote, caducidad y cantidad.", "MUESTRA", "", "", "", "Sí", "PENDIENTE", "PENDIENTE_VALIDAR", "", ""],
+  [1, "AGUJA-CONFIRMAR", "Aguja de toma", "MATERIAL_TOMA", "", "", "Confirmar calibre", "UNIDAD", "", "", "", "Toma de muestra", "", "", "", "UNIDAD", "Sí", "", "", "", "Regla operativa confirmada por usuario; definir si se controla por pieza o uso libre.", "MUESTRA", "", "", "", "No", "PENDIENTE", "PENDIENTE_VALIDAR", "", ""],
+  [1, "PUNTILLA-CONFIRMAR", "Puntilla", "CONSUMIBLE_ANALITICO", "", "", "Confirmar volumen", "UNIDAD", "", "", "", "Procesamiento analítico", "", "", "", "UNIDAD", "No", "", "", "", "Regla operativa confirmada por usuario; ligar a equipo y analito cuando se confirme el modelo.", "ANALITO", "", "", "", "Sí", "PENDIENTE", "PENDIENTE_VALIDAR", "", ""],
+  [1, "TORUNDA-CONFIRMAR", "Torunda", "MATERIAL_TOMA", "", "", "Confirmar presentación", "UNIDAD", "", "", "", "Toma de muestra", "", "", "", "UNIDAD", "Sí", "", "", "", "Uso libre por política actual; completar marca y presentación si se decide controlar.", "MUESTRA", "", "", "", "No", "PENDIENTE", "PENDIENTE_VALIDAR", "", ""],
+  [1, "ALCOHOL-CONFIRMAR", "Alcohol", "MATERIAL_TOMA", "", "", "Confirmar concentración/presentación", "ML", "", "", "", "Toma de muestra", "", "", "", "ML", "No", "", "", "", "Uso libre por política actual; completar marca, concentración y presentación.", "MUESTRA", "", "", "", "No", "PENDIENTE", "PENDIENTE_VALIDAR", "", ""],
+];
+consumibles.getRange(`A6:AD${5 + consumiblePrefill.length}`).values = consumiblePrefill;
+consumibles.getRange(`A6:AD${5 + consumiblePrefill.length}`).format.fill = C.orange;
+
+const equiposPrefill = [
+  [1, "EQUIPO-RF-CONFIRMAR", "Equipo/proceso de reacciones febriles por confirmar", "", "", "", "Laboratorio", "Inmunología", "AGLUTINACION", "", "PENDIENTE", "Aglutinación en placa", "Tífico O; Tífico H; Paratífico B; Paratífico A; Brucella abortus; Proteus", "Reacciones febriles", "Puntillas; tubos; material de toma", "Antígenos de reacciones febriles", "", "", "", "", "", "", "", "", "", "PENDIENTE", "", "Fuente: Examenes.csv/Examenes_Perfil.csv; registrar nombre, marca, modelo y serie del equipo real."],
+  [1, "EQUIPO-QC-CONFIRMAR", "Analizador de química clínica por confirmar", "", "", "", "Laboratorio", "Bioquímica clínica", "ANALIZADOR_QUIMICA", "", "PENDIENTE", "Colorimétrico Automatizado; Enzimático Automatizado", "Glucosa; Urea; Creatinina sérica; Colesterol; Triglicéridos; Ácido úrico", "QSC; química clínica", "Puntillas; tubos; calibradores; controles", "Reactivos por analito", "", "", "", "", "", "", "", "", "", "PENDIENTE", "", "Fuente: Parametros.csv; completar equipo físico, marca, modelo, serie e interfaz."],
+];
+equipos.getRange(`A6:AB${5 + equiposPrefill.length}`).values = equiposPrefill;
+equipos.getRange(`A6:AB${5 + equiposPrefill.length}`).format.fill = C.orange;
 
 const equiposHeaders = ["tenant_id", "codigo_equipo", "nombre_equipo", "marca", "modelo", "numero_serie", "ubicacion", "area", "tipo_equipo", "software_version", "interfaz_lims", "metodos_soportados", "analitos_soportados", "pruebas_soportadas", "consumibles_requeridos", "reactivos_requeridos", "calibradores_requeridos", "controles_requeridos", "mantenimiento_preventivo", "ultima_calibracion", "proxima_calibracion", "ultimo_mantenimiento", "proximo_mantenimiento", "proveedor_servicio", "manual_documento", "estado", "responsable", "observaciones"];
 setup(equipos, "AB", "Catálogo maestro de equipos e interfaces", "Una fila por equipo. Ligar marca, modelo, serie, ubicación, pruebas, analitos, reactivos, consumibles, controles, calibración, mantenimiento e interfaz LIMS.", equiposHeaders, [12,18,28,20,20,22,20,20,22,18,20,32,32,32,32,32,28,28,24,18,18,20,20,24,28,16,24,36]); tenant(equipos); listValidation(equipos, "K6:K205", ["Sí", "No", "PENDIENTE"]); listValidation(equipos, "Z6:Z205", ["ACTIVO", "INACTIVO", "MANTENIMIENTO", "BAJA"]); equipos.getRange("T6:W205").format.numberFormat = "yyyy-mm-dd";

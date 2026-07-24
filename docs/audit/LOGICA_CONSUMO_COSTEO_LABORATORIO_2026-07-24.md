@@ -41,13 +41,17 @@ El costo material real por ejecucion ya queda disponible. La utilidad material s
 
 ## Captura operativa
 
-La plantilla `Plantilla_Carga_Reactivos_Insumos_Prislab_v2_2026-07-24.xlsx` contiene:
+La plantilla `Plantilla_Carga_Reactivos_Insumos_Prislab_v3_2026-07-24.xlsx` contiene:
 
 - `bom_consumo_prueba`: receta por muestra y analito.
 - `consumo_por_analito`: precarga de los analitos del catalogo LIMS.
 - `costeo_por_prueba`: campos para determinacion, repeticion, QC, calibracion, lote, costo e ingreso.
+- `captura_reactivos`: Factor reumatoide y los seis antigenos de reacciones febriles: Tifico O, Tifico H, Paratifico B, Paratifico A, Brucella abortus y Proteus.
+- `captura_consumibles`: tubo dorado, tubo lila EDTA, tubo verde heparina, aguja, puntilla, torunda y alcohol.
+- `catalogo_equipos`: procesos de aglutinacion en placa y analisis de quimica clinica, ambos marcados para completar con el equipo fisico real.
+- `catalogo_pruebas`: relaciones precargadas entre perfiles y analitos tomadas de `Examenes_Perfil.csv`.
 
-Las filas de QSC incluidas en la BOM son ejemplos marcados `PENDIENTE_LIGAR`; deben sustituirse por los codigos reales del catalogo antes de importar a produccion.
+Las filas precargadas con sufijo `-CONFIRMAR` son guias de captura y no deben importarse como articulos definitivos hasta completar marca, fabricante, presentacion, lote, equipo, costo y responsable. Las filas de QSC incluidas en la BOM son ejemplos marcados `PENDIENTE_LIGAR`; deben sustituirse por los codigos reales del catalogo antes de importar a produccion.
 
 ## Evidencia
 
