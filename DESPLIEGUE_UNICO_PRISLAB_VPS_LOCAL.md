@@ -90,6 +90,8 @@ El 2026-07-25 se desplego localmente la revision `a83ac54c3f58326ae20422fa08adbf
 
 Posteriormente se desplego `8469f20b6f7dc8551489eff98df9d9338918bc1e`, que corrige la reversa de cancelacion en PostgreSQL. La prueba productiva cancelo el folio QA `VTA-20260724204319-6422` y confirmo el retorno del lote `253432` a existencia `3`.
 
+La interfaz productiva tambien valido venta parcial sin cobro: cantidad 2 -> 1 y subtotal recalculado a `$65.00`.
+
 El 2026-07-24 se desplego localmente la revision `82f26a99176e280f4b71968bb433dec4754750f2`, que incluye el fix funcional `c94b92b`. Migraciones, estaticos, servicios y health check fueron correctos. Laboratorio/LIMS se verifico en produccion navegando 22 pantallas y abriendo el formulario de nueva orden; la consola del navegador reporto 0 errores y 0 warnings.
 
 La verificacion anterior no sustituye la matriz E2E con efectos laterales. Esa matriz debe ejecutarse con datos QA controlados antes de marcar Laboratorio/LIMS como cerrado: recepcion, toma, captura, validacion, PDF, entrega, rechazo/repeticion, cancelacion/reembolso, calidad, reactivos/insumos, equipos, impresoras y HL7.

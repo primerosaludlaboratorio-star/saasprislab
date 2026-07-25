@@ -27,6 +27,7 @@ Fecha: 2026-07-21
 - Prueba humana PDV: busqueda `paracetamol`, seleccion de producto con multiples lotes, seleccion explicita de `LOTE-TEST-001`, agregado con lote visible en carrito; segundo producto agregado correctamente y totales recalculados.
 - La primera cancelacion QA revelo un error real de PostgreSQL (`FOR UPDATE cannot be applied to the nullable side of an outer join`). `8469f20` elimino el `select_related` del queryset bloqueado; los 52 tests de Farmacia/devoluciones quedaron OK.
 - La cancelacion se repitio en produccion: folio `VTA-20260724204319-6422` confirmado como cancelado y el lote `253432` del producto `PARACETAMOL 650MG TABLETA` regreso a existencia `3` despues de la reversa.
+- Venta parcial en interfaz: el producto se incremento a dos unidades, se redujo a una mediante el control editable y el subtotal se recalculo a `$65.00`; la simulacion no se cobro.
 
 ### Estado de cierre
 
