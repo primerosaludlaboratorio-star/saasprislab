@@ -1138,7 +1138,7 @@ Verificacion:
 - el cierre registra por separado al responsable de apertura y al usuario que ejecuta el cierre (`CierreTurnoFarmacia.cerrado_por`);
 - la apertura ya no se duplica cuando cambia el personal: `verificar_apertura_caja` y `abrir_caja` validan empresa + sucursal + caja activa;
 - los retiros y egresos del kardex se descuentan del efectivo esperado; las ventas digitales no se mezclan con efectivo;
-- el despliegue se realizara unicamente despues de pasar `check`, migraciones, suite focalizada y diff limpio;
+- revision productiva desplegada por el proceso local: `91c0b75`;
 - produccion devolvio HTTP 200 para `farmacia_admin_10d` y `solo_lectura: true`;
 - la misma prueba reporto delta cero en cierres creados y aperturas activas;
 - la interfaz productiva cargo el boton, ejecuto el precorte y mostro `PRECORTE INFORMATIVO` / `SOLO LECTURA - NO CIERRA CAJA`;
@@ -1151,4 +1151,7 @@ Verificacion:
 - El endpoint mantiene `solo_lectura: true` y no expone claves de costo, margen o ganancia a perfiles operativos.
 - La suite focalizada cubre apertura de un usuario, retiro, precorte por otro usuario y cierre por entrega; se conserva la prueba de no duplicacion de cierre.
 - `manage.py check`, `makemigrations --check`, compilacion Python y `git diff --check` son los gates previos al despliegue.
-- La confirmacion productiva pendiente de este bloque debe incluir ambos usuarios, pagina, precorte y que una apertura no se duplique al cambiar de turno.
+- Produccion confirmo con `auditoria_admin_10d`: pagina HTTP 200, apertura activa, boton `GENERAR PRECORTE`, precorte `SOLO LECTURA`, kardex visible con ventas y gasto, y cero errores de consola.
+- La migracion `farmacia.0009_cierreturnofarmacia_cerrado_por` esta aplicada y el modelo productivo expone `cerrado_por`.
+- Sentinel no registro incidencias de Farmacia nuevas en los 20 minutos posteriores al despliegue.
+- La prueba con `farmacia_empleado_10d` requiere iniciar una sesion separada con su credencial temporal; no se inventa ni se guarda esa contrasena en el repositorio.
