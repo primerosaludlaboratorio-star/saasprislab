@@ -305,7 +305,7 @@
         const montoReportado = parseFloat(montoReportadoEl.value) || 0;
         const montoEsperado = {{ saldo_caja|default:0 }};
         
-        if (montoReportado === 0) {
+        if (montoReportadoEl.value.trim() === '') {
             alert('Por favor ingresa el monto que tienes en caja.');
             return;
         }
@@ -360,7 +360,7 @@
         const montoReportadoEl = document.getElementById('monto-reportado');
         const btn = document.getElementById('btn-cerrar-turno');
         const efectivo = parseFloat(montoReportadoEl?.value || '0');
-        if (!efectivo || efectivo < 0) {
+        if (Number.isNaN(efectivo) || efectivo < 0) {
             alert('Ingresa el efectivo contado antes de cerrar el turno.');
             return;
         }
