@@ -11,6 +11,7 @@ from farmacia.views import pdv as farmacia_pdv
 from farmacia.views import inventario as farmacia_inventario
 from farmacia.views import devoluciones as farmacia_devoluciones
 from farmacia.views import reportes as farmacia_reportes
+from farmacia.views import caja as farmacia_caja
 from core.views import laboratorio_config as lims_views
 from core.views import laboratorio_captura as captura_views
 from core.views import laboratorio_reportes as reportes_views
@@ -177,6 +178,7 @@ urlpatterns = [
     # ── Redirects legacy (eliminan 404s detectados por Omnitex) ─────────────
     # /farmacia/corte-caja/ ahora resuelve la vista operativa real de corte diario
     path('farmacia/corte-caja/', farmacia_views.corte_caja_dia, name='corte_caja_legacy'),
+    path('farmacia/caja/verificar/', farmacia_caja.verificar_apertura_caja, name='verificar_apertura_caja_legacy'),
     path('finanzas/corte/', farmacia_views.corte_caja_dia, name='corte_dia'),
     # /laboratorio/captura/ sin ID → redirige al worklist con mensaje amigable
     path('laboratorio/captura/', views.registro_resultados_entrada, name='captura_sin_id'),

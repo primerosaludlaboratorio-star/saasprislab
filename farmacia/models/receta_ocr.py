@@ -27,6 +27,7 @@ class LecturaRecetaFarmacia(TenantModel):
     imagen = models.ImageField(
         upload_to="recetas_farmacia/%Y/%m/%d/",
         validators=[validate_image_upload],
+        max_length=255,
     )
     texto_extraido = models.TextField(blank=True, default="")
     datos_extraidos = models.JSONField(default=dict, blank=True)
