@@ -98,6 +98,7 @@
                         </button>
                     </div>
                     <div id="resultado-diferencia" style="display: none;" class="mt-3">
+                        {% csrf_token %}
                         <div id="mensaje-diferencia" class="alert fw-bold text-center"></div>
                         <div class="d-flex justify-content-between small">
                             <span>Esperado:</span>
@@ -111,6 +112,9 @@
                             <span class="fw-bold">Diferencia:</span>
                             <span id="diferencia-valor" class="fw-bold">$0.00</span>
                         </div>
+                        <button type="button" id="btn-cerrar-turno" class="btn btn-success btn-lg w-100 mt-3 fw-bold" onclick="cerrarTurnoUnificado()">
+                            <i class="bi bi-lock-fill"></i> CERRAR TURNO Y GENERAR CORTE
+                        </button>
                     </div>
                 </div>
             </div>
@@ -341,6 +345,54 @@
                 reportado: montoReportado,
                 diferencia: diferencia
             });
+        }
+    }
+
+    function getCsrfToken() {
+        const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+        return cookie ? decodeURIComponent(cookie.split('=').slice(1).join('=')) :
+            document.querySelector('#resultado-diferencia input[name=csrfmiddlewaretoken]')?.value || '';
+    }
+
+    async function cerrarTurnoUnificado() {
+        const montoReportadoEl = document.getElementById('monto-reportado');
+        const btn = document.getElementById('btn-cerrar-turno');
+        const efectivo = parseFloat(montoReportadoEl?.value || '0');
+        if (!efectivo || efectivo < 0) {
+            alert('Ingresa el efectivo contado antes de cerrar el turno.');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Cerrando turno...';
+        try {
+            const response = await fetch('/api/caja/corte-unificado/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken(),
+                },
+                body: JSON.stringify({ efectivo_declarado: efectivo, imprimir_ticket: false }),
+            });
+            const data = await response.json();
+            if (!response.ok || !data.ok) {
+                throw new Error(data.error || 'No fue posible cerrar el turno.');
+            }
+            const folio = data.corte?.farmacia?.folio_cierre || 'generado';
+            if (window.Swal) {
+                await Swal.fire({ icon: 'success', title: 'Turno cerrado', text: `Corte ${folio} generado correctamente.` });
+            } else {
+                alert(`Turno cerrado. Corte ${folio} generado correctamente.`);
+            }
+            window.location.reload();
+        } catch (error) {
+            if (window.Swal) {
+                Swal.fire('Error', error.message, 'error');
+            } else {
+                alert(error.message);
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-lock-fill"></i> CERRAR TURNO Y GENERAR CORTE';
         }
     }
     
