@@ -399,7 +399,7 @@
         {# MÓDULO 3: FARMACIA (ERP + PDV)                                      #}
         {# Flujo: venta → descuento FEFO → kardex → corte de caja             #}
         {# ─────────────────────────────────────────────────────────────────── #}
-        {% if request.user|has_group:"FARMACIA" or request.user|has_group:"CAJERO" or request.user|is_role:"CAJERO" or request.user|is_role:"FARMACIA" or request.user.is_superuser %}
+        {% if request.user|has_group:"FARMACIA" or request.user|has_group:"CAJERO" or request.user|is_role:"CAJERO" or request.user|is_role:"FARMACIA" or request.user|is_role:"ADMIN" or request.user|is_role:"ADMINISTRADOR" or request.user|is_role:"GERENTE" or request.user|is_role:"DIRECTOR" or request.user.is_superuser %}
         <div class="prsb-module" data-module="farmacia">
             <button class="prsb-trigger" type="button"
                     data-mod="farmacia"
@@ -439,6 +439,12 @@
                 </a>
                 <a href="{% url 'ajustes_inventario' %}" class="prsb-link {% if '/ajustes/' in request.path %}prsb-active{% endif %}">
                     <i class="fas fa-balance-scale"></i> Ajustes / Mermas
+                </a>
+                <a href="{% url 'farmacia:dashboard_semaforo_caducidad' %}" class="prsb-link {% if '/semaforo-caducidad/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-traffic-light"></i> Semáforo de Caducidad
+                </a>
+                <a href="{% url 'farmacia:dashboard_alertas' %}" class="prsb-link {% if '/farmacia/alertas/' in request.path %}prsb-active{% endif %}">
+                    <i class="fas fa-bell"></i> Alertas de Farmacia
                 </a>
 
                 <span class="prsb-group-label">Control & Cierre</span>

@@ -12,6 +12,22 @@
         modal = bootstrap.Modal.getOrCreateInstance(el);
         modal.show();
     };
+    var inputReceta = document.getElementById('foto-receta-farmacia');
+    if (inputReceta) inputReceta.addEventListener('change', function () {
+        var preview = document.getElementById('receta-ocr-farmacia-preview');
+        var image = document.getElementById('receta-ocr-farmacia-preview-img');
+        var file = inputReceta.files && inputReceta.files[0];
+        if (!preview || !image) return;
+        if (!file) { preview.hidden = true; image.removeAttribute('src'); return; }
+        if (!file.type || file.type.indexOf('image/') !== 0) {
+            preview.hidden = true;
+            estado('Seleccione un archivo de imagen válido.', 'danger');
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function (event) { image.src = event.target.result; preview.hidden = false; };
+        reader.readAsDataURL(file);
+    });
     function estado(texto, tipo) {
         var el = document.getElementById('receta-ocr-farmacia-estado');
         if (el) { el.className = 'small mt-3 text-' + (tipo || 'muted'); el.textContent = texto || ''; }

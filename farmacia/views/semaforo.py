@@ -24,9 +24,11 @@ def es_farmacia_o_director(user):
     """Verifica si el usuario tiene permisos de farmacia o es director."""
     if not get_empresa_usuario(user):
         return False
+    rol = (getattr(user, 'rol', '') or '').upper().strip()
     return (
         user.is_superuser or 
-        user.groups.filter(name__in=['FARMACIA', 'DIRECTOR']).exists()
+        rol in {'ADMIN', 'ADMINISTRADOR', 'GERENTE', 'DIRECTOR', 'FARMACIA'} or
+        user.groups.filter(name__in=['FARMACIA', 'DIRECTOR', 'GERENCIA', 'GERENCIA_OPERATIVA', 'Administrador']).exists()
     )
 
 

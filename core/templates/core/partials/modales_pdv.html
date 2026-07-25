@@ -12,6 +12,10 @@
                 </div>
                 <label for="foto-receta-farmacia" class="form-label fw-bold">Foto de receta</label>
                 <input id="foto-receta-farmacia" class="form-control" type="file" accept="image/*" capture="environment">
+                <div id="receta-ocr-farmacia-preview" class="mt-3 text-center" hidden>
+                    <img id="receta-ocr-farmacia-preview-img" class="img-fluid rounded border" alt="Vista previa de la receta adjunta" style="max-height: 280px;">
+                    <div class="small text-muted mt-1">Revise que la imagen sea legible antes de analizarla.</div>
+                </div>
                 <button id="btn-analizar-receta-farmacia" type="button" class="btn btn-primary mt-3" onclick="analizarRecetaFarmacia()">
                     <i class="bi bi-magic"></i> Analizar receta
                 </button>
@@ -68,6 +72,12 @@
                                placeholder="Ej: 00145 (del talonario)">
                         <div class="form-text" style="font-size:0.7rem;">Folio impreso en el papel del médico.</div>
                     </div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="small fw-bold" for="rec-cantidad-prescrita">Cantidad prescrita en la receta:</label>
+                    <input type="number" id="rec-cantidad-prescrita" class="form-control form-control-sm" min="1" value="1" required>
+                    <div class="form-text" style="font-size:0.7rem;">Permite registrar surtido parcial sin perder la cantidad original prescrita.</div>
                 </div>
 
                 <!-- Fila 3: Folio PRISLAB (readonly) + Información adicional -->
@@ -170,8 +180,9 @@
                                     <label class="small fw-bold mb-1">Motivo de Cortesía:</label>
                                     <select id="motivo-cortesia" class="form-select form-select-sm mb-2" required>
                                         <option value="">-- Seleccione --</option>
-                                        <option value="MEDICO">Médico / Personal de Salud</option>
-                                        <option value="COLABORADOR">Colaborador Interno</option>
+                                        <option value="MEDICO">Cortesía a médico</option>
+                                        <option value="PACIENTE">Cortesía a paciente</option>
+                                        <option value="COLABORADOR">Cortesía a personal</option>
                                         <option value="VULNERABILIDAD">Vulnerabilidad Alta</option>
                                         <option value="OTRO">Otro (Especificar)</option>
                                     </select>
@@ -234,15 +245,20 @@
                         <!-- ============================================================ -->
                         <details id="opciones-admin-staff" class="mt-2" style="border-top: 1px dashed #ccc; padding-top: 6px;">
                             <summary class="small text-muted" style="cursor: pointer; font-size: 0.7rem; user-select: none;">
-                                <i class="bi bi-gear-wide-connected"></i> Opciones Administrativas
+                                <i class="bi bi-gear-wide-connected"></i> Precio personal / familiar y autorizaciones
                             </summary>
                             <div class="mt-2 p-2 rounded" style="background: #f8f9fa; border: 1px solid #e9ecef;">
                                 <div class="d-flex align-items-center gap-2">
+                                    <select id="tipo-beneficio-staff" class="form-select form-select-sm" aria-label="Beneficiario del precio de costo" style="font-size: 0.75rem;">
+                                        <option value="">Beneficio de precio...</option>
+                                        <option value="PERSONAL">Personal</option>
+                                        <option value="FAMILIAR">Familiar de personal</option>
+                                    </select>
                                     <button type="button" class="btn btn-outline-secondary btn-sm flex-grow-1" 
                                             id="btn-precio-neto-staff"
                                             onclick="solicitarPinStaff()" 
                                             style="font-size: 0.75rem;">
-                                        <i class="bi bi-shield-lock"></i> Beneficio Staff (Precio Neto)
+                                        <i class="bi bi-shield-lock"></i> Aplicar precio de costo
                                     </button>
                                     <button type="button" class="btn btn-outline-danger btn-sm" 
                                             id="btn-desactivar-neto"

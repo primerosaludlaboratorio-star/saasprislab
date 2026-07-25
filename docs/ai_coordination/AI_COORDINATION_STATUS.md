@@ -1048,3 +1048,17 @@ y en el mismo despachador con aislamiento por tenant y RBAC.
 - la clave del proveedor se lee exclusivamente desde la configuración del entorno; nunca se incorpora al repositorio.
 - el nombre visible se configura por tenant en `Empresa.nombre_asistente_ia`: Primero Salud/PRISLAB usa PRIS y Clínica del Valle parte con LIA;
 - PRIS y LIA no son motores distintos: comparten proveedor, herramientas, RBAC, aislamiento tenant y confirmación humana.
+
+## Farmacia: receta, precio especial y caducidad - 2026-07-25
+
+Correcciones implementadas y pendientes de validacion productiva:
+
+- el visor de receta muestra inmediatamente una vista previa de la imagen adjunta antes de enviarla al OCR;
+- el OCR mantiene confirmacion humana y devuelve un error visible si el proveedor de vision no esta configurado; no crea ventas ni inventario por si solo;
+- la receta de antibioticos/controlados captura cantidad prescrita y permite `Editar receta / surtido` desde el carrito, conservando el folio externo editable y registrando surtido parcial;
+- cortesias gratuitas siguen separadas de `PERSONAL` y `FAMILIAR`, que se registran como precio de costo autorizado en `Venta.tipo_precio_especial`;
+- el backend rechaza precio especial para usuarios no autorizados y evita combinarlo con una cortesia gratuita;
+- el semaforo de caducidad y alertas de Farmacia quedan visibles en el menu para roles administrativos autorizados con empresa asignada;
+- se agrego la migracion `core.0091_venta_tipo_precio_especial`.
+
+Validacion local de esta ronda: `manage.py check`, `makemigrations --check --noinput`, `node --check` de los dos scripts PDV/OCR, `git diff --check` y `core.tests.test_farmacia_permission_helpers` (`5/5`) correctos. La prueba humana productiva de OCR requiere una imagen real y la credencial de vision activa; no se marca como realizada sin esos insumos.

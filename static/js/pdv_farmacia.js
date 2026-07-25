@@ -430,7 +430,14 @@ function _procesarProductoPDV(prod) {
     if (prod.alerta_precio_bajo) {
         if (!confirm('ALERTA DE RENTABILIDAD\n\n' + prod.nombre_comercial + '\nPrecio venta: ' + _fmt(prod.precio_base) + '\nCosto lote: ' + _fmt(prod.costo_lote) + '\n\n¿Confirmar de todas formas?')) return;
     }
-    if (prod.requiere_receta || prod.es_antibiotico || prod.es_controlado) { window._productoAntibioticoTemp = prod; abrirModalReceta(); return; }
+    if (prod.requiere_receta || prod.es_antibiotico || prod.es_controlado) {
+        window._productoAntibioticoTemp = prod;
+        window._editarSurtidoIdx = null;
+        var cantidadEl = document.getElementById('rec-cantidad-prescrita');
+        if (cantidadEl) cantidadEl.value = '1';
+        abrirModalReceta();
+        return;
+    }
     _agregarAlCarrito(prod);
 }
 
@@ -477,9 +484,9 @@ function _agregarAlCarrito(prod) {
     if (pv > 0 && costo > 0 && pv < costo) { _mostrarAlerta("Precio bajo costo", prod.nombre_comercial + ": precio=" + _fmt(pv) + " < costo=" + _fmt(costo) + ". Verifique tarifa.", "warning"); }
     var idx = window.carrito.findIndex(function(i){ return i.id===prod.id && i.lote_id===(prod.lote_id||null); });
     if (idx >= 0) {
-        if (window.carrito[idx].cantidad < stock) { window.carrito[idx].cantidad++; window.carrito[idx].cantidad_prescrita++; } else { _mostrarAlerta("Stock maximo","No hay mas unidades.","warning"); return; }
+        if (window.carrito[idx].cantidad < stock) { window.carrito[idx].cantidad++; } else { _mostrarAlerta("Stock maximo","No hay mas unidades.","warning"); return; }
     } else {
-        window.carrito.push({id:prod.id,nombre:prod.nombre_comercial||"",sustancia:prod.sustancia_activa||"",precio_base:parseFloat(prod.precio_base)||0,precio_neto:parseFloat(prod.precio_compra)||0,precio_venta:pv,iva_pct:parseFloat(prod.iva_pct)||0,cantidad:1,cantidad_prescrita:1,motivo_surtido_parcial:'',lote_id:prod.lote_id||null,lote_num:prod.numero_lote_proximo||"",stock:stock,dias_restantes:diasRestantes,es_antibiotico:!!prod.es_antibiotico,es_controlado:!!prod.es_controlado,requiere_receta:!!(prod.requiere_receta||prod.es_antibiotico||prod.es_controlado),costo:costo});
+        window.carrito.push({id:prod.id,nombre:prod.nombre_comercial||"",sustancia:prod.sustancia_activa||"",precio_base:parseFloat(prod.precio_base)||0,precio_neto:parseFloat(prod.precio_compra)||0,precio_venta:pv,iva_pct:parseFloat(prod.iva_pct)||0,cantidad:1,cantidad_prescrita:Number(prod._cantidadPrescrita||1),motivo_surtido_parcial:'',lote_id:prod.lote_id||null,lote_num:prod.numero_lote_proximo||"",stock:stock,dias_restantes:diasRestantes,es_antibiotico:!!prod.es_antibiotico,es_controlado:!!prod.es_controlado,requiere_receta:!!(prod.requiere_receta||prod.es_antibiotico||prod.es_controlado),costo:costo});
     }
     renderCarrito();
     _renderTabs();
@@ -499,7 +506,7 @@ window.renderCarrito = function() {
         var prescrita = item.cantidad_prescrita || item.cantidad;
         var parcial = prescrita > item.cantidad;
         var motivo = parcial ? '<select class="form-select form-select-sm mt-1" data-motivo-index="'+i+'" aria-label="Motivo de surtido parcial"><option value="">Motivo requerido</option><option value="PRESUPUESTO_INSUFICIENTE"'+(item.motivo_surtido_parcial==='PRESUPUESTO_INSUFICIENTE'?' selected':'')+'>Presupuesto insuficiente</option><option value="DECISION_PACIENTE"'+(item.motivo_surtido_parcial==='DECISION_PACIENTE'?' selected':'')+'>Decisión del paciente</option><option value="SIN_EXISTENCIA"'+(item.motivo_surtido_parcial==='SIN_EXISTENCIA'?' selected':'')+'>Sin existencia</option><option value="OTRO"'+(item.motivo_surtido_parcial==='OTRO'?' selected':'')+'>Otro</option></select>' : '';
-        html += '<tr><td class="text-muted small">'+(i+1)+'</td><td><div class="fw-bold" style="font-size:.85rem">'+item.nombre+'</div><small class="text-muted">'+item.sustancia+'</small>'+(item.lote_num?'<br><span class="badge bg-light text-dark" style="font-size:.7rem">Lote:'+item.lote_num+'</span>':'')+(item.es_antibiotico?'<span class="badge bg-danger ms-1" style="font-size:.65rem">AB</span>':'')+(parcial?'<br><span class="badge bg-warning text-dark mt-1">Prescrita: '+prescrita+' | Surtir: '+item.cantidad+'</span>'+motivo:'')+'</td><td><small class="text-muted">'+(item.lote_num||'&mdash;')+'</small></td><td class="text-center"><div class="input-group input-group-sm" style="max-width:90px;margin:0 auto"><button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1" data-cantidad-delta="-1" data-index="'+i+'">&minus;</button><input type="number" class="form-control text-center py-0" style="font-size:.85rem" value="'+item.cantidad+'" min="1" max="'+item.stock+'" data-cantidad-index="'+i+'"><button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1" data-cantidad-delta="1" data-index="'+i+'">+</button></div></td><td class="text-end"><small class="text-muted d-block">'+_fmt(item.precio_venta)+'</small></td><td class="text-end fw-bold">'+_fmt(sub)+'</td><td><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" data-quitar-index="'+i+'"><i class="bi bi-trash3"></i></button></td></tr>';
+        html += '<tr><td class="text-muted small">'+(i+1)+'</td><td><div class="fw-bold" style="font-size:.85rem">'+item.nombre+'</div><small class="text-muted">'+item.sustancia+'</small>'+(item.lote_num?'<br><span class="badge bg-light text-dark" style="font-size:.7rem">Lote:'+item.lote_num+'</span>':'')+(item.es_antibiotico?'<span class="badge bg-danger ms-1" style="font-size:.65rem">AB</span>':'')+(parcial?'<br><span class="badge bg-warning text-dark mt-1">Prescrita: '+prescrita+' | Surtir: '+item.cantidad+'</span>'+motivo:'')+(item.requiere_receta?'<br><button type="button" class="btn btn-link btn-sm p-0" data-editar-surtido-index="'+i+'">Editar receta / surtido</button>':'')+'</td><td><small class="text-muted">'+(item.lote_num||'&mdash;')+'</small></td><td class="text-center"><div class="input-group input-group-sm" style="max-width:90px;margin:0 auto"><button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1" data-cantidad-delta="-1" data-index="'+i+'">&minus;</button><input type="number" class="form-control text-center py-0" style="font-size:.85rem" value="'+item.cantidad+'" min="1" max="'+item.stock+'" data-cantidad-index="'+i+'"><button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1" data-cantidad-delta="1" data-index="'+i+'">+</button></div></td><td class="text-end"><small class="text-muted d-block">'+_fmt(item.precio_venta)+'</small></td><td class="text-end fw-bold">'+_fmt(sub)+'</td><td><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" data-quitar-index="'+i+'"><i class="bi bi-trash3"></i></button></td></tr>';
     });
     tbody.innerHTML = html;
     tbody.querySelectorAll('[data-cantidad-delta]').forEach(function(button) {
@@ -521,6 +528,9 @@ window.renderCarrito = function() {
         select.addEventListener('change', function() {
             setMotivoSurtido(Number(select.dataset.motivoIndex), select.value);
         });
+    });
+    tbody.querySelectorAll('[data-editar-surtido-index]').forEach(function(button) {
+        button.addEventListener('click', function() { window.editarSurtido(Number(button.dataset.editarSurtidoIndex)); });
     });
     var t = _calcTotales(); _actualizarTotalesPanel(t.subtotal, t.iva, t.total);
     if (badge) badge.textContent = window.carrito.reduce(function(s,i){return s+i.cantidad;},0);
@@ -601,7 +611,7 @@ window.enviarVenta = function(){
     var cl=document.getElementById('p-cliente');var pid=document.getElementById('p-paciente-id');var sel=document.getElementById('selector-descuento');
     var pd=(sel?(parseFloat(sel.value)||0):0)*100;
     var items=window.carrito.map(function(item){return{producto_id:item.id,cantidad:item.cantidad,cantidad_prescrita:window.recetaActual?(item.cantidad_prescrita||item.cantidad):item.cantidad,motivo_surtido_parcial:item.motivo_surtido_parcial||'',precio_unitario:item.precio_venta,subtotal:item.precio_venta*item.cantidad,iva_item:(item.precio_venta*item.cantidad)*(item.iva_pct/100),lote_id:item.lote_id||null};});
-    var payload={items:items,pagos:pagos,subtotal:t.subtotal.toFixed(2),iva_total:t.iva.toFixed(2),redondeo:'0',total_final:t.total.toFixed(2),descuento_aplicado:t.descuento.toFixed(2),descuento_porcentaje:pd,total_original:t.subtotal.toFixed(2),cliente:(cl?.value?.trim()||'PUBLICO GENERAL'),paciente_id:pid?.value||null,efectivo_recibido:ef.toFixed(2),cambio_entregado:cambio.toFixed(2),es_cortesia:ec,motivo_cortesia:document.getElementById('motivo-cortesia')?.value||'',autorizado_por_cortesia:document.getElementById('autorizado-por-cortesia')?.value||'',codigo_cupon:window.cuponAplicado?.codigo||'',receta_id:window.recetaActual?window.recetaActual.id||null:null,medico_nombre:window.recetaActual?window.recetaActual.medico||'':'',medico_cedula:window.recetaActual?window.recetaActual.cedula||'':'',receta_fecha:window.recetaActual?window.recetaActual.fecha||'':'',numero_receta_externo:window.recetaActual?window.recetaActual.numero_externo||'':'',informacion_adicional:window.recetaActual?window.recetaActual.info_adicional||'':'',es_controlada:window.carrito.some(function(i){return !!(i.requiere_receta||i.es_antibiotico);})};
+    var payload={items:items,pagos:pagos,subtotal:t.subtotal.toFixed(2),iva_total:t.iva.toFixed(2),redondeo:'0',total_final:t.total.toFixed(2),descuento_aplicado:t.descuento.toFixed(2),descuento_porcentaje:pd,total_original:t.subtotal.toFixed(2),cliente:(cl?.value?.trim()||'PUBLICO GENERAL'),paciente_id:pid?.value||null,efectivo_recibido:ef.toFixed(2),cambio_entregado:cambio.toFixed(2),es_cortesia:ec,motivo_cortesia:document.getElementById('motivo-cortesia')?.value||'',autorizado_por_cortesia:document.getElementById('autorizado-por-cortesia')?.value||'',beneficio_precio_neto:window.precioNetoActivo?(document.getElementById('tipo-beneficio-staff')?.value||''):'',codigo_cupon:window.cuponAplicado?.codigo||'',receta_id:window.recetaActual?window.recetaActual.id||null:null,medico_nombre:window.recetaActual?window.recetaActual.medico||'':'',medico_cedula:window.recetaActual?window.recetaActual.cedula||'':'',receta_fecha:window.recetaActual?window.recetaActual.fecha||'':'',numero_receta_externo:window.recetaActual?window.recetaActual.numero_externo||'':'',informacion_adicional:window.recetaActual?window.recetaActual.info_adicional||'':'',es_controlada:window.carrito.some(function(i){return !!(i.requiere_receta||i.es_antibiotico);})};
     fetch('/farmacia/pdv/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':_csrf(),'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin',body:JSON.stringify(payload)})
     .then(function(r){return r.json();})
     .then(function(data){if(data.status==='success'){window.ventaActualId=data.venta_id;window.ventaActualFolio=data.folio;_onVentaExitosa(data,cambio);}else{throw new Error(data.mensaje||'Error al procesar la venta.');}})
@@ -701,6 +711,12 @@ window.validarReceta = function () {
     var numExt   = numExtEl ? numExtEl.value.trim() : '';
     var infoAdEl = document.getElementById('rec-info-adicional');
     var infoAd   = infoAdEl ? infoAdEl.value.trim() : '';
+    var cantidadEl = document.getElementById('rec-cantidad-prescrita');
+    var cantidadPrescrita = cantidadEl ? parseInt(cantidadEl.value, 10) : 1;
+    if (!Number.isInteger(cantidadPrescrita) || cantidadPrescrita < 1) {
+        _mostrarAlerta('Cantidad inválida', 'Capture una cantidad prescrita mayor a cero.', 'warning');
+        return;
+    }
 
     if (!medico || !cedula) {
         _mostrarAlerta('Datos incompletos', 'Ingrese nombre del medico y cedula profesional.', 'warning');
@@ -723,14 +739,43 @@ window.validarReceta = function () {
     var alertaEl2 = document.getElementById('rec-fecha-alerta'); if (alertaEl2) alertaEl2.style.display = 'none';
 
     window.recetaActual = { medico: medico, cedula: cedula, fecha: fecha, numero_externo: numExt, info_adicional: infoAd };
+    if (window._editarSurtidoIdx !== null && window._editarSurtidoIdx !== undefined) {
+        var itemEditado = window.carrito[window._editarSurtidoIdx];
+        if (itemEditado) {
+            itemEditado.cantidad_prescrita = cantidadPrescrita;
+            if (itemEditado.cantidad > cantidadPrescrita) itemEditado.cantidad = cantidadPrescrita;
+            itemEditado.motivo_surtido_parcial = '';
+        }
+        window._editarSurtidoIdx = null;
+        var modalEdicion = _getModal('modalReceta'); if (modalEdicion) modalEdicion.hide();
+        renderCarrito();
+        return;
+    }
     var m = _getModal('modalReceta'); if (m) m.hide();
-    if (window._productoAntibioticoTemp) { _agregarAlCarrito(window._productoAntibioticoTemp); window._productoAntibioticoTemp = null; }
+    if (window._productoAntibioticoTemp) {
+        window._productoAntibioticoTemp._cantidadPrescrita = cantidadPrescrita;
+        _agregarAlCarrito(window._productoAntibioticoTemp);
+        window._productoAntibioticoTemp = null;
+    }
 };
-window.handleCancelAntibiotic = function(){window._productoAntibioticoTemp=null;var m=_getModal('modalReceta');if(m)m.hide();};
+window._editarSurtidoIdx = null;
+window.editarSurtido = function (idx) {
+    var item = window.carrito[idx];
+    if (!item) return;
+    window._editarSurtidoIdx = idx;
+    var r = window.recetaActual || {};
+    [['rec-medico', r.medico], ['rec-cedula', r.cedula], ['rec-fecha', r.fecha],
+     ['rec-numero-externo', r.numero_externo], ['rec-info-adicional', r.info_adicional],
+     ['rec-cantidad-prescrita', item.cantidad_prescrita || item.cantidad]].forEach(function (pair) {
+        var el = document.getElementById(pair[0]); if (el && pair[1] !== undefined && pair[1] !== null) el.value = pair[1];
+    });
+    abrirModalReceta();
+};
+window.handleCancelAntibiotic = function(){window._productoAntibioticoTemp=null;window._editarSurtidoIdx=null;var m=_getModal('modalReceta');if(m)m.hide();};
 
 // CORTESIA / PRECIO NETO
 window.toggleCortesiaFarmacia = function(){var chk=document.getElementById('toggle-cortesia');var c=document.getElementById('campos-cortesia-farmacia');if(c)c.style.display=chk?.checked?'block':'none';calcularBalanceMultimodal();};
-window.solicitarPinStaff = function(){var m=_getModal('modalPinStaff');if(m)m.show();setTimeout(function(){var inp=document.getElementById('input-pin-staff');if(inp){inp.value='';inp.focus();}},300);};
+window.solicitarPinStaff = function(){var tipo=document.getElementById('tipo-beneficio-staff');if(tipo&&!tipo.value){_mostrarAlerta('Beneficiario requerido','Seleccione Personal o Familiar antes de autorizar el precio de costo.','warning');tipo.focus();return;}var m=_getModal('modalPinStaff');if(m)m.show();setTimeout(function(){var inp=document.getElementById('input-pin-staff');if(inp){inp.value='';inp.focus();}},300);};
 window.confirmarPinStaff = function(){
     var pin=document.getElementById('input-pin-staff')?.value||'';
     var pinUrl = window.PDV_VALIDAR_PIN_NETO_URL || '/farmacia/api/validar-pin-neto/';
@@ -739,7 +784,7 @@ window.confirmarPinStaff = function(){
     .then(function(data){
         var e=document.getElementById('pin-error-msg');
         var autorizado = !!(data && (data.autorizado || data.valid || data.ok || data.status === 'success'));
-        if(autorizado){window.precioNetoActivo=true;window.carrito.forEach(function(item){item.precio_venta=item.precio_neto||item.precio_base;});renderCarrito();var m=_getModal('modalPinStaff');if(m)m.hide();var b=document.getElementById('badge-neto-activo');if(b)b.style.display='block';var bd=document.getElementById('btn-desactivar-neto');if(bd)bd.style.display='inline-block';if(e)e.style.display='none';}
+        if(autorizado){window.precioNetoActivo=true;window.carrito.forEach(function(item){item.precio_venta=item.precio_neto||item.precio_base;});renderCarrito();var m=_getModal('modalPinStaff');if(m)m.hide();var b=document.getElementById('badge-neto-activo');if(b){b.style.display='block';var tipo=document.getElementById('tipo-beneficio-staff');b.querySelector('span').innerHTML='<i class="bi bi-check-circle-fill"></i> PRECIO DE COSTO APLICADO: '+(tipo?.selectedOptions[0]?.text||'AUTORIZADO');}var bd=document.getElementById('btn-desactivar-neto');if(bd)bd.style.display='inline-block';if(e)e.style.display='none';}
         else{if(e)e.style.display='block';}
     }).catch(function(){var e=document.getElementById('pin-error-msg');if(e)e.style.display='block';});
 };

@@ -299,10 +299,22 @@ class Venta(TenantModel):
     motivo_cortesia = models.CharField(max_length=50, blank=True, null=True, verbose_name="Motivo de Cortesía",
                                        choices=[
                                            ('MEDICO', 'Médico / Personal de Salud'),
+                                           ('PACIENTE', 'Cortesía a paciente'),
                                            ('COLABORADOR', 'Colaborador Interno'),
                                            ('VULNERABILIDAD', 'Vulnerabilidad Alta'),
                                            ('OTRO', 'Otro')
                                        ])
+    tipo_precio_especial = models.CharField(
+        max_length=20,
+        blank=True,
+        default='',
+        choices=[
+            ('PERSONAL', 'Precio de costo: personal'),
+            ('FAMILIAR', 'Precio de costo: familiar de personal'),
+        ],
+        verbose_name="Tipo de precio especial",
+        help_text="Distingue precio de costo autorizado de una cortesía gratuita.",
+    )
     autorizado_por_cortesia = models.CharField(max_length=200, blank=True, null=True, verbose_name="Autorizado por (Cortesía)")
     total_original = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
                                          verbose_name="Total Original",

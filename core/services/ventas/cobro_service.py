@@ -140,6 +140,20 @@ class VentaFarmaciaService:
                 es_cortesia = data.get('es_cortesia', False)
                 motivo_cortesia = data.get('motivo_cortesia', '')
                 autorizado_por_cortesia = data.get('autorizado_por_cortesia', '')
+                tipo_precio_especial = str(data.get('beneficio_precio_neto', '') or '').upper().strip()
+                if tipo_precio_especial not in ('PERSONAL', 'FAMILIAR'):
+                    tipo_precio_especial = ''
+                if tipo_precio_especial:
+                    rol_usuario = (getattr(request.user, 'rol', '') or '').upper().strip()
+                    autorizado_precio = (
+                        request.user.is_superuser or
+                        rol_usuario in {'ADMIN', 'ADMINISTRADOR', 'GERENTE', 'DIRECTOR', 'FARMACIA'} or
+                        request.user.groups.filter(name__in=['Administrador', 'FARMACIA', 'Gerente', 'Director']).exists()
+                    )
+                    if not autorizado_precio:
+                        return JsonResponse({'status': 'error', 'mensaje': 'El usuario no está autorizado para precio de costo.'}, status=403)
+                if tipo_precio_especial and es_cortesia:
+                    return JsonResponse({'status': 'error', 'mensaje': 'El precio de costo no puede combinarse con una cortesía gratuita.'}, status=400)
 
                 # Si es cortesía, forzar total a 0
                 if es_cortesia:
@@ -359,6 +373,7 @@ class VentaFarmaciaService:
                     es_cortesia=es_cortesia,
                     motivo_cortesia=motivo_cortesia or None,
                     autorizado_por_cortesia=autorizado_por_cortesia or None,
+                    tipo_precio_especial=tipo_precio_especial,
                     total_original=(total_original if es_cortesia else None),
                     inventario_descontado=True,
                 )
