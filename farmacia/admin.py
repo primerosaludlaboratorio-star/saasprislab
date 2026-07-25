@@ -51,7 +51,7 @@ class MermaFarmaciaAdmin(admin.ModelAdmin):
 
 @admin.register(CierreTurnoFarmacia)
 class CierreTurnoFarmaciaAdmin(admin.ModelAdmin):
-    list_display = ('folio', 'usuario_responsable', 'fecha_cierre', 'efectivo_declarado', 'tarjeta_declarado')
+    list_display = ('folio', 'usuario_responsable', 'cerrado_por', 'fecha_cierre', 'efectivo_declarado', 'tarjeta_declarado')
     list_filter = ('empresa',)
     search_fields = ('folio',)
 

@@ -33,6 +33,11 @@ post_corte_caja_unificado = Signal()
 # Recibe: sender, corte_data, cajero, empresa
 
 
+def _money(value) -> str:
+    """Serializa importes con escala monetaria estable para API, UI y auditoría."""
+    return f"{Decimal(value or 0):.2f}"
+
+
 def _es_administrador_caja(usuario):
     if not usuario:
         return False
@@ -63,6 +68,14 @@ def calcular_precorte_unificado(cajero, empresa, sucursal=None) -> dict:
     total_consolidado = total_farmacia + total_lab
     gastos = farmacia['gastos']
     fondo = farmacia['fondo_inicial']
+    efectivo_esperado = (
+        fondo
+        + farmacia['efectivo']
+        + laboratorio.get('efectivo', Decimal('0'))
+        - farmacia.get('gastos', Decimal('0'))
+        - farmacia.get('egresos_kardex', Decimal('0'))
+        - farmacia.get('retiros', Decimal('0'))
+    )
 
     return {
         'fecha': ahora.isoformat(),
@@ -76,21 +89,28 @@ def calcular_precorte_unificado(cajero, empresa, sucursal=None) -> dict:
             'id': farmacia.get('apertura_id'),
             'folio': farmacia.get('folio_apertura'),
             'fecha_apertura': farmacia.get('fecha_apertura'),
-            'fondo_inicial': str(fondo),
+            'fondo_inicial': _money(fondo),
+            'responsable_apertura': farmacia.get('responsable_apertura'),
         },
         'farmacia': {
-            'total': str(total_farmacia),
+            'total': _money(total_farmacia),
             'ventas': farmacia['ventas'],
-            'efectivo': str(farmacia['efectivo']),
-            'digital': str(farmacia['digital']),
-            'gastos': str(gastos),
+            'efectivo': _money(farmacia['efectivo']),
+            'digital': _money(farmacia['digital']),
+            'gastos': _money(gastos),
+            'egresos_kardex': _money(farmacia.get('egresos_kardex', Decimal('0'))),
+            'retiros': _money(farmacia.get('retiros', Decimal('0'))),
+            'ajustes': _money(farmacia.get('ajustes', Decimal('0'))),
+            'movimientos': farmacia.get('movimientos', []),
         },
         'laboratorio': {
-            'total': str(total_lab),
+            'total': _money(total_lab),
             'ordenes': laboratorio.get('ordenes', 0),
+            'efectivo': _money(laboratorio.get('efectivo', Decimal('0'))),
+            'digital': _money(laboratorio.get('digital', Decimal('0'))),
         },
-        'total_consolidado': str(total_consolidado),
-        'efectivo_esperado': str(fondo + total_consolidado - gastos),
+        'total_consolidado': _money(total_consolidado),
+        'efectivo_esperado': _money(efectivo_esperado),
     }
 
 
@@ -98,13 +118,11 @@ def _precorte_farmacia(cajero, empresa, sucursal) -> dict:
     """Lee apertura, ventas, pagos y gastos sin mutar el estado de caja."""
     from django.db.models import Sum
     from farmacia.models import AperturaCaja
-    from core.models import GastoCaja, Pago, Venta
+    from core.models import GastoCaja, MovimientoCaja, Pago, Venta
 
     query = AperturaCaja.objects.filter(empresa=empresa, activa=True)
     if sucursal:
         query = query.filter(sucursal=sucursal)
-    if cajero:
-        query = query.filter(usuario_responsable=cajero)
     apertura = query.order_by('-fecha_apertura').first()
     if not apertura:
         return {
@@ -115,6 +133,7 @@ def _precorte_farmacia(cajero, empresa, sucursal) -> dict:
             'digital': Decimal('0'),
             'gastos': Decimal('0'),
             'fondo_inicial': Decimal('0'),
+            'movimientos': [],
         }
 
     ventas = Venta.objects.filter(
@@ -125,23 +144,48 @@ def _precorte_farmacia(cajero, empresa, sucursal) -> dict:
         ventas = ventas.filter(sucursal=sucursal)
 
     total = ventas.aggregate(total=Sum('total'))['total'] or Decimal('0')
-    pagos = Pago.objects.filter(venta__in=ventas).aggregate(
+    pagos_qs = Pago.objects.filter(venta__in=ventas)
+    pagos = pagos_qs.aggregate(
         efectivo=Sum('monto_efectivo'),
         tarjeta=Sum('monto_tarjeta'),
         transferencia=Sum('monto_transferencia'),
     )
     efectivo = pagos['efectivo'] or Decimal('0')
     digital = (pagos['tarjeta'] or Decimal('0')) + (pagos['transferencia'] or Decimal('0'))
+    # Compatibilidad segura con ventas históricas que no tienen desglose de pago:
+    # se conservan como efectivo y quedan disponibles para conciliación posterior.
+    if not pagos_qs.exists() and total:
+        efectivo = total
     gastos = GastoCaja.objects.filter(
         empresa=empresa,
         fecha__gte=apertura.fecha_apertura,
     ).aggregate(total=Sum('monto'))['total'] or Decimal('0')
-    if not _es_administrador_caja(cajero):
-        gastos = GastoCaja.objects.filter(
-            empresa=empresa,
-            usuario=cajero,
-            fecha__gte=apertura.fecha_apertura,
-        ).aggregate(total=Sum('monto'))['total'] or Decimal('0')
+    movimientos_qs = MovimientoCaja.objects.filter(
+        empresa=empresa,
+        fecha_movimiento__gte=apertura.fecha_apertura,
+    ).exclude(concepto='APERTURA_CAJA')
+    if sucursal:
+        movimientos_qs = movimientos_qs.filter(sucursal=sucursal)
+    egresos_kardex = movimientos_qs.filter(
+        tipo_movimiento='EGRESO',
+    ).exclude(concepto='GASTO_MENOR').aggregate(total=Sum('monto'))['total'] or Decimal('0')
+    retiros = movimientos_qs.filter(
+        tipo_movimiento='TRANSFERENCIA',
+    ).aggregate(total=Sum('monto'))['total'] or Decimal('0')
+    ajustes = movimientos_qs.filter(
+        tipo_movimiento='AJUSTE',
+    ).aggregate(total=Sum('monto'))['total'] or Decimal('0')
+    movimientos = [
+        {
+            'fecha': movimiento.fecha_movimiento.isoformat(),
+            'tipo': movimiento.get_tipo_movimiento_display(),
+            'concepto': movimiento.get_concepto_display(),
+            'monto': str(movimiento.monto),
+            'usuario': getattr(movimiento.usuario_responsable, 'username', '') or 'Sistema',
+            'referencia': movimiento.referencia or '',
+        }
+        for movimiento in movimientos_qs.select_related('usuario_responsable').order_by('-fecha_movimiento')[:200]
+    ]
 
     return {
         'apertura_activa': True,
@@ -153,7 +197,12 @@ def _precorte_farmacia(cajero, empresa, sucursal) -> dict:
         'efectivo': efectivo,
         'digital': digital,
         'gastos': gastos,
+        'egresos_kardex': egresos_kardex,
+        'retiros': retiros,
+        'ajustes': ajustes,
+        'movimientos': movimientos,
         'fondo_inicial': apertura.fondo_efectivo,
+        'responsable_apertura': apertura.usuario_responsable.username,
     }
 
 
@@ -201,7 +250,14 @@ def cerrar_turno_unificado(
         total_consolidado = total_farmacia + total_lab
         fondo_inicial = corte_farmacia.get('fondo_inicial', Decimal('0'))
         gastos_farmacia = corte_farmacia.get('gastos', Decimal('0'))
-        efectivo_esperado = fondo_inicial + total_consolidado - gastos_farmacia
+        efectivo_esperado = (
+            fondo_inicial
+            + corte_farmacia.get('efectivo', Decimal('0'))
+            + corte_lab.get('efectivo', Decimal('0'))
+            - gastos_farmacia
+            - corte_farmacia.get('egresos_kardex', Decimal('0'))
+            - corte_farmacia.get('retiros', Decimal('0'))
+        )
 
         diferencia = efectivo_declarado - efectivo_esperado
 
@@ -256,12 +312,11 @@ def _cerrar_farmacia(cajero, empresa, sucursal, ahora: datetime, efectivo_declar
     try:
         from farmacia.models import CierreTurnoFarmacia, AperturaCaja
 
-        # Buscar apertura activa — el campo correcto es usuario_responsable, no cajero
+        # La caja pertenece a empresa+sucursal; el usuario que cierra puede ser
+        # distinto del responsable que abrió el turno (entrega/recepción).
         q = AperturaCaja.objects.select_for_update().filter(empresa=empresa, activa=True)
         if sucursal:
             q = q.filter(sucursal=sucursal)
-        if cajero:
-            q = q.filter(usuario_responsable=cajero)
         apertura = q.select_related('usuario_responsable').first()
 
         if not apertura:
@@ -280,23 +335,46 @@ def _cerrar_farmacia(cajero, empresa, sucursal, ahora: datetime, efectivo_declar
         total = ventas_del_turno.aggregate(t=Sum('total'))['t'] or Decimal('0')
         num_ventas = ventas_del_turno.count()
 
-        from core.models import GastoCaja
+        from core.models import GastoCaja, MovimientoCaja, Pago
         gastos_del_turno = GastoCaja.objects.filter(
             empresa=empresa,
             fecha__gte=apertura.fecha_apertura,
+        ).aggregate(t=Sum('monto'))['t'] or Decimal('0')
+        pagos_qs = Pago.objects.filter(venta__in=ventas_del_turno)
+        pagos = pagos_qs.aggregate(
+            efectivo=Sum('monto_efectivo'),
+            tarjeta=Sum('monto_tarjeta'),
+            transferencia=Sum('monto_transferencia'),
+        )
+        efectivo_ventas = pagos['efectivo'] or Decimal('0')
+        tarjeta_ventas = pagos['tarjeta'] or Decimal('0')
+        if not pagos_qs.exists() and total:
+            efectivo_ventas = total
+        movimientos_qs = MovimientoCaja.objects.filter(
+            empresa=empresa,
+            fecha_movimiento__gte=apertura.fecha_apertura,
+        ).exclude(concepto='APERTURA_CAJA')
+        if sucursal:
+            movimientos_qs = movimientos_qs.filter(sucursal=sucursal)
+        egresos_kardex = movimientos_qs.filter(
+            tipo_movimiento='EGRESO',
+        ).exclude(concepto='GASTO_MENOR').aggregate(t=Sum('monto'))['t'] or Decimal('0')
+        retiros = movimientos_qs.filter(
+            tipo_movimiento='TRANSFERENCIA',
         ).aggregate(t=Sum('monto'))['t'] or Decimal('0')
 
         cierre = CierreTurnoFarmacia.objects.create(
             empresa=empresa,
             sucursal=apertura.sucursal,
             usuario_responsable=apertura.usuario_responsable,
+            cerrado_por=cajero,
             apertura_caja=apertura,
             fecha_apertura=apertura.fecha_apertura,
             efectivo_declarado=efectivo_declarado,
             tarjeta_declarado=Decimal('0.00'),
             vales_declarado=Decimal('0.00'),
-            efectivo_teorico=total - gastos_del_turno,
-            tarjeta_teorico=Decimal('0.00'),
+            efectivo_teorico=efectivo_ventas - gastos_del_turno - egresos_kardex - retiros,
+            tarjeta_teorico=tarjeta_ventas,
             vales_teorico=Decimal('0.00'),
             observaciones='Cierre generado por corte unificado.',
         )
@@ -305,6 +383,10 @@ def _cerrar_farmacia(cajero, empresa, sucursal, ahora: datetime, efectivo_declar
             'total': total,
             'num_ventas': num_ventas,
             'gastos': gastos_del_turno,
+            'efectivo': efectivo_ventas,
+            'egresos_kardex': egresos_kardex,
+            'retiros': retiros,
+            'tarjeta': tarjeta_ventas,
             'apertura_id': apertura.pk,
             'cierre_id': cierre.pk,
             'folio_cierre': cierre.folio,
@@ -328,16 +410,23 @@ def _cerrar_laboratorio(cajero, empresa, sucursal, ahora: datetime) -> dict:
             fecha_creacion__gte=inicio_turno,
             fecha_creacion__lte=ahora,
         )
-        if not _es_administrador_caja(cajero):
-            ordenes_qs = ordenes_qs.filter(responsable_ingreso=cajero)
-
         resultado = ordenes_qs.aggregate(t=_Sum('total'))
         total = Decimal(str(resultado['t'] or 0))
         count = ordenes_qs.count()
+        from core.models import PagoOrden
+        pagos = PagoOrden.objects.filter(orden__in=ordenes_qs, cancelado=False).aggregate(
+            efectivo=_Sum('monto_efectivo'),
+            tarjeta=_Sum('monto_tarjeta'),
+            transferencia=_Sum('monto_transferencia'),
+        )
+        efectivo = Decimal(str(pagos['efectivo'] or 0))
+        digital = Decimal(str((pagos['tarjeta'] or 0) + (pagos['transferencia'] or 0)))
 
         return {
             'total': total,
             'ordenes': count,
+            'efectivo': efectivo,
+            'digital': digital,
             'estado': 'calculado',
         }
     except (DatabaseError, ValueError, TypeError, AttributeError) as exc:

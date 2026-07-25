@@ -6,7 +6,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 
-from core.models import Empresa, Paciente, Sucursal, Venta
+from core.models import Empresa, MovimientoCaja, Paciente, Sucursal, Venta
 from farmacia.models import AperturaCaja, CierreTurnoFarmacia
 from farmacia.services.corte_caja_unificado import calcular_precorte_unificado, cerrar_turno_unificado
 
@@ -214,6 +214,60 @@ class CorteCajaUnificadoTest(TestCase):
         self.assertNotIn('ganancia', data)
         self.assertNotIn('margen', data)
         self.assertNotIn('costo', data)
+
+    def test_precorte_de_entrega_incluye_actividad_de_todo_el_turno(self):
+        empleado = User.objects.create_user(
+            username='empleado_entrega',
+            password='empleado-entrega-123',
+            email='empleado-entrega@example.com',
+            rol='CAJERO',
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+        )
+        MovimientoCaja.objects.create(
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            tipo_movimiento='TRANSFERENCIA',
+            concepto='RETIRO_BOVEDA',
+            monto=Decimal('25.00'),
+            usuario_responsable=self.user,
+            referencia='Retiro de prueba para entrega de turno',
+        )
+
+        precorte = calcular_precorte_unificado(
+            cajero=empleado,
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+        )
+
+        self.assertEqual(precorte['apertura']['responsable_apertura'], self.user.username)
+        self.assertEqual(precorte['farmacia']['ventas'], 1)
+        self.assertEqual(precorte['farmacia']['retiros'], '25.00')
+        self.assertEqual(precorte['efectivo_esperado'], '155.00')
+        self.assertEqual(len(precorte['farmacia']['movimientos']), 2)
+
+    def test_personal_entrante_puede_cerrar_apertura_de_otro_usuario(self):
+        empleado = User.objects.create_user(
+            username='empleado_cierre',
+            password='empleado-cierre-123',
+            email='empleado-cierre@example.com',
+            rol='CAJERO',
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+        )
+
+        corte = cerrar_turno_unificado(
+            cajero=empleado,
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            efectivo_declarado=Decimal('180.00'),
+            imprimir_ticket=False,
+        )
+
+        cierre = CierreTurnoFarmacia.objects.get(apertura_caja=self.apertura)
+        self.assertEqual(corte['estado'], 'CUADRADO')
+        self.assertEqual(cierre.usuario_responsable, self.user)
+        self.assertEqual(cierre.cerrado_por, empleado)
 
     @patch('farmacia.services.corte_caja_unificado._cerrar_laboratorio')
     def test_api_corte_unificado_revierte_si_laboratorio_falla(self, mock_cerrar_laboratorio):

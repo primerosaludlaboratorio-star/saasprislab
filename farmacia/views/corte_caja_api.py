@@ -18,11 +18,11 @@ logger = logging.getLogger('farmacia.corte_caja_api')
 @login_required
 @require_http_methods(['GET'])
 def api_precorte_unificado(request):
-    """GET /api/caja/precorte/ - lectura propia, nunca cierra la caja.
+    """GET /api/caja/precorte/ - lectura del turno activo, nunca cierra la caja.
 
-    Todo usuario con empresa puede consultar su turno. La función no expone
-    costos, márgenes ni ganancias; el alcance administrativo se controla en
-    el servicio por el usuario y la sucursal de su apertura.
+    Todo usuario con empresa puede consultar la caja activa de su sucursal,
+    aunque otro usuario haya abierto el turno. La función no expone costos,
+    márgenes ni ganancias.
     """
     empresa = getattr(request.user, 'empresa', None)
     if not empresa:

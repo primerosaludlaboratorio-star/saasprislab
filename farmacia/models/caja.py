@@ -30,6 +30,15 @@ class CierreTurnoFarmacia(models.Model):
         related_name='cierres_farmacia',
         verbose_name="Usuario que Cierra (Nancy)"
     )
+    cerrado_por = models.ForeignKey(
+        Usuario,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='cierres_farmacia_realizados',
+        verbose_name="Cerrado por",
+        help_text="Usuario que ejecutó el cierre. Puede ser distinto al responsable de apertura."
+    )
     apertura_caja = models.OneToOneField(
         'farmacia.AperturaCaja',
         on_delete=models.PROTECT,
@@ -159,6 +168,7 @@ class CierreTurnoFarmacia(models.Model):
         indexes = [
             models.Index(fields=['sucursal', '-fecha_cierre']),
             models.Index(fields=['usuario_responsable', '-fecha_cierre']),
+            models.Index(fields=['cerrado_por', '-fecha_cierre']),
             models.Index(fields=['folio']),
         ]
     

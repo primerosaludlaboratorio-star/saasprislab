@@ -31,6 +31,11 @@ def corte_caja_farmacia(request):
         return redirect('dashboard')
     usuario = request.user
     sucursal_usuario = get_user_primary_sucursal(usuario)
+    apertura_activa = AperturaCaja.objects.filter(
+        empresa=empresa,
+        sucursal=sucursal_usuario,
+        activa=True,
+    ).first()
     
     if request.method == 'POST':
         form = CorteCajaFarmaciaForm(request.POST)
@@ -45,15 +50,18 @@ def corte_caja_farmacia(request):
                     
                     total_declarado = efectivo_declarado + tarjeta_declarada + transferencia_declarada
                     
-                    hoy_inicio = datetime.combine(date.today(), time.min)
                     ahora = timezone.now()
+                    hoy_inicio = apertura_activa.fecha_apertura if apertura_activa else timezone.make_aware(
+                        datetime.combine(timezone.localdate(), time.min)
+                    )
                     
                     ventas_turno = Venta.objects.filter(
                         empresa=empresa,
                         fecha__gte=hoy_inicio,
                         fecha__lte=ahora,
-                        usuario=usuario
                     ).exclude(estado='CANCELADA')
+                    if sucursal_usuario:
+                        ventas_turno = ventas_turno.filter(sucursal=sucursal_usuario)
                     
                     total_sistema = ventas_turno.aggregate(
                         total=Coalesce(Sum('total'), Value(Decimal('0')), output_field=DecimalField())
@@ -141,15 +149,23 @@ def corte_caja_farmacia(request):
     else:
         form = CorteCajaFarmaciaForm()
     
-    hoy_inicio = datetime.combine(date.today(), time.min)
     ahora = timezone.now()
+    hoy_inicio = apertura_activa.fecha_apertura if apertura_activa else timezone.make_aware(
+        datetime.combine(timezone.localdate(), time.min)
+    )
     
     ventas_turno_count = Venta.objects.filter(
         empresa=empresa,
         fecha__gte=hoy_inicio,
         fecha__lte=ahora,
-        usuario=usuario,
     ).exclude(estado='CANCELADA').count()
+    if sucursal_usuario:
+        ventas_turno_count = Venta.objects.filter(
+            empresa=empresa,
+            fecha__gte=hoy_inicio,
+            fecha__lte=ahora,
+            sucursal=sucursal_usuario,
+        ).exclude(estado='CANCELADA').count()
     
     return render(request, 'farmacia/corte_caja_form.html', {
         'form': form,
@@ -171,7 +187,6 @@ def verificar_apertura_caja(request):
     apertura_activa = AperturaCaja.objects.filter(
         empresa=empresa,
         sucursal=user_sucursal,
-        usuario_responsable=request.user,
         activa=True
     ).first()
     
@@ -206,7 +221,6 @@ def abrir_caja(request):
     apertura_activa = AperturaCaja.objects.filter(
         empresa=empresa,
         sucursal=user_sucursal,
-        usuario_responsable=request.user,
         activa=True
     ).first()
     

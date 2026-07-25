@@ -18,7 +18,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from core.models import DetalleVenta, GastoCaja, Pago, Venta
+from core.models import DetalleVenta, GastoCaja, MovimientoCaja, Pago, Venta
 from core.services.ventas.venta_farmacia_service import VentaFarmaciaService
 
 warnings.warn(
@@ -52,6 +52,7 @@ from farmacia.views.inventario import (  # noqa: E402
     registro_gasto,
     validar_pin_precio_neto,
 )
+from core.utils.sucursal_helpers import get_request_sucursal
 from farmacia.views.devoluciones import (  # noqa: E402
     _es_gerente_o_admin,
     buscar_venta_devolucion,
@@ -170,7 +171,12 @@ def registrar_gasto(request):
 
 @login_required
 def corte_caja_dia(request):
-    """Vista operativa de corte diario, con alcance propio para el personal."""
+    """Vista operativa del turno activo, con trazabilidad de entrega/recepción.
+
+    El alcance operativo es empresa + sucursal + apertura activa, no el usuario
+    que inició sesión. La identidad del usuario se conserva en cada movimiento
+    y en el cierre, pero no oculta actividad del mismo turno.
+    """
     empresa = _empresa_desde_request(request)
     if not empresa:
         return HttpResponseForbidden("Usuario sin empresa asignada.")
@@ -184,8 +190,17 @@ def corte_caja_dia(request):
     else:
         fecha_seleccionada = timezone.localdate()
 
+    sucursal = get_request_sucursal(request)
+    from farmacia.models import AperturaCaja
+    apertura_activa = AperturaCaja.objects.filter(
+        empresa=empresa,
+        sucursal=sucursal,
+        activa=True,
+    ).select_related("usuario_responsable").first()
     inicio = timezone.make_aware(datetime.combine(fecha_seleccionada, datetime.min.time()))
     fin = timezone.make_aware(datetime.combine(fecha_seleccionada, datetime.max.time()))
+    if fecha_seleccionada == timezone.localdate() and apertura_activa:
+        inicio = apertura_activa.fecha_apertura
 
     rol = (getattr(request.user, "rol", "") or "").upper().strip()
     puede_ver_consolidado = request.user.is_superuser or rol in {
@@ -196,29 +211,33 @@ def corte_caja_dia(request):
         fecha__range=(inicio, fin),
         estado="COMPLETADA",
     )
-    if not puede_ver_consolidado:
-        ventas_qs = ventas_qs.filter(usuario=request.user)
+    if sucursal:
+        ventas_qs = ventas_qs.filter(sucursal=sucursal)
     pagos_qs = Pago.objects.filter(venta__in=ventas_qs)
     gastos_qs = GastoCaja.objects.filter(
         empresa=empresa,
         fecha__range=(inicio, fin),
     ).select_related("usuario").order_by("-fecha")
-    if not puede_ver_consolidado:
-        gastos_qs = gastos_qs.filter(usuario=request.user)
+    movimientos_qs = MovimientoCaja.objects.filter(
+        empresa=empresa,
+        fecha_movimiento__range=(inicio, fin),
+    ).exclude(concepto="APERTURA_CAJA").select_related("usuario_responsable").order_by("-fecha_movimiento")
+    if sucursal:
+        movimientos_qs = movimientos_qs.filter(sucursal=sucursal)
 
     ventas_efectivo = pagos_qs.aggregate(total=Coalesce(Sum("monto_efectivo"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
     ventas_tarjeta = pagos_qs.aggregate(total=Coalesce(Sum("monto_tarjeta"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
     ventas_transferencia = pagos_qs.aggregate(total=Coalesce(Sum("monto_transferencia"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
     total_gastos = gastos_qs.aggregate(total=Coalesce(Sum("monto"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
+    egresos_kardex = movimientos_qs.filter(tipo_movimiento="EGRESO").exclude(concepto="GASTO_MENOR").aggregate(
+        total=Coalesce(Sum("monto"), Decimal("0.00"), output_field=DecimalField())
+    )["total"] or Decimal("0.00")
+    retiros_caja = movimientos_qs.filter(tipo_movimiento="TRANSFERENCIA").aggregate(
+        total=Coalesce(Sum("monto"), Decimal("0.00"), output_field=DecimalField())
+    )["total"] or Decimal("0.00")
     total_ventas = ventas_efectivo + ventas_tarjeta + ventas_transferencia
-    from farmacia.models import AperturaCaja
-    apertura_activa = AperturaCaja.objects.filter(
-        empresa=empresa,
-        usuario_responsable=request.user,
-        activa=True,
-    ).first()
     fondo_inicial = apertura_activa.fondo_efectivo if apertura_activa else Decimal("0.00")
-    saldo_caja = fondo_inicial + ventas_efectivo - total_gastos
+    saldo_caja = fondo_inicial + ventas_efectivo - total_gastos - egresos_kardex - retiros_caja
 
     lista_gastos = [
         {
@@ -251,6 +270,12 @@ def corte_caja_dia(request):
         "total_consultorio": Decimal("0.00"),
         "total_ventas": total_ventas,
         "gastos": lista_gastos,
+        "movimientos_caja": list(movimientos_qs[:200]),
+        "apertura_activa": apertura_activa,
+        "responsable_apertura": apertura_activa.usuario_responsable if apertura_activa else None,
+        "egresos_kardex": egresos_kardex,
+        "retiros_caja": retiros_caja,
+        "puede_ver_consolidado": puede_ver_consolidado,
     }
     return render(request, "core/corte_caja_dia.html", contexto)
 

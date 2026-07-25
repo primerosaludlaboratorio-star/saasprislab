@@ -236,6 +236,61 @@
         </div>
     </div>
 
+    <!-- KARDEX DE CAJA: VISIBLE PARA ENTREGA/RECEPCION DEL TURNO -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white fw-bold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-journal-text"></i> MOVIMIENTOS DEL TURNO</span>
+                    <small>
+                        {% if apertura_activa %}
+                            Caja abierta desde {{ apertura_activa.fecha_apertura|date:"d/m/Y H:i" }} · Responsable de apertura: {{ responsable_apertura.get_full_name|default:responsable_apertura.username }}
+                        {% else %}
+                            Vista del día seleccionado
+                        {% endif %}
+                    </small>
+                </div>
+                <div class="card-body p-0">
+                    <div class="alert alert-light border-0 rounded-0 mb-0 small">
+                        Se muestran ventas, devoluciones, retiros, egresos y ajustes registrados por todo el personal de esta empresa y sucursal. El desglose de costos, márgenes y ganancias permanece restringido a permisos administrativos.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>FECHA/HORA</th>
+                                    <th>TIPO</th>
+                                    <th>CONCEPTO</th>
+                                    <th>REFERENCIA</th>
+                                    <th>USUARIO</th>
+                                    <th class="text-end">MONTO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for movimiento in movimientos_caja %}
+                                <tr>
+                                    <td>{{ movimiento.fecha_movimiento|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ movimiento.get_tipo_movimiento_display }}</td>
+                                    <td>{{ movimiento.get_concepto_display }}</td>
+                                    <td>{{ movimiento.referencia|default:"-" }}</td>
+                                    <td>{{ movimiento.usuario_responsable.get_full_name|default:movimiento.usuario_responsable.username|default:"Sistema" }}</td>
+                                    <td class="text-end fw-bold {% if movimiento.tipo_movimiento == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">
+                                        {% if movimiento.tipo_movimiento == 'INGRESO' %}+{% else %}-{% endif %}$ {{ movimiento.monto|floatformat:2 }}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">Sin movimientos adicionales registrados en el periodo.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: REGISTRAR GASTO -->
     <div class="modal fade" id="modalGasto" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
