@@ -538,7 +538,7 @@ function _actualizarTotalesPanel(sub,iva,total) {
 }
 
 // OPS CARRITO
-window.cambiarCantidad = function(idx,delta){if(!window.carrito[idx])return;var n=window.carrito[idx].cantidad+delta;if(n<1){quitarItem(idx);return;}if(n>window.carrito[idx].stock){_mostrarAlerta('Stock maximo','No hay mas unidades.','warning');return;}window.carrito[idx].cantidad=n;renderCarrito();};
+window.cambiarCantidad = function(idx,delta){if(!window.carrito[idx])return;var n=Number(window.carrito[idx].cantidad||0)+Number(delta||0);if(n<1){quitarItem(idx);return;}if(n>Number(window.carrito[idx].stock||0)){_mostrarAlerta('Stock maximo','No hay mas unidades.','warning');return;}window.carrito[idx].cantidad=n;renderCarrito();};
 window.setCantidad = function(idx, val) {
     var n = parseInt(val);
     if (!window.carrito[idx] || isNaN(n) || n < 1) return;
