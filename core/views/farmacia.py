@@ -203,7 +203,14 @@ def corte_caja_dia(request):
     ventas_transferencia = pagos_qs.aggregate(total=Coalesce(Sum("monto_transferencia"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
     total_gastos = gastos_qs.aggregate(total=Coalesce(Sum("monto"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
     total_ventas = ventas_efectivo + ventas_tarjeta + ventas_transferencia
-    saldo_caja = ventas_efectivo - total_gastos
+    from farmacia.models import AperturaCaja
+    apertura_activa = AperturaCaja.objects.filter(
+        empresa=empresa,
+        usuario_responsable=request.user,
+        activa=True,
+    ).first()
+    fondo_inicial = apertura_activa.fondo_efectivo if apertura_activa else Decimal("0.00")
+    saldo_caja = fondo_inicial + ventas_efectivo - total_gastos
 
     lista_gastos = [
         {

@@ -76,7 +76,8 @@ def cerrar_turno_unificado(
         total_lab = corte_lab.get('total', Decimal('0'))
         total_consolidado = total_farmacia + total_lab
         fondo_inicial = corte_farmacia.get('fondo_inicial', Decimal('0'))
-        efectivo_esperado = fondo_inicial + total_consolidado
+        gastos_farmacia = corte_farmacia.get('gastos', Decimal('0'))
+        efectivo_esperado = fondo_inicial + total_consolidado - gastos_farmacia
 
         diferencia = efectivo_declarado - efectivo_esperado
 
@@ -155,6 +156,12 @@ def _cerrar_farmacia(cajero, empresa, sucursal, ahora: datetime, efectivo_declar
         total = ventas_del_turno.aggregate(t=Sum('total'))['t'] or Decimal('0')
         num_ventas = ventas_del_turno.count()
 
+        from core.models import GastoCaja
+        gastos_del_turno = GastoCaja.objects.filter(
+            empresa=empresa,
+            fecha__gte=apertura.fecha_apertura,
+        ).aggregate(t=Sum('monto'))['t'] or Decimal('0')
+
         cierre = CierreTurnoFarmacia.objects.create(
             empresa=empresa,
             sucursal=apertura.sucursal,
@@ -164,7 +171,7 @@ def _cerrar_farmacia(cajero, empresa, sucursal, ahora: datetime, efectivo_declar
             efectivo_declarado=efectivo_declarado,
             tarjeta_declarado=Decimal('0.00'),
             vales_declarado=Decimal('0.00'),
-            efectivo_teorico=total,
+            efectivo_teorico=total - gastos_del_turno,
             tarjeta_teorico=Decimal('0.00'),
             vales_teorico=Decimal('0.00'),
             observaciones='Cierre generado por corte unificado.',
@@ -173,6 +180,7 @@ def _cerrar_farmacia(cajero, empresa, sucursal, ahora: datetime, efectivo_declar
         return {
             'total': total,
             'num_ventas': num_ventas,
+            'gastos': gastos_del_turno,
             'apertura_id': apertura.pk,
             'cierre_id': cierre.pk,
             'folio_cierre': cierre.folio,
