@@ -78,7 +78,9 @@ def _es_gerente_o_admin(user):
     if user.is_superuser or user.is_staff:
         return True
     rol = (getattr(user, 'rol', '') or '').upper().strip()
-    if rol in ('ADMIN', 'ADMINISTRADOR', 'GERENTE'):
+    if rol in ('ADMIN', 'ADMINISTRADOR', 'GERENTE', 'DIRECTOR', 'DUEÑO', 'DUENO'):
+        return True
+    if getattr(user, 'es_auditor_supremo', False):
         return True
     return user.groups.filter(name__in=['Gerente', 'Administrador', 'Admin']).exists()
 
