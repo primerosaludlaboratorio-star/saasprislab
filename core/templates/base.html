@@ -667,8 +667,8 @@
     <!-- SUGERENCIA DE DESCANSO (Pris te Cuida 💜) -->
     {% if request.session.sugerir_descanso %}
     <div id="alerta-descanso" class="alert alert-warning border-0 shadow-lg position-fixed" 
-         style="top: 80px; right: 20px; z-index: 1060; max-width: 350px; display: none;">
-        <button type="button" class="btn-close" onclick="cerrarAlertaPris()"></button>
+         style="top: 80px; right: 20px; z-index: 1060; max-width: 350px; display: none; pointer-events: none;">
+        <button type="button" class="btn-close" style="pointer-events: auto;" onclick="cerrarAlertaPris()"></button>
         <h6 class="mb-2">
             <i class="bi bi-heart-pulse" aria-hidden="true"></i> Recordatorio de bienestar
         </h6>
@@ -678,7 +678,7 @@
             Has estado activo por más de {{ request.session.tiempo_activo_horas|floatformat:1 }} horas. 
             <strong>Tómate 5 minutos de paz.</strong>
         </p>
-        <a href="{% url 'bienestar:dashboard_bienestar' %}" class="btn btn-sm btn-outline-primary mt-2">
+        <a href="{% url 'bienestar:dashboard_bienestar' %}" class="btn btn-sm btn-outline-primary mt-2" style="pointer-events: auto;">
             <i class="bi bi-heart"></i> Ir a Bienestar
         </a>
     </div>
