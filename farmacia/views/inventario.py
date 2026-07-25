@@ -782,7 +782,15 @@ def validar_pin_precio_neto(request):
     
     try:
         data = json.loads(request.body)
-        pin_ingresado = data.get('pin', '').strip()
+        pin_ingresado = data.get('pin', '')
+        if not isinstance(pin_ingresado, str) or not re.fullmatch(r'\d{4}', pin_ingresado.strip()):
+            return JsonResponse({
+                'status': 'error',
+                'autorizado': False,
+                'mensaje': 'El PIN debe contener exactamente 4 dígitos.',
+                'codigo': 'PIN_FARMACIA_FORMATO_INVALIDO',
+            }, status=400)
+        pin_ingresado = pin_ingresado.strip()
         
         # El PIN pertenece al tenant y se administra fuera del codigo. No
         # existe fallback: una configuracion ausente debe bloquear la venta.
@@ -795,6 +803,14 @@ def validar_pin_precio_neto(request):
                 'autorizado': False,
                 'mensaje': 'El PIN de precio de costo no está configurado para esta empresa.',
                 'codigo': 'PIN_FARMACIA_NO_CONFIGURADO',
+            }, status=503)
+        if not re.fullmatch(r'\d{4}', pin_configurado):
+            logger.error('Precio neto bloqueado: PIN invalido para empresa %s', empresa.id)
+            return JsonResponse({
+                'status': 'error',
+                'autorizado': False,
+                'mensaje': 'La configuración del PIN de Farmacia es inválida.',
+                'codigo': 'PIN_FARMACIA_CONFIGURACION_INVALIDA',
             }, status=503)
 
         if secrets.compare_digest(pin_ingresado, pin_configurado):

@@ -5,6 +5,7 @@ Sin dependencias internas a otros fragmentos de core/models/.
 """
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import RegexValidator
 from django.utils import timezone
 from datetime import date
 import uuid
@@ -280,11 +281,12 @@ class ConfiguracionModulos(models.Model):
     )
 
     pin_precio_neto = models.CharField(
-        max_length=10,
+        max_length=4,
         blank=True,
         default='',
+        validators=[RegexValidator(r'^$|^\d{4}$', 'El PIN debe contener exactamente 4 dígitos.')],
         verbose_name="PIN Precio Neto (Staff)",
-        help_text="PIN numérico para autorizar descuento a precio de costo. Debe configurarse manualmente."
+        help_text="PIN numérico de 4 dígitos para autorizar descuento a precio de costo. Debe configurarse manualmente."
     )
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Fecha de Actualización")
 

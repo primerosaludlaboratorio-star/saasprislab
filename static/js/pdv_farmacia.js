@@ -820,6 +820,7 @@ window.toggleCortesiaFarmacia = function(){var chk=document.getElementById('togg
 window.solicitarPinStaff = function(){var tipo=document.getElementById('tipo-beneficio-staff');if(tipo&&!tipo.value){_mostrarAlerta('Beneficiario requerido','Seleccione Personal o Familiar antes de autorizar el precio de costo.','warning');tipo.focus();return;}var m=_getModal('modalPinStaff');if(m)m.show();setTimeout(function(){var inp=document.getElementById('input-pin-staff');if(inp){inp.value='';inp.focus();}},300);};
 window.confirmarPinStaff = function(){
     var pin=document.getElementById('input-pin-staff')?.value||'';
+    if(!/^\d{4}$/.test(pin)){var f=document.getElementById('pin-error-msg');if(f){f.textContent='El PIN debe contener exactamente 4 dígitos';f.style.display='block';}return;}
     var pinUrl = window.PDV_VALIDAR_PIN_NETO_URL || '/farmacia/api/validar-pin-neto/';
     fetch(pinUrl,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':_csrf(),'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin',body:JSON.stringify({pin:pin})})
     .then(function(r){return r.json();})

@@ -364,6 +364,22 @@ class FarmaciaViewTests(TestCase):
         self.assertEqual(response.json()["status"], "error")
         self.assertFalse(response.json()["autorizado"])
 
+    def test_validar_pin_precio_neto_rechaza_longitud_distinta_de_cuatro(self):
+        self.usuario.rol = "ADMIN"
+        self.usuario.save(update_fields=["rol"])
+        ConfiguracionModulos.objects.update_or_create(
+            empresa=self.empresa,
+            defaults={"pin_precio_neto": "1234"},
+        )
+        response = self.client.post(
+            reverse("validar_pin_precio_neto"),
+            data='{"pin":"12345678"}',
+            content_type="application/json",
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["codigo"], "PIN_FARMACIA_FORMATO_INVALIDO")
+
     def test_validar_pin_precio_neto_falla_cerrado_sin_configuracion(self):
         self.usuario.rol = "ADMIN"
         self.usuario.save(update_fields=["rol"])
