@@ -2,6 +2,16 @@
 
 Fecha: 2026-07-25
 
+## Cuenta de auditoria administrativa: verificacion productiva — 2026-07-25
+
+- Cuenta canonica utilizada: `auditoria_admin_10d`.
+- Alcance documentado: `ADMIN` + superusuario, Empresa `1`, acceso administrativo total para verificaciones.
+- La autenticacion se comprobo en `https://prislab.labcorecloud.com/login/` y redirigio correctamente al Dashboard de Director.
+- La contrasena no se almacena en el repositorio ni en esta documentacion; se conserva unicamente en el canal seguro usado al crear la cuenta.
+- Con la misma sesion se cargaron en produccion, sin error visible ni `500`: `/farmacia/pdv/`, `/farmacia/almacen/entradas/`, `/farmacia/erp/kardex/`, `/laboratorio/recepcion/` y `/laboratorio/captura/`.
+- En PDV se busco `paracetamol`, se selecciono un producto con existencia, se eligio `LOTE-TEST-001`, el lote quedo visible en el carrito y el subtotal se recalculo a `$15.00`. La operacion se limpio sin cobrar.
+- La cuenta mantiene expiracion automatica documentada para `2026-08-02 17:25 UTC` mediante `prislab-expire-auditoria-users.timer`.
+
 ## Verificacion PDV y devoluciones posterior — 2026-07-25
 
 - `a5c070b`: se eliminaron manejadores duplicados de los controles de cantidad; el boton `+` ya no incrementa dos veces.
