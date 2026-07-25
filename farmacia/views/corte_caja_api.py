@@ -15,30 +15,18 @@ from core.utils.sucursal_helpers import get_request_sucursal
 logger = logging.getLogger('farmacia.corte_caja_api')
 
 
-def _puede_ver_precorte(user):
-    """El precorte revela el esperado; el cajero conserva el arqueo ciego."""
-    if user.is_superuser:
-        return True
-    rol = (getattr(user, 'rol', '') or '').upper().strip()
-    if rol in {'FARMACIA', 'ADMIN', 'ADMINISTRADOR', 'GERENTE', 'DIRECTOR'}:
-        return True
-    return user.groups.filter(
-        name__in={'FARMACIA', 'ADMINISTRACION', 'GERENCIA_OPERATIVA', 'GERENCIA'}
-    ).exists()
-
-
 @login_required
 @require_http_methods(['GET'])
 def api_precorte_unificado(request):
-    """GET /api/caja/precorte/ - lectura previa, nunca cierra la caja."""
+    """GET /api/caja/precorte/ - lectura propia, nunca cierra la caja.
+
+    Todo usuario con empresa puede consultar su turno. La función no expone
+    costos, márgenes ni ganancias; el alcance administrativo se controla en
+    el servicio por el usuario y la sucursal de su apertura.
+    """
     empresa = getattr(request.user, 'empresa', None)
     if not empresa:
         return JsonResponse({'ok': False, 'error': 'Sin empresa asignada.'}, status=403)
-    if not _puede_ver_precorte(request.user):
-        return JsonResponse(
-            {'ok': False, 'error': 'El precorte requiere permiso de administración de caja.'},
-            status=403,
-        )
 
     try:
         from farmacia.services.corte_caja_unificado import calcular_precorte_unificado

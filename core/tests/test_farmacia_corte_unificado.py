@@ -195,6 +195,26 @@ class CorteCajaUnificadoTest(TestCase):
         self.apertura.refresh_from_db()
         self.assertTrue(self.apertura.activa)
 
+    def test_api_precorte_permite_personal_y_no_expone_ganancias(self):
+        empleado = User.objects.create_user(
+            username='empleado_precorte',
+            password='empleado_precorte_123',
+            email='empleado-precorte@example.com',
+            rol='CAJERO',
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+        )
+        self.client.force_login(empleado)
+
+        response = self.client.get('/api/caja/precorte/')
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['precorte']
+        self.assertTrue(data['solo_lectura'])
+        self.assertNotIn('ganancia', data)
+        self.assertNotIn('margen', data)
+        self.assertNotIn('costo', data)
+
     @patch('farmacia.services.corte_caja_unificado._cerrar_laboratorio')
     def test_api_corte_unificado_revierte_si_laboratorio_falla(self, mock_cerrar_laboratorio):
         mock_cerrar_laboratorio.return_value = {'total': Decimal('0'), 'estado': 'error', 'error': 'boom'}

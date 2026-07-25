@@ -33,6 +33,15 @@ post_corte_caja_unificado = Signal()
 # Recibe: sender, corte_data, cajero, empresa
 
 
+def _es_administrador_caja(usuario):
+    if not usuario:
+        return False
+    rol = (getattr(usuario, 'rol', '') or '').upper().strip()
+    return usuario.is_superuser or rol in {
+        'ADMIN', 'ADMINISTRADOR', 'GERENTE', 'DIRECTOR', 'FARMACIA'
+    }
+
+
 def calcular_precorte_unificado(cajero, empresa, sucursal=None) -> dict:
     """Calcula un resumen de solo lectura del turno actualmente abierto.
 
@@ -127,6 +136,12 @@ def _precorte_farmacia(cajero, empresa, sucursal) -> dict:
         empresa=empresa,
         fecha__gte=apertura.fecha_apertura,
     ).aggregate(total=Sum('monto'))['total'] or Decimal('0')
+    if not _es_administrador_caja(cajero):
+        gastos = GastoCaja.objects.filter(
+            empresa=empresa,
+            usuario=cajero,
+            fecha__gte=apertura.fecha_apertura,
+        ).aggregate(total=Sum('monto'))['total'] or Decimal('0')
 
     return {
         'apertura_activa': True,
@@ -313,6 +328,8 @@ def _cerrar_laboratorio(cajero, empresa, sucursal, ahora: datetime) -> dict:
             fecha_creacion__gte=inicio_turno,
             fecha_creacion__lte=ahora,
         )
+        if not _es_administrador_caja(cajero):
+            ordenes_qs = ordenes_qs.filter(responsable_ingreso=cajero)
 
         resultado = ordenes_qs.aggregate(t=_Sum('total'))
         total = Decimal(str(resultado['t'] or 0))

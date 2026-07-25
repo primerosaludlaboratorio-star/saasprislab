@@ -170,7 +170,7 @@ def registrar_gasto(request):
 
 @login_required
 def corte_caja_dia(request):
-    """Vista operativa de corte diario de farmacia."""
+    """Vista operativa de corte diario, con alcance propio para el personal."""
     empresa = _empresa_desde_request(request)
     if not empresa:
         return HttpResponseForbidden("Usuario sin empresa asignada.")
@@ -187,16 +187,24 @@ def corte_caja_dia(request):
     inicio = timezone.make_aware(datetime.combine(fecha_seleccionada, datetime.min.time()))
     fin = timezone.make_aware(datetime.combine(fecha_seleccionada, datetime.max.time()))
 
+    rol = (getattr(request.user, "rol", "") or "").upper().strip()
+    puede_ver_consolidado = request.user.is_superuser or rol in {
+        "ADMIN", "ADMINISTRADOR", "GERENTE", "DIRECTOR", "FARMACIA"
+    }
     ventas_qs = Venta.objects.filter(
         empresa=empresa,
         fecha__range=(inicio, fin),
         estado="COMPLETADA",
     )
+    if not puede_ver_consolidado:
+        ventas_qs = ventas_qs.filter(usuario=request.user)
     pagos_qs = Pago.objects.filter(venta__in=ventas_qs)
     gastos_qs = GastoCaja.objects.filter(
         empresa=empresa,
         fecha__range=(inicio, fin),
     ).select_related("usuario").order_by("-fecha")
+    if not puede_ver_consolidado:
+        gastos_qs = gastos_qs.filter(usuario=request.user)
 
     ventas_efectivo = pagos_qs.aggregate(total=Coalesce(Sum("monto_efectivo"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
     ventas_tarjeta = pagos_qs.aggregate(total=Coalesce(Sum("monto_tarjeta"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
