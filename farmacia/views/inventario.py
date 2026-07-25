@@ -9,6 +9,7 @@ import csv
 import difflib
 import re
 import unicodedata
+import secrets
 from datetime import datetime, timedelta, date
 from decimal import Decimal
 
@@ -29,7 +30,8 @@ logger = logging.getLogger('farmacia.inventario')
 _DIAS_CADUCIDAD_CRITICO = getattr(settings, 'FARMACIA_DIAS_CADUCIDAD_CRITICO', 30)
 
 from core.models import (
-    Producto, Lote, Venta, Pago, GastoCaja, DiscountPolicy, Empresa
+    Producto, Lote, Venta, Pago, GastoCaja, DiscountPolicy, Empresa,
+    ConfiguracionModulos,
 )
 from core.services.inventario.movimiento_inventario_service import MovimientoInventarioService
 from core.services.inventario.catalogo_farmacia_service import CatalogoFarmaciaService
@@ -782,10 +784,20 @@ def validar_pin_precio_neto(request):
         data = json.loads(request.body)
         pin_ingresado = data.get('pin', '').strip()
         
-        # Validar PIN (configurado en settings)
-        PIN_PRECIO_NETO = getattr(settings, 'FARMACIA_PIN_PRECIO_NETO', '1234')
-        
-        if pin_ingresado == PIN_PRECIO_NETO:
+        # El PIN pertenece al tenant y se administra fuera del codigo. No
+        # existe fallback: una configuracion ausente debe bloquear la venta.
+        configuracion = ConfiguracionModulos.objects.filter(empresa=empresa).first()
+        pin_configurado = (configuracion.pin_precio_neto if configuracion else '').strip()
+        if not pin_configurado:
+            logger.error('Precio neto bloqueado: falta PIN de Farmacia para empresa %s', empresa.id)
+            return JsonResponse({
+                'status': 'error',
+                'autorizado': False,
+                'mensaje': 'El PIN de precio de costo no está configurado para esta empresa.',
+                'codigo': 'PIN_FARMACIA_NO_CONFIGURADO',
+            }, status=503)
+
+        if secrets.compare_digest(pin_ingresado, pin_configurado):
             return JsonResponse({'status': 'success', 'autorizado': True, 'mensaje': 'PIN válido'})
         else:
             return JsonResponse({'status': 'error', 'autorizado': False, 'mensaje': 'PIN incorrecto'}, status=401)

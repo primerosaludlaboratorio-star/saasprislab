@@ -364,6 +364,22 @@ class FarmaciaViewTests(TestCase):
         self.assertEqual(response.json()["status"], "error")
         self.assertFalse(response.json()["autorizado"])
 
+    def test_validar_pin_precio_neto_falla_cerrado_sin_configuracion(self):
+        self.usuario.rol = "ADMIN"
+        self.usuario.save(update_fields=["rol"])
+        ConfiguracionModulos.objects.filter(empresa=self.empresa).delete()
+
+        response = self.client.post(
+            reverse("validar_pin_precio_neto"),
+            data='{"pin":"1234"}',
+            content_type="application/json",
+            secure=True,
+        )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()["codigo"], "PIN_FARMACIA_NO_CONFIGURADO")
+        self.assertFalse(response.json()["autorizado"])
+
     def test_farmacia_inventario_general_view(self):
         url = reverse("farmacia_inventario_general")
         response = self.client.get(url, follow=True)
