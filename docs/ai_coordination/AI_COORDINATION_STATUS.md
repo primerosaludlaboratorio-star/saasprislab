@@ -1126,8 +1126,10 @@ Se implemento y desplego el precorte operativo separado del arqueo y del cierre:
 - no crea `CierreTurnoFarmacia`, no desactiva `AperturaCaja`, no bloquea registros y no modifica ventas, inventario ni gastos;
 - la pantalla canonica `/farmacia/erp/corte-caja/` muestra `GENERAR PRECORTE` y presenta apertura, ventas, gastos, total consolidado y efectivo esperado;
 - el boton verde `CERRAR TURNO Y GENERAR CORTE` permanece como la unica accion que ejecuta el cierre definitivo;
-- el precorte se habilita para `FARMACIA`, `ADMIN`, `ADMINISTRADOR`, `GERENTE` y `DIRECTOR` con empresa asignada;
-- `CAJERO` conserva el arqueo ciego y recibe denegacion controlada al solicitar el esperado;
+- el precorte se habilita para cualquier usuario autenticado con empresa asignada;
+- el personal no administrativo consulta solo su propio turno, ventas, gastos y ordenes asociadas; no recibe actividad de otros usuarios;
+- `FARMACIA`, `ADMIN`, `ADMINISTRADOR`, `GERENTE` y `DIRECTOR` conservan el consolidado administrativo de su empresa;
+- ningun perfil operativo recibe costos, margenes ni ganancias; esos datos permanecen en permisos financieros/administrativos;
 - la informacion sigue aislada por empresa y sucursal.
 
 Verificacion:
@@ -1136,7 +1138,15 @@ Verificacion:
 - produccion devolvio HTTP 200 para `farmacia_admin_10d` y `solo_lectura: true`;
 - la misma prueba reporto delta cero en cierres creados y aperturas activas;
 - la interfaz productiva cargo el boton, ejecuto el precorte y mostro `PRECORTE INFORMATIVO` / `SOLO LECTURA - NO CIERRA CAJA`;
-- `farmacia_empleado_10d` recibio HTTP 403 por no tener permiso para revelar el esperado;
+- `farmacia_empleado_10d` recibio HTTP 200, cargo la pantalla y pudo solicitar su precorte en modo solo lectura;
 - no se ejecuto ningun cierre ni se alteraron datos durante la prueba.
+
+## Alcance de caja para personal - 2026-07-25
+
+- `27dbaf0` corrige el alcance del precorte: CAJERO y personal con empresa ya pueden ver y realizar su propio corte.
+- La pantalla diaria filtra ventas y gastos por usuario para perfiles no administrativos; los perfiles administrativos conservan el consolidado de empresa.
+- El endpoint mantiene `solo_lectura: true` y no expone claves de costo, margen o ganancia.
+- Produccion verificada con `farmacia_admin_10d` y `farmacia_empleado_10d`: ambos obtuvieron HTTP 200 en pantalla y precorte, con el boton `GENERAR PRECORTE` visible.
+- Sentinel no genero incidencias nuevas en los 20 minutos posteriores al despliegue.
 
 Limitacion de pruebas automatizadas: la suite focalizada local quedo bloqueada durante la creacion de la base de pruebas; no se marca como verde. Las validaciones estaticas (`manage.py check`, `makemigrations --check`, compilacion Python y `git diff --check`) fueron correctas y la verificacion de produccion fue realizada con el entorno real del servicio web.
