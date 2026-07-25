@@ -1,6 +1,14 @@
 # AI Coordination Status
 
-Fecha: 2026-07-21
+Fecha: 2026-07-25
+
+## Corte de caja unificado visible en interfaz — 2026-07-25
+
+- `78982ba`: la pantalla de corte ahora expone la accion humana `CERRAR TURNO Y GENERAR CORTE` despues de calcular la diferencia; la accion envia el efectivo declarado al API unificado, bloquea el boton durante el envio y muestra el folio generado.
+- Despliegue local directo completado con revision `78982ba35ea7775d1dac2afa5db0865022601107`; migraciones sin pendientes, servicios activos, estaticos procesados y health check correcto.
+- Flujo humano productivo verificado: se capturo `$0.01`, se calculo el corte, se confirmo `CORTE CORRECTO`, se cerro el turno y la interfaz mostro `CIERRE-2026-000001`.
+- Verificacion posterior productiva: `/farmacia/erp/caja/verificar/` devolvio `caja_abierta: false`.
+- La suite de corte iniciada en esta iteracion quedo bloqueada durante la creacion de la base de pruebas local y no se cuenta como exitosa; `manage.py check`, `makemigrations --check --noinput` y `git diff --check` si pasaron.
 
 ## Auditoria Farmacia posterior al despliegue local — 2026-07-25
 

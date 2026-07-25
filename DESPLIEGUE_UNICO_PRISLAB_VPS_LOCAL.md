@@ -86,7 +86,7 @@ Invoke-WebRequest https://prislab.labcorecloud.com/health/
 
 ## Evidencia vigente
 
-El 2026-07-25 se desplego localmente la revision `a83ac54c3f58326ae20422fa08adbf60061c9f9b`, con migraciones sin pendientes, estaticos procesados, servicios activos y health check `status=ok`, `database=ok`, `cache=ok`. La prueba humana productiva de Farmacia cargo sus rutas principales y valido busqueda, seleccion multi-lote, lote visible y agregado de segundo producto al carrito.
+El 2026-07-25 se desplego localmente la revision `78982ba35ea7775d1dac2afa5db0865022601107`, con migraciones sin pendientes, estaticos procesados, servicios activos y health check correcto. La prueba humana productiva de Farmacia cargo sus rutas principales, valido busqueda, seleccion multi-lote, lote visible, agregado de segundo producto al carrito, cancelacion con restitucion de lote y cierre de caja desde la interfaz. El cierre genero `CIERRE-2026-000001` y la verificacion posterior confirmo `caja_abierta: false`.
 
 Posteriormente se desplego `8469f20b6f7dc8551489eff98df9d9338918bc1e`, que corrige la reversa de cancelacion en PostgreSQL. La prueba productiva cancelo el folio QA `VTA-20260724204319-6422` y confirmo el retorno del lote `253432` a existencia `3`.
 
