@@ -1156,7 +1156,7 @@ Verificacion:
 - Sentinel no registro incidencias de Farmacia nuevas en los 20 minutos posteriores al despliegue.
 - La prueba con `farmacia_empleado_10d` requiere iniciar una sesion separada con su credencial temporal; no se inventa ni se guarda esa contrasena en el repositorio.
 
-## Endurecimiento enterprise de caja - pendiente de despliegue
+## Endurecimiento enterprise de caja - 2026-07-25
 
 La revision posterior detecto controles que no podian depender solo de la vista:
 
@@ -1165,4 +1165,12 @@ La revision posterior detecto controles que no podian depender solo de la vista:
 - un segundo intento de cierre debe responder conflicto y no simular un cierre exitoso;
 - el cierre debe serializar los importes con dos decimales y conservar la trazabilidad del actor.
 
-La suite focalizada ampliada cubre estos controles con `16 tests OK`. El cambio esta en la rama local y no debe marcarse productivo hasta ejecutar el despliegue y repetir la prueba humana de apertura, precorte, entrega y cierre.
+La suite focalizada ampliada cubre estos controles con `16 tests OK`. Revision desplegada: `bd7a7ba`.
+
+Verificacion productiva posterior:
+
+- migracion `farmacia.0010_unique_active_apertura_branch` aplicada;
+- restriccion `unique_apertura_activa_empresa_sucursal` presente en la base productiva;
+- una sola apertura activa para la sucursal auditada;
+- precorte productivo en estado `PRECORTE` sin mutar datos;
+- salud HTTP 200 y cero incidencias Sentinel de Farmacia nuevas en los 20 minutos posteriores.
