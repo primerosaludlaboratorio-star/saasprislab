@@ -2,6 +2,14 @@
 
 Fecha: 2026-07-25
 
+## PIN de precio de costo Farmacia — 2026-07-25
+
+- El PIN solicitado por el PDV no corresponde al corte ni al arqueo ciego; autoriza exclusivamente la venta a precio de costo para `Personal` o `Familiar`.
+- Se detecto que Empresa `1` no tenia `ConfiguracionModulos.pin_precio_neto` y la vista usaba el fallback inseguro `1234`.
+- `43d55db`: la validacion ahora lee el PIN de la configuracion de la empresa, usa comparacion constante y falla cerrado con `PIN_FARMACIA_NO_CONFIGURADO` si no existe; se agrego regresion automatica.
+- Se provisiono un PIN de 8 digitos para Empresa `1` en produccion. El valor no se guarda en codigo ni en el repositorio; debe entregarse al personal autorizado por canal seguro.
+- Produccion verificada: PIN valido devuelve `HTTP 200`; PIN invalido devuelve `HTTP 401`; la cuenta `farmacia_admin_10d` conserva permiso para solicitarlo y un `CAJERO` no lo hereda.
+
 ## Ticket digital y autorizacion de devoluciones — 2026-07-25
 
 - `f3ae553`: el boton `ENVIAR TICKET DIGITAL` ya consulta el detalle real de la venta antes de abrir WhatsApp y compone un comprobante con folio, fecha, cliente, producto, lote, cantidad, precio unitario, importe, subtotal, descuento, IVA, total, formas de pago, pagado, cambio y cajero.
