@@ -12,8 +12,10 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
@@ -517,7 +519,7 @@ class FarmaciaAperturaCajaTests(TestCase):
         )
         self.usuario.rol = "CAJERO"
         self.usuario.sucursal = self.sucursal
-        self.usuario.save(update_fields=["rol", "sucursal"])
+        self.usuario.save(update_fields=["rol"])
         g, _ = Group.objects.get_or_create(name="FARMACIA")
         self.usuario.groups.add(g)
         self.client = Client()
@@ -640,8 +642,9 @@ class FarmaciaCorteCajaTests(TestCase):
         )
         self.assertIn(response.status_code, [200, 301, 302])
 
-    def test_corte_caja_sin_empresa_redirige(self):
-        """Usuario sin empresa es redirigido."""
+    @override_settings(PRISLAB_TENANT_STRICT_MODE=True)
+    def test_corte_caja_sin_empresa_bloquea(self):
+        """Usuario sin empresa es bloqueado en modo estricto de producción."""
         u = User.objects.create_user(
             username="sin_emp_corte", password="x", email="x@t.com",
         )
@@ -653,7 +656,7 @@ class FarmaciaCorteCajaTests(TestCase):
         u = User.objects.get(pk=u.pk)
         self.client.force_login(u)
         response = self.client.get(reverse("farmacia:corte_caja"))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 403)
 
 
 class FarmaciaEntradaExpressTests(TestCase):
@@ -676,6 +679,11 @@ class FarmaciaEntradaExpressTests(TestCase):
         self.usuario.save(update_fields=["rol"])
         g, _ = Group.objects.get_or_create(name="FARMACIA")
         self.usuario.groups.add(g)
+        permiso = Permission.objects.get(
+            content_type=ContentType.objects.get_for_model(MovimientoInventario),
+            codename="add_movimientoinventario",
+        )
+        g.permissions.add(permiso)
         self.producto = Producto.objects.create(
             empresa=self.empresa, nombre="Ibuprofeno 400mg",
             codigo_barras=_codigo_barras_unico(),
@@ -767,7 +775,7 @@ class FarmaciaCOFEPRISTests(TestCase):
         )
         self.usuario.rol = "CAJERO"
         self.usuario.sucursal = self.sucursal
-        self.usuario.save(update_fields=["rol", "sucursal"])
+        self.usuario.save(update_fields=["rol"])
         g, _ = Group.objects.get_or_create(name="FARMACIA")
         self.usuario.groups.add(g)
         self.producto_normal = Producto.objects.create(
@@ -850,7 +858,7 @@ class FarmaciaCargaMasivaTests(TestCase):
         )
         self.usuario.rol = "ADMIN"
         self.usuario.sucursal = self.sucursal
-        self.usuario.save(update_fields=["rol", "sucursal"])
+        self.usuario.save(update_fields=["rol"])
         g, _ = Group.objects.get_or_create(name="FARMACIA")
         self.usuario.groups.add(g)
         self.client = Client()

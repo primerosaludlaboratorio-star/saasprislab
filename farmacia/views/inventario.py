@@ -770,6 +770,7 @@ def validar_pin_precio_neto(request):
     
     # Verificar que el usuario tiene permiso de acceder a esta función
     ROLES_PRECIO_NETO = ['ADMIN', 'GERENTE', 'DIRECTOR', 'FARMACIA']
+    rol = (getattr(request.user, 'rol', '') or '').upper().strip()
     puede_precio_neto = (
         request.user.is_superuser or rol in ROLES_PRECIO_NETO
     )

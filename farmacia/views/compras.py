@@ -341,7 +341,13 @@ def entrada_express(request):
         empresa = getattr(request.user, 'empresa', None)
         if not empresa:
             return JsonResponse({'success': False, 'error': 'Usuario sin empresa asignada.'}, status=403)
-        producto = Producto.objects.filter(codigo_barras=codigo_barras, empresa=empresa).first()
+        # El catálogo puede ser global para la empresa y aún no tener sucursal.
+        # La empresa queda acotada explícitamente; no aplicar aquí el filtro de
+        # sucursal del TenantManager evita rechazar una entrada válida.
+        producto = Producto.objects_all.filter(
+            codigo_barras=codigo_barras,
+            empresa=empresa,
+        ).first()
         
         if not producto:
             return JsonResponse({
