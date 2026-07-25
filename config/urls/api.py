@@ -6,7 +6,7 @@ from core.views.cron_tasks import (
     cron_check_stock_critico,
     cron_verify_escudo_clinico,
 )
-from farmacia.views.corte_caja_api import api_corte_caja_unificado
+from farmacia.views.corte_caja_api import api_corte_caja_unificado, api_precorte_unificado
 from ._helpers import lazy_view
 
 urlpatterns = [
@@ -14,6 +14,7 @@ urlpatterns = [
     path('api/v3/', api_contracts_v3.urls),
 
     # FASE 8: Corte de caja unificado (Lab + Farmacia)
+    path('api/caja/precorte/', api_precorte_unificado, name='precorte_caja_unificado'),
     path('api/caja/corte-unificado/', api_corte_caja_unificado, name='corte_caja_unificado'),
 
     # PRIS SENTINEL SHIELD — Telemetría Frontend

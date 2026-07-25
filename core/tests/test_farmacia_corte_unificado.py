@@ -8,7 +8,7 @@ from django.test import Client, TestCase
 
 from core.models import Empresa, Paciente, Sucursal, Venta
 from farmacia.models import AperturaCaja, CierreTurnoFarmacia
-from farmacia.services.corte_caja_unificado import cerrar_turno_unificado
+from farmacia.services.corte_caja_unificado import calcular_precorte_unificado, cerrar_turno_unificado
 
 
 User = get_user_model()
@@ -165,6 +165,35 @@ class CorteCajaUnificadoTest(TestCase):
         self.assertFalse(data['ok'])
         self.assertIn('JSON', data['error'])
         self.assertEqual(CierreTurnoFarmacia.objects.count(), 0)
+
+    def test_precorte_es_solo_lectura_y_conserva_apertura(self):
+        antes = CierreTurnoFarmacia.objects.count()
+
+        precorte = calcular_precorte_unificado(
+            cajero=self.user,
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+        )
+
+        self.apertura.refresh_from_db()
+        self.assertTrue(precorte['solo_lectura'])
+        self.assertEqual(precorte['estado'], 'PRECORTE')
+        self.assertEqual(precorte['farmacia']['total'], '80.00')
+        self.assertEqual(precorte['efectivo_esperado'], '180.00')
+        self.assertEqual(CierreTurnoFarmacia.objects.count(), antes)
+        self.assertTrue(self.apertura.activa)
+
+    def test_api_precorte_admin_devuelve_resumen_sin_cerrar(self):
+        response = self.client.get('/api/caja/precorte/')
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['ok'])
+        self.assertTrue(data['precorte']['solo_lectura'])
+        self.assertEqual(data['precorte']['farmacia']['ventas'], 1)
+        self.assertEqual(CierreTurnoFarmacia.objects.count(), 0)
+        self.apertura.refresh_from_db()
+        self.assertTrue(self.apertura.activa)
 
     @patch('farmacia.services.corte_caja_unificado._cerrar_laboratorio')
     def test_api_corte_unificado_revierte_si_laboratorio_falla(self, mock_cerrar_laboratorio):

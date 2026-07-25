@@ -95,6 +95,7 @@ urlpatterns = [
     path('kiosko/check-in/<str:qr_token>/', kiosko_check_in_qr, name='kiosko_check_in'),
 
     # FASE 8: Corte de caja unificado (Lab + Farmacia)
+    path('api/caja/precorte/', lazy_view('farmacia.views.corte_caja_api.api_precorte_unificado'), name='precorte_caja_unificado'),
     path('api/caja/corte-unificado/', lazy_view('farmacia.views.corte_caja_api.api_corte_caja_unificado'), name='corte_caja_unificado'),
 
     # FASE 9: Bienestar Staff NOM-035 (Caja Fuerte Interna)

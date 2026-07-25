@@ -33,6 +33,115 @@ post_corte_caja_unificado = Signal()
 # Recibe: sender, corte_data, cajero, empresa
 
 
+def calcular_precorte_unificado(cajero, empresa, sucursal=None) -> dict:
+    """Calcula un resumen de solo lectura del turno actualmente abierto.
+
+    Este flujo no crea cierres, no desactiva aperturas y no bloquea registros.
+    Su objetivo es permitir que un responsable revise el estado antes del
+    arqueo y del cierre definitivo.
+    """
+    if empresa is None:
+        raise ValueError('empresa es obligatoria para precorte de caja.')
+
+    ahora = timezone.now()
+    farmacia = _precorte_farmacia(cajero, empresa, sucursal)
+    laboratorio = _cerrar_laboratorio(cajero, empresa, sucursal, ahora)
+    if laboratorio.get('estado') == 'error':
+        raise RuntimeError('No fue posible calcular el precorte de laboratorio.')
+
+    total_farmacia = farmacia['total']
+    total_lab = laboratorio.get('total', Decimal('0'))
+    total_consolidado = total_farmacia + total_lab
+    gastos = farmacia['gastos']
+    fondo = farmacia['fondo_inicial']
+
+    return {
+        'fecha': ahora.isoformat(),
+        'cajero': cajero.username if cajero else 'SISTEMA',
+        'empresa': str(empresa),
+        'sucursal': str(sucursal) if sucursal else 'General',
+        'estado': 'PRECORTE',
+        'solo_lectura': True,
+        'apertura': {
+            'activa': farmacia['apertura_activa'],
+            'id': farmacia.get('apertura_id'),
+            'folio': farmacia.get('folio_apertura'),
+            'fecha_apertura': farmacia.get('fecha_apertura'),
+            'fondo_inicial': str(fondo),
+        },
+        'farmacia': {
+            'total': str(total_farmacia),
+            'ventas': farmacia['ventas'],
+            'efectivo': str(farmacia['efectivo']),
+            'digital': str(farmacia['digital']),
+            'gastos': str(gastos),
+        },
+        'laboratorio': {
+            'total': str(total_lab),
+            'ordenes': laboratorio.get('ordenes', 0),
+        },
+        'total_consolidado': str(total_consolidado),
+        'efectivo_esperado': str(fondo + total_consolidado - gastos),
+    }
+
+
+def _precorte_farmacia(cajero, empresa, sucursal) -> dict:
+    """Lee apertura, ventas, pagos y gastos sin mutar el estado de caja."""
+    from django.db.models import Sum
+    from farmacia.models import AperturaCaja
+    from core.models import GastoCaja, Pago, Venta
+
+    query = AperturaCaja.objects.filter(empresa=empresa, activa=True)
+    if sucursal:
+        query = query.filter(sucursal=sucursal)
+    if cajero:
+        query = query.filter(usuario_responsable=cajero)
+    apertura = query.order_by('-fecha_apertura').first()
+    if not apertura:
+        return {
+            'apertura_activa': False,
+            'total': Decimal('0'),
+            'ventas': 0,
+            'efectivo': Decimal('0'),
+            'digital': Decimal('0'),
+            'gastos': Decimal('0'),
+            'fondo_inicial': Decimal('0'),
+        }
+
+    ventas = Venta.objects.filter(
+        empresa=empresa,
+        fecha__gte=apertura.fecha_apertura,
+    ).exclude(estado='CANCELADA')
+    if sucursal:
+        ventas = ventas.filter(sucursal=sucursal)
+
+    total = ventas.aggregate(total=Sum('total'))['total'] or Decimal('0')
+    pagos = Pago.objects.filter(venta__in=ventas).aggregate(
+        efectivo=Sum('monto_efectivo'),
+        tarjeta=Sum('monto_tarjeta'),
+        transferencia=Sum('monto_transferencia'),
+    )
+    efectivo = pagos['efectivo'] or Decimal('0')
+    digital = (pagos['tarjeta'] or Decimal('0')) + (pagos['transferencia'] or Decimal('0'))
+    gastos = GastoCaja.objects.filter(
+        empresa=empresa,
+        fecha__gte=apertura.fecha_apertura,
+    ).aggregate(total=Sum('monto'))['total'] or Decimal('0')
+
+    return {
+        'apertura_activa': True,
+        'apertura_id': apertura.pk,
+        'folio_apertura': apertura.folio,
+        'fecha_apertura': apertura.fecha_apertura.isoformat(),
+        'total': total,
+        'ventas': ventas.count(),
+        'efectivo': efectivo,
+        'digital': digital,
+        'gastos': gastos,
+        'fondo_inicial': apertura.fondo_efectivo,
+    }
+
+
 def cerrar_turno_unificado(
     cajero,
     empresa,

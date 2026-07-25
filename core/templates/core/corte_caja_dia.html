@@ -96,6 +96,11 @@
                         <button class="btn btn-primary btn-lg w-100 mt-3 fw-bold" onclick="calcularDiferencia()">
                             <i class="bi bi-calculator"></i> CALCULAR DIFERENCIA
                         </button>
+                        {% if request.user.is_superuser or request.user.rol in 'FARMACIA ADMIN ADMINISTRADOR GERENTE DIRECTOR' %}
+                        <button type="button" class="btn btn-outline-primary btn-lg w-100 mt-2 fw-bold" onclick="generarPreCorte()">
+                            <i class="bi bi-eye"></i> GENERAR PRECORTE
+                        </button>
+                        {% endif %}
                     </div>
                     <div id="resultado-diferencia" style="display: none;" class="mt-3">
                         {% csrf_token %}
@@ -118,6 +123,16 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="precorte-panel" class="card shadow-sm mb-4 d-none">
+        <div class="card-header bg-info text-white fw-bold">
+            <i class="bi bi-eye"></i> PRECORTE INFORMATIVO
+            <span class="float-end small">SOLO LECTURA · NO CIERRA CAJA</span>
+        </div>
+        <div class="card-body" id="precorte-contenido">
+            Calculando precorte...
         </div>
     </div>
 
@@ -354,6 +369,39 @@
         const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
         return cookie ? decodeURIComponent(cookie.split('=').slice(1).join('=')) :
             document.querySelector('#resultado-diferencia input[name=csrfmiddlewaretoken]')?.value || '';
+    }
+
+    async function generarPreCorte() {
+        const panel = document.getElementById('precorte-panel');
+        const contenido = document.getElementById('precorte-contenido');
+        panel.classList.remove('d-none');
+        contenido.innerHTML = '<div class="text-center text-muted"><span class="spinner-border spinner-border-sm"></span> Calculando...</div>';
+        try {
+            const response = await fetch('/api/caja/precorte/', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            const data = await response.json();
+            if (!response.ok || !data.ok) throw new Error(data.error || 'No fue posible calcular el precorte.');
+            const p = data.precorte;
+            const money = value => `$${Number(value || 0).toFixed(2)}`;
+            contenido.innerHTML = `
+                <div class="row g-3">
+                    <div class="col-md-3"><small class="text-muted d-block">Estado</small><strong>${p.estado}</strong></div>
+                    <div class="col-md-3"><small class="text-muted d-block">Apertura</small><strong>${p.apertura.folio || 'Sin apertura activa'}</strong></div>
+                    <div class="col-md-3"><small class="text-muted d-block">Ventas farmacia</small><strong>${p.farmacia.ventas} · ${money(p.farmacia.total)}</strong></div>
+                    <div class="col-md-3"><small class="text-muted d-block">Ordenes laboratorio</small><strong>${p.laboratorio.ordenes} · ${money(p.laboratorio.total)}</strong></div>
+                </div>
+                <hr>
+                <div class="row g-3">
+                    <div class="col-md-3"><small class="text-muted d-block">Fondo inicial</small><strong>${money(p.apertura.fondo_inicial)}</strong></div>
+                    <div class="col-md-3"><small class="text-muted d-block">Gastos</small><strong class="text-danger">${money(p.farmacia.gastos)}</strong></div>
+                    <div class="col-md-3"><small class="text-muted d-block">Total consolidado</small><strong>${money(p.total_consolidado)}</strong></div>
+                    <div class="col-md-3"><small class="text-muted d-block">Efectivo esperado</small><strong class="text-primary">${money(p.efectivo_esperado)}</strong></div>
+                </div>
+                <div class="alert alert-info mt-3 mb-0"><i class="bi bi-info-circle"></i> Este precorte no modifica ventas, inventario, apertura ni cierre. El cierre definitivo requiere capturar el efectivo y usar el botón verde.</div>`;
+        } catch (error) {
+            contenido.innerHTML = `<div class="alert alert-danger mb-0">${error.message}</div>`;
+        }
     }
 
     async function cerrarTurnoUnificado() {

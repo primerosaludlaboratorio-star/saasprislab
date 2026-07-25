@@ -15,6 +15,47 @@ from core.utils.sucursal_helpers import get_request_sucursal
 logger = logging.getLogger('farmacia.corte_caja_api')
 
 
+def _puede_ver_precorte(user):
+    """El precorte revela el esperado; el cajero conserva el arqueo ciego."""
+    if user.is_superuser:
+        return True
+    rol = (getattr(user, 'rol', '') or '').upper().strip()
+    if rol in {'FARMACIA', 'ADMIN', 'ADMINISTRADOR', 'GERENTE', 'DIRECTOR'}:
+        return True
+    return user.groups.filter(
+        name__in={'FARMACIA', 'ADMINISTRACION', 'GERENCIA_OPERATIVA', 'GERENCIA'}
+    ).exists()
+
+
+@login_required
+@require_http_methods(['GET'])
+def api_precorte_unificado(request):
+    """GET /api/caja/precorte/ - lectura previa, nunca cierra la caja."""
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse({'ok': False, 'error': 'Sin empresa asignada.'}, status=403)
+    if not _puede_ver_precorte(request.user):
+        return JsonResponse(
+            {'ok': False, 'error': 'El precorte requiere permiso de administración de caja.'},
+            status=403,
+        )
+
+    try:
+        from farmacia.services.corte_caja_unificado import calcular_precorte_unificado
+        precorte = calcular_precorte_unificado(
+            cajero=request.user,
+            empresa=empresa,
+            sucursal=get_request_sucursal(request),
+        )
+        return JsonResponse({'ok': True, 'precorte': precorte})
+    except Exception:
+        logger.exception('Error calculando precorte unificado')
+        return JsonResponse(
+            {'ok': False, 'error': 'No fue posible calcular el precorte.'},
+            status=500,
+        )
+
+
 @login_required
 @require_http_methods(['POST'])
 def api_corte_caja_unificado(request):
