@@ -1068,3 +1068,9 @@ Validacion local de esta ronda: `manage.py check`, `makemigrations --check --noi
 Se dejo en codigo una cascada opt-in para recetas manuscritas: `OCR_VISION_PRIMARY`, `OCR_VISION_FALLBACK`, `OCR_VISION_CONFIDENCE_THRESHOLD` y `DEEPSEEK_VISION_MODEL`. El segundo proveedor solo se consulta si el primero no responde o queda debajo del umbral; se elige la lectura con mayor confianza y se informa el proveedor utilizado. Si ninguna lectura supera el umbral, la interfaz conserva revision humana obligatoria. Por defecto el fallback queda vacio para no generar costos ni activar un modelo multimodal no verificado. Esta mejora queda pendiente de pruebas con imagenes reales y despliegue separado.
 
 La interfaz tambien fue preparada para mostrar el texto estructurado de la receta (paciente, fecha, medico, medicamento, cantidad e indicaciones), no solo la imagen. Si una linea no concilia automaticamente, permite buscarla en el catalogo desde el mismo lector y seleccionar un producto antes de confirmar. El boton de confirmacion permanece bloqueado hasta que exista al menos una seleccion valida.
+
+### Incidencia productiva corregida - 2026-07-25
+
+Sentinel detecto un `DataError` al guardar recetas porque el nombre generado del archivo de imagen podia superar el `max_length` predeterminado de 100 caracteres. Se corrigio con `farmacia.0008_lecturarecetafarmacia_imagen_max_length`, aplicado en produccion durante la revision `dcdc70f`. Tambien se agrego el alias `/farmacia/caja/verificar/` para compatibilidad con clientes antiguos que no usaban el prefijo `/farmacia/erp/`.
+
+El reporte Sentinel posterior al despliegue no registro incidencias nuevas en los diez minutos siguientes. La ventana diaria conserva incidencias historicas, principalmente solicitudes lentas de IA/War Room y el error anterior; se mantienen para auditoria y no se marcan como eliminadas.
