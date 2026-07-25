@@ -696,8 +696,50 @@ function _imprimirData(v){
 window.enviarWhatsApp = function(){
     var num=(document.getElementById('whatsapp-numero')?.value||'').replace(/\D/g,'');
     if(num.length<10){alert('Ingrese numero de 10 digitos.');return;}
-    var msg=encodeURIComponent('Compra PRISLAB\nFolio: '+(window.ventaActualFolio||'&mdash;')+'\nGracias.');
-    window.open('https://wa.me/52'+num+'?text='+msg,'_blank');
+
+    // Abrir la ventana de inmediato para conservar el gesto del usuario y
+    // evitar que el navegador bloquee WhatsApp después del fetch del ticket.
+    var win=window.open('about:blank','_blank');
+    if(!win){alert('Permita ventanas emergentes para enviar el ticket digital.');return;}
+    win.document.write('<p style="font-family:sans-serif;padding:16px">Preparando comprobante digital...</p>');
+
+    fetch('/farmacia/pdv/?accion=detalle_venta&id='+window.ventaActualId,{headers:{'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin'})
+    .then(function(r){if(!r.ok)throw new Error('No se pudo obtener el ticket.');return r.json();})
+    .then(function(v){
+        var money=function(value){return '$'+Number(value||0).toFixed(2);};
+        var lineas=(v.items||v.detalles||[]).map(function(item){
+            var lote=item.lote?' | Lote: '+item.lote:'';
+            return '- '+(item.nombre||item.producto||'Producto')+' | Cant: '+item.cantidad+lote+' | Unit: '+money(item.precio_unitario)+' | Importe: '+money(item.subtotal||item.sub);
+        });
+        var pagado=(v.pagos||[]).reduce(function(total,pago){return total+Number(pago.monto||0);},0);
+        var pagos=(v.pagos||[]).map(function(pago){return '- '+(pago.metodo||'Pago')+': '+money(pago.monto);});
+        var cambio=Math.max(0,pagado-Number(v.total||0));
+        var mensaje=[
+            'PRISLAB',
+            'COMPROBANTE DIGITAL DE COMPRA',
+            'Folio: '+(v.folio||window.ventaActualFolio||'—'),
+            'Fecha: '+(v.fecha||'—'),
+            'Cliente: '+(v.cliente||'PÚBLICO GENERAL'),
+            '',
+            'DETALLE:',
+            lineas.length?lineas.join('\n'):'- Sin detalle disponible',
+            '',
+            'Subtotal: '+money(v.subtotal),
+            'Descuento: '+money(v.descuento),
+            'IVA: '+money(v.iva),
+            'TOTAL PAGADO: '+money(v.total),
+            '',
+            'FORMA DE PAGO:',
+            pagos.length?pagos.join('\n'):'- No especificado',
+            'Pagado: '+money(pagado),
+            'Cambio: '+money(cambio),
+            '',
+            'Cajero: '+(v.cajero||'—'),
+            'Gracias por su preferencia.'
+        ].join('\n');
+        win.location.href='https://wa.me/52'+num+'?text='+encodeURIComponent(mensaje);
+    })
+    .catch(function(error){try{win.close();}catch(_e){} alert(error.message||'No se pudo preparar el ticket digital.');});
 };
 
 // ANTIBIOTICOS

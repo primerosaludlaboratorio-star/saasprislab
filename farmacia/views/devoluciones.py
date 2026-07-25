@@ -720,9 +720,12 @@ def dashboard_devoluciones(request):
 def autorizar_devolucion(request, devolucion_id):
     """
     Autoriza una devolución que requiere aprobación gerencial.
-    Solo accesible para DIRECTOR.
+
+    La autorización debe respetar el mismo alcance tenant-sensitive que el
+    procesamiento: un administrador/superusuario con empresa válida también
+    es autoridad válida, aunque no pertenezca literalmente al grupo DIRECTOR.
     """
-    if not request.user.groups.filter(name='DIRECTOR').exists():
+    if not _es_gerente_o_admin(request.user):
         return JsonResponse({
             'success': False,
             'error': 'Sin permisos para autorizar devoluciones'
