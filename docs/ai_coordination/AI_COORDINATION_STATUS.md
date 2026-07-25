@@ -2,6 +2,15 @@
 
 Fecha: 2026-07-25
 
+## Gasto, conciliacion y cierre de caja QA — 2026-07-25
+
+- `9240576`: la pantalla de corte usa la fecha del servidor y ya no desplaza el dia por conversion UTC; el gasto `QA insumo operativo` quedo visible en `24/07/2026`.
+- `ffa90ba`: los controles del carrito PDV se enlazaron mediante listeners explicitos para cantidad, eliminacion y motivo de surtido parcial; se invalido tambien el recurso JavaScript de la pantalla.
+- `be32a80`: el corte unificado descuenta gastos de caja del efectivo esperado y la pantalla incorpora el fondo inicial al saldo esperado.
+- `4ac3861`: se permite declarar `$0.00` cuando el efectivo valido despues de gastos es cero; antes se confundia monto cero con campo vacio.
+- Verificacion productiva: gasto de `$0.01`, fondo de `$0.01`, efectivo declarado `$0.00`, resultado `CORTE CORRECTO`, folio `CIERRE-2026-000002` y `/farmacia/erp/caja/verificar/` devolvio `caja_abierta: false`.
+- No se encontro una implementacion identificable de precorte en rutas, vistas o templates; queda pendiente funcional y no se marca como probado.
+
 ## Corte de caja unificado visible en interfaz — 2026-07-25
 
 - `78982ba`: la pantalla de corte ahora expone la accion humana `CERRAR TURNO Y GENERAR CORTE` despues de calcular la diferencia; la accion envia el efectivo declarado al API unificado, bloquea el boton durante el envio y muestra el folio generado.
