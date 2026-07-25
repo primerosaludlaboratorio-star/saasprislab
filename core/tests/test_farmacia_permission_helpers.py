@@ -6,6 +6,7 @@ from django.test import SimpleTestCase
 from core.views.farmacia import _verificar_acceso
 from core.services.auto_repair import _usuario_deberia_acceder
 from farmacia.views.semaforo import es_farmacia_o_director
+from farmacia.views.devoluciones import _es_gerente_o_admin
 
 
 class _FakeGroups:
@@ -77,4 +78,9 @@ class FarmaciaPermissionHelpersTest(SimpleTestCase):
                 '/farmacia/erp/kardex/crear-movimiento/',
             )
         )
+
+    def test_devolucion_autoriza_director_con_empresa_y_rechaza_cajero(self):
+        self.assertTrue(_es_gerente_o_admin(_user(empresa=object(), rol='DIRECTOR')))
+        self.assertFalse(_es_gerente_o_admin(_user(empresa=object(), rol='CAJERO')))
+        self.assertFalse(_es_gerente_o_admin(_user(rol='DIRECTOR')))
 
