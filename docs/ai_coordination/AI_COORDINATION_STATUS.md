@@ -2,6 +2,15 @@
 
 Fecha: 2026-07-25
 
+## Ticket digital y autorizacion de devoluciones — 2026-07-25
+
+- `f3ae553`: el boton `ENVIAR TICKET DIGITAL` ya consulta el detalle real de la venta antes de abrir WhatsApp y compone un comprobante con folio, fecha, cliente, producto, lote, cantidad, precio unitario, importe, subtotal, descuento, IVA, total, formas de pago, pagado, cambio y cajero.
+- `f3ae553`: la autorizacion gerencial de devoluciones reutiliza el control tenant-sensitive `_es_gerente_o_admin`; `ADMIN`/superusuario con empresa valida ya no recibe `Acceso denegado` por no pertenecer literalmente al grupo `DIRECTOR`.
+- Produccion desplegada por el procedimiento local VPS en revision `f3ae553bf3021e2c2491cca94171f9d2d592cdb6`; migraciones sin pendientes, estaticos procesados, servicios activos y health check correcto.
+- Reproduccion productiva con `auditoria_admin_10d`: una autorizacion de devolucion de monto alto respondio `HTTP 200` y el rollback QA no dejo registros.
+- Verificacion UI productiva: PDV y `/farmacia/erp/devoluciones/buscar/` cargaron sin `500`, `Traceback` ni mensaje de acceso denegado; el JS servido contiene la construccion detallada del ticket y la consulta de `detalle_venta`.
+- Sentinel: `0` incidencias nuevas en los 20 minutos posteriores al despliegue. El reporte diario conserva incidencias historicas previas y advertencias de latencia; no se borraron ni se marcaron artificialmente como resueltas.
+
 ## Cuenta de auditoria administrativa: verificacion productiva — 2026-07-25
 
 - Cuenta canonica utilizada: `auditoria_admin_10d`.
