@@ -269,7 +269,7 @@ class DevolucionService:
                 movimientos_originales = MovimientoInventario.objects.select_for_update().filter(
                     venta=venta_bloqueada,
                     tipo_movimiento='SALIDA_VENTA',
-                ).select_related('producto', 'lote')
+                )
                 for mov in movimientos_originales:
                     if not mov.lote or not mov.producto or not mov.cantidad:
                         continue
