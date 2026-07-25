@@ -1,5 +1,19 @@
+import re
+
 from django.db import migrations, models
 from django.core.validators import RegexValidator
+
+
+def limpiar_pines_legacy(apps, schema_editor):
+    ConfiguracionModulos = apps.get_model('core', 'ConfiguracionModulos')
+    for configuracion in ConfiguracionModulos.objects.all().only('pk', 'pin_precio_neto').iterator():
+        pin = (configuracion.pin_precio_neto or '').strip()
+        if pin and not re.fullmatch(r'\d{4}', pin):
+            ConfiguracionModulos.objects.filter(pk=configuracion.pk).update(pin_precio_neto='')
+
+
+def noop_reverse(apps, schema_editor):
+    pass
 
 
 class Migration(migrations.Migration):
@@ -8,6 +22,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(limpiar_pines_legacy, noop_reverse),
         migrations.AlterField(
             model_name='configuracionmodulos',
             name='pin_precio_neto',
