@@ -279,6 +279,88 @@ def _gemini_vision_call(imagen_b64: str, prompt: str, api_key: str) -> str:
     return ''
 
 
+def _deepseek_vision_call(imagen_b64: str, prompt: str) -> str:
+    """Llama un modelo DeepSeek compatible con entrada multimodal, si se configura."""
+    api_key = getattr(settings, 'DEEPSEEK_API_KEY', '')
+    modelo = getattr(settings, 'DEEPSEEK_VISION_MODEL', '')
+    if not api_key or not modelo:
+        return ''
+    payload = json.dumps({
+        'model': modelo,
+        'temperature': 0.1,
+        'max_tokens': 1200,
+        'messages': [{
+            'role': 'user',
+            'content': [
+                {'type': 'text', 'text': prompt},
+                {'type': 'image_url', 'image_url': {'url': imagen_b64}},
+            ],
+        }],
+    }).encode()
+    req = urllib.request.Request(
+        getattr(settings, 'DEEPSEEK_API_URL', 'https://api.deepseek.com/v1/chat/completions'),
+        data=payload,
+        headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {api_key}'},
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=getattr(settings, 'DEEPSEEK_TIMEOUT', 30)) as resp:
+            data = json.loads(resp.read().decode())
+            return str(data.get('choices', [{}])[0].get('message', {}).get('content', '')).strip()
+    except Exception as exc:
+        logger.warning('[OCR] DeepSeek vision no disponible: %s', exc)
+        return ''
+
+
+def _confianza_ocr(valor) -> float:
+    """Normaliza confianza a 0..1; algunos proveedores responden porcentajes."""
+    try:
+        confianza = float(valor or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    if confianza > 1:
+        confianza /= 100
+    return max(0.0, min(confianza, 1.0))
+
+
+def _leer_receta_en_cascada(imagen_b64: str) -> tuple[dict, str, dict]:
+    """Lee una receta con proveedor primario y fallback explícito por baja confianza."""
+    proveedores = []
+    for nombre in (
+        getattr(settings, 'OCR_VISION_PRIMARY', 'gemini'),
+        getattr(settings, 'OCR_VISION_FALLBACK', ''),
+    ):
+        nombre = (nombre or '').strip().lower()
+        if nombre in ('gemini', 'deepseek') and nombre not in proveedores:
+            proveedores.append(nombre)
+    if not proveedores:
+        return {}, '', {'proveedores_intentados': [], 'requiere_revision_humana': True}
+
+    umbral = _confianza_ocr(getattr(settings, 'OCR_VISION_CONFIDENCE_THRESHOLD', 0.72))
+    resultados = []
+    for indice, proveedor in enumerate(proveedores):
+        if proveedor == 'gemini':
+            clave = getattr(settings, 'GOOGLE_API_KEY', '') or getattr(settings, 'GEMINI_API_KEY', '')
+            raw = _gemini_vision_call(imagen_b64, _PROMPT_RECETA_FARMACIA, clave) if clave else ''
+        else:
+            raw = _deepseek_vision_call(imagen_b64, _PROMPT_RECETA_FARMACIA)
+        datos = _parse_json_respuesta(raw) if raw else {}
+        confianza = _confianza_ocr(datos.get('confianza'))
+        resultados.append({'proveedor': proveedor, 'confianza': confianza, 'datos': datos, 'respondio': bool(datos)})
+        if datos and confianza >= umbral:
+            break
+
+    validos = [r for r in resultados if r['datos']]
+    elegido = max(validos, key=lambda r: r['confianza']) if validos else {'proveedor': '', 'confianza': 0, 'datos': {}}
+    return elegido['datos'], elegido['proveedor'], {
+        'proveedores_intentados': [r['proveedor'] for r in resultados],
+        'confianzas': {r['proveedor']: r['confianza'] for r in resultados},
+        'umbral': umbral,
+        'fallback_utilizado': len(resultados) > 1,
+        'requiere_revision_humana': elegido['confianza'] < umbral,
+    }
+
+
 def _parse_json_respuesta(texto: str) -> dict:
     """Limpia la respuesta de Gemini y parsea el JSON."""
     texto = texto.strip()
@@ -375,20 +457,24 @@ def analizar_receta_farmacia(imagen_b64: str, empresa=None, usuario=None) -> dic
 
     if not flag_activo('OCR_CLASIFICACION_ACTIVO', empresa):
         return {'activo': False, 'mensaje': 'Motor OCR desactivado desde configuración.'}
-    api_key = getattr(settings, 'GOOGLE_API_KEY', '') or getattr(settings, 'GEMINI_API_KEY', '')
-    if not api_key:
-        return {'activo': True, 'error': 'OCR de recetas no disponible: falta configurar GOOGLE_API_KEY o GEMINI_API_KEY.'}
-    respuesta = _gemini_vision_call(imagen_b64, _PROMPT_RECETA_FARMACIA, api_key)
-    datos = _parse_json_respuesta(respuesta)
+    proveedores_configurados = {
+        'gemini': bool(getattr(settings, 'GOOGLE_API_KEY', '') or getattr(settings, 'GEMINI_API_KEY', '')),
+        'deepseek': bool(getattr(settings, 'DEEPSEEK_API_KEY', '') and getattr(settings, 'DEEPSEEK_VISION_MODEL', '')),
+    }
+    if not any(proveedores_configurados.values()):
+        return {'activo': True, 'error': 'OCR de recetas no disponible: configure un proveedor de visión.'}
+    datos, proveedor, vision = _leer_receta_en_cascada(imagen_b64)
     if not datos:
         return {'activo': True, 'error': 'El motor OCR no devolvió una lectura estructurada.'}
     datos['medicamentos'] = datos.get('medicamentos') if isinstance(datos.get('medicamentos'), list) else []
     return {
         'activo': True,
         'tipo_documento': datos.get('tipo_documento', 'OTRO'),
-        'confianza': datos.get('confianza', 0),
+        'confianza': vision.get('confianzas', {}).get(proveedor, 0),
         'datos_extraidos': datos,
-        'texto_extraido': respuesta,
+        'texto_extraido': json.dumps(datos, ensure_ascii=False),
+        'proveedor_vision': proveedor,
+        'vision': vision,
     }
 
 

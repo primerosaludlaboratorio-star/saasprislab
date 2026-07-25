@@ -1062,3 +1062,7 @@ Correcciones implementadas y pendientes de validacion productiva:
 - se agrego la migracion `core.0091_venta_tipo_precio_especial`.
 
 Validacion local de esta ronda: `manage.py check`, `makemigrations --check --noinput`, `node --check` de los dos scripts PDV/OCR, `git diff --check` y `core.tests.test_farmacia_permission_helpers` (`5/5`) correctos. La prueba humana productiva de OCR requiere una imagen real y la credencial de vision activa; no se marca como realizada sin esos insumos.
+
+### Cascada de vision preparada, no desplegada
+
+Se dejo en codigo una cascada opt-in para recetas manuscritas: `OCR_VISION_PRIMARY`, `OCR_VISION_FALLBACK`, `OCR_VISION_CONFIDENCE_THRESHOLD` y `DEEPSEEK_VISION_MODEL`. El segundo proveedor solo se consulta si el primero no responde o queda debajo del umbral; se elige la lectura con mayor confianza y se informa el proveedor utilizado. Si ninguna lectura supera el umbral, la interfaz conserva revision humana obligatoria. Por defecto el fallback queda vacio para no generar costos ni activar un modelo multimodal no verificado. Esta mejora queda pendiente de pruebas con imagenes reales y despliegue separado.

@@ -42,6 +42,13 @@ def api_analizar_receta(request):
         lectura.save(update_fields=["estado", "error"])
         return JsonResponse({"ok": False, "lectura_id": lectura.id, "error": lectura.error}, status=422)
     datos = resultado.get("datos_extraidos") or {}
+    vision_meta = resultado.get("vision") or {}
+    datos["_vision"] = {
+        "proveedor": resultado.get("proveedor_vision", ""),
+        "confianza": resultado.get("confianza", 0),
+        "requiere_revision_humana": True,
+        "proveedores_intentados": vision_meta.get("proveedores_intentados", []),
+    }
     lectura.texto_extraido = resultado.get("texto_extraido", "")
     lectura.datos_extraidos = datos
     lectura.sugerencias = conciliar_medicamentos(empresa, datos)
@@ -52,6 +59,8 @@ def api_analizar_receta(request):
         "lectura_id": lectura.id,
         "tipo_documento": resultado.get("tipo_documento"),
         "confianza": resultado.get("confianza"),
+        "proveedor_vision": resultado.get("proveedor_vision"),
+        "vision": vision_meta,
         "datos": datos,
         "sugerencias": lectura.sugerencias,
         "requiere_revision_humana": True,
