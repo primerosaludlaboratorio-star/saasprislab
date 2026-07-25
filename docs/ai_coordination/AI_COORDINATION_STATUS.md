@@ -18,6 +18,14 @@ Fecha: 2026-07-25
 - Produccion verificada: PIN valido `HTTP 200`, PIN de cuatro digitos incorrecto `HTTP 401` y cualquier PIN de ocho digitos `HTTP 400` con `PIN_FARMACIA_FORMATO_INVALIDO`.
 - El PDV productivo sirve `maxlength="4"`; ya no sirve el limite anterior de seis digitos.
 
+## Sentinel posterior al cambio de PIN - 2026-07-25
+
+- Se reviso produccion despues del despliegue `3454263`: no hubo incidencias nuevas en ventanas de 20 ni 60 minutos.
+- Sentinel tenia la incidencia `91` en estado pendiente por un `DataError` historico al guardar una imagen de receta con nombre mayor a 100 caracteres.
+- La causa fue confirmada contra el traceback y el esquema productivo actual (`imagen varchar(255)` con `farmacia.0008` aplicada).
+- La incidencia `91` se marco `SOLUCIONADO` con nota de resolucion y evidencia; no se borro el registro.
+- La ventana de cuatro horas quedo sin incidencias pendientes despues de la resolucion.
+
 ## Ticket digital y autorizacion de devoluciones — 2026-07-25
 
 - `f3ae553`: el boton `ENVIAR TICKET DIGITAL` ya consulta el detalle real de la venta antes de abrir WhatsApp y compone un comprobante con folio, fecha, cliente, producto, lote, cantidad, precio unitario, importe, subtotal, descuento, IVA, total, formas de pago, pagado, cambio y cajero.
