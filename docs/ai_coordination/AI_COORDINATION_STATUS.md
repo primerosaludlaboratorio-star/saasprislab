@@ -25,10 +25,12 @@ Fecha: 2026-07-21
 - `/health/`: `status=ok`, `database=ok`, `cache=ok`.
 - Las nueve rutas principales de Farmacia cargaron en interfaz sin error visible: PDV, inventario, Kardex, entrada, compras, ajustes, devoluciones, libro COFEPRIS y corte.
 - Prueba humana PDV: busqueda `paracetamol`, seleccion de producto con multiples lotes, seleccion explicita de `LOTE-TEST-001`, agregado con lote visible en carrito; segundo producto agregado correctamente y totales recalculados.
+- La primera cancelacion QA revelo un error real de PostgreSQL (`FOR UPDATE cannot be applied to the nullable side of an outer join`). `8469f20` elimino el `select_related` del queryset bloqueado; los 52 tests de Farmacia/devoluciones quedaron OK.
+- La cancelacion se repitio en produccion: folio `VTA-20260724204319-6422` confirmado como cancelado y el lote `253432` del producto `PARACETAMOL 650MG TABLETA` regreso a existencia `3` despues de la reversa.
 
 ### Estado de cierre
 
-La correccion queda desplegada y verificada. Farmacia continua **ABIERTA para certificacion 100%** hasta ejecutar con datos QA controlados los flujos con efecto lateral: apertura de caja, ventas, venta parcial, cancelacion, devolucion parcial/total, gasto, precorte y corte. La navegacion y seleccion no sustituyen esos escenarios.
+La correccion queda desplegada y verificada. Farmacia continua **ABIERTA para certificacion 100%** hasta ejecutar con datos QA controlados los flujos restantes: devolucion parcial/total, venta parcial, gasto, precorte y corte. La venta, cancelacion, reversa de lote y navegacion no sustituyen esos escenarios.
 
 ## Corte Farmacia: correcciones y verificacion productiva — 2026-07-23
 
