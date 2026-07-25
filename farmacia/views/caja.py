@@ -240,10 +240,17 @@ def abrir_caja(request):
             fondo_vales = Decimal(data.get('fondo_vales', '0.00'))
             observaciones = data.get('observaciones', '')
             
-            if fondo_efectivo <= 0:
+            if (
+                not fondo_efectivo.is_finite()
+                or not fondo_vales.is_finite()
+                or fondo_efectivo.as_tuple().exponent < -2
+                or fondo_vales.as_tuple().exponent < -2
+                or fondo_efectivo <= 0
+                or fondo_vales < 0
+            ):
                 return JsonResponse({
                     'success': False,
-                    'error': 'El fondo inicial de efectivo debe ser mayor a 0'
+                    'error': 'Los fondos deben ser finitos, no negativos y tener máximo dos decimales; el efectivo debe ser mayor a 0.'
                 }, status=400)
             
             apertura = AperturaCaja.objects.create(
@@ -266,6 +273,11 @@ def abrir_caja(request):
                 }
             })
             
+        except IntegrityError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Ya existe una caja activa para esta sucursal. Realice la entrega o el cierre antes de abrir otra.'
+            }, status=409)
         except (DatabaseError, ValueError, TypeError, InvalidOperation, ValidationError) as e:
             return JsonResponse({
                 'success': False,

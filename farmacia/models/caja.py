@@ -315,11 +315,25 @@ class AperturaCaja(models.Model):
         verbose_name = "Apertura de Caja"
         verbose_name_plural = "Aperturas de Caja"
         ordering = ['-fecha_apertura']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'sucursal'],
+                condition=models.Q(activa=True),
+                name='unique_apertura_activa_empresa_sucursal',
+                violation_error_message='Ya existe una caja activa para esta empresa y sucursal.',
+            ),
+        ]
         indexes = [
             models.Index(fields=['sucursal', '-fecha_apertura']),
             models.Index(fields=['usuario_responsable', '-fecha_apertura']),
             models.Index(fields=['activa', '-fecha_apertura']),
         ]
+
+    def clean(self):
+        if self.fondo_efectivo is not None and self.fondo_efectivo <= Decimal('0.00'):
+            raise ValidationError('El fondo inicial de efectivo debe ser mayor a cero.')
+        if self.fondo_vales is not None and self.fondo_vales < Decimal('0.00'):
+            raise ValidationError('El fondo de vales no puede ser negativo.')
     
     def save(self, *args, **kwargs):
         if not self.folio:
@@ -330,6 +344,7 @@ class AperturaCaja(models.Model):
             ).count()
             self.folio = f'APERT-{año}-{(ultimo + 1):06d}'
         
+        self.full_clean()
         super().save(*args, **kwargs)
     
     def cerrar_caja(self):

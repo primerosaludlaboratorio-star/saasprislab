@@ -4,6 +4,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.test import Client, TestCase
 
 from core.models import Empresa, MovimientoCaja, Paciente, Sucursal, Venta
@@ -140,6 +141,18 @@ class CorteCajaUnificadoTest(TestCase):
         self.assertIn('obligatorio', data['error'])
         self.assertEqual(CierreTurnoFarmacia.objects.count(), 0)
 
+    def test_api_corte_unificado_rechaza_monto_no_finito(self):
+        response = self.client.post(
+            '/api/caja/corte-unificado/',
+            data=json.dumps({'efectivo_declarado': 'NaN'}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('finito', response.json()['error'])
+        self.apertura.refresh_from_db()
+        self.assertTrue(self.apertura.activa)
+
     def test_api_corte_unificado_rechaza_json_malformado(self):
         response = self.client.post(
             '/api/caja/corte-unificado/',
@@ -165,6 +178,32 @@ class CorteCajaUnificadoTest(TestCase):
         self.assertFalse(data['ok'])
         self.assertIn('JSON', data['error'])
         self.assertEqual(CierreTurnoFarmacia.objects.count(), 0)
+
+    def test_api_corte_repetido_devuelve_conflicto_y_no_simula_exito(self):
+        primera = self.client.post(
+            '/api/caja/corte-unificado/',
+            data=json.dumps({'efectivo_declarado': '180.00', 'imprimir_ticket': False}),
+            content_type='application/json',
+        )
+        segunda = self.client.post(
+            '/api/caja/corte-unificado/',
+            data=json.dumps({'efectivo_declarado': '180.00', 'imprimir_ticket': False}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(primera.status_code, 200)
+        self.assertEqual(segunda.status_code, 409)
+        self.assertFalse(segunda.json()['ok'])
+
+    def test_no_se_permiten_dos_aperturas_activas_en_la_misma_sucursal(self):
+        with self.assertRaises(ValidationError):
+            AperturaCaja.objects.create(
+                empresa=self.empresa,
+                sucursal=self.sucursal,
+                usuario_responsable=self.user,
+                fondo_efectivo=Decimal('50.00'),
+                fondo_vales=Decimal('0.00'),
+            )
 
     def test_precorte_es_solo_lectura_y_conserva_apertura(self):
         antes = CierreTurnoFarmacia.objects.count()

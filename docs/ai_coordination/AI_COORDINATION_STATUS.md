@@ -1155,3 +1155,14 @@ Verificacion:
 - La migracion `farmacia.0009_cierreturnofarmacia_cerrado_por` esta aplicada y el modelo productivo expone `cerrado_por`.
 - Sentinel no registro incidencias de Farmacia nuevas en los 20 minutos posteriores al despliegue.
 - La prueba con `farmacia_empleado_10d` requiere iniciar una sesion separada con su credencial temporal; no se inventa ni se guarda esa contrasena en el repositorio.
+
+## Endurecimiento enterprise de caja - pendiente de despliegue
+
+La revision posterior detecto controles que no podian depender solo de la vista:
+
+- la base de datos debe impedir dos `AperturaCaja` activas para la misma empresa y sucursal;
+- el API debe rechazar `NaN`, infinitos, negativos y montos con mas de dos decimales;
+- un segundo intento de cierre debe responder conflicto y no simular un cierre exitoso;
+- el cierre debe serializar los importes con dos decimales y conservar la trazabilidad del actor.
+
+La suite focalizada ampliada cubre estos controles con `16 tests OK`. El cambio esta en la rama local y no debe marcarse productivo hasta ejecutar el despliegue y repetir la prueba humana de apertura, precorte, entrega y cierre.

@@ -236,6 +236,21 @@ def cerrar_turno_unificado(
     with transaction.atomic():
         # ── 1. Corte Farmacia ─────────────────────────────────────────────────
         corte_farmacia = _cerrar_farmacia(cajero, empresa, sucursal, ahora, efectivo_declarado)
+        if corte_farmacia.get('estado') == 'sin_apertura':
+            return {
+                'fecha': ahora.isoformat(),
+                'cajero': cajero.username if cajero else 'SISTEMA',
+                'empresa': str(empresa),
+                'sucursal': str(sucursal) if sucursal else 'General',
+                'estado': 'SIN_APERTURA',
+                'farmacia': corte_farmacia,
+                'laboratorio': {'total': Decimal('0'), 'ordenes': 0, 'estado': 'no_aplica'},
+                'total_consolidado': _money(Decimal('0')),
+                'efectivo_esperado': _money(Decimal('0')),
+                'efectivo_declarado': _money(efectivo_declarado),
+                'diferencia': _money(Decimal('0')),
+                'ticket_impreso': False,
+            }
         if corte_farmacia.get('estado') == 'error':
             raise RuntimeError('No fue posible completar el corte unificado.')
 
@@ -268,11 +283,11 @@ def cerrar_turno_unificado(
             'sucursal': str(sucursal) if sucursal else 'General',
             'farmacia': corte_farmacia,
             'laboratorio': corte_lab,
-            'total_consolidado': str(total_consolidado),
-            'fondo_inicial': str(fondo_inicial),
-            'efectivo_esperado': str(efectivo_esperado),
-            'efectivo_declarado': str(efectivo_declarado),
-            'diferencia': str(diferencia),
+            'total_consolidado': _money(total_consolidado),
+            'fondo_inicial': _money(fondo_inicial),
+            'efectivo_esperado': _money(efectivo_esperado),
+            'efectivo_declarado': _money(efectivo_declarado),
+            'diferencia': _money(diferencia),
             'estado': 'CUADRADO' if abs(diferencia) < Decimal('1') else 'DESCUADRADO',
         }
 

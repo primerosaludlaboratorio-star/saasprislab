@@ -15,6 +15,23 @@ from core.utils.sucursal_helpers import get_request_sucursal
 logger = logging.getLogger('farmacia.corte_caja_api')
 
 
+def _parse_money(raw_value, field_name, *, allow_zero=True):
+    """Valida importes de caja antes de permitir una mutacion financiera."""
+    try:
+        value = Decimal(str(raw_value))
+    except (InvalidOperation, TypeError, ValueError):
+        raise ValueError(f'{field_name} debe ser un monto válido.')
+    if not value.is_finite():
+        raise ValueError(f'{field_name} debe ser un monto finito.')
+    if value.as_tuple().exponent < -2:
+        raise ValueError(f'{field_name} admite como máximo dos decimales.')
+    minimum = Decimal('0.00') if allow_zero else Decimal('0.01')
+    if value < minimum:
+        comparator = 'mayor o igual a' if allow_zero else 'mayor a'
+        raise ValueError(f'{field_name} debe ser {comparator} {minimum:.2f}.')
+    return value
+
+
 @login_required
 @require_http_methods(['GET'])
 def api_precorte_unificado(request):
@@ -70,10 +87,10 @@ def api_corte_caja_unificado(request):
         )
 
     try:
-        efectivo = Decimal(str(body.get('efectivo_declarado')))
-    except (InvalidOperation, TypeError, ValueError):
+        efectivo = _parse_money(body.get('efectivo_declarado'), 'efectivo_declarado')
+    except ValueError as exc:
         return JsonResponse(
-            {'ok': False, 'error': 'efectivo_declarado debe ser un monto válido.'},
+            {'ok': False, 'error': str(exc)},
             status=400,
         )
     imprimir = body.get('imprimir_ticket', False)
@@ -89,6 +106,11 @@ def api_corte_caja_unificado(request):
             imprimir_ticket=imprimir,
             host_impresora=host_imp,
         )
+        if corte.get('estado') == 'SIN_APERTURA':
+            return JsonResponse(
+                {'ok': False, 'error': 'No existe una caja activa para cerrar.'},
+                status=409,
+            )
         if corte.get('estado') == 'ERROR' or corte.get('status') == 'error':
             return JsonResponse(
                 {'ok': False, 'error': 'No fue posible completar el corte unificado.'},
