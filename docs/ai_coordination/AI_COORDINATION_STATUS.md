@@ -2,6 +2,34 @@
 
 Fecha: 2026-07-21
 
+## Auditoria Farmacia posterior al despliegue local — 2026-07-25
+
+### Correcciones aplicadas
+
+- `a83ac54`: se corrigio el `NameError` de la validacion de precio neto; el rol se normaliza antes de evaluar permisos y los casos de PIN valido/invalido vuelven a responder conforme a contrato.
+- `a83ac54`: Entrada Express consulta el catalogo por empresa usando el manager sin filtro de sucursal, permitiendo ingresar productos globales de la empresa que aun no tienen sucursal asignada, sin abrir acceso entre tenants.
+- Se actualizaron fixtures obsoletos que intentaban guardar la propiedad de compatibilidad `Usuario.sucursal` dentro de `update_fields`; la arquitectura vigente usa la relacion M2M de sucursales.
+
+### Evidencia automatica
+
+- Suite dirigida Farmacia: `74 pruebas OK`.
+- Incluye PDV, busqueda, lotes, entradas, precio neto, caja, devoluciones, COFEPRIS, permisos, auditoria y aislamiento multi-tenant.
+- `manage.py check`: sin problemas.
+- `makemigrations --check --noinput`: sin cambios.
+- `git diff --check`: limpio.
+
+### Evidencia productiva
+
+- Despliegue local unico completado con revision `a83ac54c3f58326ae20422fa08adbf60061c9f9b`; no se uso GitHub.
+- Migraciones: sin pendientes; Gunicorn, Celery y Celery Beat activos; estaticos procesados.
+- `/health/`: `status=ok`, `database=ok`, `cache=ok`.
+- Las nueve rutas principales de Farmacia cargaron en interfaz sin error visible: PDV, inventario, Kardex, entrada, compras, ajustes, devoluciones, libro COFEPRIS y corte.
+- Prueba humana PDV: busqueda `paracetamol`, seleccion de producto con multiples lotes, seleccion explicita de `LOTE-TEST-001`, agregado con lote visible en carrito; segundo producto agregado correctamente y totales recalculados.
+
+### Estado de cierre
+
+La correccion queda desplegada y verificada. Farmacia continua **ABIERTA para certificacion 100%** hasta ejecutar con datos QA controlados los flujos con efecto lateral: apertura de caja, ventas, venta parcial, cancelacion, devolucion parcial/total, gasto, precorte y corte. La navegacion y seleccion no sustituyen esos escenarios.
+
 ## Corte Farmacia: correcciones y verificacion productiva — 2026-07-23
 
 Este corte se limita al modulo Farmacia y deja trazabilidad de lo que fue corregido y de lo que sigue pendiente para la certificacion humana integral.

@@ -2,7 +2,7 @@
 
 Estado: procedimiento unico y vigente
 Nombre operativo: `DESPLIEGUE_UNICO_PRISLAB_VPS_LOCAL`
-Ultima verificacion: 2026-07-24
+Ultima verificacion: 2026-07-25
 
 ## Regla principal
 
@@ -85,6 +85,8 @@ Invoke-WebRequest https://prislab.labcorecloud.com/health/
 - No declarar exito solo porque SSH conecto: siempre se requiere revision, servicios, health check y prueba humana.
 
 ## Evidencia vigente
+
+El 2026-07-25 se desplego localmente la revision `a83ac54c3f58326ae20422fa08adbf60061c9f9b`, con migraciones sin pendientes, estaticos procesados, servicios activos y health check `status=ok`, `database=ok`, `cache=ok`. La prueba humana productiva de Farmacia cargo sus rutas principales y valido busqueda, seleccion multi-lote, lote visible y agregado de segundo producto al carrito.
 
 El 2026-07-24 se desplego localmente la revision `82f26a99176e280f4b71968bb433dec4754750f2`, que incluye el fix funcional `c94b92b`. Migraciones, estaticos, servicios y health check fueron correctos. Laboratorio/LIMS se verifico en produccion navegando 22 pantallas y abriendo el formulario de nueva orden; la consola del navegador reporto 0 errores y 0 warnings.
 
