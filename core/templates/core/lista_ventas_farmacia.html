@@ -5,6 +5,7 @@
 
 {% block content %}
 <div class="container-fluid p-4">
+    <input type="hidden" id="csrf-cancel-venta" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
     <!-- Encabezado -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -171,6 +172,12 @@
         return '';
     }
 
+    function getCsrfToken() {
+        return getCookie('csrftoken')
+            || document.getElementById('csrf-cancel-venta')?.value
+            || '';
+    }
+
     async function cancelarVenta(url, folio) {
         const confirmar = await Swal.fire({
             icon: 'warning',
@@ -187,7 +194,7 @@
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-CSRFToken': getCsrfToken(),
                     'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json'
                 }
