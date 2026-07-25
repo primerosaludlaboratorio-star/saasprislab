@@ -272,15 +272,17 @@
     document.addEventListener('DOMContentLoaded', function() {
         const fechaInput = document.getElementById('filtro-fecha');
         const fechaGuardada = localStorage.getItem('fechaFiltroCorte');
+        const fechaServidor = '{{ fecha_seleccionada_str|default:"" }}';
+        const fechaEnUrl = new URLSearchParams(window.location.search).get('fecha');
         
-        if (fechaGuardada && !new URLSearchParams(window.location.search).get('fecha')) {
+        // No usar toISOString(): convierte a UTC y puede mostrar manana despues de las 18:00 en Mexico.
+        if (fechaGuardada && !fechaEnUrl && fechaGuardada <= fechaServidor) {
             fechaInput.value = fechaGuardada;
             if (fechaInput.value !== '{{ fecha_seleccionada|default:"" }}') {
                 window.location.href = window.location.pathname + '?fecha=' + fechaGuardada;
             }
         } else if (!fechaInput.value) {
-            const hoy = new Date().toISOString().split('T')[0];
-            fechaInput.value = hoy;
+            fechaInput.value = fechaServidor;
         }
         
         fechaInput.addEventListener('change', function() {
@@ -289,7 +291,7 @@
     });
     
     function resetearFecha() {
-        const hoy = new Date().toISOString().split('T')[0];
+        const hoy = '{{ fecha_seleccionada_str|default:"" }}';
         localStorage.setItem('fechaFiltroCorte', hoy);
         window.location.href = window.location.pathname;
     }
