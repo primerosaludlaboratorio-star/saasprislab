@@ -7,8 +7,16 @@ Fecha: 2026-07-25
 - El PIN solicitado por el PDV no corresponde al corte ni al arqueo ciego; autoriza exclusivamente la venta a precio de costo para `Personal` o `Familiar`.
 - Se detecto que Empresa `1` no tenia `ConfiguracionModulos.pin_precio_neto` y la vista usaba el fallback inseguro `1234`.
 - `43d55db`: la validacion ahora lee el PIN de la configuracion de la empresa, usa comparacion constante y falla cerrado con `PIN_FARMACIA_NO_CONFIGURADO` si no existe; se agrego regresion automatica.
-- Se provisiono un PIN de 8 digitos para Empresa `1` en produccion. El valor no se guarda en codigo ni en el repositorio; debe entregarse al personal autorizado por canal seguro.
+- En la fase inicial se provisiono un PIN de 8 digitos para Empresa `1`; ese valor quedo invalidado al cambiar el contrato a cuatro digitos.
 - Produccion verificada: PIN valido devuelve `HTTP 200`; PIN invalido devuelve `HTTP 401`; la cuenta `farmacia_admin_10d` conserva permiso para solicitarlo y un `CAJERO` no lo hereda.
+
+### PIN de pruebas de cuatro digitos - revision 2026-07-25
+
+- `9746b23` limita el campo, el modal y el backend a exactamente cuatro digitos.
+- `3454263` agrega limpieza de datos legacy antes de reducir la columna PostgreSQL; la migracion `core.0092` se aplico correctamente en produccion.
+- Se provisiono un PIN nuevo de cuatro digitos para Empresa `1`; el valor no se almacena en codigo ni en esta documentacion y se entrega solo por canal seguro.
+- Produccion verificada: PIN valido `HTTP 200`, PIN de cuatro digitos incorrecto `HTTP 401` y cualquier PIN de ocho digitos `HTTP 400` con `PIN_FARMACIA_FORMATO_INVALIDO`.
+- El PDV productivo sirve `maxlength="4"`; ya no sirve el limite anterior de seis digitos.
 
 ## Ticket digital y autorizacion de devoluciones — 2026-07-25
 
