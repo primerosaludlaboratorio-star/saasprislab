@@ -12,6 +12,8 @@ Fecha: 2026-07-25
 - Prueba humana productiva completada: venta de `PARACETAMOL 650MG TABLETA`, lote `253432`, cantidad `2`, subtotal `$130.00`, cobro efectivo exitoso, folio `VTA-20260724222626-5CFA`.
 - La prueba humana de devolucion parcial se inicio sobre ese folio, pero la sesion autenticada del navegador se perdio despues de una interrupcion y no se certifica el resultado. Quedan pendientes de repetir con sesion autenticada: devolucion parcial, devolucion total, verificacion de existencias y cierre de la caja QA.
 - La suite Django dirigida iniciada localmente quedo bloqueada durante la creacion de la base de pruebas; no se cuenta como aprobada.
+- Regresion local especifica de permisos: `5/5` pruebas OK, incluyendo `DIRECTOR` con empresa permitido, `CAJERO` rechazado y `DIRECTOR` sin empresa rechazado.
+- La revision posterior `7d13a4e` quedo desplegada; la certificacion humana de devoluciones sigue pendiente por falta de sesion autenticada disponible.
 
 ## Gasto, conciliacion y cierre de caja QA — 2026-07-25
 
