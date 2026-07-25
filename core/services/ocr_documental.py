@@ -176,7 +176,7 @@ Responde SOLO con JSON válido y no inventes datos ilegibles:
   ],
   "observaciones": "string o null"
 }
-Reglas: una línea por medicamento; no conviertas dosis o frecuencia en cantidad de cajas; si no puedes leer el nombre, conserva el texto parcial y baja la confianza."""
+Reglas: una línea por medicamento; conserva literalmente dosis, frecuencia, duración, vía e indicaciones en "indicaciones"; no conviertas dosis o frecuencia en cantidad de cajas; si la letra es ambigua, conserva el texto parcial y baja la confianza en vez de inventar."""
 
 _PROMPT_COMPRA_FARMACIA = """Lee esta factura o nota de compra de medicamentos para auxiliar al encargado de inventario.
 Responde SOLO con JSON válido y no inventes datos ilegibles:
