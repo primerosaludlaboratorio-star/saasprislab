@@ -1101,3 +1101,26 @@ La interfaz tambien fue preparada para mostrar el texto estructurado de la recet
 Sentinel detecto un `DataError` al guardar recetas porque el nombre generado del archivo de imagen podia superar el `max_length` predeterminado de 100 caracteres. Se corrigio con `farmacia.0008_lecturarecetafarmacia_imagen_max_length`, aplicado en produccion durante la revision `dcdc70f`. Tambien se agrego el alias `/farmacia/caja/verificar/` para compatibilidad con clientes antiguos que no usaban el prefijo `/farmacia/erp/`.
 
 El reporte Sentinel posterior al despliegue no registro incidencias nuevas en los diez minutos siguientes. La ventana diaria conserva incidencias historicas, principalmente solicitudes lentas de IA/War Room y el error anterior; se mantienen para auditoria y no se marcan como eliminadas.
+
+## Precorte de caja independiente - 2026-07-25
+
+Se implemento y desplego el precorte operativo separado del arqueo y del cierre:
+
+- `GET /api/caja/precorte/` calcula el estado actual de Farmacia + Laboratorio en modo solo lectura;
+- no crea `CierreTurnoFarmacia`, no desactiva `AperturaCaja`, no bloquea registros y no modifica ventas, inventario ni gastos;
+- la pantalla canonica `/farmacia/erp/corte-caja/` muestra `GENERAR PRECORTE` y presenta apertura, ventas, gastos, total consolidado y efectivo esperado;
+- el boton verde `CERRAR TURNO Y GENERAR CORTE` permanece como la unica accion que ejecuta el cierre definitivo;
+- el precorte se habilita para `FARMACIA`, `ADMIN`, `ADMINISTRADOR`, `GERENTE` y `DIRECTOR` con empresa asignada;
+- `CAJERO` conserva el arqueo ciego y recibe denegacion controlada al solicitar el esperado;
+- la informacion sigue aislada por empresa y sucursal.
+
+Verificacion:
+
+- commit desplegado por el proceso local al VPS: `7641666`;
+- produccion devolvio HTTP 200 para `farmacia_admin_10d` y `solo_lectura: true`;
+- la misma prueba reporto delta cero en cierres creados y aperturas activas;
+- la interfaz productiva cargo el boton, ejecuto el precorte y mostro `PRECORTE INFORMATIVO` / `SOLO LECTURA - NO CIERRA CAJA`;
+- `farmacia_empleado_10d` recibio HTTP 403 por no tener permiso para revelar el esperado;
+- no se ejecuto ningun cierre ni se alteraron datos durante la prueba.
+
+Limitacion de pruebas automatizadas: la suite focalizada local quedo bloqueada durante la creacion de la base de pruebas; no se marca como verde. Las validaciones estaticas (`manage.py check`, `makemigrations --check`, compilacion Python y `git diff --check`) fueron correctas y la verificacion de produccion fue realizada con el entorno real del servicio web.
