@@ -2,6 +2,17 @@
 
 Fecha: 2026-07-25
 
+## Verificacion PDV y devoluciones posterior — 2026-07-25
+
+- `a5c070b`: se eliminaron manejadores duplicados de los controles de cantidad; el boton `+` ya no incrementa dos veces.
+- `99a308d`: una venta normal sin receta ya envia la cantidad real solicitada y no la interpreta como surtido parcial de receta.
+- `7c5c850` y `67aefc4`: la autorizacion de devoluciones usa la empresa efectiva del usuario y reconoce los roles `DIRECTOR`/auditor supremo sin abrir el flujo a usuarios sin empresa.
+- `8c51da7`: el recordatorio de bienestar deja de bloquear controles del PDV; solo sus propios botones conservan interaccion.
+- Produccion confirmada en revision `67aefc4f75f2b5c570bfa53314c00c6583f9950d`; `/health/` devuelve `status=ok`, base de datos y cache `ok`.
+- Prueba humana productiva completada: venta de `PARACETAMOL 650MG TABLETA`, lote `253432`, cantidad `2`, subtotal `$130.00`, cobro efectivo exitoso, folio `VTA-20260724222626-5CFA`.
+- La prueba humana de devolucion parcial se inicio sobre ese folio, pero la sesion autenticada del navegador se perdio despues de una interrupcion y no se certifica el resultado. Quedan pendientes de repetir con sesion autenticada: devolucion parcial, devolucion total, verificacion de existencias y cierre de la caja QA.
+- La suite Django dirigida iniciada localmente quedo bloqueada durante la creacion de la base de pruebas; no se cuenta como aprobada.
+
 ## Gasto, conciliacion y cierre de caja QA — 2026-07-25
 
 - `9240576`: la pantalla de corte usa la fecha del servidor y ya no desplaza el dia por conversion UTC; el gasto `QA insumo operativo` quedo visible en `24/07/2026`.

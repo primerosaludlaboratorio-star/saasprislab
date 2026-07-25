@@ -86,7 +86,9 @@ Invoke-WebRequest https://prislab.labcorecloud.com/health/
 
 ## Evidencia vigente
 
-El 2026-07-25 se desplego localmente la revision `4ac3861afa887cca4e786ed5eda3acdd8abcca63`, con migraciones sin pendientes, estaticos procesados, servicios activos y health check correcto. La prueba humana productiva de Farmacia cargo sus rutas principales, valido busqueda, seleccion multi-lote, lote visible, agregado de segundo producto al carrito, cancelacion con restitucion de lote, registro de gasto y cierre de caja desde la interfaz. El cierre mas reciente genero `CIERRE-2026-000002` con efectivo esperado cero despues del gasto, y la verificacion posterior confirmo `caja_abierta: false`.
+El 2026-07-25 se desplego localmente la revision `67aefc4f75f2b5c570bfa53314c00c6583f9950d`, con migraciones sin pendientes, estaticos procesados, servicios activos y health check correcto. La prueba humana productiva de Farmacia cargo sus rutas principales, valido busqueda, seleccion multi-lote, lote visible, agregado de segundo producto al carrito, cancelacion con restitucion de lote, registro de gasto y cierre de caja desde la interfaz. El cierre mas reciente genero `CIERRE-2026-000002` con efectivo esperado cero despues del gasto, y la verificacion posterior confirmo `caja_abierta: false`.
+
+En la misma ronda se verifico una venta de dos unidades del producto `PARACETAMOL 650MG TABLETA`, lote `253432`, con subtotal `$130.00` y cobro exitoso, folio `VTA-20260724222626-5CFA`. La devolucion parcial se dejo preparada pero no se certifica porque la sesion autenticada del navegador se perdio tras una interrupcion; debe repetirse antes de declarar Farmacia cerrada al 100%.
 
 Posteriormente se desplego `8469f20b6f7dc8551489eff98df9d9338918bc1e`, que corrige la reversa de cancelacion en PostgreSQL. La prueba productiva cancelo el folio QA `VTA-20260724204319-6422` y confirmo el retorno del lote `253432` a existencia `3`.
 
