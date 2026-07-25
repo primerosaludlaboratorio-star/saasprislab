@@ -498,10 +498,30 @@ window.renderCarrito = function() {
         var sub = item.precio_venta * item.cantidad;
         var prescrita = item.cantidad_prescrita || item.cantidad;
         var parcial = prescrita > item.cantidad;
-        var motivo = parcial ? '<select class="form-select form-select-sm mt-1" onchange="setMotivoSurtido('+i+',this.value)" aria-label="Motivo de surtido parcial"><option value="">Motivo requerido</option><option value="PRESUPUESTO_INSUFICIENTE"'+(item.motivo_surtido_parcial==='PRESUPUESTO_INSUFICIENTE'?' selected':'')+'>Presupuesto insuficiente</option><option value="DECISION_PACIENTE"'+(item.motivo_surtido_parcial==='DECISION_PACIENTE'?' selected':'')+'>Decisión del paciente</option><option value="SIN_EXISTENCIA"'+(item.motivo_surtido_parcial==='SIN_EXISTENCIA'?' selected':'')+'>Sin existencia</option><option value="OTRO"'+(item.motivo_surtido_parcial==='OTRO'?' selected':'')+'>Otro</option></select>' : '';
-        html += '<tr><td class="text-muted small">'+(i+1)+'</td><td><div class="fw-bold" style="font-size:.85rem">'+item.nombre+'</div><small class="text-muted">'+item.sustancia+'</small>'+(item.lote_num?'<br><span class="badge bg-light text-dark" style="font-size:.7rem">Lote:'+item.lote_num+'</span>':'')+(item.es_antibiotico?'<span class="badge bg-danger ms-1" style="font-size:.65rem">AB</span>':'')+(parcial?'<br><span class="badge bg-warning text-dark mt-1">Prescrita: '+prescrita+' | Surtir: '+item.cantidad+'</span>'+motivo:'')+'</td><td><small class="text-muted">'+(item.lote_num||'&mdash;')+'</small></td><td class="text-center"><div class="input-group input-group-sm" style="max-width:90px;margin:0 auto"><button class="btn btn-outline-secondary btn-sm py-0 px-1" onclick="cambiarCantidad('+i+',-1)">&minus;</button><input type="number" class="form-control text-center py-0" style="font-size:.85rem" value="'+item.cantidad+'" min="1" max="'+item.stock+'" onchange="setCantidad('+i+',this.value)"><button class="btn btn-outline-secondary btn-sm py-0 px-1" onclick="cambiarCantidad('+i+',1)">+</button></div></td><td class="text-end"><small class="text-muted d-block">'+_fmt(item.precio_venta)+'</small></td><td class="text-end fw-bold">'+_fmt(sub)+'</td><td><button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="quitarItem('+i+')"><i class="bi bi-trash3"></i></button></td></tr>';
+        var motivo = parcial ? '<select class="form-select form-select-sm mt-1" data-motivo-index="'+i+'" aria-label="Motivo de surtido parcial"><option value="">Motivo requerido</option><option value="PRESUPUESTO_INSUFICIENTE"'+(item.motivo_surtido_parcial==='PRESUPUESTO_INSUFICIENTE'?' selected':'')+'>Presupuesto insuficiente</option><option value="DECISION_PACIENTE"'+(item.motivo_surtido_parcial==='DECISION_PACIENTE'?' selected':'')+'>Decisión del paciente</option><option value="SIN_EXISTENCIA"'+(item.motivo_surtido_parcial==='SIN_EXISTENCIA'?' selected':'')+'>Sin existencia</option><option value="OTRO"'+(item.motivo_surtido_parcial==='OTRO'?' selected':'')+'>Otro</option></select>' : '';
+        html += '<tr><td class="text-muted small">'+(i+1)+'</td><td><div class="fw-bold" style="font-size:.85rem">'+item.nombre+'</div><small class="text-muted">'+item.sustancia+'</small>'+(item.lote_num?'<br><span class="badge bg-light text-dark" style="font-size:.7rem">Lote:'+item.lote_num+'</span>':'')+(item.es_antibiotico?'<span class="badge bg-danger ms-1" style="font-size:.65rem">AB</span>':'')+(parcial?'<br><span class="badge bg-warning text-dark mt-1">Prescrita: '+prescrita+' | Surtir: '+item.cantidad+'</span>'+motivo:'')+'</td><td><small class="text-muted">'+(item.lote_num||'&mdash;')+'</small></td><td class="text-center"><div class="input-group input-group-sm" style="max-width:90px;margin:0 auto"><button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1" data-cantidad-delta="-1" data-index="'+i+'">&minus;</button><input type="number" class="form-control text-center py-0" style="font-size:.85rem" value="'+item.cantidad+'" min="1" max="'+item.stock+'" data-cantidad-index="'+i+'"><button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1" data-cantidad-delta="1" data-index="'+i+'">+</button></div></td><td class="text-end"><small class="text-muted d-block">'+_fmt(item.precio_venta)+'</small></td><td class="text-end fw-bold">'+_fmt(sub)+'</td><td><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" data-quitar-index="'+i+'"><i class="bi bi-trash3"></i></button></td></tr>';
     });
     tbody.innerHTML = html;
+    tbody.querySelectorAll('[data-cantidad-delta]').forEach(function(button) {
+        button.addEventListener('click', function() {
+            cambiarCantidad(Number(button.dataset.index), Number(button.dataset.cantidadDelta));
+        });
+    });
+    tbody.querySelectorAll('[data-cantidad-index]').forEach(function(input) {
+        input.addEventListener('change', function() {
+            setCantidad(Number(input.dataset.cantidadIndex), input.value);
+        });
+    });
+    tbody.querySelectorAll('[data-quitar-index]').forEach(function(button) {
+        button.addEventListener('click', function() {
+            quitarItem(Number(button.dataset.quitarIndex));
+        });
+    });
+    tbody.querySelectorAll('[data-motivo-index]').forEach(function(select) {
+        select.addEventListener('change', function() {
+            setMotivoSurtido(Number(select.dataset.motivoIndex), select.value);
+        });
+    });
     var t = _calcTotales(); _actualizarTotalesPanel(t.subtotal, t.iva, t.total);
     if (badge) badge.textContent = window.carrito.reduce(function(s,i){return s+i.cantidad;},0);
 };
