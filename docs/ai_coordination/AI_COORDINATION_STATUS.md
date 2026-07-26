@@ -1193,4 +1193,14 @@ Validacion local:
 - `core.tests.test_farmacia_corte_unificado`: `18 tests OK`;
 - migraciones nuevas: `core.0093` y `farmacia.0011`.
 
-La revision productiva queda pendiente de aplicar en el despliegue de esta revision; no se marca como productiva hasta confirmar migraciones, health check y Sentinel posterior.
+Revision productiva aplicada: `a746df8`.
+
+Verificacion posterior al despliegue:
+
+- `core.0093` y `farmacia.0011` aplicadas sin errores;
+- health check HTTP 200;
+- campos de conciliacion de tarjeta, transferencia y vales presentes en produccion;
+- `GastoCaja.sucursal` presente y gastos historicos backfilleados cuando fue posible;
+- precorte productivo `PRECORTE` y `solo_lectura=True`;
+- una apertura activa conservada sin ejecutar un cierre destructivo;
+- Sentinel Farmacia: `0` incidencias nuevas en los 20 minutos posteriores.
