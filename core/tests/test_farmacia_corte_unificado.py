@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import Client, TestCase
 
-from core.models import Empresa, MovimientoCaja, Paciente, Sucursal, Venta
+from core.models import Empresa, GastoCaja, MovimientoCaja, Paciente, Pago, Sucursal, Venta
 from farmacia.models import AperturaCaja, CierreTurnoFarmacia
 from farmacia.services.corte_caja_unificado import calcular_precorte_unificado, cerrar_turno_unificado
 
@@ -284,6 +284,62 @@ class CorteCajaUnificadoTest(TestCase):
         self.assertEqual(precorte['farmacia']['retiros'], '25.00')
         self.assertEqual(precorte['efectivo_esperado'], '155.00')
         self.assertEqual(len(precorte['farmacia']['movimientos']), 2)
+
+    def test_cierre_concilia_por_separado_efectivo_tarjeta_transferencia_y_vales(self):
+        Pago.objects.create(
+            venta=self.venta,
+            metodo='EFECTIVO',
+            monto=Decimal('80.00'),
+            monto_efectivo=Decimal('30.00'),
+            monto_tarjeta=Decimal('20.00'),
+            monto_transferencia=Decimal('20.00'),
+            monto_vales=Decimal('10.00'),
+        )
+
+        corte = cerrar_turno_unificado(
+            cajero=self.user,
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            efectivo_declarado=Decimal('130.00'),
+            tarjeta_declarado=Decimal('20.00'),
+            transferencia_declarado=Decimal('20.00'),
+            vales_declarado=Decimal('10.00'),
+            imprimir_ticket=False,
+        )
+
+        cierre = CierreTurnoFarmacia.objects.get(apertura_caja=self.apertura)
+        self.assertEqual(cierre.efectivo_teorico, Decimal('30.00'))
+        self.assertEqual(cierre.tarjeta_teorico, Decimal('20.00'))
+        self.assertEqual(cierre.transferencia_teorico, Decimal('20.00'))
+        self.assertEqual(cierre.vales_teorico, Decimal('10.00'))
+        self.assertEqual(cierre.diferencia_total, Decimal('0.00'))
+        self.assertEqual(corte['diferencia_tarjeta'], '0.00')
+        self.assertEqual(corte['diferencia_transferencia'], '0.00')
+        self.assertEqual(corte['diferencia_vales'], '0.00')
+        self.assertEqual(corte['estado'], 'CUADRADO')
+
+    def test_gasto_de_otra_sucursal_no_contamina_precorte(self):
+        otra_sucursal = Sucursal.objects.create(
+            empresa=self.empresa,
+            nombre='Otra Sucursal',
+            codigo_sucursal='SUC-COR-002',
+        )
+        GastoCaja.objects.create(
+            empresa=self.empresa,
+            sucursal=otra_sucursal,
+            usuario=self.user,
+            concepto='Gasto de otra sucursal',
+            monto=Decimal('75.00'),
+        )
+
+        precorte = calcular_precorte_unificado(
+            cajero=self.user,
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+        )
+
+        self.assertEqual(precorte['farmacia']['gastos'], '0.00')
+        self.assertEqual(precorte['efectivo_esperado'], '180.00')
 
     def test_personal_entrante_puede_cerrar_apertura_de_otro_usuario(self):
         empleado = User.objects.create_user(

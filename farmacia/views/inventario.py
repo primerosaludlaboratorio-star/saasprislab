@@ -36,6 +36,7 @@ from core.models import (
 from core.services.inventario.movimiento_inventario_service import MovimientoInventarioService
 from core.services.inventario.catalogo_farmacia_service import CatalogoFarmaciaService
 from core.tenant import get_current_empresa, set_current_empresa
+from core.utils.sucursal_helpers import get_user_primary_sucursal
 
 
 def _empresa_desde_request(request):
@@ -438,7 +439,11 @@ def dashboard_farmacia(request):
         venta__estado='COMPLETADA'
     ).exclude(metodo='EFECTIVO').aggregate(total=Coalesce(Sum('monto'), Decimal('0.00'), output_field=DecimalField()))['total'] or Decimal('0.00')
     
-    gastos_hoy = GastoCaja.objects.filter(empresa=empresa, fecha__range=(inicio, fin))
+    gastos_hoy = GastoCaja.objects.filter(
+        empresa=empresa,
+        sucursal=get_user_primary_sucursal(request.user),
+        fecha__range=(inicio, fin),
+    )
     saldo_caja = ventas_efectivo - (gastos_hoy.aggregate(total=Coalesce(Sum('monto'), Decimal('0.00'), output_field=DecimalField()))['total'] or Decimal('0.00'))
     
     ultimas_ventas = ventas_hoy.select_related('paciente').order_by('-fecha')[:10]
@@ -618,6 +623,7 @@ def registro_gasto(request):
     if request.method == 'GET':
         gastos_hoy = GastoCaja.objects.filter(
             empresa=empresa,
+            sucursal=get_user_primary_sucursal(request.user),
             fecha__date=timezone.now().date()
         ).order_by('-fecha')[:20]
         return render(request, 'core/registro_gasto.html', {
@@ -649,6 +655,7 @@ def registro_gasto(request):
             documento_adjunto = request.FILES.get('documento_adjunto') or request.FILES.get('evidencia_foto')
             gasto = GastoCaja(
                 empresa=empresa,
+                sucursal=get_user_primary_sucursal(request.user),
                 usuario=request.user,
                 concepto=concepto,
                 monto=monto,
@@ -730,6 +737,7 @@ def api_saldo_caja(request):
     ventas_digital = (ventas_digital_agg.get('tar') or Decimal('0.00')) + (ventas_digital_agg.get('trans') or Decimal('0.00'))
     gastos_hoy = GastoCaja.objects.filter(
         empresa=empresa,
+        sucursal=get_user_primary_sucursal(request.user),
         fecha__range=(inicio, fin)
     ).order_by('-fecha')
     total_gastos = gastos_hoy.aggregate(

@@ -68,9 +68,9 @@ def _detectar_discrepancias_caja(empresa) -> list[dict]:
             fecha_cierre__gte=desde,
         ).select_related('usuario_responsable')
         for c in cierres:
-            # Comparar totales declarados vs teóricos (efectivo + tarjeta + vales)
-            declarado = float((c.efectivo_declarado or 0) + (c.tarjeta_declarado or 0) + (c.vales_declarado or 0))
-            sistema = float((c.efectivo_teorico or 0) + (c.tarjeta_teorico or 0) + (c.vales_teorico or 0))
+            # Comparar todos los métodos declarados contra sus teóricos.
+            declarado = float((c.efectivo_declarado or 0) + (c.tarjeta_declarado or 0) + (c.transferencia_declarado or 0) + (c.vales_declarado or 0))
+            sistema = float((c.efectivo_teorico or 0) + (c.tarjeta_teorico or 0) + (c.transferencia_teorico or 0) + (c.vales_teorico or 0))
             if sistema > 0:
                 pct = abs(declarado - sistema) / sistema * 100
                 if pct > 2.0:

@@ -45,13 +45,15 @@ def enviar_resumen_cierre_caja(sender, instance, created, **kwargs):
         # Construir datos del resumen
         efectivo_teorico = instance.efectivo_teorico or 0
         tarjeta_teorica = instance.tarjeta_teorico or 0
+        transferencia_teorica = instance.transferencia_teorico or 0
         vales_teorico = instance.vales_teorico or 0
-        total_teorico = efectivo_teorico + tarjeta_teorica + vales_teorico
+        total_teorico = efectivo_teorico + tarjeta_teorica + transferencia_teorica + vales_teorico
 
         efectivo_declarado = instance.efectivo_declarado or 0
         tarjeta_declarada = instance.tarjeta_declarado or 0
+        transferencia_declarada = instance.transferencia_declarado or 0
         vales_declarado = instance.vales_declarado or 0
-        total_declarado = efectivo_declarado + tarjeta_declarada + vales_declarado
+        total_declarado = efectivo_declarado + tarjeta_declarada + transferencia_declarada + vales_declarado
 
         diferencia = instance.diferencia_total or 0
         requiere_revision = instance.requiere_revision
@@ -81,7 +83,8 @@ INGRESOS TEÓRICOS (Sistema)
 {'─'*50}
   Efectivo:       ${efectivo_teorico:>12,.2f}
   Tarjeta:        ${tarjeta_teorica:>12,.2f}
-  Vales/Transf:   ${vales_teorico:>12,.2f}
+  Transferencia:  ${transferencia_teorica:>12,.2f}
+  Vales:          ${vales_teorico:>12,.2f}
   TOTAL TEÓRICO:  ${total_teorico:>12,.2f}
 
 {'─'*50}
@@ -89,7 +92,8 @@ INGRESOS DECLARADOS (Cajero)
 {'─'*50}
   Efectivo:       ${efectivo_declarado:>12,.2f}
   Tarjeta:        ${tarjeta_declarada:>12,.2f}
-  Vales/Transf:   ${vales_declarado:>12,.2f}
+  Transferencia:  ${transferencia_declarada:>12,.2f}
+  Vales:          ${vales_declarado:>12,.2f}
   TOTAL DECLARADO:${total_declarado:>12,.2f}
 
 {'─'*50}

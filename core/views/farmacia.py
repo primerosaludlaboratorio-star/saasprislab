@@ -216,6 +216,7 @@ def corte_caja_dia(request):
     pagos_qs = Pago.objects.filter(venta__in=ventas_qs)
     gastos_qs = GastoCaja.objects.filter(
         empresa=empresa,
+        sucursal=sucursal,
         fecha__range=(inicio, fin),
     ).select_related("usuario").order_by("-fecha")
     movimientos_qs = MovimientoCaja.objects.filter(
@@ -228,6 +229,7 @@ def corte_caja_dia(request):
     ventas_efectivo = pagos_qs.aggregate(total=Coalesce(Sum("monto_efectivo"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
     ventas_tarjeta = pagos_qs.aggregate(total=Coalesce(Sum("monto_tarjeta"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
     ventas_transferencia = pagos_qs.aggregate(total=Coalesce(Sum("monto_transferencia"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
+    ventas_vales = pagos_qs.aggregate(total=Coalesce(Sum("monto_vales"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
     total_gastos = gastos_qs.aggregate(total=Coalesce(Sum("monto"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
     egresos_kardex = movimientos_qs.filter(tipo_movimiento="EGRESO").exclude(concepto="GASTO_MENOR").aggregate(
         total=Coalesce(Sum("monto"), Decimal("0.00"), output_field=DecimalField())
@@ -235,7 +237,7 @@ def corte_caja_dia(request):
     retiros_caja = movimientos_qs.filter(tipo_movimiento="TRANSFERENCIA").aggregate(
         total=Coalesce(Sum("monto"), Decimal("0.00"), output_field=DecimalField())
     )["total"] or Decimal("0.00")
-    total_ventas = ventas_efectivo + ventas_tarjeta + ventas_transferencia
+    total_ventas = ventas_efectivo + ventas_tarjeta + ventas_transferencia + ventas_vales
     fondo_inicial = apertura_activa.fondo_efectivo if apertura_activa else Decimal("0.00")
     saldo_caja = fondo_inicial + ventas_efectivo - total_gastos - egresos_kardex - retiros_caja
 
@@ -256,6 +258,7 @@ def corte_caja_dia(request):
         "fecha_seleccionada_str": fecha_seleccionada.strftime("%Y-%m-%d"),
         "ventas_efectivo": ventas_efectivo,
         "ventas_digital": ventas_tarjeta + ventas_transferencia,
+        "ventas_vales": ventas_vales,
         "ventas_efectivo_farm": ventas_efectivo,
         "ventas_digital_farm": ventas_tarjeta + ventas_transferencia,
         "lab_efectivo": Decimal("0.00"),

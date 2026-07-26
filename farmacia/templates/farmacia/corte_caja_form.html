@@ -162,6 +162,24 @@
                                 <small class="form-text text-muted">{{ form.transferencia_declarada.help_text }}</small>
                             </div>
                         </div>
+
+                        <!-- PASO 4: VALES -->
+                        <div class="step-card p-4 mb-3">
+                            <h6 class="text-primary">
+                                <i class="bi bi-4-circle-fill"></i>
+                                Vales y Convenios
+                            </h6>
+                            <p class="text-muted">Suma los vales físicos o convenios aceptados</p>
+
+                            <div class="mb-3">
+                                {{ form.vales_declarados.label_tag }}
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text">$</span>
+                                    {{ form.vales_declarados }}
+                                </div>
+                                <small class="form-text text-muted">{{ form.vales_declarados.help_text }}</small>
+                            </div>
+                        </div>
                         
                         <hr class="my-4">
                         
@@ -223,8 +241,9 @@
         const efectivo = parseFloat(document.getElementById('id_efectivo_declarado').value) || 0;
         const tarjeta = parseFloat(document.getElementById('id_tarjeta_declarada').value) || 0;
         const transferencia = parseFloat(document.getElementById('id_transferencia_declarada').value) || 0;
+        const vales = parseFloat(document.getElementById('id_vales_declarados').value) || 0;
         
-        const total = efectivo + tarjeta + transferencia;
+        const total = efectivo + tarjeta + transferencia + vales;
         
         document.getElementById('totalDeclarado').textContent = total.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
     }
@@ -233,6 +252,7 @@
     document.getElementById('id_efectivo_declarado').addEventListener('input', calcularTotal);
     document.getElementById('id_tarjeta_declarada').addEventListener('input', calcularTotal);
     document.getElementById('id_transferencia_declarada').addEventListener('input', calcularTotal);
+    document.getElementById('id_vales_declarados').addEventListener('input', calcularTotal);
     
     // Calcular al cargar
     calcularTotal();

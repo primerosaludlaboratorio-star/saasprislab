@@ -247,6 +247,21 @@ class CorteCajaFarmaciaForm(forms.Form):
         }),
         help_text="🏦 Suma las transferencias recibidas"
     )
+
+    vales_declarados = forms.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        label="Total Vales / Convenios",
+        required=False,
+        initial=Decimal('0.00'),
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'step': '0.01',
+            'min': '0',
+            'placeholder': '0.00'
+        }),
+        help_text="Suma los vales o convenios aceptados"
+    )
     
     # Observaciones
     observaciones_corte = forms.CharField(
@@ -277,8 +292,9 @@ class CorteCajaFarmaciaForm(forms.Form):
         efectivo = cleaned_data.get('efectivo_declarado') or Decimal('0')
         tarjeta = cleaned_data.get('tarjeta_declarada') or Decimal('0')
         transferencia = cleaned_data.get('transferencia_declarada') or Decimal('0')
+        vales = cleaned_data.get('vales_declarados') or Decimal('0')
         
-        total_declarado = efectivo + tarjeta + transferencia
+        total_declarado = efectivo + tarjeta + transferencia + vales
         
         if total_declarado <= 0:
             raise ValidationError(

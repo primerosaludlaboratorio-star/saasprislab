@@ -489,6 +489,7 @@ class Pago(models.Model):
         ('OXXO', 'OXXO / 7-24'),
         ('TIENDA', 'Chedraui / Walmart / Ahorro'),
         ('TARJETA', 'Tarjeta de Crédito/Débito'),
+        ('VALES', 'Vales / Convenio'),
     ]
     venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name='pagos', null=True, blank=True)
     metodo = models.CharField(max_length=50, choices=METODOS, verbose_name="Método de Pago")
@@ -498,6 +499,7 @@ class Pago(models.Model):
     monto_efectivo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Monto en Efectivo")
     monto_tarjeta = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Monto en Tarjeta")
     monto_transferencia = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Monto en Transferencia")
+    monto_vales = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Monto en Vales")
     referencia_pago = models.CharField(max_length=50, blank=True, null=True, verbose_name="Referencia de Pago", help_text="Número de autorización, referencia de transferencia, etc.")
     fecha_pago = models.DateTimeField(default=timezone.now, verbose_name="Fecha de Pago")
 
@@ -518,6 +520,7 @@ class PagoOrden(TenantModel):
     # monto_tarjeta mantiene la suma crédito+débito para compatibilidad con código legacy
     monto_tarjeta = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Tarjeta (Total)")
     monto_transferencia = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Transferencia")
+    monto_vales = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Vales / Convenio")
     referencia_pago = models.CharField(max_length=200, blank=True, null=True, verbose_name="Referencia / Autorización")
     fecha_pago = models.DateTimeField(default=timezone.now, verbose_name="Fecha y Hora del Cobro")
     usuario_registro = models.ForeignKey(
@@ -563,12 +566,12 @@ class PagoOrden(TenantModel):
         """Monto total del pago activo (excluye si está cancelado)."""
         if self.cancelado:
             return Decimal('0.00')
-        return self.monto_efectivo + self.monto_tarjeta + self.monto_transferencia
+        return self.monto_efectivo + self.monto_tarjeta + self.monto_transferencia + self.monto_vales
 
     @property
     def monto_bruto(self):
         """Monto original (sin considerar cancelación)."""
-        return self.monto_efectivo + self.monto_tarjeta + self.monto_transferencia
+        return self.monto_efectivo + self.monto_tarjeta + self.monto_transferencia + self.monto_vales
 
     def save(self, *args, **kwargs):
         if self.orden_id:
@@ -622,6 +625,14 @@ class GastoCaja(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, verbose_name="Usuario que registra")
     fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora")
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name="Empresa")
+    sucursal = models.ForeignKey(
+        Sucursal,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name="Sucursal",
+        help_text="Sucursal donde se realizó el gasto. Los registros históricos pueden quedar sin asignar.",
+    )
     documento_adjunto = models.FileField(
         upload_to='gastos_caja/%Y/%m/',
         null=True,
@@ -637,10 +648,14 @@ class GastoCaja(models.Model):
         ordering = ['-fecha']
         indexes = [
             models.Index(fields=['empresa', '-fecha'], name='gastocaja_empresa_fecha_idx'),
+            models.Index(fields=['empresa', 'sucursal', '-fecha'], name='gastocaja_emp_suc_fecha_idx'),
         ]
 
     def clean(self):
         from django.core.exceptions import ValidationError
+
+        if self.sucursal_id and self.empresa_id and self.sucursal.empresa_id != self.empresa_id:
+            raise ValidationError({'sucursal': 'La sucursal debe pertenecer a la misma empresa del gasto.'})
 
         politica = getattr(self.empresa, 'politica_caja', None)
         if politica and self.monto is not None and self.monto > politica.limite_verde:

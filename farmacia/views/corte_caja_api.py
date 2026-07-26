@@ -66,7 +66,8 @@ def api_precorte_unificado(request):
 def api_corte_caja_unificado(request):
     """
     POST /api/caja/corte-unificado/
-    Body: { efectivo_declarado, imprimir_ticket, host_impresora }
+    Body: { efectivo_declarado, tarjeta_declarado, transferencia_declarado,
+            vales_declarado, imprimir_ticket, host_impresora }
     """
     empresa = getattr(request.user, 'empresa', None)
     if not empresa:
@@ -88,6 +89,9 @@ def api_corte_caja_unificado(request):
 
     try:
         efectivo = _parse_money(body.get('efectivo_declarado'), 'efectivo_declarado')
+        tarjeta = _parse_money(body.get('tarjeta_declarado', '0.00'), 'tarjeta_declarado')
+        transferencia = _parse_money(body.get('transferencia_declarado', '0.00'), 'transferencia_declarado')
+        vales = _parse_money(body.get('vales_declarado', '0.00'), 'vales_declarado')
     except ValueError as exc:
         return JsonResponse(
             {'ok': False, 'error': str(exc)},
@@ -103,6 +107,9 @@ def api_corte_caja_unificado(request):
             empresa=empresa,
             sucursal=get_request_sucursal(request),
             efectivo_declarado=efectivo,
+            tarjeta_declarado=tarjeta,
+            transferencia_declarado=transferencia,
+            vales_declarado=vales,
             imprimir_ticket=imprimir,
             host_impresora=host_imp,
         )

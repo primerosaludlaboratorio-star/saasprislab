@@ -68,6 +68,12 @@ class CierreTurnoFarmacia(models.Model):
         default=Decimal('0.00'),
         verbose_name="Tarjeta Declarado (Suma de Vouchers)"
     )
+    transferencia_declarado = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Transferencia Declarado (SPEI)"
+    )
     vales_declarado = models.DecimalField(
         max_digits=10, 
         decimal_places=2,
@@ -85,6 +91,12 @@ class CierreTurnoFarmacia(models.Model):
         decimal_places=2,
         default=Decimal('0.00'),
         verbose_name="Tarjeta Teórico (Por Ventas del Sistema)"
+    )
+    transferencia_teorico = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Transferencia Teórico (Por Ventas del Sistema)"
     )
     vales_teorico = models.DecimalField(
         max_digits=10, 
@@ -104,6 +116,12 @@ class CierreTurnoFarmacia(models.Model):
         decimal_places=2,
         default=Decimal('0.00'),
         verbose_name="Diferencia Tarjeta"
+    )
+    diferencia_transferencia = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Diferencia Transferencia"
     )
     diferencia_vales = models.DecimalField(
         max_digits=10, 
@@ -198,10 +216,12 @@ class CierreTurnoFarmacia(models.Model):
         
         self.diferencia_efectivo = self.efectivo_declarado - efectivo_teorico_ajustado
         self.diferencia_tarjeta = self.tarjeta_declarado - self.tarjeta_teorico
+        self.diferencia_transferencia = self.transferencia_declarado - self.transferencia_teorico
         self.diferencia_vales = self.vales_declarado - self.vales_teorico
         self.diferencia_total = (
             self.diferencia_efectivo + 
             self.diferencia_tarjeta + 
+            self.diferencia_transferencia +
             self.diferencia_vales
         )
         
@@ -226,11 +246,11 @@ class CierreTurnoFarmacia(models.Model):
     
     @property
     def total_declarado(self):
-        return self.efectivo_declarado + self.tarjeta_declarado + self.vales_declarado
+        return self.efectivo_declarado + self.tarjeta_declarado + self.transferencia_declarado + self.vales_declarado
     
     @property
     def total_teorico(self):
-        return self.efectivo_teorico + self.tarjeta_teorico + self.vales_teorico
+        return self.efectivo_teorico + self.tarjeta_teorico + self.transferencia_teorico + self.vales_teorico
     
     @property
     def estado_diferencia(self):

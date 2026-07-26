@@ -46,9 +46,10 @@ def corte_caja_farmacia(request):
                     efectivo_declarado = form.cleaned_data['efectivo_declarado']
                     tarjeta_declarada = form.cleaned_data.get('tarjeta_declarada', Decimal('0'))
                     transferencia_declarada = form.cleaned_data.get('transferencia_declarada', Decimal('0'))
+                    vales_declarados = form.cleaned_data.get('vales_declarados', Decimal('0'))
                     observaciones = form.cleaned_data.get('observaciones_corte', '')
                     
-                    total_declarado = efectivo_declarado + tarjeta_declarada + transferencia_declarada
+                    total_declarado = efectivo_declarado + tarjeta_declarada + transferencia_declarada + vales_declarados
                     
                     ahora = timezone.now()
                     hoy_inicio = apertura_activa.fecha_apertura if apertura_activa else timezone.make_aware(
@@ -114,6 +115,7 @@ def corte_caja_farmacia(request):
                             'declarado_efectivo': str(efectivo_declarado),
                             'declarado_tarjeta': str(tarjeta_declarada),
                             'declarado_transferencia': str(transferencia_declarada),
+                            'declarado_vales': str(vales_declarados),
                             'diferencia_total': str(diferencia_total),
                             'diferencia_efectivo': str(diferencia_efectivo),
                             'diferencia_tarjeta': str(diferencia_tarjeta),
@@ -136,6 +138,7 @@ def corte_caja_farmacia(request):
                         'declarado_efectivo': efectivo_declarado,
                         'declarado_tarjeta': tarjeta_declarada,
                         'declarado_transferencia': transferencia_declarada,
+                        'declarado_vales': vales_declarados,
                         'diferencia_total': diferencia_total,
                         'diferencia_efectivo': diferencia_efectivo,
                         'diferencia_tarjeta': diferencia_tarjeta,

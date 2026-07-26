@@ -1174,3 +1174,23 @@ Verificacion productiva posterior:
 - una sola apertura activa para la sucursal auditada;
 - precorte productivo en estado `PRECORTE` sin mutar datos;
 - salud HTTP 200 y cero incidencias Sentinel de Farmacia nuevas en los 20 minutos posteriores.
+
+## Cierre de los dos bloqueadores de caja - 2026-07-25
+
+Se implementaron los dos controles pendientes para operación profesional por sucursal:
+
+- el cierre unificado recibe y persiste por separado efectivo, tarjeta, transferencia y vales;
+- la conciliación calcula diferencia individual y diferencia total sin mezclar métodos;
+- farmacia y laboratorio exponen sus pagos por método para el precorte;
+- `GastoCaja` ahora se asocia a sucursal y los gastos históricos se asignan cuando el usuario tenía sucursal disponible;
+- los precortes, saldos y reportes operativos filtran por empresa y sucursal;
+- la interfaz de corte captura los cuatro importes y la API valida cada monto.
+
+Validacion local:
+
+- `manage.py check`: sin problemas;
+- `makemigrations --check --noinput`: sin cambios pendientes;
+- `core.tests.test_farmacia_corte_unificado`: `18 tests OK`;
+- migraciones nuevas: `core.0093` y `farmacia.0011`.
+
+La revision productiva queda pendiente de aplicar en el despliegue de esta revision; no se marca como productiva hasta confirmar migraciones, health check y Sentinel posterior.
