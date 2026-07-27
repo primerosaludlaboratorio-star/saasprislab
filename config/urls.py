@@ -192,9 +192,11 @@ urlpatterns = [
     path('farmacia/dashboard/', farmacia_inventario.dashboard_farmacia, name='dashboard_farmacia_v2'),
     path('farmacia/libro-control/', farmacia_inventario.libro_control_antibioticos, name='libro_control'),
     path('farmacia/inventario/', views.farmacia_inventario_general, name='farmacia_inventario_general'),
-    path('farmacia/devoluciones/', views.historial_devoluciones, name='historial_devoluciones'),
-    path('farmacia/devoluciones/buscar/', views.buscar_venta_devolucion, name='buscar_venta_devolucion'),
-    path('farmacia/devoluciones/procesar/', views.procesar_devolucion, name='procesar_devolucion'),
+    # Flujo canónico de devoluciones: evitar que la ruta pública caiga en el
+    # template legacy sin selección por partida ni autorización PIN.
+    path('farmacia/devoluciones/', farmacia_devoluciones.buscar_venta_para_devolucion, name='historial_devoluciones'),
+    path('farmacia/devoluciones/buscar/', farmacia_devoluciones.buscar_venta_para_devolucion, name='buscar_venta_devolucion'),
+    path('farmacia/devoluciones/procesar/', farmacia_devoluciones.procesar_devolucion, name='procesar_devolucion'),
     path('farmacia/ventas/cancelar/<int:venta_id>/', views.cancelar_venta, name='cancelar_venta'),
     # Aliases legacy aún consumidos por templates/tests/comandos
     path('farmacia/ticket/<int:venta_id>/', views.imprimir_ticket, name='imprimir_ticket'),
