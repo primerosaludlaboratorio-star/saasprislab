@@ -318,6 +318,11 @@ class FarmaciaViewTests(TestCase):
         g, _ = Group.objects.get_or_create(name="FARMACIA")
         self.usuario.groups.add(g)
         self.client.force_login(self.usuario)
+        ConfiguracionModulos.objects.create(
+            empresa=self.empresa,
+            pin_cancelacion_venta="2468",
+            pin_precio_neto="5938",
+        )
 
     def test_pdv_farmacia_view(self):
         url = reverse("pdv_farmacia")
@@ -528,7 +533,7 @@ class FarmaciaViewTests(TestCase):
 
         response = self.client.post(
             reverse("farmacia:procesar_devolucion"),
-            data='{"venta_id": %d, "tipo": "PARCIAL", "monto": "60.00", "motivo": "ERROR_VENTA"}' % venta.id,
+            data='{"venta_id": %d, "tipo": "PARCIAL", "monto": "60.00", "motivo": "ERROR_VENTA", "pin": "2468"}' % venta.id,
             content_type="application/json",
         )
 

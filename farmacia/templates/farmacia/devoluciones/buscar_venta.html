@@ -81,6 +81,7 @@
                             <table class="table table-striped table-hover">
                                 <thead class="table-primary">
                                     <tr>
+                                        <th>Devolver</th>
                                         <th>Producto</th>
                                         <th>Cantidad</th>
                                         <th>Precio Unitario</th>
@@ -240,12 +241,19 @@ function mostrarVenta(venta, detalles) {
     detalles.forEach(detalle => {
         tbody.innerHTML += `
             <tr>
+                <td><input type="checkbox" class="form-check-input devolucion-detalle-check" data-detalle-id="${detalle.id}" data-max-cantidad="${detalle.cantidad}"></td>
                 <td>${detalle.producto}</td>
                 <td>${detalle.cantidad}</td>
                 <td>$${parseFloat(detalle.precio_unitario).toFixed(2)}</td>
-                <td>$${parseFloat(detalle.subtotal).toFixed(2)}</td>
+                <td>$${parseFloat(detalle.subtotal).toFixed(2)}<input type="number" class="form-control form-control-sm mt-1 devolucion-detalle-cantidad" data-detalle-id="${detalle.id}" min="1" max="${detalle.cantidad}" value="${detalle.cantidad}" disabled></td>
             </tr>
         `;
+    });
+    tbody.querySelectorAll('.devolucion-detalle-check').forEach(check => {
+        check.addEventListener('change', function () {
+            const cantidad = tbody.querySelector(`.devolucion-detalle-cantidad[data-detalle-id="${this.dataset.detalleId}"]`);
+            if (cantidad) cantidad.disabled = !this.checked;
+        });
     });
     
     document.getElementById('resultado-busqueda').style.display = 'block';
@@ -259,16 +267,42 @@ function abrirModalDevolucion() {
 document.getElementById('form-devolucion').addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    const tipo = document.getElementById('tipo-devolucion').value;
+    const productos = tipo === 'PARCIAL'
+        ? Array.from(document.querySelectorAll('.devolucion-detalle-check:checked')).map(check => ({
+            detalle_id: Number(check.dataset.detalleId),
+            cantidad: Number(document.querySelector(`.devolucion-detalle-cantidad[data-detalle-id="${check.dataset.detalleId}"]`)?.value || 0),
+        }))
+        : [];
+    if (tipo === 'PARCIAL' && !productos.length) {
+        Swal.fire('Faltan productos', 'Seleccione al menos una partida y la cantidad a devolver.', 'warning');
+        return;
+    }
+
+    const autorizacion = await Swal.fire({
+        icon: 'info',
+        title: 'Autorización requerida',
+        text: 'Ingrese el PIN universal de 4 dígitos para procesar la devolución.',
+        input: 'password',
+        inputAttributes: { maxlength: 4, inputmode: 'numeric', autocomplete: 'off' },
+        showCancelButton: true,
+        confirmButtonText: 'Autorizar devolución',
+        cancelButtonText: 'Cancelar',
+        inputValidator: value => /^\d{4}$/.test(value || '') ? undefined : 'El PIN debe contener exactamente 4 dígitos.'
+    });
+    if (!autorizacion.isConfirmed) return;
+
     const data = {
         venta_id: document.getElementById('venta-id').value,
-        tipo: document.getElementById('tipo-devolucion').value,
-        monto: document.getElementById('monto-devolucion').value,
-        motivo: document.getElementById('motivo-devolucion').value,
-        motivo_detallado: document.getElementById('motivo-detallado').value,
-        reingresar_stock: document.querySelector('input[name="reingresar-stock"]:checked').value === 'true'
+        tipo_devolucion: tipo,
+        monto_reembolsado: document.getElementById('monto-devolucion').value,
+        motivo_error: document.getElementById('motivo-devolucion').value + ': ' + document.getElementById('motivo-detallado').value,
+        productos: productos,
+        pin: autorizacion.value,
+        accion_stock: document.querySelector('input[name="reingresar-stock"]:checked').value === 'true' ? 'REINGRESAR' : 'MERMA_DESECHO'
     };
     
-    if (parseFloat(data.monto) > parseFloat(ventaActual.disponible_devolver)) {
+    if (parseFloat(data.monto_reembolsado) > parseFloat(ventaActual.disponible_devolver)) {
         Swal.fire('Error', 'El monto excede lo disponible para devolver', 'error');
         return;
     }

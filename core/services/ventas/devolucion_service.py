@@ -148,6 +148,7 @@ class DevolucionService:
                 'http_status': 400,
                 'body': {
                     'status': 'error',
+                    'codigo': 'DEVOLUCION_PARCIAL_REQUIERE_DETALLE',
                     'mensaje': 'Debe seleccionar al menos un producto válido para devolución parcial',
                 },
             }

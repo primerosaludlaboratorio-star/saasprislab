@@ -177,3 +177,38 @@ El folio interno PRISLAB permanece automatico e inmutable para conservar la
 cadena de auditoria. El numero externo de la receta es editable. En surtido
 parcial se conserva el folio y se registran cantidad prescrita, cantidad
 surtida, saldo pendiente y motivo.
+
+## Correccion Farmacia - devoluciones totales y parciales con autorizacion
+
+Se corrigio el flujo de devoluciones de farmacia para que la interfaz y el
+backend utilicen el mismo contrato. La pantalla permite seleccionar las
+partidas y cantidades de una devolucion parcial, elegir reingreso a inventario
+o merma/desecho, capturar el motivo y solicitar el PIN universal de cuatro
+digitos antes de procesar.
+
+El backend ahora:
+
+- valida el PIN configurado por empresa antes de cualquier mutacion;
+- acepta los roles operativos de farmacia autorizados, sin abrir el permiso a
+  cajeros;
+- mantiene compatibilidad temporal con los nombres de payload anteriores;
+- delega el parcial al servicio trazable de devoluciones, incluyendo lotes y
+  cantidades reales;
+- bloquea parciales sin partidas, montos superiores al saldo disponible y
+  devoluciones duplicadas.
+
+El numero externo de receta queda opcional cuando el surtido es parcial. El
+folio interno PRISLAB permanece automatico, unico e inmutable para auditoria;
+no sustituye ni inventa el folio fisico del medico. Se conservan medico,
+cedula, fecha, cantidad prescrita, cantidad surtida, saldo y motivo.
+
+Validacion local posterior a la correccion:
+
+- suite `core.tests.test_devoluciones_farmacia_api farmacia.tests`: **56 OK**;
+- rechazo de parcial sin detalle: **400** con codigo
+  `DEVOLUCION_PARCIAL_REQUIERE_DETALLE`;
+- `git diff --check`: sin errores.
+
+El despliegue productivo queda pendiente de ejecutar despues de registrar el
+commit de esta correccion. No se considera cerrado el flujo hasta confirmar la
+salud productiva y una operacion controlada en produccion.

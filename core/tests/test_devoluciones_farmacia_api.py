@@ -8,7 +8,7 @@ from decimal import Decimal
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from core.models import Empresa, Sucursal, Paciente, Producto, Lote, Venta, DetalleVenta
+from core.models import Empresa, Sucursal, Paciente, Producto, Lote, Venta, DetalleVenta, ConfiguracionModulos
 
 User = get_user_model()
 
@@ -40,6 +40,10 @@ class DevolucionesFarmaciaAPITest(TestCase):
         )
         Group.objects.get_or_create(name='Administrador')
         self.admin_user.groups.add(Group.objects.get(name='Administrador'))
+        ConfiguracionModulos.objects.create(
+            empresa=self.empresa,
+            pin_cancelacion_venta='2468',
+        )
 
         self.paciente = Paciente.objects.create(
             nombres='María',
@@ -141,6 +145,7 @@ class DevolucionesFarmaciaAPITest(TestCase):
             'monto_reembolsado': '80.00',
             'motivo_error': 'Producto caducado',
             'accion_stock': 'REINGRESAR',
+            'pin': '2468',
         }
         response = self.client.post(
             '/farmacia/devoluciones/procesar/',
@@ -161,6 +166,7 @@ class DevolucionesFarmaciaAPITest(TestCase):
             'monto_reembolsado': '80.00',
             'motivo_error': 'Producto caducado',
             'accion_stock': 'REINGRESAR',
+            'pin': '2468',
         }
 
         primera = self.client.post(
@@ -189,6 +195,7 @@ class DevolucionesFarmaciaAPITest(TestCase):
             'motivo': 'ERROR_VENTA',
             'motivo_detallado': 'Prueba de doble devolucion',
             'reingresar_stock': True,
+            'pin': '2468',
         }
 
         primera = self.client.post(
@@ -217,6 +224,7 @@ class DevolucionesFarmaciaAPITest(TestCase):
             'monto_reembolsado': '80.00',
             'motivo_error': 'Producto caducado',
             'accion_stock': 'REINGRESAR',
+            'pin': '2468',
         }
         payload_erp = {
             'venta_id': self.venta.id,
@@ -225,6 +233,7 @@ class DevolucionesFarmaciaAPITest(TestCase):
             'motivo': 'ERROR_VENTA',
             'motivo_detallado': 'Intento duplicado desde ERP',
             'reingresar_stock': True,
+            'pin': '2468',
         }
 
         primera = self.client.post(
@@ -255,6 +264,7 @@ class DevolucionesFarmaciaAPITest(TestCase):
             'motivo': 'ERROR_VENTA',
             'motivo_detallado': 'Prueba cruzada ERP primero',
             'reingresar_stock': True,
+            'pin': '2468',
         }
         payload_core = {
             'venta_id': self.venta.id,
@@ -262,6 +272,7 @@ class DevolucionesFarmaciaAPITest(TestCase):
             'monto_reembolsado': '80.00',
             'motivo_error': 'Intento duplicado desde PDV',
             'accion_stock': 'REINGRESAR',
+            'pin': '2468',
         }
 
         primera = self.client.post(
@@ -290,6 +301,7 @@ class DevolucionesFarmaciaAPITest(TestCase):
             'monto_reembolsado': '80.00',
             'motivo_error': 'Error de cobro',
             'accion_stock': 'REINGRESAR',
+            'pin': '2468',
             'productos': [
                 {'detalle_id': detalle.id, 'cantidad': 1, 'motivo': 'Producto equivocado'}
             ],
@@ -318,6 +330,7 @@ class DevolucionesFarmaciaAPITest(TestCase):
             'productos_devueltos': [
                 {'detalle_id': detalle.id, 'cantidad': 1, 'motivo': 'Producto incorrecto'}
             ],
+            'pin': '2468',
         }
         response = self.client.post(
             '/farmacia/devoluciones/procesar/',
@@ -337,6 +350,7 @@ class DevolucionesFarmaciaAPITest(TestCase):
             'motivo_error': 'Sin detalle',
             'accion_stock': 'REINGRESAR',
             'productos_devueltos': [],
+            'pin': '2468',
         }
         response = self.client.post(
             '/farmacia/devoluciones/procesar/',

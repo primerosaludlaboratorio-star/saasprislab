@@ -3,6 +3,8 @@ Vistas de Devoluciones y Cancelaciones de Farmacia
 """
 import json
 import logging
+import re
+import secrets
 from decimal import Decimal
 from datetime import datetime
 from django.shortcuts import render, redirect, get_object_or_404
@@ -16,7 +18,7 @@ from django.db.models.functions import Coalesce
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.utils import timezone
 
-from core.models import Venta, DetalleVenta, SalesReturn, Pago
+from core.models import Venta, DetalleVenta, SalesReturn, Pago, ConfiguracionModulos
 from core.utils.empresa_request import get_empresa_usuario
 from core.utils.sucursal_helpers import get_request_sucursal
 from farmacia.models import MermaFarmacia, MovimientoInventario, DevolucionVenta
@@ -60,6 +62,7 @@ def _serializar_venta_para_devolucion(venta):
         },
         'detalles': [
             {
+                'id': detalle.id,
                 'producto': detalle.producto.nombre,
                 'cantidad': str(detalle.cantidad),
                 'precio_unitario': str(detalle.precio_unitario),
@@ -82,11 +85,50 @@ def _es_gerente_o_admin(user):
     if user.is_superuser or user.is_staff:
         return True
     rol = (getattr(user, 'rol', '') or '').upper().strip()
-    if rol in ('FARMACIA', 'ADMIN', 'ADMINISTRADOR', 'GERENTE', 'DIRECTOR', 'DUEÑO', 'DUENO'):
+    if rol in (
+        'FARMACIA', 'ADMIN_FARMACIA', 'FARMACIA_ADMIN',
+        'ADMINISTRADOR_FARMACIA', 'ENCARGADO_FARMACIA',
+        'RESPONSABLE_FARMACIA', 'ADMIN', 'ADMINISTRADOR',
+        'GERENTE', 'DIRECTOR', 'DUEÑO', 'DUENO',
+    ):
         return True
     if getattr(user, 'es_auditor_supremo', False):
         return True
-    return user.groups.filter(name__in=['Gerente', 'Administrador', 'Admin']).exists()
+    return user.groups.filter(name__in=[
+        'Gerente', 'Administrador', 'Admin', 'FARMACIA',
+        'ADMIN_FARMACIA', 'ADMINISTRADOR_FARMACIA',
+    ]).exists()
+
+
+def _validar_pin_devolucion(empresa, data):
+    """Valida el PIN universal de cuatro dígitos para una devolución."""
+    pin = str(data.get('pin') or data.get('pin_cancelacion') or '').strip()
+    if not re.fullmatch(r'\d{4}', pin):
+        return JsonResponse({
+            'success': False,
+            'status': 'error',
+            'error': 'Ingrese el PIN de autorización de 4 dígitos.',
+            'codigo': 'PIN_CANCELACION_FORMATO_INVALIDO',
+        }, status=400)
+    configuracion = ConfiguracionModulos.objects.filter(empresa=empresa).only(
+        'pin_cancelacion_venta'
+    ).first()
+    pin_configurado = (getattr(configuracion, 'pin_cancelacion_venta', '') or '').strip()
+    if not re.fullmatch(r'\d{4}', pin_configurado):
+        return JsonResponse({
+            'success': False,
+            'status': 'error',
+            'error': 'El PIN de autorización no está configurado para esta empresa.',
+            'codigo': 'PIN_CANCELACION_NO_CONFIGURADO',
+        }, status=503)
+    if not secrets.compare_digest(pin, pin_configurado):
+        return JsonResponse({
+            'success': False,
+            'status': 'error',
+            'error': 'PIN de autorización incorrecto.',
+            'codigo': 'PIN_CANCELACION_INCORRECTO',
+        }, status=401)
+    return None
 
 
 # ==============================================================================
@@ -204,7 +246,7 @@ def procesar_devolucion_venta(request):
             return JsonResponse({'status': 'error', 'mensaje': 'No hay items para devolver'}, status=400)
         
         venta = get_object_or_404(Venta, id=venta_id, empresa=empresa)
-        
+
         if venta.estado != 'COMPLETADA':
             return JsonResponse({'status': 'error', 'mensaje': 'Solo se pueden devolver ventas completadas'}, status=400)
         
@@ -421,6 +463,22 @@ def procesar_devolucion(request):
 
         venta = get_object_or_404(Venta, id=venta_id, empresa=empresa)
 
+        pin_error = _validar_pin_devolucion(empresa, data)
+        if pin_error:
+            return pin_error
+
+        # Mantener compatibilidad con clientes internos antiguos mientras la
+        # interfaz termina de migrar al contrato explícito de devoluciones.
+        if 'tipo_devolucion' not in data and data.get('tipo'):
+            data = {
+                **data,
+                'tipo_devolucion': data.get('tipo'),
+                'monto_reembolsado': data.get('monto', '0.00'),
+                'motivo_error': data.get('motivo', ''),
+            }
+        if 'productos' not in data and data.get('productos_devueltos') is not None:
+            data = {**data, 'productos': data.get('productos_devueltos')}
+
         sucursal = getattr(venta, 'sucursal', None) or get_request_sucursal(request)
         if not sucursal and venta.empresa:
             sucursal = venta.empresa.sucursales.filter(activa=True).first()
@@ -436,7 +494,13 @@ def procesar_devolucion(request):
         es_erp = request.path.startswith('/farmacia/erp/')
         if es_erp:
             return _procesar_devolucion_erp(request, data, empresa, venta, sucursal, disponible)
-        return _procesar_devolucion_core(request, data, empresa, venta, sucursal, disponible)
+        from core.services.ventas.devolucion_service import DevolucionService
+        resultado = DevolucionService.registrar_devolucion_resultado(request, empresa, data)
+        body = resultado['body']
+        body.setdefault('success', body.get('status') == 'success')
+        if body.get('mensaje') and not body.get('error'):
+            body['error'] = body['mensaje']
+        return JsonResponse(body, status=resultado['http_status'])
 
     except Exception as e:
         # Justificación: Boundary top-level de API para procesar devolución.
@@ -567,14 +631,22 @@ def _procesar_devolucion_erp(request, data, empresa, venta, sucursal, disponible
         }, status=400)
 
     if tipo == 'PARCIAL':
-        return JsonResponse({
-            'success': False,
-            'error': (
-                'La devolución parcial aún requiere captura por producto/cantidad. '
-                'Use devolución TOTAL o espere la captura detallada.'
-            ),
-            'codigo': 'DEVOLUCION_PARCIAL_REQUIERE_DETALLE',
-        }, status=400)
+        from core.services.ventas.devolucion_service import DevolucionService
+        resultado = DevolucionService.registrar_devolucion_resultado(
+            request,
+            empresa,
+            {
+                **data,
+                'tipo_devolucion': 'PARCIAL',
+                'monto_reembolsado': data.get('monto'),
+                'motivo_error': data.get('motivo'),
+            },
+        )
+        body = resultado['body']
+        body.setdefault('success', body.get('status') == 'success')
+        if body.get('mensaje') and not body.get('error'):
+            body['error'] = body['mensaje']
+        return JsonResponse(body, status=resultado['http_status'])
 
     with transaction.atomic():
         venta = Venta.objects.select_for_update().get(id=venta.id, empresa=empresa)
