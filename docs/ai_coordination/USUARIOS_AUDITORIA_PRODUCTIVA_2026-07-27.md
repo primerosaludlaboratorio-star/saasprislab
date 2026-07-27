@@ -69,6 +69,22 @@ Fecha: 2026-07-27. La auditoría se continuó en producción con navegación rea
 
 Estos puntos quedan pendientes y no se consideran cerrados por esta verificación.
 
+## Verificacion OCR de receta en vivo
+
+Fecha: 2026-07-27. Se ejecutó una receta sintética de auditoría con dos medicamentos y texto explícito de concentración, frecuencia y duración. No representa una receta clínica real y no se cobró ninguna venta.
+
+- Antes de la corrección: la imagen se adjuntaba y se visualizaba, pero el análisis terminaba en `El motor OCR no devolvió una lectura estructurada`.
+- Causa: Gemini respondió `401 Unauthorized`; DeepSeek estaba configurado como `DEEPSEEK_MODEL`, pero el lector intentaba usarlo como proveedor de visión. DeepSeek V4 es texto, no lector de imágenes.
+- Corrección desplegada: `93dfe73b28758fe05dab86ff849e36ca279770a4`.
+- Flujo productivo posterior: Cloud Vision extrajo el documento, DeepSeek estructuró el texto y el sistema mostró `Paracetamol 500 mg` e `Ibuprofeno 400 mg`, con sus indicaciones de cada 8 horas por 5 días y cada 12 horas por 3 días.
+- La conciliación mostró candidatos del catálogo con genérico, marca, existencia y advertencia de receta cuando correspondía.
+- La confirmación humana permaneció separada del análisis; después de seleccionar ambos candidatos, el sistema solicitó lote para cada medicamento y agregó al carrito `LOTE-TEST-001` y `LOTE-TEST-002`. No se ejecutó el cobro.
+- La lectura confirmada quedó registrada en producción como `LecturaRecetaFarmacia #8`, con confianza `0.90` y dos productos confirmados.
+
+### Criterio de robustez
+
+La calidad de imagen no se usa como bloqueo binario. Se acepta impresión, inclinación, sombras, formatos distintos y escritura irregular hasta donde el OCR pueda recuperar texto. Cada campo mantiene texto original y confianza; si un medicamento, dosis, frecuencia, duración, paciente, médico o fecha no es confiable, se muestra como pendiente de revisión y no se agrega ni se dispensa automáticamente. El respaldo determinista conserva líneas OCR cuando DeepSeek no responde, evitando una pantalla vacía.
+
 ## Limitacion de pruebas locales
 
 `manage.py check` y compilación Python pasaron. La suite Django dirigida quedó bloqueada durante la creación de la base de pruebas, sin llegar a ejecutar aserciones; por ello esa suite no se marca como pasada y la evidencia de permisos se basa en la comprobación productiva y en la prueba de regresión añadida en `core/tests/test_auditoria_roles_ui.py`.
