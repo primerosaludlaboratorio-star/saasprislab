@@ -23,6 +23,7 @@ from core.models import (
     SalesReturn,
 )
 from core.lims_cart import detalle_orden_etiqueta
+from core.services.laboratorio_reportes_operativos import construir_resumen_ventas_laboratorio
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +141,16 @@ class LabCajaView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             {'estudio__nombre': nombre, 'cantidad': n}
             for nombre, n in _cnt.most_common(5)
         ]
+
+        context['ventas_laboratorio'] = construir_resumen_ventas_laboratorio(
+            DetalleOrden.objects.filter(**detalle_join).select_related(
+                'analito', 'perfil_lims', 'paquete_lims'
+            ),
+            empresa,
+        )
+        context['enriquecimiento_lab_pendiente'] = any(
+            row['enriquecimiento_pendiente'] for row in context['ventas_laboratorio']
+        )
         
         context['fecha_corte'] = timezone.now()
         context['usuario_corte'] = user.get_full_name() or user.username

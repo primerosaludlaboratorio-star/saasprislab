@@ -248,3 +248,32 @@ Validacion automatizada local del dominio: `laboratorio.tests lims.tests` =
 **36 OK, 3 omitidas por backend PostgreSQL**. Las omisiones corresponden a
 pruebas que requieren el backend PostgreSQL real y no se clasifican como fallo
 de codigo local.
+
+## Reportes de ventas de laboratorio con captura progresiva
+
+Se implemento el reporte de ventas de laboratorio sin hacer obligatorios los
+datos de enriquecimiento del inventario. La fuente minima de una venta es la
+linea de la orden, su descripcion o analito y `precio_momento`; por lo tanto
+una orden ya puede aparecer en caja y reportes aunque aun no tenga reactivo,
+presentacion o costo de materiales capturados.
+
+El reporte ahora muestra, por cada estudio/producto agrupado:
+
+- cantidad e ingreso historico de la venta;
+- reactivos vinculados a formulas de consumo, o `Pendiente de capturar`;
+- costo material solo cuando existe un snapshot de `CosteoEjecucionAnaliticaLab`;
+- estado de presentacion como pendiente hasta que el catalogo la complete.
+
+No se usa cero para simular un costo conocido. La ausencia de costo se marca
+como pendiente para evitar que utilidad o margen se interpreten como datos
+reales antes de completar el inventario. Al capturar formulas y costeos, el
+reporte los incorpora automaticamente en siguientes consultas, sin editar la
+venta historica ni bloquear la operacion.
+
+Validacion local:
+
+- prueba de linea minima sin inventario: **OK**;
+- prueba integrada de `/finanzas/lab/caja/` con estudio y precio unicamente:
+  **OK**;
+- suite Laboratorio/LIMS y reporte: **40 OK, 3 omitidas por PostgreSQL**;
+- `manage.py check`, `makemigrations --check` y `git diff --check`: **OK**.

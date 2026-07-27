@@ -7,7 +7,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from core.models import Empresa, OrdenDeServicio, Paciente, PagoOrden, Sucursal
+from core.models import DetalleOrden, Empresa, OrdenDeServicio, Paciente, PagoOrden, Sucursal
 
 
 User = get_user_model()
@@ -76,3 +76,29 @@ class LabCajaTimezoneRegressionTest(TestCase):
         self.assertEqual(response.context["pacientes_atendidos"], 1)
         self.assertEqual(response.context["ordenes_completadas"], 1)
         self.assertEqual(response.context["ingresos_dia"], Decimal("500.00"))
+
+    def test_caja_reporta_venta_con_catalogo_minimo(self):
+        orden = OrdenDeServicio.objects.create(
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            paciente=self.paciente,
+            total=Decimal("85.00"),
+            anticipo=Decimal("85.00"),
+            estado="PAGADO",
+            estado_pago="PAGADO",
+            responsable_ingreso=self.usuario,
+        )
+        DetalleOrden.objects.create(
+            orden=orden,
+            descripcion_linea="Glucosa",
+            precio_momento=Decimal("85.00"),
+        )
+
+        response = self.client.get(reverse("caja_laboratorio"))
+
+        self.assertEqual(response.status_code, 200)
+        rows = response.context["ventas_laboratorio"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["estudio"], "Glucosa")
+        self.assertEqual(rows[0]["ingresos"], Decimal("85.00"))
+        self.assertEqual(rows[0]["costo_estado"], "Pendiente de capturar")

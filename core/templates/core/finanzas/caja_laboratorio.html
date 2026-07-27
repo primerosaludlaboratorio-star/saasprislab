@@ -91,6 +91,11 @@
         display: flex;
         justify-content: space-between;
     }
+
+    .tabla-enriquecimiento th,
+    .tabla-enriquecimiento td {
+        vertical-align: middle;
+    }
 </style>
 {% endblock %}
 
@@ -153,6 +158,53 @@
                     {% endif %}
                 </span>
             </div>
+        </div>
+
+        <div class="caja-card">
+            <h4 class="mb-2"><i class="bi bi-clipboard-data"></i> Ventas de laboratorio y enriquecimiento</h4>
+            <p class="text-muted small mb-3">
+                La venta se reporta con el nombre y precio registrados. Reactivos, costo y presentación se incorporan
+                automáticamente cuando el personal complete su catálogo; mientras tanto no bloquean el reporte.
+            </p>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover tabla-enriquecimiento">
+                    <thead>
+                        <tr>
+                            <th>Estudio / producto</th>
+                            <th class="text-end">Ventas</th>
+                            <th class="text-end">Ingreso</th>
+                            <th>Reactivos</th>
+                            <th>Costo</th>
+                            <th>Presentación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in ventas_laboratorio %}
+                        <tr>
+                            <td>{{ row.estudio }}</td>
+                            <td class="text-end">{{ row.cantidad }}</td>
+                            <td class="text-end">${{ row.ingresos|floatformat:2 }}</td>
+                            <td>{{ row.reactivos }}</td>
+                            <td>
+                                {% if row.tiene_costo %}
+                                    ${{ row.costos|floatformat:2 }} <span class="badge bg-success">Capturado</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Pendiente de capturar</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-secondary">{{ row.presentacion_estado }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center text-muted">No hay ventas de laboratorio en el periodo.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if enriquecimiento_lab_pendiente %}
+            <div class="alert alert-info mb-0" role="status">
+                Hay datos de enriquecimiento pendientes. Esto no altera ventas ni cobros; se reflejará aquí conforme se capturen.
+            </div>
+            {% endif %}
         </div>
         
         <!-- ESTUDIOS MÁS SOLICITADOS -->
