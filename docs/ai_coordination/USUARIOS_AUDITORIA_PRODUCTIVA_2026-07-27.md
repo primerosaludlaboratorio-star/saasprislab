@@ -49,6 +49,26 @@ Fecha: 2026-07-27. Revision ejecutada sobre la interfaz de producción después 
 - La navegación de la cuenta total terminó sin errores de consola observables.
 - Health de producción: `HTTP 200`.
 
+## Verificacion humana ampliada
+
+Fecha: 2026-07-27. La auditoría se continuó en producción con navegación real y sin ejecutar cobros, órdenes clínicas ni ajustes irreversibles.
+
+- Las tres cuentas quedaron asignadas a la sucursal `Matriz Principal` (`id=1`), requisito del modo tenant estricto.
+- PDV: búsqueda de `paracetamol`, selección de presentación, apertura del selector de lote y agregado al carrito con lote `LOTE-TEST-001` y precio visible; no se confirmó el cobro.
+- PDV: búsqueda numérica sin coincidencia; la pantalla conserva el término, pero no muestra una leyenda explícita de "sin resultados".
+- Farmacia: Entrada de mercancía, inventario, semáforo de caducidad, alertas, libro de control, devoluciones, ajustes de inventario y corte de caja cargaron sin pantalla Sentinel para el administrador de Farmacia.
+- Farmacia: el registro de compras carga para el administrador de Farmacia después de otorgar sus 41 permisos específicos del app `farmacia`.
+- Empleado de Farmacia: PDV, búsqueda de medicamentos, inventario y corte de caja cargan; Laboratorio/LIMS y Finanzas permanecen bloqueados.
+- Administración total: Recepción, LIMS, lista de trabajo, control de calidad y entrega de resultados cargan; en Recepción los buscadores de paciente y estudio responden y el botón de confirmar permanece deshabilitado sin selección completa. No se creó una orden.
+- Health productivo: `HTTP 200`; base de datos y caché reportados como `ok`; Gunicorn, Celery y Celery Beat activos.
+
+### Hallazgos abiertos de esta ronda
+
+1. Una denegación esperada para el empleado al abrir directamente `/farmacia/erp/compras/registrar/` se presenta como "PRIS Sentinel esta reparando". Debe mostrarse como acceso no autorizado, sin tratar una restricción RBAC como incidente técnico.
+2. El buscador del PDV no ofrece mensaje explícito cuando no existe coincidencia para el término introducido.
+
+Estos puntos quedan pendientes y no se consideran cerrados por esta verificación.
+
 ## Limitacion de pruebas locales
 
 `manage.py check` y compilación Python pasaron. La suite Django dirigida quedó bloqueada durante la creación de la base de pruebas, sin llegar a ejecutar aserciones; por ello esa suite no se marca como pasada y la evidencia de permisos se basa en la comprobación productiva y en la prueba de regresión añadida en `core/tests/test_auditoria_roles_ui.py`.
