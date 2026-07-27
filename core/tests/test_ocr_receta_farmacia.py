@@ -44,6 +44,7 @@ class OCRRecetaFarmaciaFallbackTests(SimpleTestCase):
 
         self.assertEqual(proveedor, "google_cloud_vision+deepseek")
         self.assertEqual(datos["medicamentos"][0]["nombre_comercial"], "Paracetamol")
+        self.assertEqual(meta["confianzas"][proveedor], 0.91)
         self.assertTrue(meta["requiere_revision_humana"])
 
     @patch("core.services.ocr_documental._deepseek_text_call", return_value="")

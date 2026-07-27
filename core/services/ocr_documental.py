@@ -435,8 +435,10 @@ def _leer_receta_por_ocr_documental(imagen_b64: str) -> tuple[dict, str, dict]:
         proveedor = 'google_cloud_vision+parser'
     else:
         proveedor = 'google_cloud_vision+deepseek'
+    confianza = _confianza_ocr(datos.get('confianza'))
     return datos, proveedor, {
         'proveedores_intentados': ['google_cloud_vision', 'deepseek_text'],
+        'confianzas': {proveedor: confianza},
         'fallback_utilizado': True,
         'texto_ocr': texto,
         'requiere_revision_humana': True,
