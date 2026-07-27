@@ -1244,3 +1244,43 @@ Verificacion posterior al despliegue:
 - precorte productivo `PRECORTE` y `solo_lectura=True`;
 - una apertura activa conservada sin ejecutar un cierre destructivo;
 - Sentinel Farmacia: `0` incidencias nuevas en los 20 minutos posteriores.
+
+## Provisionamiento consistente de usuarios por empresa y rol - 2026-07-27
+
+Se corrigio una inconsistencia real del alta de usuarios: algunas cuentas
+recibian empresa y rol, pero no el grupo Django ni los permisos del modulo.
+Eso podia permitir el inicio de sesion y, aun asi, bloquear una operacion que
+dependia de `permission_required`.
+
+Regla operativa canonica:
+
+- la contrasena autentica la identidad;
+- `empresa` y `sucursales` delimitan el tenant y el alcance operativo;
+- `rol` provisiona automaticamente el grupo y los permisos funcionales;
+- el PIN no es una segunda contrasena de inicio de sesion: es una autorizacion
+  separada para cancelaciones/devoluciones y otras operaciones sensibles.
+
+Implementacion:
+
+- `core/utils/role_access.py` centraliza la relacion rol -> grupo y sincroniza
+  los permisos del modulo Farmacia para `FARMACIA`;
+- el alta por herramienta, el alta/edicion administrativa y el `post_save`
+  aplican la misma sincronizacion;
+- `core.0095_usuario_rol_farmacia` incorpora `FARMACIA` como rol valido;
+- `sincronizar_roles_grupos --apply` regularizo las cuentas existentes sin
+  cambiar datos clinicos, ventas o inventarios.
+
+Revision desplegada: `3770d6d`.
+
+Evidencia productiva:
+
+- migracion `core.0095` aplicada correctamente;
+- 18 cuentas existentes sincronizadas y 0 usuarios sin rol asignado;
+- el grupo `FARMACIA` tiene 41 permisos del modulo;
+- `farmacia_admin_10d` pertenece a `FARMACIA` y tiene
+  `farmacia.add_movimientoinventario`;
+- `farmacia_empleado_10d` permanece en `CAJERO` y no tiene ese permiso;
+- administrador de farmacia con PIN temporal valido: `404 Venta no encontrada`
+  para un folio inexistente, demostrando que supero RBAC/PIN sin mutar datos;
+- empleado con el mismo PIN: `403`, sin autorizacion para cancelar;
+- `/health/`: HTTP 200, base de datos y cache en estado `ok`.
