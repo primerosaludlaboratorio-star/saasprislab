@@ -30,7 +30,7 @@ def _can_manage_lims_catalog(user) -> bool:
     """Permiso de edición LIMS: empresa obligatoria, staff solo dentro de tenant."""
     if not getattr(user, 'empresa', None):
         return False
-    if user.is_superuser or user.is_staff:
+    if user.is_superuser:
         return True
     rol = (getattr(user, 'rol', '') or '').upper()
     return rol in ('DIRECTOR_QC', 'ADMIN', 'ADMINISTRADOR', 'LABORATORIO', 'LIMS')
@@ -43,21 +43,21 @@ def lista_pruebas(request):
         request,
         'Catálogo v7.5: gestione analitos, perfiles y paquetes en Administración LIMS.',
     )
-    return redirect(ADMIN_ANALITOS)
+    return redirect('/lims/analitos/')
 
 
 @login_required
 @role_required('DIRECTOR_QC', 'ADMIN')
 def configurar_prueba(request, estudio_id=None):
     messages.info(request, 'Edición de ítems LIMS desde el panel administrativo.')
-    return redirect(ADMIN_PERFILES if estudio_id else ADMIN_ANALITOS)
+    return redirect(f'/lims/perfiles/{estudio_id}/editar/' if estudio_id else '/lims/analitos/')
 
 
 @login_required
 @role_required('DIRECTOR_QC', 'ADMIN')
 def configurar_rangos(request, parametro_id):
     a = get_object_or_404(Analito, pk=parametro_id)
-    return redirect(f'/admin/lims/analito/{a.pk}/change/')
+    return redirect(f'/lims/analitos/{a.pk}/')
 
 
 @login_required
@@ -65,14 +65,14 @@ def configurar_rangos(request, parametro_id):
 def eliminar_prueba(request, estudio_id):
     if request.method == 'POST':
         messages.warning(request, 'Use el admin LIMS para desactivar o eliminar ítems.')
-    return redirect(ADMIN_ANALITOS)
+    return redirect('/lims/analitos/')
 
 
 @login_required
 @role_required('DIRECTOR_QC', 'ADMIN')
 def duplicar_prueba(request, estudio_id):
     messages.info(request, 'Duplique registros desde el admin LIMS (analito/perfil/paquete).')
-    return redirect(ADMIN_ANALITOS)
+    return redirect('/lims/analitos/')
 
 
 @login_required
@@ -128,16 +128,16 @@ def api_parametros_estudio(request, estudio_id):
 @role_required('DIRECTOR_QC', 'ADMIN')
 def lista_parametros(request):
     messages.info(request, 'Listado de analitos (parámetros) en Admin LIMS.')
-    return redirect(ADMIN_ANALITOS)
+    return redirect('/lims/analitos/')
 
 
 @login_required
 @role_required('DIRECTOR_QC', 'ADMIN')
 def editar_parametro(request, parametro_id=None, estudio_id=None):
     if parametro_id:
-        return redirect(f'/admin/lims/analito/{parametro_id}/change/')
+        return redirect(f'/lims/analitos/{parametro_id}/editar/')
     messages.info(request, 'Cree un nuevo analito desde Administración LIMS.')
-    return redirect('/admin/lims/analito/add/')
+    return redirect('/lims/analitos/')
 
 
 @login_required

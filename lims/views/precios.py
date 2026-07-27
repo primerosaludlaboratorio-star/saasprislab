@@ -22,8 +22,8 @@ def _check_perm(user):
     if not get_empresa_usuario(user):
         return False
 
-    # Superuser/staff con empresa válida pueden operar
-    if user.is_superuser or user.is_staff:
+    # Staff no es un rol de negocio; solo el superusuario o un rol LIMS válido.
+    if user.is_superuser:
         return True
 
     rol = (getattr(user, 'rol', '') or '').upper()

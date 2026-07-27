@@ -904,6 +904,28 @@ Hallazgo operativo explícito:
 
 Estado: Laboratorio y LIMS quedan funcionales para operación y pruebas de flujo, pero el cierre `100% enterprise` del subflujo CCI/Westgard queda condicionado a la configuración clínica real del laboratorio. No se modificaron catálogos ni datos clínicos de producción durante esta auditoría.
 
+## Endurecimiento Laboratorio/LIMS - 2026-07-27
+
+La revisión integral detectó y corrigió dos huecos de producto:
+
+- las rutas legacy `/lims/estudios/` y `/lims/parametros/` ya conducen a la UI canónica `/lims/analitos/`, `/lims/perfiles/` y sus fichas, en lugar de enviar al administrador Django;
+- `is_staff` dejó de ser bypass de permisos en las ventanas LIMS de analitos, perfiles, paquetes, precios y configuración legacy; se exige superusuario o rol/grupo LIMS válido con empresa explícita;
+- se incorporó el comando idempotente `ensure_lims_dependencies`, que reconcilia la dependencia clínica autoritativa BUN de UREA con rangos fuente y permite vincularla a perfiles existentes sin resetear catálogos;
+- el comando exige `--empresa-id`, soporta `--dry-run` y no modifica otra empresa.
+
+Validación local:
+
+- suite integrada Laboratorio/LIMS: `57 tests OK`;
+- reconciliación BUN, idempotencia y RBAC LIMS: `9 tests OK`;
+- `manage.py check`, compilación Python y `git diff --check`: correctos.
+
+Ejecución productiva pendiente en esta revisión:
+
+- desplegar el comando;
+- ejecutar `ensure_lims_dependencies --empresa-id 1 --dry-run --link-profiles`;
+- aplicar solo si el dry-run confirma que falta BUN y que el vínculo es el esperado;
+- repetir catálogo, flujo de captura calculada UREA/BUN, PDF, entrega y Sentinel.
+
 ## Fachada canónica de coherencia clínica - 2026-07-23
 
 Para eliminar la dispersión del flujo clínico se incorporó `core.services.lims.coherencia_clinica` como punto de entrada auditable para la evaluación de resultados y órdenes LIMS. La fachada conserva la lógica existente y expone explícitamente las capas que participan:
