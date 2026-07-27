@@ -14,6 +14,7 @@ import json
 import logging
 import re
 import urllib.request
+from base64 import b64decode
 from typing import Optional
 
 from django.conf import settings
@@ -312,6 +313,136 @@ def _deepseek_vision_call(imagen_b64: str, prompt: str) -> str:
         return ''
 
 
+_PROMPT_RECETA_TEXTO = """Convierte el texto OCR de una receta médica en JSON válido.
+No inventes datos: usa null o una lista vacía cuando no aparezca un dato.
+Conserva literalmente las indicaciones, dosis, frecuencia, duración y vía.
+Responde SOLO con este esquema:
+{
+  "tipo_documento": "RECETA_MEDICA" | "OTRO",
+  "confianza": 0.0 a 1.0,
+  "nombre_paciente": "string o null",
+  "fecha_receta": "YYYY-MM-DD o null",
+  "medico_nombre": "string o null",
+  "cedula_profesional": "string o null",
+  "medicamentos": [
+    {"texto": "texto original", "nombre_comercial": "string o null",
+     "sustancia_activa": "string o null", "concentracion": "string o null",
+     "forma_farmaceutica": "string o null", "cantidad": número entero o null,
+     "indicaciones": "string o null", "confianza": 0.0 a 1.0}
+  ],
+  "observaciones": "string o null"
+}
+
+Texto OCR:
+"""
+
+
+def _deepseek_text_call(texto: str) -> str:
+    """Estructura texto OCR con DeepSeek, que no se usa como lector de imagen."""
+    api_key = getattr(settings, 'DEEPSEEK_API_KEY', '')
+    modelo = getattr(settings, 'DEEPSEEK_MODEL', '') or getattr(settings, 'DEEPSEEK_VISION_MODEL', '')
+    if not api_key or not modelo:
+        return ''
+    payload = json.dumps({
+        'model': modelo,
+        'temperature': 0.0,
+        'max_tokens': 1600,
+        'response_format': {'type': 'json_object'},
+        'messages': [{'role': 'user', 'content': _PROMPT_RECETA_TEXTO + texto[:18000]}],
+    }).encode()
+    req = urllib.request.Request(
+        getattr(settings, 'DEEPSEEK_API_URL', 'https://api.deepseek.com/v1/chat/completions'),
+        data=payload,
+        headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {api_key}'},
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=getattr(settings, 'DEEPSEEK_TIMEOUT', 30)) as resp:
+            data = json.loads(resp.read().decode())
+            return str(data.get('choices', [{}])[0].get('message', {}).get('content', '')).strip()
+    except Exception as exc:
+        logger.warning('[OCR] DeepSeek texto no disponible: %s', exc)
+        return ''
+
+
+def _google_cloud_vision_text(imagen_b64: str) -> str:
+    """Extrae texto impreso o manuscrito mediante Cloud Vision Document OCR."""
+    try:
+        from google.cloud import vision
+        contenido = b64decode(imagen_b64.split(',', 1)[-1])
+        cliente = vision.ImageAnnotatorClient()
+        respuesta = cliente.document_text_detection(image=vision.Image(content=contenido))
+        if respuesta.error.message:
+            logger.warning('[OCR] Cloud Vision: %s', respuesta.error.message)
+            return ''
+        anotacion = respuesta.full_text_annotation
+        return (anotacion.text if anotacion else '').strip()
+    except Exception as exc:
+        logger.warning('[OCR] Cloud Vision no disponible: %s', exc)
+        return ''
+
+
+def _parsear_lineas_receta(texto: str) -> dict:
+    """Respaldo sin IA: conserva líneas numeradas y separa indicaciones básicas."""
+    medicamentos = []
+    for linea in texto.splitlines():
+        linea = linea.strip()
+        match = re.match(r'^\s*(?:\d+[.)]|[-*])\s*(.+?)(?:\s+-\s+|\s+)(.+)$', linea)
+        if not match:
+            continue
+        nombre, indicaciones = match.groups()
+        if len(nombre) < 3 or not re.search(r'[A-Za-zÁÉÍÓÚáéíóú]', nombre):
+            continue
+        concentracion = ''
+        concentracion_match = re.search(
+            r'\b\d+(?:[.,]\d+)?\s*(?:mg|g|mcg|ml|%)(?:\b|/)',
+            f'{nombre} {indicaciones}',
+            re.I,
+        )
+        if concentracion_match:
+            concentracion = concentracion_match.group(0)
+        medicamentos.append({
+            'texto': f'{nombre} - {indicaciones}',
+            'nombre_comercial': nombre,
+            'sustancia_activa': None,
+            'concentracion': concentracion or None,
+            'forma_farmaceutica': None,
+            'cantidad': 1,
+            'indicaciones': indicaciones,
+            'confianza': 0.55,
+        })
+    return {
+        'tipo_documento': 'RECETA_MEDICA' if medicamentos else 'OTRO',
+        'confianza': 0.55 if medicamentos else 0,
+        'nombre_paciente': None,
+        'fecha_receta': None,
+        'medico_nombre': None,
+        'cedula_profesional': None,
+        'medicamentos': medicamentos,
+        'observaciones': 'Texto extraído por OCR; requiere confirmación humana.',
+    }
+
+
+def _leer_receta_por_ocr_documental(imagen_b64: str) -> tuple[dict, str, dict]:
+    """Fallback multimotor: imagen -> OCR documental -> DeepSeek texto -> parser."""
+    texto = _google_cloud_vision_text(imagen_b64)
+    if not texto:
+        return {}, '', {'proveedores_intentados': ['google_cloud_vision'], 'requiere_revision_humana': True}
+    raw = _deepseek_text_call(texto)
+    datos = _parse_json_respuesta(raw) if raw else {}
+    if not isinstance(datos.get('medicamentos'), list) or not datos.get('medicamentos'):
+        datos = _parsear_lineas_receta(texto)
+        proveedor = 'google_cloud_vision+parser'
+    else:
+        proveedor = 'google_cloud_vision+deepseek'
+    return datos, proveedor, {
+        'proveedores_intentados': ['google_cloud_vision', 'deepseek_text'],
+        'fallback_utilizado': True,
+        'texto_ocr': texto,
+        'requiere_revision_humana': True,
+    }
+
+
 def _confianza_ocr(valor) -> float:
     """Normaliza confianza a 0..1; algunos proveedores responden porcentajes."""
     try:
@@ -350,8 +481,12 @@ def _leer_receta_en_cascada(imagen_b64: str) -> tuple[dict, str, dict]:
         if datos and confianza >= umbral:
             break
 
-    validos = [r for r in resultados if r['datos']]
+    validos = [r for r in resultados if r['datos'] and isinstance(r['datos'].get('medicamentos'), list)]
     elegido = max(validos, key=lambda r: r['confianza']) if validos else {'proveedor': '', 'confianza': 0, 'datos': {}}
+    if not elegido['datos'] or not elegido['datos'].get('medicamentos'):
+        datos_ocr, proveedor_ocr, vision_ocr = _leer_receta_por_ocr_documental(imagen_b64)
+        if datos_ocr:
+            return datos_ocr, proveedor_ocr, vision_ocr
     return elegido['datos'], elegido['proveedor'], {
         'proveedores_intentados': [r['proveedor'] for r in resultados],
         'confianzas': {r['proveedor']: r['confianza'] for r in resultados},
