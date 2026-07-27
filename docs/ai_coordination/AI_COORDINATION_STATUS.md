@@ -10,6 +10,13 @@ Fecha: 2026-07-25
 - El detalle de credenciales temporales y este PIN también está en `CREDENCIALES_AUDITORIA_PRODUCTIVA_2026-07-27.local.md`.
 - Debe rotarse a PIN individual por usuario antes del cierre de pruebas.
 
+### Correccion de acceso de administradora Farmacia — 2026-07-27
+
+- Causa confirmada: el flujo de devolucion/cancelacion usaba `_es_gerente_o_admin` y no contemplaba el rol `FARMACIA`, aunque el PIN `2468` fuera correcto.
+- `d3e6fd1` incorpora `FARMACIA` como autoridad operativa; `CAJERO` permanece bloqueado.
+- Produccion verificada: administradora `FARMACIA` + PIN correcto supera RBAC/PIN y una venta inexistente responde `404 Venta no encontrada`; empleado `CAJERO` responde `403` sin modificar datos.
+- Despliegue productivo: `d3e6fd1060229b2e214e5771b4a1a79cacf2fa9c`; migraciones al dia, servicios activos y health `HTTP 200`.
+
 ## PIN de precio de costo Farmacia — 2026-07-25
 
 - El PIN solicitado por el PDV no corresponde al corte ni al arqueo ciego; autoriza exclusivamente la venta a precio de costo para `Personal` o `Familiar`.
