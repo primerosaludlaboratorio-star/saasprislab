@@ -226,3 +226,25 @@ Despliegue y verificacion productiva:
   digitos;
 - se cancelo el dialogo antes de enviar, sin mutar caja, inventario ni ventas;
 - consola del navegador: cero errores.
+
+## Verificacion inicial Laboratorio/LIMS en produccion
+
+Se reviso la interfaz productiva con la cuenta de auditoria sin crear una
+orden ni modificar resultados clinicos:
+
+- Recepcion de orden carga correctamente y permite buscar estudios por nombre,
+  codigo o abreviatura.
+- La seleccion de `GLU - GLUCOSA` se reflejo en la tabla y recalculo el resumen
+  a `$85.00` sin error de interfaz.
+- Toma de muestra, Monitor de Produccion, Registro de Resultados, Control de
+  Calidad, Entrega de Resultados, Worklist y catalogo LIMS cargaron sin 502,
+  traceback ni pantalla de error.
+- La consola del navegador no reporto errores durante la prueba dirigida.
+- Produccion al corte: `0` mediciones CCI del tenant 1 y `0` alertas Westgard
+  pendientes. Esto impide declarar cerrado Westgard con evidencia clinica;
+  requiere cargar controles, lotes, equipo y mediciones reales.
+
+Validacion automatizada local del dominio: `laboratorio.tests lims.tests` =
+**36 OK, 3 omitidas por backend PostgreSQL**. Las omisiones corresponden a
+pruebas que requieren el backend PostgreSQL real y no se clasifican como fallo
+de codigo local.
