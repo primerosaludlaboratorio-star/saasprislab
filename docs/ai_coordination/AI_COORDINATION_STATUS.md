@@ -1284,3 +1284,143 @@ Evidencia productiva:
   para un folio inexistente, demostrando que supero RBAC/PIN sin mutar datos;
 - empleado con el mismo PIN: `403`, sin autorizacion para cancelar;
 - `/health/`: HTTP 200, base de datos y cache en estado `ok`.
+
+## Revision del informe de auditoria enterprise de Copilot - 2026-07-27
+
+Se reviso el informe emitido sobre `release/v1.0-local` en el commit
+`8a0e3e8`. Esta entrada no cierra ni corrige hallazgos; documenta su estado
+para decidir las acciones despues de que concluya la auditoria externa.
+
+### Hallazgos confirmados
+
+- **Credencial hardcodeada en produccion:**
+  `core/management/commands/crear_usuarios_produccion.py` contiene
+  `Prislab2025` como contrasena por defecto. Es un hallazgo critico. Debe
+  eliminarse el valor fijo y rotarse cualquier credencial si el comando fue
+  ejecutado con ese valor.
+- **Westgard estricto desactivado:** el flag productivo
+  `QC_WESTGARD_ACTIVO` fue verificado con valor `False`. El motor existe y
+  tiene pruebas, pero el bloqueo clinico estricto no esta activo.
+- **CotizacionOCR sin FK estructural de empresa:** `ia/models.py` define
+  `CotizacionOCR` sin `empresa_id`. Algunas vistas restringen por usuario
+  creador, pero el modelo no tiene aislamiento tenant estructural. Debe
+  probarse cross-tenant y corregirse antes de considerarlo cerrado.
+- **CAPA/no conformidades no implementado:** no existe el flujo formal de
+  registro, causa raiz, accion correctiva, verificacion y cierre requerido para
+  declarar cumplimiento ISO 15189.
+- **EQA/PEEC no implementado:** no existe el registro operativo de rondas,
+  resultados, comparacion interlaboratorial y seguimiento de desempeño.
+- **Quality Gate principal con SQLite:** `.github/workflows/main.yml` no
+  levanta PostgreSQL; las rutas L-J que usan agregados especificos de
+  PostgreSQL no quedan cubiertas por ese gate principal.
+
+### Hallazgos condicionados o sobredimensionados
+
+- **X-Forwarded-For/rate limit:** existe una debilidad de diseño si la
+  aplicacion recibe trafico directo o desde un proxy no confiable. No se
+  confirmo como bypass activo en produccion: Gunicorn escucha en
+  `127.0.0.1:8000` y el trafico publico entra por Nginx, que agrega la IP real
+  al final de la cadena. Queda como endurecimiento pendiente, no como ataque
+  productivo reproducido.
+- **Emergency tenant bypass:** el middleware ignora el bypass fuera de
+  `DEBUG`; el riesgo productivo reportado esta sobredimensionado. Debe
+  convertirse en fallo de arranque si la variable aparece en produccion para
+  eliminar dependencia de logs.
+- **Endpoints `csrf_exempt`:** no todos son vulnerables por el solo hecho de
+  usar ese decorador. Algunos tienen `login_required`, token operativo,
+  webhook o diseño publico. `api_shield_telemetry` si requiere limites de
+  tamano, rate limit y control anti-inundacion.
+- **IP publica en Nginx:** es una mejora de higiene OPSEC, no un hallazgo
+  critico de seguridad.
+- **Superioridad frente al mercado:** no queda demostrada por la tabla del
+  informe. Para sostener esa afirmacion se necesitan benchmark reproducible,
+  productos/versiones comparables, casos de prueba equivalentes y metricas.
+
+### Estado de decision
+
+Estos hallazgos quedan **ABIERTO / PENDIENTE DE DECISION**. No se modifica el
+codigo, no se activa Westgard, no se cambia la configuracion de produccion y
+no se inicia CAPA/EQA hasta recibir el informe final de la auditoria externa y
+decidir el alcance de cada cierre.
+
+### Criterio de cierre posterior
+
+Cada hallazgo debera cerrarse con cambio trazable, prueba automatizada, prueba
+de produccion cuando aplique, evidencia de no regresion y actualizacion de
+esta entrada. Ningun hallazgo se marcara como enterprise-ready solo por estar
+documentado o por existir un motor de codigo sin activacion y validacion
+operativa.
+
+## Bloque 1 local - seguridad inmediata - 2026-07-27
+
+Se tomo el control del checkout local despues de detectar que la ejecucion
+externa habia modificado audio/CCI y habia declarado cerrado el bloque sin
+resolver los hallazgos de seguridad definidos. Esos cambios desviados no se
+copiaron.
+
+Implementacion local pendiente de revision y despliegue:
+
+- el comando de usuarios ya no contiene una contrasena fija; exige
+  `PRISLAB_PRODUCTION_USER_PASSWORD` en produccion o solicita una contrasena
+  interactiva en desarrollo, con longitud minima de 12 caracteres;
+- el rate limit solo acepta `X-Forwarded-For` cuando el peer directo pertenece
+  a `PRISLAB_TRUSTED_PROXY_CIDRS` y la cadena coincide con
+  `PRISLAB_TRUSTED_PROXY_COUNT`; un acceso directo no puede falsificar la IP;
+- se agrego limite de 5 solicitudes por 10 minutos a
+  `/contabilidad/api/autofactura/generar/`;
+- autofactura publica exige POST, CSRF, JSON objeto, RFC SAT, codigo postal,
+  regimen y uso CFDI validos, sanea razon social y responde sin cache;
+- `PRISLAB_EMERGENCY_TENANT_BYPASS` provoca error de arranque en produccion;
+- se agregaron pruebas de IP confiable/no confiable y de contraseña obligatoria.
+
+Validacion local:
+
+- `manage.py check`: correcto;
+- `makemigrations --check --noinput`: sin cambios pendientes;
+- pruebas de rate limit y comando de usuarios: `5 tests OK`;
+- compilacion Python de archivos modificados: correcta;
+- `contabilidad.tests.test_views_public_autofactura`: la primera ejecucion
+  revelo que los tests antiguos no enviaban CSRF; fueron adaptados al flujo
+  real del portal con `Client(enforce_csrf_checks=True)`. En modo de
+  migracion acelerada, la suite quedo en `4 tests OK`; la variante con
+  historial completo de migraciones queda bloqueada por el arnes local y no
+  se declara verde;
+- no se hizo commit, push, despliegue ni cambio de datos productivos.
+
+## Aislamiento tenant OCR local - Bloque 2 parcial - 2026-07-27
+
+Se agrego aislamiento estructural a `CotizacionOCR`:
+
+- el modelo hereda `TenantModel` y tiene FK obligatoria a `Empresa`;
+- la migracion `ia.0004_cotizacionocr_empresa_tenant` agrega la FK, hace
+  backfill desde `usuario_creador.empresa` y falla si quedan huerfanos;
+- la vista de alta asigna explicitamente la empresa del usuario;
+- el admin restringe el queryset a la empresa del usuario salvo superusuario;
+- las pruebas verifican que un usuario de una empresa recibe `404` al pedir la
+  cotizacion de otra y que una cotizacion sin empresa no persiste.
+
+Evidencia productiva previa a migrar: `CotizacionOCR` tenia `0` registros,
+`0` sin creador y `0` con creador sin empresa. La migracion sigue sin
+desplegarse hasta ejecutar el gate de migracion en un entorno controlado.
+
+Validacion local: `manage.py check`, `makemigrations --check` y las pruebas IA
+en modo de migracion acelerada pasan. La suite con historial completo de
+migraciones queda condicionada por el bloqueo prolongado del arnes SQLite
+local.
+
+Estado: **ABIERTO - requiere revisar la suite de autofactura con una base de
+pruebas funcional antes de considerar cerrado el Bloque 1**.
+
+## PostgreSQL CI local - Bloque 4 - 2026-07-27
+
+Se amplio `.github/workflows/main.yml` con un job independiente
+`postgres-quality-gate` usando PostgreSQL 16. El job ejecuta `check`,
+`makemigrations --check`, migraciones y pruebas tenant, autofactura, OCR y CCI.
+
+`laboratorio.tests.test_cci_lj_postgres_guard` dejo de ser un placeholder:
+cuando el motor es PostgreSQL crea mediciones CCI y ejercita las consultas
+`STDDEV_SAMP` del resumen y la agrupacion temporal de Levey-Jennings.
+
+Validacion local: YAML valido, `manage.py check` correcto, migraciones sin
+cambios pendientes y compilacion Python correcta. El job de GitHub permanece
+pendiente de ejecucion porque aun no se ha hecho push.

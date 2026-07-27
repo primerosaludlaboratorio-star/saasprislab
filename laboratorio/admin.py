@@ -7,6 +7,7 @@ from .models import (
     ValorReferencia, PerfilLaboratorio, NotificacionPanico, ControlCalidad,
     CodigoParametroEquipo, ResultadoHL7, ResultadoHL7Huerfano, BitacoraMantenimiento,
     HistorialResultados, ResponsableSanitario,
+    NoConformidad, NoConformidadEvento, RondaEQA, ResultadoEQA,
 )
 
 
@@ -242,3 +243,49 @@ class ResponsableSanitarioAdmin(admin.ModelAdmin):
     list_filter   = ('activo', 'especialidad')
     search_fields = ('usuario__username', 'cedula_profesional',
                      'numero_autorizacion_sanitaria')
+
+
+@admin.register(NoConformidad)
+class NoConformidadAdmin(admin.ModelAdmin):
+    list_display = ('folio', 'empresa', 'titulo', 'origen', 'severidad', 'estado', 'responsable', 'creado_en')
+    list_filter = ('empresa', 'origen', 'severidad', 'estado')
+    search_fields = ('titulo', 'descripcion', 'folio')
+    readonly_fields = ('folio', 'fecha_cierre', 'cerrado_por', 'creado_en', 'actualizado_en')
+    autocomplete_fields = ('detectada_por', 'responsable')
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(NoConformidadEvento)
+class NoConformidadEventoAdmin(admin.ModelAdmin):
+    list_display = ('no_conformidad', 'estado_anterior', 'estado_nuevo', 'usuario', 'creado_en')
+    list_filter = ('estado_nuevo', 'creado_en')
+    readonly_fields = tuple(field.name for field in NoConformidadEvento._meta.fields)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(RondaEQA)
+class RondaEQAAdmin(admin.ModelAdmin):
+    list_display = ('codigo_ronda', 'empresa', 'proveedor', 'programa', 'estado', 'fecha_limite', 'responsable')
+    list_filter = ('empresa', 'estado', 'proveedor')
+    search_fields = ('codigo_ronda', 'programa', 'proveedor')
+    readonly_fields = ('creado_en', 'actualizado_en')
+    autocomplete_fields = ('responsable', 'no_conformidad')
+
+
+@admin.register(ResultadoEQA)
+class ResultadoEQAAdmin(admin.ModelAdmin):
+    list_display = ('ronda', 'analito', 'resultado_laboratorio', 'z_score', 'evaluacion')
+    list_filter = ('evaluacion', 'ronda__empresa')
+    search_fields = ('ronda__codigo_ronda', 'analito__nombre')
+    readonly_fields = ('z_score', 'evaluacion')
+    autocomplete_fields = ('ronda', 'analito')

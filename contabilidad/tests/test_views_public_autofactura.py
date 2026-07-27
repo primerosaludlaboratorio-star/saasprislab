@@ -1,16 +1,16 @@
 import json
 from decimal import Decimal
 
-from django.test import RequestFactory, TestCase
+from django.test import Client, TestCase
+from django.urls import reverse
 
 from contabilidad.models import FacturaCFDI
-from contabilidad.views_public import api_generar_autofactura
 from core.models import Empresa, OrdenDeServicio, Paciente, Usuario
 
 
 class PublicAutofacturaApiTests(TestCase):
     def setUp(self):
-        self.factory = RequestFactory()
+        self.client = Client(enforce_csrf_checks=True)
         self.empresa = Empresa.objects.create(nombre='Empresa Autofactura')
         self.usuario = Usuario.objects.create_user(
             username='autofactura_user',
@@ -34,7 +34,7 @@ class PublicAutofacturaApiTests(TestCase):
             folio_orden='ORD-AUTO-1',
         )
 
-    def _post(self, ticket):
+    def _post(self, ticket, csrf=True):
         payload = {
             'ticket': str(ticket),
             'rfc': 'XAXX010101000',
@@ -43,17 +43,27 @@ class PublicAutofacturaApiTests(TestCase):
             'regimen': '616',
             'uso': 'S01',
         }
-        request = self.factory.post(
-            '/contabilidad/api/autofactura/',
+        self.client.get(reverse('contabilidad:autofactura_portal'), {'ticket': str(ticket)})
+        headers = {}
+        if csrf:
+            headers['HTTP_X_CSRFTOKEN'] = self.client.cookies['csrftoken'].value
+        return self.client.post(
+            reverse('contabilidad:api_generar_autofactura'),
             data=json.dumps(payload),
             content_type='application/json',
+            **headers,
         )
-        return api_generar_autofactura(request)
 
     def test_rejects_incremental_ticket_id(self):
         response = self._post(self.orden.id)
 
         self.assertEqual(response.status_code, 404)
+        self.assertEqual(FacturaCFDI.objects.count(), 0)
+
+    def test_rejects_request_without_csrf(self):
+        response = self._post(self.orden.token_acceso, csrf=False)
+
+        self.assertEqual(response.status_code, 403)
         self.assertEqual(FacturaCFDI.objects.count(), 0)
 
     def test_accepts_uuid_ticket_token(self):

@@ -907,6 +907,8 @@ document.addEventListener('keydown',function(e){
 (function () {
     var _bcBuf = '', _bcLastKey = 0;
     document.addEventListener('keydown', function (e) {
+        // Ignore synthetic/incomplete keyboard events without breaking the PDV.
+        if (!e || typeof e.key !== 'string') return;
         var tag = document.activeElement ? document.activeElement.tagName : '';
         var eid = document.activeElement ? document.activeElement.id : '';
         // No interceptar si el foco esta en un campo de entrada distinto al buscador

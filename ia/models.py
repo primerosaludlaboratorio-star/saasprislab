@@ -8,12 +8,20 @@ from django.utils import timezone
 from decimal import Decimal
 
 from core.validators import validate_image_upload, validate_audio_upload
+from core.tenant import TenantModel
 
 
-class CotizacionOCR(models.Model):
+class CotizacionOCR(TenantModel):
     """
     Resultado de una cotización automática usando OCR sobre una receta.
     """
+    empresa = models.ForeignKey(
+        'core.Empresa',
+        on_delete=models.PROTECT,
+        related_name='cotizaciones_ocr',
+        help_text='Empresa propietaria de la cotización OCR.',
+    )
+
     imagen_receta = models.ImageField(
         upload_to='recetas_ocr/%Y/%m/%d/',
         help_text='Imagen de la receta escaneada',
@@ -108,8 +116,8 @@ class CotizacionOCR(models.Model):
                 # Si tiene empresa asociada, filtrar por empresa
                 empresa_id = getattr(self.usuario_creador, 'empresa_id', None) if self.usuario_creador else None
                 qs = Estudio.objects.all()
-                if empresa_id:
-                    qs = qs.filter(empresa_id=empresa_id) if hasattr(Estudio, 'empresa') else qs
+                if empresa_id and hasattr(Estudio, 'empresa'):
+                    qs = qs.filter(empresa_id=empresa_id)
                 estudios_relacionados = qs.filter(
                     nombre__icontains=palabra_clave
                 )[:5]  # Máximo 5 estudios por palabra clave

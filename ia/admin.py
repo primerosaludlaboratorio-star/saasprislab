@@ -38,6 +38,7 @@ class CotizacionOCRAdmin(admin.ModelAdmin):
     ]
     
     readonly_fields = [
+        'empresa',
         'fecha_creacion',
         'texto_extraido',
         'estudios_detectados',
@@ -48,7 +49,7 @@ class CotizacionOCRAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('📊 Información General', {
-            'fields': ('usuario_creador', 'fecha_creacion')
+            'fields': ('empresa', 'usuario_creador', 'fecha_creacion')
         }),
         ('📸 Imagen y OCR', {
             'fields': ('imagen_receta', 'imagen_preview', 'texto_extraido')
@@ -60,6 +61,13 @@ class CotizacionOCRAdmin(admin.ModelAdmin):
             'fields': ('orden_asociada',)
         }),
     )
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related('empresa', 'usuario_creador')
+        if request.user.is_superuser:
+            return qs
+        empresa_id = getattr(request.user, 'empresa_id', None)
+        return qs.filter(empresa_id=empresa_id) if empresa_id else qs.none()
     
     def fecha_creacion_formateada(self, obj):
         return obj.fecha_creacion.strftime('%d/%m/%Y %H:%M')

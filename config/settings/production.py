@@ -33,10 +33,8 @@ _log_sec = logging.getLogger('core.seguridad.startup')
 
 # HC-1: PRISLAB_EMERGENCY_TENANT_BYPASS no debe estar activo en producción.
 if os.environ.get('PRISLAB_EMERGENCY_TENANT_BYPASS', '').strip().lower() in ('1', 'true', 'yes', 'on'):
-    _log_sec.critical(
-        '🚨 PRISLAB_EMERGENCY_TENANT_BYPASS=1 está activo en este proceso. '
-        'El filtro multi-tenant ORM está DESACTIVADO. '
-        'Desactivar esta variable en cuanto sea seguro.'
+    raise RuntimeError(
+        'PRISLAB_EMERGENCY_TENANT_BYPASS no puede estar activo en producción.'
     )
 
 # HC-2: PRISLAB_DEFAULT_EMPRESA_ID debe estar configurado.

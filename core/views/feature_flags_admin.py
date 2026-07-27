@@ -6,6 +6,7 @@ Accesible solo para ADMIN / DIRECTOR / Superusuario.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 import logging
+import os
 
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -70,6 +71,22 @@ def api_toggle_flag(request, codigo: str):
     from core.services.feature_flags import activar, desactivar, FLAG_CATALOG
     if codigo not in FLAG_CATALOG:
         return JsonResponse({'error': f'Flag desconocido: {codigo}'}, status=400)
+
+    if (
+        codigo == 'QC_WESTGARD_ACTIVO'
+        and not valor
+        and getattr(__import__('django.conf', fromlist=['settings']).settings, 'IS_PRODUCTION', False)
+        and os.environ.get('PRISLAB_ALLOW_WESTGARD_DISABLE', '').strip().lower()
+        not in {'1', 'true', 'yes', 'on'}
+    ):
+        logger.critical(
+            '[Flags] Intento de desactivar Westgard bloqueado en produccion por %s',
+            request.user.username,
+        )
+        return JsonResponse(
+            {'error': 'Westgard no puede desactivarse en produccion sin excepcion operativa.'},
+            status=409,
+        )
 
     ok = activar(codigo, empresa, request.user) if valor else desactivar(codigo, empresa, request.user)
     if ok:

@@ -9,6 +9,7 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_http_methods
+from core.decorators import rate_limit
 
 logger = logging.getLogger('sentinel.shield')
 
@@ -45,6 +46,7 @@ def _sentinel_remote_token_valid(admin_token):
 
 @csrf_exempt
 @require_POST
+@rate_limit('sentinel_telemetry', limit=120, window_seconds=60)
 def api_shield_telemetry(request):
     """
     Recibe telemetria del Sentinel Shield (frontend).
@@ -52,7 +54,11 @@ def api_shield_telemetry(request):
     Endpoint fire-and-forget, no bloquea al usuario.
     """
     try:
+        if len(request.body) > 16 * 1024:
+            return JsonResponse({'status': 'error', 'mensaje': 'Payload demasiado grande'}, status=413)
         body = json.loads(request.body.decode('utf-8', errors='replace'))
+        if not isinstance(body, dict):
+            return JsonResponse({'status': 'error', 'mensaje': 'Payload invalido'}, status=400)
         event_type = body.get('event', 'unknown')
         data = body.get('data', {})
         timestamp = body.get('timestamp', '')
@@ -76,6 +82,7 @@ def api_shield_telemetry(request):
 
 @csrf_exempt
 @require_POST
+@rate_limit('sentinel_reset', limit=10, window_seconds=60)
 def api_sentinel_reset(request):
     """
     Reset del dashboard de Sentinel: marca todas las incidencias como SOLUCIONADO
@@ -138,6 +145,7 @@ def api_sentinel_reset(request):
 
 @csrf_exempt
 @require_POST
+@rate_limit('sentinel_diagnostico', limit=10, window_seconds=60)
 def api_sentinel_diagnostico(request):
     """Diagnostico rapido del estado del sistema. Requiere admin_token."""
     import os
@@ -159,34 +167,46 @@ def api_sentinel_diagnostico(request):
 
     try:
         from django.db import connection
-        from psycopg2 import sql
-        cursor = connection.cursor()
         info = {}
 
-        # Check tables with 'estudio' or 'examen'
-        cursor.execute(
-            "SELECT tablename FROM pg_tables "
-            "WHERE tablename LIKE '%%estudio%%' OR tablename LIKE '%%examen%%'"
-        )
-        tables = [r[0] for r in cursor.fetchall()]
+        # Use Django introspection so the diagnostic works with the configured
+        # backend (PostgreSQL in production and SQLite in local verification).
+        tables = [
+            table
+            for table in connection.introspection.table_names()
+            if 'estudio' in table.lower() or 'examen' in table.lower()
+        ]
         info['tables_encontradas'] = tables
 
-        for table in tables:
-            try:
-                # ✅ SEGURO: Usar sql.Identifier para nombres de tabla
-                table_id = sql.Identifier(table)
-                cursor.execute(sql.SQL("SELECT COUNT(*) FROM {}").format(table_id))
-                cnt = cursor.fetchone()[0]
-                info[f'count_{table}'] = cnt
-                if cnt > 0:
-                    cursor.execute(sql.SQL("SELECT id, nombre, codigo FROM {} LIMIT 3").format(table_id))
-                    info[f'sample_{table}'] = [
-                        {'id': r[0], 'nombre': r[1], 'codigo': r[2]}
-                        for r in cursor.fetchall()
+        with connection.cursor() as cursor:
+            for table in tables:
+                try:
+                    # quote_name handles the identifier for the active backend.
+                    quoted_table = connection.ops.quote_name(table)
+                    cursor.execute(f'SELECT COUNT(*) FROM {quoted_table}')
+                    cnt = cursor.fetchone()[0]
+                    info[f'count_{table}'] = cnt
+
+                    columns = {
+                        column.name.lower()
+                        for column in connection.introspection.get_table_description(cursor, table)
+                    }
+                    sample_columns = [
+                        column for column in ('id', 'nombre', 'codigo') if column in columns
                     ]
-            except Exception as e:
-                logging.getLogger(__name__).exception("Error inesperado en api_sentinel_diagnostico (sentinel_api.py)")
-                info[f'error_{table}'] = 'No disponible'
+                    if cnt > 0 and sample_columns:
+                        selected = ', '.join(connection.ops.quote_name(column) for column in sample_columns)
+                        cursor.execute(
+                            f'SELECT {selected} FROM {quoted_table} LIMIT 3'
+                        )
+                        info[f'sample_{table}'] = [
+                            dict(zip(sample_columns, row)) for row in cursor.fetchall()
+                        ]
+                except Exception:
+                    logging.getLogger(__name__).exception(
+                        "Error inesperado en api_sentinel_diagnostico (sentinel_api.py)"
+                    )
+                    info[f'error_{table}'] = 'No disponible'
 
         return JsonResponse({'status': 'success', 'diagnostico': info})
     except Exception as e:

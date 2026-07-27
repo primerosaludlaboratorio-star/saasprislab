@@ -8,7 +8,6 @@ import logging
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 
 from core.models import VoiceAuditLog
@@ -179,7 +178,6 @@ def dashboard_voice_logs(request):
 
 @login_required
 @require_http_methods(["POST"])
-@csrf_exempt  # Para WebAuthn
 def verificar_webauthn(request):
     """
     API: Verifica autenticación WebAuthn (huella/FaceID) para comandos críticos.

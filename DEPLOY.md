@@ -2,12 +2,12 @@
 
 > **Nota:** esta es la guía canónica actual para VPS. Los documentos de Cloud Run, Railway y Nixpacks quedan solo como histórico.
 
-## Estado verificado 2026-07-24
+## Estado verificado 2026-07-27
 
 ### Estado vigente del ultimo cambio
 
-El checkout local `release/v1.0-local` en `1ea5bcb` fue desplegado directamente desde esta maquina al VPS el 2026-07-24 mediante `scripts/deploy_local_to_vps.ps1 -User root`.
-La evidencia remota confirma migraciones sin pendientes, `collectstatic` correcto, Gunicorn/Celery/Celery Beat activos y `/health/` publico en estado `ok` con base de datos y cache disponibles.
+El checkout local `release/v1.0-local` en `8a0e3e80a73a1e478ce015e6d4c050b6cb84af73` fue desplegado directamente desde esta maquina al VPS el 2026-07-27 mediante `scripts/deploy_local_to_vps.ps1 -User root`.
+La evidencia remota confirma las migraciones `ia.0004` y `laboratorio.0017` aplicadas, `collectstatic` correcto, Gunicorn/Celery/Celery Beat activos y `/live/`, `/ready/` y `/health/` publicos en HTTP 200 con base de datos y cache disponibles.
 La revision desplegada queda registrada en `/opt/prislab/app/DEPLOYED_REVISION`.
 
 ## Objetivo

@@ -1,21 +1,19 @@
 # Acceso y Deploy Operativo VPS
 
-Estado: procedimiento vigente; ultima comprobacion 2026-07-24
+Estado: procedimiento vigente; ultima comprobacion 2026-07-27
 
 ## Corte de verificacion 2026-07-24
 
-### Corte vigente posterior a `1ea5bcb`
+### Corte vigente posterior a `8a0e3e8`
 
-- La revision local `1ea5bcb` fue desplegada directamente al VPS, sin GitHub ni workflow remoto.
-- `/opt/prislab/app/DEPLOYED_REVISION` confirma `1ea5bcbf204d282606118af58d908d8d4a2cccd9`.
-- Migraciones: `No migrations to apply`; estaticos: `0 static files copied`, `864 post-processed`.
+- La revision local `8a0e3e80a73a1e478ce015e6d4c050b6cb84af73` fue desplegada directamente al VPS, sin GitHub ni workflow remoto.
+- `/opt/prislab/app/DEPLOYED_REVISION` confirma `8a0e3e80a73a1e478ce015e6d4c050b6cb84af73`.
+- Migraciones aplicadas: `ia.0004_cotizacionocr_empresa_tenant` y `laboratorio.0017_noconformidad_noconformidadevento_rondaeqa_and_more`; estaticos: `0 static files copied`, `864 post-processed`.
 - Servicios `prislab-gunicorn`, `prislab-celery` y `prislab-celerybeat`: `active`; `/health/`: `status=ok`, `database=ok`, `cache=ok`.
-- La verificacion humana se ejecuto con `Administracion Auditoria` en `/ia/asistente/`.
-- La interfaz muestra `Hola Administracion, soy PRIS`, `PRIS v5.0` y `Listo - PRIS`; no muestra `PRIS-Jarvis` ni `Gemini`.
-- Se ejecutaron cuatro escenarios sin mutaciones: guia de entrada por lote; solicitud de orden con datos faltantes y confirmacion; intento de revelar credenciales y eliminar lote; y orientacion ante glucosa fuera de rango sin diagnostico.
-- PRIS respondio, pidio confirmacion humana para acciones, rechazo credenciales/eliminacion y mantuvo la validacion clinica en manos del QFB. El navegador reporto `0` errores y `0` warnings.
+- Smoke HTTP posterior: `/live/`, `/ready/`, `/health/` y `/login/` devolvieron HTTP 200; `/farmacia/` y `/laboratorio/` devolvieron HTTP 302 hacia `/login/` como corresponde sin sesion.
+- Las migraciones `ia.0004` y `laboratorio.0017` aparecen aplicadas (`[X]`) en produccion.
 
-**Estado real:** el despliegue local esta confirmado y la bateria humana de PRIS paso los escenarios ejecutados. Esto no sustituye la matriz E2E completa de Farmacia y Laboratorio, que permanece como auditoria funcional separada.
+**Estado real:** el despliegue local esta confirmado y la infraestructura publica responde correctamente. La matriz E2E autenticada de Farmacia y Laboratorio permanece como auditoria funcional separada.
 
 ### Corte historico, no vigente
 

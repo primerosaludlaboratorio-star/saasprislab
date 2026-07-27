@@ -109,6 +109,9 @@ def procesar_receta_ocr(request):
             # Crear objeto CotizacionOCR
             cotizacion = form.save(commit=False)
             cotizacion.usuario_creador = request.user
+            cotizacion.empresa = request.user.empresa
+            if not cotizacion.empresa_id:
+                return JsonResponse({'success': False, 'error': 'Usuario sin empresa.'}, status=403)
             
             # Procesar imagen con OCR
             imagen = request.FILES['imagen_receta']

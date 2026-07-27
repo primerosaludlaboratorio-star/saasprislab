@@ -13,11 +13,13 @@ urlpatterns = [
     
     # OCR de Recetas
     path('ocr/procesar/', views.procesar_receta_ocr, name='procesar_receta'),
+    path('ocr/procesar/', views.procesar_receta_ocr, name='ocr_receta'),
     path('ocr/resultados/<int:pk>/', views.resultados_ocr, name='resultados_ocr'),
     path('ocr/crear-orden/<int:pk>/', views.crear_orden_desde_ocr, name='crear_orden_desde_ocr'),
     
     # Transcripción de Audio
     path('voz/transcribir/', views.transcribir_audio, name='transcribir_audio'),
+    path('voz/transcribir/', views.transcribir_audio, name='transcripcion_voz'),
     path('voz/resultados/<int:pk>/', views.resultados_transcripcion, name='resultados_transcripcion'),
     
     # Asistente Médico

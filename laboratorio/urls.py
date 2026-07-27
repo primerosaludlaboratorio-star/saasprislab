@@ -11,10 +11,16 @@ from core.views.laboratorio import reportes as reportes_views
 from laboratorio import views_admin as admin_views
 from laboratorio import views as lab_views
 from laboratorio.views import cci_api as cci_api_views
+from laboratorio.views import compliance as compliance_views
 
 app_name = 'laboratorio'
 
 urlpatterns = [
+    # ========== COMPLIANCE ISO 15189: CAPA Y EQA/PEEC ==========
+    path('compliance/no-conformidades/', compliance_views.no_conformidades_api, name='no_conformidades_api'),
+    path('compliance/no-conformidades/<uuid:folio>/transicion/', compliance_views.no_conformidad_transicion_api, name='no_conformidad_transicion_api'),
+    path('compliance/eqa/rondas/', compliance_views.rondas_eqa_api, name='rondas_eqa_api'),
+    path('compliance/eqa/resultados/<int:resultado_id>/evaluar/', compliance_views.evaluar_resultado_eqa_api, name='evaluar_resultado_eqa_api'),
     # ========== MONITOR DE PRODUCCIÓN (SEMAFORIZACIÓN KANBAN) ==========
     path('monitor/', views.monitor_produccion, name='monitor_produccion'),
     path('monitor/api/datos/', views.api_monitor_datos, name='api_monitor_datos'),

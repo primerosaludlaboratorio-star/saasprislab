@@ -44,3 +44,4 @@ from laboratorio.cci_models import (
     MaterialControl,
     MedicionControlInterno,
 )
+from .compliance import NoConformidad, NoConformidadEvento, RondaEQA, ResultadoEQA

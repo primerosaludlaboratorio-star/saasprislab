@@ -228,9 +228,31 @@ PRISLAB_READ_ONLY_ALLOW_SUPERUSERS = _env_bool('PRISLAB_READ_ONLY_ALLOW_SUPERUSE
 
 _raw_tenant_shadow = (os.environ.get('PRISLAB_TENANT_SHADOW_MODE') or '1').strip().lower()
 PRISLAB_TENANT_SHADOW_MODE = _raw_tenant_shadow not in ('0', 'false', 'no', 'off')
-PRISLAB_TENANT_STRICT_MODE = _env_bool('PRISLAB_TENANT_STRICT_MODE', IS_PRODUCTION)
+PRISLAB_TENANT_STRICT_MODE = _env_bool(
+    'PRISLAB_TENANT_STRICT_MODE',
+    IS_PRODUCTION or (not DEBUG and not _TESTING),
+)
 PRISLAB_TENANT_SHADOW_LOG_CLI = os.environ.get('PRISLAB_TENANT_SHADOW_LOG_CLI', '').strip().lower() in (
     '1', 'true', 'yes', 'on',
+)
+
+# Rate limiting must trust forwarded headers only when the direct peer is a
+# configured reverse proxy. Direct Gunicorn requests never trust X-Forwarded-For.
+try:
+    PRISLAB_TRUSTED_PROXY_COUNT = max(
+        0,
+        int(os.environ.get('PRISLAB_TRUSTED_PROXY_COUNT', '1' if IS_PRODUCTION else '0')),
+    )
+except (TypeError, ValueError):
+    raise RuntimeError('PRISLAB_TRUSTED_PROXY_COUNT debe ser un entero no negativo.')
+
+PRISLAB_TRUSTED_PROXY_CIDRS = tuple(
+    value.strip()
+    for value in os.environ.get(
+        'PRISLAB_TRUSTED_PROXY_CIDRS',
+        '127.0.0.0/8,::1/128',
+    ).split(',')
+    if value.strip()
 )
 
 # ── Health-checks de arranque ─────────────────────────────────────────────────
@@ -239,6 +261,10 @@ _log_sec = logging.getLogger('core.seguridad.startup')
 
 # HC-1: PRISLAB_EMERGENCY_TENANT_BYPASS no debe estar activo en producción.
 if os.environ.get('PRISLAB_EMERGENCY_TENANT_BYPASS', '').strip().lower() in ('1', 'true', 'yes', 'on'):
+    if IS_PRODUCTION:
+        raise RuntimeError(
+            'PRISLAB_EMERGENCY_TENANT_BYPASS no puede estar activo en producción.'
+        )
     _log_sec.critical(
         '🚨 PRISLAB_EMERGENCY_TENANT_BYPASS=1 está activo en este proceso. '
         'El filtro multi-tenant ORM está DESACTIVADO. '

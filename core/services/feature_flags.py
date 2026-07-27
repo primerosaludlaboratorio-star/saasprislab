@@ -53,7 +53,9 @@ FLAG_CATALOG: dict[str, dict] = {
         ),
     },
     'QC_WESTGARD_ACTIVO': {
-        'default': False,
+        # El control interno no puede iniciar en modo sombra por defecto. La
+        # desactivacion en produccion requiere una excepcion operativa explicita.
+        'default': True,
         'categoria': 'LABORATORIO',
         'nombre': 'Control de Calidad — Reglas de Westgard',
         'descripcion': (

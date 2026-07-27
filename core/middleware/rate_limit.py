@@ -5,12 +5,13 @@ Protege endpoints sensibles contra ataques de fuerza bruta.
 - Login: Max 5 intentos por IP cada 5 minutos.
 - APIs: Max 120 requests por IP cada minuto.
 """
-import os
 import time
 import logging
+import ipaddress
 
 from django.http import JsonResponse
 from django.core.cache import cache
+from django.conf import settings
 
 logger = logging.getLogger('core.security')
 
@@ -29,6 +30,11 @@ class RateLimitMiddleware:
         '/admin/login/': {'max_requests': 5, 'window_seconds': 300, 'scope': 'admin_login'},
         '/crear-admin-rescate/': {'max_requests': 1, 'window_seconds': 3600, 'scope': 'rescate'},
         '/ingreso-magico/': {'max_requests': 1, 'window_seconds': 3600, 'scope': 'magico'},
+        '/contabilidad/api/autofactura/generar/': {
+            'max_requests': 5,
+            'window_seconds': 600,
+            'scope': 'public_autofactura',
+        },
     }
 
     # Limite global para APIs
@@ -46,25 +52,6 @@ class RateLimitMiddleware:
         # Solo verificar POST en login y rutas sensibles
         config = self.RATE_LIMITS.get(path)
         if config and request.method == 'POST':
-            bypass = os.environ.get('OMNI_BYPASS_TOKEN')
-            if bypass and request.headers.get('X-Omni-Bypass') == bypass:
-                from django.conf import settings
-
-                if getattr(settings, 'IS_PRODUCTION', False) and not self._env_truthy('PRISLAB_ALLOW_OMNI_BYPASS_IN_PRODUCTION'):
-                    logger.critical(
-                        'OMNI_BYPASS_BLOCKED path=%s ip=%s user=%s ambiente=production',
-                        path,
-                        self._get_client_ip(request),
-                        getattr(getattr(request, 'user', None), 'username', 'anon'),
-                    )
-                else:
-                    logger.warning(
-                        'OMNI_BYPASS_USED path=%s ip=%s user=%s',
-                        path,
-                        self._get_client_ip(request),
-                        getattr(getattr(request, 'user', None), 'username', 'anon'),
-                    )
-                    return self.get_response(request)
             ip = self._get_client_ip(request)
             key = f"rl:{config['scope']}:{ip}"
             if self._is_rate_limited(key, config['max_requests'], config['window_seconds']):
@@ -104,20 +91,38 @@ class RateLimitMiddleware:
 
         return self.get_response(request)
 
-    @staticmethod
-    def _env_truthy(name):
-        return os.environ.get(name, '').strip().lower() in ('1', 'true', 'yes', 'on')
-
     def _get_client_ip(self, request):
-        """Obtiene IP real (soporta proxy Nginx)."""
+        """Obtiene la IP del cliente solo desde proxies explícitamente confiables."""
+        remote_addr = (request.META.get('REMOTE_ADDR') or '0.0.0.0').strip()
+        try:
+            remote_ip = ipaddress.ip_address(remote_addr)
+        except ValueError:
+            return remote_addr
+
+        trusted_cidrs = []
+        for cidr in getattr(settings, 'PRISLAB_TRUSTED_PROXY_CIDRS', ()):
+            try:
+                trusted_cidrs.append(ipaddress.ip_network(cidr, strict=False))
+            except ValueError:
+                logger.error('CIDR de proxy confiable inválido: %s', cidr)
+
+        if not any(remote_ip in network for network in trusted_cidrs):
+            return remote_addr
+
+        trusted_proxy_count = max(0, int(getattr(settings, 'PRISLAB_TRUSTED_PROXY_COUNT', 0)))
+        if trusted_proxy_count == 0:
+            return remote_addr
+
         xff = request.META.get('HTTP_X_FORWARDED_FOR')
         if xff:
-            # Con Nginx usando $proxy_add_x_forwarded_for, la IP real del cliente
-            # llega al final de la cadena; tomar la primera permite spoofing.
             forwarded_ips = [ip.strip() for ip in xff.split(',') if ip.strip()]
-            if forwarded_ips:
-                return forwarded_ips[-1]
-        return request.META.get('REMOTE_ADDR', '0.0.0.0')
+            if len(forwarded_ips) >= trusted_proxy_count:
+                candidate = forwarded_ips[-trusted_proxy_count]
+                try:
+                    return str(ipaddress.ip_address(candidate))
+                except ValueError:
+                    logger.warning('X-Forwarded-For contiene una IP inválida: %s', candidate)
+        return remote_addr
 
     def _is_rate_limited(self, key, max_requests, window_seconds):
         """Verifica si la IP excedio el limite."""
