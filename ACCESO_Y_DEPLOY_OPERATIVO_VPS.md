@@ -2,16 +2,17 @@
 
 Estado: procedimiento vigente; ultima comprobacion 2026-07-27
 
-## Corte de verificacion 2026-07-24
+## Corte de verificacion 2026-07-27
 
-### Corte vigente posterior a `8a0e3e8`
+### Corte vigente posterior a `dabd01e`
 
-- La revision local `8a0e3e80a73a1e478ce015e6d4c050b6cb84af73` fue desplegada directamente al VPS, sin GitHub ni workflow remoto.
-- `/opt/prislab/app/DEPLOYED_REVISION` confirma `8a0e3e80a73a1e478ce015e6d4c050b6cb84af73`.
+- La revision local `dabd01ee8c360824aefac4101868d4e028ed457c` fue desplegada directamente al VPS, sin GitHub ni workflow remoto.
+- `/opt/prislab/app/DEPLOYED_REVISION` confirma `dabd01ee8c360824aefac4101868d4e028ed457c`.
 - Migraciones aplicadas: `ia.0004_cotizacionocr_empresa_tenant` y `laboratorio.0017_noconformidad_noconformidadevento_rondaeqa_and_more`; estaticos: `0 static files copied`, `864 post-processed`.
 - Servicios `prislab-gunicorn`, `prislab-celery` y `prislab-celerybeat`: `active`; `/health/`: `status=ok`, `database=ok`, `cache=ok`.
 - Smoke HTTP posterior: `/live/`, `/ready/`, `/health/` y `/login/` devolvieron HTTP 200; `/farmacia/` y `/laboratorio/` devolvieron HTTP 302 hacia `/login/` como corresponde sin sesion.
 - Las migraciones `ia.0004` y `laboratorio.0017` aparecen aplicadas (`[X]`) en produccion.
+- Verificacion humana PDV: busqueda de Paracetamol, seleccion de producto, seleccion de lote FEFO y agregado al carrito con total `$15.00`; estatico `pdv_farmacia.f3f9ce1ea9b0.js`; consola sin errores ni warnings.
 
 **Estado real:** el despliegue local esta confirmado y la infraestructura publica responde correctamente. La matriz E2E autenticada de Farmacia y Laboratorio permanece como auditoria funcional separada.
 

@@ -101,7 +101,7 @@ esta sesión.
 ## Despliegue local confirmado
 
 El 2026-07-27 se desplegó desde este checkout local, sin GitHub, la revisión
-`8a0e3e80a73a1e478ce015e6d4c050b6cb84af73` mediante
+`dabd01ee8c360824aefac4101868d4e028ed457c` mediante
 `scripts/deploy_local_to_vps.ps1 -User root`.
 
 Evidencia remota:
@@ -111,6 +111,7 @@ Evidencia remota:
 - `prislab-gunicorn`, `prislab-celery` y `prislab-celerybeat`: `active`.
 - `/live/`, `/ready/`, `/health/` y `/login/`: HTTP 200.
 - `/farmacia/` y `/laboratorio/`: HTTP 302 a `/login/` sin sesión, comportamiento esperado.
+- Flujo humano PDV: Paracetamol buscado, producto seleccionable, lote FEFO elegido y carrito confirmado con `$15.00`; consola limpia después de la corrección del capturador de teclado.
 
 El smoke autenticado y la prueba humana completa de los módulos siguen siendo
 una fase funcional posterior; este despliegue no se presenta como sustituto de
