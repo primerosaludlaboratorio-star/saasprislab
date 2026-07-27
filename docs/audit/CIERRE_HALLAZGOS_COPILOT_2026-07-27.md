@@ -209,6 +209,20 @@ Validacion local posterior a la correccion:
   `DEVOLUCION_PARCIAL_REQUIERE_DETALLE`;
 - `git diff --check`: sin errores.
 
-El despliegue productivo queda pendiente de ejecutar despues de registrar el
-commit de esta correccion. No se considera cerrado el flujo hasta confirmar la
-salud productiva y una operacion controlada en produccion.
+Correccion de rutas: el enlace visible `/farmacia/devoluciones/` estaba
+resolviendo un template legacy desde `config/urls/farmacia.py`, aunque la
+implementacion corregida vivia en la ruta ERP. Se unifico la ruta canonica con
+`farmacia.views.devoluciones.buscar_venta_para_devolucion` y su procesador
+correspondiente, conservando los aliases ERP para compatibilidad.
+
+Despliegue y verificacion productiva:
+
+- revision desplegada: `71809f595593e8f2fe31c3d9979582074a94bd95`;
+- migraciones: sin pendientes; servicios de aplicacion activos;
+- `/health/`, `/live/` y `/ready/`: HTTP 200;
+- flujo humano en `/farmacia/devoluciones/`: venta cargada, dos partidas
+  renderizadas, selección de una partida y cantidad parcial habilitada;
+- el modal de procesamiento solicita PIN universal de exactamente cuatro
+  digitos;
+- se cancelo el dialogo antes de enviar, sin mutar caja, inventario ni ventas;
+- consola del navegador: cero errores.
