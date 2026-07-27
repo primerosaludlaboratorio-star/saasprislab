@@ -101,7 +101,7 @@ esta sesión.
 ## Despliegue local confirmado
 
 El 2026-07-27 se desplegó desde este checkout local, sin GitHub, la revisión
-`dabd01ee8c360824aefac4101868d4e028ed457c` mediante
+`6ef947e1c25b6fe797cb6b7a52a0e46100442041` mediante
 `scripts/deploy_local_to_vps.ps1 -User root`.
 
 Evidencia remota:

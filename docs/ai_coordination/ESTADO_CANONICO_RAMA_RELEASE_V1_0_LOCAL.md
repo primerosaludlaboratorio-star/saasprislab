@@ -11,7 +11,7 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 
 ## Corte vigente 2026-07-27
 
-- Producción está alineada con el checkout local en `c7ea56e523c3ed7f2d47608ff6613cfc3d1e8a2f`, desplegado por artefacto local VPS.
+- Producción está alineada con el checkout local en `6ef947e1c25b6fe797cb6b7a52a0e46100442041`, desplegado por artefacto local VPS.
 - Migraciones nuevas `ia.0004` y `laboratorio.0017` aplicadas; Gunicorn, Celery y Celery Beat activos; `/live/`, `/ready/`, `/health/` y `/login/` responden HTTP 200.
 - Verificación humana productiva de Farmacia: búsqueda de Paracetamol, selección, selección FEFO de `LOTE-TEST-001`, agregado al carrito y total `$15.00`; consola sin errores ni warnings después del endurecimiento del capturador de teclado.
 - Verificación humana productiva de Laboratorio/LIMS: recepción, toma, registro de resultados, control de calidad, entrega, catálogo de analitos y catálogo de estudios cargan correctamente y sin errores de consola.
