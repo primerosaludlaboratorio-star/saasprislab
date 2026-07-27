@@ -1,6 +1,6 @@
 # Estado Canonico de PRISLAB SaaS
 
-Fecha de consolidacion: 2026-07-24 (última actualización: auditoría de despliegue y producción)
+Fecha de consolidacion: 2026-07-27 (última actualización: auditoría de despliegue y producción)
 Rama canonica: `release/v1.0-local`
 
 ## Proposito
@@ -8,6 +8,15 @@ Rama canonica: `release/v1.0-local`
 Este documento existe para que Copilot, Claude, Cascada y Codex lean una sola verdad.
 
 Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no contra snapshots viejos o ramas vacias.
+
+## Corte vigente 2026-07-27
+
+- Producción está alineada con el checkout local en `c7ea56e523c3ed7f2d47608ff6613cfc3d1e8a2f`, desplegado por artefacto local VPS.
+- Migraciones nuevas `ia.0004` y `laboratorio.0017` aplicadas; Gunicorn, Celery y Celery Beat activos; `/live/`, `/ready/`, `/health/` y `/login/` responden HTTP 200.
+- Verificación humana productiva de Farmacia: búsqueda de Paracetamol, selección, selección FEFO de `LOTE-TEST-001`, agregado al carrito y total `$15.00`; consola sin errores ni warnings después del endurecimiento del capturador de teclado.
+- Verificación humana productiva de Laboratorio/LIMS: recepción, toma, registro de resultados, control de calidad, entrega, catálogo de analitos y catálogo de estudios cargan correctamente y sin errores de consola.
+- El catálogo productivo contiene UREA (`codigo=URE`, numérico) y BUN (`codigo=171`, numérico). El pendiente histórico de UREA/BUN queda cerrado como falso pendiente documental.
+- CCI/Westgard sigue abierto porque producción tiene `0` mediciones CCI persistidas; no se fabrican controles, lotes ni resultados clínicos para aparentar cierre.
 
 ## Corte de auditoria 2026-07-24
 
@@ -53,7 +62,7 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 - Laboratorio (flujo funcional principal) -> `ABIERTO` hasta completar la matriz humana E2E; el esquema y catálogo LIMS autoritativos ya están disponibles
   - auditoría humana UI en desarrollo del 2026-07-21: login, recepción, toma, captura, validación, PDF y entrega OK para `LAB-20260721-002`; la ruta feliz básica ya persiste y entrega una orden
   - la auditoría posterior en QA cerró con evidencia la creación CxC parcial (`$85/$40/$45`), la cortesía con total/saldo cobrable `$0`, la toma manual 6/6 y el envío a Maquila (`EN_MAQUILA`)
-  - QA 2026-07-21 cerró valores fuera de rango con justificación QFB, rechazo/repetición, complemento de pago, cancelación/reembolso y Levey-Jennings básico con 3 fixtures; sigue pendiente Westgard CCI estricto, UREA/BUN y la segunda auditoría humana completa
+  - QA 2026-07-21 cerró valores fuera de rango con justificación QFB, rechazo/repetición, complemento de pago, cancelación/reembolso y Levey-Jennings básico con 3 fixtures; sigue pendiente Westgard CCI estricto y la segunda auditoría humana completa
   - se corrigió el JSON escapado de `parametros_lista_json` en Control de Calidad; el histórico aceptó `GLUCOSA` lote `QA-GLU-2026` con valores 100/101/99 y desviaciones 0/+1/-1
   - se reemplazó el `prompt()` de validación por diálogo SweetAlert con textarea; el backend bloquea `400 JUSTIFICACION_QC_REQUERIDA` antes de generar PDF y registra la justificación QFB en el detalle
   - Worklist ya envía el `DetalleOrden` correcto al rechazo; Recepción expone el botón de cancelación y genera el movimiento negativo de caja
@@ -75,7 +84,7 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
   - revalidado en producción el 2026-07-21: la migración `lims.0011_perfilanalito_alter_perfillims_analitos_and_more` estaba pendiente; se aplicó sin borrar catálogos y `/laboratorio/api/estudios/1/parametros/` pasó a `200 application/json` sin `lims_perfilanalito`
   - revalidado en producción el 2026-07-21: el catálogo LIMS autoritativo contiene 101 perfiles y 810 analitos; el catálogo legado de estudios no representa el inventario LIMS operativo
   - revalidado en producción el 2026-07-21: el proceso Gunicorn efectivo tiene HSTS, redirección SSL y cookies seguras activas; los hosts alternos no canónicos son rechazados por `ALLOWED_HOSTS` de forma intencional
-  - revalidado en producción el 2026-07-21: las pantallas y PDFs operativos responden, pero varias vistas tardan entre 2.6 y 3.3 segundos y queda pendiente evaluar ese rendimiento antes del cierre enterprise
+  - revalidado en producción el 2026-07-21: las pantallas y PDFs operativos responden; la medición histórica de 2.6–3.3 segundos queda como mejora de rendimiento, no como fallo funcional bloqueante
   - corregido y desplegado en producción el 2026-07-21: tokens públicos inválidos de resultados siguen respondiendo `400`, pero ya no generan traceback; se registran como advertencia controlada
   - corregido y desplegado en producción el 2026-07-21: Maquila solo lista órdenes con `requiere_maquila=True`, exige POST y registra laboratorio externo, guía, notas y fecha en `EnvioMaquila`; una orden QA sin laboratorio fue rechazada y una marcada pasó a `EN_MAQUILA`
   - corregido y desplegado en producción el 2026-07-21: Sentinel ya no crea incidencias para `404` JSON controlados de APIs; una cancelación QA inexistente devolvió `404` sin nueva incidencia
