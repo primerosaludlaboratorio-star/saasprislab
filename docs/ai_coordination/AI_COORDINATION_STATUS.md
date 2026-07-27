@@ -919,12 +919,15 @@ Validación local:
 - reconciliación BUN, idempotencia y RBAC LIMS: `9 tests OK`;
 - `manage.py check`, compilación Python y `git diff --check`: correctos.
 
-Ejecución productiva pendiente en esta revisión:
+Ejecución productiva confirmada:
 
-- desplegar el comando;
-- ejecutar `ensure_lims_dependencies --empresa-id 1 --dry-run --link-profiles`;
-- aplicar solo si el dry-run confirma que falta BUN y que el vínculo es el esperado;
-- repetir catálogo, flujo de captura calculada UREA/BUN, PDF, entrega y Sentinel.
+- revisión desplegada en `aad5a64`;
+- `dry-run` productivo confirmó el tenant `1` y la existencia previa de BUN;
+- reconciliación aplicada sin reset: `rangos_nuevos=1`, `perfiles_vinculados=0`;
+- producción ahora tiene UREA calculada `BUN*2.14`, BUN activo, 3 rangos y 7 perfiles con ambos analitos;
+- health check HTTP 200 y servicios activos.
+
+La sesión humana autenticada E2E en producción queda pendiente de una credencial temporal entregada por el responsable; no se guarda ni se inventa una contraseña. La validación QA automatizada y la verificación productiva de catálogo no sustituyen esa sesión humana.
 
 ## Fachada canónica de coherencia clínica - 2026-07-23
 

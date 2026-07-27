@@ -94,3 +94,27 @@ class LimsConfigTenantSecurityTest(TestCase):
         )
 
         self.assertIsNone(empresa_lims(request))
+
+    def test_rutas_legacy_conducen_a_la_ui_lims_canonica(self):
+        response = self.client.get(reverse('lista_pruebas'))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/lims/analitos/')
+
+        response = self.client.get(reverse('lista_parametros'))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/lims/analitos/')
+
+    def test_staff_operativo_sin_rol_lims_no_hereda_catalogo(self):
+        Usuario.objects.create_user(
+            username='staff_operativo_lims',
+            password='Test2026!LIMS',
+            empresa=self.empresa,
+            is_staff=True,
+            rol='RECEPCION',
+        )
+        self.client.login(username='staff_operativo_lims', password='Test2026!LIMS')
+
+        response = self.client.get('/lims/analitos/')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/home/')
