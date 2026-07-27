@@ -71,14 +71,18 @@ def _serializar_venta_para_devolucion(venta):
 
 
 def _es_gerente_o_admin(user):
-    """Requerido para procesar devoluciones (solo gerente/admin con empresa válida)."""
+    """Autoridad operativa de Farmacia con empresa válida.
+
+    El rol FARMACIA representa a la administradora responsable del módulo y
+    debe poder autorizar devoluciones/cancelaciones; CAJERO permanece fuera.
+    """
     empresa = getattr(user, 'empresa', None) or get_empresa_usuario(user)
     if not empresa:
         return False
     if user.is_superuser or user.is_staff:
         return True
     rol = (getattr(user, 'rol', '') or '').upper().strip()
-    if rol in ('ADMIN', 'ADMINISTRADOR', 'GERENTE', 'DIRECTOR', 'DUEÑO', 'DUENO'):
+    if rol in ('FARMACIA', 'ADMIN', 'ADMINISTRADOR', 'GERENTE', 'DIRECTOR', 'DUEÑO', 'DUENO'):
         return True
     if getattr(user, 'es_auditor_supremo', False):
         return True

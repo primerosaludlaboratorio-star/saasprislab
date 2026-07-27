@@ -81,6 +81,7 @@ class FarmaciaPermissionHelpersTest(SimpleTestCase):
 
     def test_devolucion_autoriza_director_con_empresa_y_rechaza_cajero(self):
         self.assertTrue(_es_gerente_o_admin(_user(empresa=object(), rol='DIRECTOR')))
+        self.assertTrue(_es_gerente_o_admin(_user(empresa=object(), rol='FARMACIA')))
         self.assertFalse(_es_gerente_o_admin(_user(empresa=object(), rol='CAJERO')))
         self.assertFalse(_es_gerente_o_admin(_user(rol='DIRECTOR')))
 
