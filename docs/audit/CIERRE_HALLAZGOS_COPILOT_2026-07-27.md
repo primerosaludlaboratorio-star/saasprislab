@@ -277,3 +277,15 @@ Validacion local:
   **OK**;
 - suite Laboratorio/LIMS y reporte: **40 OK, 3 omitidas por PostgreSQL**;
 - `manage.py check`, `makemigrations --check` y `git diff --check`: **OK**.
+
+Despliegue productivo:
+
+- revision activa: `d4ffba81320420cc1ff59b19fe800055de7fd59c`;
+- migraciones productivas: sin pendientes;
+- servicios de aplicacion: activos;
+- `/health/`, `/live/` y `/ready/`: HTTP 200;
+- verificacion humana de `/finanzas/lab/caja/`: el bloque nuevo renderiza, el
+  estado vacio informa que no hay ventas del periodo y la consola no reporta
+  errores;
+- no se crearon ventas ni se modificaron datos clinicos en produccion durante
+  esta comprobacion.
