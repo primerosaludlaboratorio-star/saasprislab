@@ -67,6 +67,7 @@ env_produccion.txt
 *.prod.env
 *_credentials.json
 *_secret.json
+docs/ai_coordination/*.local.md
 
 # Temporary files
 *.tmp
