@@ -630,3 +630,17 @@ Para reabrir cualquier frente se requiere reproduccion concreta contra esta rama
 - si un reporte contradice este documento, primero revisar el codigo actual
 - no reabrir bugs viejos sin reproduccion en `release/v1.0-local`
 - cuando haya hallazgo real nuevo, citar archivo, linea y evidencia tecnica
+
+## Corte 2026-07-27 — CCI/Westgard
+
+Se corrigio el manejo de errores en `laboratorio/services/cci_canal.py`: se
+importaron las excepciones Django usadas por el flujo y se eliminaron llamadas
+a `send_alert`, simbolo inexistente. Si falla la persistencia de la
+notificacion, el estado del canal permanece en `ALERTA_QC` y el rechazo no se
+convierte en una caida del proceso.
+
+La regresion esta cubierta por `laboratorio.tests.test_cci_canal`, incluida en
+los gates SQLite y PostgreSQL. Validacion local: 18 pruebas OK y 3 omitidas por
+requerir PostgreSQL. CCI/Westgard sigue abierto operacionalmente: produccion
+tenia cero mediciones de control en el corte, por lo que no se declara cierre
+funcional hasta cargar datos reales del laboratorio.

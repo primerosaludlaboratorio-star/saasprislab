@@ -116,3 +116,23 @@ Evidencia remota:
 El smoke autenticado y la prueba humana completa de los módulos siguen siendo
 una fase funcional posterior; este despliegue no se presenta como sustituto de
 esa auditoría.
+
+## Correccion CCI/Westgard posterior
+
+Se corrigio `laboratorio/services/cci_canal.py`: las excepciones de validacion,
+integridad y operacion de base de datos ya estan importadas y el codigo dejo de
+invocar `send_alert`, funcion inexistente que podia provocar un `NameError`
+durante un rechazo Westgard si fallaba la notificacion. El canal queda en
+`ALERTA_QC` aunque la notificacion no pueda persistirse, evitando liberar el
+analito por un fallo secundario de alertamiento.
+
+Se agrego `laboratorio/tests/test_cci_canal.py` y se incorporo al quality gate
+general y PostgreSQL. Validacion local: 18 pruebas OK, 3 omitidas por backend
+PostgreSQL; `manage.py check`, `makemigrations --check`, compilacion y
+`git diff --check` sin errores.
+
+Este cambio corrige robustez del camino de rechazo, pero no cierra la
+verificacion operativa de CCI: produccion continua con cero mediciones de
+control registradas al corte. Para cerrar Westgard se requieren lote, media,
+desviacion estandar, equipo y mediciones reales del laboratorio, sin fabricar
+datos clinicos.

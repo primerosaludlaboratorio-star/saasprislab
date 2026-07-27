@@ -65,6 +65,7 @@ jobs:
             core.tests.test_tenant_isolation \
             core.tests.test_lims_config_tenant_security \
             laboratorio.tests.test_westgard \
+            laboratorio.tests.test_cci_canal \
             laboratorio.tests.test_cci_lj_postgres_guard \
             core.tests.test_clinical_math \
             inventario.tests \
@@ -144,6 +145,7 @@ jobs:
         run: |
           python manage.py test \
             laboratorio.tests.test_cci_lj_postgres_guard \
+            laboratorio.tests.test_cci_canal \
             core.tests.test_tenant_isolation \
             core.tests.test_lims_config_tenant_security \
             contabilidad.tests.test_views_public_autofactura \

@@ -7,6 +7,9 @@ import logging
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional, Tuple
 
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, OperationalError
+
 if TYPE_CHECKING:
     from lims.models import Analito
 
@@ -100,18 +103,14 @@ def actualizar_canal_por_westgard(
             )
         except ValidationError as exc:
             logger.error(f"CCI Westgard - Error de validación: {exc}", exc_info=True)
-            send_alert(f"CCI Fallo validación: {type(exc).__name__}")
         except IntegrityError as exc:
             logger.error(f"CCI Westgard - Error de integridad: {exc}", exc_info=True)
-            send_alert(f"CCI Fallo integridad: {type(exc).__name__}")
         except OperationalError as exc:
             logger.error(f"CCI Westgard - Error operacional BD: {exc}", exc_info=True)
-            send_alert(f"CCI Fallo BD: {type(exc).__name__}")
         except ImportError as exc:
             logger.warning(f"CCI Westgard - Modelo NotificacionDiscrepancia no disponible: {exc}")
         except Exception as exc:
             logger.error(f"CCI Westgard - Error inesperado: {exc}", exc_info=True)
-            send_alert(f"CCI Fallo crítico: {type(exc).__name__}")
 
 
 def resolver_lote_control(empresa_id: int, analito_id: int):
