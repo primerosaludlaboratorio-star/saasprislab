@@ -186,6 +186,8 @@ def api_actualizar_usuario(request, usuario_id):
             usuario.is_staff = data['is_staff']
         
         usuario.save()
+        from core.utils.role_access import sincronizar_acceso_por_rol
+        sincronizar_acceso_por_rol(usuario)
         
         # Registrar auditoría de cambios administrativos
         valores_nuevos = {

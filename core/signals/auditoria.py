@@ -156,3 +156,15 @@ def auto_assign_empresa_nuevo_usuario(sender, instance, created, **kwargs):
             )
     except Exception as exc:
         logger.warning('[TENANT] auto_assign_empresa_nuevo_usuario falló: %s', exc)
+
+
+@receiver(post_save, sender='core.Usuario', dispatch_uid='sync_usuario_role_access_v1')
+def sync_usuario_role_access(sender, instance, created, update_fields=None, raw=False, **kwargs):
+    """Provisiona el grupo funcional cuando nace o cambia el rol del usuario."""
+    if raw or (not created and update_fields and 'rol' not in update_fields):
+        return
+    try:
+        from core.utils.role_access import sincronizar_acceso_por_rol
+        sincronizar_acceso_por_rol(instance)
+    except Exception as exc:
+        logger.warning('[RBAC] No se pudo sincronizar acceso de %s: %s', instance.username, exc)

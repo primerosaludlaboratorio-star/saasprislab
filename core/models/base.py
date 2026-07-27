@@ -317,6 +317,7 @@ class Usuario(AbstractUser):
             ('ADMIN', 'Administrador'),
             ('DIRECTOR', 'Director General / Dueño'),
             ('CAJERO', 'Cajero'),
+            ('FARMACIA', 'Administrador de Farmacia'),
             ('MEDICO', 'Médico'),
             ('QUIMICO', 'Químico'),
             ('RECEPCION', 'Recepción'),

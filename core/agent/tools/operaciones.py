@@ -293,6 +293,8 @@ def tool_gestionar_usuario(args: dict, empresa, user) -> dict:
                 empresa=empresa,
                 rol=rol,
             )
+            from core.utils.role_access import sincronizar_acceso_por_rol
+            sincronizar_acceso_por_rol(u)
             return {
                 "exito": True,
                 "usuario_id": u.id,

@@ -11,24 +11,12 @@ Uso:
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
+from core.utils.role_access import ROLE_GROUPS, sincronizar_acceso_por_rol
 
 User = get_user_model()
 
 # Mapeo: rol (case-insensitive) → nombre del grupo de Django
-ROL_A_GRUPO = {
-    'ADMIN':        'Administrador',
-    'DIRECTOR':     'DIRECTOR',
-    'GERENTE':      'GERENCIA',
-    'MEDICO':       'MEDICOS',
-    'QUIMICO':      'LABORATORIO',
-    'LABORATORIO':  'LABORATORIO',
-    'CAJERO':       'CAJERO',
-    'FARMACIA':     'FARMACIA',
-    'RECEPCION':    'RECEPCION',
-    'ENFERMERA':    'ENFERMERIA',
-    'ENFERMERO':    'ENFERMERIA',
-    'SOCIOS':       'SOCIOS',
-}
+ROL_A_GRUPO = ROLE_GROUPS
 
 
 class Command(BaseCommand):
@@ -75,8 +63,7 @@ class Command(BaseCommand):
             grupos_actuales = set(usuario.groups.values_list('name', flat=True))
             if nombre_grupo not in grupos_actuales:
                 if apply:
-                    grupo = Group.objects.get(name=nombre_grupo)
-                    usuario.groups.add(grupo)
+                    sincronizar_acceso_por_rol(usuario)
                     self.stdout.write(
                         self.style.SUCCESS(f'  ✅ {usuario.username} → grupo "{nombre_grupo}" asignado')
                     )
