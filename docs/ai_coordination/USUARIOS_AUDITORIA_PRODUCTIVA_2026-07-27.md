@@ -38,6 +38,17 @@ No se incluyen contraseñas en documentación versionada, logs, commits ni respu
 - El empleado quedó con rol `CAJERO`, sin `is_staff` y sin superusuario.
 - El temporizador fue validado con `systemd-analyze verify` y aparece activo en `systemctl list-timers`.
 
-## Pendiente de auditoria humana
+## Verificacion humana productiva inicial
 
-Falta iniciar sesión con cada cuenta y ejecutar la matriz completa de navegación y acciones en la interfaz productiva. La prueba debe registrar tanto accesos esperados como respuestas `403` esperadas en áreas fuera del rol.
+Fecha: 2026-07-27. Revision ejecutada sobre la interfaz de producción después del despliegue `b6fa35317a39104dcec36136679289839fb6face`.
+
+- `auditoria_total_10d_20260727`: inicio de sesión correcto; Recepción Laboratorio, LIMS, PDV y corte de caja cargaron correctamente.
+- `auditoria_farmacia_admin_10d_20260727`: PDV y corte cargaron; Recepción Laboratorio y LIMS quedaron bloqueados; Finanzas Master quedó bloqueado.
+- `auditoria_farmacia_empleado_10d_20260727`: PDV y corte cargaron; Recepción Laboratorio y LIMS quedaron bloqueados; Finanzas Master quedó bloqueado.
+- La prueba encontró y corrigió el bypass por URL directa de Recepción Laboratorio para roles de Farmacia.
+- La navegación de la cuenta total terminó sin errores de consola observables.
+- Health de producción: `HTTP 200`.
+
+## Limitacion de pruebas locales
+
+`manage.py check` y compilación Python pasaron. La suite Django dirigida quedó bloqueada durante la creación de la base de pruebas, sin llegar a ejecutar aserciones; por ello esa suite no se marca como pasada y la evidencia de permisos se basa en la comprobación productiva y en la prueba de regresión añadida en `core/tests/test_auditoria_roles_ui.py`.
