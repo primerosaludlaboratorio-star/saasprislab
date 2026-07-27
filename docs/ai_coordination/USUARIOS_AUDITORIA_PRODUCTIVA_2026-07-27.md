@@ -30,6 +30,15 @@ Las contraseñas completas están en el archivo local no versionado:
 
 No se incluyen contraseñas en documentación versionada, logs, commits ni respuestas públicas.
 
+## PIN universal temporal de cancelaciones
+
+Para esta ventana de pruebas se configuró en producción el PIN universal `2468` para cancelaciones de ventas. Su vigencia es la misma que la de estas cuentas: `2026-08-06 14:53 UTC`.
+
+- Pueden usarlo `ADMIN`, `FARMACIA`, `GERENTE`, `DIRECTOR` y superusuario.
+- Un usuario `CAJERO` no puede cancelar aunque conozca el PIN.
+- El PIN debe solicitarse en la ventana de autorización de la cancelación.
+- Es temporal para auditoría y debe reemplazarse por PIN individual por usuario antes del uso definitivo.
+
 ## Evidencia de creación
 
 - Las tres cuentas se crearon con `empresa_id=1`.

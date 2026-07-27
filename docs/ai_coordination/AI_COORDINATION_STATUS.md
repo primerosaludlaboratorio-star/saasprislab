@@ -2,6 +2,14 @@
 
 Fecha: 2026-07-25
 
+## PIN universal temporal de cancelaciones — 2026-07-27
+
+- Producción usa el PIN `2468` para autorizar cancelaciones de ventas durante la auditoría temporal.
+- Aplica únicamente a `ADMIN`, `FARMACIA`, `GERENTE`, `DIRECTOR` y superusuario; `CAJERO` queda bloqueado por RBAC.
+- Vigencia operativa: `2026-08-06 14:53 UTC`.
+- El detalle de credenciales temporales y este PIN también está en `CREDENCIALES_AUDITORIA_PRODUCTIVA_2026-07-27.local.md`.
+- Debe rotarse a PIN individual por usuario antes del cierre de pruebas.
+
 ## PIN de precio de costo Farmacia — 2026-07-25
 
 - El PIN solicitado por el PDV no corresponde al corte ni al arqueo ciego; autoriza exclusivamente la venta a precio de costo para `Personal` o `Familiar`.
