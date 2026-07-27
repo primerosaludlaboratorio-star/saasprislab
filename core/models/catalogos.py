@@ -123,6 +123,11 @@ class Producto(TenantModel):
 
     def necesita_receta(self):
         """True si el producto requiere prescripción médica por cualquier razón."""
+        # Jeringas, gasas, vendas y venoclisis son material de curación. La
+        # categoría sanitaria evita que banderas antiguas de importación los
+        # envíen por error al flujo de receta/antibiótico.
+        if self.categoria == 'CURACION':
+            return False
         return self.requiere_receta or self.es_antibiotico
 
     def __str__(self):

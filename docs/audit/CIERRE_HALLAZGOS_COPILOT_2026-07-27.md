@@ -158,3 +158,22 @@ Pendientes funcionales verificables que permanecen abiertos:
 - Ejecucion documentada de CAPA y EQA/PEEC con casos reales o controlados.
 - Prueba de carga de canales en tiempo real cuando exista infraestructura para
   ejecutarla.
+
+## Correccion Farmacia — material de curacion en venta con receta
+
+Se corrigio la regla de dominio para que los productos con categoria
+`CURACION` —jeringas, gasas, vendas, equipo de venoclisis y similares— no sean
+enviados al flujo de antibióticos aunque arrastren banderas historicas de una
+importacion. La misma regla se aplica en el endpoint de lotes, la busqueda PDV,
+la validacion regulatoria y el registro COFEPRIS.
+
+Evidencia:
+
+- 6 pruebas del contrato regulatorio y busqueda PDV OK.
+- Suite Farmacia/lotes/entrada previa: 60 pruebas OK.
+- `manage.py check`, `makemigrations --check` y compilacion sin errores.
+
+El folio interno PRISLAB permanece automatico e inmutable para conservar la
+cadena de auditoria. El numero externo de la receta es editable. En surtido
+parcial se conserva el folio y se registran cantidad prescrita, cantidad
+surtida, saldo pendiente y motivo.

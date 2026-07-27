@@ -58,7 +58,7 @@ def validar_venta_antibiotico(request):
                     'error': 'Producto no encontrado para la empresa actual',
                 }, status=404)
         
-            if not producto.es_antibiotico and producto.clasificacion_sanitaria != 'IV':
+            if not producto.necesita_receta():
                 return JsonResponse({
                     'success': True,
                     'requiere_validacion': False,

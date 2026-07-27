@@ -772,7 +772,8 @@ class VentaFarmaciaService:
                     detalles_controlados = DetalleVenta.objects.filter(
                         venta=venta
                     ).filter(
-                        Q(producto__es_antibiotico=True) | Q(producto__requiere_receta=True)
+                        (Q(producto__es_antibiotico=True) | Q(producto__requiere_receta=True))
+                        & ~Q(producto__categoria='CURACION')
                     ).select_related('producto').prefetch_related('lotes_extraidos__lote')
 
                     if detalles_controlados.exists():

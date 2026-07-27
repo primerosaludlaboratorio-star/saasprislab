@@ -4,9 +4,11 @@ import json
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.urls import reverse
 from django.test import Client, TestCase
 
 from core.models import Empresa, Producto, Sucursal
+from core.services.ventas.catalogo_service import CatalogoService
 
 
 class FarmaciaRegulatorioContractTest(TestCase):
@@ -60,6 +62,52 @@ class FarmaciaRegulatorioContractTest(TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()["success"], False)
+
+    def test_material_de_curacion_no_hereda_restriccion_de_receta(self):
+        material = Producto.objects.create(
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            nombre='Jeringa de prueba',
+            codigo_barras='REG-JERINGA-001',
+            categoria='CURACION',
+            clasificacion_sanitaria='VI',
+            precio_compra=Decimal('1.00'),
+            precio_publico=Decimal('2.00'),
+            stock=3,
+            # Simula una importación histórica incorrecta: la categoría manda.
+            es_antibiotico=True,
+            requiere_receta=True,
+        )
+        self.assertFalse(material.necesita_receta())
+        response = self.client.post(
+            reverse('farmacia:validar_antibiotico'),
+            data=json.dumps({'producto_id': material.id}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()['requiere_validacion'])
+
+    def test_busqueda_pdV_serializa_material_de_curacion_como_libre(self):
+        material = Producto.objects.create(
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            nombre='Jeringa búsqueda',
+            codigo_barras='REG-JERINGA-002',
+            categoria='CURACION',
+            clasificacion_sanitaria='VI',
+            precio_compra=Decimal('1.00'),
+            precio_publico=Decimal('2.00'),
+            stock=3,
+            es_antibiotico=True,
+            requiere_receta=True,
+        )
+        resultado = next(
+            item for item in CatalogoService.buscar_productos_pdv(self.empresa, 'Jeringa búsqueda')
+            if item['id'] == material.id
+        )
+        self.assertFalse(resultado['es_antibiotico'])
+        self.assertFalse(resultado['es_controlado'])
+        self.assertFalse(resultado['requiere_receta'])
 
     def test_antibiotico_sin_datos_medico_exige_cedula_y_nombre(self):
         response = self.client.post(

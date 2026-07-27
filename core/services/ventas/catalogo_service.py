@@ -182,6 +182,7 @@ class CatalogoService:
                 "iva_porcentaje",
                 "es_antibiotico",
                 "requiere_receta",
+                "clasificacion_sanitaria",
                 "categoria",
                 "empresa_id",
             )
@@ -223,11 +224,9 @@ class CatalogoService:
                     "dias_restantes_fefo": None,
                     "numero_lote_proximo": None,
                     "iva_pct": float(p.iva_porcentaje) if p.iva_porcentaje else 0,
-                    "es_controlado": bool(p.es_antibiotico),
-                    "es_antibiotico": bool(p.es_antibiotico),
-                    "requiere_receta": bool(
-                        getattr(p, "requiere_receta", False) or p.es_antibiotico
-                    ),
+                    "es_controlado": bool(p.clasificacion_sanitaria in {"I", "II", "III"} and p.categoria != "CURACION"),
+                    "es_antibiotico": bool(p.es_antibiotico and p.categoria != "CURACION"),
+                    "requiere_receta": bool(p.necesita_receta()),
                     "categoria": p.categoria or "",
                     "dias_restantes": 999,
                     "lote_id": None,
@@ -258,6 +257,7 @@ class CatalogoService:
                 "iva_porcentaje",
                 "es_antibiotico",
                 "requiere_receta",
+                "clasificacion_sanitaria",
                 "categoria",
                 "empresa_id",
             )
@@ -308,11 +308,9 @@ class CatalogoService:
                     "dias_restantes_fefo": None,
                     "numero_lote_proximo": None,
                     "iva_pct": float(p.iva_porcentaje) if p.iva_porcentaje else 0,
-                    "es_controlado": bool(p.es_antibiotico),
-                    "es_antibiotico": bool(p.es_antibiotico),
-                    "requiere_receta": bool(
-                        getattr(p, "requiere_receta", False) or p.es_antibiotico
-                    ),
+                    "es_controlado": bool(p.clasificacion_sanitaria in {"I", "II", "III"} and p.categoria != "CURACION"),
+                    "es_antibiotico": bool(p.es_antibiotico and p.categoria != "CURACION"),
+                    "requiere_receta": bool(p.necesita_receta()),
                     "categoria": p.categoria or "",
                     "dias_restantes": 999,
                     "lote_id": None,
