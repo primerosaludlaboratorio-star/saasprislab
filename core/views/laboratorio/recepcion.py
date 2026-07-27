@@ -22,6 +22,7 @@ from core.lims_cart import (
     search_lims_catalog,
 )
 from core.services.lims import OrdenServicioLims
+from core.decorators import role_required
 from lims.models import Analito
 
 from ._helpers import _detalle_codigo_lista
@@ -30,6 +31,7 @@ logger = logging.getLogger('core')
 
 
 @login_required
+@role_required('RECEPCION', 'QUIMICO', 'LABORATORIO', 'ADMIN', 'DIRECTOR', 'MEDICO')
 def recepcion_lab(request):
     """Pantalla de recepción del laboratorio."""
     empresa = getattr(request.user, 'empresa', None)

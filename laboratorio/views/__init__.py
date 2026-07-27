@@ -17,7 +17,6 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
 from core.utils.sucursal_helpers import get_request_sucursal
-from core.decorators import role_required
 
 from core.models import Medico
 from laboratorio.models import Estudio, PerfilLaboratorio
@@ -43,7 +42,6 @@ from laboratorio.views.etiquetas import *
 
 
 @login_required
-@role_required('RECEPCION', 'QUIMICO', 'LABORATORIO', 'ADMIN', 'DIRECTOR', 'MEDICO')
 def recepcion_lab(request):
     """
     Vista para crear una nueva orden de laboratorio.
