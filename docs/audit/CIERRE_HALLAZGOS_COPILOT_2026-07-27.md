@@ -136,3 +136,25 @@ verificacion operativa de CCI: produccion continua con cero mediciones de
 control registradas al corte. Para cerrar Westgard se requieren lote, media,
 desviacion estandar, equipo y mediciones reales del laboratorio, sin fabricar
 datos clinicos.
+
+## Clasificacion de pendientes y bateria adicional
+
+Los datos de CCI/Westgard quedaron clasificados como captura operativa, no como
+pendiente de codigo. La lista completa esta en
+`docs/audit/CCI_DATOS_REQUERIDOS_PARA_CIERRE_2026-07-27.md`.
+
+La bateria dirigida de Laboratorio, LIMS, Inventario, coherencia clinica,
+seguridad y CCI ejecuto 49 pruebas: 49 OK, 0 fallos. Los mensajes de log
+observados corresponden a escenarios intencionales: rechazo de una notificacion
+secundaria, bloqueo de PDF con saldo pendiente, ausencia de consentimiento en
+un caso de prueba y umbral de consultas para seguimiento de rendimiento. No se
+clasifican como regresiones.
+
+Pendientes funcionales verificables que permanecen abiertos:
+
+- Flujo humano completo de Laboratorio/LIMS en produccion con datos operativos.
+- Integracion HL7/analizador y dispositivos fisicos disponibles.
+- Cierre de CCI/Westgard despues de cargar controles y mediciones reales.
+- Ejecucion documentada de CAPA y EQA/PEEC con casos reales o controlados.
+- Prueba de carga de canales en tiempo real cuando exista infraestructura para
+  ejecutarla.

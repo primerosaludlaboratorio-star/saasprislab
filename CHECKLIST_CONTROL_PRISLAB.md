@@ -160,6 +160,40 @@ Para farmacia, este criterio incluye PDV, ventas, devoluciones, cancelaciones, c
 
 ## Estado general
 
+## Clasificacion operativa 2026-07-27
+
+### Pendientes de datos, no de codigo
+
+Estos elementos requieren captura o validacion por el personal y no
+representan por si mismos una falla del sistema:
+
+- Equipos, analitos, metodos, unidades y relaciones con estudios LIMS.
+- Reactivos, calibradores, controles e insumos con marca, lote, caducidad y
+  documentos de respaldo.
+- Media, desviacion estandar, niveles y reglas Westgard aprobadas.
+- Mediciones CCI reales por equipo, analito, lote, turno y operador.
+- Certificados de calibracion, mantenimiento y condiciones de almacenamiento.
+- Procedimientos normalizados, responsables y permisos de liberacion.
+- EQA/PEEC, no conformidades y acciones correctivas cuando existan.
+
+La captura detallada esta en
+`docs/audit/CCI_DATOS_REQUERIDOS_PARA_CIERRE_2026-07-27.md`.
+
+### Pendientes de funcionalidad o evidencia
+
+Solo se consideran abiertos si se reproducen con codigo actual y evidencia
+concreta:
+
+- Verificacion humana completa de Laboratorio/LIMS en produccion con datos
+  operativos reales.
+- Validacion de flujos HL7/analizadores y dispositivos fisicos disponibles.
+- Cierre operativo de CCI/Westgard una vez cargados los datos reales.
+- Ejecucion documentada de CAPA y EQA con casos reales o controlados.
+- Prueba de carga de canales en tiempo real cuando exista el entorno de carga.
+
+Las etiquetas antiguas `[~]` o `[ ]` de bloques historicos no se consideran
+fallas nuevas hasta ser reproducidas contra esta rama y este despliegue.
+
 - [x] Bloque 0 - Base de control
 - [~] Bloque 1 - Catálogo LIMS base
 - [~] Bloque 2 - Valores de referencia y resultados

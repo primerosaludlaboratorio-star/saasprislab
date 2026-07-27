@@ -649,3 +649,8 @@ La lista de captura pendiente, separada por equipo, analito, material de
 control, reglas, mediciones, metrologia y evidencias de rechazo, queda en
 `docs/audit/CCI_DATOS_REQUERIDOS_PARA_CIERRE_2026-07-27.md`. Ese documento es
 la fuente operativa para preparar los datos sin fabricar resultados.
+
+La bateria dirigida posterior cubrio Laboratorio, LIMS, Inventario, coherencia
+clinica, seguridad y CCI: 49 pruebas OK, sin fallos. Los logs de bloqueo de
+saldo, consentimiento ausente, rechazo de notificacion y umbral de rendimiento
+fueron escenarios esperados y no regresiones.
