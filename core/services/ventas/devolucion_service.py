@@ -3,6 +3,8 @@ Servicios de devolución y cancelación de ventas PDV.
 """
 import json
 import logging
+import re
+import secrets
 from decimal import Decimal, InvalidOperation
 from types import SimpleNamespace
 
@@ -244,6 +246,44 @@ class DevolucionService:
         """Cancelación + reversión Kardex. Retorna {http_status, body}."""
         if not empresa:
             return {'http_status': 403, 'body': {'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}}
+        try:
+            payload = json.loads(request.body or '{}')
+        except (TypeError, ValueError):
+            payload = {}
+        pin = str(payload.get('pin') or '').strip()
+        if not re.fullmatch(r'\d{4}', pin):
+            return {
+                'http_status': 400,
+                'body': {
+                    'status': 'error',
+                    'mensaje': 'El PIN de cancelación debe contener exactamente 4 dígitos.',
+                    'codigo': 'PIN_CANCELACION_FORMATO_INVALIDO',
+                },
+            }
+        try:
+            from core.models import ConfiguracionModulos
+            configuracion = ConfiguracionModulos.objects.get(empresa=empresa)
+            pin_configurado = (configuracion.pin_cancelacion_venta or '').strip()
+        except ConfiguracionModulos.DoesNotExist:
+            pin_configurado = ''
+        if not re.fullmatch(r'\d{4}', pin_configurado):
+            return {
+                'http_status': 503,
+                'body': {
+                    'status': 'error',
+                    'mensaje': 'El PIN de cancelación no está configurado para esta empresa.',
+                    'codigo': 'PIN_CANCELACION_NO_CONFIGURADO',
+                },
+            }
+        if not secrets.compare_digest(pin, pin_configurado):
+            return {
+                'http_status': 401,
+                'body': {
+                    'status': 'error',
+                    'mensaje': 'PIN de cancelación incorrecto.',
+                    'codigo': 'PIN_CANCELACION_INCORRECTO',
+                },
+            }
         try:
             venta = Venta.objects.select_related('empresa').prefetch_related(
                 'detalles__lote_vendido', 'detalles__producto'

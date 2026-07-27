@@ -364,6 +364,48 @@ class FarmaciaViewTests(TestCase):
         self.assertEqual(response.json()["status"], "error")
         self.assertFalse(response.json()["autorizado"])
 
+    def test_cancelar_venta_exige_pin_temporal(self):
+        self.usuario.rol = "ADMIN"
+        self.usuario.save(update_fields=["rol"])
+        ConfiguracionModulos.objects.update_or_create(
+            empresa=self.empresa,
+            defaults={"pin_cancelacion_venta": "2468"},
+        )
+
+        incorrecto = self.client.post(
+            reverse("cancelar_venta", args=[999999]),
+            data=json.dumps({"pin": "0000"}),
+            content_type="application/json",
+            secure=True,
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(incorrecto.status_code, 401)
+        self.assertEqual(incorrecto.json()["codigo"], "PIN_CANCELACION_INCORRECTO")
+
+        correcto = self.client.post(
+            reverse("cancelar_venta", args=[999999]),
+            data=json.dumps({"pin": "2468"}),
+            content_type="application/json",
+            secure=True,
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(correcto.status_code, 404)
+        self.assertEqual(correcto.json()["mensaje"], "Venta no encontrada")
+
+    def test_empleado_no_puede_cancelar_aunque_conozca_pin(self):
+        ConfiguracionModulos.objects.update_or_create(
+            empresa=self.empresa,
+            defaults={"pin_cancelacion_venta": "2468"},
+        )
+        response = self.client.post(
+            reverse("cancelar_venta", args=[999999]),
+            data=json.dumps({"pin": "2468"}),
+            content_type="application/json",
+            secure=True,
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 403)
+
     def test_validar_pin_precio_neto_rechaza_longitud_distinta_de_cuatro(self):
         self.usuario.rol = "ADMIN"
         self.usuario.save(update_fields=["rol"])

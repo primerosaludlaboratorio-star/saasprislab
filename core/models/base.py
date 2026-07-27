@@ -288,6 +288,14 @@ class ConfiguracionModulos(models.Model):
         verbose_name="PIN Precio Neto (Staff)",
         help_text="PIN numérico de 4 dígitos para autorizar descuento a precio de costo. Debe configurarse manualmente."
     )
+    pin_cancelacion_venta = models.CharField(
+        max_length=4,
+        blank=True,
+        default='',
+        validators=[RegexValidator(r'^$|^\d{4}$', 'El PIN debe contener exactamente 4 dígitos.')],
+        verbose_name="PIN Cancelación de Venta",
+        help_text="PIN temporal o individual de 4 dígitos para autorizar cancelaciones de ventas."
+    )
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Fecha de Actualización")
 
     class Meta:

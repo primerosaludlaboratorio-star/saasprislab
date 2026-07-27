@@ -190,6 +190,20 @@
 
         if (!confirmar.isConfirmed) return;
 
+        const pin = await Swal.fire({
+            icon: 'info',
+            title: 'Autorización requerida',
+            text: 'Ingrese el PIN de 4 dígitos para cancelar esta venta.',
+            input: 'password',
+            inputAttributes: { maxlength: 4, inputmode: 'numeric', autocomplete: 'off' },
+            showCancelButton: true,
+            confirmButtonText: 'Autorizar cancelación',
+            cancelButtonText: 'No cancelar',
+            inputValidator: (value) => /^\d{4}$/.test(value || '') ? undefined : 'El PIN debe contener exactamente 4 dígitos.'
+        });
+
+        if (!pin.isConfirmed) return;
+
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -197,7 +211,8 @@
                     'X-CSRFToken': getCsrfToken(),
                     'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json'
-                }
+                },
+                body: JSON.stringify({ pin: pin.value })
             });
             const data = await response.json();
             if (!response.ok || data.status === 'error') {

@@ -18,6 +18,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from core.decorators import role_required
 from core.models import DetalleVenta, GastoCaja, MovimientoCaja, Pago, Venta
 from core.services.ventas.venta_farmacia_service import VentaFarmaciaService
 
@@ -144,6 +145,7 @@ def imprimir_ticket_raw(request, venta_id):
 
 @login_required
 @require_POST
+@role_required('FARMACIA', 'ADMIN', 'GERENTE', 'DIRECTOR')
 def cancelar_venta(request, venta_id):
     """Wrapper legacy para cancelación de venta con reversión de stock."""
     empresa = _empresa_desde_request(request)
