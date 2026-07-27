@@ -644,3 +644,8 @@ los gates SQLite y PostgreSQL. Validacion local: 18 pruebas OK y 3 omitidas por
 requerir PostgreSQL. CCI/Westgard sigue abierto operacionalmente: produccion
 tenia cero mediciones de control en el corte, por lo que no se declara cierre
 funcional hasta cargar datos reales del laboratorio.
+
+La lista de captura pendiente, separada por equipo, analito, material de
+control, reglas, mediciones, metrologia y evidencias de rechazo, queda en
+`docs/audit/CCI_DATOS_REQUERIDOS_PARA_CIERRE_2026-07-27.md`. Ese documento es
+la fuente operativa para preparar los datos sin fabricar resultados.
