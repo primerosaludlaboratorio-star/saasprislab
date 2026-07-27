@@ -4,6 +4,7 @@
     <h2>Auto-Facturación de Pacientes</h2>
     <p>Por favor, ingresa los datos fiscales para el ticket: <b>{{ ticket_id }}</b></p>
     <form id="autofacturaForm">
+        {% csrf_token %}
         <input type="hidden" id="ticket" name="ticket" value="{{ ticket_id }}">
         <div class="mb-3">
             <label>RFC</label>
@@ -44,7 +45,11 @@ document.getElementById('autofacturaForm').addEventListener('submit', function(e
     
     fetch('/contabilidad/api/autofactura/generar/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        credentials: 'same-origin',
         body: JSON.stringify(data)
     })
     .then(res => res.json())

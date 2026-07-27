@@ -2,19 +2,36 @@ import json
 import logging
 import uuid
 from decimal import Decimal
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.shortcuts import render
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_POST
 from core.models import OrdenDeServicio, Usuario
 from contabilidad.models import ClienteFacturacion, FacturaCFDI, ConceptoFactura
+from contabilidad.validators_cfdi40 import (
+    clean_nombre_fiscal,
+    validate_codigo_postal_sat40,
+    validate_rfc_sat40,
+)
 # APIFacturama removed for now
 
 logger = logging.getLogger(__name__)
 
 
+ALLOWED_REGIMENES = {code for code, _ in ClienteFacturacion.REGIMEN_CHOICES}
+ALLOWED_USOS_CFDI = {code for code, _ in ClienteFacturacion.USO_CFDI_CHOICES}
+
+
+def _json_public(payload, status=200):
+    response = JsonResponse(payload, status=status)
+    response['Cache-Control'] = 'no-store'
+    return response
+
+
 def _json_error_publico(status=400):
-    return JsonResponse({'error': 'No fue posible procesar la solicitud.'}, status=status)
+    return _json_public({'error': 'No fue posible procesar la solicitud.'}, status=status)
 
 
 def _resolver_orden_por_token(ticket):
@@ -49,26 +66,37 @@ def autofactura_portal(request):
     context = {'ticket_id': ticket_id}
     return render(request, 'contabilidad/public/autofactura.html', context)
 
-@csrf_exempt
+@require_POST
+@csrf_protect
 def api_generar_autofactura(request):
     """
     API pública para generar la factura desde el portal.
     Se espera POST con JSON: { 'ticket': '<uuid token_acceso>', 'rfc': 'XAXX010101000', 'razon_social': 'PUBLICO EN GENERAL', 'cp': '00000', 'regimen': '616', 'uso': 'S01' }
     """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Método no permitido'}, status=405)
-    
     try:
         data = json.loads(request.body)
+        if not isinstance(data, dict):
+            return _json_public({'error': 'JSON inválido'}, status=400)
+
         ticket_id = data.get('ticket')
         rfc = data.get('rfc', '').strip().upper()
-        razon_social = data.get('razon_social', '').strip().upper()
+        razon_social = clean_nombre_fiscal(data.get('razon_social', ''))
         cp = data.get('cp', '').strip()
         regimen = data.get('regimen', '').strip()
         uso = data.get('uso', '').strip()
+        email = str(data.get('email', '')).strip() or 'autofactura@prislab.local'
 
         if not all([ticket_id, rfc, razon_social, cp, regimen, uso]):
-            return JsonResponse({'error': 'Todos los campos son obligatorios'}, status=400)
+            return _json_public({'error': 'Todos los campos son obligatorios'}, status=400)
+
+        try:
+            validate_rfc_sat40(rfc)
+            validate_codigo_postal_sat40(cp)
+        except ValidationError:
+            return _json_public({'error': 'Datos fiscales inválidos.'}, status=400)
+
+        if regimen not in ALLOWED_REGIMENES or uso not in ALLOWED_USOS_CFDI:
+            return _json_public({'error': 'Datos fiscales inválidos.'}, status=400)
 
         orden = _resolver_orden_por_token(ticket_id)
         if not orden:
@@ -83,7 +111,7 @@ def api_generar_autofactura(request):
             orden_laboratorio=orden,
             estado__in=['BORRADOR', 'PENDIENTE', 'FACTURANDO', 'TIMBRADO'],
         ).exists():
-            return JsonResponse({'error': 'Este ticket ya fue facturado previamente.'}, status=400)
+            return _json_public({'error': 'Este ticket ya fue facturado previamente.'}, status=400)
 
         with transaction.atomic():
             # Buscar o crear ClienteFacturacion
@@ -92,7 +120,7 @@ def api_generar_autofactura(request):
                 empresa=orden.empresa,
                 defaults={
                     'razon_social': razon_social,
-                    'email': str(data.get('email') or 'autofactura@prislab.local').strip() or 'autofactura@prislab.local',
+                    'email': email,
                     'codigo_postal': cp,
                     'regimen_fiscal': regimen,
                     'uso_cfdi_default': uso,
@@ -130,10 +158,10 @@ def api_generar_autofactura(request):
             )
 
         # Dejar la factura como BORRADOR para timbrado manual o por celery
-        return JsonResponse({'mensaje': 'Factura generada y encolada para timbrado exitosamente.', 'factura_id': factura.id})
+        return _json_public({'mensaje': 'Factura generada y encolada para timbrado exitosamente.', 'factura_id': factura.id})
 
     except json.JSONDecodeError:
-        return JsonResponse({'error': 'JSON inválido'}, status=400)
+        return _json_public({'error': 'JSON inválido'}, status=400)
     except Exception:
         logger.exception("Error inesperado en api_generar_autofactura")
         return _json_error_publico(status=500)

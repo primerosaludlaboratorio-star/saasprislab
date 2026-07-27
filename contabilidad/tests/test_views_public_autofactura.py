@@ -1,16 +1,17 @@
 import json
+import secrets
 from decimal import Decimal
 
-from django.test import RequestFactory, TestCase
+from django.test import Client, TestCase
+from django.urls import reverse
 
 from contabilidad.models import FacturaCFDI
-from contabilidad.views_public import api_generar_autofactura
 from core.models import Empresa, OrdenDeServicio, Paciente, Usuario
 
 
 class PublicAutofacturaApiTests(TestCase):
     def setUp(self):
-        self.factory = RequestFactory()
+        self.client = Client(enforce_csrf_checks=True)
         self.empresa = Empresa.objects.create(nombre='Empresa Autofactura')
         self.usuario = Usuario.objects.create_user(
             username='autofactura_user',
@@ -43,12 +44,14 @@ class PublicAutofacturaApiTests(TestCase):
             'regimen': '616',
             'uso': 'S01',
         }
-        request = self.factory.post(
-            '/contabilidad/api/autofactura/',
+        csrf_token = secrets.token_hex(16)
+        self.client.cookies['csrftoken'] = csrf_token
+        return self.client.post(
+            reverse('contabilidad:api_generar_autofactura'),
             data=json.dumps(payload),
             content_type='application/json',
+            HTTP_X_CSRFTOKEN=csrf_token,
         )
-        return api_generar_autofactura(request)
 
     def test_rejects_incremental_ticket_id(self):
         response = self._post(self.orden.id)
@@ -70,3 +73,19 @@ class PublicAutofacturaApiTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertEqual(data['error'], 'No fue posible procesar la solicitud.')
+
+    def test_rejects_post_without_csrf_token(self):
+        payload = {
+            'ticket': str(self.orden.token_acceso),
+            'rfc': 'XAXX010101000',
+            'razon_social': 'PUBLICO EN GENERAL',
+            'cp': '12345',
+            'regimen': '616',
+            'uso': 'S01',
+        }
+        response = self.client.post(
+            reverse('contabilidad:api_generar_autofactura'),
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 403)
