@@ -66,7 +66,8 @@ declara cierre por una sola página HTTP ni por comandos legacy.
 - Correcciones desplegadas y verificadas: savepoint para errores de rango,
   rutas de PDF acotadas después del prefijo tenant, `upload_to` ejecutado como
   función real y bloqueo FEFO limitado a la fila principal (`of=('self',)`).
-  La revisión productiva final es `74f64f5`.
+  La corrección funcional quedó en `74f64f5`; la revisión productiva final,
+  incluyendo documentación sincronizada, es `d1a7c0e`.
 - Suite por grupos ejecutada en este corte: `31/31 OK` para equipos, HL7,
   CCI/Westgard, contingencias y consumo; `39/39 OK` para recepción, captura,
   validación, PDF, entrega, aislamiento y seguridad; `34/34 OK` para la suite
