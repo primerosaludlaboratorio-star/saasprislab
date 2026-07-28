@@ -9,6 +9,7 @@ import uuid
 
 from core.tenant import TenantModel
 from core.validators import validate_image_upload, validate_document_upload
+from core.utils.paths import generar_ruta_drive_laboratorio
 from .base import Empresa, Sucursal, Usuario, get_google_drive_storage
 
 
@@ -543,7 +544,7 @@ class OrdenDeServicio(TenantModel):
     observaciones_clinicas = models.TextField(blank=True, null=True, verbose_name="Observaciones Clínicas", help_text="Notas del químico o técnico de laboratorio")
 
     archivo_resultado = models.FileField(
-        upload_to='core.utils.paths.generar_ruta_drive_laboratorio',
+        upload_to=generar_ruta_drive_laboratorio,
         storage=get_google_drive_storage,
         blank=True,
         null=True,
