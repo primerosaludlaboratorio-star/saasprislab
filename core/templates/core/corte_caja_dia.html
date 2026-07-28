@@ -116,6 +116,10 @@
                             <i class="bi bi-eye"></i> GENERAR PRECORTE
                         </button>
                         {% endif %}
+                        <button type="button" id="btn-cerrar-turno" class="btn btn-success btn-lg w-100 mt-3 fw-bold" onclick="cerrarTurnoUnificado()" disabled>
+                            <i class="bi bi-lock-fill"></i> CERRAR TURNO Y GENERAR CORTE
+                        </button>
+                        <small class="text-muted d-block mt-2">El cierre definitivo se habilita después de capturar los importes y calcular la diferencia.</small>
                     </div>
                     <div id="resultado-diferencia" style="display: none;" class="mt-3">
                         {% csrf_token %}
@@ -132,9 +136,6 @@
                             <span class="fw-bold">Diferencia:</span>
                             <span id="diferencia-valor" class="fw-bold">$0.00</span>
                         </div>
-                        <button type="button" id="btn-cerrar-turno" class="btn btn-success btn-lg w-100 mt-3 fw-bold" onclick="cerrarTurnoUnificado()">
-                            <i class="bi bi-lock-fill"></i> CERRAR TURNO Y GENERAR CORTE
-                        </button>
                     </div>
                 </div>
             </div>
@@ -422,6 +423,8 @@
         
         document.getElementById('resultado-diferencia').style.display = 'block';
         document.getElementById('saldo-esperado').style.display = 'block';
+        const btnCerrar = document.getElementById('btn-cerrar-turno');
+        if (btnCerrar) btnCerrar.disabled = false;
         
         // Registrar incidencia si hay diferencia significativa
         if (Math.abs(diferencia) > tolerancia) {

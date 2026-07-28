@@ -283,8 +283,23 @@ document.getElementById('form-devolucion').addEventListener('submit', async func
         icon: 'info',
         title: 'Autorización requerida',
         text: 'Ingrese el PIN universal de 4 dígitos para procesar la devolución.',
-        input: 'password',
-        inputAttributes: { maxlength: 4, inputmode: 'numeric', autocomplete: 'off' },
+        input: 'text',
+        inputAttributes: {
+            maxlength: 4,
+            inputmode: 'numeric',
+            pattern: '[0-9]*',
+            autocomplete: 'one-time-code',
+            autocapitalize: 'off',
+            spellcheck: 'false',
+        },
+        didOpen: () => {
+            const pinInput = Swal.getInput();
+            if (pinInput) {
+                pinInput.value = '';
+                pinInput.removeAttribute('readonly');
+                pinInput.focus();
+            }
+        },
         showCancelButton: true,
         confirmButtonText: 'Autorizar devolución',
         cancelButtonText: 'Cancelar',
