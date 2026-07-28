@@ -126,7 +126,9 @@ def _ejecutar_descuento_fefo(resultado):
     with transaction.atomic():
         rp = (
             ResultadoParametro.objects
-            .select_for_update(nowait=False)
+            # Solo se bloquea la fila principal; `equipo` es nullable y
+            # PostgreSQL no permite FOR UPDATE sobre ese lado del outer join.
+            .select_for_update(nowait=False, of=('self',))
             .select_related('orden', 'orden__empresa', 'equipo')
             .get(pk=resultado.pk)
         )
