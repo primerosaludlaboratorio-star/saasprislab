@@ -515,6 +515,19 @@ window.renderCarrito = function() {
         });
     });
     tbody.querySelectorAll('[data-cantidad-index]').forEach(function(input) {
+        input.addEventListener('input', function() {
+            var idx = Number(input.dataset.cantidadIndex);
+            var item = window.carrito[idx];
+            var n = parseInt(input.value, 10);
+            if (!item || isNaN(n) || n < 1) return;
+            if (n > Number(item.stock || 0)) {
+                n = Number(item.stock || 0);
+                input.value = n;
+            }
+            item.cantidad = n;
+            var t = _calcTotales();
+            _actualizarTotalesPanel(t.subtotal, t.iva, t.total);
+        });
         input.addEventListener('change', function() {
             setCantidad(Number(input.dataset.cantidadIndex), input.value);
         });
@@ -611,7 +624,7 @@ window.enviarVenta = function(){
     var cl=document.getElementById('p-cliente');var pid=document.getElementById('p-paciente-id');var sel=document.getElementById('selector-descuento');
     var pd=(sel?(parseFloat(sel.value)||0):0)*100;
     var items=window.carrito.map(function(item){return{producto_id:item.id,cantidad:item.cantidad,cantidad_prescrita:window.recetaActual?(item.cantidad_prescrita||item.cantidad):item.cantidad,motivo_surtido_parcial:item.motivo_surtido_parcial||'',precio_unitario:item.precio_venta,subtotal:item.precio_venta*item.cantidad,iva_item:(item.precio_venta*item.cantidad)*(item.iva_pct/100),lote_id:item.lote_id||null};});
-    var payload={items:items,pagos:pagos,subtotal:t.subtotal.toFixed(2),iva_total:t.iva.toFixed(2),redondeo:'0',total_final:t.total.toFixed(2),descuento_aplicado:t.descuento.toFixed(2),descuento_porcentaje:pd,total_original:t.subtotal.toFixed(2),cliente:(cl?.value?.trim()||'PUBLICO GENERAL'),paciente_id:pid?.value||null,efectivo_recibido:ef.toFixed(2),cambio_entregado:cambio.toFixed(2),es_cortesia:ec,motivo_cortesia:document.getElementById('motivo-cortesia')?.value||'',autorizado_por_cortesia:document.getElementById('autorizado-por-cortesia')?.value||'',beneficio_precio_neto:window.precioNetoActivo?(document.getElementById('tipo-beneficio-staff')?.value||''):'',codigo_cupon:window.cuponAplicado?.codigo||'',receta_id:window.recetaActual?window.recetaActual.id||null:null,medico_nombre:window.recetaActual?window.recetaActual.medico||'':'',medico_cedula:window.recetaActual?window.recetaActual.cedula||'':'',receta_fecha:window.recetaActual?window.recetaActual.fecha||'':'',numero_receta_externo:window.recetaActual?window.recetaActual.numero_externo||'':'',informacion_adicional:window.recetaActual?window.recetaActual.info_adicional||'':'',es_controlada:window.carrito.some(function(i){return !!(i.requiere_receta||i.es_antibiotico);})};
+    var payload={items:items,pagos:pagos,subtotal:t.subtotal.toFixed(2),iva_total:t.iva.toFixed(2),redondeo:'0',total_final:t.total.toFixed(2),descuento_aplicado:t.descuento.toFixed(2),descuento_porcentaje:pd,total_original:t.subtotal.toFixed(2),cliente:(cl?.value?.trim()||'PUBLICO GENERAL'),paciente_id:pid?.value||null,efectivo_recibido:ef.toFixed(2),cambio_entregado:cambio.toFixed(2),es_cortesia:ec,motivo_cortesia:document.getElementById('motivo-cortesia')?.value||'',autorizado_por_cortesia:document.getElementById('autorizado-por-cortesia')?.value||'',beneficio_precio_neto:window.precioNetoActivo?(document.getElementById('tipo-beneficio-staff')?.value||''):'',codigo_cupon:window.cuponAplicado?.codigo||'',receta_id:window.recetaActual?window.recetaActual.id||null:null,medico_nombre:window.recetaActual?window.recetaActual.medico||'':'',medico_cedula:window.recetaActual?window.recetaActual.cedula||'':'',receta_fecha:window.recetaActual?window.recetaActual.fecha||'':'',numero_receta_externo:window.recetaActual?window.recetaActual.numero_externo||'':'',folio_prislab:window.recetaActual?window.recetaActual.folio_prislab||'':'',informacion_adicional:window.recetaActual?window.recetaActual.info_adicional||'':'',es_controlada:window.carrito.some(function(i){return !!i.requiere_receta;})};
     fetch('/farmacia/pdv/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':_csrf(),'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin',body:JSON.stringify(payload)})
     .then(function(r){return r.json();})
     .then(function(data){if(data.status==='success'){window.ventaActualId=data.venta_id;window.ventaActualFolio=data.folio;_onVentaExitosa(data,cambio);}else{throw new Error(data.mensaje||'Error al procesar la venta.');}})
@@ -652,6 +665,14 @@ function _onVentaExitosa(data, cambio) {
         if (window.AUTO_PRINT_TICKET && data.venta_id) imprimirTicketVenta();
     }, 0);
 }
+
+// Cierra el comprobante sin obligar a iniciar otra venta.
+window.cerrarVentaExitosa = function() {
+    var me = _getModal('modalExito');
+    if (me) me.hide();
+    var buscador = document.getElementById('input-buscador');
+    if (buscador) buscador.focus();
+};
 
 // NUEVA VENTA — limpia el tab actual y actualiza estado global de tabs
 window.startNewSale = function(){
@@ -780,7 +801,9 @@ window.validarReceta = function () {
     }
     var alertaEl2 = document.getElementById('rec-fecha-alerta'); if (alertaEl2) alertaEl2.style.display = 'none';
 
-    window.recetaActual = { medico: medico, cedula: cedula, fecha: fecha, numero_externo: numExt, info_adicional: infoAd };
+    var folioEl = document.getElementById('rec-folio-prislab');
+    var folioPrislab = folioEl ? folioEl.value.trim() : '';
+    window.recetaActual = { medico: medico, cedula: cedula, fecha: fecha, numero_externo: numExt, folio_prislab: folioPrislab, info_adicional: infoAd };
     if (window._editarSurtidoIdx !== null && window._editarSurtidoIdx !== undefined) {
         var itemEditado = window.carrito[window._editarSurtidoIdx];
         if (itemEditado) {
@@ -807,7 +830,7 @@ window.editarSurtido = function (idx) {
     window._editarSurtidoIdx = idx;
     var r = window.recetaActual || {};
     [['rec-medico', r.medico], ['rec-cedula', r.cedula], ['rec-fecha', r.fecha],
-     ['rec-numero-externo', r.numero_externo], ['rec-info-adicional', r.info_adicional],
+     ['rec-numero-externo', r.numero_externo], ['rec-folio-prislab', r.folio_prislab], ['rec-info-adicional', r.info_adicional],
      ['rec-cantidad-prescrita', item.cantidad_prescrita || item.cantidad]].forEach(function (pair) {
         var el = document.getElementById(pair[0]); if (el && pair[1] !== undefined && pair[1] !== null) el.value = pair[1];
     });

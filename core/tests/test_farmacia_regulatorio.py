@@ -109,6 +109,34 @@ class FarmaciaRegulatorioContractTest(TestCase):
         self.assertFalse(resultado['es_controlado'])
         self.assertFalse(resultado['requiere_receta'])
 
+    def test_material_de_curacion_no_se_bloquea_por_receta_de_otro_producto(self):
+        """Una jeringa puede acompañar una receta sin heredar su cantidad limitada."""
+        material = Producto.objects.create(
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            nombre='Jeringa libre de receta',
+            codigo_barras='REG-JERINGA-003',
+            categoria='CURACION',
+            requiere_receta=True,
+            es_antibiotico=True,
+        )
+        self.assertFalse(material.requiere_receta_farmacia())
+
+    def test_conciliacion_ocr_prioriza_equivalencia_y_tolerancia_de_lectura(self):
+        from farmacia.services.receta_ocr import conciliar_medicamentos
+
+        producto = Producto.objects.create(
+            empresa=self.empresa,
+            nombre='Panclasa',
+            sustancia_activa='Trimetilfloroglucinol',
+            equivalencias_comerciales='Panclasa gotas, trimetil floroglucinol',
+            codigo_barras='REG-OCR-001',
+        )
+        sugerencias = conciliar_medicamentos(self.empresa, {
+            'medicamentos': [{'texto': 'Panclasa gotas'}],
+        })
+        self.assertEqual(sugerencias[0]['candidatos'][0]['producto_id'], producto.id)
+
     def test_antibiotico_sin_datos_medico_exige_cedula_y_nombre(self):
         response = self.client.post(
             "/farmacia/erp/antibioticos/validar/",

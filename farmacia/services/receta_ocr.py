@@ -1,6 +1,7 @@
 """OCR de recetas y conciliación contra el catálogo de Farmacia."""
 
 import unicodedata
+from difflib import SequenceMatcher
 
 from django.db.models import Q
 
@@ -41,7 +42,7 @@ def conciliar_medicamentos(empresa, datos):
     catalogo = list(Producto.objects_all.filter(empresa=empresa).only(
         "id", "nombre", "sustancia_activa", "marca_laboratorio", "concentracion",
         "forma_farmaceutica", "presentacion", "stock", "precio_publico",
-        "requiere_receta", "es_antibiotico",
+        "requiere_receta", "es_antibiotico", "equivalencias_comerciales",
     ))
     sugerencias = []
     for medicamento in medicamentos:
@@ -53,16 +54,31 @@ def conciliar_medicamentos(empresa, datos):
                 "sustancia_activa": _normalizar(producto.sustancia_activa),
                 "marca": _normalizar(producto.marca_laboratorio),
                 "concentracion": _normalizar(producto.concentracion),
+                "equivalencias": _normalizar(producto.equivalencias_comerciales),
             }
             score = 0
-            if consulta == campos["nombre"] or consulta == campos["sustancia_activa"]:
-                score = 100
-            elif consulta in campos["nombre"]:
-                score = 90
-            elif consulta in campos["sustancia_activa"]:
-                score = 85
-            elif any(token in " ".join(campos.values()) for token in consulta.split() if len(token) > 2):
-                score = 60
+            equivalentes = [campos["nombre"], campos["sustancia_activa"]]
+            equivalentes.extend(x.strip() for x in campos["equivalencias"].split(',') if x.strip())
+            consulta_tokens = {x for x in consulta.split() if len(x) > 2}
+            for equivalente in equivalentes:
+                if not equivalente:
+                    continue
+                if consulta == equivalente:
+                    score = max(score, 100)
+                elif consulta in equivalente:
+                    score = max(score, 92)
+                elif equivalente in consulta:
+                    score = max(score, 88)
+                else:
+                    tokens_equivalente = {x for x in equivalente.split() if len(x) > 2}
+                    overlap = len(consulta_tokens & tokens_equivalente)
+                    ratio = SequenceMatcher(None, consulta, equivalente).ratio()
+                    if overlap:
+                        score = max(score, 70 + min(15, overlap * 5) + int(ratio * 10))
+                    elif ratio >= 0.70:
+                        score = max(score, 65 + int(ratio * 20))
+            if campos["marca"] and campos["marca"] in consulta:
+                score += 3
             if score:
                 candidatos.append((score, producto))
         candidatos.sort(key=lambda pair: (-pair[0], -int(pair[1].stock or 0), pair[1].nombre))

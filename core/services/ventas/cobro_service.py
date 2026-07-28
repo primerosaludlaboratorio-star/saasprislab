@@ -251,7 +251,14 @@ class VentaFarmaciaService:
                         else:
                             fecha_receta = timezone.now().date()
 
-                        folio_receta = f"REC-{time_module.strftime('%Y%m%d%H%M%S')}-{uuid_module.uuid4().hex[:4].upper()}"
+                        folio_receta = str(data.get('folio_prislab') or '').strip()[:100]
+                        if folio_receta and Receta.objects.filter(folio_receta=folio_receta).exists():
+                            return JsonResponse({
+                                'status': 'error',
+                                'mensaje': 'La referencia interna PRISLAB ya está utilizada. Capture otra o déjela vacía para generar una nueva.',
+                            }, status=400)
+                        if not folio_receta:
+                            folio_receta = f"REC-{time_module.strftime('%Y%m%d%H%M%S')}-{uuid_module.uuid4().hex[:4].upper()}"
                         receta = Receta.objects.create(
                             medico=medico,
                             empresa=empresa,
@@ -272,6 +279,12 @@ class VentaFarmaciaService:
                             'status': 'error',
                             'mensaje': f'La cantidad prescrita del producto #{idx} no es válida.',
                         }, status=400)
+                    producto_validacion = Producto.objects.filter(
+                        id=raw_item.get('producto_id') or raw_item.get('id'),
+                        empresa=empresa,
+                    ).first()
+                    if not (producto_validacion and producto_validacion.requiere_receta_farmacia()):
+                        continue
                     if cantidad_prescrita < cantidad_item:
                         return JsonResponse({
                             'status': 'error',
@@ -437,7 +450,7 @@ class VentaFarmaciaService:
                 for _chk in items:
                     _pid = _chk.get('producto_id') or _chk.get('id')
                     _prod_chk = Producto.objects.filter(id=_pid, empresa=empresa).only(
-                        'nombre', 'requiere_receta', 'es_antibiotico'
+                        'nombre', 'categoria', 'requiere_receta', 'es_antibiotico'
                     ).first()
                     if _prod_chk and _prod_chk.necesita_receta() and not receta:
                         return JsonResponse({
@@ -563,7 +576,7 @@ class VentaFarmaciaService:
 
                     # Registro por venta del surtido completo o parcial.
                     cantidad_prescrita_solicitada = int(item_data.get('cantidad_prescrita', cantidad))
-                    if receta:
+                    if receta and producto.requiere_receta_farmacia():
                         receta_item = RecetaItem.objects.filter(
                             receta=receta,
                             medicamento=producto,

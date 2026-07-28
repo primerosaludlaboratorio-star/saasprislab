@@ -80,10 +80,11 @@
                     <div class="form-text" style="font-size:0.7rem;">Permite registrar surtido parcial sin perder la cantidad original prescrita.</div>
                 </div>
 
-                <!-- Fila 3: Folio PRISLAB (readonly) + Información adicional -->
+                <!-- Fila 3: referencia editable + folio técnico auditable -->
                 <div class="mb-2">
-                    <label class="small fw-bold">Folio PRISLAB (auto-generado y auditable):</label>
-                    <input type="text" class="form-control form-control-sm bg-light fw-bold" value="FOLIO AUTOMÁTICO POR SISTEMA" readonly>
+                    <label class="small fw-bold" for="rec-folio-prislab">Referencia interna PRISLAB (opcional):</label>
+                    <input type="text" id="rec-folio-prislab" class="form-control form-control-sm" maxlength="100" placeholder="Déjela vacía para generar el folio técnico automáticamente">
+                    <div class="form-text" style="font-size:0.7rem;">Puede editarla o dejarla vacía. El sistema conserva siempre un identificador técnico único para auditoría. El número físico va en el campo anterior y puede omitirse en surtido parcial.</div>
                 </div>
                 <div class="mb-0">
                     <label class="small fw-bold">Información Adicional / Indicaciones:</label>

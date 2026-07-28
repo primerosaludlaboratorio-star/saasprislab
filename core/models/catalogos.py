@@ -130,6 +130,10 @@ class Producto(TenantModel):
             return False
         return self.requiere_receta or self.es_antibiotico
 
+    def requiere_receta_farmacia(self):
+        """Regla autoritativa del cobro: curacion nunca hereda receta."""
+        return self.necesita_receta()
+
     def __str__(self):
         return f"{self.nombre} - {self.sustancia_activa} ({self.concentracion})"
 

@@ -160,7 +160,7 @@ Responde SOLO con JSON válido:
 }
 Si no puedes leer algún campo, usa null."""
 
-_PROMPT_RECETA_FARMACIA = """Lee esta receta médica mexicana para auxiliar a un farmacéutico.
+_PROMPT_RECETA_FARMACIA = """Lee esta receta médica mexicana, incluso si está escrita a mano, para auxiliar a un farmacéutico.
 Responde SOLO con JSON válido y no inventes datos ilegibles:
 {
   "tipo_documento": "RECETA_MEDICA" | "OTRO",
@@ -177,7 +177,7 @@ Responde SOLO con JSON válido y no inventes datos ilegibles:
   ],
   "observaciones": "string o null"
 }
-Reglas: una línea por medicamento; conserva literalmente dosis, frecuencia, duración, vía e indicaciones en "indicaciones"; no conviertas dosis o frecuencia en cantidad de cajas; si la letra es ambigua, conserva el texto parcial y baja la confianza en vez de inventar."""
+Reglas: una línea por medicamento; conserva literalmente dosis, frecuencia, duración, vía e indicaciones en "indicaciones"; no conviertas dosis o frecuencia en cantidad de cajas; separa nombre comercial, sustancia activa y concentración solo cuando se distingan; si la letra es ambigua, conserva el texto parcial, agrega una alternativa legible en "observaciones" y baja la confianza en vez de inventar. Devuelve también el texto tal como se leyó en "texto" dentro de cada medicamento. Nunca ocultes una línea ilegible."""
 
 _PROMPT_COMPRA_FARMACIA = """Lee esta factura o nota de compra de medicamentos para auxiliar al encargado de inventario.
 Responde SOLO con JSON válido y no inventes datos ilegibles:
