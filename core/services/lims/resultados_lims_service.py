@@ -642,6 +642,7 @@ class ResultadosLimsService:
                     ResultadoParametro.objects.filter(orden=orden).update(aprobado_por_humano=True)
 
                     orden.estado = 'RESULTADOS_LISTOS'
+                    orden.estado_clinico = 'COMPLETO'
 
                     orden.detalles.filter(
                         estado_procesamiento__in=['PENDIENTE_TOMA', 'TOMA_REALIZADA', 'EN_PROCESO']
