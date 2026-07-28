@@ -1,6 +1,6 @@
 # Estado Canonico de PRISLAB SaaS
 
-Fecha de consolidacion: 2026-07-28 (última actualización: matriz E2E, contingencia de maquila y trazabilidad de equipo)
+Fecha de consolidacion: 2026-07-28 (última actualización: validación productiva LIMS, almacenamiento tenant y FEFO)
 Rama canonica: `release/v1.0-local`
 
 ## Proposito
@@ -11,15 +11,16 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 
 ## Corte vigente 2026-07-28
 
-- La rama local contiene la integración documental de INCCA, Icon y Wondfo, la relación tenant de `MetodoEquipo`, la configuración `InterfazEquipo` y las migraciones `laboratorio.0018_metodoequipo` y `laboratorio.0019_equipo_empresa_interfazequipo`. Estos cambios no se consideran desplegados en producción en este corte.
-- El corte local añade `core.0096_enviomaquila_archivo_resultado_enviomaquila_estado_and_more`: recepción formal de maquila, evidencia de archivo, retorno controlado a captura y validación idempotente. Tampoco se considera desplegado en producción.
+- La rama local contiene la integración documental de INCCA, Icon y Wondfo, la relación tenant de `MetodoEquipo`, la configuración `InterfazEquipo` y las migraciones `laboratorio.0018_metodoequipo` y `laboratorio.0019_equipo_empresa_interfazequipo`; están desplegadas en producción.
+- El corte incluye `core.0096_enviomaquila_archivo_resultado_enviomaquila_estado_and_more` y `core.0097_alter_ordendeservicio_archivo_resultado`; la recepción de maquila está desplegada y el campo PDF ejecuta su generador callable real.
+- El despliegue productivo vigente es `74f64f5` mediante artefacto local directo. La prueba humana de `LAB-20260720-001` dejó `RESULTADOS_LISTOS`, `GLUCOSA=95`, PDF persistido y aprobación humana verdadera.
 - Un staging SQLite limpio recorrió toda la cadena de migraciones desde cero y terminó correctamente. La base local operativa anterior no se usa como evidencia de staging.
 - `manage.py check` y `makemigrations --check --dry-run` pasan sin errores.
 - La auditoría fuente INCCA confirma 16 métodos, 16 mapeos documentales y volúmenes estructurados; los métodos permanecen `PENDIENTE_VALIDACION` e inactivos.
 - La documentación clínica confirma 15 insertos trazables de 16; falta el inserto específico de hierro `IRON-POIN R`.
 - La prueba dirigida de consumo por analito, repetición e idempotencia terminó `6/6 OK`; esto no sustituye la validación física de equipos ni la suite E2E completa.
 - La prueba combinada de métodos, aislamiento de interfaces por tenant y handshake HL7 terminó `9/9 OK` en el runner local aislado.
-- La matriz vigente de escenarios E2E está en `docs/audit/MATRIZ_E2E_LABORATORIO_LIMS_2026-07-28.md`. La suite post-cambio de contingencias/interfaz terminó `16/16 OK`; el cierre humano con efectos laterales sigue abierto.
+- La matriz vigente de escenarios E2E está en `docs/audit/MATRIZ_E2E_LABORATORIO_LIMS_2026-07-28.md`. La suite post-cambio de contingencias/interfaz terminó `16/16 OK`; la ruta humana productiva de captura/validación/PDF pasó en `74f64f5`. Siguen abiertos los escenarios físicos y de maquila real.
 - CCI/Westgard sigue abierto porque producción tiene `0` mediciones CCI persistidas; no se fabrican controles, lotes ni resultados clínicos para aparentar cierre.
 
 ### Regla de sincronización documental

@@ -60,13 +60,13 @@ declara cierre por una sola página HTTP ni por comandos legacy.
   entradas canónicas (`lista-trabajo` y `lims/analitos`) con HTTP 200 y sin
   error de servidor.
 - Prueba humana con la orden QA `LAB-20260720-001`: guardar captura manual
-  `GLUCOSA=95` respondió HTTP 200 y persistió el valor; al validar, el
-  despliegue vigente respondió HTTP 500 por una transacción dañada después de
-  una evaluación clínica auxiliar. Este hallazgo bloquea el cierre productivo.
-- Corrección local aplicada: las evaluaciones de rango clínico usan savepoints y
-  una regresión fuerza un `DatabaseError`; el resultado esperado es `422
-  LIMS_RANGO_VALIDACION`, sin liberar la orden ni dejar la transacción rota.
-  La corrección todavía no está desplegada.
+  `GLUCOSA=95` respondió HTTP 200 y persistió el valor. La validación posterior
+  respondió HTTP 200, generó y persistió el PDF tenant, y dejó la orden en
+  `RESULTADOS_LISTOS` con `validado=True` y `aprobado_por_humano=True`.
+- Correcciones desplegadas y verificadas: savepoint para errores de rango,
+  rutas de PDF acotadas después del prefijo tenant, `upload_to` ejecutado como
+  función real y bloqueo FEFO limitado a la fila principal (`of=('self',)`).
+  La revisión productiva final es `74f64f5`.
 - Suite por grupos ejecutada en este corte: `31/31 OK` para equipos, HL7,
   CCI/Westgard, contingencias y consumo; `39/39 OK` para recepción, captura,
   validación, PDF, entrega, aislamiento y seguridad; `34/34 OK` para la suite
@@ -80,14 +80,10 @@ declara cierre por una sola página HTTP ni por comandos legacy.
   evidencia de la conmutación.
 - No se puede demostrar una caída eléctrica real sin un procedimiento de
   contingencia autorizado y datos de prueba; no se debe provocar en producción.
-- La recepción de maquila ya existe en código local, pero aún no está declarada
-  desplegada en producción.
-- La navegación productiva corresponde al despliegue vigente; las correcciones
-  locales de maquila/equipo aún no están visibles allí hasta ejecutar un
-  despliegue controlado.
+- La recepción de maquila y el aislamiento de equipos están desplegados; falta
+  probarlos con un envío/archivo de resultado controlado en producción.
 - Producción fue comprobada con `/health/` y devolvió `status=ok`, base de datos
-  y cache operativos. El `DEPLOYED_REVISION` remoto coincide con `HEAD`, pero no
-  incluye los cambios sin commit del working tree local.
+  y cache operativos. `DEPLOYED_REVISION` remoto coincide con `74f64f5`.
 - La prueba productiva con efectos debe usar una orden y paciente de prueba
   autorizados, nunca datos clínicos reales sin control.
 
