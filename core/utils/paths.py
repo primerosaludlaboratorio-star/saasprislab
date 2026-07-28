@@ -16,12 +16,28 @@ MEJORAS AL PROMPT ORIGINAL:
 
 import os
 import re
+import hashlib
 from datetime import datetime
 from django.utils.text import slugify
 from django.utils import timezone
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _limitar_ruta_storage(ruta, max_length=96):
+    """Mantiene rutas persistidas dentro del limite del FileField."""
+    ruta = str(ruta or '').replace('\\', '/')
+    if len(ruta) <= max_length:
+        return ruta
+    directorio, nombre = ruta.rsplit('/', 1) if '/' in ruta else ('', ruta)
+    extension = os.path.splitext(nombre)[1]
+    digest = hashlib.sha1(ruta.encode('utf-8')).hexdigest()[:10]
+    if len(directorio) + 1 + len(extension) + len(digest) + 3 >= max_length:
+        directorio = 'laboratorio/resultados'
+    disponible = max_length - len(directorio) - 1 - len(extension) - len(digest) - 1
+    stem = os.path.splitext(nombre)[0][:max(1, disponible)]
+    return f'{directorio}/{stem}-{digest}{extension}'
 
 
 # ==============================================================================
@@ -296,11 +312,11 @@ def generar_ruta_drive_laboratorio(instance, filename):
                     'LABORATORIO_',
                     'LAB_URGENTE_'
                 )
-                return f"{directorio}/{nombre_enriquecido}"
+                return _limitar_ruta_storage(f"{directorio}/{nombre_enriquecido}")
     except Exception as e:
         logger.warning(f"No se pudo enriquecer metadata de laboratorio: {e}")
     
-    return ruta_base
+    return _limitar_ruta_storage(ruta_base)
 
 
 def generar_ruta_drive_audio_forense(instance, filename):

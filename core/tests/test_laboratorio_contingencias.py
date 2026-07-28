@@ -6,8 +6,10 @@ from django.contrib.auth import get_user_model
 from django.db import DatabaseError
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from core.models import DetalleOrden, Empresa, EnvioMaquila, OrdenDeServicio, Paciente
+from core.utils.paths import generar_ruta_drive_laboratorio
 from laboratorio.models import Equipo
 from lims.models import Analito
 
@@ -16,6 +18,23 @@ Usuario = get_user_model()
 
 
 class LaboratorioContingenciasTest(TestCase):
+    def test_ruta_pdf_laboratorio_respeta_limite_de_filefield(self):
+        paciente = type('PacienteLargo', (), {
+            'nombre_completo': 'Paciente ' + ('Nombre Muy Largo ' * 12),
+        })()
+        orden = type('OrdenLarga', (), {
+            'fecha_creacion': timezone.now(),
+            'paciente': paciente,
+            'folio_orden': 'LAB-20260728-ORDEN-DE-PRUEBA-LARGA',
+            'id': 999,
+            'prioridad': 'NORMAL',
+        })()
+
+        ruta = generar_ruta_drive_laboratorio(orden, 'resultado.pdf')
+
+        self.assertLessEqual(len(ruta), 96)
+        self.assertTrue(ruta.endswith('.pdf'))
+
     def setUp(self):
         self.empresa = Empresa.objects.create(nombre='PRISLAB contingencias', rfc='CON260728A1')
         self.otra_empresa = Empresa.objects.create(nombre='Otro laboratorio', rfc='CON260728B2')
