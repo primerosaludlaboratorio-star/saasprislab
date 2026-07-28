@@ -128,6 +128,11 @@ class BufferLocalStorage(FileSystemStorage):
         saved_name = super()._save(nombre_con_tenant, content)
         return saved_name
 
+    def get_available_name(self, name, max_length=None):
+        """Aplica el limite del FileField despues de agregar el tenant."""
+        nombre_con_tenant = _insertar_tenant_en_ruta(name)
+        return super().get_available_name(nombre_con_tenant, max_length=max_length)
+
     def url(self, name):
         """Retorna URL local del buffer."""
         return super().url(name)
