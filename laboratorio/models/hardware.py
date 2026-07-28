@@ -22,6 +22,12 @@ class Equipo(models.Model):
         max_length=200,
         help_text='Nombre del equipo (ej: "Mindray BC-6000").',
     )
+    empresa = models.ForeignKey(
+        'core.Empresa', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='equipos_laboratorio',
+        verbose_name='Empresa/tenant',
+        help_text='Empresa propietaria; obligatoria al activar una interfaz.',
+    )
     marca = models.CharField(
         max_length=100,
         blank=True,
@@ -70,6 +76,51 @@ class Equipo(models.Model):
         return f'{marca_str}{self.nombre}'
 
 
+class InterfazEquipo(models.Model):
+    """Configuración tenant-aware de una interfaz de analizador."""
+
+    TIPO_CHOICES = [
+        ('INCCA_CSV', 'INCCA CSV bidireccional'),
+        ('ICON_HL7', 'Norma Icon HL7'),
+        ('WONDFO_HL7', 'Wondfo Finecare HL7'),
+        ('ASTM', 'ASTM E1394'),
+        ('JSON', 'JSON/API'),
+    ]
+    ESTADO_CHOICES = [
+        ('CONFIGURADA', 'Configurada'),
+        ('EN_PRUEBA', 'En prueba'),
+        ('VALIDADA', 'Validada'),
+        ('ACTIVA', 'Activa'),
+        ('SUSPENDIDA', 'Suspendida'),
+    ]
+    MODO_CHOICES = [('SOMBRA', 'Recepción en sombra'), ('OPERATIVA', 'Operativa')]
+
+    empresa = models.ForeignKey('core.Empresa', on_delete=models.PROTECT, related_name='interfaces_equipos')
+    equipo = models.ForeignKey(Equipo, on_delete=models.PROTECT, related_name='interfaces_configuradas')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='CONFIGURADA')
+    modo = models.CharField(max_length=12, choices=MODO_CHOICES, default='SOMBRA')
+    fuente_protocolaria = models.CharField(max_length=500, blank=True, default='')
+    carpeta_entrada = models.CharField(max_length=500, blank=True, default='')
+    carpeta_salida = models.CharField(max_length=500, blank=True, default='')
+    variable_api_key = models.CharField(max_length=120, blank=True, default='', help_text='Nombre de variable; nunca guardar la clave aquí.')
+    ultimo_mensaje_at = models.DateTimeField(null=True, blank=True)
+    validada_por = models.ForeignKey('core.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='interfaces_equipo_validadas')
+    validada_at = models.DateTimeField(null=True, blank=True)
+    notas = models.TextField(blank=True, default='')
+    creado_at = models.DateTimeField(auto_now_add=True)
+    actualizado_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Interfaz de equipo'
+        verbose_name_plural = 'Interfaces de equipos'
+        constraints = [models.UniqueConstraint(fields=['empresa', 'equipo'], name='laboratorio_interfaz_equipo_empresa_equipo_uniq')]
+        indexes = [models.Index(fields=['empresa', 'tipo', 'estado'])]
+
+    def __str__(self):
+        return f'{self.empresa} / {self.equipo} / {self.get_tipo_display()}'
+
+
 class CodigoParametroEquipo(models.Model):
     """
     Mapeo entre el código de un parámetro en el equipo (ej: 'WBC')
@@ -102,6 +153,81 @@ class CodigoParametroEquipo(models.Model):
 
     def __str__(self):
         return f'{self.equipo.nombre}: {self.codigo_equipo} → {self.parametro.nombre}'
+
+
+class MetodoEquipo(models.Model):
+    """Configuración técnica validable de un método tal como lo ejecuta el equipo."""
+
+    ESTADO_CHOICES = [
+        ('PENDIENTE_MAPEO', 'Pendiente de mapeo'),
+        ('PENDIENTE_VALIDACION', 'Pendiente de validación'),
+        ('VALIDADO', 'Validado'),
+        ('INACTIVO', 'Inactivo'),
+    ]
+
+    empresa = models.ForeignKey(
+        'core.Empresa', on_delete=models.CASCADE,
+        related_name='metodos_equipos', verbose_name='Empresa',
+    )
+    equipo = models.ForeignKey(
+        Equipo, on_delete=models.PROTECT,
+        related_name='metodos_tecnicos', verbose_name='Equipo',
+    )
+    analito = models.ForeignKey(
+        'lims.Analito', on_delete=models.PROTECT,
+        related_name='metodos_equipos', verbose_name='Analito LIMS',
+    )
+    nombre_metodo_equipo = models.CharField(
+        max_length=200, verbose_name='Nombre exacto en el equipo',
+    )
+    codigo_metodo_equipo = models.CharField(
+        max_length=100, blank=True, default='', verbose_name='Código del método en el equipo',
+    )
+    volumen_muestra = models.DecimalField(
+        max_digits=12, decimal_places=3, null=True, blank=True,
+        verbose_name='Volumen de muestra (µL)',
+    )
+    volumen_r1 = models.DecimalField(
+        max_digits=12, decimal_places=3, null=True, blank=True,
+        verbose_name='Volumen R1 (µL)',
+    )
+    volumen_r2 = models.DecimalField(
+        max_digits=12, decimal_places=3, null=True, blank=True,
+        verbose_name='Volumen R2 (µL)',
+    )
+    fuente_documental = models.CharField(
+        max_length=500, verbose_name='Fuente documental',
+    )
+    estado_validacion = models.CharField(
+        max_length=24, choices=ESTADO_CHOICES, default='PENDIENTE_MAPEO',
+        verbose_name='Estado de validación',
+    )
+    activo = models.BooleanField(default=False)
+    validado_por = models.ForeignKey(
+        'core.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='metodos_equipos_validados', verbose_name='Validado por',
+    )
+    validado_at = models.DateTimeField(null=True, blank=True)
+    notas = models.TextField(blank=True, default='')
+    creado_at = models.DateTimeField(auto_now_add=True)
+    actualizado_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Método de equipo'
+        verbose_name_plural = 'Métodos de equipos'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'equipo', 'nombre_metodo_equipo'],
+                name='laboratorio_metodo_equipo_empresa_equipo_nombre_uniq',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['empresa', 'equipo', 'estado_validacion']),
+            models.Index(fields=['analito', 'activo']),
+        ]
+
+    def __str__(self):
+        return f'{self.equipo}: {self.nombre_metodo_equipo}'
 
 
 class EnvioMaquila(models.Model):

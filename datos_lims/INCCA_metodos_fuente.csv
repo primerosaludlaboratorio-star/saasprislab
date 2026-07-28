@@ -1,0 +1,17 @@
+metodo_incca,analito_prueba,codigo_catalogo,volumen_muestra,volumen_r1,volumen_r2,equipo,fabricante,fuente,estado_validacion
+Albúmina,Albúmina,,3μl,300μl,0μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+Fosfatasa Alcalina (ALK-POINT),Fosfatasa alcalina,ALK-POINT,6μl,200μl,50μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+BUN 2 (Nitrógeno Ureico),Nitrógeno ureico,BUN 2,2μl,200μl,40μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+AST / TGO (AST-POINT),AST / TGO,AST-POINT,28μl,220μl,55μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+ALT / TGP (ALT-POINT),ALT / TGP,ALT-POINT,28μl,220μl,55μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+Colesterol Total (CHOLE-POIN R),Colesterol total,CHOLE-POIN R,3μl,250μl,0μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+Creatinina (CREAT-POINT),Creatinina,CREAT-POINT,15μl,200μl,50μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+Bilirrubina Directa (D BILI),Bilirrubina directa,D BILI,5μl,220μl,57μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+Gamma-GT (GGT),Gamma-glutamil transferasa,GGT,13μl,250μl,50μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+Glucosa Oxidasa,Glucosa,GLUCO OXIDASA,3μl,300μl,0μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+Hierro (IRON-POIN R),Hierro,IRON-POIN R,31μl,160μl,3μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+LDH (LDH-POIN R),Lactato deshidrogenasa,LDH-POIN R,13μl,200μl,50μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+Proteínas Totales (T PRO-POIN R),Proteínas totales,T PRO-POIN R,6μl,300μl,0μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+Bilirrubina Total (TBILI-POIN R),Bilirrubina total,TBILI-POIN R,13μl,200μl,33μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+Ácido Úrico (URICO-POINT R),Ácido úrico,AURIC,6μl,250μl,0μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION
+Triglicéridos (TRIG-POIN R),Triglicéridos,TRIG-POIN R,3μl,300μl,0μl,INCCA,Point Scientific,integra las ultimas 2 respuestas revisa que todo....xlsx,PENDIENTE_VALIDACION

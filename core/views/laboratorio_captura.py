@@ -253,7 +253,17 @@ def captura_resultados_industrial(request, orden_id):
     token_acceso = str(orden.token_acceso) if getattr(orden, 'token_acceso', None) else None
 
     equipos_laboratorio = list(
-        Equipo.objects.filter(activo=True).order_by('marca', 'nombre')[:100]
+        Equipo.objects.filter(
+            Q(
+                Q(empresa=empresa)
+                | Q(
+                    empresa__isnull=True,
+                    interfaces_configuradas__empresa=empresa,
+                    interfaces_configuradas__estado__in=['EN_PRUEBA', 'VALIDADA', 'ACTIVA'],
+                )
+            ),
+            activo=True,
+        ).distinct().order_by('marca', 'nombre')[:100]
     )
 
     context = {

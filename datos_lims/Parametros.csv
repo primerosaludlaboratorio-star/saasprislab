@@ -1,4 +1,4 @@
-﻿Id_parametro,Codigo,Abreviatura,Descripcion,Clave_hoja_trabajo,Departamento,Tipo_muestra,Metodo,Imprimir_metodo_resultado,Formula,Imprime_en_negritas,Es_antibiograma,Permite_venta_directa,Costo,Comision,Unidades,Sexo,Tipo_resultado,Resultado_default,Tipo_valor_resultado,Resultado_opciones,Decimales,Tiempo_proceso,Indicaciones,Notas,Imprimir_nota,Tipo_referencia,Valor de normalidad (texto libre),Es_Producto
+Id_parametro,Codigo,Abreviatura,Descripcion,Clave_hoja_trabajo,Departamento,Tipo_muestra,Metodo,Imprimir_metodo_resultado,Formula,Imprime_en_negritas,Es_antibiograma,Permite_venta_directa,Costo,Comision,Unidades,Sexo,Tipo_resultado,Resultado_default,Tipo_valor_resultado,Resultado_opciones,Decimales,Tiempo_proceso,Indicaciones,Notas,Imprimir_nota,Tipo_referencia,Valor de normalidad (texto libre),Es_Producto
 2037,leuct,leuct,LEUCOCITOS TOTALES,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,10³/µL,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
 2038,RBC,RBC,GLOBULOS ROJOS,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,MILLON/MM3,Ambos,Numerico,,Abierto,,2,,NO REQUIERE AYUNO,,Imprimir siempre,Rango numerico,,No
 2039,HGB,HGB,HEMOGLOBINA,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,g/dl,Ambos,Numerico,,Abierto,,1,,NO REQUIERE AYUNO,,Imprimir siempre,Rango numerico,,No
@@ -517,7 +517,6 @@ HOMBRES NORMALES  0.5-2.1
 2366,2362,ANTIACTINA,ANTICUERPOS ANTI ACTINA (IgG),,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
 2367,tra,trsalado,TRASLADO TOMA DE MUESTRA,,ANÁLISIS DEL SEMEN,BIOPSIA,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
 2368,NS1,NS1,NS1,,INMUNOLOGÍA,SUERO,Inmunocromatografia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
-2369,HCM- EQUIN,HCMe,HCMe,,HEMATOLOGÍA,SANGRE TOTAL,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",No imprimir,,No,No,No,0.00,0.00,pg,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
 2370,ELEHEM,ELEHEM,ELECTROFORESIS DE HEMOGLOBINA,ELHEM,HEMATOLOGÍA,SANGRE TOTAL,Coagulometría,No imprimir,,"Si, solo cuando el parametro se vende individual",No,Si,0.00,0.00,,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
 2371,shs,shs,INDUCCIÓN DE DREPANOCITOS,,HEMATOLOGÍA,SANGRE TOTAL,,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,NEGATIVO,No
 2373,HEMOGLOBINA A,ELEHEMO,HEMOGLOBINA A,ELE-HEM,ESPECIALES,SANGRE TOTAL,ENFOQUE ISOELECTRICO ,Imprimir siempre,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,3, 10 días,,,Imprimir siempre,Texto libre,"0-2 MESES - NORMAL
@@ -759,40 +758,14 @@ Reactivo: > 1.00",No
 Posmenopaúsicas: < 140.00",No
 2564,DEV01,DEV01,DEVOLUCIÓN DE VENTA,,BIOQUÍMICA CLÍNICA,SUERO,E.L.I.S.A.,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,Si
 2565,01,GLUCAN,GLUCOSA CAN,01,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mmol/L,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
-2566,02,UREACAN,UREA CANINO,02,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mg/dl,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Texto libre,20 – 50,No
-2567,03,CREATCAN,CREATININA CANINO,01,BIOQUÍMICA CLÍNICA,SUERO,,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,60 - 130,No
-2568,04,COLCAN,COLESTEROL CANINO,04,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mg/dl,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Texto libre,135 – 260,No
-2569,05,BILTCAN,BILIRRUBINA TOTAL CANINO,05,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,2,,,,Imprimir siempre,Texto libre,<5.16,No
-2570,06,BILDCAN,BILIRRUBINA DIRECTA CANINO,06,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,µmol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<5,No
-2571,07,BILINDCAN,BILIRRUBINA INDIRECTA CANINO,07,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,umol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<1,No
-2572,08,ALTCAN,ALT CANINO,08,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,U/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<70,No
 2573,10,ALCCAN,FOSFATASA ALCALINA,10,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,U/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<189,No
-2574,11,GGTCAN,GGTCANINO,11,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,U/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<6,No
 2575,12,PROTCAN,PROTEINAS TOTALES,12,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,g/L,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
-2576,13,ALBCAN,ALBUMINA CANINO,13,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,g/L,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
-2577,14,GLOBCAN,GLOBULINA CANINO,14,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,g/L,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
-2578,01,GLUCFEL,GLUCOSA FELINO,01,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mmol/L,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
-2579,02,UREAFEL,UREA FELINO,02,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mmol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
-2580,03,CREAFEL,CREATININA FELINO,03,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,RANGO ANTERIOR: <175,Imprimir siempre,Rango numerico,,No
-2581,04,COLFEL,COLESTEROL FELINO,04,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mmol/L,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
-2582,05,BILTFEL,BILIRRUBINA TOTAL FELINO,05,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,μmol/L,Ambos,Texto,,Abierto,,2,,,,Imprimir siempre,Texto libre,<6.84,No
-2583,06,BILDFEL,BILIRRUBINA DIRECTA FELINO,06,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,umol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<5.8,No
-2584,07,BILINDFEL,BILIRRUBINA INDIRECTA FELINO,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,umol/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<1,No
-2585,08,ALTFEL,ALT FELINO,08,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,U/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<72,No
-2586,09,ASTFEL,AST FELINO,09,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,U/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<61,No
-2587,10,ALKFEL,FOSFATASA ALCANINA FEL,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,U/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<107,No
-2588,11,GGTFEL,GGT FELINO,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,U/L,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,<5,No
-2589,12 ,PROTFEL,PROTEINAS TOTALES FELINO,12,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,g/L,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
-2590,13,ALBFEL,ALBUMINA FELINO,13,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,g/L,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
-2591,14,TRIGFEL,TRIGLICERIDOS FELINO,,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,Si,0.00,0.00,mmol/L,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
-2592,15,TRIGCAN,TRIGLICERIDOS CANINO,,BIOQUÍMICA CLÍNICA,SUERO,,No imprimir,,No,No,Si,0.00,0.00,mmol/L,Ambos,Numerico,,Abierto,,1,,,,Imprimir siempre,Rango numerico,,No
 2593,65,DFE,Difenilhidantoina (Fenitoína),,BIOQUÍMICA CLÍNICA,SUERO,Quimioluminiscencia,No imprimir,,No,No,Si,0.00,0.00,,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
 2594,6554,ACU24,ACIDO URICO URINARIO 24 HR,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Espectrofotometría Automatizada,Imprimir siempre,,No,No,Si,0.00,0.00,mg/24 hrs,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
 2595,9733,FOSFUR24,FOSFORO EN ORINA DE 24 Hrs.,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Espectrofotometría Automatizada,Imprimir siempre,,No,No,Si,0.00,0.00,mg/24 hrs,Ambos,Numerico,,Abierto,,2,,,,Imprimir siempre,Rango numerico,,No
 2596,9489419,CRUR,CREATININA URINARIA,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Espectrofotometría Automatizada,Imprimir siempre,,No,No,Si,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,2,,,VALOR DE REFERENCIA PARA MUESTRAS OBTENIDAS POR MICCION ESPONTANEA.,Imprimir siempre,Rango numerico,,No
 2597,33598,FOSURI,FOSFORO URINARIO,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Espectrofotometría Automatizada,Imprimir siempre,,No,No,No,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
 2598,161345,CALURI,CALCIO EN ORINA,,BIOQUÍMICA CLÍNICA,GALON DE ORINA,Espectrofotometría Automatizada,Imprimir siempre,,No,No,No,0.00,0.00,mg/dL,Ambos,Numerico,,Abierto,,0,,,,Imprimir siempre,Rango numerico,,No
-2599,016,ACUCAN,ACIDO URICO CANINO,016,BIOQUÍMICA CLÍNICA,SUERO,Colorimétrico Automatizado,No imprimir,,No,No,No,0.00,0.00,mg/dl,Ambos,Texto,,Abierto,,0,,,,Imprimir siempre,Texto libre,HASTA 2,No
 2600,254,GALT,GALACTOSA TOTAL,01,ESPECIALES,SANGRE,,No imprimir,,No,No,No,0.00,0.00,mg/dL,Ambos,Texto,,Abierto,,3,,,,Imprimir siempre,Texto libre,"Normal: < 10.00
 Sospechoso: > 10.00
 ",No
@@ -1145,4 +1118,3 @@ LIMITE DE DETECCION: 31.6 UI/mL
 POSITIVO: >=1:40",No
 3895,436,ANTIMITOCON,AC. ANTI MITOCONDRIA,436,ESPECIALES,SUERO,,No imprimir,,No,No,Si,0.00,0.00,RATIO,Ambos,Numerico,,Abierto,,2, 3 días,,,Imprimir solo cuando el parametro se vende individual,Texto libre,"NEGATIVO: <1.00
 POSITIVO: >=1.00",No
-

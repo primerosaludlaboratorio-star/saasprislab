@@ -492,13 +492,28 @@ def _buscar_analito_por_codigo_equipo(codigo: str, empresa):
     return None
 
 
-def _resolver_equipo_por_ip(ip: str):
+def _resolver_equipo_por_ip(ip: str, empresa=None):
     if not (ip or '').strip():
         return None
     try:
         from laboratorio.models import Equipo
 
-        return Equipo.objects.filter(ip_address=ip.strip(), activo=True).first()
+        qs = Equipo.objects.filter(ip_address=ip.strip(), activo=True)
+        if empresa is None:
+            return qs.first()
+
+        # El equipo se resuelve dentro del tenant. Los registros legacy sin
+        # empresa solo pueden usarse si existe una interfaz configurada para
+        # ese tenant y ese equipo.
+        from django.db.models import Q
+        from laboratorio.models import InterfazEquipo
+
+        interfaz_ids = InterfazEquipo.objects.filter(
+            empresa=empresa,
+            equipo__in=qs,
+            estado__in=('EN_PRUEBA', 'VALIDADA', 'ACTIVA'),
+        ).values_list('equipo_id', flat=True)
+        return qs.filter(Q(empresa=empresa) | Q(pk__in=interfaz_ids)).first()
     except Exception:
         logging.getLogger(__name__).exception("Error inesperado en _resolver_equipo_por_ip (interfaces_lims_service.py)")
         return None
@@ -692,7 +707,7 @@ def _procesar_item_hl7(
             valor_str = formatear_decimal_para_rp(dec_val, analito.decimales)
             item = {**item, 'valor': valor_str}
 
-        equipo_lab = _resolver_equipo_por_ip(ip)
+        equipo_lab = _resolver_equipo_por_ip(ip, empresa_ctx)
         nivel_metro, msg_metro = evaluar_metrologia_equipo(equipo_lab)
         if nivel_metro == 'hard':
             logger.error('[HL7] Metrología HARD: %s | IP=%s', msg_metro, ip)

@@ -24,6 +24,7 @@ from core.models import Empresa
 from core.tenant import clear_current_empresa, set_current_empresa, tenant_bypass
 from core.utils.default_empresa import resolve_default_empresa_sistema
 from lims.models import Analito, PaqueteLims, PerfilLims
+from lims.veterinary_catalog import is_veterinary_catalog_text
 
 BASE_DIR = getattr(settings, 'BASE_DIR', os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -140,6 +141,8 @@ class Command(BaseCommand):
                             if not ab:
                                 continue
                             desc = (row.get('Descripcion') or ab).strip()
+                            if is_veterinary_catalog_text(ab, desc, row.get('Indicaciones'), row.get('Notas_internas')):
+                                continue
                             nombre = _nombre_paquete_unico(desc, ab)
                             costo = _decimal_costo(row.get('Costo'))
                             indic = (row.get('Indicaciones') or '').strip()
@@ -184,6 +187,8 @@ class Command(BaseCommand):
                     t = (tipo or '').strip().lower()
                     cod_est = (cod_est or '').strip()
                     if not cod_est:
+                        continue
+                    if is_veterinary_catalog_text(paq_ab, _paq_desc, tipo, cod_est, _ed):
                         continue
                     if 'prueba' in t:
                         grupos[paq_ab]['pruebas'].add(cod_est)

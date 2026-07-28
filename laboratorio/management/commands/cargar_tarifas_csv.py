@@ -4,6 +4,7 @@ Ejecutar: python manage.py cargar_tarifas_csv
 """
 from django.core.management.base import BaseCommand
 from laboratorio.models import CategoriaExamen, Estudio
+from lims.veterinary_catalog import is_veterinary_catalog_text
 from decimal import Decimal
 import csv
 import os
@@ -55,6 +56,9 @@ class Command(BaseCommand):
                     abreviatura = row.get('Abreviatura', '').strip()
                     descripcion = row.get('Descripción', '').strip()
                     importe_str = row.get('Importe', '0').strip()
+
+                    if is_veterinary_catalog_text(tipo, codigo, abreviatura, descripcion):
+                        continue
                     
                     # Validar que tenemos datos mínimos
                     if not tipo or not descripcion:

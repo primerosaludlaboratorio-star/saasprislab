@@ -32,6 +32,7 @@ from core.models import Empresa
 from core.tenant import clear_current_empresa, set_current_empresa, tenant_bypass
 from core.utils.default_empresa import resolve_default_empresa_sistema
 from lims.models import Analito, ValorReferenciaAnalito
+from lims.veterinary_catalog import is_veterinary_catalog_text
 import logging
 
 
@@ -174,6 +175,13 @@ class Command(BaseCommand):
 
                             abrev   = (fila.get('Abreviatura') or codigo).strip()
                             nombre  = (fila.get('Descripcion') or codigo).strip()
+                            if is_veterinary_catalog_text(
+                                fila.get('Id_parametro'), codigo, abrev, nombre,
+                                fila.get('Departamento'), fila.get('Tipo_muestra'),
+                                fila.get('Metodo'), fila.get('Notas'),
+                            ):
+                                omitidos += 1
+                                continue
 
                             # Evitar duplicados por código — ajustar si código ya existe
                             codigo_final = codigo

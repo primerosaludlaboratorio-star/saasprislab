@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from laboratorio.models import CategoriaExamen, Estudio
+from lims.veterinary_catalog import is_veterinary_catalog_text
 
 
 class Command(BaseCommand):
@@ -59,6 +60,9 @@ class Command(BaseCommand):
                 abreviatura = (row[2] or '').strip() if len(row) > 2 else ''
                 descripcion = (row[3] or '').strip()
                 importe_raw = (row[4] or '').strip()
+
+                if is_veterinary_catalog_text(tipo, codigo, abreviatura, descripcion):
+                    continue
 
                 if not codigo and not descripcion:
                     continue

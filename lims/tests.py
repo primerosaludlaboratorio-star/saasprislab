@@ -1,5 +1,19 @@
 from decimal import Decimal
 from django.test import TestCase
+from django.test import SimpleTestCase
+
+from lims.veterinary_catalog import is_veterinary_catalog_text
+
+
+class VeterinaryCatalogFilterTests(SimpleTestCase):
+    def test_rejects_veterinary_identifiers(self):
+        self.assertTrue(is_veterinary_catalog_text('GLU-FEL', 'Glucosa felina'))
+        self.assertTrue(is_veterinary_catalog_text('Perfil canino'))
+        self.assertTrue(is_veterinary_catalog_text('EQUINO'))
+
+    def test_keeps_human_catalog_identifiers(self):
+        self.assertFalse(is_veterinary_catalog_text('GLU', 'Glucosa', 'Química clínica'))
+        self.assertFalse(is_veterinary_catalog_text('BH', 'Biometría hemática'))
 from django.contrib.auth import get_user_model
 from core.models import Empresa, Paciente
 from lims.models import Analito, ValorReferenciaAnalito

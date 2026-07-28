@@ -58,7 +58,6 @@ class Command(BaseCommand):
             # HEMATOLOGÍA
             {"codigo": "01-RBCP",     "abreviatura": "RBCP",          "descripcion": "ERITROCITOS",                                             "departamento": "HEMATOLOGÍA",         "dias": 1, "precio": 50},
             # BIOQUÍMICA CLÍNICA
-            {"codigo": "01-GLUCFEL",  "abreviatura": "GLUCFEL",       "descripcion": "GLUCOSA FELINO",                                          "departamento": "BIOQUÍMICA CLÍNICA",  "dias": 1, "precio": 60},
             {"codigo": "01-GLUCAN",   "abreviatura": "GLUCAN",        "descripcion": "GLUCOSA CAN",                                             "departamento": "BIOQUÍMICA CLÍNICA",  "dias": 1, "precio": 60},
             # MICROBIOLOGÍA
             {"codigo": "01230",       "abreviatura": "CULTOTIC",      "descripcion": "CULTIVO OTICO",                                           "departamento": "MICROBIOLOGÍA",       "dias": 3, "precio": 350},

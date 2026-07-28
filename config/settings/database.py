@@ -6,6 +6,7 @@ Consume: BASE_DIR, IS_PRODUCTION, _env_bool, _env_int (de base.py via namespace)
 """
 import os
 import sys
+from pathlib import Path
 
 from .base import BASE_DIR, IS_PRODUCTION, _env_bool, _env_int
 
@@ -28,7 +29,8 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            # Permite crear un staging aislado sin tocar la base local de trabajo.
+            'NAME': Path(os.environ['PRISLAB_SQLITE_PATH']) if os.environ.get('PRISLAB_SQLITE_PATH', '').strip() else BASE_DIR / 'db.sqlite3',
             'OPTIONS': {'timeout': 60},
         }
     }

@@ -5,7 +5,7 @@ from .models import (
     Resultado, Parametro, RangoReferenciaParametro,
     # Modelos rescatados V5.4
     ValorReferencia, PerfilLaboratorio, NotificacionPanico, ControlCalidad,
-    CodigoParametroEquipo, ResultadoHL7, ResultadoHL7Huerfano, BitacoraMantenimiento,
+    CodigoParametroEquipo, InterfazEquipo, MetodoEquipo, ResultadoHL7, ResultadoHL7Huerfano, BitacoraMantenimiento,
     HistorialResultados, ResponsableSanitario,
     NoConformidad, NoConformidadEvento, RondaEQA, ResultadoEQA,
 )
@@ -25,12 +25,12 @@ class ParametroInline(admin.TabularInline):
 
 @admin.register(Equipo)
 class EquipoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'marca', 'protocolo', 'ip_address', 'puerto', 'activo')
-    list_filter = ('protocolo', 'activo', 'marca')
+    list_display = ('empresa', 'nombre', 'marca', 'protocolo', 'ip_address', 'puerto', 'activo')
+    list_filter = ('empresa', 'protocolo', 'activo', 'marca')
     search_fields = ('nombre', 'marca')
     fieldsets = (
         ('Información Básica', {
-            'fields': ('nombre', 'marca', 'activo')
+            'fields': ('empresa', 'nombre', 'marca', 'activo')
         }),
         ('Configuración de Interfaz', {
             'fields': ('protocolo', 'ip_address', 'puerto')
@@ -179,6 +179,29 @@ class CodigoParametroEquipoAdmin(admin.ModelAdmin):
     search_fields = ('codigo_equipo', 'parametro__nombre')
     list_editable = ('activo',)
     autocomplete_fields = ['parametro']
+
+
+@admin.register(MetodoEquipo)
+class MetodoEquipoAdmin(admin.ModelAdmin):
+    """Configuración exacta del método del equipo, separada del mapeo legacy."""
+    list_display = (
+        'empresa', 'equipo', 'nombre_metodo_equipo', 'analito',
+        'volumen_muestra', 'volumen_r1', 'volumen_r2',
+        'estado_validacion', 'activo',
+    )
+    list_filter = ('empresa', 'equipo', 'estado_validacion', 'activo')
+    search_fields = ('nombre_metodo_equipo', 'codigo_metodo_equipo', 'analito__nombre')
+    autocomplete_fields = ['empresa', 'equipo', 'analito', 'validado_por']
+    readonly_fields = ('creado_at', 'actualizado_at')
+
+
+@admin.register(InterfazEquipo)
+class InterfazEquipoAdmin(admin.ModelAdmin):
+    list_display = ('empresa', 'equipo', 'tipo', 'estado', 'modo', 'validada_at', 'ultimo_mensaje_at')
+    list_filter = ('empresa', 'tipo', 'estado', 'modo')
+    search_fields = ('equipo__nombre', 'equipo__marca', 'fuente_protocolaria')
+    autocomplete_fields = ('empresa', 'equipo', 'validada_por')
+    readonly_fields = ('creado_at', 'actualizado_at', 'ultimo_mensaje_at')
 
 
 @admin.register(ResultadoHL7)

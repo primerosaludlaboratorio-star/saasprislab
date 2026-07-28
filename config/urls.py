@@ -477,6 +477,7 @@ urlpatterns = [
     # 16. MÓDULO DE MAQUILA
     path('laboratorio/maquila/', views.maquila_envios, name='maquila_envios'),
     path('laboratorio/maquila/<int:orden_id>/enviar/', views.enviar_a_maquila, name='enviar_a_maquila'),
+    path('laboratorio/maquila/<int:envio_id>/recibir/', views.recibir_de_maquila, name='recibir_de_maquila'),
     
     # 17. MÓDULO DE CAPACITACIÓN
     path('capacitacion/personal/', views.capacitacion_personal, name='capacitacion_personal'),

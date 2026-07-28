@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
 from django.views.decorators.http import require_http_methods
+from django.utils import timezone
 
 from core.models import OrdenDeServicio, Empresa, EnvioMaquila
 from core.utils.sucursal_helpers import get_request_sucursal
@@ -82,4 +83,27 @@ def enviar_a_maquila(request, orden_id):
     orden.save()
     
     messages.success(request, f'Orden {orden.folio_orden} enviada a maquila.')
+    return redirect('maquila_envios')
+
+
+@login_required
+@require_http_methods(["POST"])
+def recibir_de_maquila(request, envio_id):
+    """Recibe una maquila y reabre la orden para captura y validación humana."""
+    empresa = getattr(request.user, 'empresa', None)
+    envio = get_object_or_404(EnvioMaquila, pk=envio_id, empresa=empresa)
+    if envio.estado != EnvioMaquila.ESTADO_ENVIADA:
+        messages.error(request, 'La maquila ya fue recibida o cancelada; no se puede duplicar la recepción.')
+        return redirect('maquila_envios')
+
+    envio.estado = EnvioMaquila.ESTADO_RECIBIDA
+    envio.fecha_recepcion = timezone.now()
+    envio.recibido_por = request.user
+    envio.notas_recepcion = (request.POST.get('notas_recepcion') or '').strip() or None
+    if request.FILES.get('archivo_resultado'):
+        envio.archivo_resultado = request.FILES['archivo_resultado']
+    envio.save()
+
+    envio.ordenes.filter(empresa=empresa).update(estado='EN_PROCESO', estado_clinico='EN_PROCESO')
+    messages.success(request, 'Maquila recibida. La orden está disponible para captura, revisión y validación humana.')
     return redirect('maquila_envios')

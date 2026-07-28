@@ -142,6 +142,7 @@ urlpatterns = [
     # Maquila
     path('laboratorio/maquila/', views.maquila_envios, name='maquila_envios'),
     path('laboratorio/maquila/<int:orden_id>/enviar/', views.enviar_a_maquila, name='enviar_a_maquila'),
+    path('laboratorio/maquila/<int:envio_id>/recibir/', views.recibir_de_maquila, name='recibir_de_maquila'),
 
     # Auditoría de campo
     path('api/auditoria/campo/', views.api_auditoria_campo, name='api_auditoria_campo'),

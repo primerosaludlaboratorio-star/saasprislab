@@ -25,6 +25,7 @@ from core.models import Empresa
 from core.tenant import clear_current_empresa, set_current_empresa, tenant_bypass
 from core.utils.default_empresa import resolve_default_empresa_sistema
 from lims.models import Analito, PerfilLims
+from lims.veterinary_catalog import is_veterinary_catalog_text
 
 BASE_DIR = getattr(settings, 'BASE_DIR', os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -59,10 +60,15 @@ def _buscar_analito(codigo_estudio: str):
     c = (codigo_estudio or '').strip()
     if not c:
         return None
-    a = Analito.objects.filter(codigo__iexact=c).first()
-    if a:
-        return a
-    return Analito.objects.filter(abreviatura__iexact=c).first()
+    # Las abreviaturas son la llave clínica estable. Los códigos legacy
+    # pueden repetirse entre departamentos y nunca deben resolverse al azar.
+    por_abreviatura = Analito.objects.filter(abreviatura__iexact=c)
+    if por_abreviatura.count() == 1:
+        return por_abreviatura.first()
+    por_codigo = Analito.objects.filter(codigo__iexact=c)
+    if por_codigo.count() == 1:
+        return por_codigo.first()
+    return None
 
 
 def _nombre_perfil_unico(desc: str, abrev: str, pkey: str) -> str:
@@ -138,6 +144,11 @@ class Command(BaseCommand):
                                 continue
                             pkey = _perfil_legacy_key(cod, abrev)
                             desc = (row.get('Descripcion') or cod).strip()
+                            if is_veterinary_catalog_text(
+                                row.get('Id_examen'), cod, abrev, desc,
+                                row.get('Titulo'), row.get('Metodo'),
+                            ):
+                                continue
                             nombre = _nombre_perfil_unico(desc, abrev, pkey)
                             id_ex = _int_o_none(row.get('Id_examen', ''))
                             costo = _decimal_costo(row.get('Costo'))
@@ -182,6 +193,8 @@ class Command(BaseCommand):
                         continue
                     pkey = _perfil_legacy_key(ec, ea)
                     if not pkey.strip('|'):
+                        continue
+                    if is_veterinary_catalog_text(ec, ea, sc, _ed, _sd):
                         continue
                     if sc:
                         grupos[pkey]['codigos_analito'].add(sc)

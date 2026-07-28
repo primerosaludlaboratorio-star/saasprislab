@@ -103,6 +103,15 @@ class AudioTomaMuestra(models.Model):
 
 
 class EnvioMaquila(models.Model):
+    ESTADO_ENVIADA = 'ENVIADA'
+    ESTADO_RECIBIDA = 'RECIBIDA'
+    ESTADO_CANCELADA = 'CANCELADA'
+    ESTADO_CHOICES = [
+        (ESTADO_ENVIADA, 'Enviada'),
+        (ESTADO_RECIBIDA, 'Recibida — pendiente de captura'),
+        (ESTADO_CANCELADA, 'Cancelada'),
+    ]
+
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="envios_maquila")
     sucursal = models.ForeignKey(Sucursal, on_delete=models.SET_NULL, null=True, blank=True, related_name="envios_maquila")
     laboratorio_externo = models.CharField(max_length=255)
@@ -110,6 +119,17 @@ class EnvioMaquila(models.Model):
     ordenes = models.ManyToManyField("OrdenDeServicio", related_name="envios_maquila", blank=True)
     fecha_envio = models.DateTimeField(auto_now_add=True)
     notas = models.TextField(blank=True, null=True)
+    estado = models.CharField(max_length=12, choices=ESTADO_CHOICES, default=ESTADO_ENVIADA)
+    fecha_recepcion = models.DateTimeField(null=True, blank=True)
+    recibido_por = models.ForeignKey(
+        Usuario, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='maquilas_recibidas',
+    )
+    archivo_resultado = models.FileField(
+        upload_to='laboratorio/maquila_resultados/', blank=True, null=True,
+        validators=[validate_document_upload],
+    )
+    notas_recepcion = models.TextField(blank=True, null=True)
 
     class Meta:
         app_label = 'core'
@@ -366,6 +386,7 @@ class OrdenDeServicio(TenantModel):
         ('PENDIENTE_PAGO', 'Pendiente de Pago'),
         ('PAGADO', 'Pagado'),
         ('EN_PROCESO', 'En Proceso'),
+        ('EN_MAQUILA', 'En Maquila Externa'),
         ('RESULTADOS_LISTOS', 'Resultados Listos'),
         ('ENTREGADO', 'Entregado'),
         ('CANCELADO', 'Cancelado'),

@@ -14,6 +14,8 @@ from .hardware import (
     CodigoParametroEquipo,
     EnvioMaquila,
     Equipo,
+    InterfazEquipo,
+    MetodoEquipo,
     PrecursorCellular,
 )
 from .clinico import (

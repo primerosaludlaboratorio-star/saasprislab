@@ -1,6 +1,6 @@
 # Estado Canonico de PRISLAB SaaS
 
-Fecha de consolidacion: 2026-07-27 (última actualización: auditoría de despliegue y producción)
+Fecha de consolidacion: 2026-07-28 (última actualización: matriz E2E, contingencia de maquila y trazabilidad de equipo)
 Rama canonica: `release/v1.0-local`
 
 ## Proposito
@@ -9,14 +9,25 @@ Este documento existe para que Copilot, Claude, Cascada y Codex lean una sola ve
 
 Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no contra snapshots viejos o ramas vacias.
 
-## Corte vigente 2026-07-27
+## Corte vigente 2026-07-28
 
-- Producción está alineada con el checkout local en `6ef947e1c25b6fe797cb6b7a52a0e46100442041`, desplegado por artefacto local VPS.
-- Migraciones nuevas `ia.0004` y `laboratorio.0017` aplicadas; Gunicorn, Celery y Celery Beat activos; `/live/`, `/ready/`, `/health/` y `/login/` responden HTTP 200.
-- Verificación humana productiva de Farmacia: búsqueda de Paracetamol, selección, selección FEFO de `LOTE-TEST-001`, agregado al carrito y total `$15.00`; consola sin errores ni warnings después del endurecimiento del capturador de teclado.
-- Verificación humana productiva de Laboratorio/LIMS: recepción, toma, registro de resultados, control de calidad, entrega, catálogo de analitos y catálogo de estudios cargan correctamente y sin errores de consola.
-- El catálogo productivo contiene UREA (`codigo=URE`, numérico) y BUN (`codigo=171`, numérico). El pendiente histórico de UREA/BUN queda cerrado como falso pendiente documental.
+- La rama local contiene la integración documental de INCCA, Icon y Wondfo, la relación tenant de `MetodoEquipo`, la configuración `InterfazEquipo` y las migraciones `laboratorio.0018_metodoequipo` y `laboratorio.0019_equipo_empresa_interfazequipo`. Estos cambios no se consideran desplegados en producción en este corte.
+- El corte local añade `core.0096_enviomaquila_archivo_resultado_enviomaquila_estado_and_more`: recepción formal de maquila, evidencia de archivo, retorno controlado a captura y validación idempotente. Tampoco se considera desplegado en producción.
+- Un staging SQLite limpio recorrió toda la cadena de migraciones desde cero y terminó correctamente. La base local operativa anterior no se usa como evidencia de staging.
+- `manage.py check` y `makemigrations --check --dry-run` pasan sin errores.
+- La auditoría fuente INCCA confirma 16 métodos, 16 mapeos documentales y volúmenes estructurados; los métodos permanecen `PENDIENTE_VALIDACION` e inactivos.
+- La documentación clínica confirma 15 insertos trazables de 16; falta el inserto específico de hierro `IRON-POIN R`.
+- La prueba dirigida de consumo por analito, repetición e idempotencia terminó `6/6 OK`; esto no sustituye la validación física de equipos ni la suite E2E completa.
+- La prueba combinada de métodos, aislamiento de interfaces por tenant y handshake HL7 terminó `9/9 OK` en el runner local aislado.
+- La matriz vigente de escenarios E2E está en `docs/audit/MATRIZ_E2E_LABORATORIO_LIMS_2026-07-28.md`. La suite post-cambio de contingencias/interfaz terminó `16/16 OK`; el cierre humano con efectos laterales sigue abierto.
 - CCI/Westgard sigue abierto porque producción tiene `0` mediciones CCI persistidas; no se fabrican controles, lotes ni resultados clínicos para aparentar cierre.
+
+### Regla de sincronización documental
+
+Para esta integración, el documento autoritativo de pendientes es
+`docs/audit/PENDIENTES_FALTANTES_INTEGRACION_LAB_2026-07-28.md`. Los reportes
+anteriores conservan su valor histórico, pero no pueden utilizarse para afirmar
+que estos cambios nuevos ya están en producción.
 
 ## Corte de auditoria 2026-07-24
 
@@ -112,7 +123,7 @@ Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no co
 
 ## Modulos que siguen abiertos
 
-- Laboratorio: matriz de pruebas humanas con efectos laterales aún no ejecutada completamente; el catálogo LIMS autoritativo y la migración de relación perfil-analito ya están disponibles.
+- Laboratorio: matriz de pruebas humanas con efectos laterales aún no ejecutada completamente; el catálogo LIMS autoritativo, los métodos fuente INCCA y la migración `MetodoEquipo` ya están disponibles en la rama local.
 - Laboratorio/LIMS: falta ejecutar con datos QA trazables la matriz completa de recepción, toma, captura, valores críticos, rechazo/repetición, cancelación/reembolso, entrega, control de calidad estricto Westgard y consumo de reactivos/insumos por analito.
 - Laboratorio/LIMS: faltan validar en sitio los equipos, impresoras, integración HL7 y la configuración real de reactivos/insumos; el código no puede sustituir esa verificación física.
 - IA documental: DeepSeek quedó operativo para texto y JSON. El OCR de recetas, facturas y notas sigue dependiendo del proveedor visual configurado en `core/services/ocr_documental.py`; debe probarse con imágenes reales y una credencial visual válida antes de declararlo cerrado.

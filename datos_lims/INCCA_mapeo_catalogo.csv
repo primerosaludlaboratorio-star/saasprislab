@@ -1,0 +1,17 @@
+metodo_incca,analito_prueba,codigo_candidato,descripcion_catalogo,unidades_catalogo,estado_mapeo,observacion
+Albúmina,Albúmina,24,ALBUMINA,g/dL,CONFIRMADO,Correspondencia exacta en Parametros.csv y perfil hepático.
+Fosfatasa Alcalina (ALK-POINT),Fosfatasa alcalina,95,Fosfatasa alcalina (ALP),UI/L,CONFIRMADO,Código usado por el perfil hepático humano.
+BUN 2 (Nitrógeno Ureico),Nitrógeno ureico,171,BUN,U/L,CONFIRMADO,El inserto identifica BUN y el catálogo humano usa el código 171.
+AST / TGO (AST-POINT),AST / TGO,TGO,TGO,U/L,CONFIRMADO,Correspondencia por abreviatura del catálogo humano.
+ALT / TGP (ALT-POINT),ALT / TGP,TGP,TGP,U/L,CONFIRMADO,Correspondencia por abreviatura del catálogo humano.
+Colesterol Total (CHOLE-POIN R),Colesterol total,34,COLESTEROL,mg/dL,CONFIRMADO,Código humano usado en perfiles químicos.
+Creatinina (CREAT-POINT),Creatinina,50,Creatinina sérica,mg/dL,CONFIRMADO,Se excluyen variantes urinarias y veterinarias.
+Bilirrubina Directa (D BILI),Bilirrubina directa,BD,BILIRRUBINA DIRECTA,mg/dL,CONFIRMADO,Correspondencia exacta por abreviatura.
+Gamma-GT (GGT),Gamma-glutamil transferasa,101,Gammaglutamil transpeptidasa (GGT),U/L,CONFIRMADO,Código presente en Parametros.csv, valores de referencia y perfil hepático.
+Glucosa Oxidasa,Glucosa,GLU,GLUCOSA,mg/dl,CONFIRMADO,Código humano GLU; se excluyen variantes postprandiales, neonatales y veterinarias.
+Hierro (IRON-POIN R),Hierro,133,HIERRO SERICO,ug/dL,CONFIRMADO,Se distingue de TIBC y de cinética de hierro.
+LDH (LDH-POIN R),Lactato deshidrogenasa,63,Deshidrogenasa láctica (DHL),U/L,CONFIRMADO,El catálogo humano usa DHL; se excluye ISODHL, que es isoenzima.
+Proteínas Totales (T PRO-POIN R),Proteínas totales,PROT-S,PROTEINAS TOTALES,g/dl,CONFIRMADO,Se excluyen proteínas urinarias y veterinarias.
+Bilirrubina Total (TBILI-POIN R),Bilirrubina total,BT,BILIRRUBINA TOTAL,mg/dL,CONFIRMADO,Correspondencia exacta por abreviatura.
+Ácido Úrico (URICO-POINT R),Ácido úrico,AURIC,ACIDO URICO,mg/dL,CONFIRMADO,Se excluye ácido úrico urinario.
+Triglicéridos (TRIG-POIN R),Triglicéridos,TRI,TRIGLICERIDOS,mg/dL,CONFIRMADO,Correspondencia por abreviatura.

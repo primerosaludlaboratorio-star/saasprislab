@@ -28,6 +28,7 @@ from core.models import Empresa
 from core.tenant import clear_current_empresa, set_current_empresa, tenant_bypass
 from core.utils.default_empresa import resolve_default_empresa_sistema
 from lims.models import Analito, PaqueteLims, PerfilLims, PrecioItem
+from lims.veterinary_catalog import is_veterinary_catalog_text
 import logging
 
 
@@ -110,12 +111,30 @@ def _match_analito(row, codigo_map, abrev_map, nombre_map):
     abrev = _norm_text(row['abreviatura'])
     desc = _norm_text(row['descripcion'])
 
-    for key in (code, abrev):
-        if key and key in codigo_map:
-            return codigo_map[key]
+    if abrev and abrev in abrev_map:
+        return abrev_map[abrev]
+    if code and code in codigo_map:
+        return codigo_map[code]
     if desc and desc in nombre_map:
         return nombre_map[desc]
     return None
+
+
+def _unique_index(items, key):
+    """Indexa solo llaves unicas; evita precios cruzados por códigos legacy."""
+    grouped = {}
+    ambiguous = set()
+    for item in items:
+        value = _norm_text(getattr(item, key, ''))
+        if not value:
+            continue
+        if value in grouped:
+            ambiguous.add(value)
+        else:
+            grouped[value] = item
+    for value in ambiguous:
+        grouped.pop(value, None)
+    return grouped
 
 
 def _match_perfil(row, legacy_map, nombre_map):
@@ -194,35 +213,40 @@ class Command(BaseCommand):
                     PaqueteLims.objects.all().only('id', 'id_paquete_legacy', 'nombre', 'costo_lista')
                 )
 
-                analito_codigo_map = {}
-                analito_abrev_map = {}
-                analito_nombre_map = {}
-                for a in analitos:
-                    if a.codigo:
-                        analito_codigo_map[_norm_text(a.codigo)] = a
-                    if a.abreviatura:
-                        analito_abrev_map[_norm_text(a.abreviatura)] = a
-                    if a.nombre:
-                        analito_nombre_map[_norm_text(a.nombre)] = a
+                analitos = [
+                    a for a in analitos
+                    if not is_veterinary_catalog_text(a.codigo, a.abreviatura, a.nombre)
+                ]
+                analito_codigo_map = _unique_index(analitos, 'codigo')
+                analito_abrev_map = _unique_index(analitos, 'abreviatura')
+                analito_nombre_map = _unique_index(analitos, 'nombre')
 
-                perfil_legacy_map = {}
-                perfil_nombre_map = {}
+                perfiles = [
+                    p for p in perfiles
+                    if not is_veterinary_catalog_text(p.id_perfil_legacy, p.nombre)
+                ]
+                perfil_legacy_map = _unique_index(perfiles, 'id_perfil_legacy')
+                perfil_nombre_map = _unique_index(perfiles, 'nombre')
+                prefix_map = {}
+                ambiguous_prefixes = set()
                 for p in perfiles:
-                    if p.id_perfil_legacy:
-                        legacy_norm = _norm_text(p.id_perfil_legacy)
-                        perfil_legacy_map[legacy_norm] = p
-                        if '|' in legacy_norm:
-                            perfil_legacy_map.setdefault(legacy_norm.split('|', 1)[0], p)
-                    if p.nombre:
-                        perfil_nombre_map[_norm_text(p.nombre)] = p
+                    legacy_norm = _norm_text(p.id_perfil_legacy)
+                    if '|' in legacy_norm:
+                        key = legacy_norm.split('|', 1)[0]
+                        if key in prefix_map:
+                            ambiguous_prefixes.add(key)
+                        else:
+                            prefix_map[key] = p
+                for key in ambiguous_prefixes:
+                    prefix_map.pop(key, None)
+                perfil_legacy_map.update(prefix_map)
 
-                paquete_legacy_map = {}
-                paquete_nombre_map = {}
-                for q in paquetes:
-                    if q.id_paquete_legacy:
-                        paquete_legacy_map[_norm_text(q.id_paquete_legacy)] = q
-                    if q.nombre:
-                        paquete_nombre_map[_norm_text(q.nombre)] = q
+                paquetes = [
+                    q for q in paquetes
+                    if not is_veterinary_catalog_text(q.id_paquete_legacy, q.nombre)
+                ]
+                paquete_legacy_map = _unique_index(paquetes, 'id_paquete_legacy')
+                paquete_nombre_map = _unique_index(paquetes, 'nombre')
 
                 with transaction.atomic():
                     # Paso 1: ajustar costo_lista desde la tarifa original cuando exista.

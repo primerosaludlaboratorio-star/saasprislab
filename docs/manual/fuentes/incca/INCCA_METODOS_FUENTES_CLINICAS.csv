@@ -1,0 +1,17 @@
+metodo_incca,codigo_catalogo,analito_prueba,inserto_clinico,estado_fuente,uso_previsto
+Albúmina,24,Albúmina,point_scientific/ALBUMINA.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones
+Fosfatasa Alcalina (ALK-POINT),95,Fosfatasa alcalina,point_scientific/FOSFATASA ALCALINA.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones
+BUN 2 (Nitrógeno Ureico),171,Nitrógeno ureico,point_scientific/NITROGENO DE UREA.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones
+AST / TGO (AST-POINT),TGO,AST / TGO,point_scientific/AST.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones
+ALT / TGP (ALT-POINT),TGP,ALT / TGP,point_scientific/ALT.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones
+Colesterol Total (CHOLE-POIN R),34,Colesterol total,point_scientific/COLESTEROL.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones
+Creatinina (CREAT-POINT),50,Creatinina,point_scientific/CREATININA.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones
+Bilirrubina Directa (D BILI),BD,Bilirrubina directa,point_scientific/BILIRRUBINA DIRECTA.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones
+Gamma-GT (GGT),101,Gamma-glutamil transferasa,point_scientific/GAMA GLUTAMIL TRANSFERASA.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones
+Glucosa Oxidasa,GLU,Glucosa,point_scientific/GLUCOSA.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones
+Hierro (IRON-POIN R),133,HIERRO SERICO,,FALTA_INSERTO,Requiere inserto específico Point Scientific antes de activar reglas clínicas
+LDH (LDH-POIN R),63,Lactato deshidrogenasa,point_scientific/DESHIDROGENASA LACTICA.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones
+Proteínas Totales (T PRO-POIN R),PROT-S,Proteínas totales,point_scientific/PROTEINA TOTAL.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones
+Bilirrubina Total (TBILI-POIN R),BT,Bilirrubina total,point_scientific/BILIRRUBINA TOTAL.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones
+Ácido Úrico (URICO-POINT R),AURIC,Ácido úrico,point_scientific/ACIDO URICO.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones
+Triglicéridos (TRIG-POIN R),TRI,Triglicéridos,point_scientific/TRIGLICERIDOS.pdf,LISTO,Principio uso clínico reactivos interferencias y limitaciones

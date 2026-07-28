@@ -6,6 +6,7 @@ import json
 import logging
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from core.api_contracts.errors import BusinessApiError
@@ -138,7 +139,17 @@ class ResultadosLimsService:
                     from laboratorio.services.metrologia_lab import evaluar_metrologia_equipo
                     from laboratorio.services.cci_canal import QC_CANAL_CODIGO
 
-                    equipo_validacion = Equipo.objects.filter(pk=eid, activo=True).first()
+                    equipo_validacion = Equipo.objects.filter(
+                        Q(pk=eid, activo=True)
+                        & (
+                            Q(empresa=empresa)
+                            | Q(
+                                empresa__isnull=True,
+                                interfaces_configuradas__empresa=empresa,
+                                interfaces_configuradas__estado__in=['EN_PRUEBA', 'VALIDADA', 'ACTIVA'],
+                            )
+                        )
+                    ).distinct().first()
                     if not equipo_validacion:
                         return {
                             'http_status': 400,
@@ -196,6 +207,28 @@ class ResultadosLimsService:
             aviso_pdf_storage = None
             _formula_engine_snapshot = {}
             asistencia_clinica = None
+
+            def _validar_rango_seguro(resultado_parametro, contexto):
+                """Evalúa el rango en un savepoint para no corromper la transacción principal."""
+                try:
+                    with transaction.atomic():
+                        return resultado_parametro.validar_contra_rango(
+                            edad=contexto['edad'],
+                            sexo=contexto['sexo'],
+                            edad_dias=contexto['edad_dias'],
+                        ) or {}
+                except Exception:
+                    logger_core.exception(
+                        'Falló la evaluación de rango LIMS; se bloquea la liberación rp=%s',
+                        getattr(resultado_parametro, 'pk', None),
+                    )
+                    return {
+                        '_error': True,
+                        'estado': 'RANGO_ERROR',
+                        'fuera_rango': False,
+                        'es_critico': False,
+                        'mensaje_critico': '',
+                    }
 
             with transaction.atomic():
                 orden = OrdenDeServicio.objects.select_for_update().filter(
@@ -310,6 +343,7 @@ class ResultadosLimsService:
                                                 'metodo_captura': metodo_captura_rp,
                                                 'validado': accion == 'validar',
                                                 'aprobado_por_humano': False,
+                                                'equipo': equipo_validacion,
                                             },
                                         )
                                         if accion == 'validar':
@@ -323,20 +357,17 @@ class ResultadosLimsService:
                                         )
 
                                         _ctx_v = contexto_edad_sexo_para_lims(orden, orden.paciente)
-                                        _vd = {}
-                                        try:
-                                            _vd = rp.validar_contra_rango(
-                                                edad=_ctx_v['edad'],
-                                                sexo=_ctx_v['sexo'],
-                                                edad_dias=_ctx_v['edad_dias'],
-                                            ) or {}
-                                        except Exception:
-                                            logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
-                                            logger_core.debug(
-                                                'ResultadosLimsService validar_contra_rango rp=%s',
-                                                rp.pk,
-                                                exc_info=True,
-                                            )
+                                        _vd = _validar_rango_seguro(rp, _ctx_v)
+                                        if _vd.get('_error') and accion == 'validar':
+                                            return {
+                                                'http_status': 422,
+                                                'body': {
+                                                    'status': 'error',
+                                                    'codigo': 'LIMS_RANGO_VALIDACION',
+                                                    'mensaje': 'No se pudo validar el rango clínico; la orden quedó sin liberar.',
+                                                    'analito_id': aid,
+                                                },
+                                            }
                                         try:
                                             rp.refresh_from_db()
                                         except Exception:
@@ -424,20 +455,17 @@ class ResultadosLimsService:
                     except ResultadoParametro.DoesNotExist:
                         continue
                     _ctx_c = contexto_edad_sexo_para_lims(orden, orden.paciente)
-                    _vd_c = {}
-                    try:
-                        _vd_c = _rp_calc.validar_contra_rango(
-                            edad=_ctx_c['edad'],
-                            sexo=_ctx_c['sexo'],
-                            edad_dias=_ctx_c['edad_dias'],
-                        ) or {}
-                    except Exception:
-                        logging.getLogger(__name__).exception("Error inesperado en guardar_captura_desde_datos (resultados_lims_service.py)")
-                        logger_core.debug(
-                            'ResultadosLimsService validar_contra_rango rp_calc=%s',
-                            _rp_calc.pk,
-                            exc_info=True,
-                        )
+                    _vd_c = _validar_rango_seguro(_rp_calc, _ctx_c)
+                    if _vd_c.get('_error') and accion == 'validar':
+                        return {
+                            'http_status': 422,
+                            'body': {
+                                'status': 'error',
+                                'codigo': 'LIMS_RANGO_VALIDACION',
+                                'mensaje': 'No se pudo validar el rango clínico calculado; la orden quedó sin liberar.',
+                                'analito_id': _rp_calc.analito_id,
+                            },
+                        }
                     try:
                         _rp_calc.refresh_from_db()
                     except Exception:
@@ -658,11 +686,9 @@ class ResultadosLimsService:
                             if not rp.valor or not rp.analito_id:
                                 continue
                             try:
-                                vr = rp.validar_contra_rango(
-                                    edad=_ctx_fin['edad'],
-                                    sexo=_ctx_fin['sexo'],
-                                    edad_dias=_ctx_fin['edad_dias'],
-                                ) or {}
+                                vr = _validar_rango_seguro(rp, _ctx_fin)
+                                if vr.get('_error'):
+                                    continue
                                 try:
                                     rp.refresh_from_db()
                                 except Exception:

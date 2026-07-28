@@ -1,4 +1,4 @@
-﻿Id_examen,Codigo,Abreviatura,Descripcion,Titulo,Tiempo_proceso,Metodo,Permite_venta_directa,Costo,Comision,Sexo,Indicaciones,Notas,Notas_internas,Titulo_alineacion,Titulo_color
+Id_examen,Codigo,Abreviatura,Descripcion,Titulo,Tiempo_proceso,Metodo,Permite_venta_directa,Costo,Comision,Sexo,Indicaciones,Notas,Notas_internas,Titulo_alineacion,Titulo_color
 289,45,CH,CITOMETRIA HEMATICA COMPLETA,BIOMETRIA HEMATICA COMPLETA,,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",Si,0.00,0.00,Ambos,NO REQUIERE AYUNO,"VALORES DE REFERENCIA DE ACUERDO A EDAD, SEXO Y NIVEL DEL MAR.",,Alineado a la izquierda,#cc1212
 290,ATD3,ATD3,ANTIDOPING 3 DROGAS,ANTIDOPING 3 DROGAS,,Inmunocromatografia,Si,0.00,0.00,Ambos
 291,ATD5,ATD5,ANTIDOPING (5 DROGAS),ANTIDOPING (5 DROGAS),,Inmunocromatografia,Si,0.00,0.00,Ambos,,,,Alineado a la izquierda
@@ -31,7 +31,6 @@
 321,23131313131,WESTERNBLOT,WESTERN BLOT,WESTERN BLOT, 2 días,WESTERN BLOT,Si,0.00,0.00,Ambos,SUERO (TUBO DORADO),,,Alineado a la izquierda
 322,CHEMET,CHEMET,CHEQUEO METABOLICO,CHEQUEO METABOLICO,,Colorimétrico Automatizado,Si,0.00,0.00,Ambos
 323,27,DNANDC,DNA NATIVO DE DOBLE CADENA,DNA NATIVO DE DOBLE CADENA,,,Si,0.00,0.00,Ambos
-324,900,VET-BH EQUINOS,BIOMETRIA EQUINOS,BIOMETRIA EQUINOS,,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",Si,0.00,0.00,Ambos,NO REQUIERE AYUNO
 325,ELECTROFORESIS,ELEHEM,ELECTROFORESIS DE HEMOGLOBINA,ELECTROFORESIS DE HEMOGLOBINA, 10 días,Electrofóresis,Si,0.00,0.00,Ambos,,,,Alineado a la izquierda
 326,3629-ORTH,CINH,CINETICA DE HIERRO,CINETICA DE HIERRO, 1 día,INMUNOENSAYO ENZIMÁTICO,Si,0.00,0.00,Ambos,,, Suero 2 ml.,Alineado a la izquierda
 327,11111,testdeOSullivan,Tamiz de O´Sullivan,Tamiz de O´Sullivan,,Espectrofotometría Automatizada,Si,0.00,0.00,Ambos,,,,Alineado al centro,#ec1414
@@ -50,10 +49,8 @@
 340,4729,PCRSARS-CoV-2,PCR SARS-CoV-2 (COVID-19),PCR SARS-CoV-2 (COVID-19), 1 día,PCR Tiempo Real,Si,0.00,0.00,Ambos,"*Medio UTM con: exudado faringeo/nasofaríngeo*, expectoración, 2mL fluido de lavado alveolar, no tomar antivirales 48 hr previo toma de muestra. Toma con hisopo de dracón o rayón. \n*Enviar el formato de estudio epidemiológico. Transporte de 2° - 8° C.",,,Alineado a la izquierda
 341,564,TP,TIEMPO DE PROTROMBINA,TIEMPO DE PROTROMBINA,,COAGULOMETRICO AUTOMATIZADO,Si,0.00,0.00,Ambos,,,,Alineado a la izquierda
 342,212,FOSFAPSA 1,FOSFATASA ACIDA FRACCION PROSTATICA,FOSFATASA ACIDA FRACCION PROSTATICA, 3 días,Espectrofotometría Automatizada,No,0.00,0.00,Ambos,,,,Alineado a la izquierda
-343,001,CH-CAN,CITOMETRIA CANINO,CH-CAN,,"CITOMETRIA DE FLUJO, MICROSCOPIA, IMPEDANCIA",Si,0.00,0.00,Ambos,,VALORES DE REFERENCIA ESPECIFICOS PARA CANINOS,,Alineado a la izquierda
 345,126,AU ORI 24 HRS,ACIDO URCO EN ORINA DE 24 HRS ,ACIDO URCO EN ORINA DE 24 HRS ,,Espectrofotometría ,No,0.00,0.00,Ambos,,,,Alineado a la izquierda
 346,197,PERFITORCH,PERFIL DE TORCH IgG-IgM,PERFIL DE TORCH IgG-IgM,,Quimioluminiscencia,Si,0.00,0.00,Ambos,SE PROCESA AQUI,,,Alineado a la izquierda
-347,QSCAN,QSC,QUIMICA SANGUINEA CANINO,QSCAN,,Colorimétrico Automatizado,Si,0.00,0.00,Ambos,,,,Alineado a la izquierda
 348,31272,TFGORI,TASA DE FILTRADO GLOMERULAR ORINA,TASA DE FILTRADO GLOMERULAR ORINA, 1 día,Espectrofotometría Automatizada,Si,0.00,0.00,Ambos,,,,Alineado a la izquierda
 349,06,ELECTRO,ELECTRORITOS SERICOS 6,ELECTRORITOS SERICOS 6,,Ion Selectivo,Si,0.00,0.00,Ambos,,,,Alineado a la izquierda
 351,11,TAMNEOAMP,TAMIZ NEONATAL AMPLIADO,TAMIZ NEONATAL AMPLIADO, 8 días,Electrofóresis,Si,0.00,0.00,Ambos,,,,Alineado a la izquierda
@@ -104,4 +101,3 @@
 400,2034,PCRHEPATITISB,PCR CARGA VIRAL DE HEPATITIS B (HBV),PCR CARGA VIRAL DE HEPATITIS B (HBV), 10 días,PCR Tiempo Real,Si,0.00,0.00,Ambos,Muestra Única: plasma/EDTA Tubo lila (EDTA) (separar el plasma),,,Alineado a la izquierda
 401,0310,CULTOTICO,CULTIVO OTICO IZQUIERDO,CULTIVO OTICO IZQUIERDO, 4 días,Cultivo Microbiológico,Si,0.00,0.00,Ambos,,,,Alineado a la izquierda
 402,0310,CULTIOTICO,CULTIVO OTICO DERECHO,CULTIVO OTICO DERECHO, 4 días,Cultivo Microbiológico,Si,0.00,0.00,Ambos,,,,Alineado a la izquierda
-

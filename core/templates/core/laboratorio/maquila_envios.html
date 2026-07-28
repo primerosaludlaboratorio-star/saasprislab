@@ -98,7 +98,7 @@
                                     <th>Folio</th>
                                     <th>Paciente</th>
                                     <th>Fecha Envío</th>
-                                    <th>Estado</th>
+                                    <th>Estado / recepción</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -107,7 +107,22 @@
                                     <td><strong>{{ orden.folio_orden|default:orden.id }}</strong></td>
                                     <td>{{ orden.paciente.nombre_completo }}</td>
                                     <td>{{ orden.envios_maquila.first.fecha_envio|date:"d/m/Y"|default:"N/A" }}</td>
-                                    <td><span class="badge bg-info">En Maquila</span></td>
+                                    <td>
+                                        {% with envio=orden.envios_maquila.first %}
+                                        {% if envio.estado == 'ENVIADA' %}
+                                        <span class="badge bg-info">Enviada</span>
+                                        <form method="post" enctype="multipart/form-data" action="{% url 'recibir_de_maquila' envio.id %}" class="mt-2">
+                                            {% csrf_token %}
+                                            <input type="file" name="archivo_resultado" class="form-control form-control-sm mb-1" accept=".pdf,.jpg,.jpeg,.png" aria-label="Resultado de maquila">
+                                            <input type="text" name="notas_recepcion" class="form-control form-control-sm mb-1" placeholder="Notas de recepción">
+                                            <button type="submit" class="btn btn-success btn-sm">Recibir y habilitar captura</button>
+                                        </form>
+                                        {% else %}
+                                        <span class="badge bg-success">Recibida</span>
+                                        <a class="btn btn-outline-primary btn-sm ms-1" href="{% url 'captura_resultados' orden.id %}">Capturar resultados</a>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
