@@ -15,6 +15,13 @@ from .base import Empresa, Sucursal, Usuario, get_google_drive_storage
 import logging
 
 
+def _decimal_amount(value) -> Decimal:
+    """Normaliza defaults numericos antes de operar con importes monetarios."""
+    if isinstance(value, Decimal):
+        return value
+    return Decimal(str(value or '0.00'))
+
+
 # ==============================================================================
 # 4. CONTROL NORMADO: RECETAS (COFEPRIS)
 # ==============================================================================
@@ -566,12 +573,28 @@ class PagoOrden(TenantModel):
         """Monto total del pago activo (excluye si está cancelado)."""
         if self.cancelado:
             return Decimal('0.00')
-        return self.monto_efectivo + self.monto_tarjeta + self.monto_transferencia + self.monto_vales
+        return sum(
+            (_decimal_amount(value) for value in (
+                self.monto_efectivo,
+                self.monto_tarjeta,
+                self.monto_transferencia,
+                self.monto_vales,
+            )),
+            Decimal('0.00'),
+        )
 
     @property
     def monto_bruto(self):
         """Monto original (sin considerar cancelación)."""
-        return self.monto_efectivo + self.monto_tarjeta + self.monto_transferencia + self.monto_vales
+        return sum(
+            (_decimal_amount(value) for value in (
+                self.monto_efectivo,
+                self.monto_tarjeta,
+                self.monto_transferencia,
+                self.monto_vales,
+            )),
+            Decimal('0.00'),
+        )
 
     def save(self, *args, **kwargs):
         if self.orden_id:

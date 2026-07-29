@@ -391,6 +391,7 @@ class OrdenServicioLims:
                             monto_debito=init_pago_debito,
                             monto_tarjeta=init_pago_tarjeta,
                             monto_transferencia=init_pago_transferencia,
+                            monto_vales=Decimal('0.00'),
                             referencia_pago=None,
                         )
                         crear_borrador_cfdi_desde_pago_orden(pago_inicial, request.user)
