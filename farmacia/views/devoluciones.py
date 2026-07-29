@@ -634,14 +634,20 @@ def _procesar_devolucion_core(request, data, empresa, venta, sucursal, disponibl
 
 def _procesar_devolucion_erp(request, data, empresa, venta, sucursal, disponible):
     """Ruta ERP: usa farmacia.models.DevolucionVenta con sus nombres de campo."""
-    tipo = data.get('tipo')
-    monto = Decimal(data.get('monto', '0.00'))
-    motivo = data.get('motivo')
+    # El formulario web usa el contrato canonico; aceptar aliases solo como
+    # compatibilidad evita que la rama ERP vuelva a perder campos validos.
+    tipo = str(data.get('tipo_devolucion') or data.get('tipo') or 'TOTAL').strip().upper()
+    monto = Decimal(str(data.get('monto_reembolsado') or data.get('monto') or '0.00'))
+    motivo = str(data.get('motivo_error') or data.get('motivo') or '').strip()
     motivo_detallado = data.get('motivo_detallado', '')
     reingresar_stock = data.get('reingresar_stock', True)
 
-    if not tipo or not motivo:
-        return JsonResponse({'success': False, 'error': 'Datos incompletos'}, status=400)
+    if not motivo:
+        return JsonResponse({
+            'success': False,
+            'error': 'Datos incompletos: indique el motivo de la devolución',
+            'codigo': 'DEVOLUCION_MOTIVO_REQUERIDO',
+        }, status=400)
 
     if monto > disponible:
         return JsonResponse({
@@ -657,8 +663,8 @@ def _procesar_devolucion_erp(request, data, empresa, venta, sucursal, disponible
             {
                 **data,
                 'tipo_devolucion': 'PARCIAL',
-                'monto_reembolsado': data.get('monto'),
-                'motivo_error': data.get('motivo'),
+                'monto_reembolsado': monto,
+                'motivo_error': motivo,
             },
         )
         body = resultado['body']

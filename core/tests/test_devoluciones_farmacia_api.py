@@ -231,6 +231,24 @@ class DevolucionesFarmaciaAPITest(TestCase):
         self.assertEqual(segunda.status_code, 400)
         self.assertEqual(DevolucionVenta.objects.filter(venta_original=self.venta).count(), 1)
 
+    def test_erp_acepta_contrato_canonico_del_formulario(self):
+        """La ruta ERP activa debe aceptar el payload real del formulario."""
+        payload = {
+            'venta_id': self.venta.id,
+            'tipo_devolucion': ' TOTAL ',
+            'monto_reembolsado': '80.00',
+            'motivo_error': '  Producto equivocado  ',
+            'accion_stock': 'REINGRESAR',
+            'pin': '2468',
+        }
+        response = self.client.post(
+            '/farmacia/erp/devoluciones/procesar/',
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'success')
+
     def test_core_luego_erp_rechaza_devolucion_cruzada_misma_venta(self):
         """Una devolución hecha en PDV debe bloquear otro reembolso total desde ERP."""
         from core.models import SalesReturn
