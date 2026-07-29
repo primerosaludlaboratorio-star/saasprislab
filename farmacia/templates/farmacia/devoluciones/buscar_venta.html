@@ -280,6 +280,9 @@ document.getElementById('form-devolucion').addEventListener('submit', async func
     }
 
     const autorizacion = await Swal.fire({
+        // Mantener el PIN dentro del modal Bootstrap que abrió el formulario
+        // evita que su focus trap devuelva el teclado al botón de cierre.
+        target: document.getElementById('modalDevolucion'),
         icon: 'info',
         title: 'Autorización requerida',
         text: 'Ingrese el PIN universal de 4 dígitos para procesar la devolución.',
