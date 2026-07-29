@@ -89,7 +89,10 @@ def api_lotes_producto(request, producto_id):
     p = Producto.objects_all.prefetch_related('lotes').get(id=producto_id, empresa=empresa)
 
     hoy_fefo = date.today()
-    lotes_cache = list(p.lotes.all())
+    # Fuente única del stock operativo: lote del producto dentro del tenant.
+    # Evita que la relación inversa del TenantManager oculte lotes válidos y
+    # provoque que el PDV muestre stock de catálogo pero no permita venderlo.
+    lotes_cache = list(Lote.objects_all.filter(producto=p, empresa=empresa))
 
     # Lotes con cantidad > 0 (para stock)
     lotes_con_stock = [l for l in lotes_cache if (l.cantidad or 0) > 0]

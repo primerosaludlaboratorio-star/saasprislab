@@ -477,7 +477,8 @@ class VentaFarmaciaService:
                     # ALGORITMO PEPS: Obtener lotes ordenados por fecha_caducidad (más antiguo primero)
                     # select_for_update() evita que dos ventas simultáneas desconten el mismo lote y sobredesen stock
                     # SPRINT 1.1: fecha_caducidad__gte=_hoy → bloquear lotes caducados en PEPS
-                    lotes_disponibles = producto.lotes.filter(
+                    lotes_disponibles = Lote.objects_all.filter(
+                        producto=producto,
                         empresa=empresa,
                         cantidad__gt=0,
                         fecha_caducidad__gte=_hoy,  # NO vender lotes caducados (ISO 15189 + COFEPRIS)
