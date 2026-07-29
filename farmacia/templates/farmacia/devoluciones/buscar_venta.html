@@ -292,12 +292,16 @@ document.getElementById('form-devolucion').addEventListener('submit', async func
             autocapitalize: 'off',
             spellcheck: 'false',
         },
+        focusConfirm: false,
         didOpen: () => {
             const pinInput = Swal.getInput();
             if (pinInput) {
                 pinInput.value = '';
                 pinInput.removeAttribute('readonly');
-                pinInput.focus();
+                // El formulario de devolución vive dentro de otro modal; Bootstrap
+                // puede devolverle el foco después de didOpen. Reenfocar al final
+                // del ciclo deja el teclado en el PIN real para el usuario.
+                window.setTimeout(() => pinInput.focus(), 50);
             }
         },
         showCancelButton: true,
