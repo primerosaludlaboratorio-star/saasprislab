@@ -98,7 +98,7 @@
                             <div class="row g-3">
                                 {% for codigo, nombre in tipos_movimiento %}
                                     <div class="col-md-6">
-                                        <div class="card tipo-movimiento-card h-100" 
+                                        <div class="card tipo-movimiento-card h-100 {% if tipo_inicial == codigo %}selected{% endif %}" 
                                              onclick="seleccionarTipo('{{ codigo }}', this)">
                                             <div class="card-body text-center">
                                                 {% if 'ENTRADA' in codigo %}
@@ -128,7 +128,7 @@
                             <select name="producto_id" id="producto_id" class="form-select" required>
                                 <option value="">-- Seleccionar Producto --</option>
                                 {% for prod in productos %}
-                                    <option value="{{ prod.id }}" 
+                                    <option value="{{ prod.id }}" {% if lote_preseleccionado and prod.id == lote_preseleccionado.producto_id %}selected{% endif %}
                                             data-stock="{{ prod.stock }}">
                                         {{ prod.nombre }} - {{ prod.presentacion }} 
                                         (Stock: {{ prod.stock }})
@@ -146,6 +146,11 @@
                             </label>
                             <select name="lote_id" id="lote_id" class="form-select">
                                 <option value="">-- Seleccionar Lote --</option>
+                                {% if lote_preseleccionado %}
+                                <option value="{{ lote_preseleccionado.id }}" selected>
+                                    {{ lote_preseleccionado.numero_lote }} - Cad: {{ lote_preseleccionado.fecha_caducidad|date:'Y-m-d' }} ({{ lote_preseleccionado.cantidad }} unidades)
+                                </option>
+                                {% endif %}
                             </select>
                             <small class="form-text text-muted">
                                 Los lotes se cargarán al seleccionar un producto
@@ -281,6 +286,13 @@
             selectLote.innerHTML = '<option value="">-- Seleccionar Lote --</option>';
         }
     });
+
+    // Las acciones del semáforo llegan con el lote exacto y no deben perderlo.
+    {% if lote_preseleccionado %}
+    document.getElementById('infoStock').innerHTML = '<strong>Stock actual: {{ lote_preseleccionado.producto.stock }} unidades</strong>';
+    document.getElementById('tipo_movimiento').value = '{{ tipo_inicial }}';
+    document.getElementById('cantidad').max = '{{ lote_preseleccionado.cantidad }}';
+    {% endif %}
     
     // ============================================================
     // VALIDACIÓN DE FORMULARIO

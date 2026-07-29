@@ -84,35 +84,46 @@
             <div class="card card-resumen resumen-saldo shadow-sm h-100">
                 <div class="card-body">
                     <h6 class="text-muted text-uppercase small mb-1">SALDO ESPERADO</h6>
+                    {% if turno_cerrado %}
+                    <div class="alert alert-success mb-2">
+                        <strong>Turno cerrado.</strong><br>
+                        El monto mostrado abajo corresponde al historial del día, no a una caja abierta.
+                        {% if cierre_fecha %}Cierre: {{ cierre_fecha.folio }}.{% endif %}
+                    </div>
+                    {% endif %}
                     <h3 class="fw-bold mb-0 text-warning" id="saldo-esperado" style="display: none;">$ {{ saldo_caja|floatformat:2 }}</h3>
                     <div id="corte-ciego-container">
+                        {% if turno_cerrado %}
+                        <div class="text-muted small mb-2">No se puede generar otro corte hasta abrir un nuevo turno.</div>
+                        {% endif %}
                         <label class="form-label fw-bold mb-2">¿CUÁNTO TIENES EN CAJA?</label>
                         <input type="number" 
                                id="monto-reportado" 
                                class="form-control form-control-lg fw-bold text-center" 
                                step="0.01" 
                                placeholder="0.00"
+                               {% if turno_cerrado %}disabled{% endif %}
                                style="font-size: 2rem; border: 3px solid var(--prislab-red);">
                         <div class="row g-2 mt-2">
                             <div class="col-4">
                                 <label for="monto-tarjeta" class="form-label small fw-bold">Tarjeta</label>
-                                <input type="number" id="monto-tarjeta" class="form-control" min="0" step="0.01" value="0.00">
+                                <input type="number" id="monto-tarjeta" class="form-control" min="0" step="0.01" value="0.00" {% if turno_cerrado %}disabled{% endif %}>
                             </div>
                             <div class="col-4">
                                 <label for="monto-transferencia" class="form-label small fw-bold">Transferencia</label>
-                                <input type="number" id="monto-transferencia" class="form-control" min="0" step="0.01" value="0.00">
+                                <input type="number" id="monto-transferencia" class="form-control" min="0" step="0.01" value="0.00" {% if turno_cerrado %}disabled{% endif %}>
                             </div>
                             <div class="col-4">
                                 <label for="monto-vales" class="form-label small fw-bold">Vales</label>
-                                <input type="number" id="monto-vales" class="form-control" min="0" step="0.01" value="0.00">
+                                <input type="number" id="monto-vales" class="form-control" min="0" step="0.01" value="0.00" {% if turno_cerrado %}disabled{% endif %}>
                             </div>
                         </div>
                         <small class="text-muted d-block mt-2">Captura cada medio por separado. El sistema conciliará cada uno contra sus pagos registrados.</small>
-                        <button class="btn btn-primary btn-lg w-100 mt-3 fw-bold" onclick="calcularDiferencia()">
+                        <button class="btn btn-primary btn-lg w-100 mt-3 fw-bold" onclick="calcularDiferencia()" {% if turno_cerrado %}disabled{% endif %}>
                             <i class="bi bi-calculator"></i> CALCULAR DIFERENCIA
                         </button>
                         {% if request.user.is_authenticated and request.user.empresa_id %}
-                        <button type="button" class="btn btn-outline-primary btn-lg w-100 mt-2 fw-bold" onclick="generarPreCorte()">
+                        <button type="button" class="btn btn-outline-primary btn-lg w-100 mt-2 fw-bold" onclick="generarPreCorte()" {% if turno_cerrado %}disabled{% endif %}>
                             <i class="bi bi-eye"></i> GENERAR PRECORTE
                         </button>
                         {% endif %}
@@ -307,6 +318,40 @@
         </div>
     </div>
 
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-dark text-white fw-bold">
+            <i class="bi bi-clock-history"></i> HISTORIAL DE CORTES
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>FOLIO</th><th>FECHA</th><th>RESPONSABLE</th>
+                            <th class="text-end">TEÓRICO</th><th class="text-end">DECLARADO</th>
+                            <th class="text-end">DIFERENCIA</th><th>ESTADO</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for cierre in cierres_historial %}
+                        <tr>
+                            <td><strong>{{ cierre.folio }}</strong></td>
+                            <td>{{ cierre.fecha_cierre|date:"d/m/Y H:i" }}</td>
+                            <td>{{ cierre.cerrado_por.get_full_name|default:cierre.usuario_responsable.get_full_name|default:cierre.usuario_responsable.username }}</td>
+                            <td class="text-end">$ {{ cierre.total_teorico|floatformat:2 }}</td>
+                            <td class="text-end">$ {{ cierre.total_declarado|floatformat:2 }}</td>
+                            <td class="text-end">$ {{ cierre.diferencia_total|floatformat:2 }}</td>
+                            <td>{% if cierre.diferencia_total == 0 %}<span class="badge bg-success">CUADRADO</span>{% else %}<span class="badge bg-warning text-dark">REVISAR</span>{% endif %}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="7" class="text-center text-muted py-3">Aún no hay cortes registrados.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: REGISTRAR GASTO -->
     <div class="modal fade" id="modalGasto" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -386,6 +431,10 @@
     // CORTE CIEGO (V 5.0) - El cajero no ve el monto esperado
     // ==============================================================================
     function calcularDiferencia() {
+        {% if turno_cerrado %}
+        alert('El turno ya está cerrado. Abra un nuevo turno para realizar otro corte.');
+        return;
+        {% endif %}
         const montoReportadoEl = document.getElementById('monto-reportado');
         if (!montoReportadoEl) return;
         const montoReportado = parseFloat(montoReportadoEl.value) || 0;

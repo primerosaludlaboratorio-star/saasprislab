@@ -194,11 +194,26 @@ def corte_caja_dia(request):
 
     sucursal = get_request_sucursal(request)
     from farmacia.models import AperturaCaja
+    from farmacia.models import CierreTurnoFarmacia
     apertura_activa = AperturaCaja.objects.filter(
         empresa=empresa,
         sucursal=sucursal,
         activa=True,
     ).select_related("usuario_responsable").first()
+    cierre_fecha = CierreTurnoFarmacia.objects.filter(
+        empresa=empresa,
+        sucursal=sucursal,
+        fecha_cierre__date=fecha_seleccionada,
+    ).select_related("usuario_responsable", "cerrado_por", "apertura_caja").order_by("-fecha_cierre").first()
+    cierres_historial = CierreTurnoFarmacia.objects.filter(
+        empresa=empresa,
+        sucursal=sucursal,
+    ).select_related("usuario_responsable", "cerrado_por").order_by("-fecha_cierre")[:30]
+    turno_cerrado = (
+        fecha_seleccionada == timezone.localdate()
+        and apertura_activa is None
+        and cierre_fecha is not None
+    )
     inicio = timezone.make_aware(datetime.combine(fecha_seleccionada, datetime.min.time()))
     fin = timezone.make_aware(datetime.combine(fecha_seleccionada, datetime.max.time()))
     if fecha_seleccionada == timezone.localdate() and apertura_activa:
@@ -242,6 +257,10 @@ def corte_caja_dia(request):
     total_ventas = ventas_efectivo + ventas_tarjeta + ventas_transferencia + ventas_vales
     fondo_inicial = apertura_activa.fondo_efectivo if apertura_activa else Decimal("0.00")
     saldo_caja = fondo_inicial + ventas_efectivo - total_gastos - egresos_kardex - retiros_caja
+    if turno_cerrado:
+        # Las ventas del día siguen visibles como historial, pero no deben
+        # presentarse como saldo de una caja que ya fue cerrada.
+        saldo_caja = Decimal("0.00")
 
     lista_gastos = [
         {
@@ -281,6 +300,9 @@ def corte_caja_dia(request):
         "egresos_kardex": egresos_kardex,
         "retiros_caja": retiros_caja,
         "puede_ver_consolidado": puede_ver_consolidado,
+        "turno_cerrado": turno_cerrado,
+        "cierre_fecha": cierre_fecha,
+        "cierres_historial": cierres_historial,
     }
     return render(request, "core/corte_caja_dia.html", contexto)
 

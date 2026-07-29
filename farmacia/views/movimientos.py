@@ -232,6 +232,16 @@ def crear_movimiento_manual(request):
     """
     Vista para crear movimientos manuales de inventario.
     """
+    empresa = getattr(request.user, 'empresa', None)
+    lote_preseleccionado = None
+    if request.GET.get('lote') and empresa:
+        lote_preseleccionado = get_object_or_404(
+            Lote.objects.select_related('producto'),
+            id=request.GET['lote'],
+            empresa=empresa,
+            cantidad__gt=0,
+        )
+
     if request.method == 'POST':
         try:
             producto_id = request.POST.get('producto_id')
@@ -285,17 +295,23 @@ def crear_movimiento_manual(request):
                 'mensaje': 'No fue posible crear el movimiento.'
             }, status=500)
     
-    empresa = getattr(request.user, 'empresa', None)
     if not empresa:
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('dashboard')
-    productos = Producto.objects.filter(empresa=empresa).order_by('nombre')[:100]
+    productos_qs = Producto.objects.filter(empresa=empresa).order_by('nombre')
+    productos = list(productos_qs[:500])
+    if lote_preseleccionado and lote_preseleccionado.producto_id not in {p.id for p in productos}:
+        # Una acción desde caducidad nunca puede perder el producto por un
+        # límite de paginación del catálogo.
+        productos.insert(0, lote_preseleccionado.producto)
     motivos = MotivoAjuste.objects.filter(empresa=empresa, activo=True)
     
     return render(request, 'farmacia/crear_movimiento.html', {
         'productos': productos,
         'motivos': motivos,
-        'tipos_movimiento': MovimientoInventario.TIPO_MOVIMIENTO
+        'tipos_movimiento': MovimientoInventario.TIPO_MOVIMIENTO,
+        'lote_preseleccionado': lote_preseleccionado,
+        'tipo_inicial': 'SALIDA_MERMA' if request.GET.get('tipo') in {'MERMA', 'SALIDA_MERMA'} else '',
     })
 
 
