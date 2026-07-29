@@ -1424,3 +1424,53 @@ cuando el motor es PostgreSQL crea mediciones CCI y ejercita las consultas
 Validacion local: YAML valido, `manage.py check` correcto, migraciones sin
 cambios pendientes y compilacion Python correcta. El job de GitHub permanece
 pendiente de ejecucion porque aun no se ha hecho push.
+
+## Laboratorio/LIMS - captura de perfiles y validacion en produccion - 2026-07-29
+
+Se continuo el flujo humano desde una orden de laboratorio pagada en
+produccion, usando el perfil comercial `QUIMICA SANGUINEA 6`.
+
+Correcciones trazables:
+
+- `core/views/laboratorio/captura.py` ahora expande perfiles y paquetes en una
+  fila de captura por analito, creando los `ResultadoParametro` atomicos que
+  requiere el motor de validacion.
+- Las rutas activas de captura en `config/urls.py` y
+  `config/urls/laboratorio.py` ahora apuntan a la vista canonica; la ruta de
+  repeticion legacy se conserva solo donde su contrato sigue siendo distinto.
+- Los valores de una linea comercial de perfil/paquete ya no se heredan a
+  cada analito clonado. La captura inicia vacia salvo que exista un resultado
+  atomico guardado para ese analito.
+- `ResultadosLimsService` inicializa `equipo_validacion` tambien durante el
+  guardado de borrador, evitando un `UnboundLocalError` fuera de la accion de
+  validacion.
+
+Evidencia local:
+
+- `core.tests.test_lims_cart_search`: `7 tests OK`, incluyendo regresion de
+  enrutamiento canonico y creacion atomica de resultados por analito.
+- `manage.py check`, compilacion Python y `git diff --check`: correctos.
+
+Evidencia de despliegue:
+
+- Revision desplegada por el proceso local documentado:
+  `707d6a65530a3e84df8734066ad03eb95ce1659b`.
+- Migraciones sin cambios pendientes; Gunicorn, Celery y Celery Beat activos;
+  `/health/` responde correctamente.
+
+Evidencia de flujo humano en produccion:
+
+- La orden `LAB-20260729-001` mostro los 7 analitos de QS6: acido urico, BUN,
+  colesterol, creatinina, glucosa, trigliceridos y urea.
+- Se capturaron seis valores manuales y se dejo el analito calculado bajo su
+  regla de solo lectura.
+- El guardado de borrador persistio los resultados atomicos.
+- La validacion clinica cambio la orden a `RESULTADOS_LISTOS` y la interfaz a
+  `VALIDADO`; se habilitaron los enlaces de impresion.
+
+Alcance aun abierto: esta evidencia cierra la captura/validacion de un perfil
+comercial, no todo Laboratorio/LIMS. Permanecen por probar en produccion toma
+de muestra, control de calidad, repeticion, maquila, interfaces de equipos,
+publicacion/entrega y reportes. La configuracion productiva actualmente no
+expone equipos activos en el selector, por lo que la interfaz automatica de
+analizadores no se declara cerrada.

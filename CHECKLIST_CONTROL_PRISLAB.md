@@ -457,3 +457,15 @@ Leyenda:
 6. Cerrar Bloque 13 porque impacta operación diaria.
 7. Cerrar Bloques 11, 12 y 14.
 8. Ejecutar Bloque 15 como auditoría final de reemplazo total.
+
+## Actualización 2026-07-29 - Laboratorio/LIMS
+
+- [x] La ruta productiva de captura usa la vista canónica de Laboratorio/LIMS
+- [x] Un perfil QS6 se expande en siete analitos capturables
+- [x] El guardado de borrador crea resultados atómicos por analito
+- [x] Los perfiles y paquetes no heredan valores comerciales antiguos a sus analitos
+- [x] La validación humana de una orden QS6 fue ejecutada en producción y terminó en `VALIDADO`
+- [x] Los enlaces de impresión quedaron disponibles después de la validación
+- [~] Toma de muestra, repetición, maquila y publicación/entrega todavía requieren flujo humano productivo
+- [~] Las interfaces de INCCA, Icon y Fuji/Wondfo requieren equipos activos y pruebas de comunicación reales
+- [~] QC/Westgard y reportes de laboratorio aún no se declaran cerrados por esta evidencia parcial
