@@ -314,11 +314,20 @@ document.getElementById('form-devolucion').addEventListener('submit', async func
     });
     if (!autorizacion.isConfirmed) return;
 
+    const ventaId = document.getElementById('venta-id').value || (ventaActual && ventaActual.id);
+    const motivoError = (
+        document.getElementById('motivo-devolucion').value + ': ' +
+        document.getElementById('motivo-detallado').value
+    ).trim();
+    if (!ventaId || !motivoError) {
+        Swal.fire('Faltan datos', 'La venta y el motivo son obligatorios para procesar la devolución.', 'warning');
+        return;
+    }
     const data = {
-        venta_id: document.getElementById('venta-id').value,
+        venta_id: ventaId,
         tipo_devolucion: tipo,
         monto_reembolsado: document.getElementById('monto-devolucion').value,
-        motivo_error: document.getElementById('motivo-devolucion').value + ': ' + document.getElementById('motivo-detallado').value,
+        motivo_error: motivoError,
         productos: productos,
         pin: autorizacion.value,
         accion_stock: document.querySelector('input[name="reingresar-stock"]:checked').value === 'true' ? 'REINGRESAR' : 'MERMA_DESECHO'

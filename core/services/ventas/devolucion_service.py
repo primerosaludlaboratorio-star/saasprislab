@@ -34,8 +34,22 @@ class DevolucionService:
             monto = Decimal(str(data.get('monto_reembolsado') or data.get('monto', 0)))
         except (InvalidOperation, TypeError, ValueError):
             monto = Decimal('0')
-        tipo = data.get('tipo_devolucion') or data.get('tipo', 'TOTAL')
-        motivo = data.get('motivo_error') or data.get('motivo', '')
+        tipo = str(data.get('tipo_devolucion') or data.get('tipo') or 'TOTAL').strip().upper()
+        motivo = str(data.get('motivo_error') or data.get('motivo') or '').strip()
+        if tipo not in {'TOTAL', 'PARCIAL'}:
+            return {
+                'http_status': 400,
+                'body': {'status': 'error', 'mensaje': 'El tipo de devolución no es válido'},
+            }
+        if not motivo:
+            return {
+                'http_status': 400,
+                'body': {
+                    'status': 'error',
+                    'codigo': 'DEVOLUCION_MOTIVO_REQUERIDO',
+                    'mensaje': 'Datos incompletos: indique el motivo de la devolución',
+                },
+            }
         accion_stock = (data.get('accion_stock') or 'RETORNO_ALMACEN').strip().upper()
         if accion_stock == 'REINGRESAR':
             accion_stock = 'RETORNO_ALMACEN'

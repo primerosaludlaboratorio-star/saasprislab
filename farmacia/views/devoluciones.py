@@ -26,6 +26,31 @@ from farmacia.models import MermaFarmacia, MovimientoInventario, DevolucionVenta
 logger = logging.getLogger('farmacia.devoluciones')
 
 
+def _normalizar_payload_devolucion(data):
+    """Unifica los contratos antiguo y actual antes de procesar la devolución."""
+    normalizado = dict(data or {})
+    normalizado['venta_id'] = normalizado.get('venta_id') or normalizado.get('venta')
+    normalizado['tipo_devolucion'] = str(
+        normalizado.get('tipo_devolucion') or normalizado.get('tipo') or 'TOTAL'
+    ).strip().upper()
+    normalizado['monto_reembolsado'] = (
+        normalizado.get('monto_reembolsado')
+        if normalizado.get('monto_reembolsado') not in (None, '')
+        else normalizado.get('monto', '')
+    )
+    normalizado['motivo_error'] = str(
+        normalizado.get('motivo_error') or normalizado.get('motivo') or ''
+    ).strip()
+    accion = str(
+        normalizado.get('accion_stock')
+        or ('REINGRESAR' if normalizado.get('reingresar_stock', True) else 'MERMA_DESECHO')
+    ).strip().upper()
+    normalizado['accion_stock'] = accion
+    if normalizado.get('productos') is None:
+        normalizado['productos'] = normalizado.get('productos_devueltos') or []
+    return normalizado
+
+
 def _empresa_desde_request(request):
     """Empresa efectiva: EmpresaIdentityMiddleware o FK del usuario."""
     return getattr(request, 'empresa_actual', None) or getattr(request.user, 'empresa', None)
@@ -457,27 +482,21 @@ def procesar_devolucion(request):
         except json.JSONDecodeError:
             return JsonResponse({'success': False, 'status': 'error', 'error': 'JSON inválido'}, status=400)
 
+        data = _normalizar_payload_devolucion(data)
         venta_id = data.get('venta_id')
         if not venta_id:
-            return JsonResponse({'success': False, 'status': 'error', 'error': 'Datos incompletos'}, status=400)
+            return JsonResponse({
+                'success': False,
+                'status': 'error',
+                'error': 'Datos incompletos: falta la venta a devolver.',
+                'codigo': 'DEVOLUCION_VENTA_REQUERIDA',
+            }, status=400)
 
         venta = get_object_or_404(Venta, id=venta_id, empresa=empresa)
 
         pin_error = _validar_pin_devolucion(empresa, data)
         if pin_error:
             return pin_error
-
-        # Mantener compatibilidad con clientes internos antiguos mientras la
-        # interfaz termina de migrar al contrato explícito de devoluciones.
-        if 'tipo_devolucion' not in data and data.get('tipo'):
-            data = {
-                **data,
-                'tipo_devolucion': data.get('tipo'),
-                'monto_reembolsado': data.get('monto', '0.00'),
-                'motivo_error': data.get('motivo', ''),
-            }
-        if 'productos' not in data and data.get('productos_devueltos') is not None:
-            data = {**data, 'productos': data.get('productos_devueltos')}
 
         sucursal = getattr(venta, 'sucursal', None) or get_request_sucursal(request)
         if not sucursal and venta.empresa:

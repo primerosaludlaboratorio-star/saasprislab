@@ -156,6 +156,24 @@ class DevolucionesFarmaciaAPITest(TestCase):
         data = response.json()
         self.assertEqual(data['status'], 'success')
 
+    def test_procesar_devolucion_normaliza_contrato_legacy_en_ruta_core(self):
+        """La ruta activa acepta también alias legacy sin perder el motivo."""
+        payload = {
+            'venta': self.venta.id,
+            'tipo': ' total ',
+            'monto': '80.00',
+            'motivo': '  Producto equivocado  ',
+            'reingresar_stock': True,
+            'pin_cancelacion': '2468',
+        }
+        response = self.client.post(
+            '/farmacia/devoluciones/procesar/',
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'success')
+
     def test_core_rechaza_devolucion_total_duplicada_misma_venta(self):
         """La ruta core no debe permitir devolver dos veces la misma partida."""
         from core.models import SalesReturn
