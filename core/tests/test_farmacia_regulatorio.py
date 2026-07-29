@@ -7,8 +7,9 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.test import Client, TestCase
 
-from core.models import Empresa, Producto, Sucursal
+from core.models import Empresa, Producto, Sucursal, Lote
 from core.services.ventas.catalogo_service import CatalogoService
+from core.services.inventario.movimiento_inventario_service import MovimientoInventarioService
 
 
 class FarmaciaRegulatorioContractTest(TestCase):
@@ -121,6 +122,45 @@ class FarmaciaRegulatorioContractTest(TestCase):
             es_antibiotico=True,
         )
         self.assertFalse(material.requiere_receta_farmacia())
+
+    def test_entrada_material_sin_lote_crea_lote_operativo_vendible(self):
+        material = Producto.objects.create(
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            nombre='Jeringa 5 ml integración',
+            codigo_barras='REG-JERINGA-ENTRADA-001',
+            categoria='CURACION',
+            precio_compra=Decimal('2.00'),
+            precio_publico=Decimal('4.00'),
+            stock=0,
+        )
+        request = type('Request', (), {'user': self.user, 'META': {}})()
+
+        result = MovimientoInventarioService.entrada_mercancia_directa(
+            request,
+            self.empresa,
+            {
+                'producto_id': material.id,
+                'nombre': material.nombre,
+                'cantidad': 10,
+                'costo_unitario': '2.00',
+                'precio_venta': '4.00',
+                'categoria': 'CURACION',
+            },
+        )
+
+        self.assertEqual(result['http_status'], 200)
+        material.refresh_from_db()
+        lote = Lote.objects.get(producto=material)
+        self.assertEqual(material.stock, 10)
+        self.assertEqual(lote.cantidad, 10)
+        self.assertEqual(lote.fecha_caducidad.isoformat(), '2099-12-31')
+        resultado_pdv = next(
+            item for item in CatalogoService.buscar_productos_pdv(self.empresa, 'Jeringa 5 ml integración')
+            if item['id'] == material.id
+        )
+        self.assertEqual(resultado_pdv['stock_total'], 10)
+        self.assertFalse(resultado_pdv['requiere_receta'])
 
     def test_conciliacion_ocr_prioriza_equivalencia_y_tolerancia_de_lectura(self):
         from farmacia.services.receta_ocr import conciliar_medicamentos

@@ -183,6 +183,20 @@ class MovimientoInventarioService:
                             'costo_adquisicion': costo_unitario,
                         },
                     )
+                elif producto.categoria == 'CURACION':
+                    # Materiales como jeringas, gasas y vendas no siempre traen
+                    # lote o caducidad. Deben conservar trazabilidad por lote sin
+                    # quedar solo en Producto.stock, porque el PDV calcula stock
+                    # vigente desde Lote cuando ya existe cualquier lote.
+                    lote_num = lote_num or f'SIN-LOTE-{producto.id}-{uuid_module.uuid4().hex[:8].upper()}'
+                    lote_obj = Lote.objects.create(
+                        producto=producto,
+                        numero_lote=lote_num,
+                        fecha_caducidad=fecha_caducidad or parse_date('2099-12-31'),
+                        cantidad=0,
+                        costo_adquisicion=costo_unitario,
+                        ubicacion_fisica='MATERIAL-CURACION',
+                    )
 
                 try:
                     from farmacia.models import MovimientoInventario
