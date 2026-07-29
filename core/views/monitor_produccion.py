@@ -21,7 +21,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from core.lims_cart import detalle_orden_etiqueta
-from core.models import OrdenDeServicio, DetalleOrden, Usuario
+from core.models import OrdenDeServicio, DetalleOrden, ResultadoParametro, Usuario
 
 logger = logging.getLogger(__name__)
 
@@ -171,6 +171,49 @@ TRANSICION_LABELS = {
     'VALIDADO_PARCIAL': 'Aprobar Resultados',
     'COMPLETO': 'Marcar Entregado',
 }
+
+
+def _analitos_requeridos_para_orden(orden):
+    """Devuelve los analitos LIMS que deben tener valor antes de liberar."""
+    requeridos = {}
+    for detalle in orden.detalles.select_related(
+        'analito', 'perfil_lims', 'paquete_lims'
+    ).all():
+        if detalle.analito_id and detalle.analito:
+            requeridos[detalle.analito_id] = detalle.analito
+            continue
+        if detalle.perfil_lims_id and detalle.perfil_lims:
+            analitos = detalle.perfil_lims.analitos.filter(activo=True)
+        elif detalle.paquete_lims_id and detalle.paquete_lims:
+            analitos = detalle.paquete_lims.get_todos_analitos().filter(activo=True)
+        else:
+            analitos = []
+        for analito in analitos:
+            requeridos[analito.id] = analito
+    return requeridos
+
+
+def _analitos_sin_resultado(orden):
+    """Identifica analitos requeridos sin valor capturado en ResultadoParametro."""
+    requeridos = _analitos_requeridos_para_orden(orden)
+    if not requeridos:
+        return []
+    valores = {
+        resultado.analito_id: (resultado.valor or '').strip()
+        for resultado in ResultadoParametro.objects.filter(
+            orden=orden,
+            analito_id__in=requeridos,
+        )
+    }
+    return [
+        {
+            'analito_id': analito_id,
+            'nombre': analito.nombre,
+            'codigo': analito.codigo,
+        }
+        for analito_id, analito in requeridos.items()
+        if not valores.get(analito_id)
+    ]
 
 
 def _orden_to_card(orden, ahora):
@@ -487,6 +530,20 @@ def api_avanzar_estado(request):
                 'mensaje': f'No hay transición válida desde "{_orden_check.estado_clinico}"'
             }, status=400)
         pdf_url = None
+        if TRANSICIONES_VALIDAS.get(_orden_check.estado_clinico) == 'COMPLETO':
+            analitos_faltantes = _analitos_sin_resultado(_orden_check)
+            if analitos_faltantes:
+                nombres = ', '.join(item['nombre'] for item in analitos_faltantes[:10])
+                extra = f' (+{len(analitos_faltantes) - 10} más)' if len(analitos_faltantes) > 10 else ''
+                return JsonResponse({
+                    'status': 'error',
+                    'codigo': 'RESULTADOS_INCOMPLETOS',
+                    'mensaje': (
+                        'No se pueden aprobar resultados: faltan valores capturados para '
+                        f'{nombres}{extra}.'
+                    ),
+                    'analitos_faltantes': analitos_faltantes,
+                }, status=400)
         if (
             TRANSICIONES_VALIDAS.get(_orden_check.estado_clinico) == 'COMPLETO'
             and not (_orden_check.archivo_resultado and _orden_check.archivo_resultado.name)
@@ -522,6 +579,22 @@ def api_avanzar_estado(request):
             sig_estado = TRANSICIONES_VALIDAS.get(estado_actual)
             if not sig_estado:
                 raise ValueError(f'Transición inválida desde "{estado_actual}" (condición de carrera)')
+
+            if sig_estado == 'COMPLETO':
+                analitos_faltantes = _analitos_sin_resultado(orden)
+                if analitos_faltantes:
+                    nombres = ', '.join(item['nombre'] for item in analitos_faltantes[:10])
+                    extra = f' (+{len(analitos_faltantes) - 10} más)' if len(analitos_faltantes) > 10 else ''
+                    transaction.set_rollback(True)
+                    return JsonResponse({
+                        'status': 'error',
+                        'codigo': 'RESULTADOS_INCOMPLETOS',
+                        'mensaje': (
+                            'No se pueden aprobar resultados: faltan valores capturados para '
+                            f'{nombres}{extra}.'
+                        ),
+                        'analitos_faltantes': analitos_faltantes,
+                    }, status=400)
             
             # Aplicar transición
             orden.estado_clinico = sig_estado
