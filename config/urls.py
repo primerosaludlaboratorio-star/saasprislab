@@ -13,7 +13,7 @@ from farmacia.views import devoluciones as farmacia_devoluciones
 from farmacia.views import reportes as farmacia_reportes
 from farmacia.views import caja as farmacia_caja
 from core.views import laboratorio_config as lims_views
-from core.views import laboratorio_captura as captura_views
+from core.views.laboratorio import captura as captura_views
 from core.views import laboratorio_reportes as reportes_views
 from core.views import finanzas as finanzas_views
 from core.views import motor_financiero as motor_fin_views

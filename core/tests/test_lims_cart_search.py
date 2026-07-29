@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase
+from django.urls import resolve
 
 from core.lims_cart import search_lims_catalog
 from core.models import DetalleOrden, Empresa, OrdenDeServicio, Paciente, ResultadoParametro
@@ -197,3 +198,8 @@ class LimsCartSearchTests(TestCase):
                 valor='85',
             ).exists()
         )
+
+    def test_ruta_captura_usa_vista_canonica_lims(self):
+        match = resolve('/laboratorio/captura/123/')
+
+        self.assertEqual(match.func.__module__, 'core.views.laboratorio.captura')

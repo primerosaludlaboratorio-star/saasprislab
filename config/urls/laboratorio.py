@@ -2,7 +2,8 @@ from django.urls import path, include
 from core import views
 from core.views import impresion as impresion_views
 from core.views.laboratorio import config_lims as lims_views
-from core.views import laboratorio_captura as captura_views
+from core.views.laboratorio import captura as captura_views
+from core.views import laboratorio_captura as captura_legacy_views
 from core.views.laboratorio import reportes as reportes_views
 from laboratorio.views.hl7_receptor import receptor_hl7
 from laboratorio.views.imprimir_zpl import (
@@ -73,7 +74,7 @@ urlpatterns = [
 
     # Captura de Resultados
     path('laboratorio/captura/<int:orden_id>/', captura_views.captura_resultados_industrial, name='captura_resultados'),
-    path('laboratorio/resultado/<int:resultado_id>/repetir/', captura_views.repetir_resultado_analitico, name='repetir_resultado_analitico'),
+    path('laboratorio/resultado/<int:resultado_id>/repetir/', captura_legacy_views.repetir_resultado_analitico, name='repetir_resultado_analitico'),
     path('laboratorio/notificacion-panico/<int:orden_id>/', captura_views.registrar_notificacion_panico, name='registrar_notificacion_panico'),
 
     # Impresión de PDFs de Resultados
