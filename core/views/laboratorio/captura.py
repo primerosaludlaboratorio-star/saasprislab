@@ -9,6 +9,7 @@ Validación clínica (``RESULTADOS_LISTOS``) no se bloquea por saldo: si el moto
 ``ReportePdfSaldoPendienteError``, la API responde **200** con ``pdf_pendiente_pago``; el PDF
 se genera al cobrar (Portero en extracción).
 """
+from copy import copy
 from types import SimpleNamespace
 
 from django.shortcuts import render, get_object_or_404, redirect
@@ -31,6 +32,11 @@ logger = logging.getLogger(__name__)
 
 
 def _estudio_like(detalle):
+    if getattr(detalle, '_captura_padre', False):
+        if detalle.perfil_lims_id and detalle.perfil_lims:
+            return SimpleNamespace(nombre=detalle.perfil_lims.nombre, codigo='', seccion=SimpleNamespace(nombre=''))
+        if detalle.paquete_lims_id and detalle.paquete_lims:
+            return SimpleNamespace(nombre=detalle.paquete_lims.nombre, codigo='', seccion=SimpleNamespace(nombre=''))
     if detalle.analito_id:
         a = detalle.analito
         seccion = SimpleNamespace(nombre=(a.departamento or '').strip() or '')
@@ -41,6 +47,21 @@ def _estudio_like(detalle):
         codigo='',
         seccion=seccion,
     )
+
+
+def _analitos_para_detalle(detalle):
+    """Devuelve los analitos capturables de una linea comercial LIMS."""
+    if detalle.analito_id and detalle.analito:
+        return [detalle.analito]
+    if detalle.perfil_lims_id and detalle.perfil_lims:
+        return list(detalle.perfil_lims.analitos.all())
+    if detalle.paquete_lims_id and detalle.paquete_lims:
+        return list(
+            detalle.paquete_lims.get_todos_analitos().order_by(
+                'departamento', 'nombre', 'id'
+            )
+        )
+    return []
 
 
 def _ref_analito(analito, edad_anos, sexo):
@@ -113,7 +134,24 @@ def captura_resultados_industrial(request, orden_id):
         'analito', 'perfil_lims', 'paquete_lims'
     ).order_by('id')
 
-    aid_set = [d.analito_id for d in detalles_qs if d.analito_id]
+    # Perfiles/paquetes conservan una sola linea comercial, pero la captura
+    # debe exponer una fila por analito para crear ResultadoParametro.
+    detalles_captura = []
+    for detalle in detalles_qs:
+        analitos = _analitos_para_detalle(detalle)
+        if not analitos:
+            detalles_captura.append(detalle)
+            continue
+        for analito in analitos:
+            detalle_captura = copy(detalle)
+            detalle_captura.analito = analito
+            detalle_captura.analito_id = analito.id
+            detalle_captura._captura_padre = bool(
+                detalle.perfil_lims_id or detalle.paquete_lims_id
+            )
+            detalles_captura.append(detalle_captura)
+
+    aid_set = [d.analito_id for d in detalles_captura if d.analito_id]
     resultados_previos_dict = {
         rp.analito_id: rp
         for rp in ResultadoParametro.objects.filter(orden=orden, analito_id__in=aid_set)
@@ -137,7 +175,7 @@ def captura_resultados_industrial(request, orden_id):
     detalles_procesados = []
     total_parametros = 0
 
-    for detalle in detalles_qs:
+    for detalle in detalles_captura:
         estudio = _estudio_like(detalle)
         parametros_list = []
 

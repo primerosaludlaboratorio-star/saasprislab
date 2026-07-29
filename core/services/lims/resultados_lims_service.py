@@ -108,6 +108,7 @@ class ResultadosLimsService:
             comentario_validacion = str(data.get('comentario_validacion') or '').strip()
 
             _MIG0058_CODIGO = '__PRISLAB_MIG_0058__'
+            equipo_validacion = None
             if accion == 'validar':
                 if ResultadoParametro.objects.filter(
                     orden_id=orden_id,

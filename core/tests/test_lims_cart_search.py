@@ -5,9 +5,10 @@ from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase
 
 from core.lims_cart import search_lims_catalog
-from core.models import DetalleOrden, Empresa, OrdenDeServicio, Paciente
+from core.models import DetalleOrden, Empresa, OrdenDeServicio, Paciente, ResultadoParametro
+from core.services.lims.resultados_lims_service import ResultadosLimsService
 from core.views.laboratorio import api_ordenes_recientes, crear_orden_servicio
-from lims.models import Analito, PerfilLims
+from lims.models import Analito, PerfilAnalito, PerfilLims
 
 
 Usuario = get_user_model()
@@ -140,3 +141,59 @@ class LimsCartSearchTests(TestCase):
         self.assertEqual(detalles.count(), 2)
         self.assertTrue(detalles.filter(perfil_lims=self.perfil_qs6).exists())
         self.assertTrue(detalles.filter(analito=self.analito_glucosa).exists())
+
+    def test_captura_de_perfil_crea_resultado_atomico_por_analito(self):
+        """Un perfil comercial debe alimentar la triple llave con sus analitos."""
+        PerfilAnalito.objects.create(
+            empresa=self.empresa,
+            perfil=self.perfil_qs6,
+            analito=self.analito_glucosa,
+            orden=1,
+        )
+        orden = OrdenDeServicio.objects.create(
+            empresa=self.empresa,
+            paciente=self.paciente,
+            total=Decimal('350.00'),
+            anticipo=Decimal('350.00'),
+            estado='PAGADO',
+            estado_pago='PAGADO',
+            responsable_ingreso=self.usuario,
+            folio_orden='LAB-PERFIL-001',
+        )
+        detalle = DetalleOrden.objects.create(
+            orden=orden,
+            perfil_lims=self.perfil_qs6,
+            precio_momento=Decimal('350.00'),
+        )
+        request = RequestFactory().post('/laboratorio/api/guardar-resultados/')
+        request.user = self.usuario
+        payload = {
+            'resultados': {
+                str(detalle.id): {
+                    'resultado': '85',
+                    'parametros': {
+                        str(self.analito_glucosa.id): {
+                            'valor': '85',
+                            'descripcion': 'GLUCOSA',
+                        },
+                    },
+                },
+            },
+            'accion': 'borrador',
+        }
+
+        out = ResultadosLimsService.guardar_captura_desde_datos(
+            request,
+            self.empresa,
+            orden.id,
+            payload,
+        )
+
+        self.assertEqual(out['http_status'], 200, out)
+        self.assertTrue(
+            ResultadoParametro.objects.filter(
+                orden=orden,
+                analito=self.analito_glucosa,
+                valor='85',
+            ).exists()
+        )
