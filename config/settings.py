@@ -20,9 +20,10 @@ DEEPSEEK_API_URL = os.environ.get(
     "https://api.deepseek.com/v1/chat/completions",
 ).strip()
 DEEPSEEK_TIMEOUT = int(os.environ.get("DEEPSEEK_TIMEOUT", "30"))
-# OCR de recetas: la cascada es opt-in para no generar llamadas inesperadas.
-OCR_VISION_PRIMARY = os.environ.get("OCR_VISION_PRIMARY", "gemini").strip().lower()
-OCR_VISION_FALLBACK = os.environ.get("OCR_VISION_FALLBACK", "").strip().lower()
+# OCR de recetas: DeepSeek es la ruta principal acordada; Gemini queda como
+# respaldo explícito cuando DeepSeek no tenga modelo multimodal o falle.
+OCR_VISION_PRIMARY = os.environ.get("OCR_VISION_PRIMARY", "deepseek").strip().lower()
+OCR_VISION_FALLBACK = os.environ.get("OCR_VISION_FALLBACK", "gemini").strip().lower()
 OCR_VISION_CONFIDENCE_THRESHOLD = float(os.environ.get("OCR_VISION_CONFIDENCE_THRESHOLD", "0.72"))
 DEEPSEEK_VISION_MODEL = os.environ.get("DEEPSEEK_VISION_MODEL", "").strip()
 PRISCI_WEBHOOK_TOKEN = os.environ.get("PRISCI_WEBHOOK_TOKEN", "").strip()
