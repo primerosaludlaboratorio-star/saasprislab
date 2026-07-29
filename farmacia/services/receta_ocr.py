@@ -1,6 +1,7 @@
 """OCR de recetas y conciliación contra el catálogo de Farmacia."""
 
 import unicodedata
+import re
 from difflib import SequenceMatcher
 
 from django.db.models import Q
@@ -47,6 +48,15 @@ def conciliar_medicamentos(empresa, datos):
     sugerencias = []
     for medicamento in medicamentos:
         consulta = _normalizar(medicamento["texto"])
+        # Las recetas suelen expresar alternativas en una misma línea
+        # ("Biovit o Biofol", "Biovit/Biofol" o "Biovit - Biofol").
+        # Se comparan por separado, pero se conserva el texto original para
+        # que el personal confirme qué opción se surtirá.
+        consultas = [consulta]
+        for fragmento in re.split(r"\s+(?:o|u|y)\s+|\s*[,;/|]\s*|\s+-\s+", consulta):
+            fragmento = fragmento.strip()
+            if len(fragmento) >= 3 and fragmento not in consultas:
+                consultas.append(fragmento)
         candidatos = []
         for producto in catalogo:
             campos = {
@@ -59,26 +69,31 @@ def conciliar_medicamentos(empresa, datos):
             score = 0
             equivalentes = [campos["nombre"], campos["sustancia_activa"]]
             equivalentes.extend(x.strip() for x in campos["equivalencias"].split(',') if x.strip())
-            consulta_tokens = {x for x in consulta.split() if len(x) > 2}
-            for equivalente in equivalentes:
-                if not equivalente:
-                    continue
-                if consulta == equivalente:
-                    score = max(score, 100)
-                elif consulta in equivalente:
-                    score = max(score, 92)
-                elif equivalente in consulta:
-                    score = max(score, 88)
-                else:
-                    tokens_equivalente = {x for x in equivalente.split() if len(x) > 2}
-                    overlap = len(consulta_tokens & tokens_equivalente)
-                    ratio = SequenceMatcher(None, consulta, equivalente).ratio()
-                    if overlap:
-                        score = max(score, 70 + min(15, overlap * 5) + int(ratio * 10))
-                    elif ratio >= 0.70:
-                        score = max(score, 65 + int(ratio * 20))
-            if campos["marca"] and campos["marca"] in consulta:
-                score += 3
+            score_producto = 0
+            for consulta_parcial in consultas:
+                consulta_tokens = {x for x in consulta_parcial.split() if len(x) > 2}
+                score = 0
+                for equivalente in equivalentes:
+                    if not equivalente:
+                        continue
+                    if consulta_parcial == equivalente:
+                        score = max(score, 100)
+                    elif consulta_parcial in equivalente:
+                        score = max(score, 92)
+                    elif equivalente in consulta_parcial:
+                        score = max(score, 88)
+                    else:
+                        tokens_equivalente = {x for x in equivalente.split() if len(x) > 2}
+                        overlap = len(consulta_tokens & tokens_equivalente)
+                        ratio = SequenceMatcher(None, consulta_parcial, equivalente).ratio()
+                        if overlap:
+                            score = max(score, 70 + min(15, overlap * 5) + int(ratio * 10))
+                        elif ratio >= 0.70:
+                            score = max(score, 65 + int(ratio * 20))
+                if campos["marca"] and campos["marca"] in consulta_parcial:
+                    score += 3
+                score_producto = max(score_producto, score)
+            score = score_producto
             if score:
                 candidatos.append((score, producto))
         candidatos.sort(key=lambda pair: (-pair[0], -int(pair[1].stock or 0), pair[1].nombre))

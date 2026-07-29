@@ -177,6 +177,30 @@ class FarmaciaRegulatorioContractTest(TestCase):
         })
         self.assertEqual(sugerencias[0]['candidatos'][0]['producto_id'], producto.id)
 
+    def test_conciliacion_ocr_separa_alternativas_comerciales_en_una_linea(self):
+        from farmacia.services.receta_ocr import conciliar_medicamentos
+
+        biovit = Producto.objects.create(
+            empresa=self.empresa,
+            nombre='Biovit',
+            sustancia_activa='Vitaminas del complejo B',
+            equivalencias_comerciales='Biovit',
+            codigo_barras='REG-OCR-002',
+        )
+        biofol = Producto.objects.create(
+            empresa=self.empresa,
+            nombre='Biofol',
+            sustancia_activa='Acido folico',
+            equivalencias_comerciales='Biofol',
+            codigo_barras='REG-OCR-003',
+        )
+        sugerencias = conciliar_medicamentos(self.empresa, {
+            'medicamentos': [{'texto': 'Biovit o Biofol'}],
+        })
+        ids = {item['producto_id'] for item in sugerencias[0]['candidatos']}
+        self.assertIn(biovit.id, ids)
+        self.assertIn(biofol.id, ids)
+
     def test_antibiotico_sin_datos_medico_exige_cedula_y_nombre(self):
         response = self.client.post(
             "/farmacia/erp/antibioticos/validar/",

@@ -70,7 +70,26 @@
                             {% endif %}
                         </td>
                         <td>
-                            <small>{{ venta.detalles.count }} producto{{ venta.detalles.count|pluralize }}</small>
+                            <details class="venta-desglose">
+                                <summary class="small fw-bold text-primary" style="cursor:pointer;">
+                                    {{ venta.detalles.count }} producto{{ venta.detalles.count|pluralize }} · Ver desglose
+                                </summary>
+                                <div class="mt-2 border rounded bg-light p-2" style="min-width:340px;">
+                                    {% for detalle in venta.detalles.all %}
+                                    <div class="border-bottom pb-2 mb-2">
+                                        <strong class="d-block">{{ detalle.producto.nombre }}</strong>
+                                        <span class="small text-muted">
+                                            Cantidad: {{ detalle.cantidad }} · Unitario: ${{ detalle.precio_unitario|floatformat:2 }} · Subtotal: ${{ detalle.subtotal|floatformat:2 }}
+                                        </span>
+                                        <span class="small text-muted d-block">
+                                            Lote: {% if detalle.lote_vendido %}{{ detalle.lote_vendido.numero_lote }}{% else %}No registrado{% endif %}
+                                        </span>
+                                    </div>
+                                    {% empty %}
+                                    <span class="small text-muted">Sin productos registrados.</span>
+                                    {% endfor %}
+                                </div>
+                            </details>
                         </td>
                         <td>
                             <small>{{ venta.fecha|date:"H:i" }}</small><br>
