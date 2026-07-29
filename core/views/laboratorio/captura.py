@@ -202,7 +202,11 @@ def captura_resultados_industrial(request, orden_id):
                     ref_texto = f'{ref_min:.2f} - {ref_max:.2f}'
             rp = resultados_previos_dict.get(an.id)
             resultado_anterior = delta_check_dict.get(an.id)
-            valor_prev = (rp.valor if rp else '') or (detalle.resultado or '')
+            # Una linea comercial de perfil/paquete no es un resultado analitico.
+            # No heredar su valor historico a cada analito clonado.
+            valor_prev = (rp.valor if rp else '') or (
+                '' if getattr(detalle, '_captura_padre', False) else (detalle.resultado or '')
+            )
             escudo_ia_advertencia = False
             if rp and (valor_prev or '').strip():
                 if not getattr(rp, 'aprobado_por_humano', True):
