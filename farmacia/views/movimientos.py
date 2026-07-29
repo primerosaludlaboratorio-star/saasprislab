@@ -261,6 +261,14 @@ def crear_movimiento_manual(request):
             empresa = getattr(request.user, 'empresa', None)
             producto = get_object_or_404(Producto, id=producto_id, empresa=empresa)
             lote = get_object_or_404(Lote, id=lote_id, producto__empresa=empresa) if lote_id else None
+            if lote and costo_unitario <= 0 and tipo_movimiento == 'SALIDA_MERMA':
+                costo_unitario = lote.costo_adquisicion
+            if lote and not motivo_ajuste_id and tipo_movimiento == 'SALIDA_MERMA':
+                motivo_ajuste_id = MotivoAjuste.objects.filter(
+                    empresa=empresa,
+                    codigo='MERMA_CADUCIDAD',
+                    activo=True,
+                ).values_list('id', flat=True).first()
             motivo_ajuste = get_object_or_404(MotivoAjuste, id=motivo_ajuste_id) if motivo_ajuste_id else None
             sucursal = get_user_primary_sucursal(request.user)
             
@@ -312,6 +320,7 @@ def crear_movimiento_manual(request):
         'tipos_movimiento': MovimientoInventario.TIPO_MOVIMIENTO,
         'lote_preseleccionado': lote_preseleccionado,
         'tipo_inicial': 'SALIDA_MERMA' if request.GET.get('tipo') in {'MERMA', 'SALIDA_MERMA'} else '',
+        'motivo_inicial': 'MERMA_CADUCIDAD' if request.GET.get('tipo') in {'MERMA', 'SALIDA_MERMA'} else '',
     })
 
 

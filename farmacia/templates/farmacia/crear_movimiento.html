@@ -178,7 +178,7 @@
                                     <span class="input-group-text">$</span>
                                     <input type="number" name="costo_unitario" id="costo_unitario" 
                                            class="form-control" step="0.01" min="0" required
-                                           placeholder="0.00">
+                                           placeholder="0.00" {% if lote_preseleccionado %}value="{{ lote_preseleccionado.costo_adquisicion }}"{% endif %}>
                                 </div>
                             </div>
                         </div>
@@ -191,7 +191,7 @@
                             <select name="motivo_ajuste_id" class="form-select">
                                 <option value="">-- Seleccionar Motivo --</option>
                                 {% for motivo in motivos %}
-                                    <option value="{{ motivo.id }}">
+                                    <option value="{{ motivo.id }}" {% if motivo_inicial == motivo.codigo %}selected{% endif %}>
                                         {{ motivo.codigo }} - {{ motivo.descripcion }}
                                         {% if motivo.requiere_autorizacion_gerente %}
                                             (Requiere Autorización)
