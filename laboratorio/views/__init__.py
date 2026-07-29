@@ -20,6 +20,7 @@ from core.utils.sucursal_helpers import get_request_sucursal
 
 from core.models import Medico
 from laboratorio.models import Estudio, PerfilLaboratorio
+from lims.veterinary_catalog import VETERINARY_MARKERS
 
 # Origen de recepción (mismos valores que laboratorio.Orden; evita depender del modelo legacy)
 _ORIGEN_PUBLICO_GENERAL = 'PUBLICO_GENERAL'
@@ -379,7 +380,15 @@ def buscar_estudios_ajax(request):
     estudios = Estudio.objects.filter(
         Q(nombre__icontains=query) |
         Q(codigo__icontains=query)
-    ).order_by('nombre')[:20]
+    )
+    veterinary_filter = Q()
+    for marker in VETERINARY_MARKERS:
+        veterinary_filter |= (
+            Q(nombre__icontains=marker)
+            | Q(codigo__icontains=marker)
+            | Q(categoria__nombre__icontains=marker)
+        )
+    estudios = estudios.exclude(veterinary_filter).order_by('nombre')[:20]
 
     resultados = []
     for estudio in estudios:

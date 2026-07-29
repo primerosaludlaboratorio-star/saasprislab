@@ -42,6 +42,16 @@ class LimsCartSearchTests(TestCase):
             es_vendible_individualmente=True,
             costo_lista=Decimal('85.00'),
         )
+        self.analito_veterinario = Analito.objects.create(
+            empresa=self.empresa,
+            codigo='GLUCAN',
+            abreviatura='GLUCAN',
+            nombre='GLUCOSA CAN',
+            departamento='BIOQUIMICA',
+            tipo_muestra='SUERO',
+            es_vendible_individualmente=True,
+            costo_lista=Decimal('0.00'),
+        )
         self.perfil_qs6 = PerfilLims.objects.create(
             empresa=self.empresa,
             nombre='QUIMICA SANGUINEA 6',
@@ -60,6 +70,14 @@ class LimsCartSearchTests(TestCase):
 
         self.assertTrue(
             any(item['id'] == f'perfil:{self.perfil_qs6.id}' for item in resultados),
+            resultados,
+        )
+
+    def test_search_lims_catalog_excluye_catalogo_veterinario(self):
+        resultados = search_lims_catalog('GLUCOSA', empresa=self.empresa)
+
+        self.assertFalse(
+            any(item['id'] == f'analito:{self.analito_veterinario.id}' for item in resultados),
             resultados,
         )
 

@@ -8,6 +8,8 @@ from typing import Any
 
 from django.db.models import Q
 
+from lims.veterinary_catalog import VETERINARY_MARKERS
+
 
 SEARCH_ALIASES = {
     'BH': [
@@ -42,6 +44,15 @@ def _precio_venta_o_lista(precio_venta, costo_lista) -> Decimal:
     if pv > 0:
         return pv
     return cl
+
+
+def _exclude_veterinary_catalog(queryset, fields):
+    """Oculta registros veterinarios del catálogo operativo humano."""
+    veterinary_filter = Q()
+    for field in fields:
+        for marker in VETERINARY_MARKERS:
+            veterinary_filter |= Q(**{f'{field}__icontains': marker})
+    return queryset.exclude(veterinary_filter)
 
 
 def _precio_item_analito(a, empresa=None) -> Decimal:
@@ -272,7 +283,10 @@ def search_lims_catalog(
         ) else 0
         return (score, starts, alias_starts)
 
-    aq = Analito.objects.filter(activo=True, es_vendible_individualmente=True)
+    aq = _exclude_veterinary_catalog(
+        Analito.objects.filter(activo=True, es_vendible_individualmente=True),
+        ('nombre', 'codigo', 'abreviatura', 'departamento', 'tipo_muestra', 'metodologia', 'notas'),
+    )
     if empresa is not None:
         aq = aq.filter(empresa=empresa)
     if q:
@@ -306,7 +320,10 @@ def search_lims_catalog(
             'seccion': a.departamento or '',
         })
 
-    pq = PerfilLims.objects.filter(activo=True)
+    pq = _exclude_veterinary_catalog(
+        PerfilLims.objects.filter(activo=True),
+        ('nombre', 'descripcion'),
+    )
     if empresa is not None:
         pq = pq.filter(empresa=empresa)
     if q:
@@ -339,7 +356,10 @@ def search_lims_catalog(
             'seccion': 'Perfil',
         })
 
-    kq = PaqueteLims.objects.filter(activo=True)
+    kq = _exclude_veterinary_catalog(
+        PaqueteLims.objects.filter(activo=True),
+        ('nombre', 'descripcion'),
+    )
     if empresa is not None:
         kq = kq.filter(empresa=empresa)
     if q:
