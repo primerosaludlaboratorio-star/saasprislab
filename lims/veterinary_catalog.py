@@ -6,6 +6,11 @@ import unicodedata
 
 VETERINARY_MARKERS = (
     'CANIN',
+    ' CAN',
+    'CAN ',
+    'CAN-',
+    'CAN_',
+    'GLUCAN',
     'FELIN',
     'EQUIN',
     'VETERIN',

@@ -9,6 +9,7 @@ class VeterinaryCatalogFilterTests(SimpleTestCase):
     def test_rejects_veterinary_identifiers(self):
         self.assertTrue(is_veterinary_catalog_text('GLU-FEL', 'Glucosa felina'))
         self.assertTrue(is_veterinary_catalog_text('Perfil canino'))
+        self.assertTrue(is_veterinary_catalog_text('GLUCAN', 'Glucosa can'))
         self.assertTrue(is_veterinary_catalog_text('EQUINO'))
 
     def test_keeps_human_catalog_identifiers(self):
