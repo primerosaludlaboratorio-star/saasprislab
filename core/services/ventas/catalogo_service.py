@@ -48,7 +48,11 @@ class CatalogoService:
         # No usar la relación inversa filtrada por TenantManager como prueba de
         # existencia: lotes históricos con empresa inconsistente pueden ocultarse
         # al tenant actual y dejar Producto.stock sin una fuente vendible.
-        if Lote.objects_all.filter(producto=producto, empresa=empresa).exists():
+        if Lote.objects_all.filter(
+            producto=producto,
+            empresa=empresa,
+            cantidad__gt=0,
+        ).exists():
             return None
 
         stock_actual = int(producto.stock or 0)
