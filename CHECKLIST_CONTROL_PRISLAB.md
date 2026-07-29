@@ -469,3 +469,6 @@ Leyenda:
 - [~] Toma de muestra, repetición, maquila y publicación/entrega todavía requieren flujo humano productivo
 - [~] Las interfaces de INCCA, Icon y Fuji/Wondfo requieren equipos activos y pruebas de comunicación reales
 - [~] QC/Westgard y reportes de laboratorio aún no se declaran cerrados por esta evidencia parcial
+- [x] Ronda productiva de 10 escenarios de navegación LIMS ejecutada sin 5xx ni errores de consola
+- [x] Búsqueda productiva de `QS6` devolvió el perfil LIMS correcto
+- [x] Impresión sin membrete de la orden validada comprobada en producción

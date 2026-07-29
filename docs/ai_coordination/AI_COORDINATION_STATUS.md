@@ -1474,3 +1474,35 @@ de muestra, control de calidad, repeticion, maquila, interfaces de equipos,
 publicacion/entrega y reportes. La configuracion productiva actualmente no
 expone equipos activos en el selector, por lo que la interfaz automatica de
 analizadores no se declara cerrada.
+
+## Ronda productiva de diez escenarios - Laboratorio/LIMS - 2026-07-29
+
+Se ejecuto una ronda independiente de diez entradas de interfaz sobre la
+produccion, con la cuenta temporal de auditoria documentada y sin crear nuevas
+ordenes ni modificar catalogos:
+
+1. Dashboard de Director: cargado.
+2. Recepcion/Nueva Orden: cargada; busqueda de paciente real de prueba mostro
+   el paciente esperado.
+3. Catalogo LIMS/Estudios: cargado.
+4. Detalle de perfil QS6: cargado y mostro el perfil esperado.
+5. Captura de la orden `LAB-20260729-001`: cargada con sus 7 parametros.
+6. Toma de muestra: cargada.
+7. Monitor de produccion: cargado.
+8. Registro de resultados: cargado con la orden de referencia.
+9. Entrega de resultados: cargada.
+10. Lista de trabajo: cargada.
+
+Verificaciones adicionales:
+
+- `/laboratorio/api/buscar-estudios/?q=QS6` devolvio el perfil `perfil:16`
+  `QUIMICA SANGUINEA 6` con precio `350.0`.
+- La impresion sin membrete de la orden validada mostro resultados y no
+  devolvio pantalla 5xx ni mensaje de bloqueo.
+- No se observaron errores ni advertencias de consola en la ronda.
+
+Resultado: **10/10 escenarios de entrada de interfaz correctos**. Esto es una
+ronda de humo funcional, no sustituye las pruebas de acciones de toma,
+repeticion, maquila, interfaces de analizadores, publicacion/entrega y
+reportes, que siguen marcadas como abiertas hasta ejecutarlas con datos y
+equipos reales.
