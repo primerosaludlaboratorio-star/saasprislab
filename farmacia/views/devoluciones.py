@@ -638,8 +638,20 @@ def _procesar_devolucion_erp(request, data, empresa, venta, sucursal, disponible
     # compatibilidad evita que la rama ERP vuelva a perder campos validos.
     tipo = str(data.get('tipo_devolucion') or data.get('tipo') or 'TOTAL').strip().upper()
     monto = Decimal(str(data.get('monto_reembolsado') or data.get('monto') or '0.00'))
-    motivo = str(data.get('motivo_error') or data.get('motivo') or '').strip()
-    motivo_detallado = data.get('motivo_detallado', '')
+    motivo_raw = str(data.get('motivo_error') or data.get('motivo') or '').strip()
+    motivo_detallado = str(data.get('motivo_detallado') or '').strip()
+    # DevolucionVenta conserva el codigo de motivo en un CharField de 30
+    # caracteres; el texto libre se guarda en el campo detallado, nunca se
+    # trunca ni se intenta persistir como codigo.
+    from farmacia.models import DevolucionVenta
+    motivos_validos = {codigo for codigo, _ in DevolucionVenta.MOTIVO_CHOICES}
+    motivo, separador, detalle_desde_formulario = motivo_raw.partition(':')
+    motivo_codigo = motivo.strip()
+    motivo = motivo_codigo if motivo_codigo in motivos_validos else 'OTRO'
+    if separador and detalle_desde_formulario.strip():
+        motivo_detallado = ':'.join((detalle_desde_formulario.strip(), motivo_detallado)).strip(': ')
+    elif motivo == 'OTRO' and motivo_raw and not motivo_detallado:
+        motivo_detallado = motivo_raw
     reingresar_stock = data.get('reingresar_stock', True)
 
     if not motivo:
