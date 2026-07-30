@@ -167,6 +167,7 @@
     <form method="POST" autocomplete="on">
       {% csrf_token %}
       <input type="hidden" name="folio" value="{{ folio }}">
+      <input type="hidden" name="token" value="{{ public_token }}">
 
       <div class="mb-3">
         <label>RFC *</label>

@@ -123,10 +123,10 @@
     <span style="font-size: 8px; font-weight: bold;">FACTURACIÓN ELECTRÓNICA (CFDI 4.0)</span><br>
     <span style="font-size: 7px;">Escanea el QR o visita:</span><br>
     <span style="font-size: 7px; word-break: break-all;">
-      {{ request.scheme }}://{{ request.get_host }}/facturacion/autofactura/?folio={{ venta.folio_operacion }}
+      {{ request.scheme }}://{{ request.get_host }}/facturacion/autofactura/?folio={{ venta.folio_operacion }}&token={{ autofactura_token }}
     </span>
     <!-- QR de autofacturación generado con Google Charts API (sin dependencias locales) -->
-    <img src="https://chart.googleapis.com/chart?chs=100x100&cht=qr&chl={{ request.scheme }}%3A%2F%2F{{ request.get_host }}%2Ffacturacion%2Fautofactura%2F%3Ffolio%3D{{ venta.folio_operacion }}&choe=UTF-8"
+    <img src="https://chart.googleapis.com/chart?chs=100x100&cht=qr&chl={{ request.scheme }}%3A%2F%2F{{ request.get_host }}%2Ffacturacion%2Fautofactura%2F%3Ffolio%3D{{ venta.folio_operacion }}%26token%3D{{ autofactura_token }}&choe=UTF-8"
          alt="QR Autofacturación"
          width="80" height="80"
          style="margin: 4px auto; display: block;"
@@ -146,7 +146,7 @@
     <button class="btn btn-dark btn-sm" onclick="window.print()">
       <i class="bi bi-printer"></i> Imprimir Ticket
     </button>
-    <a href="/facturacion/autofactura/?folio={{ venta.folio_operacion }}"
+    <a href="/facturacion/autofactura/?folio={{ venta.folio_operacion }}&token={{ autofactura_token }}"
        target="_blank"
        class="btn btn-outline-primary btn-sm ms-2">
       <i class="bi bi-receipt"></i> Solicitar Factura CFDI

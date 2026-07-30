@@ -11,18 +11,34 @@ URL pública: /facturacion/autofactura/?folio=VTA-0001
 import json
 import logging
 import time
+import hmac
 
+from django.conf import settings
 from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.utils.crypto import salted_hmac
 
 from django.contrib.auth.decorators import login_required
 from core.decorators import role_required
 
 logger = logging.getLogger('core.autofactura')
+
+
+def public_autofactura_token(venta) -> str:
+    """Token de posesión estable para el QR del ticket, no enumerable."""
+    identity = f'{venta.empresa_id}:{venta.folio_operacion}'
+    return salted_hmac(
+        'prislab.autofactura.ticket', identity, secret=settings.SECRET_KEY
+    ).hexdigest()
+
+
+def hmac_compare_token(venta, token: str) -> bool:
+    """Compara el token de ticket en tiempo constante."""
+    return hmac.compare_digest(public_autofactura_token(venta), token)
 
 # Catálogos SAT (subset más frecuente)
 REGIMENES_FISCALES = [
@@ -83,6 +99,7 @@ def autofactura_publica(request):
     Acepta GET (mostrar formulario) y POST (procesar solicitud).
     """
     folio = request.GET.get('folio', '').strip() or request.POST.get('folio', '').strip()
+    public_token = request.GET.get('token', '').strip() or request.POST.get('token', '').strip()
     venta = None
     empresa = None
     error_folio = None
@@ -106,22 +123,23 @@ def autofactura_publica(request):
             'regimenes': REGIMENES_FISCALES,
             'usos_cfdi': USOS_CFDI,
             'form_data': {},
+            'public_token': public_token,
         })
     cache.set(rate_key, attempts + 1, timeout=300)
 
-    # ── Buscar la venta por folio ──────────────────────────────────────────────
+    # El folio identifica el ticket, pero no demuestra posesión. Sin el token
+    # firmado del QR no se consulta ni se revela información de la venta.
     if folio:
         try:
             from core.models import Venta
-            venta = (
-                Venta.objects
-                .select_related('empresa', 'paciente')
-                .filter(folio_operacion=folio, estado='COMPLETADA')
-                .first()
-            )
+            candidato = Venta.objects.only(
+                'id', 'empresa_id', 'folio_operacion'
+            ).filter(folio_operacion=folio, estado='COMPLETADA').first()
+            if candidato and public_token and hmac_compare_token(candidato, public_token):
+                venta = Venta.objects.select_related('empresa', 'paciente').get(pk=candidato.pk)
             if not venta:
-                error_folio = f'No encontramos ninguna venta con el folio "{folio}". Verifica el ticket.'
-                logger.info('autofactura_publica: folio no encontrado — folio=%s ip=%s', folio, client_ip)
+                error_folio = 'No encontramos un ticket válido. Escanea el QR del ticket.'
+                logger.info('autofactura_publica: token inválido o ausente — ip=%s', client_ip)
             else:
                 empresa = venta.empresa
                 # Verificar si ya tiene una factura registrada
@@ -203,6 +221,7 @@ def autofactura_publica(request):
             'usos_cfdi': USOS_CFDI,
             # Pre-poblar con datos enviados
             'form_data': request.POST,
+            'public_token': public_token,
         })
 
     return render(request, 'core/autofactura_publica.html', {
@@ -216,6 +235,7 @@ def autofactura_publica(request):
         'regimenes': REGIMENES_FISCALES,
         'usos_cfdi': USOS_CFDI,
         'form_data': {},
+        'public_token': public_token,
     })
 
 

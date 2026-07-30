@@ -157,7 +157,7 @@ Estrategia: dado el volumen, se prioriza por riesgo (endpoints públicos/csrf_ex
 - [x] auditoria_api.py / auditoria_campo.py — Hallazgo H-NUEVO-16 corregido, desplegado y verificado: el endpoint legacy responde `410`; el endpoint activo limita el resultado al tenant y obtiene el valor anterior desde servidor.
 - [x] push.py — COMPLETO (231 líneas). Todas las vistas `@login_required`, scoping correcto por `usuario=request.user`; `test_notificacion` exige `is_superuser`.
 - [x] consentimiento_digital.py (parcial, 220/424 líneas revisadas) — vistas reales usan `@login_required` (csrf_exempt importado pero no aplicado). Genera PDF legal con hash SHA-256 + timestamp servidor.
-- [!] autofactura.py — Hallazgo **H-NUEVO-17**: portal público `autofactura_publica` (sin login) expone nombre completo del paciente + fecha + monto de venta para cualquier folio adivinado (formato secuencial `VTA-0001`), mitigado solo por rate-limit de IP. `bandeja_cfdi` (vista interna) correctamente protegida con `@role_required('DIRECTOR','ADMIN','GERENTE','FINANZAS')`. Abierto.
+- [!] autofactura.py — Hallazgo H-NUEVO-17 corregido localmente: el portal público requiere token HMAC de posesión incluido en el QR/enlace del ticket; `bandeja_cfdi` mantiene RBAC interno. Pendiente despliegue y verificación productiva.
 - [x] finanzas.py (parcial, arquitectura de silos revisada) — `LabCajaView`/`FarmaciaCajaView` con `UserPassesTestMixin.test_func()` por rol; `MasterDashboardView` ("God Mode") restringido estrictamente a `is_superuser`. Diseño correcto.
 - [x] motor_financiero.py (parcial, 100/308 líneas) — `@login_required` + `@role_required('DIRECTOR','ADMIN','GERENTE','FINANZAS')`, queries siempre `empresa=` scoped. Sin hallazgos.
 

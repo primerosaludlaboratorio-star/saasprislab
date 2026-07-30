@@ -125,6 +125,8 @@ def imprimir_ticket(request, venta_id):
     facturas_rel = getattr(venta, "facturas_cfdi", None)
     facturas_cfdi = facturas_rel.all() if facturas_rel is not None else []
 
+    from core.views.autofactura import public_autofactura_token
+
     return render(
         request,
         "core/ticket_venta.html",
@@ -133,6 +135,7 @@ def imprimir_ticket(request, venta_id):
             "detalles": detalles,
             "pagos": pagos,
             "facturas_cfdi": facturas_cfdi,
+            "autofactura_token": public_autofactura_token(venta),
         },
     )
 
