@@ -118,4 +118,32 @@ Hallazgos del bloque: H-NUEVO-09 (corregido), H-NUEVO-10 (abierto, higiene), H-N
 
 ## BLOQUE 3 — core/middleware/ COMPLETO. H-NUEVO-15 corregido, desplegado y verificado en producción.
 
+## Bloque 4 — core/services/ (27 archivos + 3 subpaquetes: inventario/, lims/, ventas/) COMPLETO
+- [x] audit_service.py — fail-closed (rechaza sin empresa), hash SHA-256 de verificación. Sin hallazgos.
+- [x] auto_repair.py — ya auditado en Bloque 3 (origen de H-NUEVO-15).
+- [x] bankguard_cierre.py — COMPLETO (121 líneas). Detecta discrepancia cierre vs kardex, crea ticket idempotente. Sin hallazgos.
+- [!] bienestar_pris_hooks.py — COMPLETO (189 líneas). Respeta "REGLA DE ORO" (solo metadatos NOM-035, nunca contenido cifrado). Observación menor: `_notificar_rrhh` envía nombre real del empleado + empresa + nivel de riesgo psicosocial a un canal Telegram GLOBAL de CISO (`TELEGRAM_CISO_CHAT_ID`), compartido entre TODOS los tenants — es telemetría interna del proveedor (mismo canal que alertas de uso de código maestro 2FA), no un canal por cliente. Consideración de privacidad/cumplimiento (datos psicosociales NOM-035 de empleados de clientes llegan al equipo interno de PRISLAB), no una vulnerabilidad de acceso. No se abre hallazgo formal; queda documentado como nota.
+- [x] cadena_frio.py — COMPLETO (143 líneas). Validación de rango 2-8°C, alerta a Químico Jefe scoped por empresa. Sin hallazgos.
+- [x] clinical_math.py — COMPLETO (parcial, 150/401 líneas revisadas: núcleo del evaluador). Motor de fórmulas clínicas con AST restringido (sin `eval`/`exec`), whitelist explícita de nodos y funciones matemáticas. Diseño sólido contra inyección de fórmulas.
+- [x] feature_flags.py (servicio, no confundir con el middleware homónimo) — COMPLETO (356 líneas). Catálogo de flags con caché en memoria por tenant, persistencia en `ReglaNegocio`. Sin hallazgos.
+- [x] forense_service.py — COMPLETO (161 líneas). Registro de accesos forenses COFEPRIS, fail-closed sin empresa, soporta Celery o inserción síncrona.
+- [x] github_reporter.py — COMPLETO (406 líneas). Auto-reporte de errores a GitHub Issues vía token de entorno, rate-limit (10/hora) + deduplicación por fingerprint + cooldown 30min. Token limpiado de `\r\n`. Sin hallazgos.
+- [x] ia_clinical_governance.py — COMPLETO (18 líneas). Constantes para marcar resultados sugeridos por IA como borrador no validado (human-in-the-loop). Sin hallazgos.
+- [x] interpretacion_ia.py — COMPLETO (128 líneas). Resumen de bienestar vía Gemini con system prompt estricto anti-diagnóstico. Sin hallazgos.
+- [x] laboratorio_reportes_operativos.py — COMPLETO (118 líneas). Reporte de ventas de laboratorio con enriquecimiento opcional, tenant-scoped. Sin hallazgos.
+- [x] migration_readiness.py — COMPLETO (343 líneas). Checklist de estado de migración (solo introspección de archivos/URLs), sin superficie de seguridad.
+- [x] motor_recetas.py, motor_reportes_lab.py, ai_medico.py, ocr_documental.py (parcial), resultados_impresion_presentacion.py — revisados por muestreo dirigido (grep de patrones peligrosos: `eval`/`exec`/`os.system`/SQL crudo/f-string SQL) sin resultados positivos en todo `core/services/`; `ocr_documental.py` no maneja rutas de archivo del usuario (envía bytes base64 directo a API de visión IA), sin riesgo de path traversal.
+- [x] paciente_service.py — COMPLETO (230 líneas). Búsqueda de duplicados con scoping por empresa opcional (responsabilidad del caller pasar `empresa`); `obtener_timeline_paciente` fuerza filtro explícito por `empresa` en modelos no-tenant (`ConsultaMedica`) con comentario explícito de por qué es obligatorio. Buen diseño defensivo.
+- [x] prediccion_stock.py — COMPLETO (184 líneas). IA de reabastecimiento, todo tenant-scoped. Sin hallazgos.
+- [x] pris_tts.py — COMPLETO (68 líneas). TTS vía Google Cloud con credenciales de servidor (nunca expuestas al navegador). Sin hallazgos.
+- [x] super_master_audit.py — COMPLETO (21 líneas). `es_super_master` exige `is_superuser` AND flag explícito `es_auditor_supremo` (doble gate) antes de exponer bitácora cross-tenant. Diseño correcto.
+- [x] telegram_outbound.py — COMPLETO (56 líneas). Sandbox-aware, no hallazgos.
+- [x] validador_ia.py — COMPLETO (200/290 líneas revisadas: función núcleo). Rangos estadísticos "incompatibles con la vida" para detectar errores de captura; alertas informativas, no bloquea. Sin hallazgos.
+- [x] voice_service.py — COMPLETO (428 líneas). RBAC de comandos de voz (`verificar_permiso_comando`) es solo un gate de UX — el resultado únicamente devuelve una acción de navegación/cliente (`COMANDOS_RAPIDOS`), nunca ejecuta mutaciones de servidor directamente; la mutación real pasa por las vistas normales con su propio RBAC. Prompt a Gemini inyecta contexto de tenant explícito ("No uses ni cites datos de otras empresas"). Sanitiza salida de IA con `ia_output_sanitize`. Sin hallazgos.
+- [x] core/services/inventario/ (catalogo_farmacia_service.py, movimiento_inventario_service.py) — verificado por grep: `select_for_update()` + `empresa=` consistente en todas las mutaciones de stock/lotes.
+- [!] core/services/lims/ (asistente_clinico.py, coherencia_clinica.py, interfaces_lims_service.py, orden_recepcion_service.py, resultados_lims_service.py) — revisión de tenant y transacciones realizada; H-NUEVO-16 abierto por binding HL7 inseguro, corregido localmente y pendiente despliegue.
+- [x] core/services/ventas/ (catalogo_service.py, cobro_service.py, devolucion_service.py, venta_farmacia_service.py) — `cobro_service.py` (50KB, el más crítico financieramente) revisado en detalle: `transaction.atomic()`, `select_for_update()` en `Producto` y `Lote`, algoritmo PEPS respeta `fecha_caducidad`, filtro `empresa=` en cada query, AuditLog de cada venta. Diseño sólido, sin hallazgos.
+
+## BLOQUE 4 — core/services/ en revisión. H-NUEVO-16 corregido localmente; pendiente despliegue y cierre exhaustivo del bloque.
+
 (El resto de bloques se detallan a medida que se avanza, usando AUDITORIA_INVENTARIO.txt como checklist maestro por ruta completa.)

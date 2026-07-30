@@ -9,7 +9,7 @@ Tras parseo y QC previo, la persistencia en paciente pasa por
 `ResultadosLimsService.guardar_captura_desde_datos` (mismas reglas que captura manual).
 
 Autenticación: API Key (X-PRISLAB-API-KEY) o IP whitelistada.
-Tenant: HL7_IP_EMPRESA_MAP o X-EMPRESA-ID / empresa_id.
+Tenant: HL7_IP_EMPRESA_MAP o HL7_API_KEY_EMPRESA_MAP.
 ════════════════════════════════════════════════════════════════════════════════
 """
 import hmac
@@ -77,16 +77,41 @@ def _hl7_mapa_ip_empresa() -> dict:
         return {}
 
 
+def _hl7_mapa_api_key_empresa() -> dict[str, int]:
+    """API key → empresa_id, configurado solo en el entorno del servidor."""
+    raw = os.environ.get('HL7_API_KEY_EMPRESA_MAP', '').strip()
+    if not raw:
+        return {}
+    try:
+        data = json.loads(raw)
+        return {str(key): int(value) for key, value in data.items()}
+    except (TypeError, ValueError, json.JSONDecodeError):
+        logger.warning('[HL7] HL7_API_KEY_EMPRESA_MAP no es JSON válido; se ignora.')
+        return {}
+
+
+def _empresa_id_por_api_key(api_key: str):
+    """Resuelve tenant desde una clave ligada; nunca acepta un tenant del body."""
+    if not api_key:
+        return None
+    for configured_key, empresa_id in _hl7_mapa_api_key_empresa().items():
+        if hmac.compare_digest(api_key, configured_key):
+            return empresa_id
+    return None
 def _empresa_hl7_autoritativa(request, ip: str):
     """
-    # FIX V8.2 HL7 TENANT: empresa nunca infiere solo del cuerpo del mensaje.
-    Orden: mapa IP (env) → header X-EMPRESA-ID / query empresa_id.
+    La empresa se obtiene únicamente de una relación servidor-equipo.
+    `X-EMPRESA-ID` y `empresa_id` no son autoridad porque el emisor puede
+    modificarlos y provocar escritura cross-tenant.
     """
     m = _hl7_mapa_ip_empresa()
     if ip and str(ip).strip() in m:
         return _resolver_empresa_hl7(m[str(ip).strip()])
-    eid = request.META.get('HTTP_X_EMPRESA_ID') or request.GET.get('empresa_id')
-    return _resolver_empresa_hl7(eid)
+    api_key = request.META.get('HTTP_X_PRISLAB_API_KEY', '')
+    empresa_id = _empresa_id_por_api_key(api_key)
+    if empresa_id is not None:
+        return _resolver_empresa_hl7(empresa_id)
+    return None
 
 
 def _persistir_huerfano_hl7(
@@ -181,14 +206,14 @@ def receptor_hl7(request):
     empresa_tenant = _empresa_hl7_autoritativa(request, ip_equipo)
     if not empresa_tenant:
         logger.warning(
-            '[HL7] Sin empresa resoluble (X-EMPRESA-ID / empresa_id o HL7_IP_EMPRESA_MAP). IP=%s',
+            '[HL7] Sin empresa resoluble (HL7_IP_EMPRESA_MAP o HL7_API_KEY_EMPRESA_MAP). IP=%s',
             ip_equipo,
         )
         return JsonResponse(
             {
                 'error': (
-                    'Empresa no identificada: envíe cabecera X-EMPRESA-ID (o query empresa_id) '
-                    'o configure HL7_IP_EMPRESA_MAP para esta IP.'
+                    'Empresa no identificada: configure HL7_IP_EMPRESA_MAP para esta IP '
+                    'o HL7_API_KEY_EMPRESA_MAP para esta clave.'
                 ),
             },
             status=400,
