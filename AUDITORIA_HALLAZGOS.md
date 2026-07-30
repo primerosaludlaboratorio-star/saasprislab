@@ -196,6 +196,12 @@
 - **Corrección aplicada:** dentro de `transaction.atomic()` se bloquea la fila de `Empresa` antes de calcular el folio y se rechaza una CxC existente para la misma orden con HTTP 409. El tenant y convenio siguen filtrados por empresa.
 - **Verificación:** compilación, `manage.py check` y revisión del flujo transaccional; pendiente despliegue de esta revisión.
 - **Estado:** corregido localmente; pendiente despliegue.
+
+## H-NUEVO-24 — Vistas LIMS exponían equipos/analitos cross-tenant y permitían notificar pánico con analito ajeno — CORREGIDO
+- **Archivos:** `core/views/laboratorio/captura.py`, `core/views/laboratorio/calidad.py`, `core/views/laboratorio/config_lims.py`.
+- **Problema:** captura y calidad consultaban equipos/analitos sin empresa; `registrar_notificacion_panico` aceptaba un analito que no pertenecía a la orden y `configurar_rangos` resolvía un analito solo por ID.
+- **Corrección aplicada:** todos los catálogos quedan filtrados por empresa; el analito de pánico debe pertenecer a la orden y al tenant, y el acceso a rangos exige empresa.
+- **Estado:** corregido localmente; pendiente despliegue.
 - **Estado:** pendiente de decisión del usuario.
 
 ## H-NUEVO-13 — `core/admin.py` (archivo raíz) es código MUERTO/huérfano, duplica registros de `core/admin/` — CORREGIDO

@@ -56,7 +56,10 @@ def configurar_prueba(request, estudio_id=None):
 @login_required
 @role_required('DIRECTOR_QC', 'ADMIN')
 def configurar_rangos(request, parametro_id):
-    a = get_object_or_404(Analito, pk=parametro_id)
+    empresa = empresa_lims(request)
+    if not empresa:
+        return JsonResponse({'error': 'Usuario sin empresa asignada'}, status=403)
+    a = get_object_or_404(Analito, pk=parametro_id, empresa=empresa)
     return redirect(f'/lims/analitos/{a.pk}/')
 
 

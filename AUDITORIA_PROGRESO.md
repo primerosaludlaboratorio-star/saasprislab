@@ -169,6 +169,7 @@ Estrategia: dado el volumen, se prioriza por riesgo (endpoints públicos/csrf_ex
 - [x] medico.py (parcial, decoradores verificados vía grep en ~1000 líneas) — todas las vistas `@login_required` + `empresa_efectiva_request(request)`. Patrón consistente.
 - [x] laboratorio.py (134KB, muestreo dirigido: sin `csrf_exempt`/SQL crudo/`os.system` en todo el archivo; decoradores verificados en ~50 vistas vía grep) — `@login_required` universal, `@role_required` en endpoints de captura/validación de resultados (`api_guardar_resultados`, `lista_trabajo_lab`). H-NUEVO-20 parcialmente corregido: las tres comparaciones de `LAB_VALIDATION_PIN` usan `secrets.compare_digest`; permanece pendiente el diseño de un PIN por empresa en despliegues multi-tenant.
 - [x] paquetes.py — endpoint legacy de ordenamiento cerrado con `410 Gone`: el modelo `laboratorio.Estudio` no es tenant-scoped y no tenía callers activos; se evita cualquier mutación global.
+- [x] laboratorio/captura.py, calidad.py, config_lims.py — H-NUEVO-24 corregido localmente: equipos y analitos scoped por empresa; pánico exige analito perteneciente a la orden; rangos LIMS validan tenant.
 
 - [x] pris_jarvis.py — COMPLETO (877 líneas). Todas las vistas `@login_required` + tenant scoping `empresa=`. H-NUEVO-22 corregido localmente: `_puede_confirmar_accion` aplica RBAC por módulo a confirmar, rechazar y la vista web, con denegación por defecto.
 

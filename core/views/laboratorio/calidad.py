@@ -77,7 +77,7 @@ def control_calidad(request):
                 if equipo_id:
                     try:
                         from laboratorio.models import Equipo as EquipoLab
-                        eq = EquipoLab.objects.filter(id=int(equipo_id)).first()
+                        eq = EquipoLab.objects.filter(id=int(equipo_id), empresa=empresa).first()
                         equipo_nombre = str(eq) if eq else ''
                     except (ImportError, ValueError, LookupError):
                         pass
@@ -149,15 +149,15 @@ def control_calidad(request):
     equipos = []
     try:
         from laboratorio.models import Equipo
-        equipos = list(Equipo.objects.filter(activo=True).values('id', 'nombre', 'marca'))
+        equipos = list(Equipo.objects.filter(empresa=empresa, activo=True).values('id', 'nombre', 'marca'))
     except (ImportError, AttributeError, LookupError):
         pass
 
     parametros_lista = list(
-        Analito.objects.filter(activo=True).values_list('nombre', flat=True).order_by('nombre')[:200]
+        Analito.objects.filter(empresa=empresa, activo=True).values_list('nombre', flat=True).order_by('nombre')[:200]
     )
     analitos_cci = list(
-        Analito.objects.filter(activo=True)
+        Analito.objects.filter(empresa=empresa, activo=True)
         .order_by('nombre')
         .values('id', 'codigo', 'nombre')[:400]
     )

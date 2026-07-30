@@ -298,7 +298,7 @@ def captura_resultados_industrial(request, orden_id):
     token_acceso = str(orden.token_acceso) if getattr(orden, 'token_acceso', None) else None
 
     equipos_laboratorio = list(
-        Equipo.objects.filter(activo=True).order_by('marca', 'nombre')[:100]
+        Equipo.objects.filter(empresa=empresa, activo=True).order_by('marca', 'nombre')[:100]
     )
 
     context = {
@@ -362,8 +362,12 @@ def registrar_notificacion_panico(request, orden_id):
                 '[Pánico IDOR] analito_id=%s no está en orden %s — usuario %s',
                 analito_id, orden_id, request.user.username,
             )
+            return JsonResponse({
+                'success': False,
+                'error': 'El analito no pertenece a la orden indicada.',
+            }, status=400)
 
-        analito = get_object_or_404(Analito, id=analito_id, activo=True)
+        analito = get_object_or_404(Analito, id=analito_id, empresa=empresa, activo=True)
 
         from django.db import transaction as _dbt
         with _dbt.atomic():
