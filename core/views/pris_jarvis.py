@@ -78,6 +78,22 @@ def _rbac_dictado_inventario(user) -> bool:
     return user.is_superuser or getattr(user, 'rol', '') in ('CAJERO', 'ADMIN', 'DIRECTOR', 'GERENTE')
 
 
+_ACCION_ROLES_POR_MODULO = {
+    'laboratorio': {'QUIMICO', 'ADMIN', 'DIRECTOR'},
+    'farmacia': {'CAJERO', 'ADMIN', 'DIRECTOR', 'GERENTE'},
+    'recepcion': {'RECEPCION', 'ADMIN', 'DIRECTOR'},
+}
+
+
+def _puede_confirmar_accion(accion, usuario) -> bool:
+    """Aplica el mismo RBAC al endpoint de mutación y a la UI."""
+    if not usuario or getattr(usuario, 'is_superuser', False):
+        return True
+    modulo_base = (accion.modulo_destino or '').split('.', 1)[0].lower()
+    roles_validos = _ACCION_ROLES_POR_MODULO.get(modulo_base, {'ADMIN', 'DIRECTOR'})
+    return (getattr(usuario, 'rol', '') or '').upper() in roles_validos
+
+
 # ── API: Dictado de resultados de laboratorio ─────────────────────────────────
 
 @login_required
@@ -624,6 +640,12 @@ def api_confirmar_accion(request, accion_id):
     empresa = getattr(request.user, 'empresa', None)
     accion = get_object_or_404(AccionPRIS, id=accion_id, empresa=empresa)
 
+    if not _puede_confirmar_accion(accion, request.user):
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': 'No tienes permiso para confirmar acciones de este módulo.',
+        }, status=403)
+
     if accion.estado != AccionPRIS.ESTADO_PENDIENTE:
         return JsonResponse({
             'status': 'error',
@@ -654,6 +676,12 @@ def api_rechazar_accion(request, accion_id):
     """El usuario rechaza la acción propuesta por PRIS."""
     empresa = getattr(request.user, 'empresa', None)
     accion = get_object_or_404(AccionPRIS, id=accion_id, empresa=empresa)
+
+    if not _puede_confirmar_accion(accion, request.user):
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': 'No tienes permiso para rechazar acciones de este módulo.',
+        }, status=403)
     motivo = (request.POST.get('motivo') or 'Rechazado por el usuario').strip()
 
     if accion.estado != AccionPRIS.ESTADO_PENDIENTE:
@@ -814,16 +842,7 @@ def validar_accion_pris(request, accion_id):
     empresa = getattr(request.user, 'empresa', None)
     accion = get_object_or_404(AccionPRIS, id=accion_id, empresa=empresa)
 
-    _RBAC = {
-        'laboratorio': ('QUIMICO', 'ADMIN', 'DIRECTOR'),
-        'farmacia': ('CAJERO', 'ADMIN', 'DIRECTOR', 'GERENTE'),
-        'recepcion': ('RECEPCION', 'ADMIN', 'DIRECTOR'),
-    }
-    modulo_base = accion.modulo_destino.split('.')[0] if accion.modulo_destino else ''
-    roles_validos = _RBAC.get(modulo_base, ('ADMIN', 'DIRECTOR'))
-    puede_validar = request.user.is_superuser or getattr(request.user, 'rol', '') in roles_validos
-
-    if not puede_validar:
+    if not _puede_confirmar_accion(accion, request.user):
         messages.error(request, 'No tienes permiso para validar esta acción.')
         return redirect('lista_acciones_pris')
 

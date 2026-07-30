@@ -182,11 +182,13 @@
 - **Verificación:** búsqueda exhaustiva sin callers activos, compilación del módulo y `manage.py check` sin incidencias.
 - **Estado:** corregido localmente; pendiente despliegue junto con la revisión actual.
 
-## H-NUEVO-21 — `api_confirmar_accion` (asistente PRIS) permite validar resultados clínicos sin verificar el rol del usuario, solo tenant + login
+## H-NUEVO-22 — `api_confirmar_accion` (asistente PRIS) permitía validar resultados clínicos sin verificar el rol del usuario, solo tenant + login — CORREGIDO
 - **Archivo:** `core/views/pris_jarvis.py::api_confirmar_accion` (línea 617-648), `_ejecutar_accion_confirmada` (línea 669-783), contraste con `lista_acciones_pris` (línea 791-808).
 - **Problema:** `lista_acciones_pris` SÍ filtra por rol qué `AccionPRIS` puede ver cada usuario (`QUIMICO` → solo `laboratorio.*`, `CAJERO`/`GERENTE` → solo `farmacia.*`, otros roles → nada salvo `ADMIN`/`DIRECTOR`/superuser). Sin embargo, el endpoint que EJECUTA la acción (`api_confirmar_accion`) solo valida `empresa=empresa` (tenant) y `estado == PENDIENTE` — NO repite el filtro de rol. Es un caso clásico de "seguridad solo en la UI": la restricción de rol vive únicamente en el queryset de la vista de listado, no en el endpoint de mutación.
 - **Impacto:** cualquier usuario autenticado de la empresa (ej. RECEPCION, sin ningún permiso de laboratorio) que conozca o adivine un `accion_id` (entero secuencial, tenant-scoped, fácilmente enumerable probando IDs consecutivos) puede hacer `POST /pris/accion/<id>/confirmar/` directamente y ejecutar `_ejecutar_accion_confirmada`, que para el tipo `laboratorio.validar_resultado` marca `Resultado.validado=True, validado_por=<ese usuario>` — es decir, firma electrónicamente la validación de un resultado clínico de laboratorio sin ser químico ni tener la calificación profesional requerida (relevante para NOM-007/COFEPRIS, donde la validación de resultados debe ser hecha por personal calificado).
-- **Recomendación:** replicar en `api_confirmar_accion`/`api_rechazar_accion` la misma verificación de rol por `modulo_destino` que ya existe en `lista_acciones_pris` (o centralizar la lógica en un solo helper `_usuario_puede_confirmar(accion, usuario)` usado por ambas vistas).
+- **Corrección aplicada:** se centralizó `_puede_confirmar_accion(accion, usuario)` y se aplica a confirmar, rechazar y a la vista web. El permiso se calcula por `modulo_destino`, con superusuario explícito y denegación por defecto para módulos no reconocidos.
+- **Verificación:** pruebas aisladas de la matriz de roles y compilación; el tenant sigue filtrándose en la consulta de la acción.
+- **Estado:** corregido localmente; pendiente despliegue de esta revisión.
 - **Estado:** pendiente de decisión del usuario.
 
 ## H-NUEVO-13 — `core/admin.py` (archivo raíz) es código MUERTO/huérfano, duplica registros de `core/admin/` — CORREGIDO
