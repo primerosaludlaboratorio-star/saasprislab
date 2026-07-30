@@ -1,12 +1,16 @@
 # Entornos PRISLAB SaaS
 
-**Versión:** 1.0  
-**Fecha:** 2026-07-09  
+**Versión:** 1.1
+**Fecha:** 2026-07-29
 **Rama:** `release/v1.0-local`
 
 ---
 
 ## 1. Resumen de entornos
+
+La fuente única de verdad local está definida en
+[`CANONICAL_SOURCE_OF_TRUTH.md`](CANONICAL_SOURCE_OF_TRUTH.md). Todas las
+ediciones y despliegues deben salir del checkout canónico indicado allí.
 
 | Entorno | Propósito | Rama | URL típica | Base de datos |
 |---------|-----------|------|------------|---------------|
@@ -68,12 +72,8 @@ REDIS_URL=                      # vacío para usar LocMemCache
 ### Deploy
 
 ```bash
-# Automático vía GitHub Actions: .github/workflows/deploy-vps.yml
-# Manual:
-docker compose -f docker-compose.yml -f docker-compose.monitoring.yml pull
-docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d --build
-docker compose exec -T app python manage.py migrate --noinput
-docker compose exec -T app python manage.py collectstatic --noinput
+# El despliegue operativo vigente es local -> VPS:
+.\scripts\deploy_local_to_vps.ps1 -User root
 ```
 
 ### Variables clave
@@ -118,8 +118,9 @@ python manage.py ensamblar_lims_v75
 ### Deploy
 
 ```bash
-# Automático vía GitHub Actions: .github/workflows/deploy-vps.yml
-# El workflow ejecuta migraciones, collectstatic y smoke tests.
+# Despliegue operativo vigente desde Windows:
+.\scripts\deploy_local_to_vps.ps1 -User root
+# El script ejecuta migraciones, collectstatic, reinicio de servicios y health check.
 ```
 
 ### Variables clave
@@ -160,7 +161,7 @@ feature/*  -->  release/v1.0-local  -->  staging  -->  production
 3. Se ejecutan status checks: quality gate, SRE, backup, secret scan, SBOM.
 4. Merge a `release/v1.0-local` dispara deploy a production por defecto en el workflow actual.
 5. `staging` queda como ruta manual solo si el entorno tiene secretos configurados.
-6. Validación en producción o staging segun el despliegue ejecutado.
+6. Validación en producción según la revisión registrada por el script local.
 
 ---
 
