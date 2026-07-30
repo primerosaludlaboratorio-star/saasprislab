@@ -180,7 +180,7 @@ Estrategia: dado el volumen, se prioriza por riesgo (endpoints públicos/csrf_ex
 - [x] crm.py — COMPLETO. `@login_required` + `_empresa(request)`/`_verificar_empresa()` en todas las vistas reales; aliases legacy delegan a las vistas canónicas (heredan la misma protección). Sin hallazgos.
 - [x] farmacia.py (parcial, aliases legacy revisados) — `@login_required` + `_empresa_desde_request()`; `cancelar_venta` además exige `@role_required('FARMACIA','ADMIN','GERENTE','DIRECTOR')`. Sin hallazgos.
 
-- [x] core/views/laboratorio.py, medico.py, pris_ia.py (archivos planos) — confirmados como código MUERTO vía `importlib.util.find_spec` (ver H-NUEVO-25); Python resuelve `core.views.laboratorio`/`medico`/`pris_ia` contra los paquetes homónimos. Auditoría redirigida a los paquetes reales.
+- [x] core/views/laboratorio.py, medico.py, pris_ia.py — eliminados por H-NUEVO-25 después de confirmar que eran monolitos muertos; los paquetes homónimos siguen siendo la fuente activa.
 - [x] core/views/laboratorio/caja.py — COMPLETO (406 líneas). `api_cobrar_orden`: `transaction.atomic()` + `select_for_update()`, idempotencia por `client_mutation_id`, validación de rango Decimal, bitácora de intentos. `api_cancelar_pago` exige rol (`ADMIN`,`DIRECTOR`,`QUIMICO`,superuser). H-NUEVO-26 corregido: `OperationalError` ya está importado y se captura correctamente.
 - [x] core/views/laboratorio/recepcion.py, edicion_orden.py, escaneo_ia.py, pacientes_lab.py, pdf_impresion.py, reportes.py — decoradores verificados vía grep (todas `@login_required`, `recepcion_lab` además `@role_required`). Sin hallazgos nuevos.
 - [x] core/views/medico/consulta.py, receta.py, ultrasonido.py (paquete real, sustituye a medico.py) — decoradores verificados, `@login_required` consistente.

@@ -220,12 +220,13 @@
 - **Recomendación:** eliminar `core/admin.py` para evitar confusión, o consolidar si contiene alguna diferencia relevante no migrada al paquete.
 - **Estado:** eliminado tras confirmar que `core.admin` resuelve al paquete `core/admin/` y no existían referencias activas.
 
-## H-NUEVO-25 — `core/views/laboratorio.py`, `medico.py` y `pris_ia.py` son monolitos MUERTOS, sustituidos por los paquetes homónimos (mismo patrón que H-NUEVO-13)
+## H-NUEVO-25 — Monolitos legacy de vistas duplicados — CORREGIDO
 - **Archivos:** `core/views/laboratorio.py` (134 KB), `core/views/medico.py` (46 KB), `core/views/pris_ia.py` (79 KB) vs. los paquetes `core/views/laboratorio/`, `core/views/medico/`, `core/views/pris_ia/`.
 - **Hallazgo:** confirmado empíricamente con `importlib.util.find_spec('core.views.laboratorio'|'medico'|'pris_ia').origin` — los tres resuelven al `__init__.py` del paquete, nunca al archivo plano. Los `__init__.py` de `laboratorio/` y `pris_ia/` documentan explícitamente "Este archivo sustituye al monolito core/views/<nombre>.py". Todos los imports reales en `config/urls.py`, `laboratorio/urls.py`, tests y management commands usan `from core.views.laboratorio import ...` / `from core.views.medico import ...` / `from core.views.pris_ia import ...`, que se resuelven contra el paquete. Los tres archivos planos son inertes.
 - **Impacto:** ninguno funcional, pero riesgo de mantenimiento — un desarrollador (o auditor) podría revisar/editar el archivo plano pensando que refleja el comportamiento real. Nota de transparencia: partes de mi propia auditoría del Bloque 5 sobre estos tres archivos (decoradores, patrones de tenant scoping) se hicieron inicialmente contra los archivos planos; los hallazgos reportados (`H-NUEVO-20`, `H-NUEVO-21`, verificación de `H-NUEVO-11`) fueron re-confirmados directamente contra el código vivo en los paquetes correspondientes (`laboratorio/calidad.py`, `pris_ia/views.py` + `pris_jarvis.py`), por lo que siguen siendo válidos.
-- **Recomendación:** eliminar los tres archivos planos, igual que se hizo con `core/admin.py` en `H-NUEVO-13`.
-- **Estado:** pendiente de decisión del usuario.
+- **Corrección aplicada:** eliminados los tres archivos planos después de verificar que `find_spec` resuelve los imports hacia los paquetes y que no existen referencias a rutas de archivo. Los paquetes activos conservan las APIs públicas mediante sus `__init__.py`.
+- **Verificación:** `django.setup()` e importación de `core.views.laboratorio`, `core.views.medico` y `core.views.pris_ia` correctos; se ejecutarán `manage.py check` y pruebas dirigidas antes del despliegue.
+- **Estado:** corregido localmente; pendiente despliegue.
 
 ## Código muerto / higiene (sin riesgo de seguridad) — CORREGIDO
 - `core/services/ai_medico_backup.py` — eliminado tras confirmar que no tenía imports activos.
