@@ -48,7 +48,7 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local: se actualizará al commit de seguridad de PIN/cifrado antes del despliegue.
+- Última revisión local y desplegada: `547163a` (`fix(migrations): widen PIN columns before hashing`).
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
