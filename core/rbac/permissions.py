@@ -411,7 +411,12 @@ def require_sucursal_access(resource: str = "", sucursal_kwarg: str = "sucursal_
                 try:
                     check_sucursal_access(request.user, int(suc_id), resource=resource, request=request)
                 except (ValueError, TypeError):
-                    pass  # kwarg no era int — la vista manejará el error
+                    logger.warning(
+                        "sucursal_id invalido en control RBAC: %r",
+                        suc_id,
+                        extra={'user_id': getattr(request.user, 'pk', None)},
+                    )
+                    raise PermissionDenied("Sucursal inválida.")
             return view_func(request, *args, **kwargs)
         return wrapper
     return decorator

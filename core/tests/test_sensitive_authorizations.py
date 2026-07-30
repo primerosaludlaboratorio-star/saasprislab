@@ -7,7 +7,11 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from core.fields import EncryptedTextField
 from core.models import (
     ConfiguracionModulos,
+    ExpedienteNotaSHA,
     Empresa,
+    NotaClinicaSOAP,
+    Paciente,
+    Usuario,
     verificar_pin_farmacia,
 )
 
@@ -43,3 +47,62 @@ class EncryptedTextFieldSecurityTests(SimpleTestCase):
     def test_encrypt_fails_closed_when_fernet_errors(self, _mock_fernet):
         with self.assertRaises(ImproperlyConfigured):
             EncryptedTextField.encrypt('dato confidencial')
+
+
+class ExpedienteNotaSHASecurityTests(TestCase):
+    def setUp(self):
+        self.empresa = Empresa.objects.create(nombre='Cadena clínica')
+        self.medico = Usuario.objects.create_user(
+            username='medico_cadena',
+            password='prueba-segura',
+            empresa=self.empresa,
+            rol='MEDICO',
+        )
+        self.paciente = Paciente.objects.create(
+            empresa=self.empresa,
+            nombre_completo='Paciente Cadena',
+        )
+        self.nota = NotaClinicaSOAP.objects.create(
+            empresa=self.empresa,
+            paciente=self.paciente,
+            medico=self.medico,
+            subjetivo='S',
+            objetivo='O',
+            analisis='A',
+            plan='P',
+        )
+
+    def test_new_snapshot_sets_timestamp_before_hashing(self):
+        snapshot = {'nota': self.nota.pk, 'estado': 'BORRADOR'}
+        expediente = ExpedienteNotaSHA.objects.create(
+            nota_soap=self.nota,
+            empresa=self.empresa,
+            paciente=self.paciente,
+            medico=self.medico,
+            snapshot_jsonb=snapshot,
+        )
+
+        self.assertIsNotNone(expediente.timestamp_creacion)
+        self.assertTrue(expediente.verificar_integridad())
+
+    def test_second_snapshot_hash_uses_previous_hash(self):
+        first = ExpedienteNotaSHA.objects.create(
+            nota_soap=self.nota,
+            empresa=self.empresa,
+            paciente=self.paciente,
+            medico=self.medico,
+            snapshot_jsonb={'version': 1},
+        )
+        second = ExpedienteNotaSHA(
+            nota_soap=self.nota,
+            empresa=self.empresa,
+            paciente=self.paciente,
+            medico=self.medico,
+            version=first.version + 1,
+            snapshot_jsonb={'version': 2},
+        )
+        second.save()
+
+        self.assertEqual(second.hash_anterior, first.hash_sha256)
+        self.assertTrue(second.verificar_integridad())
+        self.assertTrue(second.verificar_cadena())

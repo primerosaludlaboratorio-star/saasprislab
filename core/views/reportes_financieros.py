@@ -21,6 +21,16 @@ from core.models import (
 from contabilidad.models import Compra, Nomina, Poliza, AsientoContable, CuentaContable
 
 
+def _fecha_segura(valor, defecto):
+    """Evita que un filtro de fecha malformado convierta el reporte en HTTP 500."""
+    if not valor:
+        return defecto
+    try:
+        return datetime.strptime(valor, '%Y-%m-%d').date()
+    except (TypeError, ValueError):
+        return defecto
+
+
 def _sumas_por_dia(queryset, fecha_field: str, total_field: str):
     """
     Agrupa montos por día y retorna un dict {date: Decimal}.
@@ -55,8 +65,8 @@ def reporte_ingresos_egresos(request):
     if not fecha_fin:
         fecha_fin = hoy.strftime('%Y-%m-%d')
     
-    fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
-    fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+    fecha_inicio_dt = _fecha_segura(fecha_inicio, hoy - timedelta(days=30))
+    fecha_fin_dt = _fecha_segura(fecha_fin, hoy)
     
     # INGRESOS
     ventas = Venta.objects.filter(
@@ -142,7 +152,7 @@ def reporte_balance_general(request):
 
     # Fecha de corte
     fecha_corte = request.GET.get('fecha_corte', timezone.localdate().strftime('%Y-%m-%d'))
-    fecha_corte_dt = datetime.strptime(fecha_corte, '%Y-%m-%d').date()
+    fecha_corte_dt = _fecha_segura(fecha_corte, timezone.localdate())
 
     from contabilidad.models import CuentaContable, AsientoContable
 
@@ -233,8 +243,8 @@ def reporte_flujo_caja(request):
     if not fecha_fin:
         fecha_fin = hoy.strftime('%Y-%m-%d')
     
-    fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
-    fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+    fecha_inicio_dt = _fecha_segura(fecha_inicio, hoy - timedelta(days=30))
+    fecha_fin_dt = _fecha_segura(fecha_fin, hoy)
     
     # ENTRADAS DE EFECTIVO
     pagos_efectivo = Pago.objects.filter(
@@ -371,8 +381,8 @@ def exportar_excel_ingresos_egresos(request):
     hoy = timezone.localdate()
     fecha_inicio = request.GET.get('fecha_inicio', (hoy - timedelta(days=30)).strftime('%Y-%m-%d'))
     fecha_fin = request.GET.get('fecha_fin', hoy.strftime('%Y-%m-%d'))
-    fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
-    fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+    fecha_inicio_dt = _fecha_segura(fecha_inicio, hoy - timedelta(days=30))
+    fecha_fin_dt = _fecha_segura(fecha_fin, hoy)
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -482,8 +492,8 @@ def exportar_excel_flujo_caja(request):
     hoy = timezone.localdate()
     fecha_inicio = request.GET.get('fecha_inicio', (hoy - timedelta(days=30)).strftime('%Y-%m-%d'))
     fecha_fin = request.GET.get('fecha_fin', hoy.strftime('%Y-%m-%d'))
-    fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
-    fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+    fecha_inicio_dt = _fecha_segura(fecha_inicio, hoy - timedelta(days=30))
+    fecha_fin_dt = _fecha_segura(fecha_fin, hoy)
 
     wb = openpyxl.Workbook()
     ws = wb.active

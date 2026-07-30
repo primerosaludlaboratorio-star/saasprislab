@@ -24,6 +24,7 @@ Este módulo implementa las 3 capas de blindaje:
 
 import hashlib
 import json
+import secrets
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -114,7 +115,9 @@ class ExpedienteNotaSHA(models.Model):
     )
     
     # Metadatos
-    timestamp_creacion = models.DateTimeField(auto_now_add=True)
+    # Debe conservar el instante que se incluye en el hash; auto_now_add lo
+    # sobrescribiría dentro de Model.save() después de calcularlo.
+    timestamp_creacion = models.DateTimeField(default=timezone.now, editable=False)
     timestamp_edicion = models.DateTimeField(auto_now=True)
     ip_origen = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.CharField(max_length=500, blank=True)
@@ -203,11 +206,30 @@ class ExpedienteNotaSHA(models.Model):
     def save(self, *args, **kwargs):
         # Si es nuevo, generar hash
         if not self.pk:
+            # Los flujos internos no siempre tienen navegador; la columna es
+            # obligatoria y debe persistir cadena vacia, no NULL.
+            if self.user_agent is None:
+                self.user_agent = ''
+
+            # auto_now_add se asigna dentro de Model.save(); el hash debe usar
+            # exactamente el timestamp que quedara persistido.
+            if self.timestamp_creacion is None:
+                self.timestamp_creacion = timezone.now()
+
             if not self.hash_sha256:
+                # Buscar hash anterior antes de calcular el bloque actual.
+                if not self.hash_anterior and self.version > 1:
+                    anterior = ExpedienteNotaSHA.objects.filter(
+                        nota_soap=self.nota_soap,
+                        version=self.version - 1
+                    ).first()
+                    if anterior:
+                        self.hash_anterior = anterior.hash_sha256
+                elif self.version == 1:
+                    self.hash_anterior = None  # Genesis
+
                 self.hash_sha256 = self.calcular_hash()
-            
-            # Buscar hash anterior si no se proporcionó
-            if not self.hash_anterior and self.version > 1:
+            elif not self.hash_anterior and self.version > 1:
                 anterior = ExpedienteNotaSHA.objects.filter(
                     nota_soap=self.nota_soap,
                     version=self.version - 1
@@ -570,7 +592,7 @@ class NotaClinicaSellar(models.Model):
         
         # Comparar hashes
         pin_hash_input = hashlib.sha256(pin_limpio.encode()).hexdigest()
-        return pin_hash_input == pin_hash_almacenado
+        return secrets.compare_digest(pin_hash_input, pin_hash_almacenado)
     
     def _generar_qr_verificacion(self):
         """Genera URL de verificación para el QR."""

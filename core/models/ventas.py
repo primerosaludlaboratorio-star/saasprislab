@@ -500,7 +500,14 @@ class Pago(models.Model):
     ]
     venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name='pagos', null=True, blank=True)
     metodo = models.CharField(max_length=50, choices=METODOS, verbose_name="Método de Pago")
-    clabe_interbancaria = models.CharField(max_length=20, blank=True, null=True, default="0123 4567 8901 2345", verbose_name="CLABE para SPEI")
+    clabe_interbancaria = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        default='',
+        verbose_name="CLABE para SPEI",
+        help_text="Obligatoria únicamente cuando el método de pago es SPEI.",
+    )
     monto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto Recibido")
 
     monto_efectivo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Monto en Efectivo")

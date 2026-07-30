@@ -515,8 +515,13 @@ class IncidenciaAsistencia(models.Model):
     fecha_fin    = models.DateField(verbose_name="Fecha fin")
     dias         = models.PositiveSmallIntegerField(default=1, verbose_name="Días")
     motivo       = models.TextField(blank=True, verbose_name="Motivo / justificación")
-    documento_soporte = models.FileField(upload_to='incidencias/', null=True, blank=True,
-                                          verbose_name="Documento de soporte")
+    documento_soporte = models.FileField(
+        upload_to='incidencias/',
+        null=True,
+        blank=True,
+        validators=[validate_document_upload],
+        verbose_name="Documento de soporte",
+    )
     autorizado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True,
                                         related_name='incidencias_autorizadas')
     fecha_solicitud = models.DateTimeField(auto_now_add=True)

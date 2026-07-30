@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 
 from core.rbac import (
     Rol, PERMISSION_MAP, check_permission, require_permission,
-    require_roles, deny_roles, user_permissions,
+    require_roles, deny_roles, require_sucursal_access, user_permissions,
 )
 
 
@@ -163,6 +163,15 @@ class DecoratorTest(TestCase):
         request = self._make_request("", is_superuser=True)
         resp = vista_admin(request)
         self.assertEqual(resp.status_code, 200)
+
+    def test_require_sucursal_access_falla_cerrado_con_id_invalido(self):
+        @require_sucursal_access("caja")
+        def vista_caja(request, sucursal_id):
+            return MagicMock(status_code=200)
+
+        request = self._make_request(Rol.CAJA)
+        with self.assertRaises(PermissionDenied):
+            vista_caja(request, sucursal_id="no-es-un-entero")
 
 
 class UserPermissionsTest(TestCase):
