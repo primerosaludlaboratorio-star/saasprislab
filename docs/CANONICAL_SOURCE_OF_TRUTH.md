@@ -48,7 +48,7 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local y desplegada: `547163a` (`fix(migrations): widen PIN columns before hashing`).
+- Última revisión local y desplegada: `f94e74a` (`fix(audit): harden clinical snapshots and report inputs`).
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
@@ -78,6 +78,19 @@ La revisión `4ac7903` es la fuente canónica para la consolidación de middlewa
 - La búsqueda completa de imports activos no encontró referencias a ninguno.
 - `marketing/urls.py` usa exclusivamente `marketing.views` y
   `marketing.views_tracking`.
+
+## Auditoría exhaustiva: cierres desplegados
+
+- `core.0099` corrigió la generación y encadenamiento SHA de snapshots clínicos;
+  la verificación productiva transaccional confirmó dos versiones íntegras y
+  rollback sin dejar datos (`PROD_BLINDAJE_ROLLBACK_OK 1 2`).
+- `core.0100` aplicó validación de archivos de soporte de RH y eliminó el
+  default CLABE de prueba.
+- Los reportes financieros activos toleran fechas inválidas sin 500 y tienen
+  prueba focalizada.
+- `require_sucursal_access` falla cerrado ante identificadores no numéricos.
+- Producción verificada: `https://prislab.labcorecloud.com/health/` HTTP 200,
+  base de datos y caché OK; Gunicorn, Celery y Celery Beat activos.
 - El script `migracion_ia.ps1` ya no lista el respaldo eliminado.
 - Inventarios operativos actualizados; los reportes históricos conservan su
   carácter de evidencia y no son fuente de código.
