@@ -460,7 +460,6 @@ El objetivo final es entregar:
 | 758 | `datos_lims/Examenes_Perfil.csv` |
 | 754 | `core/templates/core/dashboard_director.html` |
 | 751 | `core/services/ventas/cobro_service.py` |
-| 751 | `marketing/views_legacy.py` |
 | 745 | `core/views/laboratorio/calidad.py` |
 | 716 | `farmacia/templates/farmacia/registrar_compra.html` |
 | 707 | `core/templates/pris/widget.html` |

@@ -48,7 +48,7 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local y desplegada: `2121375` (`docs: pin deployed canonical revision`).
+- Última revisión local: se actualizará al commit de esta limpieza antes del despliegue.
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
@@ -71,6 +71,16 @@ La revisión `4ac7903` es la fuente canónica para la consolidación de middlewa
   cadena real.
 - La evidencia automatizada es la suite real disponible de rate limit, tenant,
   Sentinel y drivers de middleware, además de `check`, migraciones y compilación.
+
+## Limpieza de código muerto
+
+- Eliminados `core/services/ai_medico_backup.py` y `marketing/views_legacy.py`.
+- La búsqueda completa de imports activos no encontró referencias a ninguno.
+- `marketing/urls.py` usa exclusivamente `marketing.views` y
+  `marketing.views_tracking`.
+- El script `migracion_ia.ps1` ya no lista el respaldo eliminado.
+- Inventarios operativos actualizados; los reportes históricos conservan su
+  carácter de evidencia y no son fuente de código.
 
 ## Qué no se debe hacer
 

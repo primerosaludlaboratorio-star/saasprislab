@@ -21,8 +21,7 @@ Write-Host "[2/4] Identificando archivos con Gemini..." -ForegroundColor Yellow
 $archivos = @(
     "core/services/ai_medico.py",
     "ia/views.py",
-    "consultorio/views.py",
-    "core/services/ai_medico_backup.py"
+    "consultorio/views.py"
 )
 
 foreach ($archivo in $archivos) {

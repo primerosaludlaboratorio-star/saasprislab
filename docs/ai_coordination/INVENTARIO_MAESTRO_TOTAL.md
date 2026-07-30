@@ -75,7 +75,7 @@ Cada archivo es un módulo de vista independiente:
 - `performance.py` — métricas de rendimiento
 - `canonical_host.py` — normalización de host
 - `actividad_usuario.py` — registro de actividad
-- `admin_access.py`, `admin_access_restrict.py` — restricción de admin
+- `admin_access.py` — restricción de admin
 - `blindaje_expediente.py` — protección de expedientes
 - `feature_flags.py` — flags de features
 - `json_response.py` — respuestas JSON
@@ -83,7 +83,7 @@ Cada archivo es un módulo de vista independiente:
 
 ### `core/services/` (subservicios)
 
-- **IA médica:** `ai_medico.py`, `ai_medico_backup.py`, `interpretacion_ia.py`, `ia_clinical_governance.py`, `validador_ia.py`
+- **IA médica:** `ai_medico.py`, `interpretacion_ia.py`, `ia_clinical_governance.py`, `validador_ia.py`
 - **Clínico:** `clinical_math.py`, `escudo_clinico_check.py` (en utils), `motor_recetas.py`, `motor_reportes_lab.py`, `resultados_impresion_presentacion.py`
 - **Inventario:** `inventario/catalogo_farmacia_service.py`, `inventario/movimiento_inventario_service.py`
 - **LIMS:** `lims/interfaces_lims_service.py`, `lims/orden_recepcion_service.py`, `lims/resultados_lims_service.py`
