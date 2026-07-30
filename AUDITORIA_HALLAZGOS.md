@@ -164,7 +164,7 @@
 - **Mitigante parcial:** rate limit de 20 intentos / 5 minutos por IP (`cache`) — reduce pero no elimina la enumeración (alcanzable con múltiples IPs o distribuido en el tiempo); además cualquier intento fallido O exitoso consume el mismo contador, por lo que un atacante paciente igual puede recolectar cientos de folios por hora.
 - **Corrección aplicada:** el QR y enlace del ticket incluyen un token HMAC ligado a `empresa_id` y `folio_operacion`. Sin token válido, el portal no carga ni muestra la venta y no permite registrar la solicitud. La comparación es constante y el folio por sí solo deja de ser suficiente.
 - **Verificación local:** `core.tests.test_autofactura_token` OK; `manage.py check` y compilación OK.
-- **Estado:** corregido localmente; pendiente despliegue y verificación productiva.
+- **Estado:** corregido, desplegado y verificado en producción en la revisión `c1837ee0eaf9eb859eb7db58cf3274c95e7f6cda`; migraciones sin pendientes, servicios activos y health check exitoso.
 
 ## H-NUEVO-13 — `core/admin.py` (archivo raíz) es código MUERTO/huérfano, duplica registros de `core/admin/` — CORREGIDO
 - **Archivo:** `core/admin.py` (41 KB, ~700+ líneas).

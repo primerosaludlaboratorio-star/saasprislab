@@ -48,7 +48,7 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local y desplegada: `0022cefb71183eb2f826e5181ab5a12ed2a55139` (`docs(audit): normalize finding identifiers and revision`).
+- Última revisión local y desplegada: `c1837ee0eaf9eb859eb7db58cf3274c95e7f6cda` (`fix(privacy): require possession token for public invoicing`).
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
@@ -106,6 +106,9 @@ La revisión `4ac7903` es la fuente canónica para la consolidación de middlewa
   quedó desplegada con migraciones al día, health HTTP 200 y servicios activos.
 - Auditoría de campos endurecida: la revisión `2c3a0247e7032087678e9f9f7f315f4bc0d599b2`
   bloquea entradas arbitrarias y quedó desplegada con health HTTP 200 y servicios activos.
+- Autofactura pública endurecida: el ticket usa token HMAC de posesión ligado a
+  empresa y folio; la revisión `c1837ee0eaf9eb859eb7db58cf3274c95e7f6cda`
+  quedó desplegada con health HTTP 200 y servicios activos.
 - Verificación productiva del Admin: 184 registros, cero administradores sin
   mixin, cero fallos de consulta; cinco catálogos globales fallan cerrado como
   estaba diseñado.
