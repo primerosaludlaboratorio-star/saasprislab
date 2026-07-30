@@ -51,9 +51,12 @@ Antes de editar:
 - Última revisión local/desplegada: `417b30c`.
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
-- Sincronización remota: debe verificarse con `git fetch` y
-  `git rev-parse origin/release/v1.0-local`; no se declara sincronizada si el
-  servidor Git no responde.
+- Sincronización remota verificada el 2026-07-29: el remoto visible permanece
+  en `8a0e3e8`, mientras el checkout canónico está en `641db25` y adelante 48
+  commits. El `push` no terminó desde esta máquina por falta de una sesión Git
+  autenticada disponible; por tanto GitHub no se declara como fuente activa ni
+  sincronizada. El despliegue operativo y producción sí están alineados con
+  `641db25`.
 
 ## Qué no se debe hacer
 
