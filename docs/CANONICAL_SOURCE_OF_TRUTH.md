@@ -48,7 +48,7 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local y desplegada: `c1837ee0eaf9eb859eb7db58cf3274c95e7f6cda` (`fix(privacy): require possession token for public invoicing`).
+- Última revisión local y desplegada: `a72cc5b47e375fbe2f630f07c50cb124e6643092` (`docs(audit): record public invoicing privacy closure`).
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
