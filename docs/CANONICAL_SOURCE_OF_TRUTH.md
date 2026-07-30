@@ -48,7 +48,7 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local y desplegada: `2c3a0247e7032087678e9f9f7f315f4bc0d599b2` (`fix(audit): prevent forged field history entries`).
+- Última revisión local y desplegada: `0022cefb71183eb2f826e5181ab5a12ed2a55139` (`docs(audit): normalize finding identifiers and revision`).
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
