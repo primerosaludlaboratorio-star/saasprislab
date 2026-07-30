@@ -2,6 +2,7 @@
 Admin: 4-8. CONTROL MÉDICO, LABORAL, LIMS
 """
 from django.contrib import admin
+from .tenant import TenantScopedAdmin
 from django.contrib.auth.admin import UserAdmin
 from core.models import (
     Empresa, Usuario, Producto, Lote, Venta, DetalleVenta, Pago, Medico, Receta, Gasto,
@@ -37,7 +38,7 @@ from core.models import (
 # 4. CONTROL MÉDICO Y EGRESOS
 # ==============================================================================
 @admin.register(Paciente)
-class PacienteAdmin(admin.ModelAdmin):
+class PacienteAdmin(TenantScopedAdmin):
     """Administración de pacientes."""
     list_display = ('nombre_completo', 'telefono', 'email', 'tipo', 'fecha_registro', 'empresa')
     list_filter = ('tipo', 'fecha_registro', 'empresa')
@@ -62,19 +63,19 @@ class PacienteAdmin(admin.ModelAdmin):
     )
 
 @admin.register(Medico)
-class MedicoAdmin(admin.ModelAdmin):
+class MedicoAdmin(TenantScopedAdmin):
     list_display = ('nombre_completo', 'cedula_profesional', 'especialidad')
     list_filter = ('especialidad',)
     search_fields = ('nombre_completo', 'cedula_profesional')
 
 @admin.register(Receta)
-class RecetaAdmin(admin.ModelAdmin):
+class RecetaAdmin(TenantScopedAdmin):
     list_display = ('folio_receta', 'medico', 'fecha_emision')
     list_filter = ('fecha_emision', 'medico')
     search_fields = ('folio_receta', 'medico__nombre_completo')
 
 @admin.register(Gasto)
-class GastoAdmin(admin.ModelAdmin):
+class GastoAdmin(TenantScopedAdmin):
     list_display = ('fecha', 'concepto', 'monto', 'usuario')
     list_filter = ('fecha', 'empresa')
     search_fields = ('concepto',)
@@ -83,7 +84,7 @@ class GastoAdmin(admin.ModelAdmin):
 # 5. MÓDULO DE LABORATORIO CLÍNICO (catalogo LIMS en app lims)
 # ==============================================================================
 @admin.register(OrdenDeServicio)
-class OrdenDeServicioAdmin(admin.ModelAdmin):
+class OrdenDeServicioAdmin(TenantScopedAdmin):
     """Administración de órdenes de servicio de laboratorio."""
     list_display = ('folio_orden', 'paciente', 'fecha_creacion', 'estado', 'total', 'responsable_ingreso', 'empresa')
     list_filter = ('estado', 'fecha_creacion', 'empresa', 'tipo_servicio', 'estado_pago')
@@ -134,7 +135,7 @@ class PagoOrdenInline(admin.TabularInline):
 OrdenDeServicioAdmin.inlines = [DetalleOrdenInline, PagoOrdenInline]
 
 @admin.register(DetalleOrden)
-class DetalleOrdenAdmin(admin.ModelAdmin):
+class DetalleOrdenAdmin(TenantScopedAdmin):
     """Administración de detalles de órdenes de laboratorio."""
     list_display = ('orden', 'descripcion_linea', 'analito', 'perfil_lims', 'paquete_lims', 'estado_procesamiento', 'validado_por', 'fecha_validacion')
     list_filter = ('estado_procesamiento', 'valor_critico_confirmado', 'orden__estado')
@@ -142,7 +143,7 @@ class DetalleOrdenAdmin(admin.ModelAdmin):
     readonly_fields = ('orden', 'precio_momento')
 
 @admin.register(PagoOrden)
-class PagoOrdenAdmin(admin.ModelAdmin):
+class PagoOrdenAdmin(TenantScopedAdmin):
     """Administración de pagos de órdenes."""
     def monto_total(self, obj):
         """Calcula el monto total del pago."""
@@ -179,7 +180,7 @@ class PagoOrdenAdmin(admin.ModelAdmin):
 # Comentados hasta que se implementen
 
 @admin.register(GastoOperativo)
-class GastoOperativoAdmin(admin.ModelAdmin):
+class GastoOperativoAdmin(TenantScopedAdmin):
     """Administración de gastos operativos."""
     list_display = ('categoria', 'monto', 'descripcion', 'usuario', 'fecha', 'empresa')
     list_filter = ('categoria', 'fecha', 'empresa', 'sucursal')
@@ -197,7 +198,7 @@ class GastoOperativoAdmin(admin.ModelAdmin):
     readonly_fields = ('fecha',)
 
 @admin.register(MetaVenta)
-class MetaVentaAdmin(admin.ModelAdmin):
+class MetaVentaAdmin(TenantScopedAdmin):
     """Administración de metas de venta diarias por sucursal."""
     list_display = ('empresa', 'sucursal', 'fecha', 'monto_objetivo', 'creado_por', 'fecha_creacion')
     list_filter = ('empresa', 'sucursal', 'fecha', 'fecha_creacion')
@@ -227,7 +228,7 @@ class ConvenioPrecioInline(admin.TabularInline):
 
 
 @admin.register(Convenio)
-class ConvenioAdmin(admin.ModelAdmin):
+class ConvenioAdmin(TenantScopedAdmin):
     list_display = ('nombre', 'tipo', 'dias_credito', 'descuento_porcentaje', 'activo')
     list_filter = ('tipo', 'activo')
     search_fields = ('nombre', 'rfc')
@@ -241,7 +242,7 @@ class PagoCxCInline(admin.TabularInline):
 
 
 @admin.register(CuentaPorCobrar)
-class CuentaPorCobrarAdmin(admin.ModelAdmin):
+class CuentaPorCobrarAdmin(TenantScopedAdmin):
     list_display = ('folio', 'convenio', 'monto_total', 'saldo_pendiente', 'estado', 'fecha_vencimiento')
     list_filter = ('estado', 'convenio')
     search_fields = ('folio', 'concepto')
@@ -250,7 +251,7 @@ class CuentaPorCobrarAdmin(admin.ModelAdmin):
 
 
 @admin.register(NotaCredito)
-class NotaCreditoAdmin(admin.ModelAdmin):
+class NotaCreditoAdmin(TenantScopedAdmin):
     list_display = ('folio', 'monto', 'motivo', 'aplicada', 'fecha_emision')
     list_filter = ('motivo', 'aplicada')
     search_fields = ('folio', 'descripcion')
@@ -261,7 +262,7 @@ class NotaCreditoAdmin(admin.ModelAdmin):
 # ==============================================================================
 
 @admin.register(Sucursal)
-class SucursalAdmin(admin.ModelAdmin):
+class SucursalAdmin(TenantScopedAdmin):
     list_display = (
         'nombre', 'empresa', 'codigo_sucursal', 'telefono', 'activa',
         'gestion_inventario_activa',
@@ -282,7 +283,7 @@ class SucursalAdmin(admin.ModelAdmin):
 
 
 @admin.register(ConfiguracionModulos)
-class ConfiguracionModulosAdmin(admin.ModelAdmin):
+class ConfiguracionModulosAdmin(TenantScopedAdmin):
     list_display = ('empresa', 'modulo_laboratorio', 'modulo_farmacia',
                     'modulo_expediente_clinico', 'modulo_consulta_externa')
     list_filter = ('empresa',)
@@ -293,7 +294,7 @@ class ConfiguracionModulosAdmin(admin.ModelAdmin):
 # ==============================================================================
 
 @admin.register(GastoCaja)
-class GastoCajaAdmin(admin.ModelAdmin):
+class GastoCajaAdmin(TenantScopedAdmin):
     list_display = ('concepto', 'monto', 'usuario', 'fecha', 'empresa')
     list_filter = ('empresa', 'fecha')
     search_fields = ('concepto',)
@@ -302,21 +303,21 @@ class GastoCajaAdmin(admin.ModelAdmin):
 
 
 @admin.register(MovimientoCaja)
-class MovimientoCajaAdmin(admin.ModelAdmin):
+class MovimientoCajaAdmin(TenantScopedAdmin):
     list_display = ('caja_nombre', 'empresa', 'tipo_movimiento', 'concepto', 'monto', 'fecha_movimiento')
     list_filter = ('tipo_movimiento', 'empresa')
     search_fields = ('concepto', 'caja_nombre')
 
 
 @admin.register(AjusteInventario)
-class AjusteInventarioAdmin(admin.ModelAdmin):
+class AjusteInventarioAdmin(TenantScopedAdmin):
     list_display = ('producto', 'cantidad', 'tipo_movimiento', 'fecha', 'usuario')
     list_filter = ('tipo_movimiento',)
     search_fields = ('producto__nombre', 'observacion')
 
 
 @admin.register(RecetaItem)
-class RecetaItemAdmin(admin.ModelAdmin):
+class RecetaItemAdmin(TenantScopedAdmin):
     list_display = ('receta', 'medicamento', 'texto_libre', 'cantidad')
     search_fields = ('medicamento__nombre', 'texto_libre')
     readonly_fields = ('precio_momento',)
@@ -327,21 +328,21 @@ class RecetaItemAdmin(admin.ModelAdmin):
 # ==============================================================================
 
 @admin.register(Empleado)
-class EmpleadoAdmin(admin.ModelAdmin):
+class EmpleadoAdmin(TenantScopedAdmin):
     list_display = ('usuario', 'empresa', 'puesto', 'fecha_ingreso', 'activo')
     list_filter = ('empresa', 'activo', 'puesto')
     search_fields = ('usuario__username', 'usuario__first_name', 'puesto')
 
 
 @admin.register(HorarioTrabajo)
-class HorarioTrabajoAdmin(admin.ModelAdmin):
+class HorarioTrabajoAdmin(TenantScopedAdmin):
     list_display = ('nombre', 'empresa', 'empleado', 'dia_semana', 'hora_entrada', 'hora_salida', 'activo')
     list_filter = ('empresa', 'dia_semana', 'activo')
     search_fields = ('nombre', 'empleado__usuario__username')
 
 
 @admin.register(IncidenciaAsistencia)
-class IncidenciaAsistenciaAdmin(admin.ModelAdmin):
+class IncidenciaAsistenciaAdmin(TenantScopedAdmin):
     list_display = ('empleado', 'tipo', 'estado', 'fecha_inicio', 'fecha_fin', 'dias')
     list_filter = ('tipo', 'estado', 'empresa')
     search_fields = ('empleado__usuario__username',)
@@ -349,7 +350,7 @@ class IncidenciaAsistenciaAdmin(admin.ModelAdmin):
 
 
 @admin.register(PeriodoNomina)
-class PeriodoNominaAdmin(admin.ModelAdmin):
+class PeriodoNominaAdmin(TenantScopedAdmin):
     list_display = ('nombre', 'empresa', 'frecuencia', 'fecha_inicio', 'fecha_fin', 'estado')
     list_filter = ('empresa', 'frecuencia', 'estado')
     search_fields = ('nombre',)
@@ -357,7 +358,7 @@ class PeriodoNominaAdmin(admin.ModelAdmin):
 
 
 @admin.register(ReciboNomina)
-class ReciboNominaAdmin(admin.ModelAdmin):
+class ReciboNominaAdmin(TenantScopedAdmin):
     list_display = ('empleado', 'periodo', 'sueldo_base', 'neto_pagar', 'pagado')
     list_filter = ('pagado', 'periodo__empresa')
     search_fields = ('empleado__usuario__username',)
@@ -369,7 +370,7 @@ class ReciboNominaAdmin(admin.ModelAdmin):
 # ==============================================================================
 
 @admin.register(SolicitudAutorizacion)
-class SolicitudAutorizacionAdmin(admin.ModelAdmin):
+class SolicitudAutorizacionAdmin(TenantScopedAdmin):
     list_display = ('usuario_solicita', 'tipo_accion', 'estado', 'fecha_solicitud', 'fecha_resolucion')
     list_filter = ('estado', 'tipo_accion')
     search_fields = ('usuario_solicita__username', 'descripcion')
@@ -378,7 +379,7 @@ class SolicitudAutorizacionAdmin(admin.ModelAdmin):
 
 
 @admin.register(VoiceAuditLog)
-class VoiceAuditLogAdmin(admin.ModelAdmin):
+class VoiceAuditLogAdmin(TenantScopedAdmin):
     list_display = ('usuario', 'empresa', 'timestamp', 'intencion_detectada', 'tipo_comando', 'estado')
     list_filter = ('empresa', 'tipo_comando', 'estado')
     search_fields = ('usuario__username', 'intencion_detectada')
@@ -392,7 +393,7 @@ class VoiceAuditLogAdmin(admin.ModelAdmin):
 # ==============================================================================
 
 @admin.register(DocumentoCapacitacion)
-class DocumentoCapacitacionAdmin(admin.ModelAdmin):
+class DocumentoCapacitacionAdmin(TenantScopedAdmin):
     list_display = ('titulo', 'tipo', 'empresa', 'version', 'activo', 'fecha_creacion')
     list_filter = ('tipo', 'empresa', 'activo')
     search_fields = ('titulo', 'descripcion')
@@ -400,7 +401,7 @@ class DocumentoCapacitacionAdmin(admin.ModelAdmin):
 
 
 @admin.register(CapsulaSabiduria)
-class CapsulaSabiduriAdmin(admin.ModelAdmin):
+class CapsulaSabiduriAdmin(TenantScopedAdmin):
     list_display = ('titulo', 'empresa', 'documento_fuente', 'fecha_creacion')
     list_filter = ('empresa',)
     search_fields = ('titulo', 'contenido', 'tags')

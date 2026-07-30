@@ -2,6 +2,7 @@
 Admin: 2. CATÁLOGO MAESTRO E INVENTARIO
 """
 from django.contrib import admin
+from .tenant import TenantScopedAdmin
 from django.contrib.auth.admin import UserAdmin
 from core.models import (
     Empresa, Usuario, Producto, Lote, Venta, DetalleVenta, Pago, Medico, Receta, Gasto,
@@ -44,7 +45,7 @@ class LoteInline(admin.TabularInline):
     can_delete = True
 
 @admin.register(Producto)
-class ProductoAdmin(admin.ModelAdmin):
+class ProductoAdmin(TenantScopedAdmin):
     """Ficha Técnica Detallada con agrupación lógica de campos."""
     save_on_top = True
     
@@ -66,7 +67,7 @@ class ProductoAdmin(admin.ModelAdmin):
     inlines = [LoteInline]
 
 @admin.register(Lote)
-class LoteAdmin(admin.ModelAdmin):
+class LoteAdmin(TenantScopedAdmin):
     """Control de activos y trazabilidad de caducidades (PEPS)."""
     list_display = ('numero_lote', 'producto', 'fecha_caducidad', 'cantidad', 'ubicacion_fisica')
     list_filter = ('fecha_caducidad', 'ubicacion_fisica', 'producto__empresa')

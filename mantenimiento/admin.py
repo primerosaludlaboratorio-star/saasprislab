@@ -4,6 +4,7 @@ Configurado con inlines para que el Director pueda gestionar
 protocolos, pasos, árboles y nodos desde una sola pantalla.
 """
 from django.contrib import admin
+from core.admin.tenant import TenantScopedAdmin
 from django.utils.html import format_html
 from .models import (
     ExpedienteEquipo, ProtocoloEquipo, PasoProtocolo,
@@ -59,7 +60,7 @@ class SalidaRefaccionInline(admin.TabularInline):
 # ── ModelAdmins ───────────────────────────────────────────────────────────────
 
 @admin.register(ExpedienteEquipo)
-class ExpedienteEquipoAdmin(admin.ModelAdmin):
+class ExpedienteEquipoAdmin(TenantScopedAdmin):
     list_display = ('equipo', 'empresa', 'tipo_equipo', 'silo_refacciones',
                     'en_servicio', 'garantia_hasta', 'qr_link')
     list_filter  = ('empresa', 'tipo_equipo', 'en_servicio', 'silo_refacciones')
@@ -73,7 +74,7 @@ class ExpedienteEquipoAdmin(admin.ModelAdmin):
 
 
 @admin.register(ProtocoloEquipo)
-class ProtocoloEquipoAdmin(admin.ModelAdmin):
+class ProtocoloEquipoAdmin(TenantScopedAdmin):
     list_display  = ('nombre', 'tipo_protocolo', 'equipo', 'bloquea_worklist',
                      'aplica_a_perfil', 'activo', 'version')
     list_filter   = ('tipo_protocolo', 'bloquea_worklist', 'activo', 'empresa')
@@ -82,7 +83,7 @@ class ProtocoloEquipoAdmin(admin.ModelAdmin):
 
 
 @admin.register(ArbolDiagnostico)
-class ArbolDiagnosticoAdmin(admin.ModelAdmin):
+class ArbolDiagnosticoAdmin(TenantScopedAdmin):
     list_display  = ('falla_descripcion', 'falla_codigo', 'expediente',
                      'empresa', 'activo', 'created_at')
     list_filter   = ('empresa', 'activo')
@@ -91,7 +92,7 @@ class ArbolDiagnosticoAdmin(admin.ModelAdmin):
 
 
 @admin.register(ProcedimientoReparacion)
-class ProcedimientoReparacionAdmin(admin.ModelAdmin):
+class ProcedimientoReparacionAdmin(TenantScopedAdmin):
     list_display  = ('titulo', 'tipo_componente', 'nivel_requerido',
                      'tiempo_estimado_min', 'requiere_paro_equipo', 'activo')
     list_filter   = ('tipo_componente', 'nivel_requerido', 'activo')
@@ -100,7 +101,7 @@ class ProcedimientoReparacionAdmin(admin.ModelAdmin):
 
 
 @admin.register(EjecucionProtocolo)
-class EjecucionProtocoloAdmin(admin.ModelAdmin):
+class EjecucionProtocoloAdmin(TenantScopedAdmin):
     list_display  = ('protocolo', 'expediente', 'ejecutado_por',
                      'estado', 'fecha_inicio', 'duracion_real_seg')
     list_filter   = ('estado', 'empresa')
@@ -109,7 +110,7 @@ class EjecucionProtocoloAdmin(admin.ModelAdmin):
 
 
 @admin.register(BypassChecklistAutorizacion)
-class BypassAdmin(admin.ModelAdmin):
+class BypassAdmin(TenantScopedAdmin):
     list_display  = ('ejecutado_por', 'autorizado_por', 'pasos_omitidos',
                      'pin_verificado', 'fecha', 'motivo_corto')
     list_filter   = ('pin_verificado',)
@@ -121,7 +122,7 @@ class BypassAdmin(admin.ModelAdmin):
 
 
 @admin.register(TicketMantenimientoCMMS)
-class TicketCMMSAdmin(admin.ModelAdmin):
+class TicketCMMSAdmin(TenantScopedAdmin):
     list_display  = ('pk', 'titulo', 'expediente', 'estado',
                      'tipo_origen', 'nivel_escalamiento_actual',
                      'creado_por', 'fecha_apertura')
@@ -132,7 +133,7 @@ class TicketCMMSAdmin(admin.ModelAdmin):
 
 
 @admin.register(RegistroTCO)
-class RegistroTCOAdmin(admin.ModelAdmin):
+class RegistroTCOAdmin(TenantScopedAdmin):
     list_display  = ('expediente', 'empresa', 'periodo_mes', 'periodo_anio',
                      'costo_refacciones', 'horas_inactividad',
                      'pruebas_procesadas', 'costo_por_prueba')

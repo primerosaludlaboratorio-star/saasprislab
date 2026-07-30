@@ -2,6 +2,7 @@
 Admin: 12-14. RRHH, EVALUACIÓN, GOBERNANZA
 """
 from django.contrib import admin
+from .tenant import TenantScopedAdmin
 from django.contrib.auth.admin import UserAdmin
 from core.models import (
     Empresa, Usuario, Producto, Lote, Venta, DetalleVenta, Pago, Medico, Receta, Gasto,
@@ -38,7 +39,7 @@ from core.models import (
 # ==============================================================================
 
 @admin.register(ConversacionBienestar)
-class ConversacionBienestarAdmin(admin.ModelAdmin):
+class ConversacionBienestarAdmin(TenantScopedAdmin):
     list_display = ('usuario', 'empresa', 'rol', 'estado_salud', 'privado', 'fecha_creacion')
     list_filter = ('rol', 'estado_salud', 'privado', 'empresa')
     search_fields = ('usuario__username',)
@@ -50,7 +51,7 @@ class ConversacionBienestarAdmin(admin.ModelAdmin):
 
 
 @admin.register(AlertaBienestar)
-class AlertaBienestarAdmin(admin.ModelAdmin):
+class AlertaBienestarAdmin(TenantScopedAdmin):
     list_display = ('usuario', 'empresa', 'nivel', 'estado', 'fecha_alerta')
     list_filter = ('nivel', 'estado', 'empresa')
     search_fields = ('usuario__username',)
@@ -62,14 +63,14 @@ class AlertaBienestarAdmin(admin.ModelAdmin):
 # ==============================================================================
 
 @admin.register(CertificadoMedico)
-class CertificadoMedicoAdmin(admin.ModelAdmin):
+class CertificadoMedicoAdmin(TenantScopedAdmin):
     list_display = ('paciente', 'medico', 'empresa')
     list_filter = ('empresa',)
     search_fields = ('paciente__nombre_completo', 'medico__nombre_completo')
 
 
 @admin.register(NotaClinicaSOAP)
-class NotaClinicaSOAPAdmin(admin.ModelAdmin):
+class NotaClinicaSOAPAdmin(TenantScopedAdmin):
     list_display = ('paciente', 'medico', 'empresa', 'fecha_creacion')
     list_filter = ('empresa',)
     search_fields = ('paciente__nombre_completo',)
@@ -78,7 +79,7 @@ class NotaClinicaSOAPAdmin(admin.ModelAdmin):
 
 
 @admin.register(Antecedente)
-class AntecedenteAdmin(admin.ModelAdmin):
+class AntecedenteAdmin(TenantScopedAdmin):
     list_display = ('paciente', 'tipo', 'fecha_registro')
     list_filter = ('tipo',)
     search_fields = ('paciente__nombre_completo', 'descripcion')
@@ -86,7 +87,7 @@ class AntecedenteAdmin(admin.ModelAdmin):
 
 
 @admin.register(LogAccesoExpediente)
-class LogAccesoExpedienteAdmin(admin.ModelAdmin):
+class LogAccesoExpedienteAdmin(TenantScopedAdmin):
     list_display = ('historia_clinica', 'usuario', 'fecha_acceso', 'ip_origen')
     list_filter = ('usuario',)
     search_fields = ('historia_clinica__paciente__nombre_completo', 'usuario__username')
@@ -105,7 +106,7 @@ class LogAccesoExpedienteAdmin(admin.ModelAdmin):
 # ==============================================================================
 
 @admin.register(Competencia)
-class CompetenciaAdmin(admin.ModelAdmin):
+class CompetenciaAdmin(TenantScopedAdmin):
     list_display = ('nombre', 'tipo', 'activa')
     list_filter = ('tipo', 'activa')
     search_fields = ('nombre',)
@@ -127,7 +128,7 @@ class DetalleEvaluacionInline(admin.TabularInline):
 
 
 @admin.register(EvaluacionDesempeno)
-class EvaluacionDesempenoAdmin(admin.ModelAdmin):
+class EvaluacionDesempenoAdmin(TenantScopedAdmin):
     list_display = ('empleado', 'evaluador', 'fecha', 'periodo', 'estado')
     list_filter = ('periodo', 'estado')
     search_fields = ('empleado__usuario__username', 'evaluador__username')
@@ -136,14 +137,14 @@ class EvaluacionDesempenoAdmin(admin.ModelAdmin):
 
 
 @admin.register(PlanDesarrollo)
-class PlanDesarrolloAdmin(admin.ModelAdmin):
+class PlanDesarrolloAdmin(TenantScopedAdmin):
     list_display = ('empleado', 'evaluacion_origen', 'fecha_creacion', 'fecha_limite', 'estado')
     list_filter = ('estado',)
     search_fields = ('empleado__usuario__username',)
 
 
 @admin.register(Bitacora39A)
-class Bitacora39AAdmin(admin.ModelAdmin):
+class Bitacora39AAdmin(TenantScopedAdmin):
     list_display = ('empleado', 'periodo_semanal', 'fecha_inicio', 'fecha_fin')
     list_filter = ('periodo_semanal',)
     search_fields = ('empleado__usuario__username',)
@@ -159,28 +160,28 @@ from core.models import (
 
 
 @admin.register(SalesReturn)
-class SalesReturnAdmin(admin.ModelAdmin):
+class SalesReturnAdmin(TenantScopedAdmin):
     list_display = ('venta_original', 'empresa', 'tipo_devolucion', 'monto_reembolsado')
     list_filter = ('tipo_devolucion', 'empresa')
     search_fields = ('venta_original__folio_operacion',)
 
 
 @admin.register(EnvioMaquila)
-class EnvioMaquilaAdmin(admin.ModelAdmin):
+class EnvioMaquilaAdmin(TenantScopedAdmin):
     list_display = ('laboratorio_externo', 'empresa', 'guia_rastreo')
     list_filter = ('empresa',)
     search_fields = ('laboratorio_externo', 'guia_rastreo')
 
 
 @admin.register(EstudioImagen)
-class EstudioImagenAdmin(admin.ModelAdmin):
+class EstudioImagenAdmin(TenantScopedAdmin):
     list_display = ('paciente', 'medico_interpretador', 'empresa')
     list_filter = ('empresa',)
     search_fields = ('paciente__nombre_completo',)
 
 
 @admin.register(PlantillaNotaClinica)
-class PlantillaNotaClinicaAdmin(admin.ModelAdmin):
+class PlantillaNotaClinicaAdmin(TenantScopedAdmin):
     list_display = ('nombre',)
     search_fields = ('nombre', 'descripcion')
 
@@ -200,7 +201,7 @@ class DetalleVentaLoteInline(admin.TabularInline):
 
 
 @admin.register(ResultadoParametro)
-class ResultadoParametroAdmin(admin.ModelAdmin):
+class ResultadoParametroAdmin(TenantScopedAdmin):
     """Resultados por analito LIMS v7.5."""
     list_display  = ('orden', 'analito', 'valor', 'es_critico', 'fuera_rango',
                      'validado', 'fecha_captura')
@@ -215,7 +216,7 @@ class ResultadoParametroAdmin(admin.ModelAdmin):
 
 
 @admin.register(DetalleVenta)
-class DetalleVentaAdmin(admin.ModelAdmin):
+class DetalleVentaAdmin(TenantScopedAdmin):
     """Detalle línea a línea de cada venta — 4 registros activos."""
     list_display  = ('venta', 'producto', 'cantidad', 'precio_unitario', 'subtotal')
     list_filter   = ('venta__empresa',)
@@ -225,7 +226,7 @@ class DetalleVentaAdmin(admin.ModelAdmin):
 
 
 @admin.register(Pago)
-class PagoAdmin(admin.ModelAdmin):
+class PagoAdmin(TenantScopedAdmin):
     """Pagos registrados — 4 registros activos."""
     list_display  = ('venta', 'metodo', 'monto', 'monto_efectivo', 'fecha_pago', 'referencia_pago')
     list_filter   = ('metodo', 'venta__empresa')
@@ -239,7 +240,7 @@ class PagoAdmin(admin.ModelAdmin):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @admin.register(UsoRecursosIA)
-class UsoRecursosIAAdmin(admin.ModelAdmin):
+class UsoRecursosIAAdmin(TenantScopedAdmin):
     """Log forense de consumo de tokens IA por empresa."""
     list_display  = (
         'empresa', 'fecha', 'get_tipo_display', 'tokens_total',
@@ -264,7 +265,7 @@ class UsoRecursosIAAdmin(admin.ModelAdmin):
 
 
 @admin.register(ReglaLocalIA)
-class ReglaLocalIAAdmin(admin.ModelAdmin):
+class ReglaLocalIAAdmin(TenantScopedAdmin):
     """Caché de reglas aprobadas por el QFB — aquí se aprueban o rechazan."""
     list_display  = (
         'empresa', 'get_ambito_display', 'clave', 'get_estado_display',

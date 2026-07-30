@@ -91,6 +91,9 @@ La revisión `4ac7903` es la fuente canónica para la consolidación de middlewa
 - `require_sucursal_access` falla cerrado ante identificadores no numéricos.
 - Producción verificada: `https://prislab.labcorecloud.com/health/` HTTP 200,
   base de datos y caché OK; Gunicorn, Celery y Celery Beat activos.
+- Aislamiento Django Admin corregido localmente: los 184 registros activos
+  están bajo `TenantScopedAdmin`; el despliegue productivo queda pendiente de
+  esta revisión antes de declararlo cerrado.
 - El script `migracion_ia.ps1` ya no lista el respaldo eliminado.
 - Inventarios operativos actualizados; los reportes históricos conservan su
   carácter de evidencia y no son fuente de código.

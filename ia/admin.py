@@ -3,13 +3,14 @@ Administración del Módulo de Inteligencia Artificial.
 """
 
 from django.contrib import admin
+from core.admin.tenant import TenantScopedAdmin
 from django.utils.html import format_html
 from django.db.models import Count, Avg
 from .models import CotizacionOCR, TranscripcionVoz
 
 
 @admin.register(CotizacionOCR)
-class CotizacionOCRAdmin(admin.ModelAdmin):
+class CotizacionOCRAdmin(TenantScopedAdmin):
     """
     Administración de cotizaciones procesadas con OCR.
     """
@@ -144,7 +145,7 @@ class CotizacionOCRAdmin(admin.ModelAdmin):
 
 
 @admin.register(TranscripcionVoz)
-class TranscripcionVozAdmin(admin.ModelAdmin):
+class TranscripcionVozAdmin(TenantScopedAdmin):
     """
     Administración de transcripciones de audio.
     """

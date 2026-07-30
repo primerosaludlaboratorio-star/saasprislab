@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin.tenant import TenantScopedAdmin
 
 from .models import AccesoAcademia, CursoAcademia, SesionVisualizacion, VideoAcademia
 
@@ -18,7 +19,7 @@ class AccesoAcademiaInline(admin.TabularInline):
 
 
 @admin.register(CursoAcademia)
-class CursoAcademiaAdmin(admin.ModelAdmin):
+class CursoAcademiaAdmin(TenantScopedAdmin):
     list_display = ("titulo", "empresa", "slug", "activo", "creado_en")
     list_filter = ("empresa", "activo")
     search_fields = ("titulo", "slug", "autor_externo")
@@ -27,7 +28,7 @@ class CursoAcademiaAdmin(admin.ModelAdmin):
 
 
 @admin.register(VideoAcademia)
-class VideoAcademiaAdmin(admin.ModelAdmin):
+class VideoAcademiaAdmin(TenantScopedAdmin):
     list_display = ("titulo", "empresa", "curso", "orden", "bunny_video_id", "duracion_segundos")
     list_filter = ("empresa", "curso")
     search_fields = ("titulo", "bunny_video_id")
@@ -35,7 +36,7 @@ class VideoAcademiaAdmin(admin.ModelAdmin):
 
 
 @admin.register(AccesoAcademia)
-class AccesoAcademiaAdmin(admin.ModelAdmin):
+class AccesoAcademiaAdmin(TenantScopedAdmin):
     list_display = ("usuario", "empresa", "curso", "fecha_expiracion", "activo", "otorgado_por")
     list_filter = ("empresa", "activo")
     search_fields = ("usuario__username", "usuario__first_name", "usuario__last_name", "curso__titulo")
@@ -43,7 +44,7 @@ class AccesoAcademiaAdmin(admin.ModelAdmin):
 
 
 @admin.register(SesionVisualizacion)
-class SesionVisualizacionAdmin(admin.ModelAdmin):
+class SesionVisualizacionAdmin(TenantScopedAdmin):
     list_display = ("usuario", "empresa", "video", "segundos_acumulados", "inicio", "ultima_actividad", "finalizada")
     list_filter = ("empresa", "finalizada")
     search_fields = ("usuario__username", "video__titulo")

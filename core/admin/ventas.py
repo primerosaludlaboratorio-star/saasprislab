@@ -2,6 +2,7 @@
 Admin: 3. VENTAS, FINANZAS Y AUDITORÍA
 """
 from django.contrib import admin
+from .tenant import TenantScopedAdmin
 from django.contrib.auth.admin import UserAdmin
 from core.models import (
     Empresa, Usuario, Producto, Lote, Venta, DetalleVenta, Pago, Medico, Receta, Gasto,
@@ -49,7 +50,7 @@ class PagoInline(admin.TabularInline):
     can_delete = False
 
 @admin.register(Venta)
-class VentaAdmin(admin.ModelAdmin):
+class VentaAdmin(TenantScopedAdmin):
     """Módulo de auditoría de ventas con sello digital y línea de captura."""
     # Bloqueamos edición de folios y sellos para integridad fiscal
     readonly_fields = ('linea_captura', 'sello_digital', 'fecha', 'folio_operacion')

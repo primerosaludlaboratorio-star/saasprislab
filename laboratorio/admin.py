@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin.tenant import TenantScopedAdmin
 
 from .models import (
     CategoriaExamen, Equipo, Estudio, InsumoEstudio,
@@ -12,7 +13,7 @@ from .models import (
 
 
 @admin.register(CategoriaExamen)
-class CategoriaExamenAdmin(admin.ModelAdmin):
+class CategoriaExamenAdmin(TenantScopedAdmin):
     list_display = ('nombre',)
     search_fields = ('nombre',)
 
@@ -24,7 +25,7 @@ class ParametroInline(admin.TabularInline):
 
 
 @admin.register(Equipo)
-class EquipoAdmin(admin.ModelAdmin):
+class EquipoAdmin(TenantScopedAdmin):
     list_display = ('empresa', 'nombre', 'marca', 'protocolo', 'ip_address', 'puerto', 'activo')
     list_filter = ('empresa', 'protocolo', 'activo', 'marca')
     search_fields = ('nombre', 'marca')
@@ -49,7 +50,7 @@ class InsumoEstudioInline(admin.TabularInline):
 
 
 @admin.register(Estudio)
-class EstudioAdmin(admin.ModelAdmin):
+class EstudioAdmin(TenantScopedAdmin):
     list_display = ('nombre', 'categoria', 'codigo', 'equipo_default', 'precio_base', 'unidades')
     list_filter = ('categoria', 'equipo_default', 'es_perfil')
     search_fields = ('nombre', 'codigo')
@@ -73,7 +74,7 @@ class EstudioAdmin(admin.ModelAdmin):
 
 
 @admin.register(Resultado)
-class ResultadoAdmin(admin.ModelAdmin):
+class ResultadoAdmin(TenantScopedAdmin):
     list_display = ('orden', 'estudio', 'valor_obtenido', 'es_anormal')
     list_filter = ('es_anormal', 'estudio')
     search_fields = ('orden__id', 'estudio__nombre')
@@ -90,7 +91,7 @@ class ResultadoAdmin(admin.ModelAdmin):
 
 
 @admin.register(RangoReferenciaParametro)
-class RangoReferenciaParametroAdmin(admin.ModelAdmin):
+class RangoReferenciaParametroAdmin(TenantScopedAdmin):
     list_display = ('parametro', 'sexo', 'edad_min_anios', 'edad_max_anios', 'valor_minimo', 'valor_maximo', 'valor_critico_bajo', 'valor_critico_alto', 'unidad', 'fuente', 'activo')
     list_filter = ('sexo', 'fuente', 'activo')
     search_fields = ('parametro__nombre', 'parametro__codigo_interfaz')
@@ -120,7 +121,7 @@ class RangoReferenciaParametroAdmin(admin.ModelAdmin):
 # ==============================================================================
 
 @admin.register(Parametro)
-class ParametroAdmin(admin.ModelAdmin):
+class ParametroAdmin(TenantScopedAdmin):
     """494 parámetros de laboratorio — fuente maestra para HL7 y rangos ISO."""
     list_display   = ('nombre', 'estudio', 'codigo_interfaz', 'unidades', 'valor_ref_min', 'valor_ref_max')
     list_filter    = ('estudio__categoria',)
@@ -130,7 +131,7 @@ class ParametroAdmin(admin.ModelAdmin):
 
 
 @admin.register(ValorReferencia)
-class ValorReferenciaAdmin(admin.ModelAdmin):
+class ValorReferenciaAdmin(TenantScopedAdmin):
     """219 rangos de referencia por estudios — segmentados por sexo y edad."""
     list_display  = ('estudio', 'sexo', 'edad', 'valor_minimo', 'valor_maximo', 'unidades')
     list_filter   = ('sexo',)
@@ -139,7 +140,7 @@ class ValorReferenciaAdmin(admin.ModelAdmin):
 
 
 @admin.register(PerfilLaboratorio)
-class PerfilLaboratorioAdmin(admin.ModelAdmin):
+class PerfilLaboratorioAdmin(TenantScopedAdmin):
     """17 perfiles de laboratorio — paquetes de estudios agrupados."""
     list_display   = ('nombre', 'precio', 'area_pertenencia', 'activo')
     list_filter    = ('activo', 'area_pertenencia')
@@ -148,7 +149,7 @@ class PerfilLaboratorioAdmin(admin.ModelAdmin):
 
 
 @admin.register(NotificacionPanico)
-class NotificacionPanicoAdmin(admin.ModelAdmin):
+class NotificacionPanicoAdmin(TenantScopedAdmin):
     """Registro de notificaciones de valores de pánico (ISO 15189 §7.4.3)."""
     list_display   = ('orden', 'medico_notificado', 'cargo_receptor', 'medio_notificacion',
                       'fecha_hora_notificacion')
@@ -162,7 +163,7 @@ class NotificacionPanicoAdmin(admin.ModelAdmin):
 
 
 @admin.register(ControlCalidad)
-class ControlCalidadAdmin(admin.ModelAdmin):
+class ControlCalidadAdmin(TenantScopedAdmin):
     """Controles de calidad manuales — base para gráficas Levey-Jennings."""
     list_display  = ('empresa', 'equipo', 'parametro', 'valor', 'fecha_registro')
     list_filter   = ('empresa', 'equipo')
@@ -172,7 +173,7 @@ class ControlCalidadAdmin(admin.ModelAdmin):
 
 
 @admin.register(CodigoParametroEquipo)
-class CodigoParametroEquipoAdmin(admin.ModelAdmin):
+class CodigoParametroEquipoAdmin(TenantScopedAdmin):
     """Mapeo códigos analizador ↔ parámetros PRISLAB para HL7/ASTM."""
     list_display  = ('equipo', 'codigo_equipo', 'parametro', 'factor_conversion', 'activo')
     list_filter   = ('equipo', 'activo')
@@ -182,7 +183,7 @@ class CodigoParametroEquipoAdmin(admin.ModelAdmin):
 
 
 @admin.register(MetodoEquipo)
-class MetodoEquipoAdmin(admin.ModelAdmin):
+class MetodoEquipoAdmin(TenantScopedAdmin):
     """Configuración exacta del método del equipo, separada del mapeo legacy."""
     list_display = (
         'empresa', 'equipo', 'nombre_metodo_equipo', 'analito',
@@ -196,7 +197,7 @@ class MetodoEquipoAdmin(admin.ModelAdmin):
 
 
 @admin.register(InterfazEquipo)
-class InterfazEquipoAdmin(admin.ModelAdmin):
+class InterfazEquipoAdmin(TenantScopedAdmin):
     list_display = ('empresa', 'equipo', 'tipo', 'estado', 'modo', 'validada_at', 'ultimo_mensaje_at')
     list_filter = ('empresa', 'tipo', 'estado', 'modo')
     search_fields = ('equipo__nombre', 'equipo__marca', 'fuente_protocolaria')
@@ -205,7 +206,7 @@ class InterfazEquipoAdmin(admin.ModelAdmin):
 
 
 @admin.register(ResultadoHL7)
-class ResultadoHL7Admin(admin.ModelAdmin):
+class ResultadoHL7Admin(TenantScopedAdmin):
     """Mensajes HL7/ASTM crudos recibidos de analizadores — trazabilidad total."""
     list_display   = ('orden', 'parametro', 'valor_raw', 'unidad_raw', 'estado')
     list_filter    = ('estado',)
@@ -217,7 +218,7 @@ class ResultadoHL7Admin(admin.ModelAdmin):
 
 
 @admin.register(ResultadoHL7Huerfano)
-class ResultadoHL7HuerfanoAdmin(admin.ModelAdmin):
+class ResultadoHL7HuerfanoAdmin(TenantScopedAdmin):
     """Cola de cuarentena HL7 (Punto 13) — revisión QC."""
     list_display = ('creado', 'motivo', 'codigo_equipo', 'empresa', 'estado_revision', 'ip_equipo')
     list_filter = ('motivo', 'estado_revision', 'protocolo')
@@ -230,7 +231,7 @@ class ResultadoHL7HuerfanoAdmin(admin.ModelAdmin):
 
 
 @admin.register(BitacoraMantenimiento)
-class BitacoraMantenimientoAdmin(admin.ModelAdmin):
+class BitacoraMantenimientoAdmin(TenantScopedAdmin):
     """Bitácora de mantenimiento de equipos de laboratorio."""
     list_display   = ('equipo', 'empresa', 'descripcion', 'fecha_registro')
     list_filter    = ('empresa', 'equipo')
@@ -240,7 +241,7 @@ class BitacoraMantenimientoAdmin(admin.ModelAdmin):
 
 
 @admin.register(HistorialResultados)
-class HistorialResultadosAdmin(admin.ModelAdmin):
+class HistorialResultadosAdmin(TenantScopedAdmin):
     """Auditoría de cambios en resultados — trazabilidad forense."""
     list_display   = ('resultado_asociado', 'valor_anterior', 'valor_nuevo',
                       'usuario_responsable', 'fecha_hora_cambio', 'resultado_validado_previamente')
@@ -259,7 +260,7 @@ class HistorialResultadosAdmin(admin.ModelAdmin):
 
 
 @admin.register(ResponsableSanitario)
-class ResponsableSanitarioAdmin(admin.ModelAdmin):
+class ResponsableSanitarioAdmin(TenantScopedAdmin):
     """Directores técnicos / responsables sanitarios del laboratorio (COFEPRIS)."""
     list_display  = ('usuario', 'cedula_profesional', 'especialidad',
                      'numero_autorizacion_sanitaria', 'activo')
@@ -269,7 +270,7 @@ class ResponsableSanitarioAdmin(admin.ModelAdmin):
 
 
 @admin.register(NoConformidad)
-class NoConformidadAdmin(admin.ModelAdmin):
+class NoConformidadAdmin(TenantScopedAdmin):
     list_display = ('folio', 'empresa', 'titulo', 'origen', 'severidad', 'estado', 'responsable', 'creado_en')
     list_filter = ('empresa', 'origen', 'severidad', 'estado')
     search_fields = ('titulo', 'descripcion', 'folio')
@@ -281,7 +282,7 @@ class NoConformidadAdmin(admin.ModelAdmin):
 
 
 @admin.register(NoConformidadEvento)
-class NoConformidadEventoAdmin(admin.ModelAdmin):
+class NoConformidadEventoAdmin(TenantScopedAdmin):
     list_display = ('no_conformidad', 'estado_anterior', 'estado_nuevo', 'usuario', 'creado_en')
     list_filter = ('estado_nuevo', 'creado_en')
     readonly_fields = tuple(field.name for field in NoConformidadEvento._meta.fields)
@@ -297,7 +298,7 @@ class NoConformidadEventoAdmin(admin.ModelAdmin):
 
 
 @admin.register(RondaEQA)
-class RondaEQAAdmin(admin.ModelAdmin):
+class RondaEQAAdmin(TenantScopedAdmin):
     list_display = ('codigo_ronda', 'empresa', 'proveedor', 'programa', 'estado', 'fecha_limite', 'responsable')
     list_filter = ('empresa', 'estado', 'proveedor')
     search_fields = ('codigo_ronda', 'programa', 'proveedor')
@@ -306,7 +307,7 @@ class RondaEQAAdmin(admin.ModelAdmin):
 
 
 @admin.register(ResultadoEQA)
-class ResultadoEQAAdmin(admin.ModelAdmin):
+class ResultadoEQAAdmin(TenantScopedAdmin):
     list_display = ('ronda', 'analito', 'resultado_laboratorio', 'z_score', 'evaluacion')
     list_filter = ('evaluacion', 'ronda__empresa')
     search_fields = ('ronda__codigo_ronda', 'analito__nombre')

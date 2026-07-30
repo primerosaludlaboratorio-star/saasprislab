@@ -5,6 +5,7 @@ La organización visual por departamento se define en core/admin.py mediante
 AdminSite personalizado.
 """
 from django.contrib import admin
+from core.admin.tenant import TenantScopedAdmin
 from django.utils.html import format_html
 
 from .models import (
@@ -36,7 +37,7 @@ from .models import (
 # PROVEEDOR
 # =============================================================================
 @admin.register(ProveedorCompras)
-class ProveedorComprasAdmin(admin.ModelAdmin):
+class ProveedorComprasAdmin(TenantScopedAdmin):
     list_display  = ["razon_social", "rfc", "tipo", "empresa", "activo", "fecha_alta"]
     list_filter   = ["tipo", "activo", "empresa"]
     search_fields = ["razon_social", "rfc", "nombre_comercial"]
@@ -57,7 +58,7 @@ class ConsumoEstudioReactivoInline(admin.TabularInline):
 
 
 @admin.register(CatalogoReactivoLab)
-class CatalogoReactivoLabAdmin(admin.ModelAdmin):
+class CatalogoReactivoLabAdmin(TenantScopedAdmin):
     list_display  = [
         "codigo_interno", "nombre", "tipo", "unidad_medida",
         "stock_minimo", "requiere_cadena_frio", "activo", "empresa",
@@ -74,7 +75,7 @@ class CatalogoReactivoLabAdmin(admin.ModelAdmin):
 
 
 @admin.register(CosteoEjecucionAnaliticaLab)
-class CosteoEjecucionAnaliticaLabAdmin(admin.ModelAdmin):
+class CosteoEjecucionAnaliticaLabAdmin(TenantScopedAdmin):
     list_display = ["orden", "paciente", "analito", "tipo", "cantidad_ejecuciones", "costo_materiales", "ingreso_asignado", "fecha"]
     list_filter = ["empresa", "tipo", "fecha"]
     search_fields = ["orden__folio_orden", "paciente__nombre_completo", "analito__nombre", "evento_key"]
@@ -82,7 +83,7 @@ class CosteoEjecucionAnaliticaLabAdmin(admin.ModelAdmin):
 
 
 @admin.register(LoteReactivoLab)
-class LoteReactivoLabAdmin(admin.ModelAdmin):
+class LoteReactivoLabAdmin(TenantScopedAdmin):
     list_display  = [
         "reactivo", "marca", "numero_lote", "fecha_caducidad",
         "cantidad_actual", "estado", "trazabilidad_estado", "lote_aprobado_qc", "empresa",
@@ -93,7 +94,7 @@ class LoteReactivoLabAdmin(admin.ModelAdmin):
 
 
 @admin.register(SalidaAnaliticaLab)
-class SalidaAnaliticaLabAdmin(admin.ModelAdmin):
+class SalidaAnaliticaLabAdmin(TenantScopedAdmin):
     list_display  = ["lote", "orden", "cantidad_consumida", "idempotency_key", "validado_por", "fecha"]
     list_filter   = ["empresa", "fecha"]
     search_fields = ["orden__id", "lote__numero_lote", "idempotency_key"]
@@ -101,7 +102,7 @@ class SalidaAnaliticaLabAdmin(admin.ModelAdmin):
 
 
 @admin.register(RepeticionAnaliticaLab)
-class RepeticionAnaliticaLabAdmin(admin.ModelAdmin):
+class RepeticionAnaliticaLabAdmin(TenantScopedAdmin):
     list_display = ["resultado", "cantidad_pruebas", "registrada_por", "fecha"]
     list_filter = ["fecha"]
     search_fields = ["resultado__orden__id", "resultado__analito__nombre", "motivo"]
@@ -109,7 +110,7 @@ class RepeticionAnaliticaLabAdmin(admin.ModelAdmin):
 
 
 @admin.register(SalidaTecnicaLab)
-class SalidaTecnicaLabAdmin(admin.ModelAdmin):
+class SalidaTecnicaLabAdmin(TenantScopedAdmin):
     list_display  = ["lote", "tipo", "cantidad", "registrado_por", "fecha"]
     list_filter   = ["tipo", "empresa"]
     search_fields = ["lote__numero_lote", "motivo"]
@@ -120,14 +121,14 @@ class SalidaTecnicaLabAdmin(admin.ModelAdmin):
 # SILO CONSULTORIO
 # =============================================================================
 @admin.register(CatalogoInsumoConsultorio)
-class CatalogoInsumoConsultorioAdmin(admin.ModelAdmin):
+class CatalogoInsumoConsultorioAdmin(TenantScopedAdmin):
     list_display  = ["codigo_interno", "nombre", "tipo", "unidad_medida", "stock_minimo", "activo", "empresa"]
     list_filter   = ["tipo", "activo", "empresa"]
     search_fields = ["codigo_interno", "nombre"]
 
 
 @admin.register(LoteInsumoConsultorio)
-class LoteInsumoConsultorioAdmin(admin.ModelAdmin):
+class LoteInsumoConsultorioAdmin(TenantScopedAdmin):
     list_display  = ["insumo", "numero_lote", "fecha_caducidad", "cantidad_actual", "empresa"]
     list_filter   = ["empresa"]
     search_fields = ["numero_lote", "insumo__nombre"]
@@ -135,7 +136,7 @@ class LoteInsumoConsultorioAdmin(admin.ModelAdmin):
 
 
 @admin.register(SalidaConsumoConsultorio)
-class SalidaConsumoConsultorioAdmin(admin.ModelAdmin):
+class SalidaConsumoConsultorioAdmin(TenantScopedAdmin):
     list_display  = ["lote", "cantidad", "cita", "registrado_por", "fecha"]
     list_filter   = ["empresa"]
     readonly_fields = ["fecha"]
@@ -145,14 +146,14 @@ class SalidaConsumoConsultorioAdmin(admin.ModelAdmin):
 # SILO INSUMOS GENERALES
 # =============================================================================
 @admin.register(CatalogoInsumoGeneral)
-class CatalogoInsumoGeneralAdmin(admin.ModelAdmin):
+class CatalogoInsumoGeneralAdmin(TenantScopedAdmin):
     list_display  = ["codigo_interno", "nombre", "categoria", "area_principal", "stock_minimo", "activo", "empresa"]
     list_filter   = ["categoria", "area_principal", "activo", "empresa"]
     search_fields = ["codigo_interno", "nombre"]
 
 
 @admin.register(LoteInsumoGeneral)
-class LoteInsumoGeneralAdmin(admin.ModelAdmin):
+class LoteInsumoGeneralAdmin(TenantScopedAdmin):
     list_display  = ["insumo", "cantidad_actual", "precio_unitario_compra", "fecha_recepcion", "empresa"]
     list_filter   = ["empresa"]
     readonly_fields = ["fecha_recepcion"]
@@ -165,7 +166,7 @@ class LineaValeRequisicionInline(admin.TabularInline):
 
 
 @admin.register(ValeRequisicion)
-class ValeRequisicionAdmin(admin.ModelAdmin):
+class ValeRequisicionAdmin(TenantScopedAdmin):
     list_display  = [
         "folio", "area_solicitante", "solicitado_por",
         "estado", "fecha_solicitud", "empresa",
@@ -191,7 +192,7 @@ class LineaOrdenCompraInline(admin.TabularInline):
 
 
 @admin.register(OrdenDeCompra)
-class OrdenDeCompraAdmin(admin.ModelAdmin):
+class OrdenDeCompraAdmin(TenantScopedAdmin):
     list_display  = [
         "folio", "proveedor", "estado", "origen",
         "total", "generada_por", "fecha_generacion", "empresa",

@@ -1,9 +1,10 @@
 from django.contrib import admin
+from core.admin.tenant import TenantScopedAdmin
 from .models import ClienteFacturacion, FacturaCFDI, ConceptoFactura, ImpuestoConcepto
 
 
 @admin.register(ClienteFacturacion)
-class ClienteFacturacionAdmin(admin.ModelAdmin):
+class ClienteFacturacionAdmin(TenantScopedAdmin):
     list_display = ('rfc', 'razon_social', 'email', 'regimen_fiscal', 'activo')
     search_fields = ('rfc', 'razon_social', 'email')
     list_filter = ('regimen_fiscal', 'activo')
@@ -18,7 +19,7 @@ class ConceptoFacturaInline(admin.TabularInline):
 
 
 @admin.register(FacturaCFDI)
-class FacturaCFDIAdmin(admin.ModelAdmin):
+class FacturaCFDIAdmin(TenantScopedAdmin):
     list_display = ('folio_interno', 'empresa', 'cliente', 'fecha_emision', 'total', 'estado')
     list_filter = ('estado', 'tipo_comprobante', 'metodo_pago', 'fecha_emision', 'empresa')
     search_fields = ('folio_interno', 'uuid_sat', 'cliente__rfc', 'cliente__razon_social', 'empresa__nombre')
@@ -56,6 +57,6 @@ class FacturaCFDIAdmin(admin.ModelAdmin):
 
 
 @admin.register(ConceptoFactura)
-class ConceptoFacturaAdmin(admin.ModelAdmin):
+class ConceptoFacturaAdmin(TenantScopedAdmin):
     list_display = ('factura', 'numero_linea', 'descripcion', 'cantidad', 'valor_unitario', 'importe')
     search_fields = ('factura__folio_interno', 'descripcion')

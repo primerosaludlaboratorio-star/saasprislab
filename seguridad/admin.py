@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin.tenant import TenantScopedAdmin
 from .models import (
     DispositivoTOTP, DispositivoSMS, CodigoBackup2FA,
     SesionActiva, LogAccionSensible, ConfiguracionSeguridad, AlertaPanico
@@ -6,7 +7,7 @@ from .models import (
 
 
 @admin.register(DispositivoTOTP)
-class DispositivoTOTPAdmin(admin.ModelAdmin):
+class DispositivoTOTPAdmin(TenantScopedAdmin):
     list_display = ('usuario', 'nombre', 'activo', 'confirmado', 'fecha_creacion')
     list_filter = ('activo', 'confirmado')
     search_fields = ('usuario__username', 'nombre')
@@ -14,7 +15,7 @@ class DispositivoTOTPAdmin(admin.ModelAdmin):
 
 
 @admin.register(CodigoBackup2FA)
-class CodigoBackup2FAAdmin(admin.ModelAdmin):
+class CodigoBackup2FAAdmin(TenantScopedAdmin):
     list_display = ('usuario', 'codigo_parcial', 'usado', 'fecha_creacion', 'fecha_uso')
     list_filter = ('usado',)
     search_fields = ('usuario__username',)
@@ -26,7 +27,7 @@ class CodigoBackup2FAAdmin(admin.ModelAdmin):
 
 
 @admin.register(SesionActiva)
-class SesionActivaAdmin(admin.ModelAdmin):
+class SesionActivaAdmin(TenantScopedAdmin):
     list_display = ('usuario', 'dispositivo_tipo', 'ip_address', 'activa', 'fecha_inicio')
     list_filter = ('activa', 'es_sospechosa', 'dispositivo_tipo')
     search_fields = ('usuario__username', 'ip_address')
@@ -34,7 +35,7 @@ class SesionActivaAdmin(admin.ModelAdmin):
 
 
 @admin.register(LogAccionSensible)
-class LogAccionSensibleAdmin(admin.ModelAdmin):
+class LogAccionSensibleAdmin(TenantScopedAdmin):
     list_display = ('fecha_hora', 'usuario', 'accion', 'ip_address', 'severidad')
     list_filter = ('accion', 'severidad', 'fecha_hora')
     search_fields = ('usuario__username', 'descripcion', 'ip_address')
@@ -43,19 +44,19 @@ class LogAccionSensibleAdmin(admin.ModelAdmin):
 
 
 @admin.register(ConfiguracionSeguridad)
-class ConfiguracionSeguridadAdmin(admin.ModelAdmin):
+class ConfiguracionSeguridadAdmin(TenantScopedAdmin):
     list_display = ('empresa', 'boton_panico_activo')
 
 
 @admin.register(AlertaPanico)
-class AlertaPanicoAdmin(admin.ModelAdmin):
+class AlertaPanicoAdmin(TenantScopedAdmin):
     list_display = ('usuario', 'fecha_activacion', 'estado', 'ubicacion')
     list_filter = ('estado',)
     readonly_fields = ('fecha_activacion',)
 
 
 @admin.register(DispositivoSMS)
-class DispositivoSMSAdmin(admin.ModelAdmin):
+class DispositivoSMSAdmin(TenantScopedAdmin):
     list_display = ('usuario', 'telefono', 'activo', 'confirmado', 'fecha_creacion')
     list_filter = ('activo', 'confirmado')
     search_fields = ('usuario__username', 'telefono')

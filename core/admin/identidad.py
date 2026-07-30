@@ -2,6 +2,7 @@
 Admin: 1. GESTIÓN DE IDENTIDAD SaaS
 """
 from django.contrib import admin
+from .tenant import TenantScopedAdmin
 from django.contrib.auth.admin import UserAdmin
 from core.models import (
     Empresa, Usuario, Producto, Lote, Venta, DetalleVenta, Pago, Medico, Receta, Gasto,
@@ -73,14 +74,14 @@ class CustomUsuarioAdmin(UserAdmin):
         return form
 
 @admin.register(Empresa)
-class EmpresaAdmin(admin.ModelAdmin):
+class EmpresaAdmin(TenantScopedAdmin):
     """Configuración de la identidad institucional (PRISLAB, Clínica del Valle)."""
     list_display = ('nombre', 'nombre_asistente_ia', 'rfc', 'periodo_vigencia', 'inventario_modo_adaptacion', 'telefono')
     search_fields = ('nombre', 'rfc')
 
 
 @admin.register(Usuario_Sucursal)
-class Usuario_SucursalAdmin(admin.ModelAdmin):
+class Usuario_SucursalAdmin(TenantScopedAdmin):
     """Admin para asignaciones Usuario-Sucursal (M2M)."""
     list_display = ('usuario', 'sucursal', 'activa', 'fecha_asignacion', 'esta_vigente')
     list_filter = ('activa', 'fecha_asignacion', 'sucursal__empresa')

@@ -2,6 +2,7 @@
 Admin para el módulo de Pacientes.
 """
 from django.contrib import admin
+from core.admin.tenant import TenantScopedAdmin
 from django.utils.html import format_html
 from django.urls import reverse
 
@@ -9,7 +10,7 @@ from .portal_models import UsuarioPaciente, SolicitudAccesoPortal, AccesoExpedie
 
 
 @admin.register(UsuarioPaciente)
-class UsuarioPacienteAdmin(admin.ModelAdmin):
+class UsuarioPacienteAdmin(TenantScopedAdmin):
     """Admin para usuarios del portal de pacientes."""
     list_display = (
         'email',
@@ -71,7 +72,7 @@ class UsuarioPacienteAdmin(admin.ModelAdmin):
 
 
 @admin.register(SolicitudAccesoPortal)
-class SolicitudAccesoPortalAdmin(admin.ModelAdmin):
+class SolicitudAccesoPortalAdmin(TenantScopedAdmin):
     """Admin para solicitudes de acceso al portal."""
     list_display = (
         'nombre_completo',
@@ -139,7 +140,7 @@ class SolicitudAccesoPortalAdmin(admin.ModelAdmin):
 
 
 @admin.register(AccesoExpedientePortal)
-class AccesoExpedientePortalAdmin(admin.ModelAdmin):
+class AccesoExpedientePortalAdmin(TenantScopedAdmin):
     """Admin para logs de acceso al expediente (solo lectura)."""
     list_display = (
         'usuario_portal',

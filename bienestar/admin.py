@@ -1,10 +1,11 @@
 from django.contrib import admin
+from core.admin.tenant import TenantScopedAdmin
 from django.utils.html import format_html
 from .models import DiarioEmocional, RecursoCrecimiento
 
 
 @admin.register(DiarioEmocional)
-class DiarioEmocionalAdmin(admin.ModelAdmin):
+class DiarioEmocionalAdmin(TenantScopedAdmin):
     """
     Administración de diario emocional.
     Solo lectura para usuarios no superusuarios.
@@ -73,7 +74,7 @@ class DiarioEmocionalAdmin(admin.ModelAdmin):
 
 
 @admin.register(RecursoCrecimiento)
-class RecursoCrecimientoAdmin(admin.ModelAdmin):
+class RecursoCrecimientoAdmin(TenantScopedAdmin):
     """Administración de recursos de crecimiento."""
     list_display = ('titulo', 'categoria', 'activo', 'fecha_creacion')
     list_filter = ('categoria', 'activo', 'fecha_creacion')

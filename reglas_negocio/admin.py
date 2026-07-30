@@ -1,9 +1,10 @@
 from django.contrib import admin
+from core.admin.tenant import TenantScopedAdmin
 from .models import ReglaNegocio, EjecucionRegla
 
 
 @admin.register(ReglaNegocio)
-class ReglaNegocioAdmin(admin.ModelAdmin):
+class ReglaNegocioAdmin(TenantScopedAdmin):
     list_display = ('nombre', 'codigo', 'categoria', 'tipo', 'activa', 'prioridad')
     list_filter = ('categoria', 'tipo', 'activa')
     search_fields = ('nombre', 'codigo')
@@ -11,7 +12,7 @@ class ReglaNegocioAdmin(admin.ModelAdmin):
 
 
 @admin.register(EjecucionRegla)
-class EjecucionReglaAdmin(admin.ModelAdmin):
+class EjecucionReglaAdmin(TenantScopedAdmin):
     list_display = ('regla', 'resultado', 'usuario', 'fecha')
     list_filter = ('resultado', 'regla')
     date_hierarchy = 'fecha'

@@ -2,6 +2,7 @@
 Admin: 9-11. EXPEDIENTE, BIENESTAR, COMUNI
 """
 from django.contrib import admin
+from .tenant import TenantScopedAdmin
 from django.contrib.auth.admin import UserAdmin
 from core.models import (
     Empresa, Usuario, Producto, Lote, Venta, DetalleVenta, Pago, Medico, Receta, Gasto,
@@ -38,7 +39,7 @@ from core.models import (
 # ==============================================================================
 
 @admin.register(TomaMuestra)
-class TomaMuestraAdmin(admin.ModelAdmin):
+class TomaMuestraAdmin(TenantScopedAdmin):
     list_display = ('orden', 'tomada_por', 'fecha_toma', 'empresa')
     list_filter = ('empresa',)
     search_fields = ('orden__folio_orden',)
@@ -46,21 +47,21 @@ class TomaMuestraAdmin(admin.ModelAdmin):
 
 
 @admin.register(BitacoraTemperatura)
-class BitacoraTemperaturaAdmin(admin.ModelAdmin):
+class BitacoraTemperaturaAdmin(TenantScopedAdmin):
     list_display = ('area', 'temperatura_c', 'registrada_por', 'empresa')
     list_filter = ('empresa', 'area')
     search_fields = ('area',)
 
 
 @admin.register(MantenimientoEquipo)
-class MantenimientoEquipoAdmin(admin.ModelAdmin):
+class MantenimientoEquipoAdmin(TenantScopedAdmin):
     list_display = ('equipo', 'tipo', 'realizada_por', 'empresa')
     list_filter = ('tipo', 'empresa')
     search_fields = ('equipo',)
 
 
 @admin.register(PreOrdenLaboratorio)
-class PreOrdenLaboratorioAdmin(admin.ModelAdmin):
+class PreOrdenLaboratorioAdmin(TenantScopedAdmin):
     list_display = ('paciente', 'medico_solicitante', 'empresa')
     list_filter = ('empresa',)
     search_fields = ('paciente__nombre_completo',)
@@ -71,7 +72,7 @@ class PreOrdenLaboratorioAdmin(admin.ModelAdmin):
 # ==============================================================================
 
 @admin.register(FacturaSAT)
-class FacturaSATAdmin(admin.ModelAdmin):
+class FacturaSATAdmin(TenantScopedAdmin):
     list_display = ('empresa', 'usuario', 'paciente', 'folio', 'uuid', 'estatus')
     list_filter = ('empresa', 'estatus')
     search_fields = ('uuid', 'folio', 'paciente__nombre_completo')
@@ -79,14 +80,14 @@ class FacturaSATAdmin(admin.ModelAdmin):
 
 
 @admin.register(DatosFiscales)
-class DatosFiscalesAdmin(admin.ModelAdmin):
+class DatosFiscalesAdmin(TenantScopedAdmin):
     list_display = ('razon_social', 'rfc', 'regimen_fiscal', 'empresa')
     list_filter = ('empresa', 'regimen_fiscal')
     search_fields = ('razon_social', 'rfc')
 
 
 @admin.register(DevolucionVenta)
-class DevolucionVentaAdmin(admin.ModelAdmin):
+class DevolucionVentaAdmin(TenantScopedAdmin):
     list_display = ('venta_original', 'cantidad_devuelta', 'monto_devuelto', 'razon')
     list_filter = ('razon',)
     search_fields = ('venta_original__folio_operacion',)
@@ -94,7 +95,7 @@ class DevolucionVentaAdmin(admin.ModelAdmin):
 
 
 @admin.register(DiscountPolicy)
-class DiscountPolicyAdmin(admin.ModelAdmin):
+class DiscountPolicyAdmin(TenantScopedAdmin):
     list_display = ('nombre', 'empresa', 'porcentaje_descuento', 'requiere_autorizacion', 'activa')
     list_filter = ('empresa', 'activa', 'requiere_autorizacion')
     search_fields = ('nombre',)
@@ -105,7 +106,7 @@ class DiscountPolicyAdmin(admin.ModelAdmin):
 # ==============================================================================
 
 @admin.register(HistoriaClinica)
-class HistoriaClinicaAdmin(admin.ModelAdmin):
+class HistoriaClinicaAdmin(TenantScopedAdmin):
     list_display = ('paciente', 'numero_expediente', 'empresa')
     list_filter = ('empresa',)
     search_fields = ('paciente__nombre_completo', 'numero_expediente')
@@ -113,7 +114,7 @@ class HistoriaClinicaAdmin(admin.ModelAdmin):
 
 
 @admin.register(ConsultaMedica)
-class ConsultaMedicaCoreAdmin(admin.ModelAdmin):
+class ConsultaMedicaCoreAdmin(TenantScopedAdmin):
     list_display = ('paciente', 'medico', 'empresa', 'fecha_creacion')
     list_filter = ('empresa',)
     search_fields = ('paciente__nombre_completo', 'medico__nombre_completo')
@@ -122,7 +123,7 @@ class ConsultaMedicaCoreAdmin(admin.ModelAdmin):
 
 
 @admin.register(ConsentimientoInformado)
-class ConsentimientoInformadoAdmin(admin.ModelAdmin):
+class ConsentimientoInformadoAdmin(TenantScopedAdmin):
     list_display = ('paciente', 'orden', 'empresa', 'acepta_privacidad', 'fecha_firma')
     list_filter = ('empresa', 'acepta_privacidad')
     search_fields = ('paciente__nombre_completo',)
@@ -134,7 +135,7 @@ class ConsentimientoInformadoAdmin(admin.ModelAdmin):
 # ==============================================================================
 
 @admin.register(RegistroAsistencia)
-class RegistroAsistenciaAdmin(admin.ModelAdmin):
+class RegistroAsistenciaAdmin(TenantScopedAdmin):
     list_display = ('empleado', 'tipo_registro', 'empresa', 'fecha_hora')
     list_filter = ('tipo_registro', 'empresa')
     search_fields = ('empleado__usuario__username',)
@@ -142,7 +143,7 @@ class RegistroAsistenciaAdmin(admin.ModelAdmin):
 
 
 @admin.register(AuditLog)
-class AuditLogAdmin(admin.ModelAdmin):
+class AuditLogAdmin(TenantScopedAdmin):
     list_display = ('usuario', 'accion', 'empresa', 'ip_address', 'fecha_cierta')
     list_filter = ('accion', 'empresa')
     search_fields = ('usuario__username', 'modelo_afectado')
@@ -156,7 +157,7 @@ class AuditLogAdmin(admin.ModelAdmin):
 
 
 @admin.register(ForenseAcceso)
-class ForenseAccesoAdmin(admin.ModelAdmin):
+class ForenseAccesoAdmin(TenantScopedAdmin):
     list_display = ('created_at', 'accion', 'empresa_id', 'paciente_id', 'orden_id', 'usuario_id', 'es_publico', 'ip_address')
     list_filter = ('accion', 'es_publico', 'empresa')
     search_fields = ('paciente_id', 'orden_id', 'usuario_id', 'token_prefix')
@@ -177,14 +178,14 @@ class ForenseAccesoAdmin(admin.ModelAdmin):
 
 
 @admin.register(NotificacionSistema)
-class NotificacionSistemaAdmin(admin.ModelAdmin):
+class NotificacionSistemaAdmin(TenantScopedAdmin):
     list_display = ('destinatario', 'remitente', 'tipo', 'leida', 'empresa')
     list_filter = ('tipo', 'leida', 'empresa')
     search_fields = ('destinatario__username', 'mensaje')
 
 
 @admin.register(MensajeInterno)
-class MensajeInternoAdmin(admin.ModelAdmin):
+class MensajeInternoAdmin(TenantScopedAdmin):
     list_display = ('remitente', 'destinatario', 'tipo', 'leido', 'fecha')
     list_filter = ('tipo', 'leido')
     search_fields = ('remitente__username', 'destinatario__username', 'mensaje')
@@ -192,14 +193,14 @@ class MensajeInternoAdmin(admin.ModelAdmin):
 
 
 @admin.register(IncidenciaOperativa)
-class IncidenciaOperativaAdmin(admin.ModelAdmin):
+class IncidenciaOperativaAdmin(TenantScopedAdmin):
     list_display = ('tipo_incidencia', 'usuario_responsable', 'empresa', 'estado_revision', 'fecha_hora')
     list_filter = ('tipo_incidencia', 'estado_revision', 'empresa')
     search_fields = ('justificacion', 'usuario_responsable__username')
 
 
 @admin.register(BuzonQuejas)
-class BuzonQuejasAdmin(admin.ModelAdmin):
+class BuzonQuejasAdmin(TenantScopedAdmin):
     list_display = ('tipo', 'nombre_remitente', 'empresa', 'estado', 'fecha_creacion')
     list_filter = ('tipo', 'estado', 'empresa')
     search_fields = ('nombre_remitente', 'mensaje')

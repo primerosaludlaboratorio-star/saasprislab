@@ -104,7 +104,7 @@
 - **Recomendación:** invertir la política a fail-closed: si `tool_name not in _TOOL_RBAC`, denegar por defecto en vez de permitir; consolidar en una sola fuente de verdad (eliminar el mapa duplicado `grupos` en `registry.py` o hacerlo la única fuente).
 - **Estado:** pendiente de decisión del usuario.
 
-## H-NUEVO-12 — CRÍTICO: Django Admin expone datos cross-tenant (financieros, clínicos/PHI, RH, auditoría) sin aislamiento por empresa
+## H-NUEVO-12 — CRÍTICO: Django Admin expone datos cross-tenant (financieros, clínicos/PHI, RH, auditoría) sin aislamiento por empresa — CORREGIDO LOCALMENTE, PENDIENTE DE DESPLIEGUE
 - **Archivos:** `core/admin/identidad.py`, `catalogo.py`, `ventas.py`, `clinico.py`, `bienestar.py`, `rrhh.py` (paquete activo `core/admin/`, confirmado empíricamente con `importlib.util.find_spec('core.admin')` → resuelve a `core/admin/__init__.py`, NO a `core/admin.py`).
 - **Problema:** de las ~45 clases `ModelAdmin` registradas en el paquete `core/admin/`, únicamente `CustomUsuarioAdmin` y `Usuario_SucursalAdmin` (`identidad.py`) sobreescriben `get_queryset()` para filtrar por `request.user.empresa_id`. **Todas las demás** — incluyendo `VentaAdmin`, `ProductoAdmin`, `LoteAdmin`, `PacienteAdmin`, `OrdenDeServicioAdmin`, `DetalleOrdenAdmin`, `PagoOrdenAdmin`, `GastoOperativoAdmin`, `HistoriaClinicaAdmin`, `ConsultaMedicaCoreAdmin`, `ConsentimientoInformadoAdmin`, `CertificadoMedicoAdmin`, `NotaClinicaSOAPAdmin`, `AuditLogAdmin`, `ForenseAccesoAdmin`, `EmpleadoAdmin`, `ReciboNominaAdmin`, etc. — usan el `get_queryset()` por defecto de Django, que **no filtra por tenant**.
 - **Vector de explotación confirmado:**
@@ -118,14 +118,16 @@
   1. Agregar `get_queryset()` con filtro por `request.user.empresa_id` a TODAS las `ModelAdmin` de datos de negocio en `core/admin/`, replicando el patrón ya usado en `identidad.py`. Esto es indispensable independientemente de los permisos Django, porque `all_perms=True` en el grupo DIRECTOR es today una decisión de diseño vigente.
   2. Habilitar `ADMIN_GROUP_RESTRICTION_ENABLED=True` en producción como mínimo indispensable mientras se corrige el punto 1 (nota: esto NO resuelve el problema para Directores legítimos, que sí necesitan pasar ese filtro).
   3. Reconsiderar si el DIRECTOR de un tenant realmente necesita `is_staff=True` + permisos globales de Django (acceso a `/admin/`) en el flujo de onboarding, o si debería gestionarse todo desde las vistas de negocio con `role_required` (que sí es tenant-aware vía `core/tenant.py`).
-- **Estado:** pendiente de decisión del usuario. Este es, hasta el momento, el hallazgo de mayor severidad de todo el Bloque 2, y de los más severos de toda la auditoría junto con H-NUEVO-05.
+- **Corrección aplicada:** todos los `ModelAdmin` registrados, incluidos los de apps de negocio, heredan `TenantScopedAdmin`/`TenantScopedAdminMixin`. La ruta hacia `empresa` se descubre por relaciones FK/OneToOne y falla cerrado si no puede demostrarse. `Group` también queda restringido a superusuario; `Usuario` conserva su filtro específico existente. Se eliminaron las rutas administrativas duplicadas del módulo raíz.
+- **Verificación local:** registro completo de 184 administradores sin ningún `ModelAdmin` operativo fuera del mixin; `manage.py check` y compilación pasan. Catálogos globales sin FK de tenant devuelven queryset vacío para usuarios de empresa.
+- **Estado:** corregido localmente; pendiente de desplegar y verificar con dos usuarios de empresas distintas antes de cerrarlo en producción.
 
-## H-NUEVO-13 — `core/admin.py` (archivo raíz) es código MUERTO/huérfano, duplica registros de `core/admin/`
+## H-NUEVO-13 — `core/admin.py` (archivo raíz) es código MUERTO/huérfano, duplica registros de `core/admin/` — CORREGIDO
 - **Archivo:** `core/admin.py` (41 KB, ~700+ líneas).
 - **Hallazgo:** confirmado empíricamente (`importlib.util.find_spec('core.admin')` → resuelve a `core/admin/__init__.py`). Python resuelve el paquete `core/admin/` con prioridad sobre el módulo `core/admin.py` cuando ambos coexisten en el mismo directorio — por lo tanto Django `autodiscover()` **nunca importa `core/admin.py`**. Su contenido (registros duplicados de `Usuario`, `Producto`, `Venta`, `Paciente`, etc., aparentemente el archivo monolítico previo a la migración al paquete `core/admin/`) es completamente inerte.
 - **Impacto:** ninguno funcional (nunca se ejecuta), pero es fuente de confusión para mantenimiento — un desarrollador podría editar `core/admin.py` pensando que afecta el admin real, sin efecto alguno.
 - **Recomendación:** eliminar `core/admin.py` para evitar confusión, o consolidar si contiene alguna diferencia relevante no migrada al paquete.
-- **Estado:** pendiente de decisión del usuario.
+- **Estado:** eliminado tras confirmar que `core.admin` resuelve al paquete `core/admin/` y no existían referencias activas.
 
 ## Código muerto / higiene (sin riesgo de seguridad) — CORREGIDO
 - `core/services/ai_medico_backup.py` — eliminado tras confirmar que no tenía imports activos.

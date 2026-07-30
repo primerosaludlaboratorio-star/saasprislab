@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin.tenant import TenantScopedAdmin
 from .models import (
     CampanaMarketing,
     CuponMarketing,
@@ -10,21 +11,21 @@ from .models import (
 
 
 @admin.register(CampanaMarketing)
-class CampanaMarketingAdmin(admin.ModelAdmin):
+class CampanaMarketingAdmin(TenantScopedAdmin):
     list_display = ('segmento', 'empresa', 'activa', 'creado_por', 'fecha_creacion')
     list_filter = ('activa', 'empresa')
     search_fields = ('segmento', 'mensaje_whatsapp')
 
 
 @admin.register(CuponMarketing)
-class CuponMarketingAdmin(admin.ModelAdmin):
+class CuponMarketingAdmin(TenantScopedAdmin):
     list_display = ('codigo', 'empresa', 'porcentaje_descuento', 'paciente', 'fecha_creacion')
     list_filter = ('empresa',)
     search_fields = ('codigo', 'descripcion')
 
 
 @admin.register(CuponUso)
-class CuponUsoAdmin(admin.ModelAdmin):
+class CuponUsoAdmin(TenantScopedAdmin):
     list_display = ('id', 'cupon', 'empresa', 'paciente', 'orden', 'venta', 'creado_en')
     list_filter = ('empresa',)
     search_fields = ('idempotency_key', 'cupon__codigo')
@@ -39,7 +40,7 @@ class SeguimientoCRMInline(admin.TabularInline):
 
 
 @admin.register(MarketingTrackingHit)
-class MarketingTrackingHitAdmin(admin.ModelAdmin):
+class MarketingTrackingHitAdmin(TenantScopedAdmin):
     list_display = (
         "id",
         "creado_en",
@@ -72,7 +73,7 @@ class MarketingTrackingHitAdmin(admin.ModelAdmin):
 
 
 @admin.register(ProspectoCRM)
-class ProspectoCRMAdmin(admin.ModelAdmin):
+class ProspectoCRMAdmin(TenantScopedAdmin):
     list_display = (
         "nombre",
         "empresa",
@@ -89,7 +90,7 @@ class ProspectoCRMAdmin(admin.ModelAdmin):
 
 
 @admin.register(SeguimientoCRM)
-class SeguimientoCRMAdmin(admin.ModelAdmin):
+class SeguimientoCRMAdmin(TenantScopedAdmin):
     list_display = ('prospecto', 'tipo', 'realizado_por', 'fecha')
     list_filter = ('tipo',)
     search_fields = ('descripcion', 'prospecto__nombre')

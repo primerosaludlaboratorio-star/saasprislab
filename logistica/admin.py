@@ -2,6 +2,7 @@
 Admin para el módulo de Logística.
 """
 from django.contrib import admin
+from core.admin.tenant import TenantScopedAdmin
 from django.utils.html import format_html
 from .models import TransferenciaInventario, DetalleTransferencia, LogTransferencia, RutaRecoleccion, VisitaDomicilio
 
@@ -26,7 +27,7 @@ class LogTransferenciaInline(admin.TabularInline):
 
 
 @admin.register(TransferenciaInventario)
-class TransferenciaInventarioAdmin(admin.ModelAdmin):
+class TransferenciaInventarioAdmin(TenantScopedAdmin):
     """Admin para transferencias de inventario."""
     list_display = (
         'folio',
@@ -112,7 +113,7 @@ class TransferenciaInventarioAdmin(admin.ModelAdmin):
 
 
 @admin.register(DetalleTransferencia)
-class DetalleTransferenciaAdmin(admin.ModelAdmin):
+class DetalleTransferenciaAdmin(TenantScopedAdmin):
     """Admin para detalles de transferencia."""
     list_display = (
         'transferencia',
@@ -136,7 +137,7 @@ class DetalleTransferenciaAdmin(admin.ModelAdmin):
 
 
 @admin.register(LogTransferencia)
-class LogTransferenciaAdmin(admin.ModelAdmin):
+class LogTransferenciaAdmin(TenantScopedAdmin):
     """Admin para logs de transferencia (solo lectura)."""
     list_display = (
         'transferencia',
@@ -178,7 +179,7 @@ class VisitaDomicilioInline(admin.TabularInline):
 
 
 @admin.register(RutaRecoleccion)
-class RutaRecoleccionAdmin(admin.ModelAdmin):
+class RutaRecoleccionAdmin(TenantScopedAdmin):
     list_display = ('vehiculo', 'chofer', 'sucursal_origen', 'sucursal_destino', 'hora_salida', 'fecha_creacion')
     list_filter = ('empresa',)
     search_fields = ('vehiculo', 'chofer')
@@ -186,7 +187,7 @@ class RutaRecoleccionAdmin(admin.ModelAdmin):
 
 
 @admin.register(VisitaDomicilio)
-class VisitaDomicilioAdmin(admin.ModelAdmin):
+class VisitaDomicilioAdmin(TenantScopedAdmin):
     list_display = ('ruta', 'orden', 'direccion', 'estatus', 'fecha_creacion')
     list_filter = ('estatus',)
     search_fields = ('direccion',)

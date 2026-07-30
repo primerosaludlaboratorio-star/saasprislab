@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin.tenant import TenantScopedAdmin
  
 try:
     from .models import (
@@ -28,7 +29,7 @@ if ValorReferenciaAnalito is not None:
 
 if ValorReferenciaAnalito is not None:
     @admin.register(ValorReferenciaAnalito)
-    class ValorReferenciaAnalitoAdmin(admin.ModelAdmin):
+    class ValorReferenciaAnalitoAdmin(TenantScopedAdmin):
         list_display = (
             'analito', 'sexo', 'unidad_edad', 'edad_minima', 'edad_maxima',
             'ref_minimo', 'ref_maximo', 'valor_critico_bajo', 'valor_critico_alto',
@@ -41,7 +42,7 @@ if ValorReferenciaAnalito is not None:
 
 if Analito is not None:
     @admin.register(Analito)
-    class AnalitoAdmin(admin.ModelAdmin):
+    class AnalitoAdmin(TenantScopedAdmin):
         list_display = (
             'codigo', 'abreviatura', 'nombre', 'departamento',
             'es_vendible_individualmente', 'es_calculado', 'costo_lista', 'activo',
@@ -58,21 +59,21 @@ if PerfilLims is not None:
         autocomplete_fields = ('analito',)
 
     @admin.register(PerfilLims)
-    class PerfilLimsAdmin(admin.ModelAdmin):
+    class PerfilLimsAdmin(TenantScopedAdmin):
         list_display = ('nombre', 'id_perfil_legacy', 'activo')
         # filter_horizontal = ('analitos',) # Removed due to through table
         inlines = [PerfilAnalitoInline] if PerfilAnalito is not None else []
         search_fields = ('nombre', 'id_perfil_legacy')
 if PaqueteLims is not None:
     @admin.register(PaqueteLims)
-    class PaqueteLimsAdmin(admin.ModelAdmin):
+    class PaqueteLimsAdmin(TenantScopedAdmin):
         list_display = ('nombre', 'id_paquete_legacy', 'costo_lista', 'venta_publico', 'activo')
         # filter_horizontal = ('analitos', 'perfiles') # Removed due to through table
         search_fields = ('nombre',)
 
 if PrecioItem is not None:
     @admin.register(PrecioItem)
-    class PrecioItemAdmin(admin.ModelAdmin):
+    class PrecioItemAdmin(TenantScopedAdmin):
         list_display = ('get_nombre', 'tipo', 'precio_venta', 'activo')
         list_filter = ('tipo', 'activo')
  
