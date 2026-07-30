@@ -16,6 +16,7 @@ from django.views.decorators.http import require_POST
 from datetime import date, timedelta
 import hashlib
 import logging
+import secrets
 
 from laboratorio.models import Equipo
 from mantenimiento.services.consumo_refacciones_service import registrar_consumo_refaccion
@@ -174,7 +175,7 @@ def bypass_checklist(request, empresa, ejecucion_pk):
     from django.conf import settings
     pin_correcto = False
     lab_pin = getattr(settings, 'LAB_VALIDATION_PIN', None)
-    if lab_pin and supervisor_pin == str(lab_pin):
+    if lab_pin and secrets.compare_digest(str(supervisor_pin or ''), str(lab_pin)):
         pin_correcto = True
     elif supervisor.check_password(supervisor_pin):
         pin_correcto = True

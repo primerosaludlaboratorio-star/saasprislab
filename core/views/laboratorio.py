@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import base64
 import re
 import logging
+import secrets
 from decimal import Decimal
 from datetime import timedelta, datetime
 from django.shortcuts import render, get_object_or_404, redirect
@@ -1405,7 +1406,7 @@ def api_validar_pin(request, orden_id: int):
             status=503,
         )
 
-    if pin != validation_pin:
+    if not secrets.compare_digest(pin, validation_pin):
         return JsonResponse({"ok": False, "error": "PIN incorrecto"}, status=403)
 
     orden = OrdenDeServicio.objects.filter(id=orden_id, empresa=empresa).first()
