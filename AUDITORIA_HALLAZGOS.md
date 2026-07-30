@@ -12,6 +12,12 @@
 - **Pruebas añadidas:** `core/tests/test_farmacia_baja_caducidad.py` cubre acceso desde alertas, baja total del lote y rechazo de baja sin lote.
 - **Estado:** corregido localmente; pendiente de despliegue y validación humana en producción en este turno.
 
+## Farmacia — historial de devoluciones — 2026-07-30
+- **Incidente reportado por personal:** la devolución se confirmaba como exitosa, pero el historial podía aparecer vacío.
+- **Causa:** la vista consultaba únicamente `core.SalesReturn`, mientras el flujo ERP registra `farmacia.DevolucionVenta`.
+- **Corrección:** historial unificado de ambos registros, ordenado por fecha y filtrado por empresa; muestra folio de devolución, folio de venta, cliente, monto, tipo, motivo, acción de stock, usuario y estado.
+- **Estado:** corregido localmente; pendiente de despliegue y validación humana en producción en este turno.
+
 ## H-NUEVO-05 — CRÍTICO: `ExpedienteNotaSHA.save()` crashea SIEMPRE — CORREGIDO Y VERIFICADO EN PRODUCCIÓN
 - **Archivo:** `core/models/expediente_blindaje.py:147-168` (`calcular_hash`) y `:203-220` (`save`).
 - **Causa raíz:** `calcular_hash()` usa `self.timestamp_creacion.isoformat()`, pero `timestamp_creacion` es `DateTimeField(auto_now_add=True)`. Django solo asigna ese valor dentro de `pre_save()`, que se ejecuta DENTRO de `super().save()` — es decir, DESPUÉS de que el `save()` sobrescrito ya llamó a `calcular_hash()`. Para una instancia nueva, `self.timestamp_creacion` vale `None` en ese punto.

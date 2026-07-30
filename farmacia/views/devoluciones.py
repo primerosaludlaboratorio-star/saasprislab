@@ -7,6 +7,7 @@ import re
 from decimal import Decimal
 from datetime import datetime
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods, require_POST
 from django.contrib import messages
@@ -163,7 +164,7 @@ def _validar_pin_devolucion(empresa, data):
 # ==============================================================================
 @login_required
 def historial_devoluciones(request):
-    """Vista para historial de devoluciones."""
+    """Historial unificado de devoluciones core y ERP, aislado por empresa."""
     empresa = _empresa_desde_request(request)
     if not empresa:
         messages.error(request, 'Usuario no tiene empresa asignada.')
@@ -181,14 +182,74 @@ def historial_devoluciones(request):
     inicio = timezone.make_aware(datetime.combine(fecha_seleccionada, datetime.min.time()))
     fin = timezone.make_aware(datetime.combine(fecha_seleccionada, datetime.max.time()))
     
-    devoluciones = SalesReturn.objects.filter(
+    devoluciones_core = SalesReturn.objects.filter(
         empresa=empresa,
         fecha_devolucion__range=(inicio, fin)
+    ).select_related('venta_original', 'usuario_error_origen', 'usuario_autorizo').order_by('-fecha_devolucion')
+
+    devoluciones_erp = DevolucionVenta.objects.filter(
+        empresa=empresa,
+        fecha_devolucion__range=(inicio, fin),
+    ).select_related(
+        'venta_original', 'usuario_procesa', 'autorizado_por'
     ).order_by('-fecha_devolucion')
+
+    devoluciones = []
+    for devolucion in devoluciones_core:
+        venta = devolucion.venta_original
+        cliente = (
+            getattr(venta, 'paciente_nombre', None)
+            or (venta.paciente.nombre_completo if venta.paciente else None)
+            or 'PÚBLICO GENERAL'
+        )
+        devoluciones.append({
+            'fecha_devolucion': devolucion.fecha_devolucion,
+            'folio_devolucion': f'DEV-{devolucion.pk}',
+            'folio_venta': venta.folio_operacion or str(venta.pk),
+            'cliente': cliente,
+            'monto': devolucion.monto_reembolsado,
+            'tipo': devolucion.get_tipo_devolucion_display(),
+            'motivo': devolucion.motivo_error,
+            'accion': devolucion.get_accion_stock_display(),
+            'usuario': (
+                devolucion.usuario_autorizo.get_full_name()
+                if devolucion.usuario_autorizo else 'N/A'
+            ),
+            'estado': 'PROCESADA',
+        })
+
+    for devolucion in devoluciones_erp:
+        venta = devolucion.venta_original
+        cliente = (
+            getattr(venta, 'paciente_nombre', None)
+            or (venta.paciente.nombre_completo if venta.paciente else None)
+            or 'PÚBLICO GENERAL'
+        )
+        devoluciones.append({
+            'fecha_devolucion': devolucion.fecha_devolucion,
+            'folio_devolucion': devolucion.folio,
+            'folio_venta': venta.folio_operacion or str(venta.pk),
+            'cliente': cliente,
+            'monto': devolucion.monto_devolucion,
+            'tipo': devolucion.get_tipo_display(),
+            'motivo': devolucion.motivo_detallado or devolucion.get_motivo_display(),
+            'accion': 'Reingreso a stock' if devolucion.reingresar_a_stock else 'Merma / desecho',
+            'usuario': (
+                devolucion.autorizado_por.get_full_name()
+                if devolucion.autorizado_por
+                else devolucion.usuario_procesa.get_full_name()
+            ),
+            'estado': 'PROCESADA' if devolucion.procesada else (
+                'PENDIENTE DE AUTORIZACIÓN' if devolucion.requiere_autorizacion else 'REGISTRADA'
+            ),
+        })
+
+    devoluciones.sort(key=lambda item: item['fecha_devolucion'], reverse=True)
     
     return render(request, 'core/devoluciones.html', {
         'empresa': empresa,
         'devoluciones': devoluciones,
+        'fecha_seleccionada': fecha_seleccionada,
         'fecha_seleccionada_str': fecha_seleccionada.strftime('%Y-%m-%d')
     })
 

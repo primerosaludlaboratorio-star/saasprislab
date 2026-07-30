@@ -177,24 +177,30 @@
                             <thead>
                                 <tr>
                                     <th>FECHA/HORA</th>
+                                    <th>FOLIO DEVOLUCIÓN</th>
                                     <th>FOLIO VENTA</th>
                                     <th>CLIENTE</th>
                                     <th>MONTO REEMBOLSADO</th>
                                     <th>TIPO</th>
                                     <th>MOTIVO</th>
+                                    <th>STOCK</th>
                                     <th>USUARIO</th>
+                                    <th>ESTADO</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for dev in devoluciones %}
                                 <tr>
                                     <td>{{ dev.fecha_devolucion|date:"d/m/Y H:i" }}</td>
-                                    <td class="fw-bold">{{ dev.venta_original.folio_operacion|default:"N/A" }}</td>
-                                    <td>{{ dev.venta_original.paciente_nombre|default:"PÚBLICO GENERAL" }}</td>
-                                    <td class="text-danger fw-bold">$ {{ dev.monto_reembolsado|floatformat:2 }}</td>
-                                    <td><span class="badge bg-{% if dev.tipo_devolucion == 'TOTAL' %}danger{% else %}warning{% endif %}">{{ dev.get_tipo_devolucion_display }}</span></td>
-                                    <td><small>{{ dev.motivo_error|truncatewords:10 }}</small></td>
-                                    <td>{{ dev.usuario_autorizo.get_full_name|default:dev.usuario_autorizo.username|default:"N/A" }}</td>
+                                    <td class="fw-bold">{{ dev.folio_devolucion }}</td>
+                                    <td class="fw-bold">{{ dev.folio_venta }}</td>
+                                    <td>{{ dev.cliente }}</td>
+                                    <td class="text-danger fw-bold">$ {{ dev.monto|floatformat:2 }}</td>
+                                    <td>{{ dev.tipo }}</td>
+                                    <td><small>{{ dev.motivo|truncatewords:10 }}</small></td>
+                                    <td><small>{{ dev.accion }}</small></td>
+                                    <td>{{ dev.usuario|default:"N/A" }}</td>
+                                    <td><span class="badge bg-secondary">{{ dev.estado }}</span></td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
