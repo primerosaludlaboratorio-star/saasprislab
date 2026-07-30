@@ -5,11 +5,6 @@ Registra cambios en tiempo real desde el frontend.
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
-import json
-
-from core.utils.auditoria_nativa import registrar_cambio_campo
-import logging
 
 
 @login_required
@@ -30,60 +25,13 @@ def api_auditar_campo(request):
         "referencia_tipo": "OrdenDeServicio"
     }
     """
-    try:
-        data = json.loads(request.body)
-        
-        modelo = data.get('modelo', '')
-        objeto_id = data.get('objeto_id')
-        campo_nombre = data.get('campo_nombre', '')
-        valor_anterior = data.get('valor_anterior', '')
-        valor_nuevo = data.get('valor_nuevo', '')
-        modulo = data.get('modulo', 'GENERAL')
-        referencia_id = data.get('referencia_id')
-        referencia_tipo = data.get('referencia_tipo')
-        
-        # Validaciones básicas
-        if not modelo or not objeto_id or not campo_nombre:
-            return JsonResponse({
-                'status': 'error',
-                'mensaje': 'Faltan campos requeridos'
-            }, status=400)
-        
-        # Registrar cambio
-        log = registrar_cambio_campo(
-            usuario=request.user,
-            modelo=modelo,
-            objeto_id=objeto_id,
-            campo_nombre=campo_nombre,
-            valor_anterior=valor_anterior,
-            valor_nuevo=valor_nuevo,
-            modulo=modulo,
-            empresa=getattr(request.user, 'empresa', None),
-            referencia_id=referencia_id,
-            referencia_tipo=referencia_tipo,
-            request=request
-        )
-        
-        if log:
-            return JsonResponse({
-                'status': 'success',
-                'mensaje': 'Cambio registrado en auditoría',
-                'log_id': log.id
-            })
-        else:
-            return JsonResponse({
-                'status': 'error',
-                'mensaje': 'No se pudo registrar el cambio'
-            }, status=500)
-            
-    except json.JSONDecodeError:
-        return JsonResponse({
+    # Endpoint legacy sin rutas activas: no debe convertirse en una vía para
+    # fabricar AuditLog desde datos enviados por el navegador.
+    return JsonResponse(
+        {
             'status': 'error',
-            'mensaje': 'Error al procesar JSON'
-        }, status=400)
-    except Exception as e:
-        logging.getLogger(__name__).exception("Error inesperado en api_auditar_campo (auditoria_api.py)")
-        return JsonResponse({
-            'status': 'error',
-            'mensaje': 'No fue posible procesar la auditoría.'
-        }, status=500)
+            'codigo': 'AUDITORIA_CLIENTE_DEPRECADA',
+            'mensaje': 'La auditoría se genera desde el cambio persistido en servidor.',
+        },
+        status=410,
+    )

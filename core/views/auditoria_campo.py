@@ -6,6 +6,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 import json
+import re
 
 from core.utils.estandares_industriales import auditar_cambio_campo
 from core.models import DetalleOrden, OrdenDeServicio
@@ -22,16 +23,22 @@ def api_auditoria_campo(request):
     """
     try:
         data = json.loads(request.body)
-        campo_id = data.get('campo_id')
-        campo_nombre = data.get('campo_nombre')
-        valor_anterior = data.get('valor_anterior')
+        campo_id = str(data.get('campo_id') or '').strip()
         valor_nuevo = data.get('valor_nuevo')
         
-        if not campo_id or not campo_nombre:
+        # Esta API solo acompaña la edición de resultados de una orden real.
+        # No se aceptan modelo/objeto/valor anterior arbitrarios del cliente.
+        match = re.fullmatch(r'resultado_(\d+)(?:_\d+)?', campo_id)
+        if not match or valor_nuevo is None:
             return JsonResponse({
                 'status': 'error',
-                'mensaje': 'Faltan datos requeridos'
+                'mensaje': 'Campo de resultado inválido o valor nuevo ausente'
             }, status=400)
+
+        campo_nombre = 'resultado'
+        empresa = empresa_efectiva_request(request)
+        if not empresa:
+            return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}, status=403)
         
         # Intentar identificar el modelo desde el campo_id
         # Formato esperado: "resultado_123_0" -> DetalleOrden id=123
@@ -41,38 +48,26 @@ def api_auditoria_campo(request):
                 partes = campo_id.split('_')
                 if len(partes) >= 2:
                     detalle_id = int(partes[1])
-                    empresa = empresa_efectiva_request(request)
                     modelo_instancia = DetalleOrden.objects.get(id=detalle_id, orden__empresa=empresa)
         except (ValueError, IndexError, DetalleOrden.DoesNotExist):
-            pass
+            modelo_instancia = None
 
-        # Si no se pudo identificar, crear un log genérico
-        if modelo_instancia:
-            auditar_cambio_campo(
-                campo_nombre=campo_nombre,
-                valor_anterior=valor_anterior,
-                valor_nuevo=valor_nuevo,
-                modelo_instancia=modelo_instancia,
-                request=request,
-                modulo='LABORATORIO',
-                accion='UPDATE'
-            )
-        else:
-            # Registrar en TrazabilidadOperacion directamente
-            from core.utils.trazabilidad import registrar_trazabilidad
-            registrar_trazabilidad(
-                tipo_operacion='CAMPO_MODIFICADO',
-                modulo='LABORATORIO',
-                referencia_id=None,
-                referencia_tipo='Campo',
-                accion='UPDATE',
-                descripcion=f'Campo {campo_nombre} modificado: {valor_anterior} → {valor_nuevo}',
-                usuario=request.user,
-                empresa=getattr(request.user, 'empresa', None),
-                datos_anteriores={campo_nombre: valor_anterior},
-                datos_nuevos={campo_nombre: valor_nuevo},
-                request=request,
-            )
+        if not modelo_instancia:
+            return JsonResponse({'status': 'error', 'mensaje': 'Resultado no encontrado'}, status=404)
+
+        valor_anterior = getattr(modelo_instancia, 'resultado', '')
+        if str(valor_anterior) == str(valor_nuevo):
+            return JsonResponse({'status': 'success', 'mensaje': 'Sin cambios'})
+
+        auditar_cambio_campo(
+            campo_nombre=campo_nombre,
+            valor_anterior=valor_anterior,
+            valor_nuevo=str(valor_nuevo),
+            modelo_instancia=modelo_instancia,
+            request=request,
+            modulo='LABORATORIO',
+            accion='UPDATE'
+        )
         
         return JsonResponse({
             'status': 'success',
