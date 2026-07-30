@@ -48,15 +48,29 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local/desplegada: `417b30c`.
+- Última revisión local: `4ac7903` (`fix(security): consolidate middleware and atomic rate limits`). La revisión desplegada se actualizará después de verificar este despliegue.
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
-  en `8a0e3e8`, mientras el checkout canónico está en `641db25` y adelante 48
-  commits. El `push` no terminó desde esta máquina por falta de una sesión Git
-  autenticada disponible; por tanto GitHub no se declara como fuente activa ni
-  sincronizada. El despliegue operativo y producción sí están alineados con
-  `641db25`.
+  en `8a0e3e8`, mientras el checkout canónico está en `4ac7903` y adelante
+  respecto del remoto. El `push` no terminó desde esta máquina por falta de una
+  sesión Git autenticada disponible; por tanto GitHub no se declara como fuente
+  activa ni sincronizada. El despliegue operativo se realiza localmente desde
+  este checkout y se registra por revisión.
+
+## Cierre H-013 y limpieza de legacy
+
+La revisión `4ac7903` es la fuente canónica para la consolidación de middleware:
+
+- `RateLimitMiddleware` usa contador atómico por ventana fija y limita todos los
+  métodos de `/api/`, con `Retry-After` en `429`.
+- Se eliminaron `admin_access_restrict.py` y `LogAccesoExpedienteMiddleware`
+  como restos sin referencias runtime; los modelos de auditoría que sí usa el
+  sistema se conservan.
+- `TenantSubdomainMiddleware` permanece activo y documentado como parte de la
+  cadena real.
+- La evidencia automatizada es la suite real disponible de rate limit, tenant,
+  Sentinel y drivers de middleware, además de `check`, migraciones y compilación.
 
 ## Qué no se debe hacer
 
