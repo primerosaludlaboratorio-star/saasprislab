@@ -48,11 +48,11 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local y desplegada: `9a7a07a` (`docs: record H-013 canonical cleanup`).
+- Última revisión local y desplegada: `2121375` (`docs: pin deployed canonical revision`).
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
-  en `8a0e3e8`, mientras el checkout canónico está en `4ac7903` y adelante
+  en `8a0e3e8`, mientras el checkout canónico está en `2121375` y adelante
   respecto del remoto. El `push` no terminó desde esta máquina por falta de una
   sesión Git autenticada disponible; por tanto GitHub no se declara como fuente
   activa ni sincronizada. El despliegue operativo se realiza localmente desde
