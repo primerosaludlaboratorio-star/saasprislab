@@ -140,7 +140,7 @@
 - **Verificación local:** `core.tests.test_auto_repair_restart_guard` confirma que tres errores públicos no reinician Gunicorn y que el reinicio solo ocurre con autorización explícita.
 - **Estado:** corregido, desplegado y verificado en producción en la revisión `c733c8d6d86addf375956e966afda69866aea4ce`; migraciones sin pendientes, servicios activos y health check exitoso.
 
-## H-NUEVO-18 — Receptor HL7 permitía seleccionar el tenant con header controlable por el cliente
+## H-NUEVO-19 — Receptor HL7 permitía seleccionar el tenant con header controlable por el cliente
 - **Archivo:** `core/services/lims/interfaces_lims_service.py::receptor_hl7()` y `_empresa_hl7_autoritativa()`.
 - **Problema:** después de autenticar una API key global o una IP permitida, el receptor aceptaba `X-EMPRESA-ID` o `empresa_id` como fuente de tenant. Un emisor autenticado podía intentar seleccionar otra empresa y dirigir allí resultados clínicos.
 - **Impacto:** riesgo de contaminación cross-tenant de resultados HL7/ASTM/JSON y trazabilidad clínica incorrecta.
@@ -149,13 +149,13 @@
 - **Verificación local:** `core.tests.test_hl7_tenant_binding` y regresiones Walkie/Sentinel: 8 pruebas OK; `manage.py check` y compilación OK.
 - **Estado:** corregido, desplegado y verificado en producción en la revisión `3807a0df9fe2bbe7324b9cfe79943b12126de620`; migraciones sin pendientes, servicios activos y health check exitoso.
 
-## H-NUEVO-18 — Endpoints de auditoría de campo permiten forjar entradas arbitrarias en AuditLog (integridad forense comprometida)
+## H-NUEVO-16 — Endpoints de auditoría de campo permiten forjar entradas arbitrarias en AuditLog (integridad forense comprometida)
 - **Archivos:** `core/views/auditoria_api.py::api_auditar_campo` (línea 17-89), `core/views/auditoria_campo.py::api_auditoria_campo` (línea 18-92), `core/utils/auditoria_nativa.py::registrar_cambio_campo` (línea 14-74).
 - **Problema:** ambos endpoints solo exigen `@login_required` (CUALQUIER usuario autenticado, sin importar rol) y aceptan del body JSON del cliente los campos `modelo`, `objeto_id`, `campo_nombre`, `valor_anterior` y `valor_nuevo` sin ninguna verificación server-side de que: (a) el modelo/objeto realmente existe, (b) el `objeto_id` pertenece al tenant del usuario (en `auditoria_api.py` no hay ninguna validación de existencia ni de tenant; en `auditoria_campo.py` solo se valida tenant si `campo_id` sigue el patrón `resultado_<id>_*`), (c) `valor_anterior`/`valor_nuevo` corresponden al estado real anterior/actual del campo. `registrar_cambio_campo` persiste estos valores tal cual en `AuditLog` sin contraste alguno.
 - **Impacto:** cualquier usuario autenticado (incluso el rol más bajo, ej. RECEPCION o CAJERO) puede escribir entradas de auditoría completamente fabricadas — para un `modelo`/`objeto_id` inexistente, o simulando cambios que nunca ocurrieron. Esto compromete el valor forense/legal de `AuditLog`, usado en el sistema como bitácora NOM-024/COFEPRIS: un atacante interno podría (1) inundar el log con ruido para dificultar una investigación real, o (2) crear una narrativa falsa de auditoría (ej. registrar un "cambio" atribuido a un valor distinto al real) para desviar la atención de una manipulación real hecha por otra vía.
 - **Corrección aplicada:** el endpoint legacy `api_auditar_campo` queda deprecado con `410`; el endpoint activo solo acepta IDs `resultado_<detalle_id>`, resuelve `DetalleOrden` dentro de la empresa efectiva, obtiene `valor_anterior` desde el servidor y elimina el fallback genérico para objetos inexistentes.
 - **Verificación local:** `core.tests.test_auditoria_campo_security` (3 pruebas OK), `manage.py check` OK.
-- **Estado:** corregido localmente; pendiente despliegue y verificación productiva.
+- **Estado:** corregido, desplegado y verificado en producción en la revisión `2c3a0247e7032087678e9f9f7f315f4bc0d599b2`; migraciones sin pendientes, servicios activos y health check exitoso.
 
 ## H-NUEVO-17 — Portal público de autofactura (IDOR): expone nombre de paciente y monto de venta por folio adivinable, sin autenticación
 - **Archivos:** `core/views/autofactura.py::autofactura_publica` (línea 79-219), `core/templates/core/autofactura_publica.html` (línea 132-145).
