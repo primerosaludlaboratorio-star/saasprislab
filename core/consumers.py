@@ -5,6 +5,7 @@ Maneja conexiones en tiempo real para comandos de voz y walkie-talkie
 
 import json
 import logging
+import re
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
@@ -165,6 +166,22 @@ class WalkieTalkieConsumer(AsyncWebsocketConsumer):
     Consumer para comunicación tipo walkie-talkie entre usuarios.
     Permite transmitir audio efímero en tiempo real.
     """
+
+    _ROOM_RE = re.compile(r"^[a-z0-9_-]{1,48}$")
+
+    @classmethod
+    def build_room_group_name(cls, empresa_id, room_name):
+        """Construye un grupo de audio aislado por empresa.
+
+        El nombre de sala es una etiqueta funcional, no una frontera de
+        seguridad. La empresa autenticada siempre forma parte del grupo.
+        """
+        if not empresa_id:
+            raise ValueError("El walkie-talkie requiere una empresa autenticada")
+        normalized_room = str(room_name or "").strip().lower()
+        if not cls._ROOM_RE.fullmatch(normalized_room):
+            raise ValueError("Sala de walkie-talkie inválida")
+        return f"walkie_t{empresa_id}_{normalized_room}"
     
     async def connect(self):
         """Acepta la conexión y une al room."""
@@ -175,9 +192,22 @@ class WalkieTalkieConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
         
-        # Room name desde la URL (ej: "farmacia", "consultorio", "general")
-        self.room_name = self.scope['url_route']['kwargs']['room_name']
-        self.room_group_name = f'walkie_{self.room_name}'
+        # La sala viene de la URL, pero el aislamiento depende del tenant del
+        # usuario autenticado. Nunca se comparte un grupo entre empresas.
+        self.empresa_id = getattr(self.user, 'empresa_id', None)
+        try:
+            self.room_name = str(self.scope['url_route']['kwargs']['room_name']).strip().lower()
+            self.room_group_name = self.build_room_group_name(
+                self.empresa_id,
+                self.room_name,
+            )
+        except (KeyError, TypeError, ValueError):
+            logger.warning(
+                "Walkie-talkie rechazado: sala inválida o tenant ausente para usuario=%s",
+                getattr(self.user, 'id', None),
+            )
+            await self.close()
+            return
         
         # Unirse al room
         await self.channel_layer.group_add(

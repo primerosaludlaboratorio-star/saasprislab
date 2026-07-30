@@ -72,25 +72,50 @@ Hallazgos totales del bloque: H-NUEVO-01 (corregido), H-NUEVO-02 (corregido), H-
 - [x] core/admin/ventas.py — COMPLETO; VentaAdmin bajo `TenantScopedAdmin`, verificación productiva H-NUEVO-12.
 
 ## H-NUEVO-12 CERRADO: Django Admin tenant-aware en 184 registros activos y verificado en producción. Ver AUDITORIA_HALLAZGOS.md.
-- [ ] core/ai_brain.py
-- [ ] core/apps.py
-- [ ] core/catalog.py
-- [ ] core/constants/lock_order.py
-- [ ] core/consumers.py
-- [ ] core/context_processors.py
-- [ ] core/django_template_context_patch.py
+- [x] core/admin/tenant.py — COMPLETO (56 líneas). `TenantScopedAdminMixin`/`TenantScopedAdmin` descubre ruta FK→empresa dinámicamente (profundidad 3), falla cerrado (`queryset.none()`). Corrección de H-NUEVO-12 verificada correcta en código.
+- [!] core/ai_brain.py — COMPLETO (387 líneas). Chat IA alternativo/legacy (usado por `core/views/ai_brain.py::api_ai_brain_preguntar`). `consultar_ventas`/`buscar_rh` exigen `is_superuser` estricto (fail-closed correcto) pero son código muerto en la práctica (`responder()` solo detecta `validar_folios` por regex superficial sobre el texto del LLM). Sin hallazgo de seguridad explotable.
+- [x] core/apps.py — COMPLETO (31 líneas). `ready()` activa signals, monkey-patch de `admin.site.__class__` a `PrislabAdminSite` (config/admin_site.py), y verificación de entorno con manejo de excepciones que nunca bloquea el arranque.
+- [x] core/catalog.py — COMPLETO (315 líneas). `CatalogResolver` con patrón catálogo maestro (empresa=None) + override por tenant; `tenant_bypass()` usado correcta y deliberadamente para el propio patrón de catálogo global (no es un bypass de seguridad).
+- [x] core/constants/lock_order.py — COMPLETO (137 líneas). Solo documentación + `validate_lock_order()` (helper de validación, con self-test en `__main__`). No se usa en runtime real (no hay `import core.constants.lock_order` fuera de sí mismo) — es documentación/aspiración de orden de locks, no enforcement activo. Sin riesgo de seguridad (es una guía de code review, no control de acceso).
+- [x] core/consumers.py — COMPLETO (WalkieTalkieConsumer con aislamiento por `empresa_id`, validación de sala y rechazo fail-closed de usuarios sin tenant). H-NUEVO-14 corregido localmente; pruebas focalizadas OK.
+- [x] core/routing.py — COMPLETO (16 líneas). Solo define websocket_urlpatterns.
+- [x] core/context_processors.py — COMPLETO (59 líneas). Inyecta empresa_actual/módulos/branding en templates. Sin hallazgos.
+- [x] core/django_template_context_patch.py — COMPLETO (22 líneas). Parche de compatibilidad Django 5.0.x + Python 3.13+ para `BaseContext.__copy__`. Sin riesgo.
 - [x] core/fields.py — ya auditado en Bloque 1.
-- [ ] core/forms.py
-- [ ] core/lims_cart.py
-- [ ] core/push_service.py
-- [ ] core/rescate_total_prislab.py
-- [ ] core/routing.py
+- [x] core/forms.py — COMPLETO (5 líneas, solo docstring, sin código funcional).
+- [x] core/lims_cart.py — COMPLETO (417 líneas: resolución de precios/carrito LIMS v7.5). Todas las funciones aceptan `empresa` opcional y filtran correctamente cuando se pasa; responsabilidad de scoping recae en el caller (patrón consistente en todo el archivo).
+- [x] core/push_service.py — COMPLETO (255 líneas). Web Push con VAPID, circuit breaker por `cache` ante rate-limit (429) y auto-desactivación ante 410 Gone. `notificar_error_sentinel` correctamente scoped a `is_superuser`. Sin hallazgos.
+- [x] core/rescate_total_prislab.py — COMPLETO (99 líneas). Script de rescate/mantenimiento multi-tenant con `tenant_bypass()` explícito y documentado; confirmado que solo se invoca desde `core/management/commands/execute_rescate_total.py` (uso administrativo, no expuesto vía web). Sin riesgo.
 - [x] core/tenant.py — ya confirmado positivo en sesión previa (aislamiento multi-tenant + sucursal, STRICT_MODE).
-- [ ] core/urls.py
-- [ ] core/validators.py
-- [ ] core/__init__.py
-- [ ] core/mixins.py
+- [x] core/urls.py — COMPLETO (29 líneas). Rutas de historial de resultados y blindaje de expediente; `verificar_publico` es intencionalmente público (token UUID).
+- [x] core/validators.py — COMPLETO (236 líneas). `validate_file_upload` con extensión + tamaño + Content-Type + magic bytes reales (bloquea ejecutables/scripts aunque se renombren); `validate_fecha_nacimiento_razonable` con rango 1900-hoy. Buen diseño defensivo.
+- [x] core/__init__.py — COMPLETO (2 líneas, solo `default_app_config`).
+- [x] core/mixins.py — COMPLETO (496 líneas: GroupRequiredMixin y variantes por rol). Usado en `consultorio/api/procesar_audio.py` y `laboratorio/views/etiquetas.py` (no es código muerto, uso limitado). Mecanismo paralelo a `core/decorators.py::role_required`; mismo patrón fail-safe (superuser bypass, deny explícito, logging).
 
-Hallazgos nuevos del Bloque 2 (hasta ahora): H-NUEVO-09, H-NUEVO-10, H-NUEVO-11.
+## BLOQUE 2 — core/ raíz + admin/ + agent/ + api_contracts/ + constants/ + rbac/ COMPLETO.
+Hallazgos del bloque: H-NUEVO-09 (corregido), H-NUEVO-10 (abierto, higiene), H-NUEVO-11 (abierto), H-NUEVO-12 CRÍTICO (corregido y verificado en producción), H-NUEVO-13 (corregido), H-NUEVO-14 (corregido localmente; pendiente despliegue).
+
+## Bloque 3 — core/middleware/ (18 archivos) COMPLETO
+- [x] core/middleware/__init__.py — COMPLETO. Agrega los middlewares del paquete.
+- [x] core/middleware/actividad_usuario.py — COMPLETO (37 líneas). Rastrea sesiones de 4+h para sugerir descansos. Sin hallazgos de seguridad.
+- [x] core/middleware/admin_access.py — ya auditado (Bloque 2, relacionado con H-NUEVO-12).
+- [x] core/middleware/blindaje_expediente.py — COMPLETO (353 líneas). Señales pre_save/post_save de `NotaClinicaSOAP` consistentes con la corrección de H-NUEVO-05 (Bloque 1); `verificar_inmutabilidad_pre_save` bloquea edición de campos críticos en notas selladas; `_get_client_ip` usa `REMOTE_ADDR` (no falsificable) para evidencia forense, correcto.
+- [x] core/middleware/canonical_host.py — COMPLETO (64 líneas). Redirección a host canónico. Sin hallazgos.
+- [x] core/middleware/empresa.py — COMPLETO (271 líneas). `EmpresaIdentityMiddleware` — resolución de empresa/sucursal correcta, header `X-Sucursal-ID` validado con `check_sucursal_assignment`, bypass de emergencia gateado a `DEBUG=True` explícitamente, limpieza en `finally` para evitar fuga entre hilos. Diseño sólido.
+- [!] core/middleware/feature_flags.py — COMPLETO (262 líneas). `FeatureFlagMiddleware`/`ModuloRequeridoMixin`/`modulo_requerido` con bypass correcto para superusuario. Sin hallazgos nuevos.
+- [x] core/middleware/json_response.py — COMPLETO (80 líneas). Convierte errores HTML a JSON para AJAX. Sin hallazgos.
+- [x] core/middleware/mantenimiento.py — COMPLETO (82 líneas). `MaintenanceModeMiddleware` bloquea escrituras en mantenimiento, exime superuser/rol ADMIN (diseño intencional). Sin hallazgos.
+- [x] core/middleware/performance.py — COMPLETO (164 líneas). Mide latencia/queries sin loguear SQL crudo; registra incidencias >5s vía threading. Sin hallazgos.
+- [x] core/middleware/pris_context.py — COMPLETO (41 líneas). Import lazy con manejo de excepción para no romper requests. Sin hallazgos.
+- [x] core/middleware/rate_limit.py — COMPLETO (138 líneas). `RateLimitMiddleware` con ventana fija atómica (`cache.add`/`incr`), IP resuelta solo desde proxies confiables explícitos (CIDR allowlist) — diseño correcto, no confía ciegamente en X-Forwarded-For.
+- [x] core/middleware/read_only.py — COMPLETO (143 líneas). `ReadOnlyMiddleware` — kill switch de solo lectura, fail-closed por diseño (allowlist explícita para POST de auth y auditoría).
+- [x] core/middleware/seguridad.py — COMPLETO (134 líneas). `SessionTimeoutMiddleware` (8h) y `TenantStorageMiddleware` (slug seguro para Drive, sin riesgo de path traversal). Sin hallazgos.
+- [!] core/middleware/sentinel.py — COMPLETO (882 líneas). Middleware de auto-reparación AIOps. Hallazgo H-NUEVO-15 (restart de Gunicorn disparable sin autenticación ante 3 excepciones tipo timeout/memoria en 60s). Resto del motor de auto-reparación (redirects a rutas seguras, nunca a '/', registro de incidencias con tenant scoping estricto en `_crear_incidencia` que rechaza `empresa_id` nulo) es sólido. `reparar_permisos_sesion` (auto-fix de permisos 403) confirmado como código NO invocado desde el middleware (solo pruebas) — intencionalmente deshabilitado, comentario explícito "RBAC sea observable y auditable".
+- [x] core/services/auto_repair.py — COMPLETO (511 líneas, revisado por necesidad de H-NUEVO-15). 3 motores: Gunicorn soft-restart, DB connection recovery, auto-fix permisos (código muerto, no invocado).
+- [x] core/middleware/sre_metrics.py — COMPLETO (63 líneas). Métricas Prometheus in-memory. Sin hallazgos.
+- [x] core/middleware/suscripciones.py — COMPLETO (40 líneas). `SuscripcionMiddleware` bloquea acceso si suscripción vencida, exime superuser. Sin hallazgos.
+- [x] core/middleware/tenant_subdomain.py — COMPLETO (144 líneas). `TenantSubdomainMiddleware` — resolución por subdominio SOLO afecta usuarios anónimos (usuario autenticado siempre usa `user.empresa`, confirmado en `EmpresaIdentityMiddleware`); sin riesgo de cross-tenant.
+
+## BLOQUE 3 — core/middleware/ COMPLETO. Hallazgo nuevo: H-NUEVO-15 (abierto).
 
 (El resto de bloques se detallan a medida que se avanza, usando AUDITORIA_INVENTARIO.txt como checklist maestro por ruta completa.)
