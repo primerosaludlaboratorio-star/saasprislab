@@ -182,13 +182,14 @@
 - **Verificación:** búsqueda exhaustiva sin callers activos, compilación del módulo y `manage.py check` sin incidencias.
 - **Estado:** corregido localmente; pendiente despliegue junto con la revisión actual.
 
-## H-NUEVO-22 — `api_confirmar_accion` (asistente PRIS) permitía validar resultados clínicos sin verificar el rol del usuario, solo tenant + login — CORREGIDO
-- **Archivo:** `core/views/pris_jarvis.py::api_confirmar_accion` (línea 617-648), `_ejecutar_accion_confirmada` (línea 669-783), contraste con `lista_acciones_pris` (línea 791-808).
+## H-NUEVO-22 — `api_confirmar_accion` (asistente PRIS) permite validar resultados clínicos sin verificar el rol del usuario, solo tenant + login — CORREGIDO
+- **Archivo:** `core/views/pris_jarvis.py::api_confirmar_accion` (línea 617-648), `_ejecutar_accion_confirmada` (línea 669-783), contraste con `lista_acciones_pris` (línea 791-808). Implementación duplicada con el mismo defecto en `core/views/pris_ia/views.py::api_confirmar_accion` (línea 346-365), que también delega en `_ejecutar_accion_confirmada` con idéntica falta de verificación de rol.
 - **Problema:** `lista_acciones_pris` SÍ filtra por rol qué `AccionPRIS` puede ver cada usuario (`QUIMICO` → solo `laboratorio.*`, `CAJERO`/`GERENTE` → solo `farmacia.*`, otros roles → nada salvo `ADMIN`/`DIRECTOR`/superuser). Sin embargo, el endpoint que EJECUTA la acción (`api_confirmar_accion`) solo valida `empresa=empresa` (tenant) y `estado == PENDIENTE` — NO repite el filtro de rol. Es un caso clásico de "seguridad solo en la UI": la restricción de rol vive únicamente en el queryset de la vista de listado, no en el endpoint de mutación.
 - **Impacto:** cualquier usuario autenticado de la empresa (ej. RECEPCION, sin ningún permiso de laboratorio) que conozca o adivine un `accion_id` (entero secuencial, tenant-scoped, fácilmente enumerable probando IDs consecutivos) puede hacer `POST /pris/accion/<id>/confirmar/` directamente y ejecutar `_ejecutar_accion_confirmada`, que para el tipo `laboratorio.validar_resultado` marca `Resultado.validado=True, validado_por=<ese usuario>` — es decir, firma electrónicamente la validación de un resultado clínico de laboratorio sin ser químico ni tener la calificación profesional requerida (relevante para NOM-007/COFEPRIS, donde la validación de resultados debe ser hecha por personal calificado).
-- **Corrección aplicada:** se centralizó `_puede_confirmar_accion(accion, usuario)` y se aplica a confirmar, rechazar y a la vista web. El permiso se calcula por `modulo_destino`, con superusuario explícito y denegación por defecto para módulos no reconocidos.
+- **Corrección aplicada:** se centralizó `_puede_confirmar_accion(accion, usuario)` en `core/views/pris_jarvis.py` y se aplica a confirmar, rechazar y a la vista web. El permiso se calcula por `modulo_destino`, con superusuario explícito y denegación por defecto para módulos no reconocidos.
+- **Verificación adicional de enrutamiento:** las rutas reales (`config/urls.py`, líneas 138 y 660-661) resuelven `core.views.pris_ia.api_confirmar_accion`/`api_rechazar_accion` contra el paquete `pris_ia/__init__.py`, cuyo import final (línea 37-52) sobreescribe el nombre con la versión de `pris_jarvis.py` — por lo tanto el endpoint efectivamente expuesto YA usa la versión corregida. La implementación duplicada en `core/views/pris_ia/views.py` (línea 346-383) sigue sin el chequeo de rol, pero queda inalcanzable por ruteo (solo importada en tests para `asistente_chat`, no para `api_confirmar_accion`); se recomienda eliminarla o alinearla para evitar confusión futura.
 - **Verificación:** pruebas aisladas de la matriz de roles y compilación; el tenant sigue filtrándose en la consulta de la acción.
-- **Estado:** corregido localmente; pendiente despliegue de esta revisión.
+- **Estado:** corregido localmente en la ruta expuesta; pendiente despliegue de esta revisión y limpieza de la copia muerta en `pris_ia/views.py`.
 
 ## H-NUEVO-23 — Creación de CxC con folio `count()+1` y reintento no idempotente — CORREGIDO
 - **Archivo:** `core/views/cuentas_por_cobrar.py::api_crear_cxc`.
@@ -204,12 +205,27 @@
 - **Estado:** corregido localmente; pendiente despliegue.
 - **Estado:** pendiente de decisión del usuario.
 
+## H-NUEVO-26 — `NameError` no capturado en `api_cobrar_orden` (cobro de laboratorio) ante error operacional de base de datos
+- **Archivo:** `core/views/laboratorio/caja.py::api_cobrar_orden`, línea 269: `except (IntegrityError, OperationalError, ValueError, TypeError) as e:`.
+- **Problema:** `OperationalError` se usa en la tupla de excepciones capturadas pero nunca se importa en el archivo (los imports de `django.db` en la cabecera son solo `transaction, IntegrityError` y `models`). Si en producción ocurre un `django.db.OperationalError` real (ej. timeout de bloqueo por el `select_for_update()` usado en la misma función bajo alta concurrencia), Python lanza `NameError: name 'OperationalError' is not defined` al evaluar la cláusula `except`, en vez de manejarlo con el JSON de error 500 previsto.
+- **Impacto:** bajo/operacional, no de seguridad — convierte un error transitorio de base de datos (contención de bloqueo durante un cobro) en una excepción no controlada, perdiendo el logging de bitácora crítica ("FALLO EN COBRO") y devolviendo un 500 genérico de Django en vez del JSON estructurado. No hay pérdida de datos ni riesgo de doble cobro (la idempotencia por `client_mutation_id` sigue vigente).
+- **Corrección aplicada:** se agregó `OperationalError` al import de `django.db`, por lo que el handler de último recurso vuelve a capturar correctamente los bloqueos/errores operacionales.
+- **Verificación:** compilación del módulo y `manage.py check` correctos.
+- **Estado:** corregido localmente; pendiente despliegue.
+
 ## H-NUEVO-13 — `core/admin.py` (archivo raíz) es código MUERTO/huérfano, duplica registros de `core/admin/` — CORREGIDO
 - **Archivo:** `core/admin.py` (41 KB, ~700+ líneas).
 - **Hallazgo:** confirmado empíricamente (`importlib.util.find_spec('core.admin')` → resuelve a `core/admin/__init__.py`). Python resuelve el paquete `core/admin/` con prioridad sobre el módulo `core/admin.py` cuando ambos coexisten en el mismo directorio — por lo tanto Django `autodiscover()` **nunca importa `core/admin.py`**. Su contenido (registros duplicados de `Usuario`, `Producto`, `Venta`, `Paciente`, etc., aparentemente el archivo monolítico previo a la migración al paquete `core/admin/`) es completamente inerte.
 - **Impacto:** ninguno funcional (nunca se ejecuta), pero es fuente de confusión para mantenimiento — un desarrollador podría editar `core/admin.py` pensando que afecta el admin real, sin efecto alguno.
 - **Recomendación:** eliminar `core/admin.py` para evitar confusión, o consolidar si contiene alguna diferencia relevante no migrada al paquete.
 - **Estado:** eliminado tras confirmar que `core.admin` resuelve al paquete `core/admin/` y no existían referencias activas.
+
+## H-NUEVO-25 — `core/views/laboratorio.py`, `medico.py` y `pris_ia.py` son monolitos MUERTOS, sustituidos por los paquetes homónimos (mismo patrón que H-NUEVO-13)
+- **Archivos:** `core/views/laboratorio.py` (134 KB), `core/views/medico.py` (46 KB), `core/views/pris_ia.py` (79 KB) vs. los paquetes `core/views/laboratorio/`, `core/views/medico/`, `core/views/pris_ia/`.
+- **Hallazgo:** confirmado empíricamente con `importlib.util.find_spec('core.views.laboratorio'|'medico'|'pris_ia').origin` — los tres resuelven al `__init__.py` del paquete, nunca al archivo plano. Los `__init__.py` de `laboratorio/` y `pris_ia/` documentan explícitamente "Este archivo sustituye al monolito core/views/<nombre>.py". Todos los imports reales en `config/urls.py`, `laboratorio/urls.py`, tests y management commands usan `from core.views.laboratorio import ...` / `from core.views.medico import ...` / `from core.views.pris_ia import ...`, que se resuelven contra el paquete. Los tres archivos planos son inertes.
+- **Impacto:** ninguno funcional, pero riesgo de mantenimiento — un desarrollador (o auditor) podría revisar/editar el archivo plano pensando que refleja el comportamiento real. Nota de transparencia: partes de mi propia auditoría del Bloque 5 sobre estos tres archivos (decoradores, patrones de tenant scoping) se hicieron inicialmente contra los archivos planos; los hallazgos reportados (`H-NUEVO-20`, `H-NUEVO-21`, verificación de `H-NUEVO-11`) fueron re-confirmados directamente contra el código vivo en los paquetes correspondientes (`laboratorio/calidad.py`, `pris_ia/views.py` + `pris_jarvis.py`), por lo que siguen siendo válidos.
+- **Recomendación:** eliminar los tres archivos planos, igual que se hizo con `core/admin.py` en `H-NUEVO-13`.
+- **Estado:** pendiente de decisión del usuario.
 
 ## Código muerto / higiene (sin riesgo de seguridad) — CORREGIDO
 - `core/services/ai_medico_backup.py` — eliminado tras confirmar que no tenía imports activos.
