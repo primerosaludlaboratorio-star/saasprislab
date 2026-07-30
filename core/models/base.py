@@ -5,10 +5,11 @@ Sin dependencias internas a otros fragmentos de core/models/.
 """
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import RegexValidator
+from django.contrib.auth.hashers import check_password, identify_hasher, make_password
 from django.utils import timezone
 from datetime import date
 import uuid
+import re
 
 from core.validators import (
     validate_image_upload,
@@ -231,6 +232,32 @@ class Sucursal(models.Model):
         return f"{self.nombre} ({self.codigo_sucursal})"
 
 
+_FARMACIA_PIN_FIELDS = ('pin_precio_neto', 'pin_cancelacion_venta')
+
+
+def farmacia_pin_configurado(valor):
+    """Indica si el valor almacenado es un hash Django válido."""
+    if not valor:
+        return False
+    try:
+        identify_hasher(valor)
+    except (ValueError, TypeError):
+        return False
+    return True
+
+
+def verificar_pin_farmacia(valor_almacenado, pin_ingresado):
+    """Verifica un PIN de cuatro dígitos sin comparar ni guardar texto plano."""
+    if not isinstance(pin_ingresado, str) or not re.fullmatch(r'\d{4}', pin_ingresado.strip()):
+        return False
+    if not farmacia_pin_configurado(valor_almacenado):
+        return False
+    try:
+        return check_password(pin_ingresado.strip(), valor_almacenado)
+    except (ValueError, TypeError):
+        return False
+
+
 class ConfiguracionModulos(models.Model):
     """Feature Toggles: Interruptores de módulos según contrato de la empresa."""
     empresa = models.OneToOneField(
@@ -281,20 +308,18 @@ class ConfiguracionModulos(models.Model):
     )
 
     pin_precio_neto = models.CharField(
-        max_length=4,
+        max_length=128,
         blank=True,
         default='',
-        validators=[RegexValidator(r'^$|^\d{4}$', 'El PIN debe contener exactamente 4 dígitos.')],
         verbose_name="PIN Precio Neto (Staff)",
-        help_text="PIN numérico de 4 dígitos para autorizar descuento a precio de costo. Debe configurarse manualmente."
+        help_text="PIN de 4 dígitos almacenado como hash; debe configurarse manualmente."
     )
     pin_cancelacion_venta = models.CharField(
-        max_length=4,
+        max_length=128,
         blank=True,
         default='',
-        validators=[RegexValidator(r'^$|^\d{4}$', 'El PIN debe contener exactamente 4 dígitos.')],
         verbose_name="PIN Cancelación de Venta",
-        help_text="PIN temporal o individual de 4 dígitos para autorizar cancelaciones de ventas."
+        help_text="PIN de 4 dígitos almacenado como hash; debe configurarse manualmente."
     )
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Fecha de Actualización")
 
@@ -305,6 +330,15 @@ class ConfiguracionModulos(models.Model):
 
     def __str__(self):
         return f"Configuración Módulos - {self.empresa.nombre}"
+
+    def save(self, *args, **kwargs):
+        # Hashing en el modelo evita que nuevas altas o update_or_create dejen
+        # PINs legibles aunque provengan de un comando o formulario distinto.
+        for field_name in _FARMACIA_PIN_FIELDS:
+            valor = getattr(self, field_name, '') or ''
+            if re.fullmatch(r'\d{4}', valor):
+                setattr(self, field_name, make_password(valor))
+        return super().save(*args, **kwargs)
 
 
 class Usuario(AbstractUser):

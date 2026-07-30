@@ -4,7 +4,6 @@ Servicios de devolución y cancelación de ventas PDV.
 import json
 import logging
 import re
-import secrets
 from decimal import Decimal, InvalidOperation
 from types import SimpleNamespace
 
@@ -276,12 +275,15 @@ class DevolucionService:
                 },
             }
         try:
-            from core.models import ConfiguracionModulos
+            from core.models import (
+                ConfiguracionModulos, farmacia_pin_configurado,
+                verificar_pin_farmacia,
+            )
             configuracion = ConfiguracionModulos.objects.get(empresa=empresa)
             pin_configurado = (configuracion.pin_cancelacion_venta or '').strip()
         except ConfiguracionModulos.DoesNotExist:
             pin_configurado = ''
-        if not re.fullmatch(r'\d{4}', pin_configurado):
+        if not farmacia_pin_configurado(pin_configurado):
             return {
                 'http_status': 503,
                 'body': {
@@ -290,7 +292,7 @@ class DevolucionService:
                     'codigo': 'PIN_CANCELACION_NO_CONFIGURADO',
                 },
             }
-        if not secrets.compare_digest(pin, pin_configurado):
+        if not verificar_pin_farmacia(pin_configurado, pin):
             return {
                 'http_status': 401,
                 'body': {

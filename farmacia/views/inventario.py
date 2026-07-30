@@ -9,7 +9,6 @@ import csv
 import difflib
 import re
 import unicodedata
-import secrets
 from datetime import datetime, timedelta, date
 from decimal import Decimal
 
@@ -31,7 +30,7 @@ _DIAS_CADUCIDAD_CRITICO = getattr(settings, 'FARMACIA_DIAS_CADUCIDAD_CRITICO', 3
 
 from core.models import (
     Producto, Lote, Venta, Pago, GastoCaja, DiscountPolicy, Empresa,
-    ConfiguracionModulos,
+    ConfiguracionModulos, farmacia_pin_configurado, verificar_pin_farmacia,
 )
 from core.services.inventario.movimiento_inventario_service import MovimientoInventarioService
 from core.services.inventario.catalogo_farmacia_service import CatalogoFarmaciaService
@@ -812,7 +811,7 @@ def validar_pin_precio_neto(request):
                 'mensaje': 'El PIN de precio de costo no está configurado para esta empresa.',
                 'codigo': 'PIN_FARMACIA_NO_CONFIGURADO',
             }, status=503)
-        if not re.fullmatch(r'\d{4}', pin_configurado):
+        if not farmacia_pin_configurado(pin_configurado):
             logger.error('Precio neto bloqueado: PIN invalido para empresa %s', empresa.id)
             return JsonResponse({
                 'status': 'error',
@@ -821,7 +820,7 @@ def validar_pin_precio_neto(request):
                 'codigo': 'PIN_FARMACIA_CONFIGURACION_INVALIDA',
             }, status=503)
 
-        if secrets.compare_digest(pin_ingresado, pin_configurado):
+        if verificar_pin_farmacia(pin_configurado, pin_ingresado):
             return JsonResponse({'status': 'success', 'autorizado': True, 'mensaje': 'PIN válido'})
         else:
             return JsonResponse({'status': 'error', 'autorizado': False, 'mensaje': 'PIN incorrecto'}, status=401)

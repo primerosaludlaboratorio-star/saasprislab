@@ -48,7 +48,7 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local y desplegada: `166e32c` (`chore: remove orphaned legacy modules`).
+- Última revisión local: se actualizará al commit de seguridad de PIN/cifrado antes del despliegue.
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
@@ -81,6 +81,15 @@ La revisión `4ac7903` es la fuente canónica para la consolidación de middlewa
 - El script `migracion_ia.ps1` ya no lista el respaldo eliminado.
 - Inventarios operativos actualizados; los reportes históricos conservan su
   carácter de evidencia y no son fuente de código.
+
+## Cierre H-NUEVO-01 y H-NUEVO-02
+
+- `ConfiguracionModulos` ya no guarda PINs de farmacia en texto plano.
+  `core.0098_hash_farmacia_pins` migra los valores existentes a hash Django y
+  los tres consumidores usan verificación centralizada.
+- `EncryptedTextField` falla cerrado ante ausencia o fallo de Fernet; no puede
+  guardar texto plano como degradación silenciosa.
+- Pruebas de seguridad sensible y regresión de PIN de farmacia aprobadas.
 
 ## Qué no se debe hacer
 

@@ -11,6 +11,8 @@ from .base import (
     Empresa,
     Sucursal,
     ConfiguracionModulos,
+    farmacia_pin_configurado,
+    verificar_pin_farmacia,
     Usuario_Sucursal,
     Usuario,
     DocumentoConocimiento,

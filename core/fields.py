@@ -16,6 +16,7 @@ import hashlib
 import logging
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 
 logger = logging.getLogger(__name__)
@@ -63,20 +64,23 @@ class EncryptedTextField(models.TextField):
 
     @staticmethod
     def encrypt(text: str) -> str:
-        fernet = _get_fernet()
+        try:
+            fernet = _get_fernet()
+        except Exception as exc:
+            raise ImproperlyConfigured(
+                'EncryptedTextField no pudo inicializar Fernet; se bloquea el guardado.'
+            ) from exc
         if fernet is None:
-            # En producción, esto no debería ocurrir nunca
-            if not getattr(settings, 'DEBUG', True):
-                logger.critical(
-                    'SEGURIDAD CRÍTICA: EncryptedTextField intentando guardar texto plano '
-                    'en producción. Instalar cryptography y configurar FERNET_KEY.'
-                )
-            return text
+            raise ImproperlyConfigured(
+                'EncryptedTextField requiere cryptography y una clave Fernet válida; '
+                'se bloquea el guardado para evitar texto plano.'
+            )
         try:
             return fernet.encrypt(text.encode('utf-8')).decode('utf-8')
         except Exception as exc:
-            logger.error('Error cifrando campo: %s', exc, exc_info=True)
-            return text
+            raise ImproperlyConfigured(
+                'EncryptedTextField no pudo cifrar el valor; se bloquea el guardado.'
+            ) from exc
 
     @staticmethod
     def decrypt(text: str) -> str:

@@ -4,7 +4,6 @@ Vistas de Devoluciones y Cancelaciones de Farmacia
 import json
 import logging
 import re
-import secrets
 from decimal import Decimal
 from datetime import datetime
 from django.shortcuts import render, redirect, get_object_or_404
@@ -18,7 +17,10 @@ from django.db.models.functions import Coalesce
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.utils import timezone
 
-from core.models import Venta, DetalleVenta, SalesReturn, Pago, ConfiguracionModulos
+from core.models import (
+    Venta, DetalleVenta, SalesReturn, Pago, ConfiguracionModulos,
+    farmacia_pin_configurado, verificar_pin_farmacia,
+)
 from core.utils.empresa_request import get_empresa_usuario
 from core.utils.sucursal_helpers import get_request_sucursal
 from farmacia.models import MermaFarmacia, MovimientoInventario, DevolucionVenta
@@ -139,14 +141,14 @@ def _validar_pin_devolucion(empresa, data):
         'pin_cancelacion_venta'
     ).first()
     pin_configurado = (getattr(configuracion, 'pin_cancelacion_venta', '') or '').strip()
-    if not re.fullmatch(r'\d{4}', pin_configurado):
+    if not farmacia_pin_configurado(pin_configurado):
         return JsonResponse({
             'success': False,
             'status': 'error',
             'error': 'El PIN de autorización no está configurado para esta empresa.',
             'codigo': 'PIN_CANCELACION_NO_CONFIGURADO',
         }, status=503)
-    if not secrets.compare_digest(pin, pin_configurado):
+    if not verificar_pin_farmacia(pin_configurado, pin):
         return JsonResponse({
             'success': False,
             'status': 'error',
