@@ -48,14 +48,18 @@ RESTART_TRIGGER_ERRORS = {
 }
 
 
-def registrar_error_critico(tipo_excepcion, mensaje_error=''):
+def registrar_error_critico(tipo_excepcion, mensaje_error='', *, permitir_restart=False):
     """
     Registra un error crítico. Si se alcanzan 3 consecutivos
-    de tipo Timeout/Memory en 60 segundos, dispara soft restart.
+    de tipo Timeout/Memory en 60 segundos, deja evidencia para la
+    operación. El reinicio requiere autorización explícita fuera del
+    camino de una request HTTP.
     
     Args:
         tipo_excepcion (str): Nombre del tipo de excepción
         mensaje_error (str): Mensaje del error para análisis
+        permitir_restart (bool): Solo una operación de infraestructura
+            controlada puede habilitar el SIGHUP explícitamente.
     Returns:
         bool: True si se disparó un restart
     """
@@ -85,8 +89,14 @@ def registrar_error_critico(tipo_excepcion, mensaje_error=''):
     recent_errors = [e for e in _critical_errors if e['timestamp'] > cutoff]
     
     if len(recent_errors) >= _CONSECUTIVE_THRESHOLD:
-        return _ejecutar_soft_restart()
-    
+        logger.critical(
+            "SENTINEL REPAIR [Gunicorn]: umbral alcanzado (%s errores en 60s); "
+            "reinicio automatico bloqueado desde el camino de requests",
+            len(recent_errors),
+        )
+        if permitir_restart:
+            return _ejecutar_soft_restart()
+
     return False
 
 
