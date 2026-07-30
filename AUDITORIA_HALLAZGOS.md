@@ -129,7 +129,7 @@
 - **Contraste:** `VoiceCommandConsumer` sí es seguro — agrupa por `voice_commands_{self.user.id}` (canal privado por usuario, no por nombre arbitrario).
 - **Corrección aplicada:** `WalkieTalkieConsumer` exige un `empresa_id` en el usuario autenticado, normaliza y valida la sala, y construye grupos con el tenant (`walkie_t<empresa_id>_<sala>`). Un usuario sin empresa o con sala inválida es rechazado antes de unirse al channel layer.
 - **Verificación local:** `core.tests.test_walkie_tenant_isolation` (3 pruebas OK), `manage.py check` sin incidencias y `git diff --check` sin errores.
-- **Estado:** corregido localmente; pendiente despliegue y verificación de salud en producción.
+- **Estado:** corregido, desplegado y verificado en producción en la revisión `1f091db2f36f564a88373dcdae7d19910aaffdd3`; health HTTP 200 y servicios Gunicorn/Celery/Celery Beat activos.
 
 ## H-NUEVO-15 — Auto-restart de Gunicorn (Sentinel) disparable sin autenticación (DoS de disponibilidad)
 - **Archivos:** `core/middleware/sentinel.py::SentinelTelemetryMiddleware.process_exception()` (línea 219-316, ver línea 259-269), `core/services/auto_repair.py::registrar_error_critico()`/`_ejecutar_soft_restart()` (línea 51-147).

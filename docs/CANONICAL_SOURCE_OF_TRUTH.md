@@ -48,7 +48,7 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local y desplegada: `2c61ae7` (`fix(audit): bind clinical history hashes to timestamp`).
+- Última revisión local y desplegada: `1f091db2f36f564a88373dcdae7d19910aaffdd3` (`fix(security): isolate walkie rooms by tenant`).
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
@@ -93,6 +93,11 @@ La revisión `4ac7903` es la fuente canónica para la consolidación de middlewa
   base de datos y caché OK; Gunicorn, Celery y Celery Beat activos.
 - Aislamiento Django Admin corregido: los 184 registros activos están bajo
   `TenantScopedAdmin` y la verificación productiva quedó en verde.
+- Aislamiento WebSocket del walkie-talkie corregido: los grupos incluyen el
+  `empresa_id`, las salas se validan y los usuarios sin tenant son rechazados.
+- Verificación productiva del aislamiento WebSocket: revisión
+  `1f091db2f36f564a88373dcdae7d19910aaffdd3` desplegada; health HTTP 200 y
+  Gunicorn/Celery/Celery Beat activos.
 - Verificación productiva del Admin: 184 registros, cero administradores sin
   mixin, cero fallos de consulta; cinco catálogos globales fallan cerrado como
   estaba diseñado.

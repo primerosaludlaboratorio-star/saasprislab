@@ -77,7 +77,7 @@ Hallazgos totales del bloque: H-NUEVO-01 (corregido), H-NUEVO-02 (corregido), H-
 - [x] core/apps.py — COMPLETO (31 líneas). `ready()` activa signals, monkey-patch de `admin.site.__class__` a `PrislabAdminSite` (config/admin_site.py), y verificación de entorno con manejo de excepciones que nunca bloquea el arranque.
 - [x] core/catalog.py — COMPLETO (315 líneas). `CatalogResolver` con patrón catálogo maestro (empresa=None) + override por tenant; `tenant_bypass()` usado correcta y deliberadamente para el propio patrón de catálogo global (no es un bypass de seguridad).
 - [x] core/constants/lock_order.py — COMPLETO (137 líneas). Solo documentación + `validate_lock_order()` (helper de validación, con self-test en `__main__`). No se usa en runtime real (no hay `import core.constants.lock_order` fuera de sí mismo) — es documentación/aspiración de orden de locks, no enforcement activo. Sin riesgo de seguridad (es una guía de code review, no control de acceso).
-- [x] core/consumers.py — COMPLETO (WalkieTalkieConsumer con aislamiento por `empresa_id`, validación de sala y rechazo fail-closed de usuarios sin tenant). H-NUEVO-14 corregido localmente; pruebas focalizadas OK.
+- [x] core/consumers.py — COMPLETO (WalkieTalkieConsumer con aislamiento por `empresa_id`, validación de sala y rechazo fail-closed de usuarios sin tenant). H-NUEVO-14 corregido, desplegado y verificado en producción; pruebas focalizadas OK.
 - [x] core/routing.py — COMPLETO (16 líneas). Solo define websocket_urlpatterns.
 - [x] core/context_processors.py — COMPLETO (59 líneas). Inyecta empresa_actual/módulos/branding en templates. Sin hallazgos.
 - [x] core/django_template_context_patch.py — COMPLETO (22 líneas). Parche de compatibilidad Django 5.0.x + Python 3.13+ para `BaseContext.__copy__`. Sin riesgo.
@@ -93,7 +93,7 @@ Hallazgos totales del bloque: H-NUEVO-01 (corregido), H-NUEVO-02 (corregido), H-
 - [x] core/mixins.py — COMPLETO (496 líneas: GroupRequiredMixin y variantes por rol). Usado en `consultorio/api/procesar_audio.py` y `laboratorio/views/etiquetas.py` (no es código muerto, uso limitado). Mecanismo paralelo a `core/decorators.py::role_required`; mismo patrón fail-safe (superuser bypass, deny explícito, logging).
 
 ## BLOQUE 2 — core/ raíz + admin/ + agent/ + api_contracts/ + constants/ + rbac/ COMPLETO.
-Hallazgos del bloque: H-NUEVO-09 (corregido), H-NUEVO-10 (abierto, higiene), H-NUEVO-11 (abierto), H-NUEVO-12 CRÍTICO (corregido y verificado en producción), H-NUEVO-13 (corregido), H-NUEVO-14 (corregido localmente; pendiente despliegue).
+Hallazgos del bloque: H-NUEVO-09 (corregido), H-NUEVO-10 (abierto, higiene), H-NUEVO-11 (abierto), H-NUEVO-12 CRÍTICO (corregido y verificado en producción), H-NUEVO-13 (corregido), H-NUEVO-14 (corregido, desplegado y verificado en producción).
 
 ## Bloque 3 — core/middleware/ (18 archivos) COMPLETO
 - [x] core/middleware/__init__.py — COMPLETO. Agrega los middlewares del paquete.
