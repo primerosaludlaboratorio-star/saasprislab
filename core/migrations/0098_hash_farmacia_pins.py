@@ -25,7 +25,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(hash_legacy_pins, migrations.RunPython.noop),
         migrations.AlterField(
             model_name='configuracionmodulos',
             name='pin_precio_neto',
@@ -48,4 +47,5 @@ class Migration(migrations.Migration):
                 verbose_name='PIN Cancelación de Venta',
             ),
         ),
+        migrations.RunPython(hash_legacy_pins, migrations.RunPython.noop),
     ]
