@@ -97,3 +97,19 @@ La calidad de imagen no se usa como bloqueo binario. Se acepta impresión, incli
 ## Limitacion de pruebas locales
 
 `manage.py check` y compilación Python pasaron. La suite Django dirigida quedó bloqueada durante la creación de la base de pruebas, sin llegar a ejecutar aserciones; por ello esa suite no se marca como pasada y la evidencia de permisos se basa en la comprobación productiva y en la prueba de regresión añadida en `core/tests/test_auditoria_roles_ui.py`.
+
+## Cuentas de auditoría Laboratorio/LIMS — 2026-07-30
+
+Se crearon en producción, sobre `empresa_id=1` y `sucursal_id=1`, las cuentas
+solicitadas para la auditoría funcional humana de Laboratorio/LIMS:
+
+| Usuario | Rol | Alcance | Privilegios excluidos |
+|---|---|---|---|
+| `jonathan.admin` | `ADMIN` + superusuario | Auditoría integral de Laboratorio, LIMS e inventario | Ninguno dentro del tenant |
+| `qcgabriela` | `QUIMICO` + grupos `LABORATORIO`, `LIMS` | Captura, validación, consulta, QC, interfaces LIMS e inventario de laboratorio | Administración global, usuarios y finanzas maestras |
+| `qcbrenda` | `QUIMICO` + grupos `LABORATORIO`, `LIMS` | Captura, validación, consulta, QC, interfaces LIMS e inventario de laboratorio | Administración global, usuarios y finanzas maestras |
+
+Las tres autenticaciones fueron verificadas en producción. Las contraseñas
+están únicamente en el archivo local no versionado
+`CREDENCIALES_AUDITORIA_PRODUCTIVA_2026-07-27.local.md`. No se configuró
+expiración automática en esta alta; deben revocarse al terminar la auditoría.
