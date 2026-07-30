@@ -1,5 +1,10 @@
 # Auditoría exhaustiva PRISLAB — Hallazgos
 
+## Limpieza aplicada — 2026-07-30
+- Retirados símbolos sin consumidores: `Paciente.generar_pris_id()`, `TokenLIMSV7Manager`, `conectar_seniales()` y el registro legacy `PrisAgent`/`TOOL_REGISTRY`/`register_tool`/`can_execute_tool`.
+- Retiradas las copias huérfanas `core/models/motor_financiero.py` y `core/models/reportes_financieros.py`. Las implementaciones activas permanecen en `core/views/` y sus URLs/pruebas fueron verificadas por referencia.
+- No se eliminaron `core/services/auto_repair.py`, `core/rbac/permissions.py`, scripts legacy ni documentación histórica porque tienen consumidores, pruebas o función de archivo explícita.
+
 ## H-NUEVO-05 — CRÍTICO: `ExpedienteNotaSHA.save()` crashea SIEMPRE — CORREGIDO Y VERIFICADO EN PRODUCCIÓN
 - **Archivo:** `core/models/expediente_blindaje.py:147-168` (`calcular_hash`) y `:203-220` (`save`).
 - **Causa raíz:** `calcular_hash()` usa `self.timestamp_creacion.isoformat()`, pero `timestamp_creacion` es `DateTimeField(auto_now_add=True)`. Django solo asigna ese valor dentro de `pre_save()`, que se ejecuta DENTRO de `super().save()` — es decir, DESPUÉS de que el `save()` sobrescrito ya llamó a `calcular_hash()`. Para una instancia nueva, `self.timestamp_creacion` vale `None` en ese punto.
@@ -19,8 +24,8 @@
 - **Severidad:** CRÍTICA — funcionalidad de cumplimiento legal/forense central completamente inoperante, con fallos silenciados en la mayoría de los call sites.
 - **Estado:** corregido y desplegado. Producción aplicó `core.0099`; la transacción reversible confirmó `PROD_BLINDAJE_ROLLBACK_OK 1 2`. La tabla productiva estaba sin snapshots al momento de la verificación (`SHA_COUNT 0`), por lo que no había histórico que reparar.
 - **Call site adicional confirmado:** `core/models/expediente_blindaje.py::NotaClinicaSellar.sellar_con_pin()` (línea 506-554) también llama `SnapshotNotaMiddleware.crear_expediente_sha()` dentro de `transaction.atomic()`, sin try/except propio — mismo crash, revierte la transacción de sellado.
-- **Hallazgo relacionado (menor, mitigante):** `core/models/expediente_blindaje.py::conectar_seniales()` (línea 1066-1098) define un SEGUNDO receptor `post_save` para `NotaClinicaSOAP` que llama a `crear_expediente_sha()` SIN try/except alguno. Confirmé que nunca se activa: `core/apps.py::ready()` no lo invoca (pese a que el docstring dice "Se llama desde ready() en apps.py" — falso), y el guard `if apps.ready` al importar el módulo es `False` en esa fase del arranque de Django. Es código muerto con docstring engañoso, pero es afortunado que esté inactivo: si se conectara, cada guardado de `NotaClinicaSOAP` en todo el sistema lanzaría una excepción no controlada (rompería consultas médicas, enfermería, recepción, etc.), no solo un fallo silencioso de auditoría.
-- **Hallazgo menor adicional:** `TokenLIMSV7Manager.resolver_a_orden()`/`_resolver_token()`/`_crear_detalle_orden()` (línea 595-696) es código sin usar en ningún lugar del proyecto (confirmado por grep), con implementación visiblemente incompleta (comentario `# ... otros campos` en la creación de `OrdenDeServicio`). Higiene, no es hallazgo de seguridad.
+- **Limpieza aplicada:** se retiró `conectar_seniales()` y su guard de importación. El flujo vigente de snapshots permanece en `core/middleware/blindaje_expediente.py::crear_snapshot_automatico`, que es el único receptor activo y maneja sus errores explícitamente.
+- **Limpieza aplicada:** se retiró `TokenLIMSV7Manager` y sus métodos sin consumidores (`resolver_a_orden()`/`_resolver_token()`/`_crear_detalle_orden()`). Era una implementación incompleta y desconectada del flujo LIMS vigente; la integración activa permanece en `core/utils/lims_tokens_v75.py` y en los servicios LIMS.
 - **Hallazgo menor adicional:** `NotaClinicaSellar._validar_pin_medico()` (línea 556-573) compara hashes con `==` directo en vez de `secrets.compare_digest`. Riesgo bajo (es un hash SHA256, no el PIN crudo; resistencia a preimagen protege), pero rompe el estándar de comparación de secretos usado correctamente en otras partes (`require_api_token`).
 
 

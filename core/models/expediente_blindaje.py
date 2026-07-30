@@ -32,7 +32,6 @@ from decimal import Decimal
 from django.db import models, transaction
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-import logging
 
 
 # =============================================================================
@@ -610,113 +609,6 @@ class NotaClinicaSellar(models.Model):
         return self.expediente_sha.verificar_integridad()
 
 
-# =============================================================================
-# CAPA 3: INTEGRACIÓN LIMS v7.5 — MOTOR DE TOKENS
-# =============================================================================
-
-class TokenLIMSV7Manager:
-    """
-    Motor de resolución de tokens LIMS v7.5.
-    
-    Convierte tokens de texto (analito:, perfil:, paquete:) en órdenes
-    de laboratorio con trazabilidad completa de reactivos.
-    """
-    
-    TOKEN_PATTERNS = {
-        'analito': r'analito:\s*(\w+)',
-        'perfil': r'perfil:\s*(\w+)',
-        'paquete': r'paquete:\s*(\w+)',
-    }
-    
-    @classmethod
-    def parsear_texto(cls, texto):
-        """
-        Extrae tokens del texto de la nota SOAP.
-        Retorna lista de dicts con tipo y código.
-        """
-        import re
-        tokens = []
-        
-        for tipo, pattern in cls.TOKEN_PATTERNS.items():
-            matches = re.finditer(pattern, texto, re.IGNORECASE)
-            for match in matches:
-                tokens.append({
-                    'tipo': tipo,
-                    'codigo': match.group(1).upper(),
-                    'match': match.group(0)
-                })
-        
-        return tokens
-    
-    @classmethod
-    def resolver_a_orden(cls, tokens, paciente, medico, empresa):
-        """
-        Convierte tokens en una OrdenDeServicio.
-        """
-        from .laboratorio import OrdenDeServicio, DetalleOrden
-        
-        with transaction.atomic():
-            # Crear orden base
-            orden = OrdenDeServicio.objects.create(
-                paciente=paciente,
-                medico_referente=medico,
-                empresa=empresa,
-                # ... otros campos
-            )
-            
-            # Resolver cada token a detalles
-            for token in tokens:
-                detalles = cls._resolver_token(token, orden)
-                # Los detalles se crean dentro de _resolver_token
-            
-            return orden
-    
-    @classmethod
-    def _resolver_token(cls, token, orden):
-        """
-        Resuelve un token específico a analitos del LIMS.
-        """
-        if token['tipo'] == 'analito':
-            # Buscar analito por código
-            from lims.models import Analito
-            analito = Analito.objects.filter(codigo=token['codigo']).first()
-            if analito:
-                return cls._crear_detalle_orden(orden, analito)
-        
-        elif token['tipo'] == 'perfil':
-            # Buscar perfil y sus analitos
-            from lims.models import Perfil
-            perfil = Perfil.objects.filter(codigo=token['codigo']).first()
-            if perfil:
-                detalles = []
-                for analito in perfil.analitos.all():
-                    detalles.append(cls._crear_detalle_orden(orden, analito))
-                return detalles
-        
-        elif token['tipo'] == 'paquete':
-            # Buscar paquete y sus perfiles/analitos
-            from lims.models import Paquete
-            paquete = Paquete.objects.filter(codigo=token['codigo']).first()
-            if paquete:
-                detalles = []
-                for perfil in paquete.perfiles.all():
-                    for analito in perfil.analitos.all():
-                        detalles.append(cls._crear_detalle_orden(orden, analito))
-                return detalles
-        
-        return None
-    
-    @classmethod
-    def _crear_detalle_orden(cls, orden, analito):
-        """Crea un DetalleOrden para un analito."""
-        from .laboratorio import DetalleOrden
-        return DetalleOrden.objects.create(
-            orden=orden,
-            analito=analito,
-            estado='PENDIENTE'
-        )
-
-
 class ReglaPreparacionAnalito(models.Model):
     """
     Reglas de preparación para analitos (ayuno, preparación especial).
@@ -1079,42 +971,3 @@ class HashRaizDiario(models.Model):
             'hash_calculado': hash_calculado,
             'total_hashes_verificados': len(hashes_del_dia),
         }
-
-
-# =============================================================================
-# SEÑALES DE CONEXIÓN
-# =============================================================================
-
-def conectar_seniales():
-    """
-    Conecta las señales post_save para generar snapshots automáticamente.
-    Se llama desde ready() en apps.py
-    """
-    from django.db.models.signals import post_save
-    from django.dispatch import receiver
-    
-    @receiver(post_save, sender='core.NotaClinicaSOAP')
-    def crear_snapshot_al_guardar(sender, instance, created, **kwargs):
-        """
-        Crea automáticamente un ExpedienteNotaSHA cada vez que se guarda una nota.
-        """
-        # Solo crear snapshot si la nota no está sellada
-        sello = getattr(instance, 'sello_firma', None)
-        if sello and sello.estado_sello == 'SELLADA':
-            return  # No crear snapshots de notas selladas
-        
-        # Crear snapshot
-        SnapshotNotaMiddleware.crear_expediente_sha(
-            nota_soap=instance,
-            estado='BORRADOR' if created else 'PRELIMINAR'
-        )
-
-
-# Importar señales al final para evitar circular imports
-try:
-    from django.apps import apps
-    if apps.ready:
-        conectar_seniales()
-except Exception:
-    logging.getLogger(__name__).exception("Error inesperado en crear_snapshot_al_guardar (expediente_blindaje.py)")
-    pass  # Defensa de importación temprana: si Django aún no está listo, la conexión real ocurre desde AppConfig.ready().

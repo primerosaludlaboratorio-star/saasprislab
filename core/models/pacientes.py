@@ -120,15 +120,6 @@ class Paciente(TenantModel):
         """Propiedad para acceder a la edad calculada."""
         return self.calcular_edad()
 
-    def generar_pris_id(self):
-        """Genera un ID único para el paciente (PRIS-ID)."""
-        import uuid as _uuid
-        if not hasattr(self, '_pris_id') or not self._pris_id:
-            fecha_str = self.fecha_registro.strftime('%Y%m%d')
-            uuid_str = str(_uuid.uuid4())[:8].upper()
-            return f"PRIS-{fecha_str}-{uuid_str}"
-        return self._pris_id
-
     @staticmethod
     def _normalizar_nombre(valor):
         """Normaliza un campo de nombre: strip, colapsar espacios, title case."""
