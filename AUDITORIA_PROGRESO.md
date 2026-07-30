@@ -45,7 +45,7 @@ Hallazgos totales del bloque: H-NUEVO-01 (corregido), H-NUEVO-02 (corregido), H-
 
 ## Bloque 2 — core/ (raíz, admin/, agent/, api_contracts/, constants/, rbac/)
 - [x] core/decorators.py — COMPLETO (433 líneas, 6 decoradores). Sin hallazgos nuevos.
-- [!] core/rbac/permissions.py — COMPLETO (444 líneas). Hallazgos H-NUEVO-09 (require_sucursal_access fail-open, mitigado por ser código muerto) y H-NUEVO-10 (decoradores RBAC no usados en vistas reales).
+- [!] core/rbac/permissions.py — COMPLETO (444 líneas). H-NUEVO-09 corregido y desplegado con fail-closed; H-NUEVO-10 permanece abierto como deuda de arquitectura por decoradores RBAC no usados en vistas reales.
 - [x] core/rbac/__init__.py — COMPLETO. Re-exporta símbolos de permissions.py.
 - [x] core/api_contracts/ninja_api.py — COMPLETO (314 líneas). Sin csrf_exempt, protegido por CsrfViewMiddleware; confirmado con scripts/e2e_api_v3_redteam.py. Sin hallazgos.
 - [x] core/api_contracts/errors.py — COMPLETO. BusinessApiError.
@@ -62,16 +62,16 @@ Hallazgos totales del bloque: H-NUEVO-01 (corregido), H-NUEVO-02 (corregido), H-
 - [x] core/agent/tools/ventas.py — COMPLETO (214 líneas). Delega a VentaFarmaciaService.ejecutar_venta_pdv (ya confirmado positivo).
 - [x] core/agent/__init__.py — COMPLETO.
 - [!] core/views/pris_ia.py (parcial, líneas 1-405 de 1591) — revisado por necesidad (`_TOOL_RBAC`, `_verificar_rbac`, `_ejecutar_herramienta`). Hallazgo H-NUEVO-11 (fail-open ante tool_name desconocido en _TOOL_RBAC; cobertura actual de las 16 tools es correcta). Resto del archivo pendiente para Bloque 6.
-- [!] core/admin.py — COMPLETO. CONFIRMADO EMPÍRICAMENTE código muerto/huérfano (`find_spec('core.admin')` resuelve al paquete, no a este archivo). Ver H-NUEVO-13.
+- [x] core/admin.py — eliminado tras confirmar que `core.admin` resuelve al paquete activo `core/admin/`; H-NUEVO-13 cerrado.
 - [x] core/admin/__init__.py — COMPLETO. Agrega los 6 submódulos.
-- [!] core/admin/bienestar.py — COMPLETO (209 líneas, ~13 ModelAdmin). Sin get_queryset por tenant — ver H-NUEVO-12.
-- [!] core/admin/catalogo.py — COMPLETO (76 líneas: ProductoAdmin, LoteAdmin). Sin get_queryset por tenant — ver H-NUEVO-12.
-- [!] core/admin/clinico.py — COMPLETO (409 líneas, ~12 ModelAdmin incluyendo OrdenDeServicio, HistoriaClinica vía otros submódulos). Sin get_queryset por tenant — ver H-NUEVO-12.
+- [x] core/admin/bienestar.py — COMPLETO; ModelAdmin bajo `TenantScopedAdmin`, verificación productiva H-NUEVO-12.
+- [x] core/admin/catalogo.py — COMPLETO; Producto/Lote bajo `TenantScopedAdmin`, verificación productiva H-NUEVO-12.
+- [x] core/admin/clinico.py — COMPLETO; ModelAdmin bajo `TenantScopedAdmin`, verificación productiva H-NUEVO-12.
 - [x] core/admin/identidad.py — COMPLETO (121 líneas). ÚNICO submódulo con get_queryset correcto por tenant (CustomUsuarioAdmin, Usuario_SucursalAdmin).
-- [!] core/admin/rrhh.py — COMPLETO (313 líneas, ~15 ModelAdmin). Sin get_queryset por tenant — ver H-NUEVO-12.
-- [!] core/admin/ventas.py — COMPLETO (79 líneas: VentaAdmin). Sin get_queryset por tenant — ver H-NUEVO-12.
+- [x] core/admin/rrhh.py — COMPLETO; ModelAdmin bajo `TenantScopedAdmin`, verificación productiva H-NUEVO-12.
+- [x] core/admin/ventas.py — COMPLETO; VentaAdmin bajo `TenantScopedAdmin`, verificación productiva H-NUEVO-12.
 
-## HALLAZGO CRÍTICO H-NUEVO-12: Django Admin sin aislamiento multi-tenant en ~43 de 45 ModelAdmin. Ver AUDITORIA_HALLAZGOS.md.
+## H-NUEVO-12 CERRADO: Django Admin tenant-aware en 184 registros activos y verificado en producción. Ver AUDITORIA_HALLAZGOS.md.
 - [ ] core/ai_brain.py
 - [ ] core/apps.py
 - [ ] core/catalog.py
