@@ -42,12 +42,12 @@
 - **Recomendación:** usar secuencia de BD, `select_for_update()` sobre un contador dedicado, o reintento con backoff ante `IntegrityError`.
 - **Estado:** pendiente de decisión del usuario.
 
-## H-NUEVO-04 — Hash de integridad computado antes de que `auto_now_add` fije el timestamp — CORREGIDO LOCALMENTE
+## H-NUEVO-04 — Hash de integridad computado antes de que `auto_now_add` fije el timestamp — CORREGIDO Y VERIFICADO EN PRODUCCIÓN
 - **Archivo:** `core/models/clinico.py:730-735` (`HistorialCambiosConsulta.save`)
 - **Problema:** `self.hash_integridad` se calcula incluyendo `self.timestamp` ANTES de llamar a `super().save()`. Para un registro nuevo, `timestamp` (campo `auto_now_add=True`) todavía no ha sido poblado por Django en ese punto — su valor es `None`. El hash queda atado a un valor constante `None` en vez del timestamp real de creación.
 - **Impacto:** debilita el propósito declarado del hash ("Hash SHA256" de integridad forense) — no vincula criptográficamente el registro a su momento exacto de creación, aunque conserva algo de unicidad por `consulta.id + campo + valores`.
 - **Corrección aplicada:** `timestamp` usa `default=timezone.now` para conservar el instante incluido en el hash; migración `core.0101`. Prueba añadida en `core/tests/test_clinical_integrity.py` y verificación transaccional local confirmada.
-- **Estado:** corregido localmente; pendiente de commit y despliegue junto con el siguiente lote.
+- **Estado:** corregido, migrado y verificado en producción con `PROD_CLINICAL_HASH_ROLLBACK_OK 1`.
 
 ## H-NUEVO-02 — EncryptedTextField degrada a texto plano silenciosamente (severidad media-alta) — CORREGIDO
 - **Archivo:** `core/fields.py:64-79` (`EncryptedTextField.encrypt`)
