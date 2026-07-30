@@ -48,7 +48,7 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local y desplegada: `0f4355e` (`fix(security): enforce tenant isolation across admin`).
+- Última revisión local y desplegada: `d03e6b4` (`docs(audit): close deployed findings`).
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
