@@ -174,7 +174,7 @@ Estrategia: dado el volumen, se prioriza por riesgo (endpoints públicos/csrf_ex
 
 - [x] rh.py — COMPLETO (decoradores verificados). Evaluaciones 39-A y desempeño con `@role_required('DIRECTOR','ADMIN','GERENTE','RH')`; `mis_resultados` (autoservicio del empleado) correctamente sin restricción de rol pero scoped a `usuario`/`user_empresa`. Sin hallazgos.
 - [x] nomina.py — COMPLETO. Todas las vistas `@login_required` + `@role_required('DIRECTOR','ADMIN','GERENTE')` + `_empresa(request)` (lanza `PermissionDenied` si no hay empresa) + `get_object_or_404(..., empresa=empresa)`. Sin hallazgos.
-- [x] cuentas_por_cobrar.py — COMPLETO. `@role_required('DIRECTOR','ADMIN','GERENTE','FINANZAS')` en todos los endpoints de pago/convenios/reportes. Sin hallazgos.
+- [x] cuentas_por_cobrar.py — H-NUEVO-23 corregido localmente: folio CxC serializado por empresa bajo transacción y reintentos de la misma orden rechazados con 409.
 - [x] contabilidad.py — COMPLETO. `@role_required('DIRECTOR','ADMIN','GERENTE','FINANZAS')` universal, `_empresa_contable()` centraliza el scoping. Sin hallazgos.
 - [x] crm.py — COMPLETO. `@login_required` + `_empresa(request)`/`_verificar_empresa()` en todas las vistas reales; aliases legacy delegan a las vistas canónicas (heredan la misma protección). Sin hallazgos.
 - [x] farmacia.py (parcial, aliases legacy revisados) — `@login_required` + `_empresa_desde_request()`; `cancelar_venta` además exige `@role_required('FARMACIA','ADMIN','GERENTE','DIRECTOR')`. Sin hallazgos.

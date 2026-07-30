@@ -189,6 +189,13 @@
 - **Corrección aplicada:** se centralizó `_puede_confirmar_accion(accion, usuario)` y se aplica a confirmar, rechazar y a la vista web. El permiso se calcula por `modulo_destino`, con superusuario explícito y denegación por defecto para módulos no reconocidos.
 - **Verificación:** pruebas aisladas de la matriz de roles y compilación; el tenant sigue filtrándose en la consulta de la acción.
 - **Estado:** corregido localmente; pendiente despliegue de esta revisión.
+
+## H-NUEVO-23 — Creación de CxC con folio `count()+1` y reintento no idempotente — CORREGIDO
+- **Archivo:** `core/views/cuentas_por_cobrar.py::api_crear_cxc`.
+- **Problema:** el folio se calculaba con `count()+1` sin bloqueo; solicitudes concurrentes podían competir por el mismo folio único. La misma orden también podía generar más de una cuenta si el cliente reintentaba el POST.
+- **Corrección aplicada:** dentro de `transaction.atomic()` se bloquea la fila de `Empresa` antes de calcular el folio y se rechaza una CxC existente para la misma orden con HTTP 409. El tenant y convenio siguen filtrados por empresa.
+- **Verificación:** compilación, `manage.py check` y revisión del flujo transaccional; pendiente despliegue de esta revisión.
+- **Estado:** corregido localmente; pendiente despliegue.
 - **Estado:** pendiente de decisión del usuario.
 
 ## H-NUEVO-13 — `core/admin.py` (archivo raíz) es código MUERTO/huérfano, duplica registros de `core/admin/` — CORREGIDO

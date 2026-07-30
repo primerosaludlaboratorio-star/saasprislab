@@ -15,6 +15,7 @@ from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.db.models import Sum, Q, Count
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
@@ -24,7 +25,7 @@ from django.views.decorators.http import require_POST
 from core.decorators import role_required
 from core.models import (
     CuentaPorCobrar, PagoCuentaPorCobrar, Convenio,
-    NotaCredito, OrdenDeServicio,
+    NotaCredito, OrdenDeServicio, Empresa,
 )
 
 logger = logging.getLogger('core')
@@ -191,10 +192,6 @@ def api_crear_cxc(request):
         orden = get_object_or_404(OrdenDeServicio, id=orden_id, empresa=empresa)
         convenio = get_object_or_404(Convenio, id=convenio_id, empresa=empresa, activo=True)
 
-        # Generar folio
-        count = CuentaPorCobrar.objects.filter(empresa=empresa).count() + 1
-        folio = f'CXC-{timezone.now().year}-{count:05d}'
-
         # Calcular vencimiento
         fecha_venc = timezone.now().date() + timedelta(days=convenio.dias_credito)
 
@@ -204,8 +201,15 @@ def api_crear_cxc(request):
         estudios = ', '.join(get_detalle_nombre(d) for d in detalles_qs)
         concepto = f'Orden {orden.folio_orden} - {orden.paciente.nombre_completo} - {estudios}'
 
-        from django.db import transaction as _dbt
-        with _dbt.atomic():
+        with transaction.atomic():
+            Empresa.objects.select_for_update().get(pk=empresa.pk)
+            if CuentaPorCobrar.objects.filter(empresa=empresa, orden=orden).exists():
+                return JsonResponse({
+                    'status': 'error',
+                    'mensaje': 'La orden ya tiene una cuenta por cobrar.',
+                }, status=409)
+            count = CuentaPorCobrar.objects.filter(empresa=empresa).count() + 1
+            folio = f'CXC-{timezone.now().year}-{count:05d}'
             cxc = CuentaPorCobrar.objects.create(
                 empresa=empresa,
                 convenio=convenio,
