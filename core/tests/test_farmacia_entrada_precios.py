@@ -135,3 +135,121 @@ class EntradaMercanciaPreciosTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertLessEqual(len(consultas), 12)
+
+    def test_productos_sin_codigo_pueden_coexistir_y_aparecen_por_separado(self):
+        for lote in ('VAL-01', 'VAL-02'):
+            response = self.client.post(
+                '/farmacia/almacen/entradas/',
+                data=json.dumps({
+                    'nombre': 'Valaciclovir 500 mg',
+                    'codigo': '',
+                    'lote': lote,
+                    'caducidad': (date.today() + timedelta(days=365)).isoformat(),
+                    'cantidad': 2,
+                    'costo_unitario': '10.00',
+                    'precio_venta': '20.00',
+                }),
+                content_type='application/json',
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()['status'], 'success')
+
+        productos = Producto.objects.filter(
+            empresa=self.empresa,
+            nombre='Valaciclovir 500 mg',
+        )
+        self.assertEqual(productos.count(), 2)
+        self.assertEqual(productos.filter(codigo_barras__isnull=True).count(), 2)
+
+        response = self.client.get(
+            '/farmacia/api/buscar-productos-compra/',
+            {'q': 'Valaciclovir 500 mg'},
+        )
+        self.assertEqual(response.status_code, 200)
+        encontrados = [
+            item for item in response.json()['productos']
+            if item['nombre'] == 'Valaciclovir 500 mg'
+        ]
+        self.assertEqual(len(encontrados), 2)
+        self.assertEqual({item['codigo_barras'] for item in encontrados}, {None})
+        self.assertEqual(len({item['id'] for item in encontrados}), 2)
+
+    def test_codigo_se_puede_limpiar_y_reasignar_con_auditoria_de_conflicto(self):
+        ampicilina = Producto.objects.create(
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            nombre='Ampicilina 500 mg',
+            codigo_barras='BAR-AMP-001',
+            precio_compra=Decimal('10.00'),
+            precio_publico=Decimal('20.00'),
+        )
+        valaciclovir = Producto.objects.create(
+            empresa=self.empresa,
+            sucursal=self.sucursal,
+            nombre='Valaciclovir 500 mg',
+            codigo_barras='BAR-VAL-001',
+            precio_compra=Decimal('10.00'),
+            precio_publico=Decimal('20.00'),
+        )
+
+        limpiar = self.client.post(
+            '/farmacia/almacen/entradas/',
+            data=json.dumps({
+                'producto_id': ampicilina.id,
+                'codigo': '',
+                'nombre': ampicilina.nombre,
+                'lote': 'AMP-EDIT-01',
+                'caducidad': (date.today() + timedelta(days=365)).isoformat(),
+                'cantidad': 1,
+                'costo_unitario': '10.00',
+                'precio_venta': '20.00',
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(limpiar.status_code, 200)
+        ampicilina.refresh_from_db()
+        self.assertIsNone(ampicilina.codigo_barras)
+
+        reasignar = self.client.post(
+            '/farmacia/almacen/entradas/',
+            data=json.dumps({
+                'producto_id': ampicilina.id,
+                'codigo': 'BAR-AMP-001',
+                'nombre': ampicilina.nombre,
+                'lote': 'AMP-EDIT-02',
+                'caducidad': (date.today() + timedelta(days=365)).isoformat(),
+                'cantidad': 1,
+                'costo_unitario': '10.00',
+                'precio_venta': '20.00',
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(reasignar.status_code, 200)
+        ampicilina.refresh_from_db()
+        self.assertEqual(ampicilina.codigo_barras, 'BAR-AMP-001')
+
+        conflicto = self.client.post(
+            '/farmacia/almacen/entradas/',
+            data=json.dumps({
+                'producto_id': valaciclovir.id,
+                'codigo': 'BAR-AMP-001',
+                'nombre': valaciclovir.nombre,
+                'lote': 'VAL-EDIT-01',
+                'caducidad': (date.today() + timedelta(days=365)).isoformat(),
+                'cantidad': 1,
+                'costo_unitario': '10.00',
+                'precio_venta': '20.00',
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(conflicto.status_code, 409)
+        valaciclovir.refresh_from_db()
+        self.assertEqual(valaciclovir.codigo_barras, 'BAR-VAL-001')
+
+    def test_lector_no_asigna_automaticamente_el_primer_resultado(self):
+        response = self.client.get('/farmacia/almacen/entradas/')
+        contenido = response.content.decode('utf-8')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("const producto = productos.find(function(p) { return String(p.codigo_barras || '').trim() === codigo; });", contenido)
+        self.assertNotIn("}) || productos[0]", contenido)

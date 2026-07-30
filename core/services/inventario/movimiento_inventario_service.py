@@ -80,10 +80,11 @@ class MovimientoInventarioService:
                         codigo_barras=codigo,
                     ).first()
 
-                # El catalogo conserva un indice global por codigo de barras.
-                # Si el lector llega sin producto_id y el codigo pertenece a
-                # otra empresa, no convertir el conflicto en un HTTP 500.
+                # Un código físico solo puede apuntar a un producto dentro de
+                # la empresa. No bloquear a otros tenants por compartir el
+                # mismo catálogo comercial.
                 if not producto and codigo and Producto.objects_all.filter(
+                    empresa=empresa,
                     codigo_barras=codigo,
                 ).exists():
                     return cls._json_result(409, {
@@ -95,12 +96,10 @@ class MovimientoInventarioService:
                     })
 
                 if not producto:
-                    if not codigo:
-                        codigo = f"PRIS-{uuid_module.uuid4().hex[:8].upper()}"
                     try:
                         producto = Producto.objects.create(
                             empresa=empresa,
-                            codigo_barras=codigo,
+                            codigo_barras=codigo or None,
                             nombre=nombre,
                             marca_laboratorio=marca_laboratorio or 'GENERICO',
                             equivalencias_comerciales=equivalencias_comerciales,
@@ -123,6 +122,7 @@ class MovimientoInventarioService:
                         })
                 else:
                     datos_antes = {
+                        'codigo_barras': producto.codigo_barras or '',
                         'marca_laboratorio': producto.marca_laboratorio,
                         'equivalencias_comerciales': producto.equivalencias_comerciales,
                         'precio_publico': str(producto.precio_publico) if producto.precio_publico else None,
@@ -134,6 +134,22 @@ class MovimientoInventarioService:
                         producto.marca_laboratorio = marca_laboratorio
                     if equivalencias_comerciales:
                         producto.equivalencias_comerciales = equivalencias_comerciales
+                    # La pantalla de entrada permite corregir el código de la
+                    # ficha seleccionada. Solo se actualiza cuando el campo
+                    # vino explícitamente en la solicitud; así los clientes
+                    # antiguos que no lo envían conservan el código actual.
+                    if producto_id and 'codigo' in data:
+                        codigo_nuevo = codigo or None
+                        conflicto = Producto.objects_all.filter(
+                            empresa=empresa,
+                            codigo_barras=codigo_nuevo,
+                        ).exclude(pk=producto.pk).exists() if codigo_nuevo else False
+                        if conflicto:
+                            return cls._json_result(409, {
+                                'status': 'error',
+                                'mensaje': 'El código de barras ya pertenece a otro producto de esta empresa. Selecciona la ficha correcta antes de guardar.',
+                            })
+                        producto.codigo_barras = codigo_nuevo
                     if precio_venta > 0:
                         producto.precio_publico = precio_venta
                     producto.precio_compra = costo_unitario
@@ -151,6 +167,7 @@ class MovimientoInventarioService:
                             objeto_id=str(producto.id),
                             datos_anteriores=datos_antes,
                             datos_nuevos={
+                                'codigo_barras': producto.codigo_barras or '',
                                 'precio_publico': str(producto.precio_publico),
                                 'precio_compra': str(producto.precio_compra),
                                 'nombre': producto.nombre,

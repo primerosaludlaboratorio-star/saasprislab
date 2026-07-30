@@ -352,7 +352,7 @@
                     const boton = document.createElement('button');
                     boton.type = 'button';
                     boton.className = 'list-group-item list-group-item-action text-start';
-                    boton.innerHTML = '<strong>' + (producto.nombre || '') + '</strong><br><small class="text-muted">Codigo: ' + (producto.codigo_barras || 'N/A') + ' | Stock: ' + (producto.stock || 0) + ' | Costo: $' + Number(producto.precio_compra || 0).toFixed(2) + ' | Venta: $' + Number(producto.precio_publico || 0).toFixed(2) + '</small>';
+                    boton.innerHTML = '<strong>' + (producto.nombre || '') + '</strong><br><small class="text-muted">Ficha #' + producto.id + ' | Codigo: ' + (producto.codigo_barras || 'Sin codigo de barras') + ' | Stock: ' + (producto.stock || 0) + ' | Costo: $' + Number(producto.precio_compra || 0).toFixed(2) + ' | Venta: $' + Number(producto.precio_publico || 0).toFixed(2) + '</small>';
                     boton.addEventListener('click', function() { aplicarProductoEntrada(producto); });
                     resultados.appendChild(boton);
                 });
@@ -372,13 +372,15 @@
         }).then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
           .then(function(data) {
               const productos = data.productos || [];
-              const producto = productos.find(function(p) { return String(p.codigo_barras || '') === codigo; }) || productos[0];
+              const producto = productos.find(function(p) { return String(p.codigo_barras || '').trim() === codigo; });
               if (producto) {
                   document.getElementById('tipo-existente').checked = true;
                   seleccionarModoIngreso('existente');
                   aplicarProductoEntrada(producto);
               } else {
-                  document.getElementById('ent-producto-seleccionado').textContent = 'No existe un producto con ese codigo en este catalogo.';
+                  document.getElementById('ent-producto-seleccionado').textContent = productos.length
+                      ? 'El código no coincide exactamente con una ficha. Selecciona el producto correcto de la lista, no se asignará automáticamente.'
+                      : 'No existe un producto con ese código en este catálogo. Captura el nombre y crea una ficha nueva si corresponde.';
               }
           })
           .catch(function() { document.getElementById('ent-producto-seleccionado').textContent = 'No fue posible consultar el codigo en el catalogo.'; });

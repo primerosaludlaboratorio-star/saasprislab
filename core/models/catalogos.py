@@ -4,6 +4,7 @@ Catálogo maestro: Productos, Lotes, Médicos, Estudios, Parámetros, Convenios.
 Depende de: base.py
 """
 from django.db import models
+from django.db.models import Q
 from datetime import date
 
 from core.tenant import TenantModel
@@ -47,7 +48,13 @@ class Producto(TenantModel):
         verbose_name="Equivalencias comerciales / nombres alternativos",
         help_text="Patentes, marcas o nombres alternativos separados por coma. Se usan para búsqueda equivalente; validar la composición antes de capturarla.",
     )
-    codigo_barras = models.CharField(max_length=100, unique=True, verbose_name="Código de Barras / VIN")
+    codigo_barras = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name="Código de Barras / VIN",
+        help_text="Opcional. Si se captura, debe ser único dentro de la empresa.",
+    )
 
     forma_farmaceutica = models.CharField(max_length=100, verbose_name="Forma (Tabletas, Jarabe, etc.)")
     concentracion = models.CharField(max_length=100, verbose_name="Concentración (ej. 500mg, 1g)")
@@ -108,6 +115,13 @@ class Producto(TenantModel):
         app_label = 'core'
         verbose_name = "Producto / Servicio"
         verbose_name_plural = "Productos y Servicios"
+        constraints = [
+            models.UniqueConstraint(
+                fields=('empresa', 'codigo_barras'),
+                condition=Q(codigo_barras__isnull=False) & ~Q(codigo_barras=''),
+                name='producto_empresa_codigo_barras_unico_no_vacio',
+            ),
+        ]
 
     def precio_por_fraccion_efectivo(self):
         """

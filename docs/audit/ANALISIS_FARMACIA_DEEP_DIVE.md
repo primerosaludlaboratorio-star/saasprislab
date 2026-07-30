@@ -271,3 +271,33 @@ indexes = [
 ---
 
 **Fin del documento — CIERRE DE INTEGRIDAD FARMACIA v1.13**
+
+---
+
+## 9. CORRECCIÓN DE CATÁLOGO Y CÓDIGOS DE BARRAS — 2026-07-30
+
+Se corrigió el flujo de entrada de mercancía para evitar que una ficha de
+producto reciba accidentalmente el código de otra ficha:
+
+- El código de barras ahora es opcional; los productos sin código se almacenan
+  como `NULL`, por lo que pueden coexistir varias fichas con el mismo nombre.
+- Los códigos no vacíos son únicos dentro de la empresa, no globalmente entre
+  tenants.
+- La ficha seleccionada permite limpiar o reasignar su código, con rechazo
+  transaccional si ya pertenece a otro producto de la misma empresa.
+- El lector ya no selecciona automáticamente el primer resultado aproximado;
+  exige coincidencia exacta o selección humana explícita.
+- La búsqueda de entrada muestra el ID de ficha y distingue "Sin código de
+  barras", permitiendo identificar duplicados legítimos.
+
+Evidencia local:
+
+- Migración `core/migrations/0102_alter_producto_codigo_barras_and_more.py`.
+- `core.tests.test_farmacia_entrada_precios`: 9 pruebas OK.
+- `manage.py check`: sin incidencias.
+- `makemigrations --check`: sin cambios pendientes.
+
+La regresión agregada de farmacia reportó cuatro errores preexistentes fuera de
+este cambio: dos fixtures de caducidad con fecha anterior al 2026-07-30 y dos
+pruebas de devoluciones con un contrato de respuesta incompatible. No se
+marcan como corregidos por esta entrega.
