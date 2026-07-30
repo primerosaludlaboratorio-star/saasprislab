@@ -6,6 +6,7 @@ Depende de: base.py, catalogos.py, pacientes.py, ventas.py (Receta), laboratorio
 FKs cruzados usan string references.
 """
 from django.db import models
+from django.utils import timezone
 import uuid
 
 from core.validators import validate_image_upload, validate_audio_upload, validate_document_upload
@@ -710,7 +711,9 @@ class HistorialCambiosConsulta(models.Model):
     razon_cambio = models.TextField(verbose_name="Razón del Cambio")
 
     usuario_modificador = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    # El timestamp forma parte del hash y no debe ser sobrescrito por
+    # auto_now_add después de calcularlo.
+    timestamp = models.DateTimeField(default=timezone.now, editable=False)
     ip_origen = models.GenericIPAddressField(null=True)
 
     hash_integridad = models.CharField(max_length=64, verbose_name="Hash SHA256")
