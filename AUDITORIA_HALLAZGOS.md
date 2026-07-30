@@ -1,6 +1,6 @@
 # Auditoría exhaustiva PRISLAB — Hallazgos
 
-## H-NUEVO-05 — CRÍTICO: `ExpedienteNotaSHA.save()` crashea SIEMPRE — CORREGIDO LOCALMENTE, PENDIENTE DE DESPLIEGUE
+## H-NUEVO-05 — CRÍTICO: `ExpedienteNotaSHA.save()` crashea SIEMPRE — CORREGIDO Y VERIFICADO EN PRODUCCIÓN
 - **Archivo:** `core/models/expediente_blindaje.py:147-168` (`calcular_hash`) y `:203-220` (`save`).
 - **Causa raíz:** `calcular_hash()` usa `self.timestamp_creacion.isoformat()`, pero `timestamp_creacion` es `DateTimeField(auto_now_add=True)`. Django solo asigna ese valor dentro de `pre_save()`, que se ejecuta DENTRO de `super().save()` — es decir, DESPUÉS de que el `save()` sobrescrito ya llamó a `calcular_hash()`. Para una instancia nueva, `self.timestamp_creacion` vale `None` en ese punto.
 - **Verificación empírica (no solo lectura de código):** ejecuté directamente contra la base de datos de desarrollo (dentro de una transacción con rollback forzado, sin dejar huella):
@@ -17,7 +17,7 @@
 - **Corrección aplicada:** `timestamp_creacion` usa `default=timezone.now` en vez de `auto_now_add`, se normaliza `user_agent=None` a cadena vacía, se carga `hash_anterior` antes de calcular el bloque y la comparación del PIN médico usa `secrets.compare_digest`. Migración `core.0099_alter_expedientenotasha_timestamp_creacion`.
 - **Verificación local:** transacción con rollback creó dos snapshots, verificó ambos hashes y confirmó la cadena `v2 -> v1` (`BLINDAJE_ROLLBACK_OK 1 2`). También existe prueba focalizada en `core/tests/test_sensitive_authorizations.py`.
 - **Severidad:** CRÍTICA — funcionalidad de cumplimiento legal/forense central completamente inoperante, con fallos silenciados en la mayoría de los call sites.
-- **Estado:** corregido en local; todavía no desplegado. Tras el despliegue se debe verificar la migración y el flujo de sellado en producción antes de cerrarlo definitivamente. La comprobación de registros históricos de producción se mantiene pendiente y será de solo lectura.
+- **Estado:** corregido y desplegado. Producción aplicó `core.0099`; la transacción reversible confirmó `PROD_BLINDAJE_ROLLBACK_OK 1 2`. La tabla productiva estaba sin snapshots al momento de la verificación (`SHA_COUNT 0`), por lo que no había histórico que reparar.
 - **Call site adicional confirmado:** `core/models/expediente_blindaje.py::NotaClinicaSellar.sellar_con_pin()` (línea 506-554) también llama `SnapshotNotaMiddleware.crear_expediente_sha()` dentro de `transaction.atomic()`, sin try/except propio — mismo crash, revierte la transacción de sellado.
 - **Hallazgo relacionado (menor, mitigante):** `core/models/expediente_blindaje.py::conectar_seniales()` (línea 1066-1098) define un SEGUNDO receptor `post_save` para `NotaClinicaSOAP` que llama a `crear_expediente_sha()` SIN try/except alguno. Confirmé que nunca se activa: `core/apps.py::ready()` no lo invoca (pese a que el docstring dice "Se llama desde ready() en apps.py" — falso), y el guard `if apps.ready` al importar el módulo es `False` en esa fase del arranque de Django. Es código muerto con docstring engañoso, pero es afortunado que esté inactivo: si se conectara, cada guardado de `NotaClinicaSOAP` en todo el sistema lanzaría una excepción no controlada (rompería consultas médicas, enfermería, recepción, etc.), no solo un fallo silencioso de auditoría.
 - **Hallazgo menor adicional:** `TokenLIMSV7Manager.resolver_a_orden()`/`_resolver_token()`/`_crear_detalle_orden()` (línea 595-696) es código sin usar en ningún lugar del proyecto (confirmado por grep), con implementación visiblemente incompleta (comentario `# ... otros campos` en la creación de `OrdenDeServicio`). Higiene, no es hallazgo de seguridad.
@@ -57,27 +57,27 @@
 - **Recomendación:** en producción, fallar cerrado (`raise`) si el cifrado no puede aplicarse, igual que ya se hace con `FERNET_KEY` ausente en `config/settings/security.py`.
 - **Estado:** corregido. `EncryptedTextField.encrypt()` lanza `ImproperlyConfigured` ante ausencia, clave inválida o fallo de Fernet; nunca devuelve texto plano en un guardado nuevo.
 
-## H-NUEVO-06 — `datetime.strptime` sin try/except en reportes financieros (baja severidad) — CORREGIDO LOCALMENTE
+## H-NUEVO-06 — `datetime.strptime` sin try/except en reportes financieros (baja severidad) — CORREGIDO Y DESPLEGADO
 - **Archivo activo:** `core/views/reportes_financieros.py` — cinco rutas usan ahora `_fecha_segura`, que aplica un valor por defecto ante entrada inválida.
 - **Problema:** parsean `fecha_inicio`/`fecha_fin`/`fecha_corte` desde `request.GET` con `datetime.strptime(valor, '%Y-%m-%d')` sin capturar `ValueError`. Un parámetro malformado provoca `500 Internal Server Error` no controlado.
 - **Contraste:** `core/models/motor_financiero.py::genera_reporte_caja` sí captura `ValueError` con fallback a rango por defecto — mismo archivo/dominio, patrón inconsistente.
 - **Severidad:** baja — requiere sesión autenticada con rol `DIRECTOR`/`ADMIN`/`GERENTE`/`FINANZAS`; no es bypass de autenticación ni fuga de datos, solo UX pobre y ruta de excepción no controlada.
 - **Nota adicional:** este archivo, igual que `motor_financiero.py`, vive en `core/models/` pero no contiene ninguna clase de modelo — son 8 vistas/helpers. Confirma que el patrón de mala ubicación de código no es aislado.
-- **Estado:** corregido localmente y cubierto por `core/tests/test_financial_reports.py`. `core/models/reportes_financieros.py` es una copia no enlazada por las URLs; no se modificó para evitar mantener una segunda fuente ejecutable.
+- **Estado:** corregido, probado y desplegado en `core/views/reportes_financieros.py`. `core/models/reportes_financieros.py` es una copia no enlazada por las URLs; no se modificó para evitar mantener una segunda fuente ejecutable.
 
 ## H-NUEVO-07 — `IncidenciaAsistencia.documento_soporte` sin validador de archivo (baja-media severidad) — CORREGIDO LOCALMENTE
 - **Archivo:** `core/models/rrhh.py:518` (`FileField(upload_to='incidencias/', ...)`, sin `validators=`).
 - **Problema:** a diferencia de `Bitacora39A.pdf_firmado` (mismo archivo, línea 92-99) que sí usa `validators=[validate_document_upload]`, este campo acepta cualquier tipo/tamaño de archivo sin restricción — cualquier empleado que suba un "documento de soporte" para una incidencia (falta, permiso, incapacidad) puede subir un ejecutable, script, o archivo arbitrariamente grande.
 - **Impacto:** subida de archivos sin restricción de tipo/tamaño; superficie de ataque para malware almacenado o agotamiento de disco, aunque requiere sesión autenticada de empleado.
 - **Recomendación:** aplicar `validators=[validate_document_upload]` igual que en el resto del sistema.
-- **Estado:** corregido localmente con `validators=[validate_document_upload]` y migración `core.0100`.
+- **Estado:** corregido y desplegado con `validators=[validate_document_upload]` y migración `core.0100`.
 
 ## H-NUEVO-08 — CLABE interbancaria hardcodeada como default en modelo `Pago` (higiene/riesgo bajo) — CORREGIDO LOCALMENTE
 - **Archivo:** `core/models/ventas.py:503` — `Pago.clabe_interbancaria = models.CharField(..., default="0123 4567 8901 2345", ...)`.
 - **Problema:** el campo tiene un valor `default` que parece una CLABE de prueba/placeholder (secuencia obviamente ficticia). Si algún flujo de pago SPEI no captura la CLABE real y confía en el default del modelo, quedaría un número de cuenta falso en el registro de pago, lo cual podría confundir conciliación bancaria o auditoría contable si nadie lo nota.
 - **Impacto:** bajo directamente (no es una credencial real ni secreto), pero es un dato financiero placeholder incrustado en el esquema que no debería tener un valor por defecto "parecido a real" — mejor `default=''` o `blank=True` sin valor semántico.
 - **Recomendación:** cambiar el default a cadena vacía; forzar captura explícita de CLABE en el formulario de pago SPEI.
-- **Estado:** corregido localmente: el default ahora es cadena vacía y la captura queda explícita para SPEI; migración `core.0100`.
+- **Estado:** corregido y desplegado: el default ahora es cadena vacía y la captura queda explícita para SPEI; migración `core.0100`.
 
 ## H-NUEVO-09 — `require_sucursal_access` omite la validación silenciosamente ante `sucursal_id` no numérico — CORREGIDO LOCALMENTE
 - **Archivo:** `core/rbac/permissions.py:406-417` (`require_sucursal_access`, líneas 409-414).
@@ -86,7 +86,7 @@
 - **Contraste:** `check_sucursal_assignment` (mismo archivo, línea 173-175) sí falla cerrado (`except Exception: return False`) — el decorador `require_sucursal_access` es la única ruta que falla abierto.
 - **Recomendación:** ante fallo de conversión, denegar (`PermissionDenied`) en vez de `pass`.
 - **Mitigante confirmado:** `require_sucursal_access` NO está aplicado a ninguna vista actualmente (`grep` en todo el repo solo lo encuentra en `core/rbac/permissions.py` y su re-export en `core/rbac/__init__.py`) — es código muerto/sin usar hoy, por lo que el riesgo real actual es nulo. Queda como defecto latente si se adopta en el futuro.
-- **Estado:** corregido localmente: el decorador registra el intento y falla cerrado con `PermissionDenied`; prueba añadida en `core/rbac/tests.py`.
+- **Estado:** corregido y desplegado: el decorador registra el intento y falla cerrado con `PermissionDenied`; prueba añadida en `core/rbac/tests.py`.
 
 ## H-NUEVO-10 — `core/rbac/permissions.py`: decoradores `require_permission`/`require_roles`/`deny_roles`/`require_sucursal_access` no se usan en ninguna vista real (higiene/riesgo de confusión)
 - **Archivo:** `core/rbac/permissions.py` completo.
@@ -104,7 +104,7 @@
 - **Recomendación:** invertir la política a fail-closed: si `tool_name not in _TOOL_RBAC`, denegar por defecto en vez de permitir; consolidar en una sola fuente de verdad (eliminar el mapa duplicado `grupos` en `registry.py` o hacerlo la única fuente).
 - **Estado:** pendiente de decisión del usuario.
 
-## H-NUEVO-12 — CRÍTICO: Django Admin expone datos cross-tenant (financieros, clínicos/PHI, RH, auditoría) sin aislamiento por empresa — CORREGIDO LOCALMENTE, PENDIENTE DE DESPLIEGUE
+## H-NUEVO-12 — CRÍTICO: Django Admin expone datos cross-tenant (financieros, clínicos/PHI, RH, auditoría) sin aislamiento por empresa — CORREGIDO Y VERIFICADO EN PRODUCCIÓN
 - **Archivos:** `core/admin/identidad.py`, `catalogo.py`, `ventas.py`, `clinico.py`, `bienestar.py`, `rrhh.py` (paquete activo `core/admin/`, confirmado empíricamente con `importlib.util.find_spec('core.admin')` → resuelve a `core/admin/__init__.py`, NO a `core/admin.py`).
 - **Problema:** de las ~45 clases `ModelAdmin` registradas en el paquete `core/admin/`, únicamente `CustomUsuarioAdmin` y `Usuario_SucursalAdmin` (`identidad.py`) sobreescriben `get_queryset()` para filtrar por `request.user.empresa_id`. **Todas las demás** — incluyendo `VentaAdmin`, `ProductoAdmin`, `LoteAdmin`, `PacienteAdmin`, `OrdenDeServicioAdmin`, `DetalleOrdenAdmin`, `PagoOrdenAdmin`, `GastoOperativoAdmin`, `HistoriaClinicaAdmin`, `ConsultaMedicaCoreAdmin`, `ConsentimientoInformadoAdmin`, `CertificadoMedicoAdmin`, `NotaClinicaSOAPAdmin`, `AuditLogAdmin`, `ForenseAccesoAdmin`, `EmpleadoAdmin`, `ReciboNominaAdmin`, etc. — usan el `get_queryset()` por defecto de Django, que **no filtra por tenant**.
 - **Vector de explotación confirmado:**
@@ -120,7 +120,7 @@
   3. Reconsiderar si el DIRECTOR de un tenant realmente necesita `is_staff=True` + permisos globales de Django (acceso a `/admin/`) en el flujo de onboarding, o si debería gestionarse todo desde las vistas de negocio con `role_required` (que sí es tenant-aware vía `core/tenant.py`).
 - **Corrección aplicada:** todos los `ModelAdmin` registrados, incluidos los de apps de negocio, heredan `TenantScopedAdmin`/`TenantScopedAdminMixin`. La ruta hacia `empresa` se descubre por relaciones FK/OneToOne y falla cerrado si no puede demostrarse. `Group` también queda restringido a superusuario; `Usuario` conserva su filtro específico existente. Se eliminaron las rutas administrativas duplicadas del módulo raíz.
 - **Verificación local:** registro completo de 184 administradores sin ningún `ModelAdmin` operativo fuera del mixin; `manage.py check` y compilación pasan. Catálogos globales sin FK de tenant devuelven queryset vacío para usuarios de empresa.
-- **Estado:** corregido localmente; pendiente de desplegar y verificar con dos usuarios de empresas distintas antes de cerrarlo en producción.
+- **Estado:** corregido, desplegado y verificado en producción: 184 registros Admin, cero administradores sin mixin, cero fallos de consulta; cinco catálogos globales fallan cerrado.
 
 ## H-NUEVO-13 — `core/admin.py` (archivo raíz) es código MUERTO/huérfano, duplica registros de `core/admin/` — CORREGIDO
 - **Archivo:** `core/admin.py` (41 KB, ~700+ líneas).
