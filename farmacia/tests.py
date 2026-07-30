@@ -448,6 +448,41 @@ class FarmaciaViewTests(TestCase):
         response = self.client.get(url, follow=True)
         self.assertIn(response.status_code, [200, 301, 302])
 
+    def test_inventario_farmacia_filtra_producto_y_excluye_otro_tenant(self):
+        otra_empresa = Empresa.objects.create(nombre="Otra Empresa", rfc="OTR123456ABC")
+        Producto.objects.create(
+            empresa=otra_empresa,
+            nombre="Paracetamol de otro tenant",
+            codigo_barras=_codigo_barras_unico(),
+            forma_farmaceutica="Tabletas",
+            concentracion="500mg",
+            presentacion="20 tabletas",
+            precio_publico=Decimal("50.00"),
+            stock=20,
+        )
+
+        response = self.client.get(reverse("farmacia_inventario_general"), {"q": "Paracetamol"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Paracetamol 500mg")
+        self.assertNotContains(response, "Paracetamol de otro tenant")
+        self.assertContains(response, "Agregar producto / entrada")
+        self.assertContains(response, "100")
+
+    def test_inventario_farmacia_exporta_excel_con_filtros(self):
+        response = self.client.get(
+            reverse("farmacia_inventario_general"),
+            {"categoria": "GENERICO", "formato": "excel"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        self.assertIn("inventario_farmacia.xlsx", response["Content-Disposition"])
+        self.assertGreater(len(response.content), 100)
+
     def test_kardex_list_view(self):
         url = reverse("farmacia:kardex_list")
         response = self.client.get(url, follow=True)

@@ -95,6 +95,7 @@ urlpatterns = [
     # ======================================================================
     # INVENTARIO (NUEVAS RUTAS)
     # ======================================================================
+    path('inventario/', inventario.inventario_farmacia, name='inventario_farmacia'),
     path('entrada-mercancia/', inventario.entrada_mercancia, name='entrada_mercancia'),
     path('registrar-compra/', inventario.registrar_compra, name='registrar_compra_inv'),
     path('api/buscar-productos-compra/', inventario.api_buscar_productos_compra, name='api_buscar_productos_compra'),

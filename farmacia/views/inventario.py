@@ -16,6 +16,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
+from django.core.paginator import Paginator
 from django.db import DatabaseError
 from django.db.models import DecimalField, Q, Sum, F, Prefetch
 from django.db.models.functions import Coalesce
@@ -68,6 +69,171 @@ def _coincidencia_aproximada(termino, producto):
     if not relevantes or (len(tokens_consulta) > 1 and len(relevantes) < 2):
         return 0.0
     return sum(relevantes) / len(tokens_consulta)
+
+
+def _filas_inventario_farmacia(productos, hoy):
+    """Construye el resumen visible/exportable sin consultas por cada fila."""
+    categorias = dict(Producto.CATEGORIAS)
+    filas = []
+    for producto in productos:
+        lotes = list(getattr(producto, 'inventario_lotes', []))
+        lotes_vigentes = [lote for lote in lotes if lote.cantidad > 0 and lote.fecha_caducidad >= hoy]
+        lotes_caducados = [lote for lote in lotes if lote.cantidad > 0 and lote.fecha_caducidad < hoy]
+        lote_proximo = min(lotes_vigentes, key=lambda lote: lote.fecha_caducidad, default=None)
+        dias = (lote_proximo.fecha_caducidad - hoy).days if lote_proximo else None
+        stock_lotes = sum(lote.cantidad for lote in lotes)
+        # Misma fuente de verdad que el PDV: los lotes vigentes mandan;
+        # Producto.stock solo sirve como respaldo para productos sin lotes.
+        stock_efectivo = sum(lote.cantidad for lote in lotes_vigentes) if lotes else (producto.stock or 0)
+
+        if stock_efectivo <= 0:
+            estado, estado_clase = 'AGOTADO', 'secondary'
+        elif not lotes_vigentes and lotes_caducados:
+            estado, estado_clase = 'SIN LOTE VIGENTE', 'danger'
+        elif stock_efectivo < producto.stock_minimo:
+            estado, estado_clase = 'STOCK BAJO', 'warning'
+        elif dias is not None and dias < 30:
+            estado, estado_clase = 'CADUCIDAD CRITICA', 'danger'
+        elif dias is not None and dias < 90:
+            estado, estado_clase = 'PROXIMO A CADUCAR', 'warning'
+        else:
+            estado, estado_clase = 'DISPONIBLE', 'success'
+
+        filas.append({
+            'producto': producto,
+            'categoria_label': categorias.get(producto.categoria, producto.categoria or 'Sin categoría'),
+            'stock': stock_efectivo,
+            'stock_lotes': stock_lotes,
+            'lotes_count': len(lotes),
+            'lotes_caducados': len(lotes_caducados),
+            'lote_proximo': lote_proximo,
+            'dias_proximo': dias,
+            'estado': estado,
+            'estado_clase': estado_clase,
+            'valor_inventario': stock_efectivo * (producto.precio_compra or Decimal('0')),
+        })
+    return filas
+
+
+@login_required
+def inventario_farmacia(request):
+    """Inventario operativo por producto, aislado por empresa y exportable."""
+    empresa = _empresa_desde_request(request)
+    if not empresa:
+        messages.error(request, 'Usuario no tiene empresa asignada.')
+        return redirect('home')
+
+    hoy = timezone.localdate()
+    busqueda = request.GET.get('q', '').strip()
+    categoria = request.GET.get('categoria', '').strip().upper()
+    marca = request.GET.get('marca', '').strip()
+    estado = request.GET.get('estado', '').strip().lower()
+    lotes_con_existencia = Lote.objects.filter(cantidad__gt=0).order_by('fecha_caducidad')
+    productos = (
+        Producto.objects.filter(empresa=empresa)
+        .select_related('sucursal')
+        .prefetch_related(Prefetch('lotes', queryset=lotes_con_existencia, to_attr='inventario_lotes'))
+        .order_by('nombre')
+    )
+    if busqueda:
+        productos = productos.filter(
+            Q(nombre__icontains=busqueda) |
+            Q(sustancia_activa__icontains=busqueda) |
+            Q(marca_laboratorio__icontains=busqueda) |
+            Q(codigo_barras__icontains=busqueda) |
+            Q(equivalencias_comerciales__icontains=busqueda) |
+            Q(lotes__numero_lote__icontains=busqueda)
+        ).distinct()
+    if categoria in dict(Producto.CATEGORIAS):
+        productos = productos.filter(categoria=categoria)
+    if marca:
+        productos = productos.filter(marca_laboratorio__icontains=marca)
+    filas_todas = _filas_inventario_farmacia(list(productos), hoy)
+    # Estos estados se filtran después de calcular la existencia efectiva,
+    # para no divergir del criterio FEFO usado por el PDV.
+    if estado == 'disponible':
+        filas_todas = [fila for fila in filas_todas if fila['stock'] > 0]
+    elif estado == 'agotado':
+        filas_todas = [fila for fila in filas_todas if fila['stock'] <= 0]
+    elif estado == 'bajo':
+        filas_todas = [
+            fila for fila in filas_todas
+            if 0 < fila['stock'] < fila['producto'].stock_minimo
+        ]
+    elif estado == 'caducado':
+        filas_todas = [fila for fila in filas_todas if fila['lotes_caducados'] > 0]
+    elif estado == 'proximo':
+        filas_todas = [
+            fila for fila in filas_todas
+            if fila['dias_proximo'] is not None and fila['dias_proximo'] < 90
+        ]
+    if request.GET.get('formato') == 'excel':
+        import io
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Inventario Farmacia'
+        ws.append([f'Inventario de Farmacia - {empresa.nombre}'])
+        ws.append([f'Generado: {timezone.localtime().strftime("%d/%m/%Y %H:%M")}'])
+        ws.append([])
+        headers = [
+            'Producto', 'Sustancia activa', 'Categoría', 'Marca', 'Código de barras',
+            'Existencia catálogo', 'Existencia en lotes', 'Lotes', 'Lotes caducados',
+            'Próximo lote', 'Próxima caducidad', 'Días restantes', 'Costo unitario',
+            'Precio público', 'Valor inventario', 'Estado',
+        ]
+        ws.append(headers)
+        fill = PatternFill(start_color='173F5F', end_color='173F5F', fill_type='solid')
+        for cell in ws[4]:
+            cell.fill = fill
+            cell.font = Font(color='FFFFFF', bold=True)
+        for fila in filas_todas:
+            producto = fila['producto']
+            lote = fila['lote_proximo']
+            ws.append([
+                producto.nombre, producto.sustancia_activa or '', fila['categoria_label'],
+                producto.marca_laboratorio or '', producto.codigo_barras or 'Sin código',
+                fila['stock'], fila['stock_lotes'], fila['lotes_count'], fila['lotes_caducados'],
+                lote.numero_lote if lote else '',
+                lote.fecha_caducidad.strftime('%d/%m/%Y') if lote else '',
+                fila['dias_proximo'] if fila['dias_proximo'] is not None else '',
+                float(producto.precio_compra or 0), float(producto.precio_publico or 0),
+                float(fila['valor_inventario']), fila['estado'],
+            ])
+        ws.freeze_panes = 'A5'
+        ws.auto_filter.ref = ws.dimensions
+        for columna, ancho in enumerate((34, 30, 20, 24, 18, 18, 18, 10, 16, 18, 18, 16, 16, 16, 18, 22), 1):
+            ws.column_dimensions[openpyxl.utils.get_column_letter(columna)].width = ancho
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        response = HttpResponse(buffer.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="inventario_farmacia.xlsx"'
+        return response
+
+    paginator = Paginator(filas_todas, 50)
+    pagina = paginator.get_page(request.GET.get('page', 1))
+    marcas = (
+        Producto.objects.filter(empresa=empresa)
+        .exclude(marca_laboratorio__isnull=True)
+        .exclude(marca_laboratorio='')
+        .values_list('marca_laboratorio', flat=True)
+        .distinct().order_by('marca_laboratorio')
+    )
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    query_params.pop('formato', None)
+    return render(request, 'farmacia/inventario.html', {
+        'empresa': empresa, 'pagina': pagina, 'filas': pagina.object_list,
+        'total_productos': len(filas_todas),
+        'total_stock': sum(f['stock'] for f in filas_todas),
+        'total_valor': sum(f['valor_inventario'] for f in filas_todas),
+        'categorias': Producto.CATEGORIAS, 'marcas': marcas,
+        'filtros': {'q': busqueda, 'categoria': categoria, 'marca': marca, 'estado': estado},
+        'query_string': query_params.urlencode(), 'fecha_reporte': timezone.localtime(),
+    })
 
 
 # ==============================================================================

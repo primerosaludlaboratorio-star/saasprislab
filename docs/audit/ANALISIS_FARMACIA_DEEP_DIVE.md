@@ -301,3 +301,33 @@ La regresión agregada de farmacia reportó cuatro errores preexistentes fuera d
 este cambio: dos fixtures de caducidad con fecha anterior al 2026-07-30 y dos
 pruebas de devoluciones con un contrato de respuesta incompatible. No se
 marcan como corregidos por esta entrega.
+
+## 10. INVENTARIO OPERATIVO POR PRODUCTO — 2026-07-30
+
+Se incorporó una pantalla canónica para que el personal consulte el inventario
+de Farmacia sin entrar a pantallas aisladas:
+
+- Ruta principal: `/farmacia/inventario/` (`farmacia_inventario_general`).
+- Ruta canónica con namespace: `/farmacia/erp/inventario/`
+  (`farmacia:inventario_farmacia`).
+- Búsqueda por nombre, sustancia activa, marca, código de barras, equivalencia
+  comercial o lote.
+- Filtros por categoría, marca, disponibilidad, agotado, stock bajo, lote
+  caducado y caducidad en los próximos 90 días.
+- La existencia vendible usa la misma regla del PDV: suma de lotes vigentes y,
+  únicamente si no existen lotes, respaldo en `Producto.stock`.
+- Se muestran lote FEFO próximo, caducidad, días restantes, existencia de
+  catálogo, existencia en lotes, costo, precio público, valor y estado.
+- `Descargar Excel` conserva los filtros activos e incluye columnas de
+  trazabilidad, costos y estado; no genera un CSV ficticio ni limita el reporte
+  a productos con existencia.
+- Accesos directos verificados a entrada de mercancía, registro de compra,
+  kardex, semáforo de caducidad y stock crítico.
+- La consulta está restringida por `empresa` y se agregaron pruebas de
+  aislamiento entre tenants y de respuesta Excel.
+
+Validación realizada: `manage.py check`, compilación Python, carga de plantilla
+y resolución de ambas rutas sin incidencias. La suite Django específica quedó
+bloqueada en la inicialización de la base de pruebas local existente antes de
+ejecutar los casos; no se reporta como prueba aprobada hasta resolver ese
+bloqueo del entorno.

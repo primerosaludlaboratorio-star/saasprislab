@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventario de Farmacia{% endblock %}
+
+{% block extra_css %}
+<style>
+    .inventory-header { background: linear-gradient(135deg, #123c52, #176b73); color: #fff; }
+    .metric { border: 0; border-left: 4px solid #176b73; }
+    .table-inventory { font-size: .9rem; }
+    .table-inventory thead th { position: sticky; top: 0; z-index: 2; white-space: nowrap; }
+    .status-badge { font-size: .7rem; letter-spacing: .02em; }
+    .filter-card { background: #f7fafb; border: 1px solid #dbe7ea; }
+    .empty-state { min-height: 220px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="container-fluid py-4">
+    <div class="card inventory-header shadow-sm mb-4">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <div class="text-uppercase small opacity-75">Farmacia / Control de existencias</div>
+                <h1 class="h3 mb-1">Inventario operativo</h1>
+                <p class="mb-0 opacity-75">Consulta por producto, lote, caducidad y existencia. Empresa: {{ empresa.nombre }}</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-light" href="{% url 'entrada_mercancia' %}">
+                    <i class="bi bi-plus-circle"></i> Agregar producto / entrada
+                </a>
+                <a class="btn btn-outline-light" href="{% url 'farmacia:registrar_compra' %}">
+                    <i class="bi bi-cart-plus"></i> Registrar compra
+                </a>
+                <a class="btn btn-outline-light" href="{% url 'farmacia:kardex_list' %}">
+                    <i class="bi bi-journal-text"></i> Kardex
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-4"><div class="card metric shadow-sm h-100"><div class="card-body"><div class="text-muted small">Productos encontrados</div><div class="h4 mb-0">{{ total_productos }}</div></div></div></div>
+        <div class="col-sm-4"><div class="card metric shadow-sm h-100"><div class="card-body"><div class="text-muted small">Existencia total</div><div class="h4 mb-0">{{ total_stock }}</div></div></div></div>
+        <div class="col-sm-4"><div class="card metric shadow-sm h-100"><div class="card-body"><div class="text-muted small">Valor de inventario</div><div class="h4 mb-0 text-success">${{ total_valor|floatformat:2 }}</div></div></div></div>
+    </div>
+
+    <section class="card filter-card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h6 mb-0"><i class="bi bi-funnel"></i> Buscar y filtrar</h2>
+                <a class="btn btn-success btn-sm" href="?{% if query_string %}{{ query_string }}&{% endif %}formato=excel">
+                    <i class="bi bi-file-earmark-excel"></i> Descargar Excel
+                </a>
+            </div>
+            <form method="get" class="row g-2">
+                <div class="col-lg-4">
+                    <label class="form-label small mb-1" for="id_q">Producto, sustancia, marca, código o lote</label>
+                    <input id="id_q" name="q" value="{{ filtros.q }}" class="form-control" placeholder="Ej. paracetamol, 750...">
+                </div>
+                <div class="col-md-3 col-lg-2">
+                    <label class="form-label small mb-1" for="id_categoria">Categoría</label>
+                    <select id="id_categoria" name="categoria" class="form-select">
+                        <option value="">Todas</option>
+                        {% for valor, etiqueta in categorias %}<option value="{{ valor }}" {% if filtros.categoria == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 col-lg-2">
+                    <label class="form-label small mb-1" for="id_marca">Marca</label>
+                    <select id="id_marca" name="marca" class="form-select">
+                        <option value="">Todas</option>
+                        {% for item in marcas %}<option value="{{ item }}" {% if filtros.marca == item %}selected{% endif %}>{{ item }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 col-lg-2">
+                    <label class="form-label small mb-1" for="id_estado">Estado</label>
+                    <select id="id_estado" name="estado" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="disponible" {% if filtros.estado == 'disponible' %}selected{% endif %}>Disponible</option>
+                        <option value="agotado" {% if filtros.estado == 'agotado' %}selected{% endif %}>Agotado</option>
+                        <option value="bajo" {% if filtros.estado == 'bajo' %}selected{% endif %}>Stock bajo</option>
+                        <option value="caducado" {% if filtros.estado == 'caducado' %}selected{% endif %}>Con lote caducado</option>
+                        <option value="proximo" {% if filtros.estado == 'proximo' %}selected{% endif %}>Caduca en 90 días</option>
+                    </select>
+                </div>
+                <div class="col-md-3 col-lg-2 d-flex align-items-end gap-2">
+                    <button class="btn btn-primary flex-grow-1" type="submit"><i class="bi bi-search"></i> Aplicar</button>
+                    <a class="btn btn-outline-secondary" href="{% url 'farmacia_inventario_general' %}" title="Limpiar filtros"><i class="bi bi-x-lg"></i></a>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+        <h2 class="h5 mb-0">Productos y existencias</h2>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-warning btn-sm" href="{% url 'farmacia:dashboard_semaforo_caducidad' %}"><i class="bi bi-calendar-x"></i> Semáforo caducidad</a>
+            <a class="btn btn-outline-danger btn-sm" href="{% url 'farmacia:dashboard_stock_critico' %}"><i class="bi bi-exclamation-triangle"></i> Stock crítico</a>
+        </div>
+    </div>
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 table-inventory">
+                <thead class="table-dark"><tr>
+                    <th>Producto</th><th>Categoría / marca</th><th>Código</th><th class="text-end">Existencia</th>
+                    <th>Próximo lote</th><th>Caducidad</th><th class="text-end">Costo</th><th class="text-end">P. público</th><th>Estado</th><th>Acciones</th>
+                </tr></thead>
+                <tbody>
+                {% for fila in filas %}
+                    <tr>
+                        <td><div class="fw-semibold">{{ fila.producto.nombre }}</div><div class="small text-muted">{{ fila.producto.sustancia_activa|default:'Sin sustancia registrada' }}</div></td>
+                        <td><div>{{ fila.categoria_label }}</div><div class="small text-muted">{{ fila.producto.marca_laboratorio|default:'Sin marca' }}</div></td>
+                        <td><code>{{ fila.producto.codigo_barras|default:'Sin código' }}</code></td>
+                        <td class="text-end"><strong>{{ fila.stock }}</strong><div class="small text-muted">{{ fila.stock_lotes }} en lotes</div></td>
+                        <td>{% if fila.lote_proximo %}<code>{{ fila.lote_proximo.numero_lote }}</code>{% else %}<span class="text-muted">Sin lote vigente</span>{% endif %}</td>
+                        <td>{% if fila.lote_proximo %}{{ fila.lote_proximo.fecha_caducidad|date:'d/m/Y' }}<div class="small text-muted">{{ fila.dias_proximo }} días</div>{% else %}-{% endif %}</td>
+                        <td class="text-end">${{ fila.producto.precio_compra|floatformat:2 }}</td>
+                        <td class="text-end">${{ fila.producto.precio_publico|floatformat:2 }}</td>
+                        <td><span class="badge text-bg-{{ fila.estado_clase }} status-badge">{{ fila.estado }}</span>{% if fila.lotes_caducados %}<div class="small text-danger">{{ fila.lotes_caducados }} lote(s) caducado(s)</div>{% endif %}</td>
+                        <td><div class="btn-group btn-group-sm"><a class="btn btn-outline-primary" href="{% url 'farmacia:kardex_list' %}?producto_q={{ fila.producto.nombre|urlencode }}" title="Ver movimientos"><i class="bi bi-journal-text"></i></a><a class="btn btn-outline-success" href="{% url 'entrada_mercancia' %}?producto_id={{ fila.producto.id }}" title="Agregar existencia"><i class="bi bi-plus-lg"></i></a></div></td>
+                    </tr>
+                {% empty %}<tr><td colspan="10" class="text-center text-muted empty-state"><i class="bi bi-search fs-1 d-block mb-2"></i>No hay productos que coincidan con los filtros.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if pagina.paginator.num_pages > 1 %}<nav class="p-3" aria-label="Paginación de inventario"><ul class="pagination justify-content-center mb-0">
+            {% if pagina.has_previous %}<li class="page-item"><a class="page-link" href="?{{ query_string }}&page={{ pagina.previous_page_number }}">Anterior</a></li>{% endif %}
+            <li class="page-item active"><span class="page-link">{{ pagina.number }} / {{ pagina.paginator.num_pages }}</span></li>
+            {% if pagina.has_next %}<li class="page-item"><a class="page-link" href="?{{ query_string }}&page={{ pagina.next_page_number }}">Siguiente</a></li>{% endif %}
+        </ul></nav>{% endif %}
+    </div>
+</main>
+{% endblock %}

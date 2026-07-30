@@ -52,6 +52,7 @@ from farmacia.views.inventario import (  # noqa: E402
     registrar_compra,
     registro_gasto,
     validar_pin_precio_neto,
+    inventario_farmacia,
 )
 from core.utils.sucursal_helpers import get_request_sucursal
 from farmacia.views.devoluciones import (  # noqa: E402
@@ -92,8 +93,8 @@ def ajustes_inventario(request):
 
 @login_required
 def farmacia_inventario_general(request):
-    """Alias legacy al tablero principal mientras se define la vista canónica de stock por lote."""
-    return dashboard_farmacia(request)
+    """Alias legacy al inventario operativo canónico de Farmacia."""
+    return inventario_farmacia(request)
 
 
 @login_required
