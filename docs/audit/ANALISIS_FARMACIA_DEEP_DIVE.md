@@ -331,3 +331,16 @@ y resolución de ambas rutas sin incidencias. La suite Django específica quedó
 bloqueada en la inicialización de la base de pruebas local existente antes de
 ejecutar los casos; no se reporta como prueba aprobada hasta resolver ese
 bloqueo del entorno.
+
+Despliegue y verificación productiva:
+
+- Revisión desplegada como `f7865b2f6fafed047341f6b7c5461e7da09cb57c` mediante
+  `scripts/deploy_local_to_vps.ps1 -User root`.
+- Migraciones sin pendientes, servicios Gunicorn/Celery/Celery Beat activos y
+  health check HTTP en estado 200.
+- Flujo humano autenticado en producción: pantalla cargada, controles visibles,
+  enlaces de navegación presentes y filtro `Paracetamol` aplicado correctamente
+  en la URL y en la tabla.
+- La descarga Excel fue invocada desde la interfaz; el navegador no expuso el
+  evento de descarga al arnés, por lo que el contenido binario se mantiene
+  cubierto por la prueba de endpoint y por la generación server-side revisada.
