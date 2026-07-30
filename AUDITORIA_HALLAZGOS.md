@@ -147,7 +147,7 @@
 - **Corrección aplicada:** el tenant solo se resuelve desde `HL7_IP_EMPRESA_MAP` o desde `HL7_API_KEY_EMPRESA_MAP`, ambos configurados en el servidor. Los headers y query params del emisor ya no son autoridad. Se añadieron pruebas de binding y rechazo.
 - **Configuración requerida:** para claves sin IP fija, configurar `HL7_API_KEY_EMPRESA_MAP` como JSON privado `{"clave-del-equipo": <empresa_id>}`. No registrar este valor en Git.
 - **Verificación local:** `core.tests.test_hl7_tenant_binding` y regresiones Walkie/Sentinel: 8 pruebas OK; `manage.py check` y compilación OK.
-- **Estado:** corregido localmente; pendiente despliegue y verificación productiva.
+- **Estado:** corregido, desplegado y verificado en producción en la revisión `3807a0df9fe2bbe7324b9cfe79943b12126de620`; migraciones sin pendientes, servicios activos y health check exitoso.
 
 ## H-NUEVO-16 — Endpoints de auditoría de campo permiten forjar entradas arbitrarias en AuditLog (integridad forense comprometida)
 - **Archivos:** `core/views/auditoria_api.py::api_auditar_campo` (línea 17-89), `core/views/auditoria_campo.py::api_auditoria_campo` (línea 18-92), `core/utils/auditoria_nativa.py::registrar_cambio_campo` (línea 14-74).

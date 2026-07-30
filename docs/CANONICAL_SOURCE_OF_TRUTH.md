@@ -48,7 +48,7 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local y desplegada: `c733c8d6d86addf375956e966afda69866aea4ce` (`fix(security): block sentinel request-triggered restarts`).
+- Última revisión local y desplegada: `3807a0df9fe2bbe7324b9cfe79943b12126de620` (`fix(lims): bind HL7 integration to tenant credentials`).
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
@@ -101,6 +101,9 @@ La revisión `4ac7903` es la fuente canónica para la consolidación de middlewa
 - H-NUEVO-15 corregido: Sentinel ya no puede reiniciar Gunicorn desde una
   request pública; la revisión `c733c8d6d86addf375956e966afda69866aea4ce`
   quedó desplegada con health HTTP 200 y servicios activos.
+- H-NUEVO-16 corregido: el receptor HL7 resuelve el tenant solo por IP o
+  credencial ligada en servidor; la revisión `3807a0df9fe2bbe7324b9cfe79943b12126de620`
+  quedó desplegada con migraciones al día, health HTTP 200 y servicios activos.
 - Verificación productiva del Admin: 184 registros, cero administradores sin
   mixin, cero fallos de consulta; cinco catálogos globales fallan cerrado como
   estaba diseñado.
