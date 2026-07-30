@@ -30,9 +30,9 @@ Proyecto: `config/`. Estáticos/plantillas: `static/`, `templates/`, `core/templ
 ## 3. Middlewares activos (orden)
 
 `SecurityMiddleware`, `WhiteNoiseMiddleware`, `CorsMiddleware`, `SessionMiddleware`, `CommonMiddleware`, `CanonicalHostMiddleware`, `CsrfViewMiddleware`, `AuthenticationMiddleware`, `ReadOnlyMiddleware`, `AdminAccessMiddleware`, `RateLimitMiddleware`, `EmpresaIdentityMiddleware`, `FeatureFlagMiddleware`, `JSONResponseMiddleware`, `ActividadUsuarioMiddleware`, `SentinelTelemetryMiddleware`, `PerformanceMiddleware`, `PrisContextMiddleware`, `MaintenanceModeMiddleware`, `SessionTimeoutMiddleware`, `TenantStorageMiddleware`, `BlindajeExpedienteMiddleware`, `SnapshotMiddleware`, `MessageMiddleware`, `XFrameOptionsMiddleware`.  
-`LogAccesoExpedienteMiddleware` comentado. `admin_access_restrict.py` existe pero no está en la cadena.
+La trazabilidad de expediente se realiza mediante hooks explícitos, blindaje y snapshots. `admin_access_restrict.py` no forma parte del código canónico.
 
-**Clases en `core/middleware/`:** `JSONResponseMiddleware`, `EmpresaIdentityMiddleware`, `AdminAccessMiddleware`, `PerformanceMiddleware`, `ReadOnlyMiddleware`, `BlindajeExpedienteMiddleware`, `SnapshotMiddleware`, `SentinelTelemetryMiddleware`, `RateLimitMiddleware`, `SessionTimeoutMiddleware`, `TenantStorageMiddleware`, `LogAccesoExpedienteMiddleware`, `FeatureFlagMiddleware`, `ModuloRequeridoMixin`, `MaintenanceModeMiddleware`, `CanonicalHostMiddleware`, `ActividadUsuarioMiddleware`, `PrisContextMiddleware`.
+**Clases en `core/middleware/`:** `JSONResponseMiddleware`, `EmpresaIdentityMiddleware`, `AdminAccessMiddleware`, `PerformanceMiddleware`, `ReadOnlyMiddleware`, `BlindajeExpedienteMiddleware`, `SnapshotMiddleware`, `SentinelTelemetryMiddleware`, `RateLimitMiddleware`, `SessionTimeoutMiddleware`, `TenantStorageMiddleware`, `FeatureFlagMiddleware`, `ModuloRequeridoMixin`, `MaintenanceModeMiddleware`, `CanonicalHostMiddleware`, `ActividadUsuarioMiddleware`, `PrisContextMiddleware`.
 
 ---
 

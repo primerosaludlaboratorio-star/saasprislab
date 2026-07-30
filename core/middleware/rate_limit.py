@@ -5,7 +5,6 @@ Protege endpoints sensibles contra ataques de fuerza bruta.
 - Login: Max 5 intentos por IP cada 5 minutos.
 - APIs: Max 120 requests por IP cada minuto.
 """
-import time
 import logging
 import ipaddress
 
@@ -70,14 +69,14 @@ class RateLimitMiddleware:
                     'mensaje': 'Has excedido el limite de intentos. Espera unos minutos.'
                 }, status=429)
 
-        # Limite global para API endpoints
-        if path.startswith('/api/') and request.method == 'POST':
+        # Limite global para API endpoints, independientemente del verbo HTTP.
+        if path.startswith('/api/'):
             ip = self._get_client_ip(request)
             key = f"rl:api:{ip}"
             if self._is_rate_limited(key, self.API_LIMIT['max_requests'], self.API_LIMIT['window_seconds']):
                 return JsonResponse({
                     'error': 'Limite de peticiones excedido. Reintenta en 60 segundos.'
-                }, status=429)
+                }, status=429, headers={'Retry-After': str(self.API_LIMIT['window_seconds'])})
 
         # Límite específico para el chat de PRIS (/ia/)
         if path.startswith('/ia/') and request.method == 'POST':
@@ -125,20 +124,14 @@ class RateLimitMiddleware:
         return remote_addr
 
     def _is_rate_limited(self, key, max_requests, window_seconds):
-        """Verifica si la IP excedio el limite."""
-        now = time.time()
+        """Aplica una ventana fija con contador atómico del backend de cache."""
         window_key = f"{key}:window"
-
-        # Obtener historial de requests
-        history = cache.get(window_key, [])
-
-        # Filtrar solo requests dentro de la ventana
-        history = [t for t in history if t > now - window_seconds]
-
-        if len(history) >= max_requests:
-            return True
-
-        # Registrar este request
-        history.append(now)
-        cache.set(window_key, history, timeout=window_seconds)
-        return False
+        timeout = max(1, int(window_seconds) + 1)
+        if cache.add(window_key, 1, timeout=timeout):
+            return False
+        try:
+            count = cache.incr(window_key)
+        except ValueError:
+            cache.add(window_key, 1, timeout=timeout)
+            return False
+        return count > int(max_requests)

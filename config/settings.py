@@ -282,7 +282,6 @@ MIDDLEWARE = [
     'core.middleware.seguridad.TenantStorageMiddleware',        # FASE 3: Inyecta empresa_slug en Drive storage
     # Kill-switch Punto 12 (2026-04): middleware confundía paciente_id vs historia_id vs orden_id.
     # Trazabilidad NOM-024 / expediente vía hooks explícitos + ForenseAcceso.
-    # 'core.middleware.seguridad.LogAccesoExpedienteMiddleware',  # FASE 4: legacy (desactivado)
     # 🔒 Arquitectura de Blindaje v2.0 — Protección de Expedientes Médicos
     'core.middleware.blindaje_expediente.BlindajeExpedienteMiddleware',  # Bloquea modificaciones a notas selladas
     'core.middleware.blindaje_expediente.SnapshotMiddleware',  # Captura metadatos para snapshots SHA

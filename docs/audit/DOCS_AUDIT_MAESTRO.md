@@ -361,7 +361,7 @@ python docs/audit/_regen_comandos_manage.py
 
 | Middleware | Archivo | Motivo |
 | :--- | :--- | :--- |
-| `TenantSubdomainMiddleware` | `core/middleware/tenant_subdomain.py` | Resolución tenant por subdominio/header; no activo en `MIDDLEWARE` |
+| `TenantSubdomainMiddleware` | `core/middleware/tenant_subdomain.py` | Resolución tenant por subdominio/header; activo en `MIDDLEWARE` |
 
 **Cambios de consolidación realizados:**
 
@@ -386,7 +386,7 @@ python docs/audit/_regen_comandos_manage.py
 - `python manage.py check` → OK
 - Pruebas aisladas:
   - `core.tests.test_rate_limit_middleware`
-  - `core.tests.test_actividad_usuario_middleware`
+- `core.tests.test_tenant_strict_mode`, `core.tests.test_middleware_local_drivers`
   - `core.tests.test_auto_repair_tenant_guard`
 - Barrido de referencias huérfanas en `core/` → sin `admin_access_restrict`, sin `LogAccesoExpedienteMiddleware`, sin auto-cleanup de `SentinelTelemetryMiddleware`
 

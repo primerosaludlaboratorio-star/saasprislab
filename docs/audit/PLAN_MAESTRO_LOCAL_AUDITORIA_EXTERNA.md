@@ -139,9 +139,9 @@ Fuente canónica de la cadena: `config/settings/base.py`.
 17. `core.middleware.blindaje_expediente.BlindajeExpedienteMiddleware` — bloquea modificaciones a notas selladas.
 18. `core.middleware.blindaje_expediente.SnapshotMiddleware` — captura metadatos request para SHA.
 
-**Middlewares fuera de la cadena:**
+**Middleware de resolución adicional:**
 
-- `core.middleware.tenant_subdomain.TenantSubdomainMiddleware`: archivo existe, no activo en `MIDDLEWARE`; resolución tenant por subdominio no se usa en la cadena canónica actual.
+- `core.middleware.tenant_subdomain.TenantSubdomainMiddleware`: activo en `MIDDLEWARE`; resuelve el tenant por subdominio/header antes de la identidad por usuario.
 
 **Cambios realizados para cerrar H-013:**
 
@@ -155,7 +155,7 @@ Fuente canónica de la cadena: `config/settings/base.py`.
 - `ApiRequestIdMiddleware`: movido antes de `AuthenticationMiddleware` para garantizar trazabilidad desde el inicio útil del request.
 - `config/settings.py` sigue existiendo en el repo; la cadena activa de middlewares está definida en `config/settings/base.py`.
 - `RateLimitMiddleware`: reescrito para usar contador atómico por ventana fija (`cache.add` + `cache.incr`) en lugar de lista no atómica; se eliminó la condición de carrera. El límite de `/api/` ahora aplica a todos los métodos HTTP y devuelve header `Retry-After`.
-- Se verificó `python manage.py check`, el barrido de referencias huérfanas y las pruebas aisladas de `core.tests.test_rate_limit_middleware`, `core.tests.test_actividad_usuario_middleware` y `core.tests.test_auto_repair_tenant_guard`. Todas pasaron.
+- Se verificó `python manage.py check`, el barrido de referencias huérfanas y las pruebas reales disponibles `core.tests.test_rate_limit_middleware`, `core.tests.test_tenant_strict_mode`, `core.tests.test_auto_repair_tenant_guard` y `core.tests.test_middleware_local_drivers`. Todas pasaron; no se declara una suite inexistente de actividad de usuario.
 
 **Riesgos mitigados:**
 
