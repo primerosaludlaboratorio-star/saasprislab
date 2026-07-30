@@ -48,7 +48,7 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local: `4ac7903` (`fix(security): consolidate middleware and atomic rate limits`). La revisión desplegada se actualizará después de verificar este despliegue.
+- Última revisión local y desplegada: `9a7a07a` (`docs: record H-013 canonical cleanup`).
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
