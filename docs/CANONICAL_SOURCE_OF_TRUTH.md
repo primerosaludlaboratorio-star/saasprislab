@@ -48,7 +48,7 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local: se actualizará al commit de esta limpieza antes del despliegue.
+- Última revisión local y desplegada: `166e32c` (`chore: remove orphaned legacy modules`).
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
