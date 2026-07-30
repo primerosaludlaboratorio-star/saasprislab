@@ -48,7 +48,7 @@ Antes de editar:
 ## Estado de la consolidación
 
 - Checkout canónico: activo y limpio.
-- Última revisión local y desplegada: `1f091db2f36f564a88373dcdae7d19910aaffdd3` (`fix(security): isolate walkie rooms by tenant`).
+- Última revisión local y desplegada: `c733c8d6d86addf375956e966afda69866aea4ce` (`fix(security): block sentinel request-triggered restarts`).
 - Copias alternas: apartadas como archivos de resguardo con fecha
   `20260729`.
 - Sincronización remota verificada el 2026-07-29: el remoto visible permanece
@@ -98,6 +98,9 @@ La revisión `4ac7903` es la fuente canónica para la consolidación de middlewa
 - Verificación productiva del aislamiento WebSocket: revisión
   `1f091db2f36f564a88373dcdae7d19910aaffdd3` desplegada; health HTTP 200 y
   Gunicorn/Celery/Celery Beat activos.
+- H-NUEVO-15 corregido: Sentinel ya no puede reiniciar Gunicorn desde una
+  request pública; la revisión `c733c8d6d86addf375956e966afda69866aea4ce`
+  quedó desplegada con health HTTP 200 y servicios activos.
 - Verificación productiva del Admin: 184 registros, cero administradores sin
   mixin, cero fallos de consulta; cinco catálogos globales fallan cerrado como
   estaba diseñado.

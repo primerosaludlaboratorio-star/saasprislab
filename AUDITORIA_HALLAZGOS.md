@@ -138,7 +138,7 @@
 - **Mitigante parcial:** cooldown de 120s entre restarts (`_RESTART_COOLDOWN_SECONDS`) limita la frecuencia máxima de disrupción; SIGHUP es un reload "graceful" en Gunicorn (no debería tumbar requests activos), por lo que el impacto es degradación de rendimiento/latencia periódica, no caída total.
 - **Corrección aplicada:** el camino HTTP de Sentinel ya no puede ejecutar `SIGHUP`. `registrar_error_critico()` conserva el contador y la alerta, pero exige `permitir_restart=True` para invocar el reinicio; esa autorización no se entrega desde `process_exception()` y queda reservada a una operación explícita de infraestructura.
 - **Verificación local:** `core.tests.test_auto_repair_restart_guard` confirma que tres errores públicos no reinician Gunicorn y que el reinicio solo ocurre con autorización explícita.
-- **Estado:** corregido localmente; pendiente pruebas generales, despliegue y health check productivo.
+- **Estado:** corregido, desplegado y verificado en producción en la revisión `c733c8d6d86addf375956e966afda69866aea4ce`; migraciones sin pendientes, servicios activos y health check exitoso.
 
 ## H-NUEVO-13 — `core/admin.py` (archivo raíz) es código MUERTO/huérfano, duplica registros de `core/admin/` — CORREGIDO
 - **Archivo:** `core/admin.py` (41 KB, ~700+ líneas).
