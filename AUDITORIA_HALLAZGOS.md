@@ -5,6 +5,13 @@
 - Retiradas las copias huérfanas `core/models/motor_financiero.py` y `core/models/reportes_financieros.py`. Las implementaciones activas permanecen en `core/views/` y sus URLs/pruebas fueron verificadas por referencia.
 - No se eliminaron `core/services/auto_repair.py`, `core/rbac/permissions.py`, scripts legacy ni documentación histórica porque tienen consumidores, pruebas o función de archivo explícita.
 
+## Farmacia — baja de caducados — 2026-07-30
+- **Incidente reportado por personal:** los botones de baja desde el panel de caducidad eran marcadores visuales (`alert('Función ... por implementar')`) y no iniciaban ningún flujo.
+- **Corrección:** los botones ahora enlazan con `farmacia:crear_movimiento`, preseleccionan lote y movimiento `SALIDA_MERMA`; el servidor valida empresa, producto y lote exactos.
+- **Corrección adicional:** `ValidationError` operativo devuelve HTTP 400 con mensaje accionable; ya no se convierte en HTTP 500 ni dispara la pantalla de reparación de Sentinel.
+- **Pruebas añadidas:** `core/tests/test_farmacia_baja_caducidad.py` cubre acceso desde alertas, baja total del lote y rechazo de baja sin lote.
+- **Estado:** corregido localmente; pendiente de despliegue y validación humana en producción en este turno.
+
 ## H-NUEVO-05 — CRÍTICO: `ExpedienteNotaSHA.save()` crashea SIEMPRE — CORREGIDO Y VERIFICADO EN PRODUCCIÓN
 - **Archivo:** `core/models/expediente_blindaje.py:147-168` (`calcular_hash`) y `:203-220` (`save`).
 - **Causa raíz:** `calcular_hash()` usa `self.timestamp_creacion.isoformat()`, pero `timestamp_creacion` es `DateTimeField(auto_now_add=True)`. Django solo asigna ese valor dentro de `pre_save()`, que se ejecuta DENTRO de `super().save()` — es decir, DESPUÉS de que el `save()` sobrescrito ya llamó a `calcular_hash()`. Para una instancia nueva, `self.timestamp_creacion` vale `None` en ese punto.
@@ -232,6 +239,30 @@
 - **Corrección aplicada:** eliminados los tres archivos planos después de verificar que `find_spec` resuelve los imports hacia los paquetes y que no existen referencias a rutas de archivo. Los paquetes activos conservan las APIs públicas mediante sus `__init__.py`.
 - **Verificación:** `django.setup()` e importación de `core.views.laboratorio`, `core.views.medico` y `core.views.pris_ia` correctos; se ejecutarán `manage.py check` y pruebas dirigidas antes del despliegue.
 - **Estado:** corregido localmente; pendiente despliegue.
+
+## H-NUEVO-27 — `core/management/commands/resetear_usuarios_acceso.py`: credenciales en texto plano de empleados reales (incluye superusuario) hardcodeadas en el código fuente — CRÍTICO, ABIERTO
+- **Ubicación:** `core/management/commands/resetear_usuarios_acceso.py:20-92`.
+- **Descripción:** El comando contiene una lista `usuarios_base` con usernames, nombres y **contraseñas en texto plano** de 7 empleados reales (`jonathan/Admin2026!` con `is_superuser=True`, `nancy/Nancy2026!`, `gabriela/Gabriela2026!`, `janette/Janette2026!`, `tania/Tania2026!`, `deyaneira/Deyaneira2026!`, `brizia/Brizia2026!`). Al ejecutarse: (1) desactiva TODOS los demás usuarios del sistema (`User.objects.exclude(username__in=target_usernames).update(is_active=False)`, sin distinguir tenant), y (2) crea/actualiza estas 7 cuentas con las contraseñas fijas del código. **No hay ningún prompt de confirmación** (a diferencia de `wipe_datos_operativos.py` o `purgar_datos_nom035.py`).
+- **Riesgo:** (a) Fuga de credenciales reales si el repositorio se expone (Git history, backups, IDE compartido); (b) contraseñas predecibles con patrón `Nombre+Año!` fácilmente adivinables; (c) ejecución accidental desactiva instantáneamente a todos los usuarios de todos los tenants sin posibilidad de `--dry-run` ni confirmación.
+- **Recomendación:** Eliminar el comando o migrarlo al patrón ya usado en `crear_usuarios_produccion.py`/`crear_superusuario_prod.py` (contraseña vía variable de entorno, `CommandError` si falta, longitud mínima, sin defaults). Rotar inmediatamente las contraseñas de los 7 usuarios listados si el comando llegó a ejecutarse alguna vez en un entorno real.
+
+## H-NUEVO-28 — `core/management/commands/resetear_personal_final.py`: contraseña default débil compartida (`Prislab2026`) para TODOS los usuarios activos del sistema, sin confirmación ni tenant scoping — ALTO, ABIERTO
+- **Ubicación:** `core/management/commands/resetear_personal_final.py:31,57-70`.
+- **Descripción:** `--password` tiene default hardcodeado `"Prislab2026"`. Si se ejecuta sin el flag, **todas** las cuentas `is_active=True` de **todos los tenants** quedan con esa misma contraseña, y las cuentas `is_active=False` no protegidas se **eliminan físicamente** (`desactivadas.delete()`), sin `transaction.atomic()` envolviendo ambas fases y sin prompt de confirmación (solo existe `--dry-run`, opt-in).
+- **Riesgo:** contraseña única, predecible, y compartida entre múltiples cuentas de múltiples empresas — un compromiso de una cuenta compromete a todas hasta que cada usuario cambie su clave manualmente; no hay mecanismo que fuerce el cambio en el primer login.
+- **Recomendación:** Eliminar el default; exigir `--password` explícito o generar una contraseña aleatoria distinta por usuario (como ya hace `OnboardingCrearEmpresaView._generar_password_temporal` en `core/views/onboarding.py`); agregar confirmación interactiva salvo `--force`; envolver ambas fases en `transaction.atomic()`.
+
+## H-NUEVO-29 — `core/management/commands/wipe_datos_operativos.py`: borra `AuditLog` (bitácora que debe ser append-only) y opera sobre TODOS los tenants sin scoping ni verificación de entorno — MEDIO, ABIERTO
+- **Ubicación:** `core/management/commands/wipe_datos_operativos.py:212-214,59-63`.
+- **Descripción:** El comando borra permanentemente `AuditLog`, `HistorialResultados`, `IncidenciaSentinel` y todos los registros transaccionales de **todas las empresas** (no acepta `--empresa`), contradiciendo el principio de append-only documentado para `AuditLog`/`ForenseAcceso` en el resto del proyecto (ver "Confirmaciones positivas"). La única protección es escribir la frase `CONFIRMAR_WIPE_PRISLAB`, y el flag `--yes` la omite por completo sin ninguna otra verificación (no chequea `settings.DEBUG`, `IS_PRODUCTION`, ni pide `--empresa-id`).
+- **Riesgo:** ejecución accidental (o de un script CI mal configurado con `--yes`) contra la base de producción destruye irreversiblemente la bitácora de auditoría forense y expedientes clínicos de todos los clientes simultáneamente.
+- **Recomendación:** Añadir verificación explícita de entorno (bloquear si `settings.IS_PRODUCTION`/`DEBUG=False` salvo variable de entorno adicional dedicada), excluir `AuditLog`/`ForenseAcceso` del wipe (o exportarlos antes de borrar), y permitir/objetar por `--empresa-id` en vez de operar siempre global.
+
+## H-NUEVO-30 — `core/management/commands/unificar_empresa_prislab.py`: fusión destructiva multi-tenant sin guardarraíl de entorno ni confirmación — MEDIO, ABIERTO
+- **Ubicación:** `core/management/commands/unificar_empresa_prislab.py` (completo).
+- **Descripción:** El comando reasigna todas las FKs de `Empresa`/`Sucursal` de las empresas "fuente" hacia una empresa destino y luego **elimina** las empresas fuente (`Empresa.objects.filter(pk__in=source_ids).delete()`), colapsando el aislamiento multi-tenant. El docstring indica "desarrollo/datos de prueba", pero el comando no verifica `settings.DEBUG` ni pide ninguna confirmación interactiva (solo `--dry-run`, opt-in) antes de ejecutar la fusión real.
+- **Riesgo:** si se invoca por error contra una base de producción con múltiples clientes reales, fusionaría y eliminaría empresas de clientes distintos de forma irreversible.
+- **Recomendación:** Añadir guardia `if not settings.DEBUG: raise CommandError(...)` (o variable de entorno explícita `ALLOW_TENANT_MERGE`), y exigir confirmación interactiva antes de ejecutar sin `--dry-run`.
 
 ## Código muerto / higiene (sin riesgo de seguridad) — CORREGIDO
 - `core/services/ai_medico_backup.py` — eliminado tras confirmar que no tenía imports activos.

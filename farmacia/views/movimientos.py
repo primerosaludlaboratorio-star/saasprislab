@@ -260,7 +260,17 @@ def crear_movimiento_manual(request):
             
             empresa = getattr(request.user, 'empresa', None)
             producto = get_object_or_404(Producto, id=producto_id, empresa=empresa)
-            lote = get_object_or_404(Lote, id=lote_id, producto__empresa=empresa) if lote_id else None
+            lote = get_object_or_404(
+                Lote,
+                id=lote_id,
+                producto=producto,
+                empresa=empresa,
+            ) if lote_id else None
+            if tipo_movimiento == 'SALIDA_MERMA' and lote is None:
+                return JsonResponse({
+                    'status': 'error',
+                    'mensaje': 'Selecciona el lote exacto que se dará de baja.'
+                }, status=400)
             if lote and costo_unitario <= 0 and tipo_movimiento == 'SALIDA_MERMA':
                 costo_unitario = lote.costo_adquisicion
             if lote and not motivo_ajuste_id and tipo_movimiento == 'SALIDA_MERMA':
@@ -269,7 +279,12 @@ def crear_movimiento_manual(request):
                     codigo='MERMA_CADUCIDAD',
                     activo=True,
                 ).values_list('id', flat=True).first()
-            motivo_ajuste = get_object_or_404(MotivoAjuste, id=motivo_ajuste_id) if motivo_ajuste_id else None
+            motivo_ajuste = get_object_or_404(
+                MotivoAjuste,
+                id=motivo_ajuste_id,
+                empresa=empresa,
+                activo=True,
+            ) if motivo_ajuste_id else None
             sucursal = get_user_primary_sucursal(request.user)
             
             movimiento = MovimientoInventario(
@@ -297,7 +312,13 @@ def crear_movimiento_manual(request):
                 'stock_nuevo': float(movimiento.stock_resultante)
             })
             
-        except (DatabaseError, ValueError, TypeError, ValidationError) as e:
+        except ValidationError as e:
+            mensaje = e.messages[0] if getattr(e, 'messages', None) else 'Datos inválidos.'
+            return JsonResponse({
+                'status': 'error',
+                'mensaje': mensaje,
+            }, status=400)
+        except (DatabaseError, ValueError, TypeError) as e:
             return JsonResponse({
                 'status': 'error',
                 'mensaje': 'No fue posible crear el movimiento.'

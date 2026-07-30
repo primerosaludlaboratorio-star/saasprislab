@@ -1,5 +1,10 @@
 # Auditoría exhaustiva PRISLAB — Progreso
 
+## Incidente Farmacia — baja de caducados (2026-07-30)
+- Corregidos los botones placeholder del panel de alertas y conectado el flujo real de Kardex por lote.
+- Corregido el manejo de validaciones para evitar respuestas 500/Sentinel en errores operativos esperables.
+- Pruebas de regresión añadidas en `core/tests/test_farmacia_baja_caducidad.py`.
+
 Regla: cobertura función por función, sin excepciones. 1005 archivos .py (sin migraciones).
 Fuente del inventario: árbol Git del checkout canónico (`git ls-files '*.py'`). No se mantiene un `.txt` duplicado fuera de Git.
 

@@ -214,10 +214,10 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-primary" 
-                                                    onclick="alert('Función de ajuste por implementar')">
+                                            <a class="btn btn-sm btn-outline-primary"
+                                               href="{% url 'farmacia:crear_movimiento' %}?lote={{ lote.id }}&tipo=MERMA">
                                                 <i class="bi bi-pencil-square"></i> Ajustar
-                                            </button>
+                                            </a>
                                         </td>
                                     </tr>
                                     {% endwith %}
@@ -408,10 +408,10 @@
                                             </strong>
                                         </td>
                                         <td>
-                                            <button class="btn btn-sm btn-dark" 
-                                                    onclick="alert('Función de baja por implementar')">
+                                            <a class="btn btn-sm btn-dark"
+                                               href="{% url 'farmacia:crear_movimiento' %}?lote={{ lote.id }}&tipo=MERMA">
                                                 <i class="bi bi-trash"></i> Dar de Baja
-                                            </button>
+                                            </a>
                                         </td>
                                     </tr>
                                     {% endfor %}
