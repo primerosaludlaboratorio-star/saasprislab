@@ -93,6 +93,23 @@ class MonitorProduccionWorkflowTest(TestCase):
         self.assertEqual(orden.estado_clinico, 'COMPLETO')
         self.assertEqual(orden.estado, 'RESULTADOS_LISTOS')
 
+    def test_empleado_operativo_no_puede_liberar_resultados(self):
+        orden = self._crear_orden_lims(estado_clinico='VALIDADO_PARCIAL')
+        self.usuario.rol = 'CAJERO'
+        self.usuario.save(update_fields=['rol'])
+        self.client.force_login(self.usuario)
+
+        response = self.client.post(
+            reverse('laboratorio:api_avanzar_estado'),
+            data=json.dumps({'orden_id': orden.id}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()['codigo'], 'PERMISO_VALIDACION_CLINICA')
+        orden.refresh_from_db()
+        self.assertEqual(orden.estado_clinico, 'VALIDADO_PARCIAL')
+
     def test_avanzar_sin_pdf_devuelve_error_controlado(self):
         orden = self._crear_orden_lims(estado_clinico='VALIDADO_PARCIAL')
         ResultadoParametro.objects.create(

@@ -173,6 +173,20 @@ TRANSICION_LABELS = {
 }
 
 
+def _puede_validar_resultados(user):
+    """Solo personal autorizado puede liberar clínicamente una orden."""
+    if getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False):
+        return True
+    rol = (getattr(user, 'rol', '') or '').upper().strip()
+    if rol in ('QUIMICO', 'LABORATORIO', 'ADMIN', 'ADMINISTRADOR'):
+        return True
+    groups = getattr(user, 'groups', None)
+    return bool(
+        groups is not None
+        and groups.filter(name__in=['LABORATORIO', 'GERENCIA_OPERATIVA']).exists()
+    )
+
+
 def _analitos_requeridos_para_orden(orden):
     """Devuelve los analitos LIMS que deben tener valor antes de liberar."""
     requeridos = {}
@@ -529,6 +543,15 @@ def api_avanzar_estado(request):
                 'status': 'error',
                 'mensaje': f'No hay transición válida desde "{_orden_check.estado_clinico}"'
             }, status=400)
+        if (
+            TRANSICIONES_VALIDAS.get(_orden_check.estado_clinico) == 'COMPLETO'
+            and not _puede_validar_resultados(request.user)
+        ):
+            return JsonResponse({
+                'status': 'error',
+                'codigo': 'PERMISO_VALIDACION_CLINICA',
+                'mensaje': 'Solo personal autorizado de laboratorio puede liberar resultados clínicos.',
+            }, status=403)
         pdf_url = None
         if TRANSICIONES_VALIDAS.get(_orden_check.estado_clinico) == 'COMPLETO':
             analitos_faltantes = _analitos_sin_resultado(_orden_check)

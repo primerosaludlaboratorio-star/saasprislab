@@ -6,9 +6,22 @@ from django.test import RequestFactory, SimpleTestCase
 
 from core.views.dashboard_unificado import api_kpis_tiempo_real, dashboard_unificado
 from core.views.laboratorio_captura import registrar_notificacion_panico
+from core.views.monitor_produccion import _puede_validar_resultados
 
 
 class DashboardAndPanicSecurityTests(SimpleTestCase):
+    def test_clinical_release_gate_is_role_scoped(self):
+        self.assertFalse(_puede_validar_resultados(SimpleNamespace(
+            is_superuser=False,
+            is_staff=False,
+            rol='CAJERO',
+        )))
+        self.assertTrue(_puede_validar_resultados(SimpleNamespace(
+            is_superuser=False,
+            is_staff=False,
+            rol='LABORATORIO',
+        )))
+
     def test_employee_cannot_access_financial_dashboard(self):
         request = RequestFactory().get('/dashboard-unificado/')
         request.user = SimpleNamespace(
