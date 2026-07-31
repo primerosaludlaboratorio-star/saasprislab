@@ -106,6 +106,8 @@ class Command(BaseCommand):
 
         if not options['confirm_reset']:
             raise CommandError('Operación destructiva: añade --confirm-reset para continuar.')
+        if getattr(settings, 'IS_PRODUCTION', False) and not options['dry_run']:
+            raise CommandError('resetear_usuarios_acceso está bloqueado en producción; use crear_usuarios_produccion.')
         password = self._get_password(options['password_env'])
         if options['dry_run']:
             self.stdout.write(self.style.WARNING('DRY-RUN: no se modificarán usuarios.'))

@@ -44,6 +44,8 @@ class Command(BaseCommand):
         dry = options["dry_run"]
         if not dry and not options["confirm_reset"]:
             raise CommandError("Operación destructiva: añade --confirm-reset para continuar.")
+        if getattr(settings, "IS_PRODUCTION", False) and not dry:
+            raise CommandError("resetear_personal_final está bloqueado en producción; use un flujo de administración controlado.")
         pwd = os.environ.get(options["password_env"], "").strip()
         if not pwd:
             if getattr(settings, "IS_PRODUCTION", False) or not sys.stdin.isatty():
