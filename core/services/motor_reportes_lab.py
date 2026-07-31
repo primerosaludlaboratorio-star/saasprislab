@@ -123,7 +123,7 @@ def _safe_str(val, default='-'):
     para evitar errores de codificacion en la generacion de PDF.
     """
     import unicodedata
-    import re
+    from xml.sax.saxutils import escape
 
     if val is None:
         return default
@@ -184,7 +184,7 @@ def _safe_str(val, default='-'):
         # Si falla, forzar ASCII con reemplazo
         s = s.encode('ascii', 'replace').decode('ascii')
 
-    return s or default
+    return escape(s) if s else default
 
 
 def _generar_qr(url, size=2.5 * cm):

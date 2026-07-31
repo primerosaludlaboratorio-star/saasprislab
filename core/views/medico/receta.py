@@ -6,6 +6,7 @@ import base64
 import hashlib
 import io
 import json
+import secrets
 from datetime import date
 
 import qrcode
@@ -369,7 +370,18 @@ def verificar_qr_receta(request):
             hash_calculado = calcular_hash_verificacion_receta(receta)
             hash_recibido = qr_data.get('hash')
             
-            autentica = hash_calculado == hash_recibido == receta.hash_verificacion
+            autentica = (
+                isinstance(hash_recibido, str)
+                and bool(receta.hash_verificacion)
+                and secrets.compare_digest(hash_calculado, hash_recibido)
+                and secrets.compare_digest(hash_recibido, receta.hash_verificacion)
+            )
+            if not autentica:
+                return JsonResponse({
+                    'status': 'error',
+                    'mensaje': 'QR de receta no auténtico.',
+                    'autentica': False,
+                }, status=403)
             
             cedula_vigente = receta.cedula_vigente
             if receta.fecha_vencimiento_cedula:

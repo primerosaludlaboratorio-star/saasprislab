@@ -84,7 +84,7 @@ def _safe(val, default='___'):
     Normaliza Unicode, elimina emojis y caracteres que rompen ReportLab.
     """
     import unicodedata
-    import re
+    from xml.sax.saxutils import escape
 
     if val is None or val == '':
         return default
@@ -117,7 +117,7 @@ def _safe(val, default='___'):
     except UnicodeEncodeError:
         s = s.encode('ascii', 'replace').decode('ascii')
 
-    return s or default
+    return escape(s) if s else default
 
 
 # ======================================================================

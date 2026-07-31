@@ -14,6 +14,7 @@ import json
 import logging
 import uuid
 from datetime import datetime
+from xml.sax.saxutils import escape
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
@@ -48,6 +49,13 @@ def _generar_pdf_consentimiento(
     Genera un PDF de consentimiento informado con todos los metadatos de seguridad.
     Usa reportlab si disponible; si no, genera un HTML base64-embebido como fallback.
     """
+    paciente_nombre = escape(str(paciente_nombre or 'Paciente'))
+    estudio_nombre = escape(str(estudio_nombre or 'Procedimiento de laboratorio'))
+    empresa_nombre = escape(str(empresa_nombre or 'PRISLAB'))
+    timestamp = escape(str(timestamp or ''))
+    ip_captura = escape(str(ip_captura or 'desconocida'))
+    folio = escape(str(folio or ''))
+
     try:
         from reportlab.lib.pagesizes import LETTER
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -262,12 +270,20 @@ def api_guardar_consentimiento(request, orden_id: int):
         data = json.loads(request.body)
         firma_data_url = data.get('firma_data_url', '')
         hash_audio = data.get('hash_audio', None)
-        paciente_nombre = data.get('paciente_nombre', 'Paciente')
-        estudios_texto = data.get('estudios', 'Procedimiento de laboratorio')
         firma_aceptada = data.get('acepta', False)
 
         if not firma_aceptada or not firma_data_url:
             return JsonResponse({'ok': False, 'error': 'Firma o aceptacion faltante.'}, status=400)
+
+        from core.models import OrdenDeServicio
+        orden = get_object_or_404(OrdenDeServicio, id=orden_id, empresa=empresa)
+        paciente_nombre = (
+            orden.paciente.nombre_completo
+            if orden.paciente else orden.paciente_nombre_snapshot or 'Paciente'
+        )
+        estudios_texto = ', '.join(
+            str(estudio) for estudio in orden.estudios.all()[:5]
+        ) or 'Procedimiento de laboratorio'
 
         # REMOTE_ADDR: IP real vista por Nginx, no falsificable por el cliente.
         # Este valor queda en el consentimiento firmado como evidencia legal.
@@ -292,8 +308,7 @@ def api_guardar_consentimiento(request, orden_id: int):
 
         # Guardar en ConsentimientoInformado usando los campos reales del modelo
         try:
-            from core.models import ConsentimientoInformado, OrdenDeServicio
-            orden = get_object_or_404(OrdenDeServicio, id=orden_id, empresa=empresa)
+            from core.models import ConsentimientoInformado
 
             # Usar los campos reales del modelo
             # firma_digital = TextField (guardamos la dataURL o el folio como referencia)
