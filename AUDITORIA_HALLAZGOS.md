@@ -294,14 +294,14 @@ Los cinco hallazgos del bloque de comandos fueron corregidos en el código activ
 
 Evidencia: `manage.py check`, compilación de los seis comandos y cinco pruebas de
 seguridad en `core/tests/test_management_command_safety.py`. Los hallazgos
-H-NUEVO-32 a H-NUEVO-34 permanecen abiertos y no se consideran corregidos en esta
-ronda.
+H-NUEVO-32 y H-NUEVO-33 fueron corregidos y desplegados en la ronda actual; H-NUEVO-34
+permanece abierto.
 
 Producción: se configuró una clave Fernet dedicada en `.env` (sin exponer su
 valor) y se verificó que tiene formato válido. Despliegue de código:
 `c4bcf50bf96b669e9a80c69142b3c738747e6ad5`.
 
-## H-NUEVO-32 — Inyección de markup ReportLab en PDFs médicos/legales oficiales (recetas, resultados de laboratorio, consentimiento informado) — MEDIO-ALTO, ABIERTO
+## H-NUEVO-32 — Inyección de markup ReportLab en PDFs médicos/legales oficiales (recetas, resultados de laboratorio, consentimiento informado) — MEDIO-ALTO, CORREGIDO
 - **Ubicación:**
   - `core/services/motor_recetas.py::_safe()` (líneas 81-120) — no escapa `<`,`>`,`&`.
   - `core/services/motor_reportes_lab.py::_safe_str()` (líneas 119-187) — mismo problema.
@@ -313,11 +313,19 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
   - No es RCE (ReportLab `Paragraph` no ejecuta código), pero sí manipulación de presentación de datos clínicos/legales oficiales.
 - **Recomendación:** Escapar explícitamente `&`, `<`, `>` (equivalente a `xml.sax.saxutils.escape`) en los tres puntos antes de insertar en cualquier `Paragraph(...)`; en `consentimiento_digital.py` además validar/sanear `paciente_nombre`/`estudios_texto` contra el registro real de la orden (`orden.paciente.nombre_completo`) en vez de confiar en el valor enviado por el cliente en el JSON.
 
-## H-NUEVO-33 — `core/views/medico/receta.py::verificar_qr_receta`: IDOR — divulga diagnóstico y datos de paciente de CUALQUIER receta del tenant vía enumeración de folio secuencial — ALTO, ABIERTO
+## H-NUEVO-33 — `core/views/medico/receta.py::verificar_qr_receta`: IDOR — divulga diagnóstico y datos de paciente de CUALQUIER receta del tenant vía enumeración de folio secuencial — ALTO, CORREGIDO
 - **Ubicación:** `core/views/medico/receta.py:338-398`; folio generado en `core/models/ventas.py::Receta.save()` (líneas 122-128).
 - **Descripción:** `folio_receta` se genera con formato predecible y secuencial: `REC-{YYYYMM}-{contador_zfill5}` (ej. `REC-202607-00001`, `00002`, ...), trivialmente enumerable. La vista `verificar_qr_receta` (`@login_required`, sin `@role_required`) busca la receta **solo por `folio_receta` + `empresa`** (`Receta.objects.filter(folio_receta=folio, empresa=empresa).first()`) — no valida que el `hash` recibido en el QR coincida antes de devolver los datos: `autentica = hash_calculado == hash_recibido == receta.hash_verificacion` se calcula pero **no se usa como gate**; el bloque `return JsonResponse({..., 'receta': {diagnostico, paciente, medico, cedula, fecha_emision}, ...})` se ejecuta siempre que la receta exista, incluso con `autentica: False`.
 - **Riesgo:** cualquier usuario autenticado del tenant (sin necesidad de rol médico — un CAJERO o RECEPCION con sesión válida) puede iterar folios secuenciales del mes (`REC-202607-00001` a `NNNNN`) y obtener el **diagnóstico principal y nombre completo** de cada paciente con receta ese mes, sin poseer el QR físico ni el hash real. Esto es una fuga de datos de salud (NOM-024/LFPDPPP) por control de acceso roto (IDOR), no requiere ningún conocimiento previo del folio real.
 - **Recomendación:** (1) Hacer que `autentica` sea un gate real: si `hash_recibido != receta.hash_verificacion`, responder 403/404 sin incluir el bloque `receta` con datos clínicos. (2) Sustituir `folio_receta` secuencial por un identificador no adivinable (UUID) para el campo usado en verificación pública, o exigir el hash completo como parte de la búsqueda (`filter(folio_receta=folio, hash_verificacion=hash_recibido, empresa=empresa)`) en vez de solo el folio. (3) Considerar `@role_required` adicional si la vista no está pensada para todos los roles del tenant.
+
+## Corrección verificada H-NUEVO-32 y H-NUEVO-33
+
+- **H-NUEVO-32 — CORREGIDO:** `motor_recetas._safe`, `motor_reportes_lab._safe_str` y `_generar_pdf_consentimiento` escapan `&`, `<` y `>` antes de construir contenido para ReportLab. `api_guardar_consentimiento` obtiene paciente y estudios de la `OrdenDeServicio` del tenant, en lugar de confiar en esos valores del JSON del cliente.
+- **H-NUEVO-33 — CORREGIDO:** `verificar_qr_receta` exige coincidencia constante entre el hash calculado, el hash recibido y el hash persistido. Un hash inválido responde HTTP 403 sin incluir diagnóstico ni datos del paciente.
+- **Evidencia:** `core/tests/test_pdf_and_qr_security.py` (2 pruebas OK), `python manage.py check` sin errores y compilación de los cuatro archivos modificados sin errores.
+- **Despliegue:** revisión `405035581bdebb96f818590e9c60f98834c20112` activa en producción; migraciones sin cambios pendientes y servicios activos. La prueba `core.tests.test_lab_validation_pdf` quedó bloqueada durante la creación de la base de pruebas local; no se usa como evidencia de cierre.
+- **H-NUEVO-34** permanece abierto y no se incluye en esta corrección.
 
 ## H-NUEVO-34 — `core/views/laboratorio/calidad.py::api_finalizar_toma`: audio de toma de muestra cae a texto plano si falta `FERNET_KEY` (fail-open, inconsistente con `EncryptedTextField`) — MEDIO, ABIERTO
 - **Ubicación:** `core/views/laboratorio/calidad.py:593-621`.
@@ -337,7 +345,7 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 ## H-NUEVO-36 — `core/views/catalogos_maestros.py`: cualquier usuario autenticado (sin rol ni tenant) puede sobrescribir masivamente el catálogo GLOBAL `laboratorio.Estudio` compartido por TODOS los clientes de PRISLAB — CRÍTICO, ABIERTO
 - **Ubicación:** `core/views/catalogos_maestros.py` (225 líneas completas); modelo `laboratorio.models.clinico.Estudio` (confirmado sin campo `empresa` — tabla global, no tenant-scoped).
 - **Descripción:** Las 5 vistas del archivo (`gestionar_metodos`, `api_obtener_metodo`, `api_actualizar_metodo`, `gestionar_muestras`, `api_actualizar_muestra`) solo tienen `@login_required`, **sin `@role_required` ni ningún otro control de acceso**, y ninguna de sus queries filtra por `empresa` — porque el modelo subyacente `laboratorio.Estudio` (import `from laboratorio.models import Estudio as EstudioLab`) **no tiene campo `empresa`**, es decir, es una tabla compartida globalmente entre todos los tenants de la plataforma. `api_actualizar_metodo`/`api_actualizar_muestra`, con `actualizar_estudios=True`, ejecutan `estudios_afectados.update(metodo=metodo_nuevo)` / `.update(muestra_requerida=muestra_nueva)` sobre **todos** los `Estudio` que coincidan con el valor anterior, sin distinguir a qué cliente pertenecen.
-- Esto contradice una nota de auditoría previa (`core/views/paquetes.py`, ver Bloque 5) que asumía que `laboratorio.Estudio` "no tenía callers activos" y por eso se dejó sin proteger — esa suposición es **incorrecta**: `catalogos_maestros.py` es un caller activo real y alcanzable vía URL autenticada.
+- Esto contradice una nota de auditoría previa (`core/views/paquetes.py`, ver Bloque 5) que asumía que `laboratorio.Estudio` "no tenía callers activos" y por eso se dejó sin proteger — esa suposición es **incorrecta**: `catalogos_maestros.py` es un caller activo real y alcanzable vía URL autenticada. **Confirmación adicional:** `core/views/cotizacion.py::api_buscar_estudios_cotizacion` (línea 136-150) también consulta `LabEstudio`/`PerfilLaboratorio` (mismos modelos) **sin ningún filtro por `empresa`**, con un comentario explícito en el código: *"PerfilLaboratorio no tiene FK a empresa en el modelo actual. Filtrar por `empresa` aquí dispara FieldError y rompe la cotización."* — es decir, el propio equipo de desarrollo ya detectó la falta de tenant-scoping en este modelo y optó por omitir el filtro en vez de corregir el modelo, confirmando que esta es una funcionalidad **viva y en uso activo** (UI de "Cotización Flash"), no código muerto.
 - **Riesgo:** cualquier usuario autenticado de **cualquier tenant**, sin necesidad de rol administrativo, puede renombrar en bloque valores de "método" o "muestra requerida" de estudios de laboratorio que pertenecen potencialmente a **otras empresas clientes de PRISLAB**, corrompiendo catálogos ajenos (integridad de datos clínicos/operativos cross-tenant). No hay aislamiento de ningún tipo — es una violación directa del principio fundamental multi-tenant de la plataforma.
 - **Recomendación:** (1) Verificar con máxima prioridad si `laboratorio.Estudio` todavía tiene registros activos en producción y si son compartidos entre tenants o son remanentes de una migración; (2) si el modelo sigue en uso, agregar `empresa` FK y migrar datos, filtrando todas las queries de este archivo por `empresa=request.user.empresa`; (3) mientras tanto, aplicar `@role_required('DIRECTOR_QC','ADMIN')` (mismo patrón que `catalogos.py`) a las 5 vistas como mitigación inmediata; (4) si el modelo es verdaderamente legacy/muerto como se documentó para `paquetes.py`, retirar `catalogos_maestros.py` también, en vez de dejarlo como caller activo sin protección.
 
