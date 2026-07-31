@@ -7,9 +7,47 @@ from django.test import RequestFactory, SimpleTestCase
 from core.views.dashboard_unificado import api_kpis_tiempo_real, dashboard_unificado
 from core.views.laboratorio_captura import registrar_notificacion_panico
 from core.views.monitor_produccion import _puede_validar_resultados
+from core.views.transferencias import api_buscar_productos_transferencia
+from core.utils.pris_audio_vision import generar_hash_digital, verificar_integridad
 
 
 class DashboardAndPanicSecurityTests(SimpleTestCase):
+    def test_transfer_search_accepts_text_filter(self):
+        request = RequestFactory().get('/transferencias/api/buscar-productos/?q=guante')
+        request.user = SimpleNamespace(is_authenticated=True, empresa=object())
+        class FakeQuerySet:
+            def filter(self, *args, **kwargs):
+                return self
+
+            def __getitem__(self, key):
+                return []
+
+            def __iter__(self):
+                return iter(())
+
+        with patch('core.views.transferencias.Producto.objects.filter', return_value=FakeQuerySet()):
+            response = api_buscar_productos_transferencia.__wrapped__(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.content), {'productos': []})
+
+    def test_audio_integrity_lookup_is_tenant_scoped(self):
+        empresa = object()
+        timestamp = '2026-07-30T12:00:00+00:00'
+        registro = SimpleNamespace(
+            parametros_extraidos={'hash_sha256': generar_hash_digital('prueba', timestamp)},
+            timestamp=SimpleNamespace(isoformat=lambda: timestamp),
+            transcripcion='prueba',
+        )
+        manager = Mock()
+        manager.get.return_value = registro
+
+        with patch('core.models.VoiceAuditLog.objects', manager):
+            resultado = verificar_integridad(7, empresa=empresa)
+
+        manager.get.assert_called_once_with(pk=7, empresa=empresa)
+        self.assertTrue(resultado['valido'])
+
     def test_clinical_release_gate_is_role_scoped(self):
         self.assertFalse(_puede_validar_resultados(SimpleNamespace(
             is_superuser=False,

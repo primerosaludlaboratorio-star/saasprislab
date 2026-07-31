@@ -6,6 +6,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
+from django.db.models import Q
 from django.db import transaction
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator

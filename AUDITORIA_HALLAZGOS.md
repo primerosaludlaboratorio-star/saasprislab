@@ -385,17 +385,19 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Corrección aplicada:** se añadió `_puede_validar_resultados()` con el mismo criterio de `captura_resultados_industrial`. El control se aplica antes de procesar la transición `VALIDADO_PARCIAL → COMPLETO`; roles operativos conservan las transiciones tempranas del monitor, pero no pueden liberar resultados.
 - **Evidencia:** `core/tests/test_dashboard_and_panic_security.py` verifica el gate unitario para `CAJERO`/`LABORATORIO`; `core/tests/test_monitor_produccion_workflow.py` contiene la regresión HTTP 403 y la regresión del flujo autorizado. La suite con base de datos no concluyó por bloqueo al crear la base local; no se contabiliza como aprobada.
 
-## H-NUEVO-40 — `core/views/transferencias.py::api_buscar_productos_transferencia`: `Q` no está importado — `NameError` en tiempo de ejecución al buscar por texto — BAJO/FUNCIONAL, ABIERTO
+## H-NUEVO-40 — `core/views/transferencias.py::api_buscar_productos_transferencia`: `Q` no está importado — `NameError` en tiempo de ejecución al buscar por texto — BAJO/FUNCIONAL, CORREGIDO
 - **Ubicación:** `core/views/transferencias.py:1-19` (imports) y línea 318-321 (uso de `Q`).
 - **Descripción:** El archivo importa `render`, `get_object_or_404`, `redirect`, `login_required`, `messages`, `JsonResponse`, `transaction`, `require_http_methods`, `Paginator`, `timezone`, `Decimal`, `datetime`, modelos y `logging`, pero **nunca `from django.db.models import Q`**. Sin embargo, `api_buscar_productos_transferencia` usa `Q(nombre__icontains=query) | Q(codigo_barras__icontains=query)` cuando el parámetro `q` viene en el query string. Esto genera un `NameError: name 'Q' is not defined` no capturado (no hay try/except alrededor), devolviendo un 500 sin manejar cada vez que un usuario escribe texto en el buscador de productos para transferencias.
 - **Riesgo:** no es una vulnerabilidad de seguridad, pero rompe una funcionalidad operativa activa (búsqueda de productos al crear una transferencia entre sucursales) cada vez que se usa el filtro de texto — solo funciona si se filtra exclusivamente por `sucursal_id`.
-- **Recomendación:** Agregar `from django.db.models import Q` a los imports de `core/views/transferencias.py`.
+- **Corrección aplicada:** se agregó `from django.db.models import Q` y se cubrió la búsqueda con texto con una prueba de regresión que confirma respuesta JSON 200.
+- **Evidencia:** `core.tests.test_dashboard_and_panic_security` pasa 6/6, además de `manage.py check`, compilación Python y `git diff --check`.
 
-## H-NUEVO-41 — `core/views/audio_legal.py::api_verificar_integridad_audio` + `core/utils/pris_audio_vision.py::verificar_integridad`: IDOR sin filtro de tenant sobre `VoiceAuditLog` — BAJO, ABIERTO
+## H-NUEVO-41 — `core/views/audio_legal.py::api_verificar_integridad_audio` + `core/utils/pris_audio_vision.py::verificar_integridad`: IDOR sin filtro de tenant sobre `VoiceAuditLog` — BAJO, CORREGIDO
 - **Ubicación:** `core/views/audio_legal.py:51-64`; `core/utils/pris_audio_vision.py:93-117` (`verificar_integridad`).
-- **Descripción:** `api_verificar_integridad_audio(request, registro_id)` solo tiene `@login_required`, sin filtro de `empresa`. Delega a `verificar_integridad(registro_id)`, que ejecuta `VoiceAuditLog.objects.get(pk=registro_id)` **sin ningún filtro por empresa/tenant**. Cualquier usuario autenticado de cualquier tenant puede iterar `registro_id` secuenciales y confirmar la existencia de registros `VoiceAuditLog` de otras empresas.
-- **Riesgo:** el impacto es limitado porque la respuesta **no incluye el contenido de la transcripción** — solo `valido` (booleano), `hash_almacenado`/`hash_calculado` (SHA-256, no reversible) y `timestamp`. Aun así, rompe el aislamiento multi-tenant al confirmar existencia/timestamps de actividad de voz de otras empresas (fuga de metadatos, no de contenido).
-- **Recomendación:** Añadir `empresa=request.user.empresa` al `get()` en `verificar_integridad` (requiere pasar `empresa` como parámetro desde la vista) o validar en la vista que `registro.empresa == request.user.empresa` antes de invocar la verificación.
+- **Descripción histórica:** `api_verificar_integridad_audio` delegaba a `verificar_integridad(registro_id)`, que ejecutaba `VoiceAuditLog.objects.get(pk=registro_id)` sin filtro por empresa.
+- **Riesgo histórico:** un usuario autenticado podía confirmar existencia y timestamps de actividad de voz de otro tenant mediante IDs secuenciales.
+- **Corrección aplicada:** la vista exige empresa y la función de verificación recibe `empresa` obligatoriamente y consulta `VoiceAuditLog.objects.get(pk=registro_id, empresa=empresa)`. Sin empresa, la vista responde 403.
+- **Evidencia:** `core.tests.test_dashboard_and_panic_security` verifica que la consulta siempre incluye `empresa`; la suite aislada pasa 6/6.
 
 ## H-NUEVO-42 — `core/views/administracion_usuarios.py::api_actualizar_usuario`: gate de acceso solo por `is_staff` (no por rol específico) permite escalación de privilegios — ALTO, ABIERTO
 - **Ubicación:** `core/views/administracion_usuarios.py:115-254`.

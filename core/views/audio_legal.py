@@ -56,8 +56,11 @@ def api_verificar_integridad_audio(request, registro_id: int):
     Útil para peritaje legal o auditoría.
     """
     try:
+        empresa = getattr(request.user, 'empresa', None)
+        if not empresa:
+            return JsonResponse({'error': 'Usuario sin empresa asignada'}, status=403)
         from core.utils.pris_audio_vision import verificar_integridad
-        resultado = verificar_integridad(registro_id)
+        resultado = verificar_integridad(registro_id, empresa=empresa)
         return JsonResponse(resultado)
     except Exception as exc:
         logging.getLogger(__name__).exception("Error inesperado en api_verificar_integridad_audio (audio_legal.py)")

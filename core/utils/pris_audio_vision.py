@@ -90,14 +90,16 @@ def sellar_transcripcion(
         }
 
 
-def verificar_integridad(registro_id: int) -> dict:
+def verificar_integridad(registro_id: int, *, empresa) -> dict:
     """
     Dado un VoiceAuditLog.id, verifica que el hash almacenado
     sigue siendo consistente con la transcripción guardada.
     """
     try:
         from core.models import VoiceAuditLog
-        registro = VoiceAuditLog.objects.get(pk=registro_id)
+        if not empresa:
+            return {'valido': False, 'error': 'Empresa requerida para verificar integridad'}
+        registro = VoiceAuditLog.objects.get(pk=registro_id, empresa=empresa)
         params = registro.parametros_extraidos or {}
         hash_almacenado = params.get('hash_sha256', '')
         if not hash_almacenado:
