@@ -148,7 +148,10 @@ class CatalogoFarmaciaService:
                     })
 
                 unique_cbs = list(dict.fromkeys(all_cbs))
-                existing_qs = Producto.objects.filter(codigo_barras__in=unique_cbs)
+                existing_qs = Producto.objects.filter(
+                    empresa=empresa,
+                    codigo_barras__in=unique_cbs,
+                )
                 by_cb = {obj.codigo_barras: obj for obj in existing_qs}
 
                 to_create: List[Producto] = []
@@ -204,7 +207,10 @@ class CatalogoFarmaciaService:
 
                 by_cb = {
                     x.codigo_barras: x
-                    for x in Producto.objects.filter(codigo_barras__in=unique_cbs)
+                    for x in Producto.objects.filter(
+                        empresa=empresa,
+                        codigo_barras__in=unique_cbs,
+                    )
                 }
 
                 prod_ids = [o.pk for o in by_cb.values() if o.pk]

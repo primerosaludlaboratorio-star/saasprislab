@@ -311,6 +311,8 @@ def buscar_venta_devolucion(request):
 # PROCESAR DEVOLUCIÓN DE VENTA
 # ==============================================================================
 @login_required
+@user_passes_test(_es_gerente_o_admin, login_url='/login/')
+@require_POST
 def procesar_devolucion_venta(request):
     """Procesa una devolución de venta."""
     if request.method != 'POST':
@@ -332,6 +334,10 @@ def procesar_devolucion_venta(request):
             return JsonResponse({'status': 'error', 'mensaje': 'Motivo requerido'}, status=400)
         if not items_devolver:
             return JsonResponse({'status': 'error', 'mensaje': 'No hay items para devolver'}, status=400)
+
+        pin_error = _validar_pin_devolucion(empresa, data)
+        if pin_error:
+            return pin_error
         
         venta = get_object_or_404(Venta, id=venta_id, empresa=empresa)
 
@@ -343,6 +349,10 @@ def procesar_devolucion_venta(request):
             return JsonResponse({'status': 'error', 'mensaje': 'Solo se pueden devolver ventas de los últimos 7 días'}, status=400)
         
         with transaction.atomic():
+            venta = Venta.objects.select_for_update().get(
+                id=venta.id,
+                empresa=empresa,
+            )
             devolucion = DevolucionVenta(
                 empresa=empresa,
                 venta=venta,

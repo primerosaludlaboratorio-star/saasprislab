@@ -23,6 +23,7 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
+from core.decorators import role_required
 
 logger = logging.getLogger('farmacia.inventario')
 
@@ -373,6 +374,7 @@ def api_buscar_productos_compra(request):
 # ==============================================================================
 
 @login_required
+@role_required('FARMACIA', 'ADMIN', 'GERENTE', 'DIRECTOR')
 def carga_masiva_productos(request):
     """Carga masiva de productos desde CSV o XLSX."""
     empresa = _empresa_desde_request(request)
@@ -432,6 +434,11 @@ def carga_masiva_productos(request):
 
     sucursal = empresa.sucursales.first()
     limpiar = str(request.POST.get('limpiar', '')).lower() in {'1', 'true', 'si', 'sí'}
+    if limpiar and request.POST.get('confirmar_limpieza') != 'CONFIRMAR_LIMPIEZA':
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': 'Para limpiar el catálogo debe confirmar escribiendo CONFIRMAR_LIMPIEZA.',
+        }, status=400)
     out = CatalogoFarmaciaService.carga_masiva_productos(
         empresa,
         sucursal,

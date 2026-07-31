@@ -307,6 +307,7 @@ def api_eliminar_producto_compra(request, index):
 
 
 @login_required
+@permission_required('farmacia.add_movimientoinventario', raise_exception=True)
 def entrada_express(request):
     """
     Ingreso rápido de mercancía por AJAX.

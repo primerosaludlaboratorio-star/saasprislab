@@ -15,9 +15,56 @@ from core.views.director import director_analizadores_probar_conexion
 from core.views.excepciones_lab import registrar_merma
 from core.views.catalogos import catalogo_convenios
 from core.agent.tools.registry import TOOLS_OPERATIVOS
+from farmacia.views.inventario import carga_masiva_productos
+from farmacia.views.devoluciones import procesar_devolucion_venta
+from farmacia.views.compras import entrada_express
 
 
 class DashboardAndPanicSecurityTests(SimpleTestCase):
+    def test_employee_cannot_bulk_load_pharmacy_catalog(self):
+        request = RequestFactory().post('/farmacia/inventario/carga-masiva/', data={})
+        request.user = SimpleNamespace(
+            is_authenticated=True,
+            is_superuser=False,
+            rol='CAJERO',
+            username='cajero',
+        )
+        response = carga_masiva_productos.__wrapped__(request)
+        self.assertEqual(response.status_code, 403)
+
+    def test_employee_cannot_use_alternate_return_endpoint(self):
+        request = RequestFactory().post(
+            '/farmacia/devoluciones/procesar-venta/',
+            data='{}',
+            content_type='application/json',
+        )
+        request.user = SimpleNamespace(
+            is_authenticated=True,
+            is_superuser=False,
+            is_staff=False,
+            rol='CAJERO',
+            username='cajero',
+            empresa=object(),
+            groups=SimpleNamespace(filter=lambda **kwargs: SimpleNamespace(exists=lambda: False)),
+        )
+        response = procesar_devolucion_venta.__wrapped__(request)
+        self.assertEqual(response.status_code, 302)
+
+    def test_employee_without_inventory_permission_cannot_use_express_entry(self):
+        request = RequestFactory().post(
+            '/farmacia/compras/entrada-express/',
+            data='{}',
+            content_type='application/json',
+        )
+        request.user = SimpleNamespace(
+            is_authenticated=True,
+            is_superuser=False,
+            has_perms=lambda permission: False,
+        )
+        from django.core.exceptions import PermissionDenied
+        with self.assertRaises(PermissionDenied):
+            entrada_express.__wrapped__(request)
+
     def test_employee_cannot_create_convenio(self):
         request = RequestFactory().post('/catalogos/convenios/', data={})
         request.user = SimpleNamespace(
