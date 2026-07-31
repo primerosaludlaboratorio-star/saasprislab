@@ -294,8 +294,8 @@ Los cinco hallazgos del bloque de comandos fueron corregidos en el código activ
 
 Evidencia: `manage.py check`, compilación de los seis comandos y cinco pruebas de
 seguridad en `core/tests/test_management_command_safety.py`. Los hallazgos
-H-NUEVO-32 y H-NUEVO-33 fueron corregidos y desplegados en la ronda actual; H-NUEVO-34
-permanece abierto.
+H-NUEVO-32, H-NUEVO-33 y H-NUEVO-34 fueron corregidos y desplegados en las rondas
+correspondientes.
 
 Producción: se configuró una clave Fernet dedicada en `.env` (sin exponer su
 valor) y se verificó que tiene formato válido. Despliegue de código:
@@ -325,13 +325,14 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **H-NUEVO-33 — CORREGIDO:** `verificar_qr_receta` exige coincidencia constante entre el hash calculado, el hash recibido y el hash persistido. Un hash inválido responde HTTP 403 sin incluir diagnóstico ni datos del paciente.
 - **Evidencia:** `core/tests/test_pdf_and_qr_security.py` (2 pruebas OK), `python manage.py check` sin errores y compilación de los cuatro archivos modificados sin errores.
 - **Despliegue:** revisión `405035581bdebb96f818590e9c60f98834c20112` activa en producción; migraciones sin cambios pendientes y servicios activos. La prueba `core.tests.test_lab_validation_pdf` quedó bloqueada durante la creación de la base de pruebas local; no se usa como evidencia de cierre.
-- **H-NUEVO-34** permanece abierto y no se incluye en esta corrección.
 
-## H-NUEVO-34 — `core/views/laboratorio/calidad.py::api_finalizar_toma`: audio de toma de muestra cae a texto plano si falta `FERNET_KEY` (fail-open, inconsistente con `EncryptedTextField`) — MEDIO, ABIERTO
+## H-NUEVO-34 — `core/views/laboratorio/calidad.py::api_finalizar_toma`: audio de toma de muestra cae a texto plano si falta `FERNET_KEY` (fail-open, inconsistente con `EncryptedTextField`) — MEDIO, CORREGIDO
 - **Ubicación:** `core/views/laboratorio/calidad.py:593-621`.
 - **Descripción:** Al finalizar la toma de muestra, si el frontend envía audio (`audio_b64`), el código intenta cifrarlo con Fernet: `cifrado = audio_bytes  # fallback: sin cifrar` seguido de un `try/except` que solo cifra si `FERNET_KEY` está configurada; si no lo está (o `Fernet(...)` falla), el bloque `except` solo registra un `logger.warning` y el flujo continúa guardando `audio_rec.audio_cifrado = cifrado` con el audio **en texto plano**, sin abortar la operación ni alertar al usuario. Esto contradice el patrón fail-closed ya usado en `core/fields.py::EncryptedTextField.encrypt()` (confirmado en `core/tests/test_sensitive_authorizations.py::test_encrypt_fails_closed_when_fernet_unavailable`, que exige lanzar `ImproperlyConfigured` si Fernet no está disponible).
 - **Riesgo:** el audio de toma de muestra puede contener verbalización de datos de identidad, consentimiento oral y contexto clínico del paciente (dato de salud sensible). Si por error de despliegue `FERNET_KEY` no está configurada, estos audios quedan almacenados sin cifrar en la base de datos indefinidamente, sin ningún registro de auditoría que distinga "cifrado" de "sin cifrar" más allá de un log de warning fácil de pasar por alto.
 - **Recomendación:** Alinear con el patrón fail-closed del resto del proyecto: si `FERNET_KEY` no está disponible, rechazar el guardado del audio (o continuar la toma sin persistir el audio) en vez de almacenarlo en claro; opcionalmente añadir un campo `cifrado: bool` en `AudioTomaMuestra` para poder auditar retroactivamente qué registros quedaron sin cifrar.
+- **Corrección verificada:** el flujo ya no usa fallback en claro. Si la clave falta, es inválida o falla Fernet, no se crea ni actualiza `AudioTomaMuestra`; la toma clínica termina sin audio y la respuesta informa `audio_guardado: false` con una advertencia controlada. Con una clave válida, el audio se persiste únicamente después de `Fernet.encrypt()`.
+- **Evidencia:** `core/tests/test_audio_toma_security.py` (prueba de clave ausente), `python manage.py check`, compilación de `calidad.py` y prueba aislada H-032/H-033, todos correctos.
 
 ## H-NUEVO-35 — `core/views/asistencia.py`: módulo de asistencia/RH sin ningún control de rol — cualquier empleado autenticado puede autorizar/rechazar incidencias, ver documentos de soporte y registrar entradas/salidas de otros — ALTO, ABIERTO
 - **Ubicación:** `core/views/asistencia.py` (327 líneas completas) — el archivo solo importa `login_required` de `django.contrib.auth.decorators`; NO importa `role_required` de `core.decorators` en ningún punto, a diferencia de `core/views/rh.py` y `core/views/nomina.py` (mismo dominio HR/nómina) que exigen `@role_required('DIRECTOR','ADMIN','GERENTE','RH')`.

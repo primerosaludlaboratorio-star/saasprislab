@@ -182,7 +182,7 @@ BLOQUE 4 — CERRADO SIN HUECOS PENDIENTES (los 27 archivos + 3 subpaquetes ahor
 - [x] recepcion.py — 386/386 líneas. Sin hallazgos.
 - [x] pdf_impresion.py — 419/419 líneas. `signing.dumps`/`loads` firmado con salt para QR de worklist; triple candado (saldo/validación/consentimiento) antes de imprimir. Sin hallazgos.
 - [x] captura.py — 437/437 líneas. Confirma fix de H-NUEVO-24 (valida que el analito pertenezca a la orden, con log explícito "[Pánico IDOR]"). Sin hallazgos.
-- [x] calidad.py — 747/747 líneas (archivo más grande del paquete, releído completo en 2 partes). `api_validar_pin` usa `secrets.compare_digest` correctamente (PIN sigue siendo global de la app, no por tenant — deuda ya documentada en H-NUEVO-20). **H-NUEVO-34 NUEVO** (MEDIO): `api_finalizar_toma` cae a texto plano si falta `FERNET_KEY` al cifrar audio de toma de muestra, sin bloquear ni advertir claramente — inconsistente con el patrón fail-closed de `EncryptedTextField`.
+- [x] calidad.py — 747/747 líneas (archivo más grande del paquete, releído completo en 2 partes). `api_validar_pin` usa `secrets.compare_digest` correctamente (PIN sigue siendo global de la app, no por tenant — deuda ya documentada en H-NUEVO-20). **H-NUEVO-34 CORREGIDO:** `api_finalizar_toma` nunca persiste audio sin cifrar; si Fernet no está disponible, continúa la toma sin audio y devuelve advertencia explícita.
 
 - [x] analytics.py — 460/460 líneas leídas completas. Todo `empresa=` scoped correctamente. Sin hallazgos de seguridad (nota menor no formal: `datetime.strptime` sin try/except en `dashboard_analytics` podría causar 500 con fecha inválida en GET, no es explotable).
 - [x] asistencia.py — 327/327 líneas leídas completas. **H-NUEVO-35 NUEVO** (ALTO): el archivo NUNCA importa `role_required`; ninguna vista de gestión/autorización de asistencia tiene control de rol, a diferencia de `rh.py`/`nomina.py` del mismo dominio. `autorizar_incidencia` permite a cualquier usuario autenticado aprobar/rechazar incidencias de cualquier empleado.
@@ -270,7 +270,8 @@ verificados. Los comandos de usuarios ya no contienen contraseñas, los comandos
 destructivos requieren confirmación y están bloqueados en producción cuando
 corresponde, `AuditLog` queda fuera del wipe y el backup nocturno exige la clave
 Fernet dedicada `PRISLAB_BACKUP_ENCRYPTION_KEY`. Los hallazgos H-NUEVO-32 a
-H-NUEVO-34 siguen abiertos.
+H-NUEVO-34 están corregidos y documentados con pruebas de regresión; permanecen
+abiertos los hallazgos posteriores que aún no han sido atendidos.
 
 ## Bloque 8 — core/tests/ (88 archivos) — MUESTREO COMPLETO
 - [x] Muestreo dirigido de ~18 archivos de pruebas de seguridad/tenant/RBAC/cifrado: `test_cron_tasks_security.py`, `test_lims_config_tenant_security.py`, `test_pris_tools_operativos_security.py`, `test_tenant_strict_mode.py`, `test_role_access.py`, `test_pris_rbac.py`, `test_multi_tenant_isolation.py`, `test_rbac_staff_no_bypass.py`, `test_sensitive_authorizations.py` (PINs hasheados, `EncryptedTextField` fail-closed, cadena SHA de `ExpedienteNotaSHA`), `test_storage_backends_security.py` (Google Drive no expone archivos públicamente), `test_public_api_tokens.py`, `test_rh_nomina_security.py` (RBAC + tenant isolation en RH/nómina), `test_hl7_tenant_binding.py` (comparación de API key HL7 sin timing leak), `test_super_master.py` (confirma que `es_auditor_supremo` es un flag independiente de `is_superuser` para lectura cross-tenant de `AuditLog` — ningún superusuario normal puede leer auditoría global sin ese flag explícito), `test_enterprise_security_closures.py`, `test_auto_repair_tenant_guard.py`.

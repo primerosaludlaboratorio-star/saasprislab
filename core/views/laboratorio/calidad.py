@@ -5,12 +5,14 @@ import json
 import re
 import logging
 import secrets
+import binascii
 from datetime import timedelta
 from decimal import Decimal
 from types import SimpleNamespace
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ImproperlyConfigured
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -576,6 +578,9 @@ def api_finalizar_toma(request, orden_id):
     if toma.hora_inicio_extraccion:
         duracion = int((ahora - toma.hora_inicio_extraccion).total_seconds())
 
+    audio_guardado = False
+    audio_advertencia = None
+
     with transaction.atomic():
         toma.hora_fin_extraccion = ahora
         toma.duracion_extraccion_seg = duracion
@@ -593,20 +598,16 @@ def api_finalizar_toma(request, orden_id):
         # Cifrar y guardar audio si fue enviado
         if audio_b64:
             try:
-                audio_bytes = base64.b64decode(audio_b64)
+                audio_bytes = base64.b64decode(audio_b64, validate=True)
                 sha = hashlib.sha256(audio_bytes).hexdigest()
 
-                # Cifrado Fernet si FERNET_KEY está configurada
-                cifrado = audio_bytes  # fallback: sin cifrar
-                try:
-                    from cryptography.fernet import Fernet
-                    from django.conf import settings as _cfg
-                    fernet_key = getattr(_cfg, 'FERNET_KEY', None)
-                    if fernet_key:
-                        f = Fernet(fernet_key.encode() if isinstance(fernet_key, str) else fernet_key)
-                        cifrado = f.encrypt(audio_bytes)
-                except (ImportError, ValueError, TypeError, RuntimeError) as e_fernet:
-                    logger.warning("Fernet no disponible para audio toma: %s", e_fernet)
+                # Fail-closed: un audio de paciente nunca se persiste en claro.
+                from cryptography.fernet import Fernet
+                fernet_key = getattr(settings, 'FERNET_KEY', None)
+                if not fernet_key:
+                    raise ImproperlyConfigured('FERNET_KEY no configurada para audio de toma')
+                f = Fernet(fernet_key.encode() if isinstance(fernet_key, str) else fernet_key)
+                cifrado = f.encrypt(audio_bytes)
 
                 audio_rec, _ = AudioTomaMuestra.objects.get_or_create(toma=toma)
                 audio_rec.audio_cifrado = cifrado
@@ -617,8 +618,10 @@ def api_finalizar_toma(request, orden_id):
                 audio_rec.timestamp_fin = ahora
                 audio_rec.ip_origen = request.META.get('REMOTE_ADDR', '')
                 audio_rec.save()
-            except (ValueError, TypeError, ImportError, RuntimeError) as e_audio:
-                logger.error("Error guardando audio toma orden=%s: %s", orden_id, e_audio)
+                audio_guardado = True
+            except (binascii.Error, ValueError, TypeError, ImportError, RuntimeError, ImproperlyConfigured) as e_audio:
+                audio_advertencia = 'El audio no se guardó porque no fue posible cifrarlo de forma segura.'
+                logger.error("Audio toma omitido por cifrado no disponible orden=%s: %s", orden_id, e_audio)
 
         # Actualizar estado clínico de la orden
         orden.estado_clinico = 'TOMA_REALIZADA'
@@ -633,11 +636,15 @@ def api_finalizar_toma(request, orden_id):
 
     logger.info("TOMA FINALIZADA orden=%s duracion=%ss usuario=%s", orden_id, duracion, request.user.username)
 
-    return JsonResponse({
+    respuesta = {
         'ok': True,
         'duracion_segundos': duracion,
+        'audio_guardado': audio_guardado,
         'redirect_url': f'/laboratorio/lista-trabajo/',
-    })
+    }
+    if audio_advertencia:
+        respuesta['advertencia_audio'] = audio_advertencia
+    return JsonResponse(respuesta)
 
 
 @login_required
