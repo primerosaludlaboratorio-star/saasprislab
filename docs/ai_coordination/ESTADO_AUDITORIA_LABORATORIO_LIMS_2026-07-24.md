@@ -88,3 +88,37 @@ Esto significa:
 4. Ejecutar una ronda separada de migraciones completas sin `PRISLAB_TEST_NO_MIGRATIONS=1` para validar el historial, no solo el modelo final.
 
 No se debe usar este documento para afirmar que produccion esta cerrada. Es el estado comprobable de esta ronda.
+
+## Addendum — Verificación humana productiva 2026-07-30
+
+Se recorrieron como usuario autenticado las pantallas de recepción, toma de
+muestra, monitor, captura, worklist, control de calidad, entrega de resultados,
+consulta de órdenes, pacientes y las cuatro ventanas LIMS. No se observó error
+HTTP 500 real; las coincidencias con `500` fueron códigos de analitos o precios.
+
+Flujo realizado en producción:
+
+- Se creó una paciente técnica de auditoría, se seleccionó el analito GLU y se
+  generó una orden pagada de $85.00.
+- La orden quedó visible en detalle con folio, estudio, pago, saldo cero y
+  navegación a captura.
+- La captura productiva mostró correctamente que no hay equipos activos para
+  asignar.
+- Al probar una orden validada existente, los botones de PDF inicialmente
+  redirigían porque faltaba la tercera llave: consentimiento de privacidad.
+- Se corrigió la interfaz para que el PDF no aparezca habilitado en ese caso y
+  muestre la causa exacta junto con el enlace `Registrar consentimiento`.
+
+Estado productivo comprobado:
+
+- Equipos activos configurados para la empresa: `0`.
+- Consentimientos digitales válidos para liberación: `0`.
+- PDF: control legal funcionando; no se libera sin saldo cero, validación y
+  consentimiento. La interfaz ya explica el bloqueo.
+- Despliegue de la corrección: `846c021818444dff8c7ddfbd7aef37d6bba81cc1`.
+- Health check y servicios productivos: correctos.
+
+El flujo completo de resultados y PDF no puede declararse cerrado hasta que el
+laboratorio configure al menos un equipo activo y se capture un consentimiento
+real del paciente. No se falsificó una firma ni se modificaron datos clínicos
+para forzar la salida.
