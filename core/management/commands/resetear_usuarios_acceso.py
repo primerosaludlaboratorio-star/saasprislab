@@ -1,18 +1,38 @@
 """
-Reseteo total de usuarios de acceso:
-  1) Elimina TODOS los usuarios existentes.
-  2) Crea 7 usuarios base con contraseñas definidas.
+Reseteo controlado de usuarios de acceso:
+  1) Desactiva cuentas fuera del equipo base.
+  2) Crea o actualiza 7 usuarios base con una contraseña proporcionada por el operador.
 
 Uso:
-    python manage.py resetear_usuarios_acceso
+    python manage.py resetear_usuarios_acceso --confirm-reset
 """
-from django.core.management.base import BaseCommand
+import getpass
+import os
+import sys
+
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
 from django.db import transaction
 
 
 class Command(BaseCommand):
-    help = "Elimina todos los usuarios y crea los usuarios base de acceso."
+    help = "Activa el equipo base con una contraseña explícita y confirmada."
+
+    def add_arguments(self, parser):
+        parser.add_argument('--password-env', default='PRISLAB_ACCESS_RESET_PASSWORD')
+        parser.add_argument('--confirm-reset', action='store_true')
+        parser.add_argument('--dry-run', action='store_true')
+
+    def _get_password(self, env_name):
+        password = os.environ.get(env_name, '').strip()
+        if not password:
+            if getattr(settings, 'IS_PRODUCTION', False) or not sys.stdin.isatty():
+                raise CommandError(f'Configura {env_name}; nunca se usa una contraseña por defecto.')
+            password = getpass.getpass('Contraseña temporal (mínimo 12 caracteres): ').strip()
+        if len(password) < 12:
+            raise CommandError('La contraseña debe tener al menos 12 caracteres.')
+        return password
 
     def handle(self, *args, **options):
         User = get_user_model()
@@ -21,7 +41,6 @@ class Command(BaseCommand):
         usuarios_base = [
             {
                 "username": "jonathan",
-                "password": "Admin2026!",
                 "first_name": "Jonathan",
                 "last_name": "Alonso",
                 "email": "jonathan@prislab.com",
@@ -31,7 +50,6 @@ class Command(BaseCommand):
             },
             {
                 "username": "nancy",
-                "password": "Nancy2026!",
                 "first_name": "Nancy",
                 "last_name": "Ramirez",
                 "email": "nancy@prislab.com",
@@ -41,7 +59,6 @@ class Command(BaseCommand):
             },
             {
                 "username": "gabriela",
-                "password": "Gabriela2026!",
                 "first_name": "Gabriela",
                 "last_name": "Araujo",
                 "email": "gabriela@prislab.com",
@@ -51,7 +68,6 @@ class Command(BaseCommand):
             },
             {
                 "username": "janette",
-                "password": "Janette2026!",
                 "first_name": "Janette",
                 "last_name": "Garcia",
                 "email": "janette@prislab.com",
@@ -61,7 +77,6 @@ class Command(BaseCommand):
             },
             {
                 "username": "tania",
-                "password": "Tania2026!",
                 "first_name": "Tania",
                 "last_name": "Castro",
                 "email": "tania@prislab.com",
@@ -71,7 +86,6 @@ class Command(BaseCommand):
             },
             {
                 "username": "deyaneira",
-                "password": "Deyaneira2026!",
                 "first_name": "Deyaneira",
                 "last_name": "Cruz",
                 "email": "deyaneira@prislab.com",
@@ -81,7 +95,6 @@ class Command(BaseCommand):
             },
             {
                 "username": "brizia",
-                "password": "Brizia2026!",
                 "first_name": "Brizia",
                 "last_name": "Nolasco",
                 "email": "brizia@prislab.com",
@@ -90,6 +103,13 @@ class Command(BaseCommand):
                 "rol": "MEDICO",
             },
         ]
+
+        if not options['confirm_reset']:
+            raise CommandError('Operación destructiva: añade --confirm-reset para continuar.')
+        password = self._get_password(options['password_env'])
+        if options['dry_run']:
+            self.stdout.write(self.style.WARNING('DRY-RUN: no se modificarán usuarios.'))
+            return
 
         self.stdout.write("Iniciando reseteo de usuarios...")
 
@@ -102,7 +122,6 @@ class Command(BaseCommand):
 
             # Crear o actualizar cada usuario del equipo base
             for data in usuarios_base:
-                password = data.pop("password")
                 user, created = User.objects.get_or_create(
                     username=data["username"],
                     defaults={k: v for k, v in data.items()},

@@ -1,12 +1,17 @@
 """
-Comando definitivo de limpieza de personal:
+Comando controlado de limpieza de personal:
   1. Elimina físicamente cuentas desactivadas (is_active=False) del grupo personal.
   2. Resetea contraseñas de cuentas activas a valor temporal.
-  3. Imprime listado final legible con usuario / nombre / rol / contraseña.
+  3. Imprime listado final sin exponer contraseñas.
 Uso:
-    python manage.py resetear_personal_final --password=NuevaClave123
+    PRISLAB_PERSONAL_RESET_PASSWORD='...' python manage.py resetear_personal_final --confirm-reset
 """
-from django.core.management.base import BaseCommand
+import getpass
+import os
+import sys
+
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -28,14 +33,24 @@ class Command(BaseCommand):
     help = "Elimina cuentas desactivadas y resetea contraseñas del personal activo."
 
     def add_arguments(self, parser):
-        parser.add_argument("--password", default="Prislab2026",
-                            help="Contraseña temporal a asignar a los usuarios activos.")
+        parser.add_argument("--password-env", default="PRISLAB_PERSONAL_RESET_PASSWORD",
+                            help="Variable de entorno con la contraseña temporal.")
         parser.add_argument("--dry-run", action="store_true",
                             help="Sólo muestra qué se haría sin aplicar cambios.")
+        parser.add_argument("--confirm-reset", action="store_true",
+                            help="Confirma el reseteo de todas las cuentas activas.")
 
     def handle(self, *args, **options):
-        pwd = options["password"].strip()
         dry = options["dry_run"]
+        if not dry and not options["confirm_reset"]:
+            raise CommandError("Operación destructiva: añade --confirm-reset para continuar.")
+        pwd = os.environ.get(options["password_env"], "").strip()
+        if not pwd:
+            if getattr(settings, "IS_PRODUCTION", False) or not sys.stdin.isatty():
+                raise CommandError(f"Configura {options['password_env']}; no existe contraseña por defecto.")
+            pwd = getpass.getpass("Contraseña temporal (mínimo 12 caracteres): ").strip()
+        if len(pwd) < 12:
+            raise CommandError("La contraseña debe tener al menos 12 caracteres.")
         self.stdout.write(f"Modo: {'DRY-RUN (sólo lectura)' if dry else 'APLICAR'}\n")
 
         # ── 1. Eliminar desactivadas ───────────────────────────────────────────
@@ -63,7 +78,6 @@ class Command(BaseCommand):
                 "usuario": u.username,
                 "nombre": u.get_full_name() or u.username,
                 "rol": getattr(u, "rol", "") or "",
-                "contraseña": pwd,
             })
             self.stdout.write(
                 f"  ✓ id={u.id:>3}  usuario={u.username:<25} nombre='{u.get_full_name() or u.username}'"
@@ -73,12 +87,11 @@ class Command(BaseCommand):
         self.stdout.write("\n" + "=" * 70)
         self.stdout.write("LISTADO FINAL DE ACCESO — PRISLAB")
         self.stdout.write("=" * 70)
-        self.stdout.write(f"{'USUARIO':<28} {'NOMBRE':<35} {'ROL':<15} CONTRASEÑA")
-        self.stdout.write("-" * 100)
+        self.stdout.write(f"{'USUARIO':<28} {'NOMBRE':<35} {'ROL':<15}")
+        self.stdout.write("-" * 85)
         for r in resumen:
             self.stdout.write(
-                f"{r['usuario']:<28} {r['nombre']:<35} {r['rol']:<15} {r['contraseña']}"
+                f"{r['usuario']:<28} {r['nombre']:<35} {r['rol']:<15}"
             )
         self.stdout.write("=" * 70)
-        self.stdout.write(f"Contraseña temporal aplicada: {pwd}")
-        self.stdout.write("IMPORTANTE: Pida a cada usuario que cambie su contraseña al ingresar.")
+        self.stdout.write("La contraseña se recibió de forma segura y no se imprime.")

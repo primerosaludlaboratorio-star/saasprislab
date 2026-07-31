@@ -6,7 +6,7 @@
 # 3. Verify: python manage.py verificar_integridad
 # 4. Reanudar el servicio después de restaurar
 #
-# For encrypted backup_nocturno .encrypted files: decrypt first (using SECRET_KEY), extract tar,
+# For encrypted backup_nocturno .encrypted files: decrypt first (using PRISLAB_BACKUP_ENCRYPTION_KEY), extract tar,
 # then restore database.sql with: psql -h HOST -U USER -d DB -f database.sql
 
 """

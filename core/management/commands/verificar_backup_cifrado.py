@@ -9,28 +9,19 @@ import os
 import sys
 import tarfile
 
-from django.core.management.base import BaseCommand
-from django.conf import settings
-
+from django.core.management.base import BaseCommand, CommandError
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.backends import default_backend
-import base64
 import logging
 
 
 def _clave_fernet():
-    password = settings.SECRET_KEY.encode('utf-8')
-    salt = b'prislab_backup_salt_2025'
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=100000,
-        backend=default_backend(),
-    )
-    return Fernet(base64.urlsafe_b64encode(kdf.derive(password)))
+    raw_key = os.environ.get('PRISLAB_BACKUP_ENCRYPTION_KEY', '').strip()
+    if not raw_key:
+        raise CommandError('Configura PRISLAB_BACKUP_ENCRYPTION_KEY para verificar backups.')
+    try:
+        return Fernet(raw_key.encode('ascii'))
+    except Exception as exc:
+        raise CommandError('PRISLAB_BACKUP_ENCRYPTION_KEY no es una clave Fernet válida.') from exc
 
 
 class Command(BaseCommand):
@@ -51,7 +42,7 @@ class Command(BaseCommand):
             plano = fernet.decrypt(cifrado)
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en handle (verificar_backup_cifrado.py)")
-            self.stdout.write(self.style.ERROR(f'Descifrado fallido (¿SECRET_KEY distinta?): {e}'))
+            self.stdout.write(self.style.ERROR(f'Descifrado fallido (¿clave de backup distinta?): {e}'))
             sys.exit(2)
         bio = io.BytesIO(plano)
         try:

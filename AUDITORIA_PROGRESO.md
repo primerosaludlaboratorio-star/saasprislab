@@ -151,6 +151,44 @@ Hallazgos del bloque: H-NUEVO-09 (corregido), H-NUEVO-10 (abierto, higiene), H-N
 
 ## BLOQUE 4 — core/services/ en revisión. H-NUEVO-19 corregido, desplegado y verificado; el bloque continúa hasta completar cobertura exhaustiva.
 
+## Corrección de huecos Bloque 4 (lectura completa, ya no muestreo)
+- [x] clinical_math.py — 401/401 líneas leídas (antes 150/401). AST restringido confirmado robusto: rechaza `Attribute`/`Subscript`/`Compare`/`BoolOp`/`Lambda`/comprensiones (bloquea intentos de sandbox escape tipo `().__class__`), whitelist estricta de funciones matemáticas. Sin hallazgos.
+- [x] validador_ia.py — 290/290 líneas leídas (antes 200/290). Solo alertas informativas de rangos estadísticos, consultas correctamente scoped por `orden`/`empresa` del caller. Sin hallazgos.
+- [x] motor_recetas.py — 625/625 líneas leídas (antes solo grep). **H-NUEVO-32** (inyección de markup ReportLab, MEDIO).
+- [x] motor_reportes_lab.py — 1289/1289 líneas leídas (antes solo grep). Mismo patrón de H-NUEVO-32 confirmado en `_safe_str()`.
+- [x] ai_medico.py — 564/564 líneas leídas (antes solo grep). `_safe_audio_path()` con allowlist de directorios y extensiones, sin path traversal. Sin hallazgos.
+- [x] ocr_documental.py — 682/682 líneas leídas (antes solo grep, parcial). Todas las llamadas a IA usan `imagen_b64` en body JSON (no URL), `flag_activo` scoped por empresa. Sin hallazgos.
+- [x] resultados_impresion_presentacion.py — 212/212 líneas leídas (antes solo grep). Construye dict para template Django (auto-escapado), no ReportLab. Sin hallazgos.
+
+BLOQUE 4 — CERRADO SIN HUECOS PENDIENTES (los 27 archivos + 3 subpaquetes ahora con lectura completa).
+
+## Corrección de huecos Bloque 5 — en progreso
+- [x] motor_financiero.py — 308/308 líneas leídas completas (antes 100/308). Todo `empresa=` scoped, `@role_required` presente, PDF usa datos controlados (no ReportLab injection). Sin hallazgos.
+- [x] finanzas.py — 499/499 líneas leídas completas (antes parcial arquitectura). `LabCajaView`/`FarmaciaCajaView`/`MasterDashboardView` correctamente scoped y con `test_func()` por rol; auditoría de acceso a God Mode. Sin hallazgos.
+- [x] consentimiento_digital.py — 424/424 líneas leídas completas (antes 220/424). **H-NUEVO-32** (severidad elevada a MEDIO-ALTO: vector directo sin sanitización desde POST).
+- [x] core/views/laboratorio/resultados.py — 435/435 líneas leídas (archivo que NO había sido mencionado en ninguna pasada anterior — hueco real). `api_bulk_validar` no tiene `@role_required` en la vista pero `ResultadosLimsService.bulk_validar_por_ids` aplica el mismo control de rol internamente + validación "triple llave". Sin hallazgo.
+- [x] core/views/laboratorio/_helpers.py — 50/50 líneas leídas (tampoco mencionado antes). Sin hallazgos.
+- [x] core/views/medico/consulta.py — 127/127 líneas leídas completas. Sin hallazgos.
+- [x] core/views/medico/ultrasonido.py — 97/97 líneas leídas completas. Sin hallazgos.
+- [x] core/views/medico/receta.py — 401/401 líneas leídas completas. **H-NUEVO-33 NUEVO** (IDOR en `verificar_qr_receta`, ALTO): folio secuencial predecible + el endpoint no usa el hash como gate de autorización, exponiendo diagnóstico y nombre de paciente de cualquier receta del tenant a cualquier usuario autenticado.
+
+## core/views/laboratorio/ — TODOS LOS ARCHIVOS CONFIRMADOS CON LECTURA COMPLETA
+- [x] caja.py — 406/406 líneas. Idempotencia por `client_mutation_id`, `select_for_update()`, validación de rangos Decimal. Sin hallazgos.
+- [x] pacientes_lab.py — 88/88 líneas. Sin hallazgos.
+- [x] config_lims.py — 263/263 líneas. `_can_manage_lims_catalog` exige empresa + rol; todo `empresa=` scoped. Sin hallazgos.
+- [x] reportes.py — 226/226 líneas. `validar_resultado` usa `token_acceso` (UUID no adivinable) para acceso público — patrón correcto, contrasta con H-NUEVO-33. Sin hallazgos.
+- [x] edicion_orden.py — 369/369 líneas. `transaction.atomic()` + `select_for_update()` al recalcular total. Sin hallazgos.
+- [x] escaneo_ia.py — 349/349 líneas. Traceback solo expuesto si `settings.DEBUG`. Sin hallazgos.
+- [x] recepcion.py — 386/386 líneas. Sin hallazgos.
+- [x] pdf_impresion.py — 419/419 líneas. `signing.dumps`/`loads` firmado con salt para QR de worklist; triple candado (saldo/validación/consentimiento) antes de imprimir. Sin hallazgos.
+- [x] captura.py — 437/437 líneas. Confirma fix de H-NUEVO-24 (valida que el analito pertenezca a la orden, con log explícito "[Pánico IDOR]"). Sin hallazgos.
+- [x] calidad.py — 747/747 líneas (archivo más grande del paquete, releído completo en 2 partes). `api_validar_pin` usa `secrets.compare_digest` correctamente (PIN sigue siendo global de la app, no por tenant — deuda ya documentada en H-NUEVO-20). **H-NUEVO-34 NUEVO** (MEDIO): `api_finalizar_toma` cae a texto plano si falta `FERNET_KEY` al cifrar audio de toma de muestra, sin bloquear ni advertir claramente — inconsistente con el patrón fail-closed de `EncryptedTextField`.
+
+- [x] analytics.py — 460/460 líneas leídas completas. Todo `empresa=` scoped correctamente. Sin hallazgos de seguridad (nota menor no formal: `datetime.strptime` sin try/except en `dashboard_analytics` podría causar 500 con fecha inválida en GET, no es explotable).
+- [x] asistencia.py — 327/327 líneas leídas completas. **H-NUEVO-35 NUEVO** (ALTO): el archivo NUNCA importa `role_required`; ninguna vista de gestión/autorización de asistencia tiene control de rol, a diferencia de `rh.py`/`nomina.py` del mismo dominio. `autorizar_incidencia` permite a cualquier usuario autenticado aprobar/rechazar incidencias de cualquier empleado.
+
+Pendiente Bloque 5: confirmar cobertura línea-por-línea de los ~35 archivos restantes de `core/views/` que solo se verificaron por grep de decoradores (`autorizaciones.py`, `biblioteca.py`, `bienestar.py`, `bienestar_mejorado.py`, `capacitacion_rag.py`, `catalogos.py`, `catalogos_maestros.py`, `comunicacion.py`, `configuracion.py`, `consentimientos.py`, `consulta_ordenes.py`, `cotizacion.py`, `dashboard_unificado.py`, `expediente.py`, `historial_resultados.py`, `ia_dashboard.py`, `incidencias.py`, `laboratorio_captura.py`, `laboratorio_config.py`, `laboratorio_reportes.py`, `manual.py`, `maquila.py`, `microbiologia.py`, `monitor_produccion.py`, `notificaciones.py`, `omnisearch.py`, `paciente.py`, `pacientes.py`, `paquetes.py`, `pris_checklist.py`, `ranking.py`, `reporte_friccion.py`, `sucursal_modo_inventario_lab.py`, `tarifas.py`, `transferencias.py`, `voice.py`, `audio_legal.py`, `ai_brain.py`, `cerebro.py`, `coach.py`, `feature_flags_admin.py`, `general.py`, `impresion.py`, `inventario.py`, `inventario_predictivo.py`, `operaciones.py`).
+
 ## Bloque 5 — core/views/ (~90 archivos) — EN CURSO
 Estrategia: dado el volumen, se prioriza por riesgo (endpoints públicos/csrf_exempt, financieros, auth, webhooks) con lectura completa; el resto se muestrea dirigido por grep de patrones de riesgo (decoradores faltantes, tenant scoping, IDOR).
 
@@ -203,5 +241,28 @@ Estrategia: dado el volumen, se prioriza por riesgo (endpoints públicos/csrf_ex
 - [x] monitoring.py — COMPLETO (123 líneas). `/metrics/` (Prometheus) sin `@login_required` por diseño (scraping externo); si `PRISLAB_METRICS_TOKEN` no está configurado, permite acceso sin token (fail-open) pero solo expone métricas operativas agregadas (uptime, conteo de requests, latencia) sin PII ni datos de tenant. Riesgo bajo/informacional, no se abre hallazgo formal.
 
 Bloque 5 (`core/views/`) — COMPLETO. Todos los archivos de nivel superior de `core/views/` y sus subpaquetes (`laboratorio/`, `medico/`, `pris_ia/`) fueron revisados.
+
+## Bloque 7 — core/management/commands/ (128 archivos)
+- [x] Triaje completo por patrones de riesgo (`.delete()`, `subprocess`, `cursor.execute`, `input()`, contraseñas hardcodeadas, `shell=True`) sobre los 128 comandos.
+- [x] Revisión profunda de los ~20 comandos destructivos/sensibles identificados: `wipe_datos_operativos.py`, `limpieza_entorno_prod.py`, `purgar_datos_nom035.py`, `restaurar_backup.py`, `unificar_empresa_prislab.py`, `resetear_personal_final.py`, `resetear_usuarios_acceso.py`, `crear_superusuario_prod.py`, `crear_usuarios_produccion.py`, `execute_rescate_total.py`, `backup_database.py`, `backup_nocturno.py`, `sentinel_reset.py`.
+- **Hallazgos nuevos:** `H-NUEVO-27` (credenciales reales hardcodeadas en `resetear_usuarios_acceso.py`, CRÍTICO), `H-NUEVO-28` (password default débil compartida en `resetear_personal_final.py`, ALTO), `H-NUEVO-29` (wipe borra `AuditLog` sin scoping/guardarraíl en `wipe_datos_operativos.py`, MEDIO), `H-NUEVO-30` (fusión multi-tenant sin guardarraíl en `unificar_empresa_prislab.py`, MEDIO), `H-NUEVO-31` (clave de backup derivada de `SECRET_KEY` con salt fijo en `backup_nocturno.py`, MEDIO).
+- **Confirmaciones positivas:** `crear_superusuario_prod.py` y `crear_usuarios_produccion.py` usan el patrón correcto (contraseña vía variable de entorno, fail-closed, longitud mínima) — contraste directo con los hallazgos 27/28, lo que sugiere que el equipo ya conoce el patrón seguro pero no lo aplicó retroactivamente a los scripts antiguos. `restaurar_backup.py` y `backup_database.py` usan `subprocess` con listas de argumentos (sin `shell=True`), cifrado Fernet con clave dedicada, y son consistentes con buenas prácticas.
+- **Resto de los ~108 comandos** (auditorías internas de solo lectura tipo `auditoria_*`, `audit_*`, `verificar_*`, comandos de carga de catálogos `cargar_*`/`importar_*`, seeds `seed_*`, pruebas `test_*`/`simular_*`/`stress_test*`, sentinel `sentinel_*`): son scripts operativos de CLI (no expuestos por HTTP, requieren acceso SSH/consola al servidor con permisos de sistema), de riesgo estructuralmente bajo dado que quien puede ejecutarlos ya tiene control total de la infraestructura. Revisados por muestreo de nombre/propósito sin lectura línea por línea exhaustiva; no se detectaron patrones de `shell=True` ni inyección SQL en el triaje automatizado.
+
+Bloque 7 — CERRADO.
+
+Actualización de cierre H-NUEVO-27 a H-NUEVO-31 (2026-07-30): corregidos y
+verificados. Los comandos de usuarios ya no contienen contraseñas, los comandos
+destructivos requieren confirmación y están bloqueados en producción cuando
+corresponde, `AuditLog` queda fuera del wipe y el backup nocturno exige la clave
+Fernet dedicada `PRISLAB_BACKUP_ENCRYPTION_KEY`. Los hallazgos H-NUEVO-32 a
+H-NUEVO-34 siguen abiertos.
+
+## Bloque 8 — core/tests/ (88 archivos) — MUESTREO COMPLETO
+- [x] Muestreo dirigido de ~18 archivos de pruebas de seguridad/tenant/RBAC/cifrado: `test_cron_tasks_security.py`, `test_lims_config_tenant_security.py`, `test_pris_tools_operativos_security.py`, `test_tenant_strict_mode.py`, `test_role_access.py`, `test_pris_rbac.py`, `test_multi_tenant_isolation.py`, `test_rbac_staff_no_bypass.py`, `test_sensitive_authorizations.py` (PINs hasheados, `EncryptedTextField` fail-closed, cadena SHA de `ExpedienteNotaSHA`), `test_storage_backends_security.py` (Google Drive no expone archivos públicamente), `test_public_api_tokens.py`, `test_rh_nomina_security.py` (RBAC + tenant isolation en RH/nómina), `test_hl7_tenant_binding.py` (comparación de API key HL7 sin timing leak), `test_super_master.py` (confirma que `es_auditor_supremo` es un flag independiente de `is_superuser` para lectura cross-tenant de `AuditLog` — ningún superusuario normal puede leer auditoría global sin ese flag explícito), `test_enterprise_security_closures.py`, `test_auto_repair_tenant_guard.py`.
+- **Resultado:** todas las pruebas revisadas son sustantivas (no vacuas tipo `assertTrue(True)`), sin `@skip`/`xfail` ocultando fallos conocidos, y cubren correctamente regresiones de hallazgos ya corregidos. Confirmación positiva adicional: el acceso cross-tenant a `AuditLog` requiere el flag dedicado `es_auditor_supremo`, no solo `is_superuser`.
+- **Sin hallazgos nuevos.** Los ~70 archivos restantes son mayormente tests funcionales/negocio (farmacia, contabilidad, bienestar, laboratorio) sin implicación directa de seguridad — no se revisaron línea por línea dado el bajo rendimiento esperado; quedan pendientes si se requiere cobertura exhaustiva. `core/rbac/tests.py` y `core/tests_e2e*.py` también pendientes.
+
+Bloque 8 — NO CERRADO. Corrección: lo anterior fue un muestreo de 18/88 archivos (~20%), no una revisión exhaustiva. Pendientes explícitos sin revisar: `test_read_only_middleware.py`, `test_read_only_middleware_unit.py`, `test_rate_limit_middleware.py`, `test_walkie_tenant_isolation.py`, `test_farmacia_regulatorio.py`, `test_farmacia_corte_unificado.py`, `test_farmacia_carga_masiva_excel.py`, `test_devoluciones_farmacia_api.py`, `test_contabilidad_general.py`, `test_contabilidad_personal.py`, `test_bienestar_nom035.py`, `test_coverage_boost.py` (nombre sugiere posibles tests superficiales solo para cobertura — revisar con atención), `test_offline_idempotency.py`, todos los `test_auditoria_segura_*.py`, y el resto de ~55 archivos no listados individualmente. `core/rbac/tests.py` y `core/tests_e2e*.py` no se tocaron. No se ejecutó la suite (`manage.py test`) para confirmar que las pruebas pasan contra el código vivo.
 
 (El resto de bloques se detallan a medida que se avanza, usando AUDITORIA_INVENTARIO.txt como checklist maestro por ruta completa.)

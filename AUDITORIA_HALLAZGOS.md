@@ -270,6 +270,66 @@
 - **Riesgo:** si se invoca por error contra una base de producción con múltiples clientes reales, fusionaría y eliminaría empresas de clientes distintos de forma irreversible.
 - **Recomendación:** Añadir guardia `if not settings.DEBUG: raise CommandError(...)` (o variable de entorno explícita `ALLOW_TENANT_MERGE`), y exigir confirmación interactiva antes de ejecutar sin `--dry-run`.
 
+## H-NUEVO-31 — `core/management/commands/backup_nocturno.py::_generar_clave_encriptacion`: clave AES derivada de `SECRET_KEY` con salt fijo hardcodeado — MEDIO, ABIERTO
+- **Ubicación:** `core/management/commands/backup_nocturno.py:327-341`.
+- **Descripción:** La clave que cifra el backup nocturno completo (BD + media + expedientes clínicos + firmas digitales) se deriva con `PBKDF2HMAC(password=settings.SECRET_KEY, salt=b'prislab_backup_salt_2025', ...)`. El salt es una constante fija en el código fuente, igual en todos los despliegues de este proyecto, y la contraseña es el mismo `SECRET_KEY` que Django usa para firmar sesiones, CSRF y tokens. A diferencia de `backup_database.py` (que exige un `FERNET_KEY` independiente y falla cerrado si no está configurado), este comando no tiene una clave de cifrado dedicada.
+- **Riesgo:** (a) si `SECRET_KEY` se filtra (escenario común: commit accidental, `.env` expuesto), el atacante puede derivar la clave de cifrado de **todos** los backups nocturnos pasados y futuros sin necesitar acceso adicional al servidor; (b) si `SECRET_KEY` se rota tras un incidente de seguridad (la respuesta estándar), los backups ya cifrados quedan indescifrables porque la clave de derivación cambia junto con ella — no hay versión histórica de clave conservada.
+- **Recomendación:** Usar una clave de cifrado dedicada (ej. `BACKUP_ENCRYPTION_KEY`/`FERNET_KEY`, igual que `backup_database.py`) desacoplada de `SECRET_KEY`, y un salt aleatorio generado una vez por instalación (almacenado junto al backup o en variable de entorno), no una constante en el código fuente.
+
+## Corrección H-NUEVO-27 a H-NUEVO-31 — verificada 2026-07-30
+
+Los cinco hallazgos del bloque de comandos fueron corregidos en el código activo:
+
+- **H-NUEVO-27:** `resetear_usuarios_acceso.py` ya no contiene contraseñas; exige
+  `PRISLAB_ACCESS_RESET_PASSWORD`, mínimo de 12 caracteres y `--confirm-reset`.
+- **H-NUEVO-28:** `resetear_personal_final.py` ya no tiene contraseña por defecto,
+  no imprime secretos y exige variable de entorno y confirmación explícita.
+- **H-NUEVO-29:** `wipe_datos_operativos.py` está bloqueado en producción y ya no
+  elimina `AuditLog`.
+- **H-NUEVO-30:** `unificar_empresa_prislab.py` funciona en simulación por defecto;
+  la aplicación exige `--apply` y `--confirm-merge`, y está bloqueada en producción.
+- **H-NUEVO-31:** `backup_nocturno.py` y `verificar_backup_cifrado.py` usan la clave
+  Fernet dedicada `PRISLAB_BACKUP_ENCRYPTION_KEY`; ya no derivan claves desde
+  `SECRET_KEY` ni usan salt fijo.
+
+Evidencia: `manage.py check`, compilación de los seis comandos y cinco pruebas de
+seguridad en `core/tests/test_management_command_safety.py`. Los hallazgos
+H-NUEVO-32 a H-NUEVO-34 permanecen abiertos y no se consideran corregidos en esta
+ronda.
+
+## H-NUEVO-32 — Inyección de markup ReportLab en PDFs médicos/legales oficiales (recetas, resultados de laboratorio, consentimiento informado) — MEDIO-ALTO, ABIERTO
+- **Ubicación:**
+  - `core/services/motor_recetas.py::_safe()` (líneas 81-120) — no escapa `<`,`>`,`&`.
+  - `core/services/motor_reportes_lab.py::_safe_str()` (líneas 119-187) — mismo problema.
+  - `core/views/consentimiento_digital.py::_generar_pdf_consentimiento()` (líneas 124-133) — **más severo**: NO usa ninguna función de saneamiento; `paciente_nombre`, `estudio_nombre` y `empresa_nombre` se insertan directo, sin escapar, en `Paragraph(f'Yo, <b>{paciente_nombre}</b>, declaro...')`. Peor aún, en `api_guardar_consentimiento` (línea 265-266) `paciente_nombre = data.get('paciente_nombre', 'Paciente')` y `estudios_texto = data.get('estudios', ...)` provienen **directamente del body JSON del POST del cliente**, no de una consulta a base de datos — es decir, el atacante controla el valor exacto que llega a `Paragraph()` sin pasar por ningún filtro.
+- **Descripción:** `reportlab.platypus.Paragraph` interpreta un subconjunto de markup tipo XML/HTML (`<b>`, `<font color=...>`, `<i>`, `<br/>`, etc.). Ninguno de los tres puntos de entrada escapa `&`, `<`, `>` antes de construir el markup final.
+- **Riesgo:** 
+  1. En `motor_recetas.py`/`motor_reportes_lab.py`: cualquier usuario que pueda capturar nombre de paciente, alergias, diagnóstico o indicaciones de tratamiento (MEDICO, RECEPCION) puede alterar la presentación visual de un documento clínico oficial (ej. ocultar o recolorear una alerta de alergia).
+  2. En `consentimiento_digital.py`: el vector es más directo y grave porque el campo llega crudo desde el request HTTP (no desde un modelo ya validado) a un **documento con valor legal/forense** (declarado explícitamente como evidencia NOM-004/ISO 15189 de consentimiento informado). Un actor malicioso con sesión válida (cualquier usuario autenticado con acceso al endpoint `api_guardar_consentimiento`) podría manipular el contenido visual del propio texto de la declaración de consentimiento, o provocar una excepción no controlada que impida generar/regenerar el PDF de evidencia legal.
+  - No es RCE (ReportLab `Paragraph` no ejecuta código), pero sí manipulación de presentación de datos clínicos/legales oficiales.
+- **Recomendación:** Escapar explícitamente `&`, `<`, `>` (equivalente a `xml.sax.saxutils.escape`) en los tres puntos antes de insertar en cualquier `Paragraph(...)`; en `consentimiento_digital.py` además validar/sanear `paciente_nombre`/`estudios_texto` contra el registro real de la orden (`orden.paciente.nombre_completo`) en vez de confiar en el valor enviado por el cliente en el JSON.
+
+## H-NUEVO-33 — `core/views/medico/receta.py::verificar_qr_receta`: IDOR — divulga diagnóstico y datos de paciente de CUALQUIER receta del tenant vía enumeración de folio secuencial — ALTO, ABIERTO
+- **Ubicación:** `core/views/medico/receta.py:338-398`; folio generado en `core/models/ventas.py::Receta.save()` (líneas 122-128).
+- **Descripción:** `folio_receta` se genera con formato predecible y secuencial: `REC-{YYYYMM}-{contador_zfill5}` (ej. `REC-202607-00001`, `00002`, ...), trivialmente enumerable. La vista `verificar_qr_receta` (`@login_required`, sin `@role_required`) busca la receta **solo por `folio_receta` + `empresa`** (`Receta.objects.filter(folio_receta=folio, empresa=empresa).first()`) — no valida que el `hash` recibido en el QR coincida antes de devolver los datos: `autentica = hash_calculado == hash_recibido == receta.hash_verificacion` se calcula pero **no se usa como gate**; el bloque `return JsonResponse({..., 'receta': {diagnostico, paciente, medico, cedula, fecha_emision}, ...})` se ejecuta siempre que la receta exista, incluso con `autentica: False`.
+- **Riesgo:** cualquier usuario autenticado del tenant (sin necesidad de rol médico — un CAJERO o RECEPCION con sesión válida) puede iterar folios secuenciales del mes (`REC-202607-00001` a `NNNNN`) y obtener el **diagnóstico principal y nombre completo** de cada paciente con receta ese mes, sin poseer el QR físico ni el hash real. Esto es una fuga de datos de salud (NOM-024/LFPDPPP) por control de acceso roto (IDOR), no requiere ningún conocimiento previo del folio real.
+- **Recomendación:** (1) Hacer que `autentica` sea un gate real: si `hash_recibido != receta.hash_verificacion`, responder 403/404 sin incluir el bloque `receta` con datos clínicos. (2) Sustituir `folio_receta` secuencial por un identificador no adivinable (UUID) para el campo usado en verificación pública, o exigir el hash completo como parte de la búsqueda (`filter(folio_receta=folio, hash_verificacion=hash_recibido, empresa=empresa)`) en vez de solo el folio. (3) Considerar `@role_required` adicional si la vista no está pensada para todos los roles del tenant.
+
+## H-NUEVO-34 — `core/views/laboratorio/calidad.py::api_finalizar_toma`: audio de toma de muestra cae a texto plano si falta `FERNET_KEY` (fail-open, inconsistente con `EncryptedTextField`) — MEDIO, ABIERTO
+- **Ubicación:** `core/views/laboratorio/calidad.py:593-621`.
+- **Descripción:** Al finalizar la toma de muestra, si el frontend envía audio (`audio_b64`), el código intenta cifrarlo con Fernet: `cifrado = audio_bytes  # fallback: sin cifrar` seguido de un `try/except` que solo cifra si `FERNET_KEY` está configurada; si no lo está (o `Fernet(...)` falla), el bloque `except` solo registra un `logger.warning` y el flujo continúa guardando `audio_rec.audio_cifrado = cifrado` con el audio **en texto plano**, sin abortar la operación ni alertar al usuario. Esto contradice el patrón fail-closed ya usado en `core/fields.py::EncryptedTextField.encrypt()` (confirmado en `core/tests/test_sensitive_authorizations.py::test_encrypt_fails_closed_when_fernet_unavailable`, que exige lanzar `ImproperlyConfigured` si Fernet no está disponible).
+- **Riesgo:** el audio de toma de muestra puede contener verbalización de datos de identidad, consentimiento oral y contexto clínico del paciente (dato de salud sensible). Si por error de despliegue `FERNET_KEY` no está configurada, estos audios quedan almacenados sin cifrar en la base de datos indefinidamente, sin ningún registro de auditoría que distinga "cifrado" de "sin cifrar" más allá de un log de warning fácil de pasar por alto.
+- **Recomendación:** Alinear con el patrón fail-closed del resto del proyecto: si `FERNET_KEY` no está disponible, rechazar el guardado del audio (o continuar la toma sin persistir el audio) en vez de almacenarlo en claro; opcionalmente añadir un campo `cifrado: bool` en `AudioTomaMuestra` para poder auditar retroactivamente qué registros quedaron sin cifrar.
+
+## H-NUEVO-35 — `core/views/asistencia.py`: módulo de asistencia/RH sin ningún control de rol — cualquier empleado autenticado puede autorizar/rechazar incidencias, ver documentos de soporte y registrar entradas/salidas de otros — ALTO, ABIERTO
+- **Ubicación:** `core/views/asistencia.py` (327 líneas completas) — el archivo solo importa `login_required` de `django.contrib.auth.decorators`; NO importa `role_required` de `core.decorators` en ningún punto, a diferencia de `core/views/rh.py` y `core/views/nomina.py` (mismo dominio HR/nómina) que exigen `@role_required('DIRECTOR','ADMIN','GERENTE','RH')`.
+- **Descripción:** Todas las vistas del módulo (`dashboard_asistencia`, `registro_asistencia`, `registrar_entrada_salida`, `horarios_trabajo`, `crear_horario`, `incidencias_asistencia`, `crear_incidencia`, `autorizar_incidencia`) solo exigen `@login_required`, sin restricción de rol. En particular:
+  - `autorizar_incidencia` (líneas 306-327): cualquier usuario autenticado del tenant puede marcar una `IncidenciaAsistencia` (falta, permiso, incapacidad) como `AUTORIZADA` o `RECHAZADA` para **cualquier empleado**, sin pertenecer a RH/Dirección.
+  - `crear_incidencia`/`registrar_entrada_salida`: cualquier usuario puede crear registros de asistencia/incidencias a nombre de **cualquier `empleado_id`** de la empresa (el campo se toma directo del POST sin validar relación jerárquica).
+  - `incidencias_asistencia`/`registro_asistencia`: cualquier usuario puede listar el `motivo` y `documento_soporte` (posible incapacidad médica, justificante) de incidencias de **todos** los empleados de la empresa.
+- **Riesgo:** ruptura de control de acceso en un flujo que impacta nómina/RH — un empleado sin privilegios podría autoaprobar su propia falta, alterar registros de asistencia de compañeros, o acceder a motivos/documentos médicos de incidencias ajenas (dato sensible bajo NOM-035/LFPDPPP), sin necesitar rol de supervisor.
+- **Recomendación:** Aplicar `@role_required('DIRECTOR','ADMIN','GERENTE','RH')` (mismo patrón que `rh.py`/`nomina.py`) a las vistas de gestión/autorización (`autorizar_incidencia`, `incidencias_asistencia`, `horarios_trabajo`, `crear_horario`), y limitar `registrar_entrada_salida`/`crear_incidencia` de autoservicio a que el `empleado_id` corresponda al propio `request.user` salvo que el actor tenga rol de supervisor.
+
 ## Código muerto / higiene (sin riesgo de seguridad) — CORREGIDO
 - `core/services/ai_medico_backup.py` — eliminado tras confirmar que no tenía imports activos.
 - `marketing/views_legacy.py` — eliminado tras confirmar que `marketing/urls.py` usa `marketing.views`.

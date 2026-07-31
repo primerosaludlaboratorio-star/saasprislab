@@ -15,6 +15,7 @@ import os
 from django.apps import apps
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.core.management.base import CommandError
 from django.db import transaction
 from django.core.files.storage import default_storage
 import logging
@@ -38,6 +39,10 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        if getattr(settings, "IS_PRODUCTION", False):
+            raise CommandError(
+                "wipe_datos_operativos está bloqueado en producción; use un entorno de pruebas aislado."
+            )
         borrar_media = options.get("media", False)
         skip_confirm = options.get("yes", False)
 
@@ -49,7 +54,7 @@ class Command(BaseCommand):
         self.stdout.write("  - ConsultaMedica, Receta, RecetaItem")
         self.stdout.write("  - OrdenDeServicio, DetalleOrden, ResultadoParametro")
         self.stdout.write("  - Venta, DetalleVenta, Pago, DevolucionVenta")
-        self.stdout.write("  - DiarioEmocional, IncidenciaSentinel, AuditLog")
+        self.stdout.write("  - DiarioEmocional e IncidenciaSentinel (AuditLog se PRESERVA)")
         self.stdout.write("  - CitaMedica, PreOrdenLaboratorio, MovimientoInventario, etc.")
         self.stdout.write("")
         self.stdout.write("Se PRESERVAN: Usuarios, Grupos, Permisos, Productos,")
@@ -209,9 +214,8 @@ class Command(BaseCommand):
 
         # 8. Sentinel / Auditoria
         IncidenciaSentinel = M("consultorio", "IncidenciaSentinel")
-        AuditLog = M("core", "AuditLog")
         _delete(IncidenciaSentinel)
-        _delete(AuditLog)
+        # AuditLog es evidencia forense append-only y nunca forma parte de un wipe.
 
         # 9. Consultorio legacy (Somatometria FK a ConsultaMedica, borrar primero)
         Somatometria = M("consultorio", "Somatometria")

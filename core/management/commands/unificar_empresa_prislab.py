@@ -7,7 +7,9 @@ Uso (desarrollo / datos de prueba):
 """
 
 from django.apps import apps
+from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.core.management.base import CommandError
 from django.db import transaction
 from django.db.models import ForeignKey, OneToOneField
 
@@ -37,9 +39,23 @@ class Command(BaseCommand):
             action='store_true',
             help='Solo muestra qué haría, sin escribir en la base de datos.',
         )
+        parser.add_argument(
+            '--apply',
+            action='store_true',
+            help='Aplica la fusion; requiere --confirm-merge.',
+        )
+        parser.add_argument(
+            '--confirm-merge',
+            action='store_true',
+            help='Confirma la reasignación y eliminación de empresas fuente.',
+        )
 
     def handle(self, *args, **options):
-        dry = options['dry_run']
+        if getattr(settings, 'IS_PRODUCTION', False):
+            raise CommandError('unificar_empresa_prislab está bloqueado en producción.')
+        dry = options['dry_run'] or not options['apply']
+        if options['apply'] and not options['confirm_merge']:
+            raise CommandError('Operación destructiva: añade --confirm-merge para continuar.')
         target = _resolve_target_empresa()
         if not target:
             self.stdout.write(self.style.ERROR('No hay ninguna empresa en la base de datos.'))

@@ -19,16 +19,12 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from decimal import Decimal
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from django.utils import timezone
 from django.db import connection
 
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.backends import default_backend
-import base64
 
 from core.models import Empresa, BackupRegistro
 from core.utils.drive_archive import drive_enabled, subir_archivo_a_drive
@@ -325,20 +321,17 @@ class Command(BaseCommand):
         return archivo_salida
 
     def _generar_clave_encriptacion(self):
-        """Genera una clave de encriptación AES-256 basada en SECRET_KEY de Django."""
-        password = settings.SECRET_KEY.encode('utf-8')
-        salt = b'prislab_backup_salt_2025'  # Salt fijo para consistencia
-        
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(),
-            length=32,
-            salt=salt,
-            iterations=100000,
-            backend=default_backend()
-        )
-        
-        key = base64.urlsafe_b64encode(kdf.derive(password))
-        return key
+        """Obtiene la clave dedicada de backups, nunca derivada de SECRET_KEY."""
+        raw_key = os.environ.get('PRISLAB_BACKUP_ENCRYPTION_KEY', '').strip()
+        if not raw_key:
+            raise CommandError(
+                'Configura PRISLAB_BACKUP_ENCRYPTION_KEY con una clave Fernet dedicada.'
+            )
+        try:
+            Fernet(raw_key.encode('ascii'))
+        except Exception as exc:
+            raise CommandError('PRISLAB_BACKUP_ENCRYPTION_KEY no es una clave Fernet válida.') from exc
+        return raw_key.encode('ascii')
 
     def _cifrar_archivo(self, archivo_origen, archivo_destino, clave):
         """Cifra un archivo con AES-256 usando Fernet."""
