@@ -84,10 +84,13 @@ def catalogo_medicos(request):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE')
 def catalogo_convenios(request):
     """Catálogo maestro de convenios (por médico o empresa)."""
     try:
         empresa = getattr(request.user, 'empresa', None)
+        if not empresa:
+            return JsonResponse({'status': 'error', 'mensaje': 'Usuario sin empresa asignada'}, status=403)
 
         if request.method == 'POST':
             nombre = (request.POST.get('nombre') or '').strip()
@@ -107,8 +110,9 @@ def catalogo_convenios(request):
             try:
                 descuento_dec = Decimal(str(descuento))
             except Exception:
-                logging.getLogger(__name__).exception("Error inesperado en catalogo_convenios (catalogos.py)")
-                descuento_dec = 0
+                return JsonResponse({'status': 'error', 'mensaje': 'Descuento inválido'}, status=400)
+            if descuento_dec < 0 or descuento_dec > 100:
+                return JsonResponse({'status': 'error', 'mensaje': 'El descuento debe estar entre 0 y 100.'}, status=400)
 
             Convenio.objects.create(
                 empresa=empresa,

@@ -13,9 +13,25 @@ from core.views.administracion_usuarios import api_actualizar_tarifa, api_actual
 from core.views.configuracion import configuracion_empresa
 from core.views.director import director_analizadores_probar_conexion
 from core.views.excepciones_lab import registrar_merma
+from core.views.catalogos import catalogo_convenios
+from core.agent.tools.registry import TOOLS_OPERATIVOS
 
 
 class DashboardAndPanicSecurityTests(SimpleTestCase):
+    def test_employee_cannot_create_convenio(self):
+        request = RequestFactory().post('/catalogos/convenios/', data={})
+        request.user = SimpleNamespace(
+            is_authenticated=True,
+            is_superuser=False,
+            rol='CAJERO',
+            username='cajero',
+        )
+        response = catalogo_convenios.__wrapped__(request)
+        self.assertEqual(response.status_code, 403)
+
+    def test_operational_registry_has_one_effective_rbac_source(self):
+        self.assertTrue(all('grupos' not in entry for entry in TOOLS_OPERATIVOS.values()))
+
     def test_employee_cannot_change_company_configuration(self):
         request = RequestFactory().get('/configuracion/empresa/')
         request.user = SimpleNamespace(

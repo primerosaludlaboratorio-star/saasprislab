@@ -96,20 +96,6 @@ def _ejecutar_herramienta(nombre_tool, args, request, pris_mode=True):
             from core.agent.pris_tools_operativos import TOOLS_OPERATIVOS
             if nombre_tool in TOOLS_OPERATIVOS:
                 entry = TOOLS_OPERATIVOS[nombre_tool]
-                # Capa adicional para herramientas operativas que declaren grupos propios.
-                grupos_req = entry.get("grupos", [])
-                if grupos_req and not user.is_superuser:
-                    grupos_usuario = set(user.groups.values_list('name', flat=True))
-                    roles_usuario = _rol_aliases_usuario(user)
-                    permitidos = set(grupos_req)
-                    if not (grupos_usuario.intersection(permitidos) or roles_usuario.intersection(permitidos)):
-                        return {
-                            "denegado_rbac": True,
-                            "error": (
-                                f"Su rol no tiene autorización para '{nombre_tool}'. "
-                                f"Se requiere uno de: {', '.join(grupos_req)}."
-                            ),
-                        }
                 if nombre_tool == "registrar_venta_farmacia":
                     return entry["ejecutor"](args, empresa, user, request=request)
                 return entry["ejecutor"](args, empresa, user)
