@@ -5,7 +5,7 @@ Gestión de horarios, registro de asistencia e incidencias.
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from django.db import transaction
 from django.db.models import Q, Count, Sum
 from django.views.decorators.http import require_http_methods
@@ -13,6 +13,7 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 from decimal import Decimal
 from datetime import date, datetime, timedelta
+from core.decorators import role_required
 
 from core.models import (
     Empresa, Empleado, RegistroAsistencia, Sucursal, Usuario,
@@ -20,7 +21,24 @@ from core.models import (
 )
 import logging
 
+_ROLES_GESTION_ASISTENCIA = {'ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'RH'}
+
+
+def _es_gestor_asistencia(user):
+    return bool(getattr(user, 'is_superuser', False)) or (
+        (getattr(user, 'rol', '') or '').upper().strip() in _ROLES_GESTION_ASISTENCIA
+    )
+
+
+def _empleado_autorizado(request, empresa, empleado_id):
+    """Devuelve el empleado objetivo, limitado al propio usuario en autoservicio."""
+    filtros = {'id': empleado_id, 'empresa': empresa}
+    if not _es_gestor_asistencia(request.user):
+        filtros['usuario'] = request.user
+    return get_object_or_404(Empleado, **filtros)
+
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'RH')
 def dashboard_asistencia(request):
     """Dashboard principal del módulo de asistencia."""
     empresa = getattr(request.user, 'empresa', None)
@@ -65,6 +83,7 @@ def dashboard_asistencia(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'RH')
 def registro_asistencia(request):
     """Registro manual de asistencia."""
     empresa = getattr(request.user, 'empresa', None)
@@ -110,7 +129,7 @@ def registrar_entrada_salida(request):
             tipo_registro = request.POST.get('tipo_registro', 'ENTRADA')
             observaciones = request.POST.get('observaciones', '').strip()
             
-            empleado = get_object_or_404(Empleado, id=empleado_id, empresa=empresa)
+            empleado = _empleado_autorizado(request, empresa, empleado_id)
 
             from core.utils.sucursal_helpers import get_user_primary_sucursal
             user_sucursal = get_user_primary_sucursal(request.user)
@@ -131,7 +150,10 @@ def registrar_entrada_salida(request):
             messages.error(request, 'No fue posible registrar la asistencia.')
     
     # GET: Mostrar formulario
-    empleados = Empleado.objects.filter(empresa=empresa, activo=True).order_by('id')
+    empleados = Empleado.objects.filter(empresa=empresa, activo=True)
+    if not _es_gestor_asistencia(request.user):
+        empleados = empleados.filter(usuario=request.user)
+    empleados = empleados.order_by('id')
     
     return render(request, 'core/asistencia/registrar_entrada_salida.html', {
         'empresa': empresa,
@@ -140,6 +162,7 @@ def registrar_entrada_salida(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'RH')
 def horarios_trabajo(request):
     """Gestionar horarios de trabajo de empleados."""
     empresa = getattr(request.user, 'empresa', None)
@@ -163,6 +186,7 @@ def horarios_trabajo(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'RH')
 @require_http_methods(["GET", "POST"])
 def crear_horario(request):
     """Crear o editar horario de trabajo."""
@@ -225,6 +249,9 @@ def incidencias_asistencia(request):
     empleado_id = request.GET.get('empleado', '')
     
     incidencias = IncidenciaAsistencia.objects.filter(empresa=empresa)
+
+    if not _es_gestor_asistencia(request.user):
+        incidencias = incidencias.filter(empleado__usuario=request.user)
     
     if estado:
         incidencias = incidencias.filter(estado=estado)
@@ -240,7 +267,10 @@ def incidencias_asistencia(request):
     page = request.GET.get('page')
     incidencias_pag = paginator.get_page(page)
     
-    empleados = Empleado.objects.filter(empresa=empresa, activo=True).order_by('id')
+    empleados = Empleado.objects.filter(empresa=empresa, activo=True)
+    if not _es_gestor_asistencia(request.user):
+        empleados = empleados.filter(usuario=request.user)
+    empleados = empleados.order_by('id')
     
     return render(request, 'core/asistencia/incidencias.html', {
         'empresa': empresa,
@@ -262,11 +292,16 @@ def crear_incidencia(request):
     if request.method == 'POST':
         try:
             if incidencia_id:
-                incidencia = get_object_or_404(IncidenciaAsistencia, id=incidencia_id, empresa=empresa)
+                filtros_incidencia = {'id': incidencia_id, 'empresa': empresa}
+                if not _es_gestor_asistencia(request.user):
+                    filtros_incidencia['empleado__usuario'] = request.user
+                incidencia = get_object_or_404(IncidenciaAsistencia, **filtros_incidencia)
             else:
                 incidencia = IncidenciaAsistencia(empresa=empresa)
             
-            incidencia.empleado_id = request.POST.get('empleado_id')
+            incidencia.empleado = _empleado_autorizado(
+                request, empresa, request.POST.get('empleado_id')
+            )
             incidencia.tipo = request.POST.get('tipo_incidencia') or request.POST.get('tipo')
             incidencia.fecha_inicio = request.POST.get('fecha_inicio')
             incidencia.fecha_fin = request.POST.get('fecha_fin')
@@ -293,7 +328,10 @@ def crear_incidencia(request):
     if incidencia_id:
         incidencia = get_object_or_404(IncidenciaAsistencia, id=incidencia_id, empresa=empresa)
     
-    empleados = Empleado.objects.filter(empresa=empresa, activo=True).order_by('id')
+    empleados = Empleado.objects.filter(empresa=empresa, activo=True)
+    if not _es_gestor_asistencia(request.user):
+        empleados = empleados.filter(usuario=request.user)
+    empleados = empleados.order_by('id')
     
     return render(request, 'core/asistencia/crear_incidencia.html', {
         'empresa': empresa,
@@ -304,6 +342,7 @@ def crear_incidencia(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'RH')
 @require_http_methods(["POST"])
 def autorizar_incidencia(request, incidencia_id):
     """Autorizar o rechazar una incidencia."""

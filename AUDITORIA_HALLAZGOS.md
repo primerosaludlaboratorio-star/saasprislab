@@ -334,7 +334,7 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Corrección verificada:** el flujo ya no usa fallback en claro. Si la clave falta, es inválida o falla Fernet, no se crea ni actualiza `AudioTomaMuestra`; la toma clínica termina sin audio y la respuesta informa `audio_guardado: false` con una advertencia controlada. Con una clave válida, el audio se persiste únicamente después de `Fernet.encrypt()`.
 - **Evidencia:** `core/tests/test_audio_toma_security.py` (prueba de clave ausente), `python manage.py check`, compilación de `calidad.py` y prueba aislada H-032/H-033, todos correctos.
 
-## H-NUEVO-35 — `core/views/asistencia.py`: módulo de asistencia/RH sin ningún control de rol — cualquier empleado autenticado puede autorizar/rechazar incidencias, ver documentos de soporte y registrar entradas/salidas de otros — ALTO, ABIERTO
+## H-NUEVO-35 — `core/views/asistencia.py`: módulo de asistencia/RH sin ningún control de rol — cualquier empleado autenticado puede autorizar/rechazar incidencias, ver documentos de soporte y registrar entradas/salidas de otros — ALTO, CORREGIDO
 - **Ubicación:** `core/views/asistencia.py` (327 líneas completas) — el archivo solo importa `login_required` de `django.contrib.auth.decorators`; NO importa `role_required` de `core.decorators` en ningún punto, a diferencia de `core/views/rh.py` y `core/views/nomina.py` (mismo dominio HR/nómina) que exigen `@role_required('DIRECTOR','ADMIN','GERENTE','RH')`.
 - **Descripción:** Todas las vistas del módulo (`dashboard_asistencia`, `registro_asistencia`, `registrar_entrada_salida`, `horarios_trabajo`, `crear_horario`, `incidencias_asistencia`, `crear_incidencia`, `autorizar_incidencia`) solo exigen `@login_required`, sin restricción de rol. En particular:
   - `autorizar_incidencia` (líneas 306-327): cualquier usuario autenticado del tenant puede marcar una `IncidenciaAsistencia` (falta, permiso, incapacidad) como `AUTORIZADA` o `RECHAZADA` para **cualquier empleado**, sin pertenecer a RH/Dirección.
@@ -342,6 +342,12 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
   - `incidencias_asistencia`/`registro_asistencia`: cualquier usuario puede listar el `motivo` y `documento_soporte` (posible incapacidad médica, justificante) de incidencias de **todos** los empleados de la empresa.
 - **Riesgo:** ruptura de control de acceso en un flujo que impacta nómina/RH — un empleado sin privilegios podría autoaprobar su propia falta, alterar registros de asistencia de compañeros, o acceder a motivos/documentos médicos de incidencias ajenas (dato sensible bajo NOM-035/LFPDPPP), sin necesitar rol de supervisor.
 - **Recomendación:** Aplicar `@role_required('DIRECTOR','ADMIN','GERENTE','RH')` (mismo patrón que `rh.py`/`nomina.py`) a las vistas de gestión/autorización (`autorizar_incidencia`, `incidencias_asistencia`, `horarios_trabajo`, `crear_horario`), y limitar `registrar_entrada_salida`/`crear_incidencia` de autoservicio a que el `empleado_id` corresponda al propio `request.user` salvo que el actor tenga rol de supervisor.
+
+### Corrección verificada H-NUEVO-35
+
+- Paneles, horarios, listados globales y autorización exigen `ADMIN`, `DIRECTOR`, `GERENTE`, `FARMACIA` o `RH`.
+- El autoservicio conserva registro y alta de la propia persona, pero el empleado objetivo se resuelve con `usuario=request.user`; las consultas de incidencias también quedan limitadas al propio empleado.
+- Evidencia: `core/tests/test_asistencia_security.py` (2 pruebas OK), `python manage.py check` y compilación sin errores.
 
 ## H-NUEVO-36 — `core/views/catalogos_maestros.py`: cualquier usuario autenticado (sin rol ni tenant) puede sobrescribir masivamente el catálogo GLOBAL `laboratorio.Estudio` compartido por TODOS los clientes de PRISLAB — CRÍTICO, ABIERTO
 - **Ubicación:** `core/views/catalogos_maestros.py` (225 líneas completas); modelo `laboratorio.models.clinico.Estudio` (confirmado sin campo `empresa` — tabla global, no tenant-scoped).

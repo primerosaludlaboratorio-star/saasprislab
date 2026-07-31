@@ -185,7 +185,7 @@ BLOQUE 4 — CERRADO SIN HUECOS PENDIENTES (los 27 archivos + 3 subpaquetes ahor
 - [x] calidad.py — 747/747 líneas (archivo más grande del paquete, releído completo en 2 partes). `api_validar_pin` usa `secrets.compare_digest` correctamente (PIN sigue siendo global de la app, no por tenant — deuda ya documentada en H-NUEVO-20). **H-NUEVO-34 CORREGIDO:** `api_finalizar_toma` nunca persiste audio sin cifrar; si Fernet no está disponible, continúa la toma sin audio y devuelve advertencia explícita.
 
 - [x] analytics.py — 460/460 líneas leídas completas. Todo `empresa=` scoped correctamente. Sin hallazgos de seguridad (nota menor no formal: `datetime.strptime` sin try/except en `dashboard_analytics` podría causar 500 con fecha inválida en GET, no es explotable).
-- [x] asistencia.py — 327/327 líneas leídas completas. **H-NUEVO-35 NUEVO** (ALTO): el archivo NUNCA importa `role_required`; ninguna vista de gestión/autorización de asistencia tiene control de rol, a diferencia de `rh.py`/`nomina.py` del mismo dominio. `autorizar_incidencia` permite a cualquier usuario autenticado aprobar/rechazar incidencias de cualquier empleado.
+- [x] asistencia.py — 327/327 líneas leídas completas. **H-NUEVO-35 CORREGIDO** (ALTO): gestión global y autorización usan `role_required`; el autoservicio de empleados queda limitado al propio registro/propia incidencia mediante `usuario=request.user`.
 
 - [x] autorizaciones.py — 286/286 líneas. Vistas de aprobación gateadas por `is_superuser`; sin scoping por empresa pero consistente con diseño de superuser cross-tenant ya confirmado en otros módulos. Sin hallazgos nuevos.
 - [x] biblioteca.py — 137/137 líneas. Todo `empresa=` scoped. Sin hallazgos.
