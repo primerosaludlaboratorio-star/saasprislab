@@ -297,6 +297,10 @@ seguridad en `core/tests/test_management_command_safety.py`. Los hallazgos
 H-NUEVO-32 a H-NUEVO-34 permanecen abiertos y no se consideran corregidos en esta
 ronda.
 
+Producción: se configuró una clave Fernet dedicada en `.env` (sin exponer su
+valor) y se verificó que tiene formato válido. Despliegue de código:
+`c4bcf50bf96b669e9a80c69142b3c738747e6ad5`.
+
 ## H-NUEVO-32 — Inyección de markup ReportLab en PDFs médicos/legales oficiales (recetas, resultados de laboratorio, consentimiento informado) — MEDIO-ALTO, ABIERTO
 - **Ubicación:**
   - `core/services/motor_recetas.py::_safe()` (líneas 81-120) — no escapa `<`,`>`,`&`.
@@ -329,6 +333,13 @@ ronda.
   - `incidencias_asistencia`/`registro_asistencia`: cualquier usuario puede listar el `motivo` y `documento_soporte` (posible incapacidad médica, justificante) de incidencias de **todos** los empleados de la empresa.
 - **Riesgo:** ruptura de control de acceso en un flujo que impacta nómina/RH — un empleado sin privilegios podría autoaprobar su propia falta, alterar registros de asistencia de compañeros, o acceder a motivos/documentos médicos de incidencias ajenas (dato sensible bajo NOM-035/LFPDPPP), sin necesitar rol de supervisor.
 - **Recomendación:** Aplicar `@role_required('DIRECTOR','ADMIN','GERENTE','RH')` (mismo patrón que `rh.py`/`nomina.py`) a las vistas de gestión/autorización (`autorizar_incidencia`, `incidencias_asistencia`, `horarios_trabajo`, `crear_horario`), y limitar `registrar_entrada_salida`/`crear_incidencia` de autoservicio a que el `empleado_id` corresponda al propio `request.user` salvo que el actor tenga rol de supervisor.
+
+## H-NUEVO-36 — `core/views/catalogos_maestros.py`: cualquier usuario autenticado (sin rol ni tenant) puede sobrescribir masivamente el catálogo GLOBAL `laboratorio.Estudio` compartido por TODOS los clientes de PRISLAB — CRÍTICO, ABIERTO
+- **Ubicación:** `core/views/catalogos_maestros.py` (225 líneas completas); modelo `laboratorio.models.clinico.Estudio` (confirmado sin campo `empresa` — tabla global, no tenant-scoped).
+- **Descripción:** Las 5 vistas del archivo (`gestionar_metodos`, `api_obtener_metodo`, `api_actualizar_metodo`, `gestionar_muestras`, `api_actualizar_muestra`) solo tienen `@login_required`, **sin `@role_required` ni ningún otro control de acceso**, y ninguna de sus queries filtra por `empresa` — porque el modelo subyacente `laboratorio.Estudio` (import `from laboratorio.models import Estudio as EstudioLab`) **no tiene campo `empresa`**, es decir, es una tabla compartida globalmente entre todos los tenants de la plataforma. `api_actualizar_metodo`/`api_actualizar_muestra`, con `actualizar_estudios=True`, ejecutan `estudios_afectados.update(metodo=metodo_nuevo)` / `.update(muestra_requerida=muestra_nueva)` sobre **todos** los `Estudio` que coincidan con el valor anterior, sin distinguir a qué cliente pertenecen.
+- Esto contradice una nota de auditoría previa (`core/views/paquetes.py`, ver Bloque 5) que asumía que `laboratorio.Estudio` "no tenía callers activos" y por eso se dejó sin proteger — esa suposición es **incorrecta**: `catalogos_maestros.py` es un caller activo real y alcanzable vía URL autenticada.
+- **Riesgo:** cualquier usuario autenticado de **cualquier tenant**, sin necesidad de rol administrativo, puede renombrar en bloque valores de "método" o "muestra requerida" de estudios de laboratorio que pertenecen potencialmente a **otras empresas clientes de PRISLAB**, corrompiendo catálogos ajenos (integridad de datos clínicos/operativos cross-tenant). No hay aislamiento de ningún tipo — es una violación directa del principio fundamental multi-tenant de la plataforma.
+- **Recomendación:** (1) Verificar con máxima prioridad si `laboratorio.Estudio` todavía tiene registros activos en producción y si son compartidos entre tenants o son remanentes de una migración; (2) si el modelo sigue en uso, agregar `empresa` FK y migrar datos, filtrando todas las queries de este archivo por `empresa=request.user.empresa`; (3) mientras tanto, aplicar `@role_required('DIRECTOR_QC','ADMIN')` (mismo patrón que `catalogos.py`) a las 5 vistas como mitigación inmediata; (4) si el modelo es verdaderamente legacy/muerto como se documentó para `paquetes.py`, retirar `catalogos_maestros.py` también, en vez de dejarlo como caller activo sin protección.
 
 ## Código muerto / higiene (sin riesgo de seguridad) — CORREGIDO
 - `core/services/ai_medico_backup.py` — eliminado tras confirmar que no tenía imports activos.
