@@ -192,7 +192,7 @@ BLOQUE 4 — CERRADO SIN HUECOS PENDIENTES (los 27 archivos + 3 subpaquetes ahor
 - [x] bienestar_mejorado.py — 187/187 líneas. Alertas de riesgo con nivel/descripción genérica (sin contenido íntimo expuesto a RRHH); roles correctamente gateados. Sin hallazgos.
 - [x] bienestar.py — 373/373 líneas. NOM-035 con cifrado vía `EncryptedTextField`; RRHH solo ve tipo de alerta/fecha, nunca contenido del diario. Diseño ejemplar de privacidad. Sin hallazgos.
 - [x] catalogos.py — 205/205 líneas. `@role_required('DIRECTOR_QC','ADMIN')` en mutaciones de catálogo; todo `empresa=` scoped. Sin hallazgos.
-- [x] catalogos_maestros.py — 225/225 líneas. **H-NUEVO-36 NUEVO (CRÍTICO)**: ninguna vista tiene `@role_required` ni filtra por `empresa`; opera sobre `laboratorio.Estudio`, confirmado como modelo GLOBAL sin campo `empresa` (no tenant-scoped) — cualquier usuario autenticado de cualquier tenant puede sobrescribir masivamente método/muestra de estudios de otras empresas. Contradice la suposición previa de "sin callers activos" para ese modelo (ver nota en `paquetes.py`).
+- [x] catalogos_maestros.py — 225/225 líneas. **H-NUEVO-36 CORREGIDO (CRÍTICO)**: las vistas de lectura requieren rol administrativo y las mutaciones sobre `laboratorio.Estudio`, modelo GLOBAL sin `empresa`, quedan reservadas al superusuario. Administradores de empresa reciben 403 y no pueden ejecutar actualizaciones masivas.
 
 - [x] capacitacion_rag.py — 463/463 líneas. `_es_director_qc` gatea mutaciones; todo `empresa=` scoped. Sin hallazgos.
 - [x] comunicacion.py — 315/315 líneas. Chat interno con filtro `empresa=` explícito en cada query (incluso las optimizadas N+1). Sin hallazgos.

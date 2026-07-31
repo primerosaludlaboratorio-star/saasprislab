@@ -3,6 +3,9 @@ Catálogos Maestros (Métodos y Muestras)
 REGLA: Estandarizar formularios usando modales asíncronos.
 Herencia: Si se edita un Método en el catálogo maestro, ofrecer actualización opcional en todos los estudios vinculados.
 """
+import json
+from functools import wraps
+
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -11,12 +14,27 @@ from django.db import transaction
 from django.db.models import Count
 
 from core.models import Empresa
+from core.decorators import role_required
 from laboratorio.models import Estudio as EstudioLab
 from core.utils.estandares_industriales import auditar_cambio_campo
 import logging
 
 
+def _superuser_only(view_func):
+    """Protege mutaciones del catálogo global compartido por todos los tenants."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not getattr(request.user, 'is_superuser', False):
+            return JsonResponse({
+                'status': 'error',
+                'mensaje': 'Solo el superusuario puede modificar el catálogo global.',
+            }, status=403)
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'RH')
 def gestionar_metodos(request):
     """
     Vista principal para gestión de métodos (catálogo maestro).
@@ -38,6 +56,7 @@ def gestionar_metodos(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'RH')
 @require_http_methods(["GET"])
 def api_obtener_metodo(request, metodo_id=None):
     """
@@ -81,6 +100,7 @@ def api_obtener_metodo(request, metodo_id=None):
 
 
 @login_required
+@_superuser_only
 @require_http_methods(["POST"])
 def api_actualizar_metodo(request):
     """
@@ -143,6 +163,7 @@ def api_actualizar_metodo(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'RH')
 def gestionar_muestras(request):
     """
     Vista principal para gestión de muestras (catálogo maestro).
@@ -164,6 +185,7 @@ def gestionar_muestras(request):
 
 
 @login_required
+@_superuser_only
 @require_http_methods(["POST"])
 def api_actualizar_muestra(request):
     """
