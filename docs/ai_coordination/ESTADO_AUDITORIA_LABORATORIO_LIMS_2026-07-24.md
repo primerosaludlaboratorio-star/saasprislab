@@ -184,3 +184,8 @@ Se corrigió y desplegó la comunicación de la pantalla:
 Verificación productiva posterior al despliegue: el aviso, los estados
 deshabilitados y la etiqueta accesible se observaron en
 `/laboratorio/captura/10/`. No se modificó ningún resultado clínico.
+
+También se añadió un título visible `Captura de resultados`, una instrucción
+breve de operación y la leyenda `P = pendiente de captura` para eliminar la
+ambigüedad de la columna `V/I`. La revisión final en producción confirmó estos
+elementos junto con el bloqueo explicado.
