@@ -24,6 +24,7 @@ from datetime import date
 from core.models import OrdenDeServicio, DetalleOrden, ResultadoParametro, AuditLog
 from core.lims_cart import detalle_orden_etiqueta
 from core.services.ia_clinical_governance import METODO_IA_BORRADOR
+from core.utils.lfpdppp_resultados import paciente_autorizado_canal_digital_resultados
 from lims.models import Analito, ValorReferenciaAnalito
 from laboratorio.models import Equipo, NotificacionPanico
 import logging
@@ -293,7 +294,8 @@ def captura_resultados_industrial(request, orden_id):
     _total = orden.total or _D('0')
     _anticipo = orden.anticipo or _D('0')
     saldo_cero = (_total - _anticipo) <= _D('0')
-    puede_imprimir = esta_validado and saldo_cero
+    firma_privacidad = paciente_autorizado_canal_digital_resultados(paciente)
+    puede_imprimir = esta_validado and saldo_cero and firma_privacidad
 
     token_acceso = str(orden.token_acceso) if getattr(orden, 'token_acceso', None) else None
 
@@ -310,6 +312,7 @@ def captura_resultados_industrial(request, orden_id):
         'total_parametros': total_parametros,
         'esta_validado': esta_validado,
         'saldo_cero': saldo_cero,
+        'firma_privacidad': firma_privacidad,
         'puede_imprimir': puede_imprimir,
         'token_acceso': token_acceso,
         'folios_dia': folios_dia,

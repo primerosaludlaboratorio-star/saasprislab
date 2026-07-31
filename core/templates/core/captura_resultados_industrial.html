@@ -308,7 +308,7 @@
                     </a>
                     {% else %}
                     <button type="button" class="btn btn-sm btn-danger opacity-50" disabled
-                            title="{% if not esta_validado %}Primero valide los resultados{% else %}La orden no está completamente pagada{% endif %}">
+                            title="{% if not esta_validado %}Primero valide los resultados{% elif not saldo_cero %}La orden no está completamente pagada{% else %}Falta registrar el consentimiento de privacidad{% endif %}">
                         <i class="bi bi-file-earmark-pdf me-1"></i>Imprimir con Membrete
                     </button>
                     {% endif %}
@@ -322,9 +322,20 @@
                     </a>
                     {% else %}
                     <button type="button" class="btn btn-sm btn-outline-danger opacity-50" disabled
-                            title="{% if not esta_validado %}Primero valide los resultados{% else %}La orden no está completamente pagada{% endif %}">
+                            title="{% if not esta_validado %}Primero valide los resultados{% elif not saldo_cero %}La orden no está completamente pagada{% else %}Falta registrar el consentimiento de privacidad{% endif %}">
                         <i class="bi bi-file-earmark me-1"></i>Imprimir sin Membrete
                     </button>
+                    {% endif %}
+
+                    {% if esta_validado and saldo_cero and not firma_privacidad %}
+                    <div class="alert alert-warning mb-0 py-2 px-3 small w-100" role="alert">
+                        <i class="bi bi-shield-exclamation me-1"></i>
+                        <strong>PDF retenido:</strong> falta la firma de aviso de privacidad.
+                        El resultado no se libera hasta completar la tercera llave.
+                        <a class="alert-link ms-1" href="{% url 'consentimiento_digital' orden.id %}" target="_blank">
+                            Registrar consentimiento
+                        </a>
+                    </div>
                     {% endif %}
 
                     {# 5. PUBLICAR — genera enlace QR para el paciente #}
