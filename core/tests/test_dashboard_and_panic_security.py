@@ -9,9 +9,35 @@ from core.views.laboratorio_captura import registrar_notificacion_panico
 from core.views.monitor_produccion import _puede_validar_resultados
 from core.views.transferencias import api_buscar_productos_transferencia
 from core.utils.pris_audio_vision import generar_hash_digital, verificar_integridad
+from core.views.administracion_usuarios import api_actualizar_tarifa, api_actualizar_usuario
 
 
 class DashboardAndPanicSecurityTests(SimpleTestCase):
+    def test_staff_without_admin_role_cannot_update_users(self):
+        request = RequestFactory().post('/administracion/usuarios/1/', data='{}', content_type='application/json')
+        request.user = SimpleNamespace(
+            is_authenticated=True,
+            is_superuser=False,
+            is_staff=True,
+            rol='CAJERO',
+            username='cajero',
+        )
+        response = api_actualizar_usuario.__wrapped__(request, 1)
+        self.assertEqual(response.status_code, 403)
+
+    def test_tenant_admin_cannot_update_global_tariff(self):
+        request = RequestFactory().post('/administracion/tarifas/1/', data='{}', content_type='application/json')
+        request.user = SimpleNamespace(
+            is_authenticated=True,
+            is_superuser=False,
+            is_staff=True,
+            rol='ADMIN',
+            empresa=object(),
+            username='admin',
+        )
+        response = api_actualizar_tarifa.__wrapped__(request, 1)
+        self.assertEqual(response.status_code, 403)
+
     def test_transfer_search_accepts_text_filter(self):
         request = RequestFactory().get('/transferencias/api/buscar-productos/?q=guante')
         request.user = SimpleNamespace(is_authenticated=True, empresa=object())

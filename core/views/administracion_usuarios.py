@@ -14,6 +14,7 @@ from decimal import Decimal
 
 from core.utils.trazabilidad import registrar_trazabilidad
 from core.utils.estandares_industriales import auditar_cambio_campo
+from core.decorators import role_required
 import logging
 
 Usuario = get_user_model()
@@ -34,6 +35,7 @@ def _requiere_empresa_o_superuser(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE')
 def gestionar_usuarios(request):
     """
     Vista principal para gestión de usuarios.
@@ -62,6 +64,7 @@ def gestionar_usuarios(request):
 
 @login_required
 @require_http_methods(["GET"])
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE')
 def api_obtener_usuario(request, usuario_id):
     """
     API para obtener datos de un usuario (para modal de edición).
@@ -114,6 +117,7 @@ def api_obtener_usuario(request, usuario_id):
 
 @login_required
 @require_http_methods(["POST"])
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE')
 def api_actualizar_usuario(request, usuario_id):
     """
     API para actualizar datos de un usuario.
@@ -148,6 +152,14 @@ def api_actualizar_usuario(request, usuario_id):
                         'status': 'error',
                         'mensaje': 'No está permitido reasignar la empresa del usuario.',
                     }, status=403)
+
+        if usuario.pk == request.user.pk and any(
+            campo in data for campo in ('rol', 'is_staff', 'is_active')
+        ):
+            return JsonResponse({
+                'status': 'error',
+                'mensaje': 'No puede modificar su propio rol, estado de staff o activación.',
+            }, status=403)
 
         # Guardar valores anteriores para auditoría
         valores_anteriores = {
@@ -256,6 +268,7 @@ def api_actualizar_usuario(request, usuario_id):
 
 @login_required
 @require_http_methods(["POST"])
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE')
 def api_actualizar_tarifa(request, estudio_id):
     """
     API para actualizar tarifa de un estudio.
@@ -270,7 +283,14 @@ def api_actualizar_tarifa(request, estudio_id):
             'mensaje': 'Acceso denegado'
         }, status=403)
 
-    # Permitir superuser/staff CON empresa válida - consistencia con LIMS
+    # Estudio es un catálogo global legacy sin empresa: solo superuser puede
+    # modificarlo hasta que exista una tarifa tenant-scoped.
+    if not request.user.is_superuser:
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': 'Las tarifas globales solo pueden modificarse por un superusuario.',
+        }, status=403)
+
     if not empresa:
         return JsonResponse({
             'status': 'error',
@@ -329,6 +349,7 @@ def api_actualizar_tarifa(request, estudio_id):
 
 @login_required
 @require_http_methods(["POST"])
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE')
 def api_actualizar_permiso(request, perfil_id):
     """
     API para actualizar permiso de un perfil.
