@@ -8,6 +8,7 @@ bypass de IP interna, código maestro de emergencia CISO.
 """
 import logging
 import hashlib
+import secrets
 import ipaddress
 
 from django.conf import settings
@@ -85,7 +86,10 @@ def _verificar_codigo_maestro(codigo: str) -> bool:
     master = getattr(settings, 'PRISLAB_MASTER_RECOVERY_CODE', '')
     if not master or not codigo:
         return False
-    return hashlib.sha256(codigo.encode()).hexdigest() == hashlib.sha256(master.encode()).hexdigest()
+    return secrets.compare_digest(
+        hashlib.sha256(codigo.encode()).hexdigest(),
+        hashlib.sha256(master.encode()).hexdigest(),
+    )
 
 
 def _notificar_ciso_uso_codigo_maestro(usuario, request):

@@ -125,7 +125,6 @@ def api_dictado_resultado(request):
             modulo='laboratorio.captura_resultados',
             empresa=empresa,
             usuario=request.user,
-            ip=_ip_cliente(request),
         )
     except Exception as exc:
         logger.warning('No se pudo sellar audio: %s', exc)
@@ -147,7 +146,7 @@ def api_dictado_resultado(request):
         'transcripcion': transcripcion,
         'orden_id': orden_id,
         'valores': valores_mapeados,
-        'audio_log_id': registro_audio.id if registro_audio else None,
+        'audio_log_id': registro_audio.get('id') if registro_audio else None,
     }
 
     accion = _crear_accion_pris(
@@ -194,7 +193,6 @@ def api_dictado_inventario(request):
             modulo='farmacia.inventario',
             empresa=empresa,
             usuario=request.user,
-            ip=_ip_cliente(request),
         )
     except Exception as exc:
         logger.warning('No se pudo sellar audio inventario: %s', exc)
@@ -216,7 +214,7 @@ def api_dictado_inventario(request):
         'producto_nombre': producto.nombre if producto else nombre_detectado,
         'cantidad_cajas': resultado.get('cantidad_cajas', 0),
         'cantidad_piezas': resultado.get('cantidad_piezas', 0),
-        'audio_log_id': registro_audio.id if registro_audio else None,
+        'audio_log_id': registro_audio.get('id') if registro_audio else None,
     }
 
     accion = _crear_accion_pris(
@@ -416,13 +414,12 @@ def api_crear_archivo_raw(request):
             modulo='consultorio.audio_legal',
             empresa=empresa,
             usuario=request.user,
-            ip=_ip_cliente(request),
         )
         return JsonResponse({
             'status': 'success',
-            'archivo_raw_id': registro.id,
-            'hash_digital': registro.hash_digital,
-            'timestamp': registro.timestamp.isoformat(),
+            'archivo_raw_id': registro.get('id'),
+            'hash_digital': registro.get('hash_sha256', ''),
+            'timestamp': registro.get('timestamp_servidor'),
             'mensaje': 'Archivo RAW sellado con éxito. Hash inmutable registrado.',
         })
     except Exception as exc:
@@ -499,7 +496,6 @@ def api_consulta_voz(request):
             modulo='pris.consulta_voz',
             empresa=empresa,
             usuario=request.user,
-            ip=_ip_cliente(request),
         )
     except Exception:
         logger.warning('[PRIS] No se pudo sellar transcripción de consulta voz', exc_info=True)
@@ -887,7 +883,6 @@ def api_coach_toma_muestra(request):
             modulo='laboratorio.toma_muestra',
             empresa=empresa,
             usuario=request.user,
-            ip=_ip_cliente(request),
         )
         return JsonResponse({'status': 'success', **evaluacion})
     except Exception as exc:

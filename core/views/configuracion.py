@@ -64,6 +64,8 @@ def configuracion_empresa(request):
         from django.contrib import messages
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
+    if not _puede_administrar_configuracion(request.user):
+        return JsonResponse({'error': 'Sin permiso'}, status=403)
     
     if request.method == 'POST':
         from django.forms import ModelForm

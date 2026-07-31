@@ -10,9 +10,49 @@ from core.views.monitor_produccion import _puede_validar_resultados
 from core.views.transferencias import api_buscar_productos_transferencia
 from core.utils.pris_audio_vision import generar_hash_digital, verificar_integridad
 from core.views.administracion_usuarios import api_actualizar_tarifa, api_actualizar_usuario
+from core.views.configuracion import configuracion_empresa
+from core.views.director import director_analizadores_probar_conexion
+from core.views.excepciones_lab import registrar_merma
 
 
 class DashboardAndPanicSecurityTests(SimpleTestCase):
+    def test_employee_cannot_change_company_configuration(self):
+        request = RequestFactory().get('/configuracion/empresa/')
+        request.user = SimpleNamespace(
+            is_authenticated=True,
+            is_superuser=False,
+            rol='CAJERO',
+        )
+        with patch('core.views.configuracion.get_empresa_usuario', return_value=object()):
+            response = configuracion_empresa(request)
+        self.assertEqual(response.status_code, 403)
+
+    def test_analyzer_probe_rejects_loopback_before_connecting(self):
+        request = RequestFactory().post(
+            '/director/analizadores/probar/',
+            data=json.dumps({'ip': '127.0.0.1', 'puerto': 80}),
+            content_type='application/json',
+        )
+        request.user = SimpleNamespace(
+            is_authenticated=True,
+            is_superuser=False,
+            rol='LABORATORIO',
+            empresa=object(),
+        )
+        response = director_analizadores_probar_conexion.__wrapped__(request)
+        self.assertEqual(response.status_code, 403)
+
+    def test_employee_cannot_register_inventory_shrinkage(self):
+        request = RequestFactory().post('/laboratorio/merma/', data='{}', content_type='application/json')
+        request.user = SimpleNamespace(
+            is_authenticated=True,
+            is_superuser=False,
+            rol='CAJERO',
+            username='cajero',
+        )
+        response = registrar_merma.__wrapped__(request)
+        self.assertEqual(response.status_code, 403)
+
     def test_staff_without_admin_role_cannot_update_users(self):
         request = RequestFactory().post('/administracion/usuarios/1/', data='{}', content_type='application/json')
         request.user = SimpleNamespace(

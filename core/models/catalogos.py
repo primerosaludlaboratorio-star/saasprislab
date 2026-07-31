@@ -254,7 +254,7 @@ class Medico(models.Model):
     
     # 🔒 Capa de Blindaje v2.0 — PIN de validación LAB (no almacenar en texto plano)
     lab_validation_pin_hash = models.CharField(
-        max_length=64,
+        max_length=128,
         blank=True,
         verbose_name="Hash del PIN-LAB",
         help_text="SHA256 del PIN de validación para firmar notas. NUNCA almacenar el PIN en texto plano."

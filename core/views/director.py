@@ -3,6 +3,7 @@ Vista del Dashboard de Director - Control de Mando Ejecutivo.
 Muestra métricas en tiempo real: ventas, reactivos, pacientes, alertas críticas.
 """
 from decimal import Decimal
+import ipaddress
 from datetime import datetime, timedelta
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
@@ -429,6 +430,23 @@ def director_analizadores_probar_conexion(request):
         if not ip:
             return JsonResponse({'ok': False, 'mensaje': 'IP requerida'})
         puerto = int(data.get('puerto', 9100))
+        try:
+            ip_obj = ipaddress.ip_address(ip)
+        except ValueError:
+            return JsonResponse({'ok': False, 'mensaje': 'IP inválida'}, status=400)
+        if ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_multicast or ip_obj.is_unspecified:
+            return JsonResponse({'ok': False, 'mensaje': 'IP no permitida'}, status=403)
+        empresa = getattr(request.user, 'empresa', None)
+        if not empresa:
+            return JsonResponse({'ok': False, 'mensaje': 'Usuario sin empresa asignada'}, status=403)
+        from laboratorio.models import Equipo
+        equipo = Equipo.objects.filter(
+            empresa=empresa,
+            activo=True,
+            ip_address=ip,
+        ).filter(Q(puerto=puerto) | Q(puerto__isnull=True)).first()
+        if not equipo:
+            return JsonResponse({'ok': False, 'mensaje': 'Equipo no autorizado para esta empresa'}, status=403)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(3)
         result = sock.connect_ex((ip, puerto))

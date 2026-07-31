@@ -10,6 +10,7 @@ from django.http import Http404, JsonResponse
 from django.db import transaction
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
+from core.decorators import role_required
 
 from core.models import (
     Empresa, Paciente, OrdenDeServicio, DetalleOrden,
@@ -326,6 +327,7 @@ def rechazar_muestra(request, detalle_id):
 
 @login_required
 @require_http_methods(["POST"])
+@role_required('FARMACIA', 'GERENTE', 'DIRECTOR', 'ADMIN')
 def registrar_merma(request):
     """
     Registra una baja por merma en inventario (sin generar venta).

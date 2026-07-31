@@ -14,6 +14,7 @@ Endpoints para:
 import hashlib
 import json
 import logging
+import secrets
 from datetime import datetime
 from django.utils import timezone
 
@@ -24,6 +25,7 @@ from django.http import JsonResponse, HttpResponse
 from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
 from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
 
 from core.models import (
     NotaClinicaSOAP, NotaClinicaSellar, ExpedienteNotaSHA,
@@ -174,8 +176,19 @@ def sellar_con_pin(request, nota_id):
                 'error': 'PIN no configurado'
             }, status=400)
         
-        pin_hash_input = hashlib.sha256(pin.encode()).hexdigest()
-        if pin_hash_input != medico_profile.lab_validation_pin_hash:
+        pin_hash_almacenado = medico_profile.lab_validation_pin_hash
+        pin_valido = check_password(pin, pin_hash_almacenado)
+        if not pin_valido and len(pin_hash_almacenado) == 64:
+            # Compatibilidad temporal con PIN-LAB legacy SHA-256; actualizar
+            # al hasher de Django después de una validación correcta.
+            pin_valido = secrets.compare_digest(
+                hashlib.sha256(pin.encode()).hexdigest(),
+                pin_hash_almacenado,
+            )
+            if pin_valido:
+                medico_profile.lab_validation_pin_hash = make_password(pin)
+                medico_profile.save(update_fields=['lab_validation_pin_hash'])
+        if not pin_valido:
             logger.warning(
                 f"[BLINDAJE] Intento de sellado con PIN inválido "
                 f"nota=#{nota_id} usuario={request.user.username}"
@@ -465,7 +478,7 @@ def configurar_pin_lab(request):
             request.user.medico_profile = medico_profile
         
         # Generar hash y guardar
-        pin_hash = hashlib.sha256(pin.encode()).hexdigest()
+        pin_hash = make_password(pin)
         medico_profile.lab_validation_pin_hash = pin_hash
         medico_profile.pin_configurado_en = timezone.localtime(timezone.now())
         medico_profile.save()
