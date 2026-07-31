@@ -163,3 +163,24 @@ Conclusión de esta ronda: el flujo humano está probado hasta el bloqueo clíni
 legítimo. El cierre E2E de captura, validación y PDF requiere configurar un
 equipo activo y registrar consentimiento real; fabricar cualquiera de los dos
 invalidaría la auditoría.
+
+## Addendum — Revisión de intuitividad productiva 2026-07-30
+
+La pantalla de captura se evaluó como usuario sin contexto técnico. Se detectó
+una confusión real: la interfaz mostraba principalmente que la orden no estaba
+validada, aunque el bloqueo inmediato era la ausencia de equipos activos; los
+campos parecían editables aunque eran de solo lectura.
+
+Se corrigió y desplegó la comunicación de la pantalla:
+
+- El selector ahora dice `Equipo que procesa la muestra`.
+- La opción vacía ahora explica `No hay equipos activos configurados`.
+- Se muestra un aviso visible: `Captura pendiente`, con la causa y la ruta
+  `Analizadores (Config)` como siguiente acción.
+- `EDITAR` y `VALIDAR` quedan deshabilitados cuando no existe equipo activo,
+  evitando acciones que inevitablemente fallarían.
+- El campo de resultado anuncia accesiblemente `Pendiente de equipo activo`.
+
+Verificación productiva posterior al despliegue: el aviso, los estados
+deshabilitados y la etiqueta accesible se observaron en
+`/laboratorio/captura/10/`. No se modificó ningún resultado clínico.

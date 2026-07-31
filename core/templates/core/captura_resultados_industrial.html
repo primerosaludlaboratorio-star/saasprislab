@@ -261,21 +261,29 @@
                     {% if not esta_validado %}
                     <div class="d-flex align-items-center gap-1 me-2">
                         <label for="equipo-select" class="text-muted mb-0" style="font-size:11px;">
-                            <i class="bi bi-motherboard me-1"></i>Equipo:
+                            <i class="bi bi-motherboard me-1"></i>Equipo que procesa la muestra:
                         </label>
-                        <select id="equipo-select" class="form-select form-select-sm" style="width:auto;min-width:140px;font-size:11px;">
+                        <select id="equipo-select" class="form-select form-select-sm" aria-describedby="equipo-ayuda" style="width:auto;min-width:140px;font-size:11px;">
                             <option value="">— Seleccionar —</option>
                             {% for equipo in equipos_laboratorio %}
                             <option value="{{ equipo.id }}">{{ equipo.nombre }}{% if equipo.marca %} ({{ equipo.marca }}){% endif %}</option>
                             {% empty %}
-                            <option value="" disabled>No hay equipos activos</option>
+                            <option value="" disabled>No hay equipos activos configurados</option>
                             {% endfor %}
                         </select>
                     </div>
                     {% endif %}
 
+                    {% if captura_bloqueada_sin_equipo %}
+                    <div id="equipo-ayuda" class="alert alert-warning mb-0 py-2 px-3 small w-100" role="alert">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        <strong>Captura pendiente:</strong> no hay un equipo activo configurado para esta empresa.
+                        Configure el equipo en <strong>Analizadores (Config)</strong> antes de capturar o validar resultados.
+                    </div>
+                    {% endif %}
+
                     {# 1. EDITAR / GUARDAR (toggle único) #}
-                    {% if not esta_validado %}
+                    {% if not esta_validado and not captura_bloqueada_sin_equipo %}
                     <button type="button" id="btn-editar-resultados"
                             class="btn btn-sm btn-warning px-3 fw-bold"
                             onclick="toggleModoEdicion(this)"
@@ -283,18 +291,30 @@
                         <i class="bi bi-pencil-square me-1"></i>EDITAR
                     </button>
                     {% else %}
+                    {% if not esta_validado and captura_bloqueada_sin_equipo %}
+                    <button type="button" id="btn-editar-resultados" class="btn btn-sm btn-warning px-3 fw-bold" disabled
+                            title="Primero configure un equipo activo para habilitar la captura">
+                        <i class="bi bi-pencil-square me-1"></i>EDITAR
+                    </button>
+                    {% else %}
                     <span class="badge bg-success px-3 py-2 align-self-center fs-6">
                         <i class="bi bi-lock-fill me-1"></i>VALIDADO
                     </span>
                     {% endif %}
+                    {% endif %}
 
                     {# 2. VALIDAR #}
-                    {% if not esta_validado %}
+                    {% if not esta_validado and not captura_bloqueada_sin_equipo %}
                     <button type="button" id="btn-validar-resultados"
                             class="btn btn-sm btn-success px-3 fw-bold"
                             onclick="validarYPublicar()"
                             data-prislab-requires-online="1"
                             title="Validar resultados como QFB (requiere guardar primero)">
+                        <i class="bi bi-check-circle-fill me-1"></i>VALIDAR
+                    </button>
+                    {% elif not esta_validado %}
+                    <button type="button" id="btn-validar-resultados" class="btn btn-sm btn-success px-3 fw-bold" disabled
+                            title="Primero configure un equipo activo para habilitar la validación">
                         <i class="bi bi-check-circle-fill me-1"></i>VALIDAR
                     </button>
                     {% endif %}
@@ -486,7 +506,7 @@
                                        oninput="validarRango(this); if (this.getAttribute('data-es-calculado') !== '1') schedulePreviewFormulas();"
                                        onkeydown="manejarNav(this, event)"
                                        autocomplete="off"
-                                       {% if param.es_calculado %}readonly title="Calculado por fórmula (motor clínico); no editable manualmente"{% else %}readonly{% endif %}>
+                                       {% if param.es_calculado %}readonly title="Calculado por fórmula (motor clínico); no editable manualmente"{% elif captura_bloqueada_sin_equipo %}readonly title="Pendiente: configure un equipo activo para habilitar la captura" aria-label="{{ param.descripcion }}. Pendiente de equipo activo"{% else %}readonly title="Primero pulse EDITAR para capturar el resultado"{% endif %}>
                             </td>
                             <td class="col-unidades">{{ param.unidades }}</td>
                             <td class="col-referencia">{{ param.ref_texto }}</td>

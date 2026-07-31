@@ -302,6 +302,7 @@ def captura_resultados_industrial(request, orden_id):
     equipos_laboratorio = list(
         Equipo.objects.filter(empresa=empresa, activo=True).order_by('marca', 'nombre')[:100]
     )
+    captura_bloqueada_sin_equipo = not equipos_laboratorio
 
     context = {
         'orden': orden,
@@ -317,6 +318,7 @@ def captura_resultados_industrial(request, orden_id):
         'token_acceso': token_acceso,
         'folios_dia': folios_dia,
         'equipos_laboratorio': equipos_laboratorio,
+        'captura_bloqueada_sin_equipo': captura_bloqueada_sin_equipo,
     }
 
     return render(request, 'core/captura_resultados_industrial.html', context)
