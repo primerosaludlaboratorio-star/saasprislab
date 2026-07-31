@@ -122,3 +122,44 @@ El flujo completo de resultados y PDF no puede declararse cerrado hasta que el
 laboratorio configure al menos un equipo activo y se capture un consentimiento
 real del paciente. No se falsificó una firma ni se modificaron datos clínicos
 para forzar la salida.
+
+## Addendum — Auditoría humana E2E productiva 2026-07-30 (segunda ronda)
+
+Esta ronda se ejecutó como flujo continuo, no como navegación de pantallas
+aisladas. Se creó el caso técnico `AUDITORIA FLUJO LAB / CASO UNO` y se recorrió:
+
+1. Recepción y alta/selección del paciente.
+2. Selección de GLUCOSA (`GLU`) desde el buscador de estudios.
+3. Cobro completo en efectivo por `$85.00`.
+4. Confirmación humana de la orden.
+5. Generación del folio `LAB-20260730-004`.
+6. Aparición en sala de espera de toma de muestra.
+7. Entrada al cubículo y visualización de orden de extracción CLSI GP41.
+8. Visualización del checklist de bioseguridad y consentimiento pendiente.
+9. Paso a captura de resultados.
+
+Resultado reproducible:
+
+- Recepción, cobro, folio, sala de espera y cubículo funcionan en producción.
+- La captura muestra el analito, unidad y rango de referencia correctamente.
+- El campo de resultado aparece de solo lectura porque la empresa no tiene
+  equipos activos configurados; el selector informa `No hay equipos activos`.
+- Los botones de validación, publicación y PDF quedan bloqueados conforme al
+  control operativo y legal. No es una falla de PDF ni se debe superar con un
+  dato manual.
+- Se verificó el estado de producción sin registrar una firma ficticia ni un
+  resultado clínico inventado.
+
+Casos adicionales observados en la misma operación:
+
+- La sala de espera muestra órdenes pagadas pendientes y permite entrar al
+  cubículo por folio.
+- La orden validada previa conserva el bloqueo explícito de PDF cuando falta
+  consentimiento, con enlace para registrar el consentimiento.
+- Las pantallas de monitor, worklist, control de calidad, entrega, consulta,
+  pacientes y catálogo LIMS cargaron sin error HTTP 500 real.
+
+Conclusión de esta ronda: el flujo humano está probado hasta el bloqueo clínico
+legítimo. El cierre E2E de captura, validación y PDF requiere configurar un
+equipo activo y registrar consentimiento real; fabricar cualquiera de los dos
+invalidaría la auditoría.
