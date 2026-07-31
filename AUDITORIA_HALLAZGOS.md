@@ -360,6 +360,7 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 
 - Las vistas de lectura requieren rol administrativo.
 - Las mutaciones `api_actualizar_metodo` y `api_actualizar_muestra` están reservadas al superusuario porque `Estudio` sigue siendo global y no permite aislamiento por tenant.
+- `cotizacion.py::api_buscar_estudios_cotizacion` conserva lectura autenticada del catálogo global; solo devuelve metadatos del estudio/perfil (nombre, código, precio, categoría, descripción y conteo), no pacientes, resultados ni configuración de otro tenant. Se mantiene como deuda arquitectónica para migrar el catálogo a tenant-scoped.
 - Un administrador de empresa recibe HTTP 403 y no se ejecuta ningún `.update()` masivo. Evidencia: `core/tests/test_catalogos_maestros_security.py` (2 pruebas OK).
 
 ## Código muerto / higiene (sin riesgo de seguridad) — CORREGIDO
