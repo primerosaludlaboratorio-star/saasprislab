@@ -14,6 +14,7 @@ from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
+from core.decorators import role_required
 
 from core.models import (
     AuditLog,
@@ -85,6 +86,7 @@ def _sumar_costo_ventas(empresa, fecha_inicio, fecha_fin=None):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FINANZAS')
 def dashboard_unificado(request):
     """
     Dashboard unificado con KPIs de todos los modulos.
@@ -312,6 +314,7 @@ def dashboard_unificado(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FINANZAS')
 def api_kpis_tiempo_real(request):
     """API para obtener KPIs en tiempo real."""
     empresa = getattr(request.user, 'empresa', None)

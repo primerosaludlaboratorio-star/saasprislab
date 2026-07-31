@@ -201,7 +201,34 @@ BLOQUE 4 — CERRADO SIN HUECOS PENDIENTES (los 27 archivos + 3 subpaquetes ahor
 - [x] consulta_ordenes.py — 277/277 líneas. Todo `empresa=` scoped. Sin hallazgos.
 - [x] cotizacion.py — 294/294 líneas. `api_buscar_estudios_cotizacion` lee `LabEstudio`/`PerfilLaboratorio` del catálogo global autenticado y solo devuelve metadatos del catálogo; no expone datos operativos de otro tenant. La migración futura a catálogo tenant-scoped queda como deuda arquitectónica, sin mutación cross-tenant activa.
 
-Pendiente Bloque 5: confirmar cobertura línea-por-línea de los ~27 archivos restantes de `core/views/` (`dashboard_unificado.py`, `expediente.py`, `historial_resultados.py`, `ia_dashboard.py`, `incidencias.py`, `laboratorio_captura.py`, `laboratorio_config.py`, `laboratorio_reportes.py`, `manual.py`, `maquila.py`, `microbiologia.py`, `monitor_produccion.py`, `notificaciones.py`, `omnisearch.py`, `paciente.py`, `pacientes.py`, `paquetes.py`, `pris_checklist.py`, `ranking.py`, `reporte_friccion.py`, `sucursal_modo_inventario_lab.py`, `tarifas.py`, `transferencias.py`, `voice.py`, `audio_legal.py`, `ai_brain.py`, `cerebro.py`, `coach.py`, `feature_flags_admin.py`, `general.py`, `impresion.py`, `inventario.py`, `inventario_predictivo.py`, `operaciones.py`).
+- [x] dashboard_unificado.py — 364/364 líneas. **H-NUEVO-37 CORREGIDO (MEDIO)**: `dashboard_unificado` y `api_kpis_tiempo_real` exigen `ADMIN`, `DIRECTOR`, `GERENTE` o `FINANZAS`; los roles operativos reciben 403. Evidencia: `core/tests/test_dashboard_and_panic_security.py`.
+- [x] expediente.py — 135/135 líneas. `expediente_clinico` correctamente gateado a roles médicos/dirección; `api_buscar_paciente_avanzado` sin rol pero solo expone nombre/teléfono básico. Sin hallazgos nuevos.
+- [x] historial_resultados.py — 208/208 líneas. Todo `empresa=` scoped; acceso a resultados numéricos consistente con patrón operativo del resto de LIMS. Sin hallazgos.
+- [x] ia_dashboard.py — 367/367 líneas. `api_ia_consultar_negocios` delega RBAC a `procesar_pregunta_con_ia` (mismo gate que `/ia/asistente/chat/`). Sin hallazgos.
+- [x] incidencias.py — 204/204 líneas. Registro por excepción sin rol (autoservicio intencional); panel de auditoría y resolución gateados a `is_superuser`. Sin hallazgos.
+- [x] laboratorio_captura.py — 427/427 líneas. **H-NUEVO-38 CORREGIDO (MEDIO)**: `registrar_notificacion_panico` devuelve 400 y aborta antes de crear resultado/notificación cuando el analito no pertenece a la orden. Evidencia: `core/tests/test_dashboard_and_panic_security.py`.
+
+- [x] laboratorio_config.py — 256/256 líneas. `_can_manage_lims_catalog` gatea mutaciones; empresa scoped vía `empresa_lims()`. Sin hallazgos.
+- [x] laboratorio_reportes.py — 226/226 líneas. `validar_resultado` usa `token_acceso` UUID (patrón correcto, contraste con H-NUEVO-33); candado financiero + LFPDPPP antes de imprimir. Sin hallazgos.
+- [x] manual.py — 163/163 líneas. Generador PDF con contenido 100% estático, sin datos de usuario reflejados sin sanitizar. Sin hallazgos.
+- [x] maquila.py — 110/110 líneas. Todo `empresa=` scoped. Sin hallazgos.
+- [x] microbiologia.py — 167/167 líneas. Import diferido seguro; todo `empresa=` scoped. Sin hallazgos.
+- [x] monitor_produccion.py — 715/715 líneas. **H-NUEVO-39 NUEVO (ALTO)**: `api_avanzar_estado` no exige rol de laboratorio para avanzar la orden a `COMPLETO` (= validación clínica de resultados / `RESULTADOS_LISTOS`), a diferencia de `captura_resultados_industrial` que sí restringe a roles técnicos.
+
+- [x] notificaciones.py — 265/265 líneas. Todo `empresa=` scoped; mutaciones administrativas gateadas a staff/DIRECTOR/ADMIN. Sin hallazgos.
+- [x] omnisearch.py — 85/85 líneas. Todo `empresa=` scoped. Sin hallazgos.
+- [x] paciente.py — 178/178 líneas. `timeline_paciente` gateado a roles médicos/recepción/laboratorio + tenant; APIs de búsqueda básica sin rol pero consistente con patrón operativo. Sin hallazgos.
+- [x] pacientes.py — 309/309 líneas. `api_buscar_pacientes` sin decorador pero valida `is_authenticated` manualmente (JSON-friendly, intencional). Todo `empresa=` scoped. Sin hallazgos.
+- [x] paquetes.py — 25/25 líneas. Endpoint legado retirado (410), confirma protección de `laboratorio.Estudio` en este archivo. Sin hallazgos.
+- [x] pris_checklist.py — 378/378 líneas. NLP de checklist de bioseguridad sin persistencia de datos sensibles; uso de Gemini con timeout. Sin hallazgos.
+- [x] ranking.py — 127/127 líneas. Gateado a `is_superuser`; empresa scoped. Sin hallazgos.
+- [x] reporte_friccion.py — 231/231 líneas. Wizard de sesión sin inyección; empresa scoped. Sin hallazgos.
+- [x] sucursal_modo_inventario_lab.py — 50/50 líneas. Gateado a Director/Admin/Gerente. Sin hallazgos.
+- [x] tarifas.py — 35/35 líneas. Endpoints legados retirados (redirect/410). Sin hallazgos.
+- [x] transferencias.py — 338/338 líneas. **H-NUEVO-40 NUEVO (BAJO/FUNCIONAL)**: `api_buscar_productos_transferencia` usa `Q(...)` sin importar `Q` de `django.db.models` — `NameError` no manejado al buscar por texto.
+- [x] voice.py — 223/223 líneas. `dashboard_voice_logs`/lógica sensible gateada a `is_superuser`; `verificar_webauthn` falla cerrado explícitamente (no implementa biometría simulada). Sin hallazgos.
+
+Pendiente Bloque 5: confirmar cobertura línea-por-línea de los últimos ~9 archivos de `core/views/` (`audio_legal.py`, `ai_brain.py`, `cerebro.py`, `coach.py`, `feature_flags_admin.py`, `general.py`, `impresion.py`, `inventario.py`, `inventario_predictivo.py`, `operaciones.py`).
 
 ## Bloque 5 — core/views/ (~90 archivos) — EN CURSO
 Estrategia: dado el volumen, se prioriza por riesgo (endpoints públicos/csrf_exempt, financieros, auth, webhooks) con lectura completa; el resto se muestrea dirigido por grep de patrones de riesgo (decoradores faltantes, tenant scoping, IDOR).

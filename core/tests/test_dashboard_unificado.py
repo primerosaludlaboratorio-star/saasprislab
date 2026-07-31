@@ -21,6 +21,7 @@ class DashboardUnificadoTest(TestCase):
             username='dashboard_user',
             password='test123456789',
             empresa=self.empresa,
+            rol='ADMIN',
         )
         self.client.login(username='dashboard_user', password='test123456789')
 

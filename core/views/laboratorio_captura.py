@@ -361,6 +361,10 @@ def registrar_notificacion_panico(request, orden_id):
                 '[Pánico IDOR] analito_id=%s no está en orden %s — usuario %s',
                 analito_id, orden_id, request.user.username,
             )
+            return JsonResponse({
+                'success': False,
+                'error': 'El analito no pertenece a la orden indicada.',
+            }, status=400)
 
         analito = get_object_or_404(Analito, id=analito_id, activo=True)
 
