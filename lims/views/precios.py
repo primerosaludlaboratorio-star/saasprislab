@@ -229,7 +229,7 @@ def ajuste_masivo(request):
 
     # FIX CONCURRENCIA: bulk completo o rollback
     with transaction.atomic():
-        PrecioItem.aplicar_inflacion_bulk(ids_safe, factor)
+        PrecioItem.aplicar_inflacion_bulk(ids_safe, factor, empresa=empresa)
 
     return JsonResponse({
         'ok': True,

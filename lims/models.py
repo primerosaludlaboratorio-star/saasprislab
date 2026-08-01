@@ -9,6 +9,7 @@ Nivel 4: PrecioItem                        (gestión financiera independiente)
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import models
+from django.utils import timezone
 
 from core.models import Empresa
 from core.tenant import TenantModel
@@ -491,11 +492,31 @@ class PrecioItem(TenantModel):
         super().save(*args, **kwargs)
 
     @classmethod
-    def aplicar_inflacion_bulk(cls, ids: list, factor: Decimal):
-        """Actualiza en bloque los precios de los PrecioItem con los IDs dados."""
-        items = cls.objects.filter(id__in=ids)
+    def aplicar_inflacion_bulk(cls, ids: list, factor: Decimal, *, empresa):
+        """Actualiza precios y costo de catálogo solo dentro de una empresa."""
+        if empresa is None:
+            raise ValueError('La empresa es obligatoria para ajustar precios LIMS.')
+        items = list(cls.objects.filter(id__in=ids, empresa=empresa).select_related(
+            'analito', 'perfil', 'paquete'
+        ))
+        now = timezone.now()
         for item in items:
             item.precio_venta = (item.precio_venta * factor).quantize(
                 Decimal('0.01'), rounding=ROUND_HALF_UP
             )
-        cls.objects.bulk_update(items, ['precio_venta'])
+            item.fecha_actualiz = now
+        cls.objects.bulk_update(items, ['precio_venta', 'fecha_actualiz'])
+
+        for item in items:
+            if item.analito_id:
+                Analito.objects_all.filter(pk=item.analito_id, empresa=empresa).update(
+                    costo_lista=item.precio_venta, fecha_actualiz=now
+                )
+            elif item.perfil_id:
+                PerfilLims.objects_all.filter(pk=item.perfil_id, empresa=empresa).update(
+                    costo_lista=item.precio_venta, fecha_actualiz=now
+                )
+            elif item.paquete_id:
+                PaqueteLims.objects_all.filter(pk=item.paquete_id, empresa=empresa).update(
+                    costo_lista=item.precio_venta, fecha_actualiz=now
+                )
