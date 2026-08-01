@@ -11,7 +11,7 @@ Fecha: 2026-01-25
 """
 import csv
 import re
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 import os
@@ -143,7 +143,7 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.SUCCESS(f'   [OK] Archivo leido ({enc})'))
                     self.stdout.write(f'   Total filas: {len(csv_data)}')
                     break
-            except:
+            except (OSError, UnicodeError, csv.Error):
                 continue
         
         if not csv_data:
@@ -252,7 +252,7 @@ class Command(BaseCommand):
                     csv_data = list(csv.DictReader(f))
                     self.stdout.write(self.style.SUCCESS(f'   [OK] Leido ({enc})'))
                     break
-            except:
+            except (OSError, UnicodeError, csv.Error):
                 continue
         
         if not csv_data:
@@ -375,7 +375,7 @@ class Command(BaseCommand):
             if not precio_clean:
                 return Decimal('0.00')
             return Decimal(precio_clean)
-        except:
+        except (InvalidOperation, TypeError, ValueError):
             return Decimal('0.00')
 
     def parse_decimal(self, valor_str):
@@ -384,7 +384,7 @@ class Command(BaseCommand):
                 return None
             valor_clean = valor_str.replace(',', '.').strip()
             return Decimal(valor_clean)
-        except:
+        except (InvalidOperation, TypeError, ValueError):
             return None
 
     def parse_sexo(self, sexo_str):

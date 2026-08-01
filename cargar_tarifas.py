@@ -12,7 +12,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from laboratorio.models import CategoriaExamen, Estudio
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 def cargar_tarifas():
     """
@@ -62,9 +62,9 @@ def cargar_tarifas():
                 # Convertir importe a Decimal
                 try:
                     importe = Decimal(importe_str) if importe_str else Decimal('0')
-                except:
+                except (InvalidOperation, TypeError, ValueError) as exc:
                     importe = Decimal('0')
-                    print(f"[WARN] Linea {idx + 2}: Precio invalido '{importe_str}', usando 0")
+                    print(f"[WARN] Linea {idx + 2}: Precio invalido '{importe_str}' ({exc}), usando 0")
                 
                 # Crear o obtener la categoría
                 categoria, created = CategoriaExamen.objects.get_or_create(

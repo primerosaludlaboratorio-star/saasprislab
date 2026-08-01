@@ -21,7 +21,7 @@ try:
 except (ValueError, Empresa.DoesNotExist):
     print(f"[ERROR] Empresa id={_eid!r} no válida.")
     sys.exit(1)
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from openpyxl import load_workbook
 
 archivo = "Productos-farmacia-2026-02-10-10-31.xlsx"
@@ -96,47 +96,48 @@ try:
             if not nombre or not codigo:
                 continue
             
-            marca = row[col_map.get('marca', 0)] if col_map.get('marca') else 'GENERICO'
+            marca_idx = col_map.get('marca')
+            marca = row[marca_idx] if marca_idx is not None and marca_idx < len(row) else 'GENERICO'
             
             # Precio
             precio = Decimal('0')
-            if col_map.get('precio'):
+            if col_map.get('precio') is not None:
                 try:
                     val = row[col_map['precio']]
                     if val:
                         precio = Decimal(str(val).replace(',', '').replace('$', '').strip())
-                except:
-                    pass
+                except (InvalidOperation, TypeError, ValueError) as exc:
+                    logging.warning("Fila %s: precio invalido (%r): %s; usando 0", row_idx, val, exc)
             
             # Costo
             costo = Decimal('0')
-            if col_map.get('costo'):
+            if col_map.get('costo') is not None:
                 try:
                     val = row[col_map['costo']]
                     if val:
                         costo = Decimal(str(val).replace(',', '').replace('$', '').strip())
-                except:
-                    pass
+                except (InvalidOperation, TypeError, ValueError) as exc:
+                    logging.warning("Fila %s: costo invalido (%r): %s; usando 0", row_idx, val, exc)
             
             # Stock
             stock = 0
-            if col_map.get('stock'):
+            if col_map.get('stock') is not None:
                 try:
                     val = row[col_map['stock']]
                     if val:
                         stock = int(float(val))
-                except:
-                    pass
+                except (TypeError, ValueError) as exc:
+                    logging.warning("Fila %s: stock invalido (%r): %s; usando 0", row_idx, val, exc)
             
             # IVA
             iva = Decimal('16')
-            if col_map.get('iva'):
+            if col_map.get('iva') is not None:
                 try:
                     val = str(row[col_map['iva']]).replace('%', '').strip()
                     if val and val != 'None':
                         iva = Decimal(val)
-                except:
-                    pass
+                except (InvalidOperation, TypeError, ValueError) as exc:
+                    logging.warning("Fila %s: IVA invalido (%r): %s; usando 16", row_idx, row[col_map['iva']], exc)
             
             # Receta
             es_antibiotico = False

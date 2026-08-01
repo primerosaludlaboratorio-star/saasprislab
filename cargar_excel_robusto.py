@@ -10,7 +10,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from core.models import Producto, Empresa, Sucursal
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import pandas as pd
 
 _eid = os.environ.get("PRISLAB_EMPRESA_ID")
@@ -73,8 +73,8 @@ try:
                     precio = Decimal(str(precio_raw).replace(',', '').replace('$', '').strip())
                     if precio < 0:
                         precio = Decimal('0')
-            except:
-                pass
+            except (InvalidOperation, TypeError, ValueError) as exc:
+                logging.warning("Fila %s: precio invalido (%r): %s; usando 0", idx + 4, precio_raw, exc)
             
             # Costo
             costo = Decimal('0')
@@ -84,8 +84,8 @@ try:
                     costo = Decimal(str(costo_raw).replace(',', '').replace('$', '').strip())
                     if costo < 0:
                         costo = Decimal('0')
-            except:
-                pass
+            except (InvalidOperation, TypeError, ValueError) as exc:
+                logging.warning("Fila %s: costo invalido (%r): %s; usando 0", idx + 4, costo_raw, exc)
             
             # Stock
             stock = 0
@@ -95,8 +95,8 @@ try:
                     stock = int(float(stock_raw))
                     if stock < 0:
                         stock = 0
-            except:
-                pass
+            except (TypeError, ValueError) as exc:
+                logging.warning("Fila %s: stock invalido (%r): %s; usando 0", idx + 4, stock_raw, exc)
             
             # IVA
             iva = Decimal('16')
@@ -106,16 +106,13 @@ try:
                     iva_str = str(iva_raw).replace('%', '').strip()
                     if iva_str and iva_str != 'nan':
                         iva = Decimal(iva_str)
-            except:
-                pass
+            except (InvalidOperation, TypeError, ValueError) as exc:
+                logging.warning("Fila %s: IVA invalido (%r): %s; usando 16", idx + 4, iva_raw, exc)
             
             # Receta Médica
             es_antibiotico = False
-            try:
-                receta_raw = str(row.get('Receta Médica', '')).lower()
-                es_antibiotico = 'sí' in receta_raw or 'si' in receta_raw or 'obligatorio' in receta_raw
-            except:
-                pass
+            receta_raw = str(row.get('Receta Médica', '')).lower()
+            es_antibiotico = 'sí' in receta_raw or 'si' in receta_raw or 'obligatorio' in receta_raw
             
             # Crear/Actualizar producto
             producto, created = Producto.objects.update_or_create(

@@ -82,15 +82,15 @@ class NormaIconDriver:
         if self.cliente_socket:
             try:
                 self.cliente_socket.close()
-            except:
-                pass
+            except (OSError, AttributeError) as exc:
+                logger.warning("No se pudo cerrar el cliente Norma Icon: %s", exc)
             self.cliente_socket = None
         
         if self.socket:
             try:
                 self.socket.close()
-            except:
-                pass
+            except (OSError, AttributeError) as exc:
+                logger.warning("No se pudo cerrar el socket Norma Icon: %s", exc)
             self.socket = None
         
         logger.info(f"Desconectado: {self.nombre}")
@@ -152,8 +152,8 @@ class NormaIconDriver:
         if self.cliente_socket:
             try:
                 self.cliente_socket.close()
-            except:
-                pass
+            except (OSError, AttributeError) as exc:
+                logger.warning("No se pudo cerrar el cliente Norma Icon: %s", exc)
             self.cliente_socket = None
     
     def _try_extract_mllp(self, buffer: bytes) -> tuple[Optional[str], bytes]:

@@ -49,8 +49,9 @@ if Path('.git').exists():
             advertencias.append("No hay remote configurado")
             print("  [AVISO] No hay remote configurado")
             print("          Ejecuta: git remote add origin <URL>")
-    except:
-        pass
+    except (OSError, subprocess.SubprocessError) as exc:
+        errores.append(f"No se pudo consultar el remote de Git: {exc}")
+        print(f"  [ERROR] No se pudo consultar el remote: {exc}")
 else:
     advertencias.append("No hay repositorio Git")
     print("  [AVISO] No hay repositorio Git")

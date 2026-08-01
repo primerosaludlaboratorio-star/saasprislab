@@ -796,3 +796,14 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - `Receta` hereda `TenantModel`. Los folios de receta y venta dejaron de depender de `count()+1`; `Venta.linea_captura` conserva el UUID completo.
 - Pruebas ejecutadas: `manage.py check`, `makemigrations --check --dry-run`, `core.tests.test_append_only_audit` y `core.tests.test_sensitive_authorizations` con base de pruebas aislada y sin migraciones de host; resultado: 10 pruebas OK.
 - H-NUEVO-130, H-NUEVO-132, H-NUEVO-134 y H-NUEVO-136 quedan marcados como parciales/corregidos según su evidencia en `AUDITORIA_HALLAZGOS.md`. El anclaje diario por tenant y el secuenciador común de folios LIMS/clínicos requieren un bloque de migración independiente antes de desplegarse.
+
+### Cierre de deuda de manejo de excepciones en scripts operativos
+
+**Fecha**: 2026-08-01
+
+- Se eliminaron las capturas desnudas (`except:`) de los cargadores de Excel/CSV, verificadores de despliegue/sistema, comandos de auditoría activos y drivers locales de equipos.
+- Los parseos numéricos ahora capturan únicamente `InvalidOperation`, `TypeError` y `ValueError`, registran la fila/valor y aplican un valor seguro explícito.
+- Los verificadores de base de datos ya no convierten un fallo de consulta en un conteo falso de cero: muestran `NO DISPONIBLE` y terminan con estado crítico.
+- Los comandos legacy que permanecen por compatibilidad siguen bloqueados con `CommandError`; sus rutas inalcanzables ya no contienen capturas silenciosas.
+- Los cierres de drivers Fuji, InCCA, Mission, Norma Icon, Wondfo y del agente LIS registran fallos de cierre (`OSError`/`AttributeError`) sin ocultarlos.
+- Evidencia: `python -m compileall -q .`, `git diff --check` y escaneo de `except:` fuera de tests/migraciones sin resultados funcionales.

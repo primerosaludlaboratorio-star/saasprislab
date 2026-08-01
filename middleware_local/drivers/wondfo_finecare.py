@@ -110,15 +110,15 @@ class WondfoFinecareDriver:
         if self.serial_port and self.serial_port.is_open:
             try:
                 self.serial_port.close()
-            except:
-                pass
+            except (OSError, AttributeError) as exc:
+                logger.warning("No se pudo cerrar el puerto Wondfo: %s", exc)
             self.serial_port = None
         
         if self.socket:
             try:
                 self.socket.close()
-            except:
-                pass
+            except (OSError, AttributeError) as exc:
+                logger.warning("No se pudo cerrar el socket Wondfo: %s", exc)
             self.socket = None
         
         logger.info(f"Desconectado: {self.nombre}")

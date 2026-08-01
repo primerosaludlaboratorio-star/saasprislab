@@ -5,7 +5,7 @@ Escaneo 360 del repositorio para eliminar 'ceguera' del sistema.
 import os
 from pathlib import Path
 from django.core.management.base import BaseCommand
-from django.urls import get_resolver
+from django.urls import get_resolver, NoReverseMatch
 from django.conf import settings
 
 class Command(BaseCommand):
@@ -88,7 +88,7 @@ class Command(BaseCommand):
             try:
                 resolver.reverse(url_name)
                 urls_validas.append(url_name)
-            except:
+            except NoReverseMatch:
                 urls_invalidas.append(url_name)
         
         self.stdout.write(f'  URLs validas: {len(urls_validas)}')
@@ -128,8 +128,8 @@ class Command(BaseCommand):
             try:
                 resolver.reverse(url_name)
                 tiene_url = True
-            except:
-                pass
+            except NoReverseMatch:
+                tiene_url = False
             
             # Verificar template
             template_path = Path(settings.BASE_DIR) / 'core' / 'templates' / 'core' / template

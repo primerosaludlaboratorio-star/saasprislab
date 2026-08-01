@@ -320,8 +320,8 @@ class AgenteLaboratorio:
         for nombre, driver in self.drivers.items():
             try:
                 driver.desconectar()
-            except:
-                pass
+            except (OSError, AttributeError) as exc:
+                logging.getLogger(__name__).warning("No se pudo desconectar el driver: %s", exc)
         
         logger.info("Agente detenido")
     

@@ -161,5 +161,6 @@ class Command(BaseCommand):
         try:
             from core.models import Producto
             return Producto.objects.count()
-        except:
+        except Exception as exc:
+            logging.getLogger(__name__).exception("No se pudo contar productos", exc_info=exc)
             return 0

@@ -5,7 +5,7 @@ Ejecutar: python manage.py cargar_tarifas_csv
 from django.core.management.base import BaseCommand
 from laboratorio.models import CategoriaExamen, Estudio
 from lims.veterinary_catalog import is_veterinary_catalog_text
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import csv
 import os
 
@@ -68,9 +68,9 @@ class Command(BaseCommand):
                     # Convertir importe a Decimal
                     try:
                         importe = Decimal(importe_str) if importe_str else Decimal('0')
-                    except:
+                    except (InvalidOperation, TypeError, ValueError) as exc:
                         importe = Decimal('0')
-                        self.stdout.write(f"[WARN] Linea {idx + 2}: Precio invalido '{importe_str}', usando 0")
+                        self.stdout.write(f"[WARN] Linea {idx + 2}: Precio invalido '{importe_str}' ({exc}), usando 0")
                     
                     # Crear o obtener la categoría
                     categoria, created = CategoriaExamen.objects.get_or_create(

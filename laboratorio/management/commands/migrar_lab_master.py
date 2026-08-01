@@ -10,7 +10,7 @@ Fecha: 2026-02-10
 import os
 import csv
 import unicodedata
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -28,7 +28,7 @@ def clean_float(value):
     """Limpia y convierte valores a float"""
     try:
         return float(str(value).replace(',', '').strip())
-    except:
+    except (TypeError, ValueError, InvalidOperation):
         return 0.0
 
 

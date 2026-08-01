@@ -134,8 +134,8 @@ class Command(BaseCommand):
             json_data = None
             try:
                 json_data = json.loads(response.content.decode('utf-8'))
-            except:
-                pass
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                json_data = None
             
             resultado = {
                 'url': url,
@@ -394,8 +394,8 @@ class Command(BaseCommand):
                 if isinstance(json_data, dict) and 'venta_id' in json_data:
                     try:
                         self.venta_creada = Venta.objects.get(id=json_data['venta_id'])
-                    except:
-                        pass
+                    except (Venta.DoesNotExist, ValueError, TypeError):
+                        self.venta_creada = None
             else:
                 self.log_result('WARNING', "No se pudo crear venta mediante API ni directamente")
 

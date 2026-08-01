@@ -100,8 +100,8 @@ class InCCAChemDriver:
                 self._enviar_eot()
                 time.sleep(0.1)
                 self.serial_port.close()
-            except:
-                pass
+            except (OSError, AttributeError) as exc:
+                logger.warning("No se pudo cerrar el puerto InCCA: %s", exc)
             self.serial_port = None
         
         logger.info(f"Desconectado: {self.nombre}")

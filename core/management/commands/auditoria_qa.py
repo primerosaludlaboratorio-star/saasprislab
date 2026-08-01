@@ -164,8 +164,13 @@ class Command(BaseCommand):
                             'status': status_code,
                             'error': error_content
                         })
-                    except:
-                        pass
+                    except UnicodeDecodeError as exc:
+                        errores_detallados.append({
+                            'url': url,
+                            'nombre': nombre,
+                            'status': status_code,
+                            'error': f'Respuesta no UTF-8: {exc}',
+                        })
                 else:
                     estado = f"{Fore.YELLOW}[AMARILLO]"
                     resultado = f"Status {status_code}"

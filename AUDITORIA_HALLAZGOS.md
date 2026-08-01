@@ -1108,3 +1108,14 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Estado**: **CORREGIDO Y VERIFICADO** para aislamiento y mutación. Ambos usan `TenantAppendOnlyManager`/`TenantAppendOnlyQuerySet`, manager explícito sin filtro para tareas administrativas, y bloquean `save/delete/update` masivo. La normalización de PII en JSON sigue siendo una mejora de cumplimiento separada.
 - **Riesgo**: Lectura de logs de auditoría o forenses de otro tenant si la vista no filtra; fuga de PII en logs.
 - **Recomendación**: Crear `TenantAppendOnlyManager` que combine `TenantQuerySet` con `AppendOnlyQuerySet`; aplicarlo a `AuditLog` y `ForenseAcceso`. Normalizar/mascarar PII en `datos_nuevos`.
+
+## Cierre de deuda transversal — excepciones silenciosas en operación
+
+**Fecha:** 2026-08-01
+**Estado:** **CORREGIDO Y VERIFICADO en el alcance activo**
+
+Se corrigieron las capturas desnudas de los cargadores Excel/CSV, verificadores, comandos de auditoría activos y drivers locales de equipos. Los parseos ahora limitan las excepciones a tipos esperados, registran fila/valor y aplican un fallback explícito; los fallos de consultas de verificación ya no se convierten en ceros falsos; y los cierres de drivers registran errores de sistema sin ocultarlos.
+
+Los comandos legacy conservados por compatibilidad permanecen bloqueados con `CommandError`; no son rutas operativas disponibles. Los `except:` que permanecen en `core/tests_e2e.py` corresponden a la suite histórica de pruebas y quedan fuera del código productivo de esta corrección.
+
+**Evidencia:** `python -m compileall -q .`, `git diff --check` y escaneo de `except:` fuera de tests/migraciones sin capturas desnudas funcionales.

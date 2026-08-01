@@ -149,8 +149,8 @@ class Command(BaseCommand):
             from core import views
             if hasattr(views, view_name.split('.')[-1]):
                 return True
-        except:
-            pass
+        except (ImportError, AttributeError):
+            return False
         return True  # Asumir que existe si está en urls.py
 
     def _determinar_estado(self, tiene_boton, tiene_vista):

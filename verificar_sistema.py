@@ -12,6 +12,7 @@ from laboratorio.models import Estudio, Parametro, PerfilLaboratorio, ValorRefer
 from farmacia.models import Producto, AperturaCaja
 from core.models import Paciente, Usuario, CitaMedica
 from django.contrib.auth import get_user_model
+from django.db import OperationalError, ProgrammingError
 
 User = get_user_model()
 
@@ -37,13 +38,16 @@ def verificar_sistema():
     # FARMACIA
     print("\n[FARMACIA]")
     productos = Producto.objects.count()
+    fallos_consulta = 0
     try:
         cajas_abiertas = AperturaCaja.objects.filter(activa=True).count()
-    except:
-        cajas_abiertas = 0
+    except (OperationalError, ProgrammingError) as exc:
+        fallos_consulta += 1
+        cajas_abiertas = None
+        print(f"  [ERROR] No se pudo consultar cajas abiertas: {exc}")
     
     print(f"  Productos: {productos} {'[PENDIENTE: Cargar inventario]' if productos == 0 else '[OK]'}")
-    print(f"  Cajas abiertas: {cajas_abiertas}")
+    print(f"  Cajas abiertas: {cajas_abiertas if cajas_abiertas is not None else '[NO DISPONIBLE]'}")
     
     # CONSULTORIO
     print("\n[CONSULTORIO]")
@@ -51,12 +55,14 @@ def verificar_sistema():
     try:
         from datetime import date
         citas_hoy = CitaMedica.objects.filter(fecha_cita=date.today()).count()
-    except:
-        citas_hoy = 0
+    except (OperationalError, ProgrammingError) as exc:
+        fallos_consulta += 1
+        citas_hoy = None
+        print(f"  [ERROR] No se pudieron consultar citas: {exc}")
     usuarios = User.objects.count()
     
     print(f"  Pacientes: {pacientes} {'[OK]' if pacientes > 0 else '[SIN PACIENTES]'}")
-    print(f"  Citas hoy: {citas_hoy}")
+    print(f"  Citas hoy: {citas_hoy if citas_hoy is not None else '[NO DISPONIBLE]'}")
     print(f"  Usuarios sistema: {usuarios} {'[OK]' if usuarios > 0 else '[ERROR: Sin usuarios]'}")
     
     # URLS CRÍTICAS
@@ -88,6 +94,9 @@ def verificar_sistema():
     if usuarios == 0:
         criticos += 1
         print("  [X] CRITICO: Sin usuarios en el sistema.")
+    if fallos_consulta:
+        criticos += fallos_consulta
+        print(f"  [X] CRITICO: {fallos_consulta} consulta(s) de verificacion no disponible(s).")
     
     if criticos == 0 and advertencias == 0:
         print("  [OK] Sistema 100% operativo")

@@ -77,7 +77,7 @@ class Command(BaseCommand):
                         try:
                             # Tu archivo viene como 01/06/2027
                             fecha_cad = datetime.strptime(caducidad_str, '%d/%m/%Y').date()
-                        except:
+                        except (TypeError, ValueError):
                             fecha_cad = datetime.strptime('2030-01-01', '%Y-%m-%d').date()
 
                     # 1. Crear o Actualizar Producto (Sin duplicar)

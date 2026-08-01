@@ -12,7 +12,7 @@ Fecha: 2026-01-25
 """
 import csv
 import re
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 import os
@@ -135,7 +135,7 @@ class Command(BaseCommand):
                                 'metodo': row.get('Metodo', row.get('metodo', row.get('Metodologia', ''))).strip(),
                             }
                 break
-            except:
+            except (OSError, UnicodeError, csv.Error):
                 continue
         
         return dict_parametros
@@ -179,7 +179,7 @@ class Command(BaseCommand):
                             # Parsear precio
                             try:
                                 precio = Decimal(precio_str.replace('$', '').replace(',', '').strip() or '0')
-                            except:
+                            except (InvalidOperation, TypeError, ValueError):
                                 precio = Decimal('0.00')
                             
                             # Crear estudio
@@ -207,7 +207,7 @@ class Command(BaseCommand):
                             stats['errores'] += 1
                 
                 break
-            except:
+            except (OSError, UnicodeError, csv.Error):
                 continue
         
         return dict_estudios
@@ -285,7 +285,7 @@ class Command(BaseCommand):
                             stats['errores'] += 1
                 
                 break
-            except:
+            except (OSError, UnicodeError, csv.Error):
                 continue
 
     def cargar_rangos(self, archivo, stats):
@@ -359,7 +359,7 @@ class Command(BaseCommand):
                             stats['errores'] += 1
                 
                 break
-            except:
+            except (OSError, UnicodeError, csv.Error):
                 continue
 
     def parse_decimal(self, valor_str):
@@ -368,7 +368,7 @@ class Command(BaseCommand):
                 return None
             valor_clean = str(valor_str).replace(',', '.').strip()
             return Decimal(valor_clean)
-        except:
+        except (InvalidOperation, TypeError, ValueError):
             return None
 
     def parse_edad(self, edad_str):

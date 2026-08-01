@@ -58,8 +58,8 @@ class Command(BaseCommand):
                     content = response.content.decode('utf-8')[:500]
                     if 'Traceback' in content:
                         error_msg = f"Error {status} - Ver traceback en logs"
-                except:
-                    pass
+                except UnicodeDecodeError:
+                    error_msg = f"Error {status} - respuesta no codificable"
                 self.log_error(url, nombre, error_msg)
                 return False
             elif status == 404:
