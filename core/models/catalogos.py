@@ -257,7 +257,7 @@ class Medico(models.Model):
         max_length=128,
         blank=True,
         verbose_name="Hash del PIN-LAB",
-        help_text="Hash resistente del PIN de validación para firmar notas. Nunca almacenar el PIN en texto plano."
+        help_text="SHA256 del PIN de validación para firmar notas. NUNCA almacenar el PIN en texto plano."
     )
     pin_configurado_en = models.DateTimeField(
         null=True,
