@@ -772,7 +772,7 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Riesgo:** borrado total del catálogo de todos los tenants; pérdida de datos irreversible; violación del aislamiento multi-tenant.
 - **Recomendación:** Requerir `--empresa-id` y eliminar únicamente los registros de esa empresa. Evitar `TRUNCATE CASCADE` global; usar `DELETE` filtrado por `empresa`. Hacer backup/respaldos automáticos y registrar en `AuditLog`.
 
-## H-NUEVO-92 — Constraints `unique=True` globales en modelos `lims` impiden duplicados entre tenants — ALTO, ABIERTO
+## H-NUEVO-92 — Constraints `unique=True` globales en modelos `lims` impiden duplicados entre tenants — ALTO, CORREGIDO
 - **Ubicación:** `lims/models.py:35` (`Analito.codigo`), `:36-39` (`codigo_rastreo_iso`), `:31` (`id_legacy`), `:324` (`PerfilLims.nombre`), `:312` (`id_perfil_legacy`), `:317` (`id_examen_legacy`), `:367` (`PaqueteLims.nombre`), `:360` (`id_paquete_legacy`).
 - **Descripción:** Campos de nombre/código/legacy son `unique=True` a nivel global, no por `empresa`. En un SaaS multi-tenant es esperado que cada tenant pueda tener su propio catálogo. Actualmente un segundo tenant no puede usar el mismo `codigo` (`GLU`) ni un paquete llamado `Perfil básico`. El importador mitiga colisiones renombrando códigos (`GLU-x`), lo que corrompe los identificadores.
 - **Riesgo:** colisiones de catálogo, códigos renombrados, datos mezclados entre tenants, escalabilidad limitada.
@@ -790,13 +790,13 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Riesgo:** sobreescritura cruzada de catálogos, precios y activación/desactivación global; pérdida de datos aislados por tenant.
 - **Recomendación:** Filtrar todas las queries por `empresa` (o iterar por empresa con `--empresa-id` obligatorio). No usar `tenant_bypass` para operaciones de datos de un tenant. Hacer obligatorio `--empresa-id` y rechazar operaciones multi-tenant implícitas.
 
-## H-NUEVO-95 — `PrecioItem.aplicar_inflacion_bulk` no filtra por empresa y omite `costo_lista`/`fecha_actualiz` — MEDIO, ABIERTO
+## H-NUEVO-95 — `PrecioItem.aplicar_inflacion_bulk` no filtra por empresa y omite `costo_lista`/`fecha_actualiz` — MEDIO, CORREGIDO
 - **Ubicación:** `lims/models.py:480-488` (`aplicar_inflacion_bulk`), `lims/views/precios.py:197-239` (`ajuste_masivo`).
 - **Descripción:** El classmethod recibe una lista de IDs y hace `cls.objects.filter(id__in=ids)` sin `empresa`. Aunque la vista `ajuste_masivo` filtra previamente, cualquier otro llamado puede pasar IDs de cualquier tenant. Además solo actualiza `precio_venta` (sin `fecha_actualiz` ni `costo_lista`), dejando `fecha_actualiz` desactualizada y el catálogo Nivel 1/2/3 sin sincronizar.
 - **Riesgo:** actualización de precios de otro tenant; inconsistencia entre `precio_venta` y `costo_lista`.
 - **Recomendación:** Añadir `empresa` al filtro y a `bulk_update`. Actualizar `costo_lista` de los objetos relacionados tras el ajuste masivo.
 
-## H-NUEVO-96 — `ajuste_masivo` de precios no sincroniza `costo_lista` del catálogo — BAJO/MEDIO, ABIERTO
+## H-NUEVO-96 — `ajuste_masivo` de precios no sincroniza `costo_lista` del catálogo — BAJO/MEDIO, CORREGIDO
 - **Ubicación:** `lims/views/precios.py:197-239` (`ajuste_masivo`), `lims/models.py:462-469` (`aplicar_inflacion`).
 - **Descripción:** `ajuste_masivo` aplica `PrecioItem.aplicar_inflacion_bulk` pero no actualiza `Analito.costo_lista`, `PerfilLims.costo_lista` ni `PaqueteLims.costo_lista`. La vista `actualizar_precio` sí actualiza ambos. Tras un ajuste masivo, `PrecioItem.precio_venta` y `costo_lista` divergen.
 - **Riesgo:** inconsistencia de precios entre Nivel 4 y Nivel 1/2/3; posibles errores de cobro.

@@ -779,5 +779,7 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - `27a8b0f`: reemplaza folios crudos en QR de kiosco por tokens firmados con caducidad y rate limit; folios desnudos quedan rechazados.
 - `3fc7cd6`: bloquea también `DELETE` sobre notas selladas, conserva `PermissionDenied` y evita empresa por defecto para usuarios sin empresa fuera de desarrollo local.
 - `826a7dc`: FeatureFlagMiddleware falla cerrado cuando falta el contexto de módulos.
+- `9f47ee2`: unicidad de Analito, PerfilLims y PaqueteLims acotada por empresa mediante `lims.0012`.
+- `1dbeed1`: ajuste masivo de precios LIMS exige empresa y sincroniza `costo_lista` y `fecha_actualiz`.
 
 **Verificación**: `manage.py check` sin incidencias; pruebas focalizadas de inventario/seguridad/LIMS/tenant/kiosco en verde; producción responde `/health/` HTTP 200 con base de datos y cache operativos después de cada despliegue.
