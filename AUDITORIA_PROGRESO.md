@@ -781,5 +781,6 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - `826a7dc`: FeatureFlagMiddleware falla cerrado cuando falta el contexto de módulos.
 - `9f47ee2`: unicidad de Analito, PerfilLims y PaqueteLims acotada por empresa mediante `lims.0012`.
 - `1dbeed1`: ajuste masivo de precios LIMS exige empresa y sincroniza `costo_lista` y `fecha_actualiz`.
+- Corrección adicional: `auditoria_qa` ya no crea usuarios ni usa `Prislab2026`; exige `PRISLAB_QA_ADMIN_USER` y `PRISLAB_QA_ADMIN_PASSWORD` para ejecutar QA.
 
 **Verificación**: `manage.py check` sin incidencias; pruebas focalizadas de inventario/seguridad/LIMS/tenant/kiosco en verde; producción responde `/health/` HTTP 200 con base de datos y cache operativos después de cada despliegue.

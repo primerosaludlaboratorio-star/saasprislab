@@ -31,27 +31,23 @@ class Command(BaseCommand):
         
         # Intentar login como admin
         try:
-            # Buscar o crear usuario admin
-            admin_user, created = User.objects.get_or_create(
-                username='admin',
-                defaults={
-                    'email': 'admin@prislab.com',
-                    'is_staff': True,
-                    'is_superuser': True
-                }
-            )
-            if created:
-                admin_user.set_password('Prislab2026')
-                admin_user.save()
-                self.stdout.write(f"{Fore.YELLOW}[!] Usuario admin creado con contraseña: Prislab2026")
-            else:
-                admin_user.set_password('Prislab2026')
-                admin_user.is_staff = True
-                admin_user.is_superuser = True
-                admin_user.save()
+            qa_username = os.environ.get('PRISLAB_QA_ADMIN_USER', 'admin').strip()
+            qa_password = os.environ.get('PRISLAB_QA_ADMIN_PASSWORD', '').strip()
+            if not qa_password:
+                self.stdout.write(
+                    f"{Fore.RED}[X] Define PRISLAB_QA_ADMIN_PASSWORD; no se permiten contraseñas por defecto."
+                )
+                return
+
+            admin_user = User.objects.filter(username=qa_username).first()
+            if not admin_user:
+                self.stdout.write(
+                    f"{Fore.RED}[X] El usuario QA '{qa_username}' no existe; créalo fuera de este comando."
+                )
+                return
             
             # Login
-            login_success = client.login(username='admin', password=os.environ.get('PRISLAB_QA_ADMIN_PASSWORD', 'Prislab2026'))
+            login_success = client.login(username=qa_username, password=qa_password)
             if not login_success:
                 self.stdout.write(f"{Fore.RED}[X] ERROR: No se pudo hacer login como admin")
                 return
