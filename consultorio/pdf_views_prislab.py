@@ -11,11 +11,13 @@ from django.shortcuts import get_object_or_404
 from core.models import ConsultaMedica
 from core.services.motor_recetas import generar_receta_pdf
 from core.utils.empresa_request import empresa_efectiva_request
+from core.decorators import role_required
 
 logger = logging.getLogger(__name__)
 
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 def imprimir_receta_profesional(request, consulta_id):
     """
     Genera y retorna el PDF de receta medica.
@@ -62,6 +64,7 @@ def imprimir_receta_profesional(request, consulta_id):
 
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 def api_generar_receta_pdf(request, consulta_id):
     """
     API: Genera receta PDF y retorna URL.

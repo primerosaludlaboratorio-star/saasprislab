@@ -17,6 +17,7 @@ from core.models import Paciente, Medico, CitaMedica
 from core.services.audit_service import registrar_auditoria
 from core.utils.empresa_request import empresa_efectiva_request
 from core.utils.sucursal_helpers import get_request_sucursal
+from core.decorators import role_required
 
 from ._helpers import _int_or_none, _resolver_medico_usuario
 
@@ -28,6 +29,7 @@ logger = logging.getLogger('consultorio')
 # ==============================================================================
 
 @login_required
+@role_required('RECEPCION', 'MEDICO', 'ADMIN', 'DIRECTOR')
 def tablero_recepcion(request):
     """
     Dashboard de recepción con vista de citas del día.
@@ -62,6 +64,7 @@ def tablero_recepcion(request):
 
 
 @login_required
+@role_required('RECEPCION', 'MEDICO', 'ADMIN', 'DIRECTOR')
 @require_http_methods(["POST"])
 def check_in_cita(request, cita_id):
     """Marca una cita como EN_SALA (Check-In)."""
@@ -79,6 +82,7 @@ def check_in_cita(request, cita_id):
 
 
 @login_required
+@role_required('RECEPCION', 'MEDICO', 'ADMIN', 'DIRECTOR')
 def agendar_cita(request):
     """
     Formulario para agendar nueva cita.

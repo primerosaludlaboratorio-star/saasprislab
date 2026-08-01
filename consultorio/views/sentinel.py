@@ -19,6 +19,7 @@ from django.contrib import messages
 
 from consultorio.models import IncidenciaSentinel
 from core.utils.empresa_request import empresa_efectiva_request
+from core.decorators import role_required
 
 logger = logging.getLogger('consultorio')
 
@@ -28,6 +29,7 @@ logger = logging.getLogger('consultorio')
 # ==============================================================================
 
 @login_required
+@role_required('ADMIN', 'GERENTE', 'DIRECTOR')
 def sentinel_dashboard(request):
     """
     Dashboard de incidencias para el Director.
@@ -100,12 +102,14 @@ def sentinel_dashboard(request):
 
 
 @login_required
+@role_required('ADMIN', 'GERENTE', 'DIRECTOR')
 def sentinel_ssh_guide(request):
     """Guía visual paso a paso para configurar Remote SSH con Cursor."""
     return render(request, 'consultorio/sentinel_ssh_guide.html')
 
 
 @login_required
+@role_required('ADMIN', 'GERENTE', 'DIRECTOR')
 def sentinel_detalle(request, incidencia_id):
     """Detalle de una incidencia con traceback completo y análisis IA."""
     empresa = empresa_efectiva_request(request)
@@ -224,6 +228,7 @@ def api_sentinel_feedback(request):
 
 
 @login_required
+@role_required('ADMIN', 'GERENTE', 'DIRECTOR')
 def api_sentinel_exportar_cursor(request, incidencia_id):
     """
     API: Exporta el contexto técnico de una incidencia en formato
@@ -299,6 +304,7 @@ def api_sentinel_exportar_cursor(request, incidencia_id):
 
 
 @login_required
+@role_required('ADMIN', 'GERENTE', 'DIRECTOR')
 def api_sentinel_ssh(request, incidencia_id):
     """
     API: Genera comandos SSH rápidos para reparación directa en terminal.

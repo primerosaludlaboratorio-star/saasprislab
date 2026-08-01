@@ -14,6 +14,7 @@ from django.contrib import messages
 from core.models import CitaMedica, SignosVitales
 from core.services.audit_service import registrar_auditoria
 from core.utils.empresa_request import empresa_efectiva_request
+from core.decorators import role_required
 
 from ._helpers import (
     _int_in_range, _dec_in_range, _dec_or_none,
@@ -36,6 +37,7 @@ logger = logging.getLogger('consultorio')
 # ==============================================================================
 
 @login_required
+@role_required('ENFERMERIA', 'MEDICO', 'ADMIN', 'DIRECTOR')
 def lista_triage(request):
     """
     Lista de pacientes en sala de espera (EN_SALA) para triage.
@@ -61,6 +63,7 @@ def lista_triage(request):
 
 
 @login_required
+@role_required('ENFERMERIA', 'MEDICO', 'ADMIN', 'DIRECTOR')
 def captura_signos_vitales(request, cita_id):
     """
     Formulario de triage para capturar signos vitales.

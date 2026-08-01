@@ -17,6 +17,7 @@ from core.models import (
     HistoriaClinica, CertificadoMedico,
 )
 from core.utils.empresa_request import empresa_efectiva_request
+from core.decorators import role_required
 
 logger = logging.getLogger('consultorio')
 
@@ -26,6 +27,7 @@ logger = logging.getLogger('consultorio')
 # ==============================================================================
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'GERENTE', 'DIRECTOR')
 def historial_clinico_paciente(request, paciente_id):
     """
     Vista completa del historial clínico de un paciente.
@@ -71,6 +73,7 @@ def historial_clinico_paciente(request, paciente_id):
 
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'GERENTE', 'DIRECTOR')
 def dashboard_consultorio(request):
     """
     Dashboard principal del consultorio.
@@ -135,6 +138,7 @@ def dashboard_consultorio(request):
 
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'GERENTE', 'DIRECTOR')
 def ver_consulta_detalle(request, consulta_id):
     """
     Vista de detalle de una consulta médica específica.

@@ -13,6 +13,7 @@ from django.contrib import messages
 
 from core.models import CertificadoMedico, ConsultaMedica, Paciente, CitaMedica
 from core.services.audit_service import registrar_auditoria
+from core.decorators import role_required
 from core.utils.empresa_request import empresa_efectiva_request
 
 from ._helpers import _int_or_none, _resolver_medico_usuario
@@ -25,6 +26,7 @@ logger = logging.getLogger('consultorio')
 # ==============================================================================
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 def generar_certificado(request):
     """
     Formulario para generar un certificado médico.
@@ -147,6 +149,7 @@ def generar_certificado(request):
 
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 def ver_certificado(request, certificado_id):
     """Vista de detalle / impresión de un certificado médico."""
     empresa = empresa_efectiva_request(request)

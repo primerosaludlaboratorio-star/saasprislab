@@ -20,6 +20,7 @@ from django.contrib import messages
 
 from core.models import ConsultaMedica
 from core.utils.empresa_request import empresa_efectiva_request
+from core.decorators import role_required
 
 logger = logging.getLogger('consultorio')
 
@@ -29,6 +30,7 @@ logger = logging.getLogger('consultorio')
 # ==============================================================================
 
 @login_required
+@role_required('MEDICO', 'RECEPCION', 'ADMIN', 'GERENTE', 'DIRECTOR')
 def cobro_consulta(request):
     """
     FASE 10: Blindaje de Cobros - Consultorio Médico Independiente.
@@ -118,6 +120,7 @@ def cobro_consulta(request):
 
 
 @login_required
+@role_required('MEDICO', 'RECEPCION', 'ADMIN', 'GERENTE', 'DIRECTOR')
 @require_http_methods(["POST"])
 def api_registrar_cobro(request):
     """API para registrar un cobro de consulta con soporte de pago mixto."""
@@ -223,6 +226,7 @@ def api_registrar_cobro(request):
 
 
 @login_required
+@role_required('MEDICO', 'RECEPCION', 'ADMIN', 'GERENTE', 'DIRECTOR')
 @require_http_methods(["POST"])
 def api_liquidar_vale(request):
     """API para marcar un vale como liquidado."""
@@ -276,6 +280,7 @@ def api_liquidar_vale(request):
 
 
 @login_required
+@role_required('MEDICO', 'RECEPCION', 'ADMIN', 'GERENTE', 'DIRECTOR')
 def reporte_liquidacion(request):
     """Reporte de liquidación diaria."""
     from consultorio.models import ValeLiquidacion, CobroConsulta, CajaConsultorio

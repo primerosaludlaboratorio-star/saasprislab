@@ -29,6 +29,7 @@ from core.services.audit_service import registrar_auditoria
 from core.utils.trazabilidad import registrar_trazabilidad
 from core.utils.trazabilidad import serializar_modelo
 from core.utils.empresa_request import empresa_efectiva_request
+from core.decorators import role_required
 
 from ._helpers import _int_or_none, _dec_or_none
 
@@ -305,6 +306,7 @@ def historial_signos_vitales(request, paciente_id):
 # ==============================================================================
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 def agenda_medico(request):
     """Vista de la agenda del médico con switch ON/OFF."""
     from consultorio.models import ConfiguracionMedico

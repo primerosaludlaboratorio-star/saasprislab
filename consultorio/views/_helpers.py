@@ -56,9 +56,17 @@ def _resolver_medico_usuario(request, empresa, *, medico_preferido=None, autocre
     if not autocrear:
         return None
 
+    # Nunca inventar una identidad clínica para usuarios sin perfil médico.
+    # La firma de recetas/certificados debe provenir de un médico registrado.
+    if getattr(request.user, 'rol', '') not in {'MEDICO', 'ADMIN', 'DIRECTOR'}:
+        return None
+
+    if not cedula_usuario:
+        return None
+
     medico, _ = Medico.objects.get_or_create(
         empresa=empresa,
-        cedula_profesional=cedula_usuario or f'USR-{request.user.id}',
+        cedula_profesional=cedula_usuario,
         defaults={
             'nombre_completo': nombre_usuario or request.user.username,
             'especialidad': 'Médico General',

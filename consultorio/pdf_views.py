@@ -11,6 +11,7 @@ from io import BytesIO
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
+from core.decorators import role_required
 
 from reportlab.lib.pagesizes import letter  # US Letter: 8.5" x 11" (215.9mm x 279.4mm)
 from reportlab.lib.units import cm, mm
@@ -48,6 +49,7 @@ MARGIN_RIGHT = 10 * mm    # Margen derecho: 10mm
 # ==============================================================================
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 def imprimir_receta_paciente(request, consulta_id):
     """
     PDF PROFESIONAL estilo PRISLAB (formato receta Monserrat).

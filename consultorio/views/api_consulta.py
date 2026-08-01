@@ -19,6 +19,7 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.urls import reverse, NoReverseMatch
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q
+from core.decorators import role_required
 
 from core.models import (
     Paciente, Medico, CitaMedica, ConsultaMedica,
@@ -43,6 +44,7 @@ logger = logging.getLogger('consultorio')
 # ==============================================================================
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 @require_http_methods(["POST"])
 def api_crear_consulta_directa(request):
     """
@@ -118,6 +120,7 @@ def api_crear_consulta_directa(request):
 # ==============================================================================
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 @require_http_methods(["POST"])
 def api_crear_paciente_y_consulta(request):
     """
@@ -266,6 +269,7 @@ def api_buscar_pacientes(request):
 # ==============================================================================
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 @require_http_methods(['POST'])
 def api_analizar_transcripcion(request):
     """
@@ -426,6 +430,7 @@ REGLAS CRÍTICAS:
 # ==============================================================================
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 @require_http_methods(['POST'])
 def api_generar_receta_inmediata(request):
     """Genera una receta INMEDIATAMENTE sin esperar al final de la consulta."""
@@ -535,6 +540,7 @@ def api_generar_receta_inmediata(request):
 # ==============================================================================
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 @require_http_methods(['POST'])
 def api_generar_certificado_inmediato(request):
     """Genera un certificado médico INMEDIATAMENTE."""
@@ -637,6 +643,7 @@ def api_generar_certificado_inmediato(request):
 # ==============================================================================
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 @require_http_methods(['POST'])
 def api_generar_orden_laboratorio_inmediata(request):
     """Genera una orden de laboratorio INMEDIATAMENTE."""
@@ -760,6 +767,7 @@ def archivos_paciente(request, paciente_id):
 
 
 @login_required
+@role_required('MEDICO', 'ENFERMERIA', 'ADMIN', 'DIRECTOR')
 @require_http_methods(['POST'])
 def api_subir_archivo(request):
     """API para subir archivos adjuntos (radiografías, tomografías, etc.)."""
@@ -772,6 +780,9 @@ def api_subir_archivo(request):
         paciente_id = request.POST.get('paciente_id')
         consulta_id = request.POST.get('consulta_id')
         tipo = request.POST.get('tipo', 'DOCUMENTO')
+        tipos_validos = {codigo for codigo, _ in ArchivoAdjuntoConsulta.TIPO_CHOICES}
+        if tipo not in tipos_validos:
+            return JsonResponse({'ok': False, 'error': 'Tipo de archivo no válido'}, status=400)
         titulo = request.POST.get('titulo', 'Sin título')
         descripcion = request.POST.get('descripcion', '')
         origen = request.POST.get('origen', '')
@@ -820,6 +831,7 @@ def api_subir_archivo(request):
 
 
 @login_required
+@role_required('MEDICO', 'ENFERMERIA', 'ADMIN', 'DIRECTOR')
 @require_http_methods(['POST'])
 def api_eliminar_archivo(request, archivo_id):
     """Eliminar archivo adjunto."""

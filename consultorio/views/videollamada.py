@@ -16,6 +16,7 @@ from django.views.decorators.http import require_http_methods
 
 from core.models import CitaMedica, Paciente
 from core.utils.empresa_request import empresa_efectiva_request
+from core.decorators import role_required
 
 from ._helpers import _empresa_explicita_usuario, _resolver_medico_usuario
 
@@ -27,6 +28,7 @@ logger = logging.getLogger('consultorio')
 # ==============================================================================
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 def videollamada_segura(request):
     """
     Vista de telemedicina con videollamada segura.
@@ -120,6 +122,7 @@ def videollamada_segura(request):
 
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 @require_http_methods(["POST"])
 def api_crear_sala_videollamada(request):
     """Crea una liga firmada de sala virtual para un paciente validado del tenant."""

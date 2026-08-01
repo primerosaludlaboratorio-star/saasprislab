@@ -50,6 +50,7 @@ logger = logging.getLogger('consultorio')
 # ==============================================================================
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 def lista_trabajo_medico(request):
     """
     Lista de pacientes listos para consulta.
@@ -107,6 +108,7 @@ def lista_trabajo_medico(request):
 
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 def consulta_sin_cita(request):
     """
     Vista para crear una consulta sin cita previa (Walk-in).
@@ -161,7 +163,7 @@ def consulta_sin_cita(request):
 
 
 @login_required
-@role_required('MEDICO', 'ADMIN')
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 def nueva_consulta_soap(request, cita_id):
     """
     VISTA MAESTRA CON LÓGICA HÍBRIDA ADAPTATIVA.
@@ -660,6 +662,7 @@ def nueva_consulta_soap(request, cita_id):
 
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 def nueva_consulta_simplificada(request):
     """
     PASO 1: Pantalla de busqueda de paciente.
@@ -688,6 +691,7 @@ def nueva_consulta_simplificada(request):
 
 
 @login_required
+@role_required('MEDICO', 'ADMIN', 'DIRECTOR')
 def nueva_consulta_con_paciente(request, paciente_uuid):
     """
     PASOS 2-3-4: Consulta medica con paciente ya identificado.

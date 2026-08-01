@@ -39,7 +39,9 @@ class ConsultorioModelTests(TestCase):
             username='test_medico',
             password='test123',
             email='medico@test.com',
-            empresa=self.empresa
+            empresa=self.empresa,
+            rol='MEDICO',
+            cedula_interna='TEST-MED-001',
         )
         
         # Create Paciente
@@ -51,6 +53,12 @@ class ConsultorioModelTests(TestCase):
             empresa=self.empresa,
             sexo='M',
             fecha_nacimiento='1990-01-01',
+        )
+        Medico.objects.create(
+            empresa=self.empresa,
+            nombre_completo='Dr. Test Medico',
+            cedula_profesional='TEST-MED-001',
+            especialidad='General',
         )
         
         self.client = Client()
@@ -128,6 +136,12 @@ class ConsultorioViewTests(TestCase):
             empresa=self.empresa,
             sexo='M',
             fecha_nacimiento='1990-01-01',
+        )
+        Medico.objects.create(
+            empresa=self.empresa,
+            nombre_completo='Dr. Test Medico',
+            cedula_profesional='TEST-MED-001',
+            especialidad='General',
         )
         
         self.client = Client()
@@ -278,6 +292,8 @@ class ConsultorioApiStressTests(TestCase):
             username=self._stress_uname,
             password='test123',
             email='stress@test.com',
+            rol='MEDICO',
+            cedula_interna='STRESS',
         )
         self.user.empresa = self.empresa
         self.user.save()
@@ -605,6 +621,7 @@ class ConsultorioBillingAndFilesRegressionTests(TestCase):
             email='doctor@test.com',
             empresa=self.empresa,
             rol='MEDICO',
+            cedula_interna='REG-MED-001',
         )
         self.paciente = Paciente.objects.create(
             empresa=self.empresa,
@@ -746,7 +763,7 @@ class ConsultorioBillingAndFilesRegressionTests(TestCase):
         self.assertTrue(response.json().get('ok'))
         certificado = CertificadoMedico.objects.get(id=response.json()['certificado_id'])
         self.assertNotEqual(certificado.medico_id, self.medico_ajeno.id)
-        self.assertEqual(certificado.medico.cedula_profesional, f'USR-{self.user.id}')
+        self.assertEqual(certificado.medico.cedula_profesional, 'REG-MED-001')
 
     def test_api_crear_paciente_y_consulta_no_usa_primer_medico_de_empresa(self):
         from core.models import CitaMedica
@@ -767,7 +784,7 @@ class ConsultorioBillingAndFilesRegressionTests(TestCase):
         self.assertTrue(response.json().get('ok'))
         cita = CitaMedica.objects.get(id=response.json()['cita_id'])
         self.assertNotEqual(cita.medico_id, self.medico_ajeno.id)
-        self.assertEqual(cita.medico.cedula_profesional, f'USR-{self.user.id}')
+        self.assertEqual(cita.medico.cedula_profesional, 'REG-MED-001')
 
 
 class ConsultorioPdfTenantTest(TestCase):
