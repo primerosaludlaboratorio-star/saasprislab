@@ -119,7 +119,9 @@ class FeatureFlagMiddleware:
         modulo_requerido = self._get_modulo_requerido(request.path_info)
         if modulo_requerido:
             modulos_activos = getattr(request, 'modulos_activos', {})
-            if not modulos_activos.get(modulo_requerido, True):
+            # Si el contexto de módulos falta, no se concede acceso por omisión.
+            # EmpresaIdentityMiddleware debe poblarlo antes de este middleware.
+            if not modulos_activos.get(modulo_requerido, False):
                 return self._bloquear(request, modulo_requerido)
 
         return self.get_response(request)
@@ -212,7 +214,7 @@ class ModuloRequeridoMixin:
     def dispatch(self, request, *args, **kwargs):
         if self.modulo_requerido:
             modulos_activos = getattr(request, 'modulos_activos', {})
-            if not modulos_activos.get(self.modulo_requerido, True):
+            if not modulos_activos.get(self.modulo_requerido, False):
                 if request.user.is_superuser:
                     pass  # Superusuario bypassa siempre
                 else:
@@ -245,7 +247,7 @@ def modulo_requerido(modulo: str):
         def wrapper(request, *args, **kwargs):
             if not request.user.is_superuser:
                 modulos_activos = getattr(request, 'modulos_activos', {})
-                if not modulos_activos.get(modulo, True):
+                if not modulos_activos.get(modulo, False):
                     nombre = _MODULO_NOMBRES.get(modulo, modulo)
                     try:
                         return render(request, 'core/modulo_inactivo.html', {
