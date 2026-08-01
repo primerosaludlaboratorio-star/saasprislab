@@ -28,14 +28,13 @@ class Analito(TenantModel):
     empresa         = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='analitos_lims')
 
     # Referencia al Id_parametro del CSV legacy (para cruzar datos en importación)
-    id_legacy       = models.IntegerField(unique=True, null=True, blank=True,
+    id_legacy       = models.IntegerField(null=True, blank=True,
                                           verbose_name='ID legacy (CSV)')
 
     # Identificadores
-    codigo          = models.CharField(max_length=50, unique=True, verbose_name='Código')
+    codigo          = models.CharField(max_length=50, verbose_name='Código')
     codigo_rastreo_iso = models.CharField(
         max_length=64,
-        unique=True,
         db_index=True,
         null=True,
         blank=True,
@@ -113,6 +112,11 @@ class Analito(TenantModel):
             models.Index(fields=['departamento']),
             models.Index(fields=['es_vendible_individualmente']),
             models.Index(fields=['es_calculado']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['empresa', 'id_legacy'], name='lims_analito_empresa_id_legacy_uniq'),
+            models.UniqueConstraint(fields=['empresa', 'codigo'], name='lims_analito_empresa_codigo_uniq'),
+            models.UniqueConstraint(fields=['empresa', 'codigo_rastreo_iso'], name='lims_analito_empresa_rastreo_uniq'),
         ]
 
     def __str__(self):
@@ -309,19 +313,19 @@ class PerfilLims(TenantModel):
     # Clave estable desde Examenes.csv + Examenes_Perfil: "{Codigo}|{Abreviatura}" (unico por fila en Examenes)
     empresa      = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='perfiles_lims')
     id_perfil_legacy = models.CharField(
-        max_length=220, unique=True, null=True, blank=True,
+        max_length=220, null=True, blank=True,
         verbose_name='ID perfil (legacy CSV)',
         help_text='Codigo|Abreviatura del examen (Examenes.csv / Examenes_Perfil).',
     )
     id_examen_legacy = models.IntegerField(
-        null=True, blank=True, unique=True,
+        null=True, blank=True,
         verbose_name='Id_examen (CSV)',
     )
     costo_lista     = models.DecimalField(
         max_digits=10, decimal_places=2, default=Decimal('0.00'),
         verbose_name='Costo lista (Examenes.csv)',
     )
-    nombre      = models.CharField(max_length=200, unique=True,
+    nombre      = models.CharField(max_length=200,
                                    verbose_name='Nombre del perfil')
     descripcion = models.TextField(blank=True, verbose_name='Descripción')
     # M2M a Analito — sin filtro es_vendible_individualmente (todos los analitos son buscables)
@@ -340,6 +344,11 @@ class PerfilLims(TenantModel):
         verbose_name        = 'Perfil LIMS'
         verbose_name_plural = 'Perfiles LIMS'
         ordering            = ['nombre']
+        constraints = [
+            models.UniqueConstraint(fields=['empresa', 'id_perfil_legacy'], name='lims_perfil_empresa_id_legacy_uniq'),
+            models.UniqueConstraint(fields=['empresa', 'id_examen_legacy'], name='lims_perfil_empresa_id_examen_uniq'),
+            models.UniqueConstraint(fields=['empresa', 'nombre'], name='lims_perfil_empresa_nombre_uniq'),
+        ]
 
     def __str__(self):
         return self.nombre
@@ -357,14 +366,14 @@ class PerfilLims(TenantModel):
 class PaqueteLims(TenantModel):
     empresa        = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='paquetes_lims')
     id_paquete_legacy = models.CharField(
-        max_length=200, unique=True, null=True, blank=True,
+        max_length=200, null=True, blank=True,
         verbose_name='Abreviatura paquete (CSV)',
     )
     costo_lista     = models.DecimalField(
         max_digits=10, decimal_places=2, default=Decimal('0.00'),
         verbose_name='Costo lista (Paquetes.csv)',
     )
-    nombre        = models.CharField(max_length=200, unique=True,
+    nombre        = models.CharField(max_length=200,
                                      verbose_name='Nombre del paquete')
     descripcion   = models.TextField(blank=True, verbose_name='Descripción')
     # Composición: analitos individuales + perfiles completos
@@ -390,6 +399,10 @@ class PaqueteLims(TenantModel):
         verbose_name        = 'Paquete LIMS'
         verbose_name_plural = 'Paquetes LIMS'
         ordering            = ['nombre']
+        constraints = [
+            models.UniqueConstraint(fields=['empresa', 'id_paquete_legacy'], name='lims_paquete_empresa_id_legacy_uniq'),
+            models.UniqueConstraint(fields=['empresa', 'nombre'], name='lims_paquete_empresa_nombre_uniq'),
+        ]
 
     def __str__(self):
         return self.nombre
