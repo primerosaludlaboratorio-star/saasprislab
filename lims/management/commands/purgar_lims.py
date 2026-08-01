@@ -11,8 +11,9 @@ ADVERTENCIA: Hace backup de conteos antes de borrar, pero NO hace backup de dato
 Haz pg_dump antes de ejecutar en producción.
 """
 import sys
+import os
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
 import logging
 
@@ -25,6 +26,10 @@ class Command(BaseCommand):
             '--force',
             action='store_true',
             help='Omitir confirmación interactiva (usar solo en scripts automatizados)',
+        )
+        parser.add_argument(
+            '--allow-global-reset', action='store_true',
+            help='Reconoce explícitamente que la purga es global e irreversible.',
         )
 
     def _contar(self):
@@ -64,6 +69,11 @@ class Command(BaseCommand):
         return conteos
 
     def handle(self, *args, **options):
+        if not options['allow_global_reset'] or os.environ.get('PRISLAB_ALLOW_LIMS_PURGE') != '1':
+            raise CommandError(
+                'Purga bloqueada. Requiere --allow-global-reset y '
+                'PRISLAB_ALLOW_LIMS_PURGE=1 en el entorno de ejecución.'
+            )
         self.stdout.write(self.style.WARNING(
             '\n' + '=' * 65
         ))

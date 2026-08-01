@@ -25,7 +25,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.core.management import call_command
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from core.models import Empresa
@@ -128,7 +128,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         dry_run = options['dry_run']
         reset   = options['reset']
+        if reset and not options.get('empresa_id'):
+            raise CommandError('--reset exige --empresa-id explícito; nunca se permite reset global.')
         empresa = self._resolver_empresa(options.get('empresa_id'))
+        if reset and not empresa:
+            raise CommandError('La empresa destino indicada no existe o está inactiva.')
 
         if empresa:
             self.stdout.write(self.style.NOTICE(
@@ -150,8 +154,8 @@ class Command(BaseCommand):
                 # ── Opcional: reset previo ────────────────────────────────────
                 if reset and not dry_run:
                     self.stdout.write('Borrando registros lims.* previos...')
-                    ValorReferenciaAnalito.objects.all().delete()
-                    Analito.objects.all().delete()
+                    ValorReferenciaAnalito.objects.filter(analito__empresa=empresa).delete()
+                    Analito.objects.filter(empresa=empresa).delete()
                     self.stdout.write(self.style.SUCCESS('  Registros lims.* eliminados.\n'))
 
                 # ── Fase A: importar Parametros.csv → Analito ───────────────

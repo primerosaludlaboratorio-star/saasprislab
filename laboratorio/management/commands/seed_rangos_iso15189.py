@@ -10,7 +10,9 @@ Uso:
 ════════════════════════════════════════════════════════════════════════════════
 """
 from decimal import Decimal
-from django.core.management.base import BaseCommand
+import os
+from django.core.management.base import BaseCommand, CommandError
+from django.conf import settings
 from laboratorio.models import Parametro, RangoReferenciaParametro
 
 
@@ -72,9 +74,17 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--limpiar', action='store_true', help='Borra rangos existentes antes de cargar')
+        parser.add_argument('--yes', action='store_true', help='Confirma el borrado global de rangos legacy')
 
     def handle(self, *args, **options):
         if options['limpiar']:
+            if not options['yes'] or os.environ.get('PRISLAB_ALLOW_GLOBAL_RANGE_RESET') != '1':
+                raise CommandError(
+                    '--limpiar es global y está bloqueado. Requiere --yes y '
+                    'PRISLAB_ALLOW_GLOBAL_RANGE_RESET=1.'
+                )
+            if getattr(settings, 'IS_PRODUCTION', False) and os.environ.get('PRISLAB_ALLOW_GLOBAL_RANGE_RESET') != '1':
+                raise CommandError('No se permite limpiar rangos globales en producción.')
             deleted, _ = RangoReferenciaParametro.objects.all().delete()
             self.stdout.write(self.style.WARNING(f'Eliminados {deleted} rangos existentes'))
 

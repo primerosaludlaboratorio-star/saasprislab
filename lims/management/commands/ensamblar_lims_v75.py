@@ -13,7 +13,7 @@ Uso:
   python manage.py ensamblar_lims_v75 --limpiar-perfiles --limpiar-paquetes
 """
 from django.core.management import call_command
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from core.models import Empresa
 from core.tenant import clear_current_empresa, set_current_empresa, tenant_bypass
@@ -42,6 +42,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         dry = options['dry_run']
+        if options['reset_catalogo'] and not options.get('empresa_id'):
+            raise CommandError('--reset-catalogo exige --empresa-id explícito.')
         out, err = self.stdout, self.stderr
         empresa = self._resolver_empresa(options.get('empresa_id'))
 
