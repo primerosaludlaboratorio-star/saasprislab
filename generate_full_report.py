@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
 import os
 import ast
 
 def generate_report(root_dir, output_file):
-    report_lines = ["# ?? Reporte Técnico Exhaustivo E2E: PRISLAB SaaS v1.0", ""]
-    report_lines.append("> Este documento detalla la realidad técnica sin filtros de la plataforma PRISLAB, incluyendo deuda técnica oculta, TODOs, funciones vacías, módulos sin cobertura de pruebas, y áreas con modelos no migrados.")
+    report_lines = ["# ?? Reporte TÃ©cnico Exhaustivo E2E: PRISLAB SaaS v1.0", ""]
+    report_lines.append("> Este documento detalla la realidad tÃ©cnica sin filtros de la plataforma PRISLAB, incluyendo deuda tÃ©cnica oculta, TODOs, funciones vacÃ­as, mÃ³dulos sin cobertura de pruebas, y Ã¡reas con modelos no migrados.")
     report_lines.append("")
     
     apps = {}
@@ -36,7 +37,7 @@ def generate_report(root_dir, output_file):
                     
                     for i, line in enumerate(lines):
                         if 'TODO' in line or 'FIXME' in line or 'HACK' in line or 'XXX' in line:
-                            # Evitar el falso positivo de TODOS (español)
+                            # Evitar el falso positivo de TODOS (espaÃ±ol)
                             if 'TODOS' in line and 'TODO' not in line.replace('TODOS', ''):
                                 continue
                             if 'METODO' in line.upper(): continue
@@ -47,27 +48,27 @@ def generate_report(root_dir, output_file):
                         for node in ast.walk(tree):
                             if isinstance(node, ast.FunctionDef):
                                 if len(node.body) == 1 and isinstance(node.body[0], ast.Pass):
-                                    apps[app_name]['empty'].append(f"- **{rel_path}**: Función vacía detectada def {node.name}()")
+                                    apps[app_name]['empty'].append(f"- **{rel_path}**: FunciÃ³n vacÃ­a detectada def {node.name}()")
                     except SyntaxError:
                         pass
             except Exception:
                 pass
 
-    report_lines.append("## 1. Módulos Críticos sin Cobertura de Pruebas")
-    report_lines.append("Los siguientes módulos no tienen funciones de prueba detectadas y representan deuda técnica de QA:")
+    report_lines.append("## 1. MÃ³dulos CrÃ­ticos sin Cobertura de Pruebas")
+    report_lines.append("Los siguientes mÃ³dulos no tienen funciones de prueba detectadas y representan deuda tÃ©cnica de QA:")
     for app, data in sorted(apps.items()):
         if data['test_count'] == 0 and data['model_count'] > 0:
             report_lines.append(f"- ?? **{app}** (Contiene {data['model_count']} modelos, 0 tests en su paquete)")
     report_lines.append("")
     
-    report_lines.append("## 2. Deuda Técnica Oculta (TODOs, FIXMEs, HACKs)")
+    report_lines.append("## 2. Deuda TÃ©cnica Oculta (TODOs, FIXMEs, HACKs)")
     for app, data in sorted(apps.items()):
         if data['todos']:
             report_lines.append(f"### {app.capitalize()}")
             report_lines.extend(data['todos'])
             report_lines.append("")
             
-    report_lines.append("## 3. Funciones Vacías o Incompletas")
+    report_lines.append("## 3. Funciones VacÃ­as o Incompletas")
     for app, data in sorted(apps.items()):
         if data['empty']:
             report_lines.append(f"### {app.capitalize()}")
