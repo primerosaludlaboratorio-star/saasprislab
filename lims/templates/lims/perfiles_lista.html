@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load prislab_text %}
 {% block title %}Perfiles LIMS{% endblock %}
 {% block extra_css %}
 <style>
@@ -42,7 +43,7 @@ body { background: #f4f6f9; }
           <tr class="lims-fila-perfil"
               data-busqueda="{{ perfil.nombre|default:''|escape }} {{ perfil.id_perfil_legacy|default:''|escape }} {{ perfil.id_examen_legacy|default:''|escape }}">
             <td><code class="small text-break">{{ perfil.id_perfil_legacy|default:"—" }}</code></td>
-            <td class="fw-semibold">{{ perfil.nombre }}</td>
+            <td class="fw-semibold">{{ perfil.nombre|nombre_lims }}</td>
             <td><small class="text-muted">{{ perfil.descripcion|default:"—"|truncatechars:90 }}</small></td>
             <td class="text-center"><span class="badge bg-primary">{{ perfil.num_analitos }}</span></td>
             <td class="text-center">

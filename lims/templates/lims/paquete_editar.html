@@ -1,11 +1,12 @@
 {% extends 'base.html' %}
+{% load prislab_text %}
 {% block title %}{% if paquete %}Editar Paquete{% else %}Nuevo Paquete{% endif %} — LIMS{% endblock %}
 {% block content %}
 <div class="container mt-4" style="margin-top:70px;">
   <div class="card shadow-sm">
     <div class="card-header text-white fw-bold" style="background:#7d6608;">
       <i class="fas fa-box-open me-1"></i>
-      {% if paquete %}Editar Paquete: {{ paquete.nombre }}{% else %}Nuevo Paquete Comercial{% endif %}
+      {% if paquete %}Editar Paquete: {{ paquete.nombre|nombre_lims }}{% else %}Nuevo Paquete Comercial{% endif %}
     </div>
     <div class="card-body">
       <form method="post">

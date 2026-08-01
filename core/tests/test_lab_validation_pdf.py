@@ -122,6 +122,27 @@ class LabValidationPdfTest(TestCase):
         self.assertEqual(response.content, b'%PDF-1.4 mock')
         generar.assert_called_once()
 
+    def test_imprimir_resultados_pdf_sin_formato_entrega_pdf(self):
+        """Los botones que abren /pdf/ sin query no deben recibir HTML."""
+        orden = self._crear_orden()
+        OrdenDeServicio.objects.filter(id=orden.id).update(estado='RESULTADOS_LISTOS')
+        ConsentimientoInformado.objects.create(
+            empresa=self.empresa,
+            paciente=self.paciente,
+            orden=orden,
+            firma_digital='data:image/png;base64,abc',
+            acepta_privacidad=True,
+            acepta_procesamiento=True,
+        )
+
+        with patch('core.services.motor_reportes_lab.generar_reporte_pdf', return_value=b'%PDF-1.4 mock'):
+            with patch('core.services.motor_reportes_lab.guardar_reporte_en_storage', return_value='/media/resultados_pdf/mock.pdf'):
+                response = self.client.get(reverse('imprimir_resultados_pdf', args=[orden.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertEqual(response.content, b'%PDF-1.4 mock')
+
     def test_imprimir_resultados_staff_bloquea_orden_no_validada(self):
         orden = self._crear_orden()
 

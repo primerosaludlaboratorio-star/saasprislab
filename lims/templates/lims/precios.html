@@ -1,6 +1,7 @@
 ﻿{% extends 'base.html' %}
 {% load static %}
 {% load l10n %}
+{% load prislab_text %}
 {% block title %}Gestión de Precios — LIMS{% endblock %}
 {% block extra_css %}
 <style>
@@ -117,7 +118,7 @@ tr:hover .btn-save-precio { display:inline-flex; }
                   <span class="badge badge-{{ item.tipo }}">{{ item.tipo }}</span>
                 </td>
                 <td><code class="small text-break">{{ item.codigo|default:"—" }}</code></td>
-                <td class="fw-semibold">{{ item.nombre }}</td>
+                <td class="fw-semibold">{{ item.nombre|nombre_lims }}</td>
                 <td><small class="text-muted">{{ item.subtitulo }}</small></td>
                 <td>
                   <div class="d-flex align-items-center gap-2">

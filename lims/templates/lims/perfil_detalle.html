@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}Perfil: {{ perfil.nombre }} — LIMS{% endblock %}
+{% load prislab_text %}
+{% block title %}Perfil: {{ perfil.nombre|nombre_lims }} — LIMS{% endblock %}
 {% block extra_css %}
 <style>
 body { background: #f4f6f9; }
@@ -15,7 +16,7 @@ body { background: #f4f6f9; }
 
   <div class="lims-header rounded-3 p-4 mb-4 text-white d-flex justify-content-between align-items-center">
     <div>
-      <h3 class="m-0 fw-bold"><i class="fas fa-layer-group me-2"></i>{{ perfil.nombre }}</h3>
+      <h3 class="m-0 fw-bold"><i class="fas fa-layer-group me-2"></i>{{ perfil.nombre|nombre_lims }}</h3>
       <small class="opacity-75">{{ perfil.descripcion|default:"Sin descripción" }}</small>
     </div>
     <div class="d-flex gap-2">
@@ -68,7 +69,7 @@ body { background: #f4f6f9; }
               {% for a in analitos %}
               <tr data-id="{{ a.pk }}">
                 <td><code>{{ a.codigo }}</code></td>
-                <td>{{ a.nombre|truncatechars:50 }}</td>
+                <td>{{ a.nombre|nombre_lims|truncatechars:50 }}</td>
                 <td><span class="badge bg-secondary">{{ a.departamento }}</span></td>
                 <td>
                   <button class="btn btn-sm btn-outline-danger btn-quitar" data-id="{{ a.pk }}" title="Quitar">

@@ -10,6 +10,7 @@ Prefijo base: /lims/
 """
 from django.http import JsonResponse
 from django.urls import path
+from core.templatetags.prislab_text import nombre_lims
 
 from lims.views import analitos as va
 from lims.views import perfiles as vb
@@ -31,6 +32,8 @@ def _api_perfiles_lista(request):
         .order_by('nombre')
         .values('id', 'nombre')
     )
+    for perfil in perfiles:
+        perfil['nombre'] = nombre_lims(perfil['nombre'])
     return JsonResponse({'perfiles': perfiles})
 
 

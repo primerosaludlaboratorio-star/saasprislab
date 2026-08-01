@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load prislab_text %}
 {% block title %}Paquetes LIMS{% endblock %}
 {% block extra_css %}
 <style>
@@ -44,7 +45,7 @@ body { background: #f4f6f9; }
           <tr class="lims-fila-paquete"
               data-busqueda="{{ paq.nombre|default:''|escape }} {{ paq.id_paquete_legacy|default:''|escape }}">
             <td><code class="small text-break">{{ paq.id_paquete_legacy|default:"—" }}</code></td>
-            <td class="fw-semibold">{{ paq.nombre }}</td>
+            <td class="fw-semibold">{{ paq.nombre|nombre_lims }}</td>
             <td><small class="text-muted">{{ paq.descripcion|default:"—"|truncatechars:80 }}</small></td>
             <td class="text-center"><span class="badge bg-secondary">{{ paq.n_analitos }}</span></td>
             <td class="text-center"><span class="badge bg-info text-dark">{{ paq.n_perfiles }}</span></td>

@@ -13,6 +13,7 @@ from django.views.decorators.http import require_http_methods
 
 from core.tenant import tenant_protected_get
 from core.utils.empresa_request import get_empresa_usuario
+from core.templatetags.prislab_text import nombre_lims
 from lims.models import Analito, PerfilLims, PaqueteLims, PrecioItem
 from lims.views.tenant_lims import empresa_lims
 
@@ -77,13 +78,13 @@ def _fila_precio_ui(precio: PrecioItem) -> dict:
     if precio.tipo == 'A':
         a = precio.analito
         if a:
-            nombre = a.nombre
+            nombre = nombre_lims(a.nombre)
             codigo = a.codigo or ''
             subtitulo = a.departamento or ''
     elif precio.tipo == 'P':
         p = precio.perfil
         if p:
-            nombre = p.nombre
+            nombre = nombre_lims(p.nombre)
             codigo = p.id_perfil_legacy or ''
             analitos_count = getattr(precio, '_analitos_count', None)
             if analitos_count is None:
@@ -92,7 +93,7 @@ def _fila_precio_ui(precio: PrecioItem) -> dict:
     else:
         qo = precio.paquete
         if qo:
-            nombre = qo.nombre
+            nombre = nombre_lims(qo.nombre)
             codigo = qo.id_paquete_legacy or ''
             desc = (qo.descripcion or '').strip()
             subtitulo = desc[:60] + ('…' if len(desc) > 60 else '')
@@ -266,6 +267,7 @@ def api_buscar_analitos_precios(request):
     out = []
     for row in qs:
         d = dict(row)
+        d['nombre'] = nombre_lims(d.get('nombre'))
         d['tiene_precio'] = PrecioItem.objects.filter(
             empresa=empresa, analito_id=d['id']
         ).exists()
@@ -305,7 +307,7 @@ def api_agregar_analito_precio(request):
                 'analito': {
                     'id': analito.pk,
                     'codigo': analito.codigo,
-                    'nombre': analito.nombre,
+                    'nombre': nombre_lims(analito.nombre),
                 },
             },
             status=422,

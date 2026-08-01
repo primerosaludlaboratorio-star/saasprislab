@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load l10n %}
+{% load prislab_text %}
 {% block title %}Analitos — LIMS{% endblock %}
 
 {% block extra_css %}
@@ -83,7 +84,7 @@ body { background: #f4f6f9; }
           <tr>
             <td><code class="small">{{ a.codigo }}</code></td>
             <td class="fw-bold">{{ a.abreviatura }}</td>
-            <td>{{ a.nombre }}</td>
+            <td>{{ a.nombre|nombre_lims }}</td>
             <td><span class="badge bg-secondary">{{ a.departamento }}</span></td>
             <td><small>{{ a.tipo_resultado }}</small></td>
             <td><small>{{ a.unidades|default:"—" }}</small></td>

@@ -10,6 +10,7 @@ from django.views.decorators.http import require_http_methods
 
 from core.tenant import tenant_protected_get
 from core.utils.empresa_request import get_empresa_usuario
+from core.templatetags.prislab_text import nombre_lims
 from core.utils.tenant_strict import empresa_desde_request
 from lims.models import Analito, PerfilLims
 from lims.views.tenant_lims import empresa_lims
@@ -125,7 +126,10 @@ def api_buscar_analitos(request):
         .values('id', 'codigo', 'abreviatura', 'nombre', 'departamento', 'unidades')[:20]
     )
 
-    return JsonResponse({'resultados': list(qs)})
+    resultados = list(qs)
+    for resultado in resultados:
+        resultado['nombre'] = nombre_lims(resultado.get('nombre'))
+    return JsonResponse({'resultados': resultados})
 
 
 @login_required
@@ -147,7 +151,7 @@ def api_agregar_analito(request, pk):
         'ok': True,
         'analito': {
             'id': analito.pk,
-            'nombre': analito.nombre,
+            'nombre': nombre_lims(analito.nombre),
             'abreviatura': analito.abreviatura,
             'departamento': analito.departamento,
         },

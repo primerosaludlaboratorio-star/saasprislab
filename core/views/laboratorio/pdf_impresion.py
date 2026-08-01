@@ -346,7 +346,10 @@ def imprimir_resultados_pdf(request, orden_id):
         empresa=empresa,
     )
 
-    if (request.GET.get('formato') or '').lower() == 'pdf':
+    # Esta ruta se llama desde varios botones como /pdf/ sin query string.
+    # El contrato de la URL es entregar PDF; la vista HTML de impresión tiene
+    # su propia ruta (`imprimir_resultados`).
+    if (request.GET.get('formato') or 'pdf').lower() == 'pdf':
         pdf_bytes = None
         if orden.archivo_resultado and getattr(orden.archivo_resultado, 'name', None):
             try:
@@ -367,13 +370,25 @@ def imprimir_resultados_pdf(request, orden_id):
             )
             try:
                 pdf_bytes = generar_reporte_pdf(orden, request=request)
-            except (RuntimeError, ValueError, OSError):
+            except Exception:
                 logger_core.warning(
                     'imprimir_resultados_pdf: motor principal fallo, usando contingencia orden=%s',
                     orden.id,
                     exc_info=True,
                 )
-                pdf_bytes = generar_reporte_pdf_simple(orden, request=request)
+                try:
+                    pdf_bytes = generar_reporte_pdf_simple(orden, request=request)
+                except Exception:
+                    logger_core.error(
+                        'imprimir_resultados_pdf: motor principal y contingencia fallaron orden=%s',
+                        orden.id,
+                        exc_info=True,
+                    )
+                    return HttpResponse(
+                        'No fue posible generar el PDF de resultados. Intente nuevamente o contacte a soporte.',
+                        status=503,
+                        content_type='text/plain; charset=utf-8',
+                    )
             guardar_reporte_en_storage(orden, pdf_bytes)
 
         filename = f"resultados_{orden.folio_orden or orden.id}.pdf"

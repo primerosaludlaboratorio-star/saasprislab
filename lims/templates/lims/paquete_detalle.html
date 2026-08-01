@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}Paquete: {{ paquete.nombre }} — LIMS{% endblock %}
+{% load prislab_text %}
+{% block title %}Paquete: {{ paquete.nombre|nombre_lims }} — LIMS{% endblock %}
 {% block extra_css %}
 <style>
 body { background: #f4f6f9; }
@@ -18,7 +19,7 @@ body { background: #f4f6f9; }
 
   <div class="lims-header rounded-3 p-4 mb-4 text-white d-flex justify-content-between align-items-center">
     <div>
-      <h3 class="m-0 fw-bold"><i class="fas fa-box-open me-2"></i>{{ paquete.nombre }}</h3>
+      <h3 class="m-0 fw-bold"><i class="fas fa-box-open me-2"></i>{{ paquete.nombre|nombre_lims }}</h3>
       <small class="opacity-75">
         {{ paquete.descripcion|default:"Sin descripción" }}
         &nbsp;·&nbsp;
@@ -55,7 +56,7 @@ body { background: #f4f6f9; }
               {% for a in analitos_directos %}
               <tr data-id="{{ a.pk }}">
                 <td><code>{{ a.codigo }}</code></td>
-                <td>{{ a.nombre|truncatechars:45 }}</td>
+                <td>{{ a.nombre|nombre_lims|truncatechars:45 }}</td>
                 <td><button class="btn btn-sm btn-outline-danger btn-quitar-analito" data-id="{{ a.pk }}"><i class="fas fa-times"></i></button></td>
               </tr>
               {% empty %}
@@ -91,7 +92,7 @@ body { background: #f4f6f9; }
             <tbody id="tbody-perfiles">
               {% for p in perfiles %}
               <tr data-id="{{ p.pk }}">
-                <td>{{ p.nombre }}</td>
+                <td>{{ p.nombre|nombre_lims }}</td>
                 <td><button class="btn btn-sm btn-outline-danger btn-quitar-perfil" data-id="{{ p.pk }}"><i class="fas fa-times"></i></button></td>
               </tr>
               {% empty %}

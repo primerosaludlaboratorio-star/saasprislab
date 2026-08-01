@@ -1,10 +1,11 @@
 ﻿{% extends 'base.html' %}
+{% load prislab_text %}
 {% block title %}Editar Analito — LIMS{% endblock %}
 {% block content %}
 <div class="container mt-4" style="margin-top:70px;">
   <div class="card shadow-sm">
     <div class="card-header bg-dark text-white fw-bold">
-      <i class="fas fa-edit me-1"></i> Editar Analito: {{ analito.nombre }}
+      <i class="fas fa-edit me-1"></i> Editar Analito: {{ analito.nombre|nombre_lims }}
     </div>
     <div class="card-body">
       <form method="post">

@@ -10,6 +10,7 @@ from django.views.decorators.http import require_http_methods
 
 from core.tenant import tenant_protected_get
 from core.utils.empresa_request import get_empresa_usuario
+from core.templatetags.prislab_text import nombre_lims
 from core.utils.tenant_strict import empresa_desde_request
 from lims.models import Analito, PerfilLims, PaqueteLims
 from lims.views.tenant_lims import empresa_lims
@@ -135,7 +136,7 @@ def api_agregar_analito(request, pk):
         analito_id = int(request.POST.get('analito_id', 0))
     analito = tenant_protected_get(Analito, pk=analito_id)
     paquete.analitos.add(analito)
-    return JsonResponse({'ok': True, 'analito': {'id': analito.pk, 'nombre': analito.nombre}})
+    return JsonResponse({'ok': True, 'analito': {'id': analito.pk, 'nombre': nombre_lims(analito.nombre)}})
 
 
 @login_required
@@ -162,7 +163,7 @@ def api_agregar_perfil(request, pk):
         perfil_id = int(request.POST.get('perfil_id', 0))
     perfil = tenant_protected_get(PerfilLims, pk=perfil_id)
     paquete.perfiles.add(perfil)
-    return JsonResponse({'ok': True, 'perfil': {'id': perfil.pk, 'nombre': perfil.nombre}})
+    return JsonResponse({'ok': True, 'perfil': {'id': perfil.pk, 'nombre': nombre_lims(perfil.nombre)}})
 
 
 @login_required
