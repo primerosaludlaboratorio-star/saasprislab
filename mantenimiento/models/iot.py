@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+import hashlib
+import hmac
 
 from .gemelo import ExpedienteEquipo
 
@@ -38,6 +40,11 @@ class SensorIoT(models.Model):
         help_text="Equipo al que está físicamente instalado este sensor.",
     )
     codigo     = models.CharField(max_length=50, verbose_name="Código / Serial del Sensor")
+    api_token_hash = models.CharField(
+        max_length=64, blank=True, default='',
+        verbose_name="Hash del token API",
+        help_text="Nunca se almacena el token físico en claro.",
+    )
     nombre     = models.CharField(max_length=150, verbose_name="Nombre / Ubicación")
     tipo       = models.CharField(max_length=25, choices=TIPO_CHOICES, verbose_name="Tipo")
     activo     = models.BooleanField(default=True, verbose_name="Activo")
@@ -76,6 +83,15 @@ class SensorIoT(models.Model):
 
     def __str__(self):
         return f"{self.codigo} — {self.nombre} ({self.get_tipo_display()})"
+
+    def set_api_token(self, token):
+        self.api_token_hash = hashlib.sha256((token or '').encode('utf-8')).hexdigest()
+
+    def verificar_api_token(self, token):
+        if not token or not self.api_token_hash:
+            return False
+        calculado = hashlib.sha256(token.encode('utf-8')).hexdigest()
+        return hmac.compare_digest(calculado, self.api_token_hash)
 
 
 class LecturaSensorIoT(models.Model):

@@ -17,13 +17,14 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST, require_http_methods
 from datetime import date, timedelta
 import logging
+import secrets
 
 from mantenimiento.models import (
     ExpedienteEquipo, CertificadoMetrologia,
     LecturaSensorIoT, SensorIoT, TicketMantenimientoCMMS,
 )
 from .helpers import _req_empresa, _empresa
-from core.decorators import role_required
+from core.decorators import role_required, rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +146,8 @@ def crear_sensor(request, empresa):
         d = request.POST
         try:
             exp_id = d.get('expediente') or None
-            SensorIoT.objects.create(
+            api_token = (d.get('api_token') or '').strip() or secrets.token_urlsafe(32)
+            sensor = SensorIoT.objects.create(
                 empresa=empresa,
                 codigo=d['codigo'].strip(),
                 nombre=d.get('nombre', d['codigo']),
@@ -157,6 +159,9 @@ def crear_sensor(request, empresa):
                 hum_max_aceptable=d.get('hum_max_aceptable') or None,
                 notas=d.get('notas', ''),
             )
+            sensor.set_api_token(api_token)
+            sensor.save(update_fields=['api_token_hash'])
+            messages.warning(request, f'Token API generado (guárdalo ahora, no se volverá a mostrar): {api_token}')
             messages.success(request, 'Sensor registrado.')
             return redirect('mantenimiento:lista_sensores')
         except (DatabaseError, ValidationError) as exc:
@@ -255,6 +260,7 @@ def registrar_lectura_manual(request, empresa):
 from django.views.decorators.csrf import csrf_exempt
 
 @csrf_exempt
+@rate_limit('iot_lectura', limit=120, window_seconds=60)
 @require_http_methods(['POST'])
 def api_iot_lectura(request):
     """
@@ -263,20 +269,15 @@ def api_iot_lectura(request):
     Si el código existe en más de una empresa, la solicitud se rechaza por
     ambigüedad para evitar asociación cross-tenant incorrecta.
     """
-    token = request.headers.get('X-SENSOR-TOKEN', '')
-    if not token:
-        return JsonResponse({'error': 'Token requerido'}, status=401)
+    sensor_id = request.headers.get('X-SENSOR-ID', '').strip()
+    token = request.headers.get('X-SENSOR-TOKEN', '').strip()
+    if not sensor_id or not token:
+        return JsonResponse({'error': 'X-SENSOR-ID y X-SENSOR-TOKEN son obligatorios'}, status=401)
 
-    sensores = list(
-        SensorIoT.objects.select_related('empresa').filter(codigo=token, activo=True)[:2]
-    )
-    if len(sensores) > 1:
-        return JsonResponse(
-            {'error': 'Código de sensor ambiguo entre empresas. Requiere identificación única.'},
-            status=409,
-        )
-    sensor = sensores[0] if sensores else None
-    if not sensor:
+    sensor = SensorIoT.objects.select_related('empresa').filter(
+        codigo=sensor_id, activo=True
+    ).first()
+    if not sensor or not sensor.verificar_api_token(token):
         return JsonResponse({'error': 'Sensor no reconocido'}, status=401)
 
     import json
