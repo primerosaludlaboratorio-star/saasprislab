@@ -29,6 +29,7 @@ from laboratorio.services.etiquetas_zpl import (
     generar_zpl_lote,
     enviar_zpl_tcp,
 )
+from laboratorio.utils.label_printer import verificar_token_kiosko
 
 logger = logging.getLogger('laboratorio.zpl.views')
 
@@ -146,10 +147,11 @@ def imprimir_etiquetas_lote_zpl(request):
     return JsonResponse(resultado)
 
 
+@rate_limit('lab_kiosko_qr', limit=20, window_seconds=60)
 def kiosko_check_in_qr(request, qr_token: str):
     """
     Auto-check-in de paciente escaneando QR en kiosco de recepción.
-    Vista pública: el QR lleva el folio o UUID de la orden.
+    Vista pública: el QR lleva un token firmado y con caducidad.
     No requiere sesión — el kiosco es de acceso libre.
 
     Flujo:
@@ -161,21 +163,32 @@ def kiosko_check_in_qr(request, qr_token: str):
     from django.utils import timezone
     logger = logging.getLogger('laboratorio.kiosko')
 
-    token_clean = qr_token.strip().upper() if qr_token else ''
+    token_clean = qr_token.strip() if qr_token else ''
+    if token_clean.upper().startswith('PRISLAB:'):
+        token_clean = token_clean[len('PRISLAB:'):].strip()
+    try:
+        folio_token = verificar_token_kiosko(token_clean)
+    except ValueError:
+        logger.warning('kiosko_check_in_qr: token inválido o expirado')
+        return render(request, 'laboratorio/kiosko/no_encontrado.html', {
+            'token': '',
+            'error': 'El código QR no es válido o ya expiró. Solicita uno nuevo en recepción.',
+        }, status=404)
+
     orden_ods = None
     paciente = None
-    folio_display = token_clean
+    folio_display = folio_token
 
     # ── 1. Buscar en OrdenDeServicio ──────────────────────────────────────────
     try:
         from core.models import OrdenDeServicio
         orden_ods = OrdenDeServicio.objects.select_related('paciente', 'empresa').filter(
-            folio_orden=token_clean
+            folio_orden=folio_token
         ).first()
         if not orden_ods and len(token_clean) > 6:
             # Intentar con la versión en minúsculas
             orden_ods = OrdenDeServicio.objects.select_related('paciente', 'empresa').filter(
-                folio_orden__iexact=token_clean
+                folio_orden__iexact=folio_token
             ).first()
     except (DatabaseError, ValidationError) as e:
         logger.warning('kiosko_check_in_qr: error buscando OrdenDeServicio: %s', e)
@@ -214,9 +227,10 @@ def kiosko_check_in_qr(request, qr_token: str):
         })
 
     # ── 2. No encontrado ──────────────────────────────────────────────────────
-    logger.warning('kiosko_check_in_qr: folio no encontrado: %s', token_clean)
+    logger.warning('kiosko_check_in_qr: orden no encontrada para token válido')
     return render(request, 'laboratorio/kiosko/no_encontrado.html', {
-        'token': token_clean,
+        'token': '',
+        'error': 'No encontramos la orden asociada a este código QR.',
     })
 
 

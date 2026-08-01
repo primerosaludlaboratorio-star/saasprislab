@@ -19,6 +19,8 @@ FILOSOFÍA:
 import io
 import logging
 from datetime import datetime
+from django.conf import settings
+from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.utils import timezone
 from typing import Optional
 
@@ -31,6 +33,27 @@ from reportlab.graphics.shapes import Drawing
 from reportlab.graphics import renderPDF
 
 logger = logging.getLogger('etiquetas')
+
+_KIOSKO_SIGNER_SALT = 'prislab-laboratorio-kiosko-v1'
+_KIOSKO_TOKEN_MAX_AGE = 7 * 24 * 60 * 60
+
+
+def firmar_token_kiosko(folio_orden: str) -> str:
+    """Genera el token opaco que se coloca en los QR de auto check-in."""
+    folio = str(folio_orden or '').strip().upper()
+    if not folio:
+        raise ValueError('El folio es obligatorio para generar el token QR.')
+    return TimestampSigner(salt=_KIOSKO_SIGNER_SALT).sign(folio)
+
+
+def verificar_token_kiosko(token: str) -> str:
+    """Valida un token QR y devuelve el folio; nunca acepta folios desnudos."""
+    max_age = int(getattr(settings, 'PRISLAB_KIOSKO_QR_MAX_AGE_SECONDS', _KIOSKO_TOKEN_MAX_AGE))
+    try:
+        folio = TimestampSigner(salt=_KIOSKO_SIGNER_SALT).unsign(token, max_age=max_age)
+    except (BadSignature, SignatureExpired, TypeError, ValueError) as exc:
+        raise ValueError('Token QR inválido o expirado.') from exc
+    return str(folio).strip().upper()
 
 
 # ==============================================================================
@@ -325,7 +348,7 @@ def generar_etiqueta_con_qr(
         
         # Generar QR
         qr = qrcode.QRCode(version=1, box_size=2, border=1)
-        qr.add_data(f"PRISLAB:{folio_orden}")
+        qr.add_data(f"PRISLAB:{firmar_token_kiosko(folio_orden)}")
         qr.make(fit=True)
         
         # Guardar QR en buffer temporal

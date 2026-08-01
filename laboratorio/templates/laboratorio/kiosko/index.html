@@ -80,8 +80,8 @@
     <div class="qr-icon" id="mainIcon">📱</div>
     <h1>Auto Check-in</h1>
     <p class="subtitle">
-      Escanea el QR de tu orden de laboratorio<br>
-      o ingresa tu folio manualmente.
+      Escanea el QR de tu orden de laboratorio.<br>
+      Si el código expiró, solicita uno nuevo en recepción.
     </p>
 
     <div id="status"></div>
@@ -97,12 +97,12 @@
       ⏹ Detener cámara
     </button>
 
-    <!-- Folio manual -->
+    <!-- Token manual para soporte de recepción -->
     <div class="manual-form">
-      <input type="text" id="folioInput" placeholder="Ej. LAB-00123" maxlength="30"
+      <input type="text" id="folioInput" placeholder="Token QR" maxlength="180"
              onkeydown="if(event.key==='Enter') irAFolio()">
       <button class="btn secondary" onclick="irAFolio()">
-        🔢 Ingresar folio manualmente
+        🔢 Ingresar código manualmente
       </button>
     </div>
   </div>
@@ -134,10 +134,10 @@
           { fps: 10, qrbox: { width: 220, height: 220 } },
           (decodedText) => {
             // QR detectado
-            const folio = decodedText.trim().toUpperCase();
-            setStatus(`✅ QR detectado: ${folio}`, 'ok');
+            const token = decodedText.trim();
+            setStatus('✅ QR detectado', 'ok');
             detenerEscaner();
-            setTimeout(() => window.location.href = `/kiosko/check-in/${encodeURIComponent(folio)}/`, 600);
+            setTimeout(() => window.location.href = `/kiosko/check-in/${encodeURIComponent(token)}/`, 600);
           },
           (err) => { /* ignorar errores de frame — son normales */ }
         );
@@ -164,7 +164,7 @@
     function irAFolio() {
       const folio = document.getElementById('folioInput').value.trim().toUpperCase();
       if (!folio) {
-        setStatus('Ingresa tu folio de laboratorio.', 'err');
+        setStatus('Ingresa el código QR.', 'err');
         return;
       }
       window.location.href = `/kiosko/check-in/${encodeURIComponent(folio)}/`;
