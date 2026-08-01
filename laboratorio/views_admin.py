@@ -7,6 +7,7 @@ import logging
 from decimal import Decimal, InvalidOperation
 
 from django.contrib.admin.views.decorators import staff_member_required
+from core.decorators import role_required
 from django.db import transaction
 from django.db.utils import DatabaseError
 from django.core.exceptions import ValidationError
@@ -17,6 +18,7 @@ from laboratorio.models import CategoriaExamen, Estudio
 logger = logging.getLogger(__name__)
 
 @staff_member_required
+@role_required('DIRECTOR')
 @require_POST
 def cargar_tarifas_desde_csv(request):
     """
@@ -30,6 +32,8 @@ def cargar_tarifas_desde_csv(request):
         }, status=400)
     
     archivo = request.FILES['archivo']
+    if archivo.size > 10 * 1024 * 1024:
+        return JsonResponse({'ok': False, 'mensaje': 'El CSV excede el límite de 10 MB.'}, status=413)
     
     # Validar que es un archivo CSV
     if not archivo.name.endswith('.csv'):
@@ -124,6 +128,7 @@ def cargar_tarifas_desde_csv(request):
 
 
 @staff_member_required
+@role_required('DIRECTOR')
 def vista_cargar_tarifas(request):
     """
     Vista para mostrar el formulario de carga de tarifas
