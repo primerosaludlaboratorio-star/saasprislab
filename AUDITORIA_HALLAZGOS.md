@@ -1091,13 +1091,14 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Riesgo**: Fuga de recetas entre tenants; duplicación de folios; trazabilidad COFEPRIS comprometida.
 - **Recomendación**: Hacer `Receta` y `RecetaItem` `TenantModel`; eliminar `null=True` de `empresa` en `Receta`; filtrar folio por empresa en `save()`.
 
-### H-NUEVO-135: `Medico.lab_validation_pin_hash` y `ConfiguracionModulos` PIN se almacenan como SHA-256 sin sal y con poca entropía
+### H-NUEVO-135: `Medico.lab_validation_pin_hash` y `ConfiguracionModulos` PIN se almacenan como SHA-256 sin sal y con poca entropía — PARCIALMENTE CORREGIDO
 - **Archivos**: `core/models/catalogos.py`, `core/models/base.py`.
 - **Líneas**: `Medico.lab_validation_pin_hash` (catalogos.py:256-261), `ConfiguracionModulos` (base.py:261-330).
 - **Severidad**: Media.
-- **Hallazgo**: El PIN de validación del médico se guarda como `SHA256(pin_limpio)` (64 hex, sin sal). `NotaClinicaSellar._validar_pin_medico` (expediente_blindaje.py:577-594) compara hashes hex directamente. El PIN de módulos de `ConfiguracionModulos` también es corto (4 dígitos). Un ataque offline por fuerza bruta es factible si se exfiltra la base.
+- **Estado actual**: `ConfiguracionModulos` ya usa hash Django mediante la migración `core.0098_hash_farmacia_pins`. El PIN-LAB del médico acepta ahora hashes Django y migra automáticamente un SHA-256 legacy válido al primer uso; la longitud de 4 dígitos y la limitación de intentos siguen pendientes.
+- **Hallazgo**: Los registros legacy del PIN-LAB pueden conservar `SHA256(pin_limpio)` (64 hex, sin sal) hasta que se validen. `NotaClinicaSellar._validar_pin_medico` ya no crea nuevos SHA-256 sin sal. Un ataque offline por fuerza bruta sigue siendo posible sobre valores legacy no migrados.
 - **Riesgo**: Falsificación de firma médica; incumplimiento de NOM-004/FES.
-- **Recomendación**: Usar `bcrypt`/`argon2` con sal para `lab_validation_pin_hash`; exigir longitud mínima > 6; limitar intentos en `sellar_con_pin`.
+- **Recomendación pendiente**: Exigir longitud mínima > 6 y limitar intentos en `sellar_con_pin`; realizar una migración operacional controlada de los valores legacy restantes cuando exista un procedimiento seguro de revalidación.
 
 ### H-NUEVO-136: `AuditLog` y `ForenseAcceso` son append-only pero no `TenantModel`
 - **Archivos**: `core/models/operaciones.py`, `core/models/forense.py`.

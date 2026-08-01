@@ -31,7 +31,20 @@ from decimal import Decimal
 
 from django.db import models, transaction
 from django.core.exceptions import ValidationError
+from django.contrib.auth.hashers import check_password, make_password
 from django.utils import timezone
+
+
+def _validar_pin_hash(pin_limpio, pin_hash_almacenado):
+    """Valida hashes nuevos de Django y hashes SHA-256 legacy."""
+    if not pin_hash_almacenado:
+        return False
+    if pin_hash_almacenado.startswith(('pbkdf2_', 'argon2', 'bcrypt', 'scrypt')):
+        return check_password(pin_limpio, pin_hash_almacenado)
+    return secrets.compare_digest(
+        hashlib.sha256(pin_limpio.encode()).hexdigest(),
+        pin_hash_almacenado,
+    )
 
 
 # =============================================================================
@@ -589,9 +602,16 @@ class NotaClinicaSellar(models.Model):
         if not pin_hash_almacenado:
             return False
         
-        # Comparar hashes
-        pin_hash_input = hashlib.sha256(pin_limpio.encode()).hexdigest()
-        return secrets.compare_digest(pin_hash_input, pin_hash_almacenado)
+        # Las nuevas configuraciones usan los hashers de Django (sal y coste
+        # configurable). Se conserva una sola migración perezosa para hashes
+        # SHA-256 legacy ya existentes, sin guardar nunca el PIN en claro.
+        if not _validar_pin_hash(pin_limpio, pin_hash_almacenado):
+            return False
+
+        if not pin_hash_almacenado.startswith(('pbkdf2_', 'argon2', 'bcrypt', 'scrypt')):
+            perfil.lab_validation_pin_hash = make_password(pin_limpio)
+            perfil.save(update_fields=['lab_validation_pin_hash'])
+        return True
     
     def _generar_qr_verificacion(self):
         """Genera URL de verificación para el QR."""

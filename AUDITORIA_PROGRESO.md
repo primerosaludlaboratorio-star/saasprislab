@@ -758,7 +758,7 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - H-NUEVO-132: generación de folios y `linea_captura` truncada usa conteos no atómicos y sin prefijo de empresa.
 - H-NUEVO-133: `CatalogoCIE10` y `HashRaizDiario` son catálogos/anchajes globales sin `empresa`.
 - H-NUEVO-134: `Receta`/`RecetaItem` no son `TenantModel`, `empresa` es nullable y el folio es global.
-- H-NUEVO-135: `Medico.lab_validation_pin_hash` y `ConfiguracionModulos` PIN almacenados como SHA-256 sin sal, baja entropía.
+- H-NUEVO-135: PARCIALMENTE CORREGIDO; PIN farmacia ya migrado a hash Django y PIN-LAB médico acepta hash Django con migración perezosa de SHA-256 legacy. Longitud mínima y rate limit aún pendientes.
 - H-NUEVO-136: `AuditLog` y `ForenseAcceso` son append-only pero no son `TenantModel`.
 
 **Pendiente en core/:** vistas (`core/views/*`), utilerías restantes (`core/utils/*` no auditados), `core/rbac/`, `core/decorators.py`, `core/management/commands/`, `core/services/`, `core/agent/`, tests.
