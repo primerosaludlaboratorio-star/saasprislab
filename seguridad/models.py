@@ -4,6 +4,7 @@ Cumplimiento: ISO 27001, GDPR, LFPDPPP (Ley Federal de Protección de Datos Pers
 """
 
 from django.db import models
+from core.fields import EncryptedTextField
 from django.conf import settings
 from django.utils import timezone
 import pyotp
@@ -197,8 +198,7 @@ class DispositivoTOTP(models.Model):
         help_text='Nombre descriptivo del dispositivo (ej: iPhone 13, Google Authenticator)'
     )
     
-    llave_secreta = models.CharField(
-        max_length=32,
+    llave_secreta = EncryptedTextField(
         unique=True,
         help_text='Llave secreta TOTP (Base32)'
     )

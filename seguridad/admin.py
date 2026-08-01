@@ -11,7 +11,8 @@ class DispositivoTOTPAdmin(TenantScopedAdmin):
     list_display = ('usuario', 'nombre', 'activo', 'confirmado', 'fecha_creacion')
     list_filter = ('activo', 'confirmado')
     search_fields = ('usuario__username', 'nombre')
-    readonly_fields = ('llave_secreta', 'contador_usos', 'fecha_ultimo_uso')
+    readonly_fields = ('contador_usos', 'fecha_ultimo_uso')
+    exclude = ('llave_secreta',)
 
 
 @admin.register(CodigoBackup2FA)
