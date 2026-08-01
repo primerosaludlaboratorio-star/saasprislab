@@ -339,8 +339,7 @@ class CodigoBackup2FA(models.Model):
         verbose_name="Usuario"
     )
     
-    codigo = models.CharField(
-        max_length=12,
+    codigo = EncryptedTextField(
         unique=True,
         help_text='Código de respaldo (formato: XXXX-XXXX-XXXX)'
     )

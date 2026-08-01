@@ -17,14 +17,11 @@ class DispositivoTOTPAdmin(TenantScopedAdmin):
 
 @admin.register(CodigoBackup2FA)
 class CodigoBackup2FAAdmin(TenantScopedAdmin):
-    list_display = ('usuario', 'codigo_parcial', 'usado', 'fecha_creacion', 'fecha_uso')
+    list_display = ('usuario', 'usado', 'fecha_creacion', 'fecha_uso')
     list_filter = ('usado',)
     search_fields = ('usuario__username',)
-    readonly_fields = ('codigo', 'fecha_uso')
-    
-    def codigo_parcial(self, obj):
-        return f"{obj.codigo[:4]}...{obj.codigo[-4:]}"
-    codigo_parcial.short_description = 'Código'
+    readonly_fields = ('fecha_uso',)
+    exclude = ('codigo',)
 
 
 @admin.register(SesionActiva)
