@@ -19,6 +19,7 @@ from datetime import datetime
 from django.utils import timezone
 
 from django.db.models.signals import post_save, pre_save
+from django.db import DatabaseError
 from django.dispatch import receiver
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
@@ -41,7 +42,7 @@ class BlindajeExpedienteMiddleware:
     
     def __call__(self, request):
         # Verificar si es un intento de modificar nota sellada
-        if request.method in ['POST', 'PUT', 'PATCH']:
+        if request.method in ['POST', 'PUT', 'PATCH', 'DELETE']:
             self._verificar_permiso_modificacion(request)
         
         response = self.get_response(request)
@@ -79,7 +80,9 @@ class BlindajeExpedienteMiddleware:
                                 f"[BLINDAJE] Desbloqueo forense de nota #{nota_id} "
                                 f"por {request.user.username}"
                             )
-                except Exception as e:
+                except PermissionDenied:
+                    raise
+                except (DatabaseError, TypeError, ValueError) as e:
                     logger.error(f"[BLINDAJE] Error verificando permisos: {e}")
     
     def _extraer_nota_id(self, path, request):
@@ -92,7 +95,7 @@ class BlindajeExpedienteMiddleware:
             return int(match.group(1))
         
         # Intentar extraer del POST
-        if request.method in ('POST', 'PUT', 'PATCH'):
+        if request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
             nota_id = request.POST.get('nota_id') or request.POST.get('soap_id')
             if nota_id:
                 try:

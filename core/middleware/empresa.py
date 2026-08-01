@@ -75,7 +75,9 @@ class EmpresaIdentityMiddleware:
                 and getattr(request.user, 'is_authenticated', False)
             ):
                 empresa = getattr(request.user, 'empresa', None)
-                if empresa is None:
+                if empresa is None and getattr(settings, 'DEBUG', False) and not getattr(
+                    settings, 'IS_PRODUCTION', False
+                ):
                     from core.utils.default_empresa import resolve_default_empresa_sistema
 
                     empresa = resolve_default_empresa_sistema()
