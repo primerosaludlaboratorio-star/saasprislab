@@ -248,15 +248,16 @@ class HistorialResultadosAdmin(TenantScopedAdmin):
     list_filter    = ('resultado_validado_previamente',)
     search_fields  = ('motivo_cambio', 'usuario_responsable__username')
     date_hierarchy = 'fecha_hora_cambio'
-    readonly_fields = tuple(HistorialResultados._meta.fields[f.name]
-                            for f in HistorialResultados._meta.fields
-                            if f.name != 'id') if False else ()
+    readonly_fields = tuple(field.name for field in HistorialResultados._meta.fields)
 
     def has_add_permission(self, request):
         return False
 
+    def has_change_permission(self, request, obj=None):
+        return False
+
     def has_delete_permission(self, request, obj=None):
-        return request.user.is_superuser
+        return False
 
 
 @admin.register(ResponsableSanitario)

@@ -11,6 +11,7 @@ from django.views.decorators.http import require_http_methods
 from core.models import OrdenDeServicio, Paciente
 from marketing.models import CampanaMarketing, CuponMarketing
 from core.utils.sucursal_helpers import get_user_primary_sucursal
+from core.decorators import role_required
 
 
 # Segmentos y canales disponibles para campañas.
@@ -19,6 +20,7 @@ _CANALES = ['whatsapp', 'email', 'sms']
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE')
 def lista_campanas(request):
     """Lista de todas las campañas de marketing."""
     empresa = getattr(request.user, "empresa", None)
@@ -50,6 +52,7 @@ def lista_campanas(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE')
 def crear_campana(request):
     """Crear nueva campaña de marketing."""
     empresa = getattr(request.user, "empresa", None)
@@ -87,6 +90,7 @@ def crear_campana(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE')
 def editar_campana(request, campana_id):
     """Editar una campaña de marketing existente."""
     empresa = getattr(request.user, "empresa", None)
@@ -120,6 +124,7 @@ def editar_campana(request, campana_id):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE')
 def dashboard_campanas(request):
     """Dashboard con métricas de campañas."""
     empresa = getattr(request.user, "empresa", None)
@@ -174,6 +179,7 @@ def dashboard_campanas(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE')
 @require_http_methods(["POST"])
 def api_crear_campana(request):
     """API para crear campaña de marketing."""

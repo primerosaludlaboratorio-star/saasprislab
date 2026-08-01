@@ -30,6 +30,8 @@ from seguridad.models import (
 )
 
 
+@login_required
+@require_POST
 def panic_button(request):
     """
     Registra AlertaPanico y notifica por Telegram/Push con rate-limit 30s por canal y usuario.

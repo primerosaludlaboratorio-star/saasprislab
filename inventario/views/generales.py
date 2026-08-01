@@ -295,6 +295,12 @@ def detalle_vale(request, empresa, pk):
             messages.info(request, f'Vale {vale.folio} enviado a aprobación.')
 
         elif accion == 'aprobar' and vale.estado == 'PENDIENTE':
+            if not _puede_aprobar_inventario(request.user):
+                messages.error(request, 'No tienes permisos para aprobar vales.')
+                return redirect('inventario:detalle_vale', pk=pk)
+            if vale.solicitado_por_id == request.user.id:
+                messages.error(request, 'El solicitante no puede autoaprobar su propio vale.')
+                return redirect('inventario:detalle_vale', pk=pk)
             vale.estado = 'APROBADO'
             vale.aprobado_por = request.user
             vale.fecha_aprobacion = timezone.now()
@@ -353,6 +359,12 @@ def detalle_vale(request, empresa, pk):
         'lineas': lineas,
     }
     return render(request, 'inventario/generales/detalle_vale.html', ctx)
+
+
+def _puede_aprobar_inventario(user):
+    return user.is_superuser or (getattr(user, 'rol', '') or '').upper() in {
+        'ADMIN', 'GERENTE', 'DIRECTOR'
+    }
 
 
 @_empresa_required

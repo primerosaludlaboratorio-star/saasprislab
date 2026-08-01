@@ -63,7 +63,10 @@ def _verificar_codigo_2fa_usuario(usuario, codigo: str):
             return True, 'backup'
 
     master_code = str(getattr(settings, 'PRISLAB_MASTER_RECOVERY_CODE', '') or '').strip()
-    if master_code and codigo == master_code:
+    allow_master_recovery = bool(getattr(settings, 'PRISLAB_ALLOW_MASTER_RECOVERY', False)) and not bool(
+        getattr(settings, 'IS_PRODUCTION', False)
+    )
+    if allow_master_recovery and master_code and codigo == master_code:
         logger = logging.getLogger('seguridad')
         logger.warning(
             'Se utilizó PRISLAB_MASTER_RECOVERY_CODE para usuario=%s id=%s',

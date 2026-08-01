@@ -6,9 +6,11 @@ from django.shortcuts import redirect, render
 
 from core.models import Paciente
 from marketing.models import CampanaMarketing, CuponMarketing
+from core.decorators import role_required
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE')
 def dashboard_marketing(request):
     """Dashboard principal de marketing."""
     empresa = getattr(request.user, "empresa", None)
@@ -28,6 +30,7 @@ def dashboard_marketing(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE')
 def entrenamiento_ia(request):
     """Acceso directo a Academy / simulaciones."""
     empresa = getattr(request.user, "empresa", None)
@@ -38,6 +41,7 @@ def entrenamiento_ia(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE')
 def dashboard_reactivacion_ia(request):
     """Vista del dashboard de reactivación con IA."""
     empresa = getattr(request.user, 'empresa', None)

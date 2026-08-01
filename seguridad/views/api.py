@@ -29,13 +29,12 @@ from seguridad.models import (
 )
 
 
+@login_required
+@require_POST
 def api_verificar_codigo_2fa(request):
     """
     API para verificar un código 2FA en tiempo real.
     """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Método no permitido'}, status=405)
-
     codigo = request.POST.get('codigo', '').strip()
     if not codigo and request.content_type == 'application/json':
         try:

@@ -13,6 +13,7 @@ from django.views.decorators.http import require_http_methods
 
 from core.models import OrdenDeServicio, Paciente
 from core.utils.whatsapp_sender import generar_enlace_whatsapp
+from core.decorators import role_required
 
 logger = logging.getLogger('marketing.reactivacion')
 
@@ -28,6 +29,7 @@ _PALABRAS_CLAVE = {
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE')
 @require_http_methods(["GET"])
 def api_detectar_pacientes_inactivos(request):
     """

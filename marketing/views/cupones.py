@@ -15,11 +15,13 @@ from core.models import OrdenDeServicio, Paciente
 from marketing.models import CampanaMarketing, CuponMarketing, CuponUso
 from marketing.utils import generar_codigo_cupon, generar_cupon_imagen_jpg
 from core.utils.sucursal_helpers import get_user_primary_sucursal
+from core.decorators import role_required
 
 logger = logging.getLogger("marketing.cupones")
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA')
 @require_http_methods(["POST"])
 def api_generar_cupon(request):
     """Genera un cupón de descuento vía API."""
@@ -175,6 +177,7 @@ def api_aplicar_cupon(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA')
 def lista_cupones(request):
     """Lista de todos los cupones."""
     empresa = getattr(request.user, "empresa", None)
@@ -200,6 +203,7 @@ def lista_cupones(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA')
 def generar_cupon(request):
     """Generar nuevo cupón de descuento."""
     empresa = getattr(request.user, "empresa", None)

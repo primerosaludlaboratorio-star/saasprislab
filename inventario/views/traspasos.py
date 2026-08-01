@@ -298,7 +298,7 @@ def _ejecutar_recepcion(traspaso, usuario, lineas, post_data):
                     'reactivo': lote_origen.reactivo,
                     'numero_lote': lote_origen.numero_lote,
                     'fecha_caducidad': lote_origen.fecha_caducidad,
-                    'estado': 'ACTIVO',
+                    'estado': 'CUARENTENA',
                 })
             elif traspaso.silo == 'CONSULTORIO' and lote_origen:
                 lote_data.update({

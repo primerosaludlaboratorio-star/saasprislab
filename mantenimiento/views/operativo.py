@@ -13,6 +13,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from core.decorators import role_required
 from datetime import date, timedelta
 import hashlib
 import logging
@@ -140,6 +141,7 @@ def ejecutar_checklist(request, empresa, protocolo_pk, expediente_pk):
 
 
 @_req_empresa
+@role_required('ADMIN', 'GERENTE', 'DIRECTOR')
 @require_POST
 def bypass_checklist(request, empresa, ejecucion_pk):
     """
@@ -170,15 +172,12 @@ def bypass_checklist(request, empresa, ejecucion_pk):
                         protocolo_pk=ejecucion.protocolo_id,
                         expediente_pk=ejecucion.expediente_id)
 
-    # Verificar PIN: usamos el PIN de validación del sistema (LAB_VALIDATION_PIN)
-    # o el password hasheado del supervisor
-    from django.conf import settings
-    pin_correcto = False
-    lab_pin = getattr(settings, 'LAB_VALIDATION_PIN', None)
-    if lab_pin and secrets.compare_digest(str(supervisor_pin or ''), str(lab_pin)):
-        pin_correcto = True
-    elif supervisor.check_password(supervisor_pin):
-        pin_correcto = True
+    # El bypass requiere la contraseña propia del supervisor. No se acepta un
+    # PIN global compartido como autorización de una operación crítica.
+    pin_correcto = supervisor.check_password(supervisor_pin) and (
+        supervisor.is_superuser or (getattr(supervisor, 'rol', '') or '').upper()
+        in {'ADMIN', 'GERENTE', 'DIRECTOR'}
+    )
 
     if not pin_correcto:
         messages.error(request, 'PIN incorrecto. No se puede autorizar el bypass.')

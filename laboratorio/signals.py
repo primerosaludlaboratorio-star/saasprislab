@@ -11,6 +11,7 @@ Objetivo:
 import logging
 
 from django.db.models.signals import pre_save, post_save
+from django.db.utils import DatabaseError
 from django.dispatch import receiver
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType

@@ -23,6 +23,7 @@ from mantenimiento.models import (
     LecturaSensorIoT, SensorIoT, TicketMantenimientoCMMS,
 )
 from .helpers import _req_empresa, _empresa
+from core.decorators import role_required
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,7 @@ def lista_certificados(request, empresa):
 
 
 @_req_empresa
+@role_required('ADMIN', 'GERENTE', 'DIRECTOR')
 def subir_certificado(request, empresa, expediente_pk=None):
     expediente = None
     if expediente_pk:
@@ -107,6 +109,7 @@ def subir_certificado(request, empresa, expediente_pk=None):
 
 
 @_req_empresa
+@role_required('ADMIN', 'GERENTE', 'DIRECTOR')
 @require_POST
 def eliminar_certificado(request, empresa, pk):
     cert = get_object_or_404(CertificadoMetrologia, pk=pk, empresa=empresa)
@@ -136,6 +139,7 @@ def lista_sensores(request, empresa):
 
 
 @_req_empresa
+@role_required('ADMIN', 'GERENTE', 'DIRECTOR')
 def crear_sensor(request, empresa):
     if request.method == 'POST':
         d = request.POST

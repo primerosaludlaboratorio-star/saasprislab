@@ -185,6 +185,15 @@ class LiberacionQCTest(TestCase):
         self.lote.refresh_from_db()
         self.assertEqual(self.lote.estado, "ACTIVO")
 
+    def test_view_liberar_lote_qc_rechaza_rol_no_autorizado(self):
+        cajero = _usuario(self.emp, username="inv_cajero", rol="CAJERO")
+        self.client.force_login(cajero)
+        url = reverse("inventario:liberar_lote_qc", args=[self.lote.pk])
+        resp = self.client.post(url)
+        self.assertEqual(resp.status_code, 403)
+        self.lote.refresh_from_db()
+        self.assertEqual(self.lote.estado, "CUARENTENA")
+
 
 # =============================================================================
 # 4. SALIDAS TÉCNICAS — Descuento de stock

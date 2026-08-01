@@ -8,9 +8,11 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
 from core.models import Paciente
+from core.decorators import role_required
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'RECEPCION')
 def lista_contactos(request):
     """Lista de contactos/leads."""
     empresa = getattr(request.user, "empresa", None)
@@ -37,6 +39,7 @@ def lista_contactos(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'RECEPCION')
 def importar_contactos(request):
     """Importar contactos desde CSV."""
     empresa = getattr(request.user, "empresa", None)

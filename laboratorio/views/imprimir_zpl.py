@@ -12,6 +12,7 @@ Endpoints:
 """
 import json
 import logging
+import ipaddress
 
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
@@ -21,6 +22,7 @@ from django.db.utils import DatabaseError
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
+from core.decorators import role_required, rate_limit
 
 from laboratorio.services.etiquetas_zpl import (
     zpl_desde_orden_legacy,
@@ -35,7 +37,29 @@ _ZEBRA_HOST_DEFAULT = getattr(settings, 'ZEBRA_PRINTER_HOST', '')
 _ZEBRA_PORT_DEFAULT = int(getattr(settings, 'ZEBRA_PRINTER_PORT', 9100))
 
 
+def _printer_endpoint(empresa, body=None):
+    """Return only the printer endpoint configured for the current tenant."""
+    body = body or {}
+    configured_host = (getattr(empresa, 'zebra_printer_host', '') or _ZEBRA_HOST_DEFAULT).strip()
+    requested_host = (body.get('zebra_host') or '').strip()
+    if requested_host and requested_host != configured_host:
+        return None, None
+    try:
+        port = int(getattr(empresa, 'zebra_printer_port', None) or _ZEBRA_PORT_DEFAULT)
+    except (TypeError, ValueError):
+        return None, None
+    if not configured_host or port != 9100:
+        return None, None
+    try:
+        ipaddress.ip_address(configured_host)
+    except ValueError:
+        return None, None
+    return configured_host, port
+
+
 @login_required
+@role_required('RECEPCION', 'QUIMICO', 'ADMIN', 'DIRECTOR')
+@rate_limit('lab_zpl_single', limit=30, window_seconds=60)
 @require_http_methods(['POST'])
 def imprimir_etiqueta_zpl(request, orden_id):
     """
@@ -64,18 +88,12 @@ def imprimir_etiqueta_zpl(request, orden_id):
     except json.JSONDecodeError:
         pass
 
-    zebra_host = (
-        body.get('zebra_host') or
-        getattr(empresa, 'zebra_printer_host', '') or
-        _ZEBRA_HOST_DEFAULT
-    )
-    zebra_port = int(body.get('zebra_port', _ZEBRA_PORT_DEFAULT))
+    zebra_host, zebra_port = _printer_endpoint(empresa, body)
 
     if not zebra_host:
         return JsonResponse({
             'ok': False,
-            'error': 'IP de impresora Zebra no configurada. '
-                     'Configure ZEBRA_PRINTER_HOST en el sistema o pase zebra_host en el body.',
+            'error': 'Impresora Zebra no configurada para esta empresa.',
             'zpl_preview': zpl,  # Retornar ZPL para diagnóstico
         }, status=400)
 
@@ -84,13 +102,15 @@ def imprimir_etiqueta_zpl(request, orden_id):
 
 
 @login_required
+@role_required('RECEPCION', 'QUIMICO', 'ADMIN', 'DIRECTOR')
+@rate_limit('lab_zpl_batch', limit=10, window_seconds=60)
 @require_http_methods(['POST'])
 def imprimir_etiquetas_lote_zpl(request):
     """Imprime múltiples etiquetas ZPL en una sola operación."""
     try:
         body = json.loads(request.body)
         ordenes_ids = body.get('ordenes_ids', [])
-        zebra_host = body.get('zebra_host', _ZEBRA_HOST_DEFAULT)
+        requested_host = body.get('zebra_host', '')
     except json.JSONDecodeError:
         return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
 
@@ -98,6 +118,7 @@ def imprimir_etiquetas_lote_zpl(request):
         return JsonResponse({'ok': False, 'error': 'Sin ordenes_ids'}, status=400)
 
     empresa = getattr(request.user, 'empresa', None)
+    zebra_host, zebra_port = _printer_endpoint(empresa, {'zebra_host': requested_host})
     from core.models import OrdenDeServicio as _ODS
 
     ordenes_data = []
@@ -120,7 +141,7 @@ def imprimir_etiquetas_lote_zpl(request):
             'zpl_preview': zpl_lote[:500],
         }, status=400)
 
-    resultado = enviar_zpl_tcp(zpl_lote, host=zebra_host)
+    resultado = enviar_zpl_tcp(zpl_lote, host=zebra_host, port=zebra_port)
     resultado['etiquetas'] = len(ordenes_data)
     return JsonResponse(resultado)
 

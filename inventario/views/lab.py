@@ -17,6 +17,8 @@ from django.views.decorators.http import require_POST
 from datetime import date, timedelta
 import logging
 
+from core.decorators import role_required
+
 from lims.models import Analito as AnalitoLims
 from inventario.models import (
     CatalogoReactivoLab, LoteReactivoLab, ConsumoEstudioReactivo,
@@ -417,6 +419,7 @@ def detalle_lote(request, empresa, pk):
 
 
 @_empresa_required
+@role_required('QUIMICO', 'ADMIN', 'DIRECTOR')
 @require_POST
 def liberar_lote_qc(request, empresa, pk):
     """

@@ -171,6 +171,12 @@ def detalle_oc(request, empresa, pk):
             messages.info(request, 'OC enviada al Director para aprobación.')
 
         elif accion == 'aprobar' and oc.estado == 'PENDIENTE_DIRECTOR':
+            if not _puede_aprobar_oc(request.user):
+                messages.error(request, 'No tienes permisos para aprobar órdenes de compra.')
+                return redirect('inventario:detalle_oc', pk=pk)
+            if oc.generada_por_id == request.user.id:
+                messages.error(request, 'El creador no puede autoaprobar su propia orden.')
+                return redirect('inventario:detalle_oc', pk=pk)
             oc.estado = 'APROBADA'
             oc.aprobada_por = request.user
             oc.fecha_aprobacion = timezone.now()
@@ -203,6 +209,12 @@ def detalle_oc(request, empresa, pk):
         'ocr_prefill': request.session.get(f'inventario_lab_ocr_{oc.id}', {}),
     }
     return render(request, 'inventario/compras/detalle_oc.html', ctx)
+
+
+def _puede_aprobar_oc(user):
+    return user.is_superuser or (getattr(user, 'rol', '') or '').upper() in {
+        'ADMIN', 'GERENTE', 'DIRECTOR'
+    }
 
 
 def _recibir_mercancia(request, oc, empresa):

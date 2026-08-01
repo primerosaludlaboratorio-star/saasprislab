@@ -32,6 +32,7 @@ _ORIGEN_CHOICES = [
 ]
 from core.models import OrdenDeServicio, DetalleOrden as CoreDetalleOrden, Paciente
 from lims.models import PerfilLims, Analito
+from core.decorators import role_required
 
 from laboratorio.services.unificacion import (
     crear_paciente_unificado,
@@ -43,6 +44,7 @@ from laboratorio.views.etiquetas import *
 
 
 @login_required
+@role_required('RECEPCION', 'QUIMICO', 'ADMIN', 'DIRECTOR')
 def recepcion_lab(request):
     """
     Vista para crear una nueva orden de laboratorio.
@@ -192,6 +194,7 @@ def recepcion_lab(request):
 
 
 @login_required
+@role_required('RECEPCION', 'QUIMICO', 'ADMIN', 'DIRECTOR')
 @require_http_methods(["POST"])
 def crear_paciente_ajax(request):
     """
@@ -294,6 +297,7 @@ def crear_paciente_ajax(request):
 
 
 @login_required
+@role_required('RECEPCION', 'QUIMICO', 'ADMIN', 'DIRECTOR')
 @require_http_methods(["POST"])
 def crear_medico_ajax(request):
     """
