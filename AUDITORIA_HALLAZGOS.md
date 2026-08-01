@@ -1119,3 +1119,15 @@ Se corrigieron las capturas desnudas de los cargadores Excel/CSV, verificadores,
 Los comandos legacy conservados por compatibilidad permanecen bloqueados con `CommandError`; no son rutas operativas disponibles. Los `except:` que permanecen en `core/tests_e2e.py` corresponden a la suite histórica de pruebas y quedan fuera del código productivo de esta corrección.
 
 **Evidencia:** `python -m compileall -q .`, `git diff --check` y escaneo de `except:` fuera de tests/migraciones sin capturas desnudas funcionales.
+
+## REPORTE IMPERIUM TOTAL — reconciliación 2026-08-01
+
+**Resultado:** 0 errores bloqueantes y 0 fallas funcionales confirmadas por el análisis estático. El alcance fue estático y no cubrió ejecución real de tenant, RBAC, LIMS ni flujos humanos.
+
+**Cerrado:** los 17 ítems de robustez indicados por Imperium en el target actual fueron revisados. Los archivos Python/JavaScript afectados ya tienen encoding explícito, logging o fallback observable; los recursos de recuperación intencional no vuelven a ocultar el diagnóstico. Se desplegó en `23d229d` y `/health/` respondió HTTP 200 con base de datos y cache operativos.
+
+**No aplicable:** `audit_tools/url_summary.py` no forma parte del checkout canónico actual. No se considera deuda del producto.
+
+**Abierto y no maquillado:** la reproducibilidad de dependencias. La instalación productiva verificada contiene `Django==5.0.6`, mientras `requirements.txt` exige `Django>=5.1.13,<5.2`; también existen dependencias transitivas instaladas que no aparecen en el archivo de requisitos. Producción contiene `chromadb==1.5.9`, que requiere remediación compatible y validación SBOM. No se cambia una dependencia de producción sin matriz de compatibilidad y pruebas.
+
+**Interpretación:** “0 fallas runtime” significa que Imperium no reprodujo una falla ejecutable en su alcance estático; no significa “sistema enterprise certificado” ni elimina los hallazgos funcionales/tenant/RBAC documentados en otras auditorías.

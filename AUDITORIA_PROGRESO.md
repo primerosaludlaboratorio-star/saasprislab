@@ -807,3 +807,14 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - Los comandos legacy que permanecen por compatibilidad siguen bloqueados con `CommandError`; sus rutas inalcanzables ya no contienen capturas silenciosas.
 - Los cierres de drivers Fuji, InCCA, Mission, Norma Icon, Wondfo y del agente LIS registran fallos de cierre (`OSError`/`AttributeError`) sin ocultarlos.
 - Evidencia: `python -m compileall -q .`, `git diff --check` y escaneo de `except:` fuera de tests/migraciones sin resultados funcionales.
+
+### Reconciliación REPORTE IMPERIUM TOTAL — 2026-08-01
+
+- **Integridad del target:** confirmada en `release/v1.0-local`, HEAD `23d229d`.
+- **Errores bloqueantes/runtime reportados por Imperium:** 0. Esto no sustituye pruebas de tenant, RBAC, LIMS ni flujo humano.
+- **Deuda de robustez reportada:** cerrada en el código desarrollado: excepciones silenciosas, lecturas sin encoding y rutas absolutas obsoletas fueron corregidas; JavaScript relevante pasa `node --check`.
+- **Falsos positivos o rutas inexistentes:** `audit_tools/url_summary.py` no existe en el checkout canónico actual; no se modifica ni se registra como deuda del producto.
+- **Seguridad de configuración:** el fallback de `SECRET_KEY` solo existe para desarrollo; producción falla al arrancar si falta una clave segura. Se verificó `DEBUG=False`, `IS_PRODUCTION=True` y salud productiva posterior al despliegue.
+- **Deuda abierta real:** reproducibilidad de dependencias. Producción tiene Django `5.0.6`, mientras `requirements.txt` declara `Django>=5.1.13,<5.2`; además hay paquetes transitivos instalados que no están declarados. Requiere una matriz de compatibilidad, lock reproducible y nueva auditoría SBOM antes de cambiar versiones.
+- **Dependencia sensible:** producción contiene `chromadb==1.5.9`; su remediación queda bloqueada hasta validar una versión compatible y el resultado de `pip-audit`, sin cambiarla a ciegas.
+- **Conclusión:** Imperium confirma compilación sin bloqueo, pero no autoriza por sí solo la declaración enterprise-ready. Los controles de seguridad, tenancy, RBAC, LIMS, dependencias y flujos humanos mantienen sus evidencias independientes.
