@@ -8,6 +8,6 @@
 document.addEventListener('DOMContentLoaded', function () {
     try {
         localStorage.removeItem('sidebarPinned');
-    } catch (e) {}
+    } catch (e) { console.debug('[SidebarPIN] No se pudo limpiar el estado anterior:', e); }
     console.log('[SidebarPIN] Shim activo. Control delegado a sidebar.html (click-to-open).');
 });

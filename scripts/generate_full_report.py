@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import ast
+import logging
+
+logger = logging.getLogger(__name__)
 
 def generate_report(root_dir, output_file):
     report_lines = ["# 🏢 Reporte Técnico Exhaustivo E2E: PRISLAB SaaS v1.0", ""]
@@ -48,10 +51,16 @@ def generate_report(root_dir, output_file):
                             if isinstance(node, ast.FunctionDef):
                                 if len(node.body) == 1 and isinstance(node.body[0], ast.Pass):
                                     apps[app_name]['empty'].append(f"- **{rel_path}**: Función vacía detectada `def {node.name}()`")
-                    except SyntaxError:
-                        pass
-            except Exception:
-                pass
+                    except SyntaxError as exc:
+                        logger.warning("Sintaxis no analizable en %s: %s", rel_path, exc)
+                        apps[app_name]['todos'].append(
+                            f"- **{rel_path}**: no se pudo analizar por sintaxis inválida"
+                        )
+            except (OSError, UnicodeError) as exc:
+                logger.warning("No se pudo leer %s: %s", rel_path, exc)
+                apps[app_name]['todos'].append(
+                    f"- **{rel_path}**: no se pudo leer durante la auditoría"
+                )
 
     report_lines.append("## 1. Módulos Críticos sin Cobertura de Pruebas")
     report_lines.append("Los siguientes módulos no tienen funciones de prueba detectadas en sus directorios y representan deuda técnica de QA:")
@@ -77,4 +86,10 @@ def generate_report(root_dir, output_file):
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write('\n'.join(report_lines))
 
-generate_report(r"C:\Users\jonil\.copilot\repos\saasprislab", r"C:\Users\jonil\.gemini\antigravity\brain\6962ed43-0225-4ef0-9e8d-6387413aae88\auditoria_tecnica_real.md")
+if __name__ == '__main__':
+    root_dir = os.environ.get('PRISLAB_AUDIT_ROOT', os.getcwd())
+    output_file = os.environ.get(
+        'PRISLAB_AUDIT_OUTPUT',
+        os.path.join(root_dir, 'auditoria_tecnica_real.md'),
+    )
+    generate_report(root_dir, output_file)

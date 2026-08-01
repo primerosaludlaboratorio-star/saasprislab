@@ -11,7 +11,7 @@ function isOfflineShellPath(pathname) {
 
 const STATIC_ASSETS = ['/static/css/prislab_shared.css', '/static/js/offline_sync.js', '/static/img/icon-192.svg', '/static/img/icon-512.svg', '/laboratorio/recepcion/', '/laboratorio/', '/finanzas/lab/caja/', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css', 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css'];
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(STATIC_CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS.map(url => { try { return new Request(url, { mode: 'no-cors' }); } catch (e) { return url; } }))).catch(() => {}));
+  event.waitUntil(caches.open(STATIC_CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS.map(url => { try { return new Request(url, { mode: 'no-cors' }); } catch (e) { console.debug('[PRISLAB SW] URL de recurso inválida:', url, e); return url; } }))).catch((error) => { console.warn('[PRISLAB SW] No se pudo precargar la caché estática:', error); }));
   self.skipWaiting();
 });
 self.addEventListener('activate', (event) => {
@@ -78,7 +78,7 @@ self.addEventListener('message', (event) => {
 self.addEventListener('sync', (event) => {
   if (event.tag === 'prislab-outbox') {
     event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      clients.forEach((c) => { try { c.postMessage({ type: 'PRISLAB_DRAIN_OUTBOX' }); } catch (e) {} });
+      clients.forEach((c) => { try { c.postMessage({ type: 'PRISLAB_DRAIN_OUTBOX' }); } catch (e) { console.debug('[PRISLAB SW] Cliente no disponible:', e); } });
     }));
   }
 });

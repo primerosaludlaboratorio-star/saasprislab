@@ -185,7 +185,7 @@ def _encontrar_gunicorn_master():
         if ppid > 1:  # PID 1 es init, no Gunicorn
             # Verificar que el padre es Gunicorn leyendo /proc/ppid/cmdline
             try:
-                with open(f'/proc/{ppid}/cmdline', 'r') as f:
+                with open(f'/proc/{ppid}/cmdline', 'r', encoding='utf-8', errors='replace') as f:
                     cmdline = f.read()
                     if 'gunicorn' in cmdline:
                         return ppid
@@ -202,7 +202,7 @@ def _encontrar_gunicorn_master():
         for entry in os.listdir('/proc'):
             if entry.isdigit():
                 try:
-                    with open(f'/proc/{entry}/cmdline', 'r') as f:
+                    with open(f'/proc/{entry}/cmdline', 'r', encoding='utf-8', errors='replace') as f:
                         cmdline = f.read()
                         if 'gunicorn' in cmdline and 'master' in cmdline:
                             return int(entry)

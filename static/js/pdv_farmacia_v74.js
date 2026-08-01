@@ -218,7 +218,7 @@ function _pdvInyectarHtmlFragmento(html, cont, sp, opts) {
             cont.innerHTML = '<div class="text-center py-4 text-danger">' + (j.mensaje || 'Error') + '</div>';
             return;
         }
-    } catch (e0) {}
+    } catch (e0) { console.debug('[PDV] Respuesta no JSON; se procesa como fragmento HTML.'); }
     cont.innerHTML = h;
     if (opts.autoUnico) {
         var nodes = cont.querySelectorAll('[data-producto-id]');
@@ -240,7 +240,7 @@ window.initPdvBuscador = function() {
     b.addEventListener('paste', function(){ setTimeout(function(){ window.debounceBuscar(b.value); }, 0); });
     b.dataset.pdvSearchBound = '1';
     setTimeout(function(){
-        try { b.focus(); } catch (e2) {}
+        try { b.focus(); } catch (e2) { console.debug('[PDV] No se pudo enfocar el buscador:', e2); }
     }, 200);
     window.initPdvResultados();
     return true;
@@ -280,7 +280,7 @@ window.buscarAjaxDirecto = function(val) {
     var frag = window.PDV_BUSCAR_FRAGMENT_URL || '';
     if (frag) {
         if (_pdvBuscarAbort) {
-            try { _pdvBuscarAbort.abort(); } catch (e1) {}
+            try { _pdvBuscarAbort.abort(); } catch (e1) { console.debug('[PDV] No se pudo cancelar la búsqueda anterior:', e1); }
         }
         _pdvBuscarAbort = typeof AbortController !== 'undefined' ? new AbortController() : null;
         var u = frag + (frag.indexOf('?') >= 0 ? '&' : '?') + 'q=' + encodeURIComponent(val);
@@ -701,7 +701,7 @@ window.buscarPaciente = function(val){
         if(!data.pacientes?.length){c.style.display='none';return;}
         c.innerHTML=data.pacientes.map(function(p){var nombre=(p.nombre_completo||p.nombre||'');return '<a href="#" class="list-group-item list-group-item-action py-1" onclick="seleccionarPaciente('+p.id+','+JSON.stringify(nombre)+');return false;">'+nombre+'</a>';}).join('');
         c.style.display='block';
-    }).catch(function(){});
+    }).catch(function(error){ console.warn('[PDV] No se pudo buscar pacientes:', error); });
 };
 window.seleccionarPaciente = function(id,nombre){var i=document.getElementById('p-cliente');if(i)i.value=nombre;var h=document.getElementById('p-paciente-id');if(h)h.value=id;var c=document.getElementById('resultados-pacientes');if(c)c.style.display='none';};
 

@@ -54,7 +54,7 @@ class VoiceCommander {
         this.button.style.transform = 'scale(1.1)';
         try {
             this.recognition.start();
-        } catch(e) {} // Evita error si ya estaba escuchando
+        } catch(e) { console.debug('[Voz] El reconocimiento ya estaba activo:', e); } // Evita error si ya estaba escuchando
     }
 
     stopRecording() {

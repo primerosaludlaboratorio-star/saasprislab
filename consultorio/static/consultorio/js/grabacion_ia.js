@@ -226,7 +226,7 @@ class GrabadorConsultaMedica {
         if (event.error === 'no-speech') {
             // Silencio, reintentar
             if (this.isRecording) {
-                try { this.recognition.start(); } catch(e) {}
+                try { this.recognition.start(); } catch (e) { console.debug('[PRISLAB IA] Reintento omitido:', e); }
             }
             return;
         }

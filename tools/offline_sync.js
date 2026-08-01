@@ -186,7 +186,9 @@
     if (!('serviceWorker' in navigator)) return Promise.resolve();
     return navigator.serviceWorker.ready.then(function (reg) {
       if (reg.sync && reg.sync.register) return reg.sync.register(SYNC_TAG);
-    }).catch(function () {});
+    }).catch(function (error) {
+      if (global.console && console.debug) console.debug('[PRISLAB offline] Background Sync no disponible:', error);
+    });
   }
 
   function pendingCount() {
