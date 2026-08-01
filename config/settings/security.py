@@ -202,7 +202,9 @@ if _allowed_hosts_env:
     ALLOWED_HOSTS = [host.strip() for host in _allowed_hosts_env.split(',') if host.strip()]
 elif IS_PRODUCTION:
     _server_name = (os.environ.get('SERVER_NAME') or os.environ.get('DOMAIN_NAME') or '').strip()
-    ALLOWED_HOSTS = [x for x in [_server_name, 'localhost', '127.0.0.1'] if x]
+    if not _server_name:
+        raise RuntimeError('SERVER_NAME/DOMAIN_NAME es obligatorio en producción.')
+    ALLOWED_HOSTS = [_server_name]
 else:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
 

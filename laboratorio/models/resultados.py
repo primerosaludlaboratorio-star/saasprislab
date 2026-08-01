@@ -399,10 +399,13 @@ class HistorialResultados(models.Model):
         """
         Sobrescribe save() para generar hash de integridad automáticamente.
         """
-        if not self.hash_integridad:
-            self.hash_integridad = self.generar_hash_integridad()
-        
         super().save(*args, **kwargs)
+        # auto_now_add se materializa dentro de super().save(); calcular el
+        # hash antes dejaba fuera el timestamp real y producía una huella débil.
+        hash_real = self.generar_hash_integridad()
+        if self.hash_integridad != hash_real:
+            type(self).objects.filter(pk=self.pk).update(hash_integridad=hash_real)
+            self.hash_integridad = hash_real
     
     def generar_hash_integridad(self):
         """

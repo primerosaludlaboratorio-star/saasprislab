@@ -304,7 +304,7 @@ _ips_bypass_raw = os.environ.get('IPS_INTERNAS_2FA_BYPASS', '')
 IPS_INTERNAS_2FA_BYPASS = [ip.strip() for ip in _ips_bypass_raw.split(',') if ip.strip()]
 
 RESULTADOS_PUBLICOS_TOKEN_MAX_AGE_SECONDS = int(
-    os.environ.get('RESULTADOS_PUBLICOS_TOKEN_MAX_AGE_SECONDS', str(60 * 60 * 24 * 7))
+    os.environ.get('RESULTADOS_PUBLICOS_TOKEN_MAX_AGE_SECONDS', str(60 * 60 * 48))
 )
 
 NOM024_ALERTA_ACCESOS_UMBRAL = int(os.environ.get('NOM024_ALERTA_ACCESOS_UMBRAL', '10'))

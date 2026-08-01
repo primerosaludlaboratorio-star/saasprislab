@@ -151,14 +151,30 @@ def api_rangos(request, pk):
             except (InvalidOperation, TypeError):
                 return None
 
+        sexo = body.get('sexo', 'I')
+        unidad_edad = body.get('unidad_edad', 'ANOS')
+        try:
+            edad_minima = int(body.get('edad_minima', 0))
+            edad_maxima = int(body.get('edad_maxima', 150))
+            ref_minimo = _dec(body.get('ref_minimo'))
+            ref_maximo = _dec(body.get('ref_maximo'))
+        except (TypeError, ValueError):
+            return JsonResponse({'error': 'Rango numérico inválido'}, status=400)
+        if sexo not in {'I', 'M', 'F'} or unidad_edad not in {'DIAS', 'ANOS'}:
+            return JsonResponse({'error': 'Sexo o unidad de edad inválidos'}, status=400)
+        if edad_minima < 0 or edad_maxima < edad_minima:
+            return JsonResponse({'error': 'Intervalo de edad inválido'}, status=400)
+        if ref_minimo is not None and ref_maximo is not None and ref_minimo > ref_maximo:
+            return JsonResponse({'error': 'Referencia mínima mayor que máxima'}, status=400)
+
         rango = ValorReferenciaAnalito.objects.create(
             analito=analito,
-            sexo=body.get('sexo', 'I'),
-            unidad_edad=body.get('unidad_edad', 'ANOS'),
-            edad_minima=int(body.get('edad_minima', 0)),
-            edad_maxima=int(body.get('edad_maxima', 150)),
-            ref_minimo=_dec(body.get('ref_minimo')),
-            ref_maximo=_dec(body.get('ref_maximo')),
+            sexo=sexo,
+            unidad_edad=unidad_edad,
+            edad_minima=edad_minima,
+            edad_maxima=edad_maxima,
+            ref_minimo=ref_minimo,
+            ref_maximo=ref_maximo,
             texto_referencia=body.get('texto_referencia', ''),
         )
         return JsonResponse({'ok': True, 'id': rango.id})
@@ -220,17 +236,29 @@ def api_rango_item(request, pk, rango_pk):
         except (InvalidOperation, TypeError):
             return None
 
-    if body.get('sexo') in ('I', 'M', 'F'):
-        rango.sexo = body['sexo']
-    rango.unidad_edad = body.get('unidad_edad', rango.unidad_edad) or rango.unidad_edad
-    rango.edad_minima = int(body.get('edad_minima', rango.edad_minima))
-    rango.edad_maxima = int(body.get('edad_maxima', rango.edad_maxima))
+    sexo = body.get('sexo', rango.sexo)
+    unidad_edad = body.get('unidad_edad', rango.unidad_edad) or rango.unidad_edad
+    try:
+        edad_minima = int(body.get('edad_minima', rango.edad_minima))
+        edad_maxima = int(body.get('edad_maxima', rango.edad_maxima))
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Rango numérico inválido'}, status=400)
+    if sexo not in {'I', 'M', 'F'} or unidad_edad not in {'DIAS', 'ANOS'}:
+        return JsonResponse({'error': 'Sexo o unidad de edad inválidos'}, status=400)
+    if edad_minima < 0 or edad_maxima < edad_minima:
+        return JsonResponse({'error': 'Intervalo de edad inválido'}, status=400)
+    rango.sexo = sexo
+    rango.unidad_edad = unidad_edad
+    rango.edad_minima = edad_minima
+    rango.edad_maxima = edad_maxima
     if 'ref_minimo' in body:
         rm = body.get('ref_minimo')
         rango.ref_minimo = _dec(rm) if rm not in (None, '') else None
     if 'ref_maximo' in body:
         rx = body.get('ref_maximo')
         rango.ref_maximo = _dec(rx) if rx not in (None, '') else None
+    if rango.ref_minimo is not None and rango.ref_maximo is not None and rango.ref_minimo > rango.ref_maximo:
+        return JsonResponse({'error': 'Referencia mínima mayor que máxima'}, status=400)
     rango.texto_referencia = body.get('texto_referencia', rango.texto_referencia) or ''
     rango.save()
     return JsonResponse({'ok': True, 'id': rango.id})

@@ -5,6 +5,7 @@ Claves y parámetros de proveedores de IA, CFDI/Facturama y VAPID.
 Depende de: base.py (IS_PRODUCTION, IS_SANDBOX, DEBUG ya definidos)
 """
 import os
+from .base import IS_PRODUCTION
 
 # ── Google / Gemini ───────────────────────────────────────────────────────────
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "").strip()
@@ -42,7 +43,9 @@ GITHUB_REPO = os.environ.get("GITHUB_REPO", "")  # formato: owner/repo
 # ── CFDI 4.0 — Facturama ─────────────────────────────────────────────────────
 FACTURAMA_USER = os.environ.get('FACTURAMA_USER', '')
 FACTURAMA_PASSWORD = os.environ.get('FACTURAMA_PASSWORD', '')
-FACTURAMA_SANDBOX = os.environ.get('FACTURAMA_SANDBOX', 'True') == 'True'
+FACTURAMA_SANDBOX = os.environ.get('FACTURAMA_SANDBOX', 'False') == 'True'
+if IS_PRODUCTION and FACTURAMA_SANDBOX:
+    raise RuntimeError('FACTURAMA_SANDBOX=True no está permitido en producción.')
 
 # ── VAPID — Web Push Notifications ───────────────────────────────────────────
 VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
