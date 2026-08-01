@@ -553,7 +553,7 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Riesgo:** spam de alertas de pánico, notificaciones falsas masivas al director/seguridad, consumo de presupuesto de notificaciones y desensibilización ante alertas reales. También expone la IP del usuario en la `ubicación`.
 - **Recomendación:** Decorar `panic_button` con `@login_required` y `@require_http_methods(["POST"])`. Añadir rate-limit por usuario e IP más estricto (el cache de 30s limita solo por canal de notificación, no por petición HTTP). Si el botón de pánico es para todo personal, mantenerlo accesible a cualquier usuario autenticado de la empresa, pero nunca vía GET.
 
-## H-NUEVO-62 — Regeneración y lectura de códigos de respaldo 2FA sin reautenticación, con almacenamiento en texto plano — ALTO, ABIERTO
+## H-NUEVO-62 — Regeneración y lectura de códigos de respaldo 2FA sin reautenticación, con almacenamiento en texto plano — ALTO, PARCIALMENTE CORREGIDO
 - **Ubicación:** `seguridad/views/auth2fa.py:210-240` (`mostrar_codigos_backup`, `regenerar_codigos_backup`); `seguridad/models.py:329-392` (`CodigoBackup2FA`); `seguridad/admin.py:17-27` (`CodigoBackup2FAAdmin`).
 - **Descripción:** `regenerar_codigos_backup` solo requiere `@login_required` y `@require_POST` pero **no pide la contraseña actual ni step-up**. Invalida los códigos anteriores, genera 10 nuevos y redirige a `mostrar_codigos_backup`, donde se muestran en claro. Un atacante con una sesión robada (XSS, cookie, token) puede regenerar y leer todos los códigos de respaldo, obteniendo un mecanismo de acceso persistente incluso si la contraseña cambia o el TOTP se desactiva. Además, el modelo `CodigoBackup2FA` almacena `codigo` en **texto plano** junto al `codigo_hash`, y `CodigoBackup2FAAdmin` incluye `codigo` en `readonly_fields`, permitiendo a un administrador con acceso a Django Admin ver los códigos de respaldo completos de cualquier usuario.
 - **Riesgo:** secuestro persistente de cuentas vía códigos de respaldo, violación del principio de mínimo conocimiento del segundo factor, y exposición a insiders con acceso admin.
@@ -962,7 +962,7 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Riesgo:** bypass universal de 2FA con un único secreto.
 - **Recomendación:** Vincular códigos de recuperación al usuario, rotar periódicamente, almacenar hash fuerte, aplicar rate-limit por cuenta.
 
-## H-NUEVO-119 — `Usuario.totp_secret` se almacena en texto plano en la base de datos — ALTO, ABIERTO
+## H-NUEVO-119 — `Usuario.totp_secret` se almacena en texto plano en la base de datos — ALTO, CORREGIDO
 - **Ubicación:** `core/models/base.py:388-393`.
 - **Descripción:** El campo `totp_secret` es un `CharField` sin cifrado. Si la base de datos se ve comprometida, un atacante puede generar códigos TOTP y superar el 2FA de cualquier usuario. El flujo actual utiliza `DispositivoTOTP`, pero este campo heredado permanece expuesto.
 - **Riesgo:** bypass total de 2FA tras exfiltración de DB.

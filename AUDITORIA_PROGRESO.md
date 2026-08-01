@@ -782,5 +782,7 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - `9f47ee2`: unicidad de Analito, PerfilLims y PaqueteLims acotada por empresa mediante `lims.0012`.
 - `1dbeed1`: ajuste masivo de precios LIMS exige empresa y sincroniza `costo_lista` y `fecha_actualiz`.
 - Corrección adicional: `auditoria_qa` ya no crea usuarios ni usa `Prislab2026`; exige `PRISLAB_QA_ADMIN_USER` y `PRISLAB_QA_ADMIN_PASSWORD` para ejecutar QA.
+- `7e9fd5d`: secretos TOTP cifrados en reposo con migración `seguridad.0004`; Admin ya no expone la llave secreta.
+- `11a9419`: códigos de respaldo 2FA cifrados en reposo con migración `seguridad.0005`; Admin ya no los expone. La reautenticación para regenerar/mostrar sigue pendiente.
 
 **Verificación**: `manage.py check` sin incidencias; pruebas focalizadas de inventario/seguridad/LIMS/tenant/kiosco en verde; producción responde `/health/` HTTP 200 con base de datos y cache operativos después de cada despliegue.
