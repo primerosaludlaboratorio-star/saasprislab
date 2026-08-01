@@ -6,6 +6,7 @@ dashboard financiero y reportes financieros.
 import json
 from decimal import Decimal
 from datetime import date, timedelta
+from unittest.mock import patch
 
 from django.test import TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
@@ -131,6 +132,25 @@ class RolePermissionsFinancialViewsTests(TestCase):
         self.client.force_login(cajero)
         resp = self.client.get(reverse('contabilidad:dashboard_contabilidad'))
         self.assertEqual(resp.status_code, 403)
+
+    def test_descargar_pdf_escapa_datos_fiscales_del_cliente(self):
+        """El markup del cliente no debe interpretarse como etiquetas ReportLab."""
+        self.cliente.razon_social = '<font size="999">ATACANTE</font>'
+        self.cliente.save(update_fields=['razon_social'])
+        self._login('director_test')
+
+        with patch('reportlab.platypus.Paragraph') as paragraph_cls, \
+                patch('reportlab.platypus.SimpleDocTemplate.build'):
+            response = self.client.get(
+                reverse('contabilidad:descargar_pdf', args=[self.factura.id])
+            )
+
+        self.assertEqual(response.status_code, 200)
+        paragraph_texts = [call.args[0] for call in paragraph_cls.call_args_list]
+        self.assertIn(
+            '<b>Cliente:</b> &lt;FONT SIZE=&quot;999&quot;&gt;ATACANTE&lt;/FONT&gt;',
+            paragraph_texts,
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════════════

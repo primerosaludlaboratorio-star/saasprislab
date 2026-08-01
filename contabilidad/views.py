@@ -351,8 +351,14 @@ def descargar_pdf(request, factura_id):
     elements.append(Spacer(1, 12))
     
     # Información del cliente
-    elements.append(Paragraph(f"<b>Cliente:</b> {factura.cliente.razon_social}", styles['Normal']))
-    elements.append(Paragraph(f"<b>RFC:</b> {factura.cliente.rfc}", styles['Normal']))
+    elements.append(Paragraph(
+        f"<b>Cliente:</b> {html_escape(factura.cliente.razon_social)}",
+        styles['Normal'],
+    ))
+    elements.append(Paragraph(
+        f"<b>RFC:</b> {html_escape(factura.cliente.rfc)}",
+        styles['Normal'],
+    ))
     elements.append(Paragraph(f"<b>Fecha:</b> {factura.fecha_emision.strftime('%d/%m/%Y')}", styles['Normal']))
     elements.append(Spacer(1, 12))
     
