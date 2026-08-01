@@ -26,7 +26,9 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # ── ALLOWED_HOSTS ─────────────────────────────────────────────────────────────
 _server_name = (os.environ.get('SERVER_NAME') or os.environ.get('DOMAIN_NAME') or '').strip()
-ALLOWED_HOSTS = [x for x in [_server_name, 'localhost', '127.0.0.1'] if x]
+if not _server_name:
+    raise RuntimeError('SERVER_NAME/DOMAIN_NAME es obligatorio en producción.')
+ALLOWED_HOSTS = [_server_name]
 
 # ── Validaciones de arranque ──────────────────────────────────────────────────
 _log_sec = logging.getLogger('core.seguridad.startup')

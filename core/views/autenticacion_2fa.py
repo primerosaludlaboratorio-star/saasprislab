@@ -83,6 +83,10 @@ def _2fa_activo_para_usuario(usuario) -> bool:
 
 def _verificar_codigo_maestro(codigo: str) -> bool:
     """Código de emergencia para el CISO (PRISLAB_MASTER_RECOVERY_CODE en settings)."""
+    if getattr(settings, 'IS_PRODUCTION', False) or not getattr(
+        settings, 'PRISLAB_ALLOW_MASTER_RECOVERY', False
+    ):
+        return False
     master = getattr(settings, 'PRISLAB_MASTER_RECOVERY_CODE', '')
     if not master or not codigo:
         return False
@@ -199,7 +203,8 @@ def verificar_2fa(request):
     if request.method == 'POST':
         codigo = request.POST.get('codigo', '').strip()
 
-        # Intentar con código maestro de emergencia
+        # La recuperación maestra solo existe explícitamente en desarrollo;
+        # en producción se usan TOTP o un código de respaldo individual.
         if _verificar_codigo_maestro(codigo):
             cache.delete(cache_key)
             _notificar_ciso_uso_codigo_maestro(usuario, request)
