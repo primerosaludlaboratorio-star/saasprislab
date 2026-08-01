@@ -786,3 +786,13 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - `11a9419`: códigos de respaldo 2FA cifrados en reposo con migración `seguridad.0005`; Admin ya no los expone. La reautenticación para regenerar/mostrar sigue pendiente.
 
 **Verificación**: `manage.py check` sin incidencias; pruebas focalizadas de inventario/seguridad/LIMS/tenant/kiosco en verde; producción responde `/health/` HTTP 200 con base de datos y cache operativos después de cada despliegue.
+
+### Corrección estructural en curso — append-only, tenant y folios
+
+**Fecha**: 2026-08-01
+
+- `AuditLog` y `ForenseAcceso` usan `TenantAppendOnlyManager` y `TenantAppendOnlyQuerySet`; las consultas por defecto quedan limitadas a la empresa activa y `objects_all` conserva un acceso administrativo explícito sin permitir `save/delete/update` masivo.
+- `ExpedienteNotaSHA` usa el mismo aislamiento y bloqueo de mutación. El sellado clínico crea el snapshot ya firmado y nunca lo actualiza después. La creación de versiones bloquea la fila de la nota para evitar colisiones concurrentes.
+- `Receta` hereda `TenantModel`. Los folios de receta y venta dejaron de depender de `count()+1`; `Venta.linea_captura` conserva el UUID completo.
+- Pruebas ejecutadas: `manage.py check`, `makemigrations --check --dry-run`, `core.tests.test_append_only_audit` y `core.tests.test_sensitive_authorizations` con base de pruebas aislada y sin migraciones de host; resultado: 10 pruebas OK.
+- H-NUEVO-130, H-NUEVO-132, H-NUEVO-134 y H-NUEVO-136 quedan marcados como parciales/corregidos según su evidencia en `AUDITORIA_HALLAZGOS.md`. El anclaje diario por tenant y el secuenciador común de folios LIMS/clínicos requieren un bloque de migración independiente antes de desplegarse.

@@ -34,6 +34,12 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import check_password, make_password
 from django.utils import timezone
 
+from .append_only import (
+    TenantAppendOnlyManager,
+    UnfilteredAppendOnlyManager,
+    reject_append_only_mutation,
+)
+
 
 def _validar_pin_hash(pin_limpio, pin_hash_almacenado):
     """Valida hashes nuevos de Django y hashes SHA-256 legacy."""
@@ -143,6 +149,9 @@ class ExpedienteNotaSHA(models.Model):
         help_text="SHA256 del PIN usado para firmar (no almacenamos el PIN)"
     )
     timestamp_firma = models.DateTimeField(null=True, blank=True)
+
+    objects = TenantAppendOnlyManager()
+    objects_all = UnfilteredAppendOnlyManager()
     
     class Meta:
         app_label = 'core'
@@ -187,7 +196,7 @@ class ExpedienteNotaSHA(models.Model):
         Verifica que el hash almacenado coincida con el calculado.
         """
         hash_calculado = self.calcular_hash()
-        return self.hash_sha256 == hash_calculado
+        return secrets.compare_digest(self.hash_sha256 or '', hash_calculado)
     
     def verificar_cadena(self, hash_esperado_anterior=None):
         """
@@ -216,6 +225,7 @@ class ExpedienteNotaSHA(models.Model):
         return True
     
     def save(self, *args, **kwargs):
+        reject_append_only_mutation(self, 'actualizacion')
         # Si es nuevo, generar hash
         if not self.pk:
             # Los flujos internos no siempre tienen navegador; la columna es
@@ -252,6 +262,9 @@ class ExpedienteNotaSHA(models.Model):
                 self.hash_anterior = None  # Genesis
         
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        reject_append_only_mutation(self, 'borrado')
 
 
 class SnapshotNotaMiddleware:
@@ -298,21 +311,30 @@ class SnapshotNotaMiddleware:
         return json.loads(snapshot_json)
     
     @classmethod
-    def crear_expediente_sha(cls, nota_soap, estado='BORRADOR', ip=None, user_agent=None):
+    def crear_expediente_sha(
+        cls,
+        nota_soap,
+        estado='BORRADOR',
+        ip=None,
+        user_agent=None,
+        firmado_con_pin=False,
+        pin_hash='',
+        timestamp_firma=None,
+    ):
         """
         Crea un nuevo registro ExpedienteNotaSHA para una nota.
         """
-        # Calcular siguiente versión
-        ultima_version = ExpedienteNotaSHA.objects.filter(
-            nota_soap=nota_soap
-        ).order_by('-version').first()
-        
-        version = (ultima_version.version + 1) if ultima_version else 1
-        hash_anterior = ultima_version.hash_sha256 if ultima_version else None
-        
         snapshot = cls.generar_snapshot(nota_soap)
         
         with transaction.atomic():
+            # Serializa las versiones por nota para evitar dos snapshots con
+            # el mismo numero cuando llegan solicitudes concurrentes.
+            nota_soap.__class__.objects.select_for_update().get(pk=nota_soap.pk)
+            ultima_version = ExpedienteNotaSHA.objects.filter(
+                nota_soap=nota_soap
+            ).order_by('-version').first()
+            version = (ultima_version.version + 1) if ultima_version else 1
+            hash_anterior = ultima_version.hash_sha256 if ultima_version else None
             expediente = ExpedienteNotaSHA.objects.create(
                 nota_soap=nota_soap,
                 empresa=nota_soap.empresa,
@@ -324,6 +346,9 @@ class SnapshotNotaMiddleware:
                 hash_anterior=hash_anterior,
                 ip_origen=ip,
                 user_agent=user_agent,
+                firmado_con_pin=firmado_con_pin,
+                pin_hash=pin_hash,
+                timestamp_firma=timestamp_firma,
             )
             return expediente
 
@@ -561,12 +586,15 @@ class NotaClinicaSellar(models.Model):
             if not self.folio_unico:
                 self.generar_folio()
             
-            # 3. Crear snapshot inmutable en ExpedienteNotaSHA
+            # 3. Crear el snapshot ya firmado; nunca se actualiza después.
             expediente = SnapshotNotaMiddleware.crear_expediente_sha(
                 nota_soap=self.nota_soap,
                 estado='SELLADA',
                 ip=ip_origen,
-                user_agent=None
+                user_agent=None,
+                firmado_con_pin=True,
+                pin_hash=self.pin_hash,
+                timestamp_firma=timezone.now(),
             )
             self.expediente_sha = expediente
             
@@ -579,13 +607,9 @@ class NotaClinicaSellar(models.Model):
             
             self.save()
             
-            # 6. Marcar el expediente SHA como firmado
-            expediente.firmado_con_pin = True
-            expediente.pin_hash = self.pin_hash
-            expediente.timestamp_firma = self.timestamp_sellado
-            expediente.save()
         
         return self
+
     
     def _validar_pin_medico(self, pin_limpio):
         """
@@ -931,7 +955,7 @@ class HashRaizDiario(models.Model):
         blank=True,
         verbose_name="IP del Servidor Calculador"
     )
-    
+
     class Meta:
         app_label = 'core'
         verbose_name = "Hash Raíz Diario (Anclaje)"

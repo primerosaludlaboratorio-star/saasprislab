@@ -2,10 +2,12 @@ from unittest.mock import patch
 
 from cryptography.fernet import Fernet
 from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase, TestCase, override_settings
 
 from core.fields import EncryptedTextField
 from core.models import (
+    AuditLog,
     ConfiguracionModulos,
     ExpedienteNotaSHA,
     Empresa,
@@ -14,6 +16,7 @@ from core.models import (
     Usuario,
     verificar_pin_farmacia,
 )
+from core.tenant import clear_current_empresa, set_current_empresa
 
 
 class FarmaciaPinSecurityTests(TestCase):
@@ -79,6 +82,7 @@ class ExpedienteNotaSHASecurityTests(TestCase):
             empresa=self.empresa,
             paciente=self.paciente,
             medico=self.medico,
+            version=2,
             snapshot_jsonb=snapshot,
         )
 
@@ -91,7 +95,8 @@ class ExpedienteNotaSHASecurityTests(TestCase):
             empresa=self.empresa,
             paciente=self.paciente,
             medico=self.medico,
-            snapshot_jsonb={'version': 1},
+            version=2,
+            snapshot_jsonb={'version': 2},
         )
         second = ExpedienteNotaSHA(
             nota_soap=self.nota,
@@ -99,10 +104,51 @@ class ExpedienteNotaSHASecurityTests(TestCase):
             paciente=self.paciente,
             medico=self.medico,
             version=first.version + 1,
-            snapshot_jsonb={'version': 2},
+            snapshot_jsonb={'version': 3},
         )
         second.save()
 
         self.assertEqual(second.hash_anterior, first.hash_sha256)
         self.assertTrue(second.verificar_integridad())
         self.assertTrue(second.verificar_cadena())
+
+    def test_snapshot_is_append_only(self):
+        expediente = ExpedienteNotaSHA.objects.create(
+            nota_soap=self.nota,
+            empresa=self.empresa,
+            paciente=self.paciente,
+            medico=self.medico,
+            version=2,
+            snapshot_jsonb={'version': 1},
+        )
+
+        with self.assertRaises(ValidationError):
+            expediente.save()
+        with self.assertRaises(ValidationError):
+            ExpedienteNotaSHA.objects.filter(pk=expediente.pk).update(estado_nota='SELLADA')
+        with self.assertRaises(ValidationError):
+            expediente.delete()
+
+
+class TenantAppendOnlyManagerTests(TestCase):
+    def test_audit_log_default_manager_is_tenant_scoped_and_immutable(self):
+        empresa_a = Empresa.objects.create(nombre='Empresa A')
+        empresa_b = Empresa.objects.create(nombre='Empresa B')
+        AuditLog.objects_all.create(
+            empresa=empresa_a,
+            accion=AuditLog.ACCION_VIEW,
+            modelo_afectado='Paciente',
+            objeto_id='1',
+        )
+        AuditLog.objects_all.create(
+            empresa=empresa_b,
+            accion=AuditLog.ACCION_VIEW,
+            modelo_afectado='Paciente',
+            objeto_id='2',
+        )
+
+        set_current_empresa(empresa_a)
+        self.addCleanup(clear_current_empresa)
+        self.assertEqual(AuditLog.objects.count(), 1)
+        with self.assertRaises(ValidationError):
+            AuditLog.objects.filter(empresa=empresa_a).update(objeto_id='99')

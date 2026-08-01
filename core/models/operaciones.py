@@ -8,7 +8,7 @@ import uuid
 
 from core.validators import validate_backup_upload, validate_audio_upload
 from .base import Empresa, Sucursal, Usuario
-from .append_only import AppendOnlyManager, reject_append_only_mutation
+from .append_only import TenantAppendOnlyManager, UnfilteredAppendOnlyManager, reject_append_only_mutation
 
 
 # ==============================================================================
@@ -45,7 +45,8 @@ class AuditLog(models.Model):
     user_agent = models.CharField(max_length=255, blank=True, null=True, verbose_name="User Agent")
     hash_verificacion = models.CharField(max_length=64, blank=True, null=True, verbose_name="Hash SHA-256", help_text="Para prevenir alteraciones")
 
-    objects = AppendOnlyManager()
+    objects = TenantAppendOnlyManager()
+    objects_all = UnfilteredAppendOnlyManager()
 
     class Meta:
         app_label = 'core'

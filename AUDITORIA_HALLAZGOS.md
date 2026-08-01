@@ -1055,7 +1055,8 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Archivo**: `core/models/expediente_blindaje.py`.
 - **Líneas**: `ExpedienteNotaSHA` (41-241), `HashRaizDiario` (825-973).
 - **Severidad**: Crítica.
-- **Hallazgo**: `ExpedienteNotaSHA` es `models.Model` (no `TenantModel`) y, aunque crea un hash SHA-256 al insertar, no impide actualizaciones ni borrados: `save()` recalcula el hash solo si `not self.pk`; una modificación posterior deja el hash obsoleto y `verificar_integridad()` falla silenciosamente. `HashRaizDiario` no tiene campo `empresa`; su `verificar_integridad_anclaje()` consulta `ExpedienteNotaSHA.objects.filter(timestamp_creacion__range=..., firmado_con_pin=True)` de **todos los tenants**, rompiendo el aislamiento del anclaje diario.
+- **Estado**: **PARCIALMENTE CORREGIDO**. `ExpedienteNotaSHA` ahora usa manager tenant-scoped, bloquea `save/update/delete`, compara hashes con `secrets.compare_digest` y el flujo de firma crea el snapshot ya firmado, sin mutarlo después. `HashRaizDiario` sigue pendiente de rediseño/migración por tenant.
+- **Hallazgo histórico**: `ExpedienteNotaSHA` era `models.Model` (no `TenantModel`) y no impedía actualizaciones ni borrados. `HashRaizDiario` no tiene campo `empresa` y su verificación consulta hashes de todos los tenants.
 - **Riesgo**: Ruptura de cadena forense sin detección; pérdida de evidencia legal NOM-004; fuga cross-tenant en trazabilidad.
 - **Recomendación**: Convertir `ExpedienteNotaSHA` a `TenantModel` + `AppendOnlyManager`, y aplicar `reject_append_only_mutation`. Agregar `empresa` a `HashRaizDiario` y filtrar `ExpedienteNotaSHA` por empresa en `verificar_integridad_anclaje()`.
 
@@ -1063,7 +1064,7 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Archivos**: `core/models/clinico.py`, `core/models/laboratorio.py`, `core/models/ventas.py`.
 - **Líneas**: `AudioConsulta.audio_archivo` (clinico.py:515-521), `ImagenDetalle.imagen` (clinico.py:646-650), `Receta.medico_firma_digital` (ventas.py:56-64), `ResultadoParametro.imagen_microscopio` (laboratorio.py:287-295).
 - **Severidad**: Alta.
-- **Hallazgo**: Estos `FileField`/`ImageField` usan `storage=get_google_drive_storage` y `upload_to='core.utils.paths.generar_ruta_drive...'`. `config/storage_backends.py` comenta que Google Drive es histórico/deshabilitado y define `TenantS3Storage` para Vultr S3 con prefijo `empresa_slug`. Los campos críticos no aprovechan el aislamiento ni la disponibilidad de S3.
+- **Estado**: **CORREGIDO Y VERIFICADO EN CÓDIGO**. `get_google_drive_storage` es un shim de compatibilidad que delega en `get_tenant_storage`; cuando está habilitado el almacenamiento de objetos, devuelve `TenantS3Storage` con prefijo por tenant. Los campos históricos conservan el nombre del helper para no romper migraciones.
 - **Riesgo**: Pérdida de evidencia clínica/firma si Drive se desactiva; falta de aislamiento de archivos por tenant; incumplimiento NOM-004/HIPAA.
 - **Recomendación**: Migrar todos los `FileField`/`ImageField` clínicos a `TenantS3Storage` o `default_storage` configurado con tenant; eliminar `get_google_drive_storage` de modelos clínicos.
 
@@ -1071,7 +1072,7 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Archivos**: `core/models/ventas.py`, `core/models/clinico.py`, `core/models/laboratorio.py`, `core/models/expediente_blindaje.py`.
 - **Líneas**: `Receta.folio_receta` (ventas.py:123-128), `Venta.folio_operacion`/`linea_captura` (ventas.py:352-357), `CertificadoMedico.folio_certificado` (clinico.py:375-388), `OrdenDeServicio.folio_orden` (laboratorio.py:597-602), `NotaClinicaSellar.folio_unico` (expediente_blindaje.py:494-506).
 - **Severidad**: Media/Alta.
-- **Hallazgo**: `Receta.save()` cuenta `Receta.objects.filter(folio_receta__startswith='REC-YYYYMM-')` sin filtrar por empresa y `Receta.empresa` es nullable. `Venta.linea_captura` genera `uuid.uuid4().hex[:12].upper()` con `unique=True` global. Otros folios usan conteos `count()` +1 sin `select_for_update()` ni transacción atómica, proclives a condiciones de carrera bajo carga concurrente.
+- **Estado**: **PARCIALMENTE CORREGIDO**. Receta y Venta ya generan folios con UUID criptográficamente aleatorio, sin `count()+1`; `Venta.linea_captura` conserva el UUID completo. Persisten los folios por conteo en otros modelos clínicos/LIMS y requieren un secuenciador transaccional común.
 - **Riesgo**: Violación de constraints `unique` por folios duplicados; colisiones cross-tenant; truncamiento de UUID reduce espacio de claves.
 - **Recomendación**: Envolver generación de folios en `transaction.atomic()` + `select_for_update()`; incluir `empresa_id` en prefijos y constraints; usar UUID completo para `linea_captura` y agregar prefijo tenant.
 
@@ -1087,7 +1088,7 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Archivo**: `core/models/ventas.py`.
 - **Líneas**: `Receta` (28-138), `RecetaItem` (140-165).
 - **Severidad**: Alta.
-- **Hallazgo**: `Receta` hereda `models.Model`; `empresa` es `ForeignKey(..., null=True, blank=True)` y `Receta.save()` genera `folio_receta` con conteo global sin filtrar por empresa. `RecetaItem` carece de `empresa`. Al vincularse con `Venta`, `OrdenDeServicio` y `DispensacionReceta`, la falta de scoping automático es un vector de fuga directo.
+- **Estado**: **PARCIALMENTE CORREGIDO**. `Receta` ahora hereda `TenantModel` y su manager por defecto filtra por empresa; su folio ya no usa conteo global. `RecetaItem` todavía requiere campo/manager tenant-scoped y la nulabilidad de `Receta.empresa` requiere migración y revisión de comandos legacy.
 - **Riesgo**: Fuga de recetas entre tenants; duplicación de folios; trazabilidad COFEPRIS comprometida.
 - **Recomendación**: Hacer `Receta` y `RecetaItem` `TenantModel`; eliminar `null=True` de `empresa` en `Receta`; filtrar folio por empresa en `save()`.
 
@@ -1104,6 +1105,6 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Archivos**: `core/models/operaciones.py`, `core/models/forense.py`.
 - **Líneas**: `AuditLog` (operaciones.py:17-70), `ForenseAcceso` (forense.py:13-93).
 - **Severidad**: Media.
-- **Hallazgo**: Ambos usan `AppendOnlyManager` y `reject_append_only_mutation`, lo cual es positivo, pero `AppendOnlyManager` no hereda de `TenantManager`; por tanto, las queries no se filtran automáticamente por `empresa`. `AuditLog.datos_nuevos/datos_anteriores` es `JSONField` libre y podría incluir PII sin normalizar.
+- **Estado**: **CORREGIDO Y VERIFICADO** para aislamiento y mutación. Ambos usan `TenantAppendOnlyManager`/`TenantAppendOnlyQuerySet`, manager explícito sin filtro para tareas administrativas, y bloquean `save/delete/update` masivo. La normalización de PII en JSON sigue siendo una mejora de cumplimiento separada.
 - **Riesgo**: Lectura de logs de auditoría o forenses de otro tenant si la vista no filtra; fuga de PII en logs.
 - **Recomendación**: Crear `TenantAppendOnlyManager` que combine `TenantQuerySet` con `AppendOnlyQuerySet`; aplicarlo a `AuditLog` y `ForenseAcceso`. Normalizar/mascarar PII en `datos_nuevos`.

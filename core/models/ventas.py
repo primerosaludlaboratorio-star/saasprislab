@@ -25,7 +25,7 @@ def _decimal_amount(value) -> Decimal:
 # ==============================================================================
 # 4. CONTROL NORMADO: RECETAS (COFEPRIS)
 # ==============================================================================
-class Receta(models.Model):
+class Receta(TenantModel):
     """Receta Médica 4.0 con QR de validación y sincronización FEFO."""
     medico = models.ForeignKey('Medico', on_delete=models.PROTECT, null=True, blank=True, verbose_name="Médico que expide")
     paciente = models.ForeignKey('Paciente', on_delete=models.PROTECT, related_name='recetas_recibidas', null=True, blank=True, verbose_name="Paciente")
@@ -124,8 +124,7 @@ class Receta(models.Model):
             from django.utils import timezone as _tz
             ahora = _tz.localtime(_tz.now())
             prefijo = f'REC-{ahora.strftime("%Y%m")}-'
-            ultimos = Receta.objects.filter(folio_receta__startswith=prefijo).count()
-            self.folio_receta = f'{prefijo}{str(ultimos + 1).zfill(5)}'
+            self.folio_receta = f'{prefijo}{uuid.uuid4().hex[:12].upper()}'
         self.calcular_imc()
         super().save(*args, **kwargs)
 
@@ -350,10 +349,9 @@ class Venta(TenantModel):
             from django.utils import timezone as _tz
             ahora = _tz.localtime(_tz.now())
             prefijo = f'VTA-{ahora.strftime("%Y%m")}-'
-            ultimos = Venta.objects.filter(folio_operacion__startswith=prefijo).count()
-            self.folio_operacion = f'{prefijo}{str(ultimos + 1).zfill(5)}'
+            self.folio_operacion = f'{prefijo}{uuid.uuid4().hex[:12].upper()}'
         if not self.linea_captura:
-            self.linea_captura = f"PRI-{uuid.uuid4().hex[:12].upper()}"
+            self.linea_captura = f"PRI-{uuid.uuid4().hex.upper()}"
         super().save(*args, **kwargs)
 
 

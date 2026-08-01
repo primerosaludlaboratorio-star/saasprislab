@@ -300,7 +300,8 @@ class TenantManager(models.Manager):
     def get_queryset(self):
         empresa = get_current_empresa()
         bypass = is_tenant_bypassed()
-        qs = TenantQuerySet(self.model, using=self._db)
+        queryset_class = getattr(self, '_queryset_class', TenantQuerySet)
+        qs = queryset_class(self.model, using=self._db)
         if empresa and not bypass:
             qs = qs.filter(empresa=empresa)
             # — Filtro de sucursal OBLIGATORIO si el modelo tiene FK sucursal —
@@ -329,11 +330,13 @@ class TenantManager(models.Manager):
 
     def for_tenant(self, empresa):
         """Fuerza el filtro a una empresa especifica (para uso admin/sistema)."""
-        return TenantQuerySet(self.model, using=self._db).filter(empresa=empresa)
+        queryset_class = getattr(self, '_queryset_class', TenantQuerySet)
+        return queryset_class(self.model, using=self._db).filter(empresa=empresa)
 
     def for_sucursal(self, sucursal):
         """Fuerza filtro empresa + sucursal especifica (admin/sistema)."""
-        qs = TenantQuerySet(self.model, using=self._db)
+        queryset_class = getattr(self, '_queryset_class', TenantQuerySet)
+        qs = queryset_class(self.model, using=self._db)
         if sucursal is not None:
             qs = qs.filter(empresa=sucursal.empresa)
             if _model_has_sucursal(self.model):
@@ -342,7 +345,8 @@ class TenantManager(models.Manager):
 
     def all_tenants(self):
         """Devuelve QuerySet sin filtro de tenant (requiere is_superuser o bypass)."""
-        return TenantQuerySet(self.model, using=self._db)
+        queryset_class = getattr(self, '_queryset_class', TenantQuerySet)
+        return queryset_class(self.model, using=self._db)
 
 
 class UnfilteredManager(models.Manager):
