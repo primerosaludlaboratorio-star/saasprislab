@@ -505,7 +505,7 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Recomendación:** Aplicar el mismo `@permission_required('farmacia.add_movimientoinventario', raise_exception=True)` (o `role_required` equivalente) a `entrada_express`.
 - **Corrección aplicada:** `entrada_express` usa ahora `@permission_required('farmacia.add_movimientoinventario', raise_exception=True)`.
 
-## H-NUEVO-55 — `contabilidad/views.py::descargar_pdf`: inyección de markup ReportLab vía `razon_social`/RFC del cliente, alcanzable desde endpoint PÚBLICO sin login — ALTO, ABIERTO
+## H-NUEVO-55 — `contabilidad/views.py::descargar_pdf`: inyección de markup ReportLab vía `razon_social`/RFC del cliente, alcanzable desde endpoint PÚBLICO sin login — ALTO, CORREGIDO
 - **Ubicación:** `contabilidad/views.py:343-391` (`descargar_pdf`); origen del dato contaminado: `contabilidad/views_public.py:69-166` (`api_generar_autofactura`, endpoint público SIN `@login_required`); saneamiento insuficiente en `contabilidad/validators_cfdi40.py:53-69` (`clean_nombre_fiscal`).
 - **Descripción:** `descargar_pdf` construye el PDF con `reportlab.platypus.Paragraph`, que interpreta un subconjunto de markup tipo HTML/XML (`<b>`, `<font>`, etc.). Dentro de la función, `empresa.nombre` y `empresa.rfc` SÍ se pasan por `html_escape()` (línea 347-348), pero **`factura.cliente.razon_social` y `factura.cliente.rfc` (líneas 354-355) se insertan directamente en `Paragraph(...)` sin ningún escape** — inconsistencia dentro de la misma función.
   - El campo `razon_social` de `ClienteFacturacion` se sanea en `ClienteFacturacion.clean()` (`contabilidad/models.py:94-95`) únicamente con `clean_nombre_fiscal()`, que solo normaliza espacios, pasa a mayúsculas y elimina sufijos societarios (`S.A. DE C.V.`, etc.) — **no elimina ni escapa `<`, `>`, `&`, `"`, `'`**.
@@ -515,24 +515,143 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
   1. Aplicar `html_escape()` a `factura.cliente.razon_social` y `factura.cliente.rfc` en `descargar_pdf`, igual que ya se hace con `empresa.nombre`/`empresa.rfc` — consistencia dentro de la misma función.
   2. Extender `clean_nombre_fiscal()` (o agregar un sanitizador adicional a nivel de modelo, en `ClienteFacturacion.clean()`) para rechazar o escapar caracteres `<`, `>`, `&` en `razon_social`, ya que el campo se usa en múltiples superficies de renderizado (PDF, XML CFDI vía Facturama, HTML de templates).
   3. Auditar el resto de usos de `Paragraph(...)` en el proyecto (patrón recurrente ya visto en `core/views/motor_financiero.py`, `core/views/reportes_financieros.py`, `core/views/rh.py`) para confirmar que ningún campo de texto libre controlado por el usuario final llegue sin `html_escape()`.
+- **Corrección aplicada:** `razon_social` y RFC del cliente se escapan antes de enviarse a `Paragraph`. La prueba de regresión confirma que etiquetas ReportLab introducidas por el cliente se convierten en texto literal. `manage.py check` y compilación de los archivos modificados pasan.
 
-## H-NUEVO-56 — `inventario/views/lab.py::liberar_lote_qc`: sin control de rol pese a que el propio docstring exige "Químico Jefe / Director / Admin" — CRÍTICO, ABIERTO
+## H-NUEVO-56 — `inventario/views/lab.py::liberar_lote_qc`: sin control de rol pese a que el propio docstring exige "Químico Jefe / Director / Admin" — CRÍTICO, CORREGIDO
 - **Ubicación:** `inventario/views/lab.py:419-450`.
 - **Descripción:** El docstring de la función dice explícitamente: *"Liberación Técnica: cambia estado de CUARENTENA → ACTIVO. Solo Químico Jefe / Director / Admin."* Sin embargo, los únicos decoradores aplicados son `@_empresa_required` (login + empresa) y `@require_POST` — **no hay `role_required` ni verificación de rol alguna dentro del cuerpo de la función**.
 - **Riesgo:** cualquier usuario autenticado de la empresa (recepcionista, auxiliar, etc.) puede liberar un lote de reactivo de laboratorio de `CUARENTENA` a `ACTIVO`, es decir, autorizar por sí mismo que ese reactivo se use en pruebas clínicas de pacientes sin que haya pasado por el control de calidad (QC) que el propio sistema fue diseñado para exigir. Tiene impacto directo en seguridad del paciente (resultados de laboratorio con reactivos no verificados) y en cumplimiento normativo (trazabilidad NOM/ISO 15189 del proceso de liberación QC).
 - **Recomendación:** Agregar `@role_required('QUIMICO', 'DIRECTOR', 'ADMIN')` (o el nombre de rol equivalente usado en el resto del proyecto, ej. `'QUIMICO_JEFE'`) a `liberar_lote_qc`, replicando el patrón ya usado en `inventario/views/compra_ocr.py::_acceso` (`{"ADMIN", "DIRECTOR", "QUIMICO", "GERENTE"}`).
 
-## H-NUEVO-57 — `inventario/views/traspasos.py::_ejecutar_recepcion`: lotes de reactivo de laboratorio recibidos por traspaso inter-sede se activan directamente, saltándose la cuarentena QC obligatoria del flujo de compra normal — CRÍTICO, ABIERTO
+## H-NUEVO-57 — `inventario/views/traspasos.py::_ejecutar_recepcion`: lotes de reactivo de laboratorio recibidos por traspaso inter-sede se activan directamente, saltándose la cuarentena QC obligatoria del flujo de compra normal — CRÍTICO, CORREGIDO
 - **Ubicación:** `inventario/views/traspasos.py:272-326` (`_ejecutar_recepcion`), específicamente líneas 296-302 (`'estado': 'ACTIVO'` para silo `LAB`); comparar con `inventario/views/compras.py:264-302` (`_recibir_mercancia`, silo LAB) y `inventario/views/lab.py:284-338` (`crear_lote`), que ambos fuerzan `'estado': 'CUARENTENA'` para todo lote de reactivo nuevo.
 - **Descripción:** Cuando un lote de reactivo de laboratorio llega a la empresa por **compra** (`compras.py::_recibir_mercancia`) o registro manual (`lab.py::crear_lote`), el sistema lo crea en estado `CUARENTENA`, exigiendo pasar por `liberar_lote_qc` (liberación técnica QC) antes de poder consumirse en pruebas. Sin embargo, cuando un lote de reactivo llega a la empresa por **traspaso inter-sede** (`traspasos.py::_ejecutar_recepcion`), el código construye `lote_data` con `'estado': 'ACTIVO'` directamente (línea 301) — el lote queda disponible de inmediato para consumo analítico en pacientes, **sin pasar nunca por cuarentena ni por liberación QC**, incluso aunque ya hubiera sido liberado (o no) en la sede de origen.
 - **Riesgo:** rompe la cadena de control de calidad de reactivos de laboratorio en un punto de entrada completo del inventario (traspasos entre sucursales/empresas), permitiendo que reactivos nunca verificados en la sede receptora se usen en estudios clínicos de pacientes. Es inconsistente con el propio diseño del sistema (que sí protege el flujo de compra) y agrava el impacto de H-NUEVO-56.
 - **Recomendación:** Forzar `'estado': 'CUARENTENA'` también para lotes de silo `LAB` creados vía traspaso en `_ejecutar_recepcion`, exigiendo la misma liberación QC (`liberar_lote_qc`, ya corregido con rol) antes de permitir su consumo en `crear_salida_tecnica`/salidas analíticas del LIMS.
 
-## H-NUEVO-58 — Autoaprobación sin control de rol en flujos de aprobación interna (`ValeRequisicion` y `OrdenDeCompra`) — ALTO, ABIERTO
+## H-NUEVO-58 — Autoaprobación sin control de rol en flujos de aprobación interna (`ValeRequisicion` y `OrdenDeCompra`) — ALTO, CORREGIDO
 - **Ubicación:** `inventario/views/generales.py:284-355` (`detalle_vale`, rama `accion == 'aprobar'`, línea 297-302); `inventario/views/compras.py:161-205` (`detalle_oc`, rama `accion == 'aprobar'`, línea 173-178).
 - **Descripción:** Ambos flujos modelan un estado explícito de espera de autorización gerencial: `ValeRequisicion.estado == 'PENDIENTE'` (esperando aprobación) y `OrdenDeCompra.estado == 'PENDIENTE_DIRECTOR'` (el propio nombre del estado indica que solo el Director debería poder avanzarlo). En ambos casos, la vista que procesa la acción `aprobar` solo exige `@_empresa_required` (login + empresa) — **no hay ninguna verificación de que `request.user` sea distinto de `solicitado_por`/`generada_por`, ni de que tenga un rol de autoridad (Director/Gerente/Admin)**.
 - **Riesgo:** cualquier usuario autenticado de la empresa puede aprobar su propio vale de requisición o su propia orden de compra (autoaprobación), anulando el propósito del control de doble validación / segregación de funciones que el flujo de estados fue diseñado para imponer. Para `OrdenDeCompra` esto tiene impacto financiero directo (compras a proveedores sin autorización real).
 - **Recomendación:** Agregar `@role_required('DIRECTOR', 'ADMIN', 'GERENTE')` (u homólogo) a las ramas de aprobación de ambas vistas, y adicionalmente comparar `request.user != vale.solicitado_por` / `request.user != oc.generada_por` para bloquear la autoaprobación incluso si el aprobador tiene el rol correcto pero es la misma persona que solicitó.
+
+## H-NUEVO-59 — `marketing/views/*`: todas las operaciones de marketing, cupones, CRM/contactos y reactivación accesibles a cualquier usuario autenticado, sin control de rol — ALTO, CORREGIDO
+- **Ubicación:** `marketing/views/campanas.py` (`lista_campanas`, `crear_campana`, `editar_campana`, `api_crear_campana`, `dashboard_campanas`); `marketing/views/cupones.py` (`api_generar_cupon`, `api_aplicar_cupon`, `generar_cupon`, `lista_cupones`); `marketing/views/contactos.py` (`lista_contactos`, `importar_contactos`); `marketing/views/dashboard.py` (`dashboard_marketing`, `entrenamiento_ia`, `dashboard_reactivacion_ia`); `marketing/views/reactivacion.py` (`api_detectar_pacientes_inactivos`).
+- **Descripción:** Todo el módulo `marketing` aplica únicamente `@login_required` (o filtro manual `request.user.empresa`) y **no utiliza `@role_required` ni verificación de rol de autorización** en ninguna de sus vistas. Esto permite a cualquier usuario autenticado de la empresa —recepcionista, enfermería, técnico de laboratorio, almacenista, etc.—: crear/editar campañas de comunicación a pacientes; generar cupones de descuento (`generar_cupon`/`api_generar_cupon`) y aplicar cupones a órdenes de servicio (`api_aplicar_cupon`, con impacto financiero directo en el cobro de estudios); importar contactos/pacientes desde CSV (`importar_contactos`) creando registros en `core.Paciente`; y consultar listados de pacientes inactivos con datos personales (`api_detectar_pacientes_inactivos`: nombre, teléfono, fecha de nacimiento, enlace WhatsApp). Las URL del módulo están activas en `marketing/urls.py`.
+- **Riesgo:** pérdida total de segregación de funciones entre roles clínicos/operativos y marketing/comercial. Cualquier empleado con credenciales puede manipular promociones, descuentos, base de datos de pacientes y campañas; además accede a PII y genera cupones con valor financiero sin aprobación de un rol autorizado. Es especialmente grave en `api_aplicar_cupon`, que modifica el descuento aplicado a una `OrdenDeServicio`.
+- **Recomendación:** Aplicar `@role_required` a las vistas de gestión (`MARKETING`, `DIRECTOR`, `ADMIN`, `GERENTE` u homólogo). Para `api_aplicar_cupon` (usado desde PDV/farmacia) se requiere un análisis de permisos específico: mantenerlo accesible a `CAJERO`/`FARMACIA` pero nunca a roles sin relación con cobro o marketing. Las APIs de consulta de pacientes inactivos y listas de contactos deben restringirse a roles de marketing/dirección.
+
+## H-NUEVO-60 — Código maestro de recuperación 2FA como bypass global y endpoint `api_verificar_codigo_2fa` sin autenticación ni rate limit — CRÍTICO, CORREGIDO
+- **Ubicación:** `seguridad/views/api.py:32-59` (`api_verificar_codigo_2fa`); `seguridad/views/auth2fa.py:41-75` (`_verificar_codigo_2fa_usuario`); `seguridad/views/auth2fa.py:255-271` (`verificar_2fa_login`); `seguridad/urls.py:30`.
+- **Descripción:** `api_verificar_codigo_2fa` carece de `@login_required` y no aplica rate limiting. Procesa `request.user`; si la petición no está autenticada, `request.user` es `AnonymousUser` y las queries de TOTP/backup no devuelven dispositivos, **pero el flujo continúa hasta comparar el código contra `settings.PRISLAB_MASTER_RECOVERY_CODE`**. Si ese secreto global está configurado, el endpoint devuelve `{'valido': True, 'tipo': 'master_recovery'}` para cualquier usuario (incluido el anónimo). El mismo `_verificar_codigo_2fa_usuario`/`verificar_2fa_login` aceptan `PRISLAB_MASTER_RECOVERY_CODE` como bypass universal del 2FA, permitiendo iniciar sesión como cualquier usuario (junto con la contraseña).
+- **Riesgo:** un único secreto en `settings` compromete la autenticación de dos factores de **todos** los usuarios del sistema. Un endpoint sin login actúa como **oráculo público** para validar/verificar el código maestro (sin siquiera autenticar), facilitando la detección del secreto mediante fuerza bruta o exfiltración. Bypass total del 2FA.
+- **Recomendación:** Eliminar el `PRISLAB_MASTER_RECOVERY_CODE` global o reemplazarlo por un flujo de recuperación auditado (códigos de respaldo individuales, tokens de un solo uso firmados, o recuperación controlada por correo/SMS). Añadir `@login_required` y rate-limit estricto a `api_verificar_codigo_2fa`; si el endpoint es parte del login, integrarlo en el flujo de autenticación con límite por usuario/IP.
+
+## H-NUEVO-61 — Botón de pánico (`panic_button`) activable por GET sin autenticación, POST ni control de rol — ALTO, CORREGIDO
+- **Ubicación:** `seguridad/views/panico.py:33-109`; `seguridad/urls.py:32`.
+- **Descripción:** `panic_button` no tiene `@login_required`, `@require_http_methods(["POST"])` ni `role_required`. Si el usuario no está autenticado, `get_empresa_usuario(request.user)` devuelve `None` y responde `403`; pero para un usuario autenticado, **cualquier GET a `/seguridad/api/panic/` crea una `AlertaPanico` y dispara notificaciones por Telegram/push**. Las peticiones GET no requieren token CSRF, por lo que un sitio malicioso puede activar el botón de pánico en segundo plano (imagen, iframe, redirección) mientras el usuario está logueado en PRISLAB.
+- **Riesgo:** spam de alertas de pánico, notificaciones falsas masivas al director/seguridad, consumo de presupuesto de notificaciones y desensibilización ante alertas reales. También expone la IP del usuario en la `ubicación`.
+- **Recomendación:** Decorar `panic_button` con `@login_required` y `@require_http_methods(["POST"])`. Añadir rate-limit por usuario e IP más estricto (el cache de 30s limita solo por canal de notificación, no por petición HTTP). Si el botón de pánico es para todo personal, mantenerlo accesible a cualquier usuario autenticado de la empresa, pero nunca vía GET.
+
+## H-NUEVO-62 — Regeneración y lectura de códigos de respaldo 2FA sin reautenticación, con almacenamiento en texto plano — ALTO, ABIERTO
+- **Ubicación:** `seguridad/views/auth2fa.py:210-240` (`mostrar_codigos_backup`, `regenerar_codigos_backup`); `seguridad/models.py:329-392` (`CodigoBackup2FA`); `seguridad/admin.py:17-27` (`CodigoBackup2FAAdmin`).
+- **Descripción:** `regenerar_codigos_backup` solo requiere `@login_required` y `@require_POST` pero **no pide la contraseña actual ni step-up**. Invalida los códigos anteriores, genera 10 nuevos y redirige a `mostrar_codigos_backup`, donde se muestran en claro. Un atacante con una sesión robada (XSS, cookie, token) puede regenerar y leer todos los códigos de respaldo, obteniendo un mecanismo de acceso persistente incluso si la contraseña cambia o el TOTP se desactiva. Además, el modelo `CodigoBackup2FA` almacena `codigo` en **texto plano** junto al `codigo_hash`, y `CodigoBackup2FAAdmin` incluye `codigo` en `readonly_fields`, permitiendo a un administrador con acceso a Django Admin ver los códigos de respaldo completos de cualquier usuario.
+- **Riesgo:** secuestro persistente de cuentas vía códigos de respaldo, violación del principio de mínimo conocimiento del segundo factor, y exposición a insiders con acceso admin.
+- **Recomendación:** Requerir reautenticación con contraseña (o un nuevo código TOTP) antes de `regenerar_codigos_backup` y `mostrar_codigos_backup`. Almacenar únicamente el hash SHA256; mostrar los códigos en claro una sola vez en el momento de la generación y nunca en el admin (usar un resumen parcial no recuperable o excluir el campo).
+
+## H-NUEVO-63 — `mantenimiento/views/*`: operaciones críticas de CMMS accesibles a cualquier usuario autenticado, sin `role_required` y con autoautorización en tickets — ALTO, PARCIALMENTE CORREGIDO
+- **Ubicación:** `mantenimiento/views/director.py` (`wizard_dashboard`, `wizard_protocolo`, `wizard_arbol`, `lista_expedientes`, `crear_expediente`, `detalle_expediente`); `mantenimiento/views/operativo.py` (`lista_equipos_operativo`, `ejecutar_checklist`, `diagnostico_inicio`, `diagnostico_nodo`, `lista_tickets`, `crear_ticket`, `detalle_ticket`); `mantenimiento/views/metrologia.py` (`lista_certificados`, `subir_certificado`, `eliminar_certificado`, `lista_sensores`, `crear_sensor`, `dashboard_sensores`, `registrar_lectura_manual`); `mantenimiento/views/api.py` (`api_stock_lote_para_refaccion`, `api_checklist_bloqueado`); `mantenimiento/views/tco.py` (`dashboard_tco`); `mantenimiento/urls.py`.
+- **Descripción:** El módulo CMMS utiliza `_req_empresa` (login + empresa) en la mayoría de las vistas pero **no aplica `@role_required`**. Cualquier usuario autenticado puede: crear/editar protocolos de arranque/limpieza/calibración y sus pasos críticos; crear/editar árboles de diagnóstico y nodos; registrar, modificar y eliminar expedientes de equipo; subir/eliminar certificados de metrología; crear sensores IoT y registrar lecturas manuales; ejecutar y *bypass* checklists; crear, cerrar y escalar tickets; consumir refacciones de inventario (`registrar_consumo_refaccion`); consultar stock de lotes. Además, `wizard_dashboard`, `dashboard_tco` y `lista_equipos_operativo` carecen incluso de `_req_empresa` y reciben `empresa` como parámetro, mientras que sus URL no lo pasan (vistas potencialmente inalcanzables / control gap). Los campos `nivel_requerido` y `aplica_a_perfil` del modelo (`ProtocoloEquipo`, `NodoDiagnostico`, `ProcedimientoReparacion`) **nunca se validan** en las vistas. En `detalle_ticket`, la acción `escalar` a `PROVEEDOR` permite autoasignarse como `autorizado_por_director` sin verificar rol. `api_checklist_bloqueado` no exige siquiera `@login_required`.
+- **Riesgo:** pérdida total de segregación de funciones en un módulo regulado (ISO 15189 / COFEPRIS) que impacta calidad, metrología, trazabilidad y seguridad del paciente. Un empleado con credenciales básicas puede falsificar registros de calibración, manipular checklists, consumir inventario de mantenimiento y autoautorizar escalamientos a proveedor.
+- **Recomendación:** Aplicar `@role_required` a todas las vistas de configuración/director (`DIRECTOR`, `ADMIN`, `QUIMICO_JEFE`, `TECNICO` según el recurso). En `ejecutar_checklist`, validar `request.user.rol` contra `protocolo.nivel_requerido` y `aplica_a_perfil`. En `detalle_ticket`, restringir cierre/escalamiento a roles `DIRECTOR`, `ADMIN` o `QUIMICO_JEFE` y evitar la autoasignación de `autorizado_por_director`. Restaurar `_req_empresa` en `wizard_dashboard`, `dashboard_tco` y `lista_equipos_operativo`. Validar tipos de archivo en subidas (`foto_equipo`, `manual_pdf`, `paso_imagen`, `archivo_pdf`).
+
+## H-NUEVO-64 — Endpoint IoT `api_iot_lectura` autentica con el código del sensor (identificador público), `csrf_exempt` y sin rate limit — ALTO, CORREGIDO
+- **Ubicación:** `mantenimiento/views/metrologia.py:251-301` (`api_iot_lectura`); `mantenimiento/urls.py:66`.
+- **Descripción:** El endpoint es `@csrf_exempt`, no requiere login y recibe `X-SENSOR-TOKEN`. El mecanismo de autenticación es comparar el header directamente con `SensorIoT.codigo` (un identificador legible de máx. 50 caracteres, no un secreto criptográfico). Si un atacante conoce o adivina un `codigo` (p.ej. secuencial, etiqueta física, expuesto en QR/equipo), puede enviar lecturas falsas de temperatura/humedad. El endpoint crea `LecturaSensorIoT`; el signal `post_save` (`mantenimiento/signals.py:48`) evalúa el rango y, si la lectura está fuera de rango, crea un `TicketMantenimientoCMMS` de prioridad CRITICA y una `NotificacionDiscrepancia` al Director.
+- **Riesgo:** alertas falsas masivas, tickets críticos de mantenimiento espurios, notificaciones a dirección y desensibilización ante alertas reales. En escenarios extremos se puede forzar la creación de tickets que indiquen falla de refrigeradores/congeladores de reactivos o muestras, causando descarte o paro de procesos. Fácil enumeración de códigos por fuerza bruta si no hay rate limit.
+- **Recomendación:** Reemplazar `codigo` como credencial por un token secreto fuerte por sensor (`secrets.token_urlsafe(32)`) y usar `secrets.compare_digest`. Añadir rate limiting por token/IP. Considerar mTLS o firma del payload para sensores físicos. No usar un identificador legible como única credencial.
+
+## H-NUEVO-65 — `bypass_checklist` permite omisión de checklists con PIN compartido global y sin verificación de rol del supervisor — ALTO/CRÍTICO, CORREGIDO
+- **Ubicación:** `mantenimiento/views/operativo.py:142-211` (`bypass_checklist`); `mantenimiento/urls.py:30-31`.
+- **Descripción:** Para autorizar el bypass de un checklist, la vista exige `supervisor_username`, `supervisor_pin` y `motivo`. El PIN se compara contra `settings.LAB_VALIDATION_PIN` (un único PIN global compartido) o contra `supervisor.check_password(supervisor_pin)`. **No verifica que el supervisor tenga un rol de autoridad** (`DIRECTOR`, `ADMIN`, `QUIMICO_JEFE`) ni que su nivel sea superior al del ejecutante. El modelo `BypassChecklistAutorizacion` documenta que "El nivel del autorizante debe ser mayor al del ejecutante", pero el código no lo implementa. Cualquier usuario que conozca `LAB_VALIDATION_PIN` o la contraseña de otro usuario puede autorizar la omisión de cualquier checklist, incluidos los que bloquean la Worklist.
+- **Riesgo:** omisión de pasos críticos de control de calidad/seguridad sin autorización real, permitiendo que personal no calificado pase por alto checks de arranque, limpieza o calibración con impacto directo en seguridad del paciente y cumplimiento normativo.
+- **Recomendación:** Verificar el rol del supervisor contra `NIVEL_AUTORIZACION_CHOICES` de forma jerárquica y exigir que sea estrictamente mayor al nivel requerido del protocolo y al rol del ejecutante. Eliminar o proteger el `LAB_VALIDATION_PIN` global; si se conserva, limitarlo a un uso de emergencia con doble autorización y auditoría. Registrar el bypass como acción sensible con `LogAccionSensible`.
+
+## H-NUEVO-66 — `bienestar` almacena el diario emocional en texto plano, sin campo `empresa` ni cifrado real, y expone recursos sin aislamiento de tenant — MEDIO, ABIERTO
+- **Ubicación:** `bienestar/models.py:37-40` (`DiarioEmocional.contenido_privado`); `bienestar/admin.py:7-74` (`DiarioEmocionalAdmin`); `bienestar/views.py:446-469` (`recursos_bienestar`); `bienestar/urls.py`.
+- **Descripción:** El campo `contenido_privado` de `DiarioEmocional` es un `TextField` plano. Aunque el admin lo oculta con la etiqueta "simula cifrado visual" y restringe add/change/delete a `is_superuser`, **no hay cifrado real en reposo ni en tránsito** para las entradas emocionales de los usuarios. El modelo tampoco tiene campo `empresa`, por lo que `TenantScopedAdmin` no puede filtrar correctamente por tenant en el admin (riesgo de fuga cross-tenant si un staff de una empresa ve el listado, ya que `has_view_permission` no está restringido y el scoping depende de un campo inexistente). Además, `RecursoCrecimiento` no tiene `empresa` y se muestra global a todos los tenants (`filter(activo=True)`), lo que puede filtrar recursos creados para otra empresa. `DiarioEmocionalAdmin.contenido_privado_display` depende de `self._request`, atributo que Django admin no establece por defecto, por lo que el contenido nunca se muestra (fallo funcional, no de seguridad).
+- **Riesgo:** exposición de datos sensibles de salud mental/emocional si la base de datos es comprometida (backup, acceso no autorizado, insider) o si el admin no scopa correctamente por tenant. Incumplimiento del principio de privacidad por diseño y de la NOM-035 (datos de bienestar deben estar aislados y protegidos).
+- **Recomendación:** Cifrar `contenido_privado` con cifrado autenticado (p. ej. `django-cryptography` o cifrado de campo) o, como mínimo, el modelo debe tener campo `empresa` y un admin con `get_queryset` filtrado por `usuario__empresa`. Añadir `empresa` a `RecursoCrecimiento` o filtrar recursos por `empresa` (o un flag de global). Revisar `DiarioEmocionalAdmin.contenido_privado_display` para usar el `request` del changelist adecuadamente.
+
+## Código muerto / higiene (sin riesgo de seguridad) — CORREGIDO
+- `core/services/ai_medico_backup.py` — eliminado tras confirmar que no tenía imports activos.
+- `marketing/views_legacy.py` — eliminado tras confirmar que `marketing/urls.py` usa `marketing.views`.
+
+## H-NUEVO-67 — `consultorio` permite a cualquier usuario autenticado crear consultas, recetas, certificados médicos y órdenes de laboratorio sin verificar rol médico — CRÍTICO, CORREGIDO
+- **Ubicación:** `consultorio/views/api_consulta.py:45-114` (`api_crear_consulta_directa`), `:120-218` (`api_crear_paciente_y_consulta`), `:428-531` (`api_generar_receta_inmediata`), `:537-632` (`api_generar_certificado_inmediato`), `:639-722` (`api_generar_orden_laboratorio_inmediata`); `consultorio/views/clinico.py:109-161` (`consulta_sin_cita`), `:662-688` (`nueva_consulta_simplificada`), `:690-865` (`nueva_consulta_con_paciente`); `consultorio/views/certificados.py:27-147` (`generar_certificado`); `consultorio/urls.py`.
+- **Descripción:** Los endpoints y vistas anteriores están decorados solo con `@login_required` y filtran por `empresa`, pero no aplican `@role_required('MEDICO', 'ADMIN')` ni verifican que el usuario sea el médico asignado o un profesional de la salud. `nueva_consulta_con_paciente` auto-crea una `CitaMedica`, `SignosVitales`, `ConsultaMedica`, `Receta`, `CertificadoMedico` y `OrdenDeServicio` en una sola transacción. `generar_certificado` y `api_generar_certificado_inmediato` permiten seleccionar el tipo `DEFUNCION`, `NACIMIENTO`, `INCAPACIDAD`, etc., sin control adicional. Un usuario de recepción, enfermería o cualquier cuenta comprometida puede emiter documentos clínicos con validez legal/fiscal.
+- **Riesgo:** fraude médico, falsificación de recetas, certificados de defunción/incapacidad y órdenes de laboratorio no autorizadas; responsabilidad legal y regulatoria (NOM-004, COFEPRIS, SAT); escalada de privilegios dentro del tenant.
+- **Recomendación:** Aplicar `@role_required` o verificación de rol médico (`MEDICO`, `ADMIN`, `DIRECTOR`) en todas las vistas/APIs de creación de consultas y documentos clínicos. Verificar que el usuario es el médico asignado a la cita o tiene permiso explícito. No permitir que `request.user` auto-firme documentos sin un `Medico` verificado.
+- **Corrección aplicada:** las vistas y APIs de escritura clínica exigen `MEDICO`, `ADMIN` o `DIRECTOR`; la resolución de médico ya no crea cédulas sintéticas sin cédula interna registrada.
+
+## H-NUEVO-68 — `consultorio` permite a cualquier usuario autenticado registrar cobros, marcar consultas como pagadas y liquidar vales sin control de rol ni autorización — ALTO, CORREGIDO
+- **Ubicación:** `consultorio/views/cobros.py:31-118` (`cobro_consulta`), `:120-223` (`api_registrar_cobro`), `:225-276` (`api_liquidar_vale`), `:278-324` (`reporte_liquidacion`); `consultorio/models/cobros.py:95-249` (`CobroConsulta`), `:251-332` (`ValeLiquidacion`).
+- **Descripción:** Todas las vistas de cobros usan solo `@login_required`. `api_registrar_cobro` recibe `monto_total`, `monto_efectivo/tarjeta/transferencia`, `concepto`, `cobrado_por` y `referencia` sin validar que el usuario tenga rol de caja/recepción/medico. Marca la consulta como `pagada=True`, fija `precio_consulta` y crea `ValeLiquidacion` si `cobrado_por='RECEPCION'`. `api_liquidar_vale` acepta un `monto` arbitrario y liquida el vale del médico solicitado sin verificar que el usuario tenga permiso de liquidación o sea el acreedor.
+- **Riesgo:** fraude financiero, cobros falsos, alteración del estado de pago de consultas, liquidaciones indebidas, desbalance de caja y riesgo de lavado de dinero/control interno.
+- **Recomendación:** Restringir a roles `CAJA`, `RECEPCION`, `MEDICO` y/o `ADMIN` según `ConfiguracionMedico.modo_cobro`. Validar que el cobrador tenga permiso para cobrar en nombre del médico. Auditizar cambios de estado de pago y liquidaciones con `LogAccionSensible`/`AuditLog`.
+- **Corrección aplicada:** cobros, liquidación de vales y reportes requieren rol operativo/financiero (`MEDICO`, `RECEPCION`, `ADMIN`, `GERENTE` o `DIRECTOR`).
+
+## H-NUEVO-69 — `_resolver_medico_usuario` auto-crea registros `Medico` con cédulas profesionales sintéticas, permitiendo que usuarios no médicos firmen documentos clínicos — ALTO, CORREGIDO
+- **Ubicación:** `consultorio/views/_helpers.py:19-68` (`_resolver_medico_usuario`, especialmente `:59-68`); `consultorio/views/api_consulta.py:70-71,164-165,451-452,561-562,662-663`; `consultorio/views/certificados.py:103`; `consultorio/views/clinico.py:709-743`.
+- **Descripción:** El helper resuelve un `core.Medico` para el `request.user`. Si no lo encuentra y `autocrear=True`, crea un registro con `cedula_profesional = cedula_interna or f'USR-{request.user.id}'` y `especialidad = 'Médico General'`. No valida que el usuario tenga una cédula profesional real registrada en el sistema, que pertenezca a la empresa o que tenga rol médico. Este `Medico` sintético se utiliza para firmar recetas, certificados, órdenes de laboratorio y PDFs.
+- **Riesgo:** suplantación de identidad médica, documentos clínicos firmados por personas no autorizadas, invalidez legal de recetas/certificados, responsabilidad médica mal atribuida.
+- **Recomendación:** Eliminar la opción `autocrear` en flujos clínicos. Exigir un `Medico` pre-existente, activo y vinculado a `request.user` (o a su `FirmaDigital`) con `cedula_profesional` verificada y `empresa` correcta. La creación de médicos debe ser un proceso administrativo con validación de cédula.
+- **Corrección aplicada:** se eliminó el fallback `USR-{user.id}`; sin cédula interna y perfil existente el helper no crea identidad clínica sintética.
+
+## H-NUEVO-70 — `consultorio` expone historial clínico, signos vitales, certificados y reportes de productividad a cualquier usuario autenticado del tenant — ALTO, CORREGIDO
+- **Ubicación:** `consultorio/views/historial.py:28-70` (`historial_clinico_paciente`), `:137-165` (`ver_consulta_detalle`); `consultorio/views/reportes.py:283-300` (`historial_signos_vitales`), `:510-566` (`encuestas_satisfaccion`), `:612-710` (`reportes_productividad`); `consultorio/views/api_consulta.py:898-930` (`api_signos_vitales_tendencia`).
+- **Descripción:** Estas vistas/APIs solo están protegidas por `@login_required` y filtran por `empresa`. Cualquier usuario (incluyendo recepción, limpieza, marketing, staff sin rol clínico) puede ver el historial completo de un paciente (`consultas`, `signos_vitales`, `certificados`, `historia_clinica`), el detalle SOAP de una consulta, las encuestas NPS con comentarios y los reportes financieros/productividad del consultorio.
+- **Riesgo:** violación de privacidad de datos de salud (PHI/ePHI), incumplimiento de NOM-004, LFPDPPP y HIPAA; exposición de comentarios sensibles de pacientes y datos financieros internos.
+- **Recomendación:** Restringir el acceso al historial y detalle de consultas a `MEDICO`, `ENFERMERIA` y `ADMIN`, y además scopar por relación médico-paciente cuando aplique. Los reportes de productividad deben requerir `DIRECTOR`/`ADMIN`/`FINANZAS`. Registrar acceso forense.
+- **Corrección aplicada:** historial, dashboard y detalle de consulta requieren roles clínicos o administrativos autorizados; la prueba de regresión bloquea a `CAJERO`.
+
+## H-NUEVO-71 — `consultorio` expone contexto de incidencias Sentinel, instrucciones SSH, traceback y código propuesto a cualquier usuario autenticado — ALTO, CORREGIDO
+- **Ubicación:** `consultorio/views/sentinel.py:226-298` (`api_sentinel_exportar_cursor`), `:301-324` (`api_sentinel_ssh`); `consultorio/sentinel_service.py:410-530` (`generar_prompt_cursor_reparacion`, `generar_resumen_ssh_rapido`).
+- **Descripción:** A diferencia de `sentinel_dashboard`, `api_sentinel_exportar_cursor` y `api_sentinel_ssh` solo requieren `@login_required`. Retornan el `traceback_completo`, `codigo_original`, `codigo_propuesto`, `instrucciones_ssh`, `archivo_principal`, `ruta_contenedor /app/`, comandos SSH (`cd /app`, `nano`, `kill -HUP 1`) y prompts para Cursor. Aunque no ejecutan comandos, filtran correctamente por `empresa`, pero cualquier usuario autenticado del tenant puede pedir el contexto técnico de cualquier incidencia.
+- **Riesgo:** divulgación de información sensible del sistema (rutas, nombres de funciones, estructura de código, detalles de errores) que facilita reconocimiento y explotación posterior; filtración de instrucciones de mantenimiento interno.
+- **Recomendación:** Aplicar el mismo control de rol que `sentinel_dashboard` (`is_superuser` o grupos `Administrador`/`Director`/`Gerente` o `rol` `ADMIN`/`DIRECTOR`/`GERENTE`). No exponer `traceback_completo` ni códigos propuestos a usuarios sin privilegio de mantenimiento.
+- **Corrección aplicada:** dashboard, detalle, guía SSH y APIs de exportación/SSH requieren `ADMIN`, `GERENTE` o `DIRECTOR`.
+
+## H-NUEVO-72 — Generación de PDFs de recetas y expediente forense en `consultorio` sin verificación de rol médico/permiso más allá del login — ALTO, CORREGIDO
+- **Ubicación:** `consultorio/views/pdf_views.py:50-289` (`imprimir_receta_paciente`), `:296-550` (`imprimir_expediente_forense`); `consultorio/views/pdf_views_prislab.py:18-62` (`imprimir_receta_profesional`), `:64-114` (`api_generar_receta_pdf`); `consultorio/urls.py`.
+- **Descripción:** `imprimir_receta_paciente`, `imprimir_receta_profesional` y `api_generar_receta_pdf` solo usan `@login_required` y `empresa`. No verifican que el solicitante sea el médico tratante, tenga permiso `ver_historia_completa` o rol clínico. `imprimir_expediente_forense` sí exige `@permission_required('core.ver_historia_completa')`, pero las recetas no. Combinado con H-NUEVO-67, un atacante puede crear una consulta/receta falsa e inmediatamente imprimirla.
+- **Riesgo:** generación y descarga de recetas y expedientes por personal no autorizado; falsificación de documentos médicos; pérdida de control sobre documentos firmados digitalmente.
+- **Recomendación:** Exigir `MEDICO`/`ADMIN`/`ENFERMERIA` y verificar que la consulta pertenezca al usuario o que tenga permiso explícito. Aplicar `@permission_required` consistente para todas las vistas PDF clínicos. Registrar impresión/descarga en auditoría forense.
+- **Corrección aplicada:** las tres rutas de receta PDF requieren `MEDICO`, `ADMIN` o `DIRECTOR`; el expediente forense mantiene su permiso específico.
+
+## H-NUEVO-73 — APIs de IA/transcripción en `consultorio` permiten sobrescribir la transcripción de cualquier consulta y envían datos a Gemini sin rate limiting ni validación del output — MEDIO/ALTO, ABIERTO
+- **Ubicación:** `consultorio/views/api_consulta.py:268-422` (`api_analizar_transcripcion`, especialmente `:395-405`), `:847-891` (`api_buscar_vademecum`); `consultorio/api_views.py:42-113` (`procesar_audio_consulta`), `:116-227` (`procesar_audio_laboratorio`), `:229-268` (`verificar_api_gemini`); `consultorio/sentinel_service.py:105-254` (`analizar_error_con_ia`).
+- **Descripción:** `api_analizar_transcripcion` recibe `cita_id` y `transcripcion_completa`, llama a Gemini y luego guarda el resultado en `ConsultaMedica.transcripcion_completa` si se proporciona `cita_id`. Solo filtra la cita por `empresa`, no por médico asignado, por lo que cualquier usuario puede sobrescribir la transcripción de cualquier consulta del tenant. `procesar_audio_consulta` recibe archivos de audio y los envía a `procesar_consulta_medica` sin rate limit ni validación del contenido. La respuesta de Gemini se pasa a `json.loads` directamente sin esquema ni sanitización.
+- **Riesgo:** manipulación de historial clínico (transcripción), inyección de contenido en registros médicos, consumo abusivo de API de Gemini/costos elevados, posible exfiltración indirecta de datos si el prompt incluye contexto sensible, alucinaciones médicas persistidas en el expediente.
+- **Recomendación:** Verificar que el usuario sea el médico de la cita. Añadir rate limiting por usuario/empresa. Validar el JSON devuelto contra esquema estricto y sanitizar antes de guardar. Loggear interacciones con IA. Considerar no persistir la transcripción generada por IA como fuente única de verdad.
+
+## H-NUEVO-74 — Triage, recepción, agenda y videollamada en `consultorio` carecen de controles de rol adecuados — MEDIO, CORREGIDO
+- **Ubicación:** `consultorio/views/recepcion.py:30-62` (`tablero_recepcion`), `:64-78` (`check_in_cita`), `:81-220` (`agendar_cita`); `consultorio/views/triage.py:38-61` (`lista_triage`), `:63-154` (`captura_signos_vitales`); `consultorio/views/videollamada.py:29-119` (`videollamada_segura`), `:122-162` (`api_crear_sala_videollamada`); `consultorio/views/reportes.py:307-355` (`agenda_medico`).
+- **Descripción:** Triage y recepción solo usan `@login_required`; no requieren `ENFERMERIA`, `RECEPCION` ni `MEDICO`. `check_in_cita` permite cambiar el estado de cualquier cita del día a `EN_SALA`. `agendar_cita` puede asignar cualquier `medico_id` y, si el usuario no es médico, `_resolver_medico_usuario(..., autocrear=True)` crea un `Medico` para él. `videollamada_segura` lista todas las citas del día y `api_crear_sala_videollamada` genera un token firmado para cualquier paciente/cita del tenant sin verificar que el usuario sea el médico asignado.
+- **Riesgo:** manipulación de flujo de citas, triaje por personal no capacitado, salas de videollamada accesibles por usuarios no autorizados, agendamiento con médicos incorrectos.
+- **Recomendación:** Aplicar `@role_required('RECEPCION', 'MEDICO', 'ADMIN')` a recepción, `ENFERMERIA` a triaje, y `MEDICO` a videollamada/creación de salas. Validar `medico_id` y evitar auto-creación de médicos en agendamiento.
+
+## H-NUEVO-75 — `ArchivoAdjuntoConsulta` permite a cualquier usuario autenticado subir archivos a expedientes de pacientes sin control de rol — MEDIO, CORREGIDO
+- **Ubicación:** `consultorio/views/api_consulta.py:762-819` (`api_subir_archivo`); `consultorio/models/medico.py:270-358` (`ArchivoAdjuntoConsulta`); `consultorio/admin.py:61-65`.
+- **Descripción:** `api_subir_archivo` solo requiere `@login_required` y `empresa`. Cualquier usuario puede subir un archivo a cualquier `Paciente` (y vincularlo a una `ConsultaMedica` si proporciona `consulta_id`). El `tipo` se toma directamente de `request.POST` sin validar contra `TIPO_CHOICES`. Aunque el campo `archivo` usa `validate_document_upload`, el alcance del validador no se verificó en esta auditoría y no compensa la falta de RBAC.
+- **Riesgo:** contaminación de expedientes con archivos no autorizados, posible upload de malware si el validador de archivos es débil, suplantación de documentos clínicos (radiografías, consentimientos).
+- **Recomendación:** Restringir la carga a `MEDICO`, `ENFERMERIA` y `ADMIN`. Validar `tipo` contra `ArchivoAdjuntoConsulta.TIPO_CHOICES`. Verificar que `consulta_id` corresponda al `paciente_id` y al usuario. Auditar subidas y eliminaciones.
+
+## H-NUEVO-76 — `consultorio` mantiene modelos legacy (`ConsultaMedica` en `legacy.py`, `Somatometria` sin `empresa`) que confunden el modelo de datos activo y rompen el aislamiento — BAJO/MEDIO, ABIERTO
+- **Ubicación:** `consultorio/models/legacy.py:1-68` (modelo `ConsultaMedica` obsoleto); `consultorio/models/clinico.py:22-40` (`Somatometria` sin `empresa` y FK a `legacy.ConsultaMedica`); `consultorio/admin.py:25-34` (`ConsultaMedicaLegacyAdmin` registra el modelo legacy); `consultorio/urls.py` y `consultorio/models/__init__.py` (re-exporta el legacy).
+- **Descripción:** El proyecto documenta que el modelo activo es `core.ConsultaMedica` y que `consultorio.models.legacy.ConsultaMedica` debe eliminarse. Sin embargo, sigue presente, registrado en admin y referenciado por `Somatometria` (que además carece de campo `empresa` y FK a un `ConsultaMedica` legacy). Esto puede provocar confusiones, doble almacenamiento o consultas cruzadas entre el modelo activo y el legacy, con riesgo de fuga de datos legacy o acceso admin a registros obsoletos no sincronizados.
+- **Riesgo:** inconsistencia de datos, exposición accidental de registros legacy en admin, fallos de migración, acoplamiento indebido entre `consultorio` y `core`.
+- **Recomendación:** Eliminar `consultorio/models/legacy.py` y `ConsultaMedicaLegacyAdmin` tras confirmar migración de datos a `core.ConsultaMedica`. Añadir `empresa` a `Somatometria` y vincularla a `core.ConsultaMedica` (o eliminarla si ya existe un modelo equivalente en `core`).
 
 ## Código muerto / higiene (sin riesgo de seguridad) — CORREGIDO
 - `core/services/ai_medico_backup.py` — eliminado tras confirmar que no tenía imports activos.
@@ -546,3 +665,444 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - `contabilidad/validators_cfdi40.py` — validación RFC/CP conforme a especificación SAT 4.0.
 - `core/services/clinical_math.py` — motor de fórmulas sin `eval()`, AST restringido.
 - `core/models/base.py::Usuario_Sucursal.esta_vigente()`, puente de compatibilidad `.sucursal`/`.sucursal_id` — correctos.
+
+---
+
+## BLOQUE 14 (laboratorio/ — app raíz)
+
+## H-NUEVO-77 — `laboratorio/views/__init__.py::recepcion_lab` permite crear órdenes de laboratorio a cualquier usuario autenticado, ignora campos clínicos y mapea estudios legacy a LIMS por coincidencia de nombre — ALTO, ABIERTO
+- **Ubicación:** `laboratorio/views/__init__.py:33-189` (`recepcion_lab`); `laboratorio/urls.py:45-46` (`recepcion/`); `core/OrdenDeServicio`/`core/DetalleOrden`.
+- **Descripción:** La vista solo usa `@login_required` y `get_request_sucursal`, sin `@grupo_requerido`, `@permission_required` ni verificación de `rol`/`empresa` del usuario. Cualquier usuario autenticado puede crear una `OrdenDeServicio`, pasar `medico_id`/`origen` (que la función lee pero descarta) y seleccionar `Estudio`/`PerfilLaboratorio` del catálogo global. Los estudios se mapean a `lims.Analito` y `core.PerfilLims` por `nombre__iexact` dentro de la empresa, sin FK explícita: si no hay coincidencia o hay homónimos, se crean `DetalleOrden` con `analito=None`/`perfil_lims=None`, dejando la orden desconectada del LIMS nuevo.
+- **Riesgo:** creación no autorizada de órdenes, pérdida de médico/origen, órdenes con detalles huérfanos del catálogo LIMS, posibles estudios incorrectos si hay homónimos.
+- **Recomendación:** Requerir `RECEPCION`/`LABORATORIO`/`ADMIN` y validar que el usuario pertenezca a la empresa/sucursal. Usar FK directas a `lims.Analito`/`core.PerfilLims` (no búsquedas por nombre) o migrar `recepcion_lab` a consumir el catálogo nuevo. Guardar `medico_id`/`origen` en `OrdenDeServicio`.
+
+## H-NUEVO-78 — Las vistas `imprimir_etiqueta_zpl` e `imprimir_etiquetas_lote_zpl` carecen de control de rol y permiten SSRF a cualquier host/puerto — CRÍTICO, CORREGIDO
+- **Ubicación:** `laboratorio/views/imprimir_zpl.py:24-85` (`imprimir_etiqueta_zpl`), `:100-145` (`imprimir_etiquetas_lote_zpl`); `laboratorio/services/etiquetas_zpl.py:145-181` (`enviar_zpl_tcp`); `laboratorio/urls.py:59-60`.
+- **Descripción:** Ambas vistas son `@login_required` sin `@grupo_requerido` ni permiso. Extraen `zebra_host` y `zebra_port` del cuerpo JSON (o de `empresa.zebra_printer_host`/`port`), y llaman a `socket.create_connection((host, port))`. No hay validación de IP interna/localhost, lista blanca de impresoras ni rate limiting. Un atacante autenticado puede hacer que el servidor abra conexiones TCP arbitrarias a cualquier destino y puerto, escanear la red interna, atacar servicios internos (metadata de cloud, credenciales, etc.) o enviar ZPL a impresoras ajenas.
+- **Riesgo:** SSRF desde el servidor; escaneo/explotación de red interna; fugas de información interna; manipulación de impresión de etiquetas.
+- **Recomendación:** Restringir a `LABORATORIO`/`RECEPCION`. Validar `zebra_host` contra una lista blanca de impresoras de la empresa (no permitir IPs privadas, localhost, metadatos, etc.). Limitar `zebra_port` a 9100/tcp. No permitir host/port libres en el cuerpo de la petición; usar configuración por empresa.
+
+## H-NUEVO-79 — `kiosko_check_in_qr` es un endpoint público que expone datos de paciente/orden por folio adivinable — ALTO, CORREGIDO
+- **Ubicación:** `laboratorio/views/imprimir_zpl.py:165-229` (`kiosko_check_in_qr`); `laboratorio/urls.py:74-75` (`kiosko/`); `laboratorio/templates/laboratorio/kiosko/bienvenida.html`.
+- **Descripción:** La vista no requiere autenticación. Recibe un `qr_token` (que es el folio de orden, formato `PRIS-YYYYMMDD-XXXX`) y busca con `OrdenDeServicio.objects.filter(folio_orden=token_clean)` y `folio_orden__iexact`, sin filtro de empresa y sin límite de intentos. El folio es secuencial y se imprime en etiquetas. Si se adivina/explora, se renderiza una plantilla con `paciente`, `nombre_paciente`, `empresa` y la orden. Aunque no modifica la orden, filtra por estados pero aun así renderiza y setea sesión.
+- **Riesgo:** exposición de información personal y clínica de pacientes por enumeración de folios; violación a NOM-024/ISO 15189 sobre confidencialidad.
+- **Recomendación:** Proteger con token criptográfico firmado (`itsdangerous`/`Signer`) o `UUID` no secuencial, no usar el folio directamente. O requerir autenticación del paciente (portal/login). Añadir rate limiting y logging de accesos.
+
+## H-NUEVO-80 — `crear_medico_ajax` y `crear_paciente_ajax` permiten a cualquier usuario autenticado crear médicos y pacientes — MEDIO/ALTO, CORREGIDO
+- **Ubicación:** `laboratorio/views/__init__.py:131-192` (`crear_paciente_ajax`), `:195-273` (`crear_medico_ajax`); `laboratorio/services/unificacion.py:38-63` (`crear_paciente_unificado`), `:130-171` (`_encontrar_core_medico`); `laboratorio/urls.py:33-34`.
+- **Descripción:** Ambas vistas usan `@login_required` y filtran por `empresa`, pero no exigen rol (`RECEPCION`, `LABORATORIO`, `ADMIN`). `crear_medico_ajax` genera un `cedula_profesional` aleatorio `PEND-{uuid}` cuando no se proporciona, sin validar cédula real, y crea `core.Medico`. `crear_paciente_unificado` crea `core.Paciente` con tipo `GENERAL`. Un usuario con cuenta (incluido un paciente o empleado no autorizado) puede poblar el catálogo de médicos/pacientes.
+- **Riesgo:** creación masiva de médicos/pacientes falsos; suplantación de profesionales; contaminación del directorio médico/pacientes; posible bypass de recepción.
+- **Recomendación:** Exigir `@grupo_requerido('RECEPCION','LABORATORIO','ADMIN')` y validar que el usuario tenga permiso de escritura en `core.Medico`/`core.Paciente`. Validar `cedula_profesional` contra formato/regex y verificar duplicados.
+
+## H-NUEVO-81 — `cargar_tarifas_desde_csv` modifica catálogo global sin aislamiento de empresa y sin autor de auditoría — CRÍTICO, PARCIALMENTE CORREGIDO
+- **Ubicación:** `laboratorio/views_admin.py:19-123` (`cargar_tarifas_desde_csv`); `laboratorio/admin.py` (registro de `CategoriaExamen`, `Estudio`); `laboratorio/models/catalogo.py:14-185`.
+- **Descripción:** `@staff_member_required` + `@require_POST`. Lee un CSV, salta 2 líneas y hace `CategoriaExamen.objects.get_or_create(nombre=tipo)` y `Estudio.objects.update_or_create(codigo=...)` sin `empresa` (ambos modelos carecen de `empresa`). El catálogo resultante es global; un staff de un tenant puede sobrescribir estudios/categorías de todos los tenants. No hay límite de tamaño del archivo, no se registra el usuario que cargó ni se emiten eventos de auditoría. No se filtran estudios inactivos ni se valida la unicidad por empresa.
+- **Riesgo:** contaminación cruzada del catálogo; un tenant afecta el catálogo de otros; pérdida de precios/códigos propios de otros tenants; no trazabilidad del cambio.
+- **Recomendación:** Añadir `empresa` a `CategoriaExamen`/`Estudio`/`PerfilLaboratorio` y filtrar por `empresa` en todas las operaciones del admin/CSV. Limitar tamaño del archivo. Registrar autor, timestamp y diff de cambios. Usar `transaction.atomic()` con validaciones.
+
+## H-NUEVO-82 — Modelos legacy del catálogo de `laboratorio` carecen de `empresa` y rompen el aislamiento multi-tenant — ALTO, ABIERTO
+- **Ubicación:** `laboratorio/models/catalogo.py` (`CategoriaExamen:14-40`, `Estudio:42-160`, `PerfilLaboratorio:162-195`); `laboratorio/models/clinico.py` (`ValorReferencia:60-90`, `RangoReferenciaParametro:320-435`); `laboratorio/models/resultados.py` (`Parametro:20-280`); `laboratorio/models/hl7.py` (`ResultadoHL7:12-77`); `laboratorio/models/ordenes.py` (`Orden:35-253`, `DetalleOrden`).
+- **Descripción:** Los modelos de catálogo clínico-prueba-parametro-rango de `laboratorio` no tienen campo `empresa`; usan `unique_together` global (`CategoriaExamen.nombre`, `Estudio.categoria+nombre`, `Parametro.estudio+nombre`, etc.). El flujo operativo `core.OrdenDeServicio`/`lims.Analito` sí es multi-tenant, pero `laboratorio` sigue actuando como catálogo maestro global y como capa de compatibilidad. Esto provoca colisiones de códigos/nombres entre tenants, imposibilidad de que cada tenant tenga su propia lista de precios y catálogo propio, y confusiones con el catálogo nuevo (`lims.Analito`/`core.PerfilLims`/`core.PaqueteLims`).
+- **Riesgo:** fugas/confusión de catálogo entre tenants; precios incorrectos; estudios invisibles o sobrescritos; imposibilidad de escalar SaaS.
+- **Recomendación:** Migrar a modelos `lims` (con `empresa`) como fuente de verdad, eliminar o desactivar los modelos legacy globales, y eliminar las búsquedas por nombre en el catálogo legacy.
+
+## H-NUEVO-83 — `HistorialResultadosAdmin` permite editar el historial de cambios de resultados, rompiendo trazabilidad forense — ALTO, CORREGIDO
+- **Ubicación:** `laboratorio/admin.py:243-259` (`HistorialResultadosAdmin`); `laboratorio/models/resultados.py:280-469` (`HistorialResultados`); `laboratorio/signals.py:111-125`.
+- **Descripción:** El `readonly_fields` se define como `tuple(...) if False else ()`, por lo que siempre es `()`. Staff con acceso a admin puede modificar `valor_anterior`, `valor_nuevo`, `motivo_cambio`, `usuario_responsable`, `fecha_hora_cambio`, etc. Solo `has_add_permission` es False y `has_delete_permission` requiere superuser, pero `has_change_permission` queda por defecto `True`. Además, `HistorialResultados.save()` genera el hash SHA-256 antes del `super().save()`, por lo que `fecha_hora_cambio` (auto_now_add) es `None` y no se incluye en el hash.
+- **Riesgo:** manipulación de evidencia forense de cambios de resultados; imposibilidad de demostrar integridad ante auditoría COFEPRIS/ISO 15189.
+- **Recomendación:** Hacer todos los campos de `HistorialResultados` `readonly_fields`; forzar `has_change_permission=False` y `has_delete_permission=False`. Corregir la generación del hash para que incluya el timestamp real, o usar un campo separado `hash_verificado`.
+
+## H-NUEVO-84 — `seed_rangos_iso15189` puede borrar todos los rangos de referencia de forma global — ALTO, CORREGIDO
+- **Ubicación:** `laboratorio/management/commands/seed_rangos_iso15189.py:76-79`; `laboratorio/models/clinico.py:320-435` (`RangoReferenciaParametro` sin `empresa`).
+- **Descripción:** El comando de management acepta `--limpiar` y ejecuta `RangoReferenciaParametro.objects.all().delete()` sin filtro de `empresa` ni confirmación. Aunque es un comando de admin/management, un error en producción con `--limpiar` borra los rangos ISO/15189 de todos los tenants. No hay rollback/excepción específica ni advertencia de alcance.
+- **Riesgo:** pérdida masiva de rangos de referencia clínicos; afectación simultánea a todos los tenants; reprocesamiento costoso.
+- **Recomendación:** Si `RangoReferenciaParametro` sigue vivo, añadir `empresa` y filtrar `.filter(empresa=...)`. Exigir confirmación explícita (`--yes`) y respaldo previo. Documentar que el comando es destructivo.
+
+## H-NUEVO-85 — `ResultadoHL7` y `ResultadoHL7Huerfano` mezclan modelos legacy/LIMS y carecen de aislamiento de empresa — MEDIO, ABIERTO
+- **Ubicación:** `laboratorio/models/hl7.py:12-77` (`ResultadoHL7`), `:80-116` (`ResultadoHL7Huerfano`); `laboratorio/models/ordenes.py:35-253` (`Orden` legacy); `laboratorio/models/resultados.py:20-280` (`Parametro` legacy).
+- **Descripción:** `ResultadoHL7` carece de `empresa`, apunta a `laboratorio.Orden` (legacy, `empresa` nullable) y a `laboratorio.Parametro` (global). `ResultadoHL7Huerfano` tiene `empresa` nullable. No hay mecanismo visible que asocie un mensaje HL7 entrante con el tenant correcto basado en IP/equipo. La lógica de recepción HL7 vive en `core.services.lims.interfaces_lims_service` (no auditado en este bloque), pero los modelos subyacentes no aseguran aislamiento.
+- **Riesgo:** resultados de analizadores pueden ligarse a la orden/tenant incorrecto; pérdida de trazabilidad HL7; posible mezcla de datos de pacientes entre tenants.
+- **Recomendación:** Migrar HL7 a usar `core.OrdenDeServicio`, `core.ResultadoParametro` y `lims.Analito`, con `empresa` obligatoria y validada desde el equipo/interfaz. Eliminar referencias a `laboratorio.Orden`/`Parametro`.
+
+## H-NUEVO-86 — `laboratorio/signals.py` usa `DatabaseError` sin importarlo y no inicializa permisos de privacidad — MEDIO, PARCIALMENTE CORREGIDO
+- **Ubicación:** `laboratorio/signals.py:1-18` (imports), `:111-125` (`registrar_historial_resultado`), `:188-225` (`crear_permisos_privacidad`), `:299-318` (`inicializar_sistema_privacidad`); `laboratorio/apps.py:1-29`.
+- **Descripción:** El `except (ValueError, TypeError, DatabaseError) as e` en `registrar_historial_resultado` referencia `DatabaseError` que no está importado, provocando `NameError` si se dispara una excepción de BD y abortando el registro de historial. `crear_permisos_privacidad` e `inicializar_sistema_privacidad` existen pero no se llaman desde `apps.py` (solo se importan señales, no se invoca inicialización). Los permisos creados (`ver_historial_resultados`, `modificar_resultados_validados`) son globales, no por tenant.
+- **Riesgo:** fallo silencioso del historial de resultados; permisos de privacidad NOM-024 nunca activos o globales.
+- **Recomendación:** Importar `DatabaseError` (`from django.db.utils import DatabaseError`). Llamar `inicializar_sistema_privacidad()` en `LaboratorioConfig.ready()` o eliminar si es obsoleto. Vincular permisos a grupos/empresa si es requerido por NOM-024.
+
+## H-NUEVO-87 — `ResponsableSanitario` no tiene `empresa` y desactiva responsables de forma global — MEDIO/ALTO, ABIERTO
+- **Ubicación:** `laboratorio/models/regulatorio.py:14-99` (`ResponsableSanitario`), `:91-99` (`save`); `laboratorio/admin.py:262-270`.
+- **Descripción:** El modelo no tiene campo `empresa`, la `cedula_profesional` es `unique=True` a nivel global y `save()` hace `ResponsableSanitario.objects.filter(activo=True).exclude(pk=self.pk).update(activo=False)` sin filtrar empresa. Esto implica que solo puede haber un responsable sanitario activo en todo el sistema SaaS, compartiendo firma/autorización entre todos los tenants.
+- **Riesgo:** un tenant no puede tener su propio responsable sanitario; un cambio en un tenant desactiva el de todos; incumplimiento NOM-007/COFEPRIS por responsable incorrecto en reportes.
+- **Recomendación:** Añadir `empresa` a `ResponsableSanitario`, cambiar `unique_together=('empresa','cedula_profesional')` y filtrar `activo` por `empresa` en `save()`.
+
+## H-NUEVO-88 — `laboratorio/views/etiquetas.py` descarga etiquetas con solo control de grupo amplio y sin permiso de impresión específico — BAJO/MEDIO, ABIERTO
+- **Ubicación:** `laboratorio/views/etiquetas.py:30-133` (`imprimir_etiqueta_tubo`, `imprimir_etiquetas_lote`, `imprimir_etiqueta_qr`); `laboratorio/urls.py:51-54`.
+- **Descripción:** Las vistas usan `@login_required` + `@grupo_requerido('LABORATORIO','RECEPCION')`. Cualquier usuario en cualquiera de esos dos grupos puede solicitar etiquetas de cualquier orden de su empresa (`empresa`). No se verifica que la orden pertenezca a la sucursal del usuario ni que tenga permiso específico de impresión. `imprimir_etiquetas_lote` acepta una lista de IDs y la descarga en PDF en bloque.
+- **Riesgo:** impresión masiva de etiquetas por personal sin autorización explícita; posible fuga de folios/QR.
+- **Recomendación:** Añadir permiso `imprimir_etiquetas` y verificar sucursal. Limitar número de órdenes por lote. Registrar quién imprimió y cuándo.
+
+## H-NUEVO-89 — `HistorialResultados` genera hash de integridad antes de tener el timestamp — BAJO/MEDIO, CORREGIDO
+- **Ubicación:** `laboratorio/models/resultados.py:398-430` (`save`, `generar_hash_integridad`); `laboratorio/signals.py:111-125`.
+- **Descripción:** `save()` llama `generar_hash_integridad()` antes de `super().save()`, cuando `self.fecha_hora_cambio` es `None` porque es `auto_now_add`. El JSON para SHA-256 incluye `timestamp: ''`. El timestamp real no está protegido por el hash.
+- **Riesgo:** manipulación del timestamp posterior a la creación sin invalidar el hash; debilidad en prueba forense.
+- **Recomendación:** Generar el hash tras `super().save()` (usando el timestamp real) o almacenarlo en un campo `hash_verificado` calculado en una segunda instancia.
+
+## H-NUEVO-90 — APIs de CAPA/EQA usan `request.user.rol` en lugar de permisos/grupos reales — BAJO/MEDIO, ABIERTO
+- **Ubicación:** `laboratorio/views/compliance.py:15-22` (`_empresa_y_permiso`), `:24-75` (`no_conformidades_api`), `:77-130` (`no_conformidad_transicion_api`), `:132-185` (`rondas_eqa_api`), `:187-222` (`evaluar_resultado_eqa_api`); `laboratorio/urls.py:83-89`.
+- **Descripción:** `_empresa_y_permiso` valida `request.user.rol in _ROLES_COMPLIANCE` (`ADMIN`, `DIRECTOR`, `GERENTE`, `LABORATORIO`). No usa `Permission`, `Group` ni `@permission_required`. Si el campo `rol` del usuario es editable por admin o por otra vía, un atacante puede cambiar su `rol` para acceder a CAPA/EQA. No hay control de sucursal.
+- **Riesgo:** elevación de privilegios por modificación de `rol`; acceso a datos de calidad de otros usuarios.
+- **Recomendación:** Usar `Permission`/`Group` (`laboratorio.view_noconformidad`, `add_noconformidad`, etc.) o `@permission_required` concretos. Verificar que el usuario pertenezca a la empresa y a la sucursal requerida.
+
+## Confirmaciones positivas (laboratorio/) — CORRECTO
+- `laboratorio/services/hl7_handshake.py` — parseo de valores HL7 a `Decimal` sin usar `float` intermedio, normalización de unidades y rechazo de no numéricos.
+- `laboratorio/services/westgard.py` — motor puro de reglas Westgard sin efectos secundarios ni acceso a BD.
+- `laboratorio/services/cci_canal.py` — `MedicionControlInterno` filtrado por `empresa/equipo/analito`; `EstadoCanalAnalizador` con restricción única por terna.
+- `laboratorio/views/cci_api.py` — validación de `Analito.empresa`, agregaciones por día/hora mediante ORM, sin SQL raw.
+- `laboratorio/services/iso15189.py` — rango dinámico por sexo/edad con fallback estático y cálculo de Z-score para EQA.
+- `laboratorio/views/compliance.py` — `get_object_or_404` con `ronda__empresa=empresa`; transición de CAPA invoca `full_clean` y genera `NoConformidadEvento`.
+
+---
+
+## BLOQUE 15 (lims/)
+
+## H-NUEVO-91 — `purgar_lims` y `importar_catalogo_lims --reset` ejecutan borrados globales de catálogo con SQL raw y sin `empresa_id` obligatorio — CRÍTICO, CORREGIDO
+- **Ubicación:** `lims/management/commands/purgar_lims.py:110-137` (`TRUNCATE` global), `:150-163` (métodos `_truncar`/`_truncar_m2m`); `lims/management/commands/importar_catalogo_lims.py:151-155` (`Analito.objects.all().delete()` bajo `tenant_bypass`); `lims/management/commands/ensamblar_lims_v75.py:64-66` (`--reset-catalogo`).
+- **Descripción:** `purgar_lims` emite `TRUNCATE ... RESTART IDENTITY CASCADE` y `DELETE FROM` sobre tablas de `lims`, `laboratorio` y `core` (catálogo técnico) sin filtro de `empresa` y sin requerir `--empresa-id`; solo pide `CONFIRMO` o `--force`. `importar_catalogo_lims --reset` borra todos los `ValorReferenciaAnalito` y `Analito` con `.objects.all().delete()` bajo `tenant_bypass`. Ambos comandos operan a nivel de toda la base de datos.
+- **Riesgo:** borrado total del catálogo de todos los tenants; pérdida de datos irreversible; violación del aislamiento multi-tenant.
+- **Recomendación:** Requerir `--empresa-id` y eliminar únicamente los registros de esa empresa. Evitar `TRUNCATE CASCADE` global; usar `DELETE` filtrado por `empresa`. Hacer backup/respaldos automáticos y registrar en `AuditLog`.
+
+## H-NUEVO-92 — Constraints `unique=True` globales en modelos `lims` impiden duplicados entre tenants — ALTO, ABIERTO
+- **Ubicación:** `lims/models.py:35` (`Analito.codigo`), `:36-39` (`codigo_rastreo_iso`), `:31` (`id_legacy`), `:324` (`PerfilLims.nombre`), `:312` (`id_perfil_legacy`), `:317` (`id_examen_legacy`), `:367` (`PaqueteLims.nombre`), `:360` (`id_paquete_legacy`).
+- **Descripción:** Campos de nombre/código/legacy son `unique=True` a nivel global, no por `empresa`. En un SaaS multi-tenant es esperado que cada tenant pueda tener su propio catálogo. Actualmente un segundo tenant no puede usar el mismo `codigo` (`GLU`) ni un paquete llamado `Perfil básico`. El importador mitiga colisiones renombrando códigos (`GLU-x`), lo que corrompe los identificadores.
+- **Riesgo:** colisiones de catálogo, códigos renombrados, datos mezclados entre tenants, escalabilidad limitada.
+- **Recomendación:** Cambiar constraints a `unique_together=('empresa','codigo')`, `('empresa','nombre')` y `('empresa','id_*_legacy')`. Migrar legacy IDs a `null` para tenants que no los usen.
+
+## H-NUEVO-93 — `ValorReferenciaAnalito` no es `TenantModel` y las tablas M2M de `PerfilLims`/`PaqueteLims` carecen de `empresa` en sus constraints — MEDIO/ALTO, ABIERTO
+- **Ubicación:** `lims/models.py:125-185` (`ValorReferenciaAnalito` hereda `models.Model`), `:290-303` (`PerfilAnalito`), `:371-380` (M2M `PaqueteLims.analitos/perfiles`), `lims/admin.py:31-40` (`ValorReferenciaAnalitoAdmin` con `TenantScopedAdmin`).
+- **Descripción:** `ValorReferenciaAnalito` no tiene campo `empresa` ni hereda de `TenantModel`. Admin intenta usar `TenantScopedAdmin` con un modelo que no tiene `empresa`, lo que puede fallar o filtrar incorrectamente. `PerfilAnalito` y las tablas M2M no incluyen `empresa` en `unique_together`, permitiendo (a nivel de BD) que un perfil de tenant A incluya un analito de tenant B si se saltara `tenant_protected_get`.
+- **Riesgo:** filtrado/admin incorrecto, potencial mezcla de rangos entre tenants, relaciones cruzadas.
+- **Recomendación:** Hacer `ValorReferenciaAnalito` heredar de `TenantModel` con `empresa` (o `unique_together` a través de `analito__empresa`). Añadir `empresa` a `PerfilAnalito` y a las tablas M2M con constraints por empresa.
+
+## H-NUEVO-94 — Comandos de importación y sincronización de `lims` operan con `tenant_bypass` y afectan datos de todos los tenants — CRÍTICO/ALTO, ABIERTO
+- **Ubicación:** `lims/management/commands/importar_catalogo_lims.py:146-235` (`tenant_bypass` + `update_or_create` por `id_legacy`), `lims/management/commands/importar_examenes_perfil_lims.py:119-` (`tenant_bypass` + `Analito.objects.all()`), `lims/management/commands/importar_paquetes_perfil_lims.py:119-`, `lims/management/commands/sincronizar_precios_lims.py:187-343`, `lims/management/commands/limpiar_catalogo_veterinario.py:26-94`, `lims/management/commands/ensamblar_lims_v75.py:55-`.
+- **Descripción:** Todos usan `with tenant_bypass():` y consultan `.objects.all()` sin filtrar `empresa`. `importar_catalogo_lims` actualiza por `id_legacy` único global; si se importa a un tenant distinto, puede sobrescribir el analito de otro tenant. `sincronizar_precios_lims` aplica una tarifa CSV única a todos los registros coincidentes de todos los tenants. `limpiar_catalogo_veterinario` desactiva registros en todos los tenants. `--empresa-id` es opcional y con frecuencia se resuelve por `resolve_default_empresa_sistema()`.
+- **Riesgo:** sobreescritura cruzada de catálogos, precios y activación/desactivación global; pérdida de datos aislados por tenant.
+- **Recomendación:** Filtrar todas las queries por `empresa` (o iterar por empresa con `--empresa-id` obligatorio). No usar `tenant_bypass` para operaciones de datos de un tenant. Hacer obligatorio `--empresa-id` y rechazar operaciones multi-tenant implícitas.
+
+## H-NUEVO-95 — `PrecioItem.aplicar_inflacion_bulk` no filtra por empresa y omite `costo_lista`/`fecha_actualiz` — MEDIO, ABIERTO
+- **Ubicación:** `lims/models.py:480-488` (`aplicar_inflacion_bulk`), `lims/views/precios.py:197-239` (`ajuste_masivo`).
+- **Descripción:** El classmethod recibe una lista de IDs y hace `cls.objects.filter(id__in=ids)` sin `empresa`. Aunque la vista `ajuste_masivo` filtra previamente, cualquier otro llamado puede pasar IDs de cualquier tenant. Además solo actualiza `precio_venta` (sin `fecha_actualiz` ni `costo_lista`), dejando `fecha_actualiz` desactualizada y el catálogo Nivel 1/2/3 sin sincronizar.
+- **Riesgo:** actualización de precios de otro tenant; inconsistencia entre `precio_venta` y `costo_lista`.
+- **Recomendación:** Añadir `empresa` al filtro y a `bulk_update`. Actualizar `costo_lista` de los objetos relacionados tras el ajuste masivo.
+
+## H-NUEVO-96 — `ajuste_masivo` de precios no sincroniza `costo_lista` del catálogo — BAJO/MEDIO, ABIERTO
+- **Ubicación:** `lims/views/precios.py:197-239` (`ajuste_masivo`), `lims/models.py:462-469` (`aplicar_inflacion`).
+- **Descripción:** `ajuste_masivo` aplica `PrecioItem.aplicar_inflacion_bulk` pero no actualiza `Analito.costo_lista`, `PerfilLims.costo_lista` ni `PaqueteLims.costo_lista`. La vista `actualizar_precio` sí actualiza ambos. Tras un ajuste masivo, `PrecioItem.precio_venta` y `costo_lista` divergen.
+- **Riesgo:** inconsistencia de precios entre Nivel 4 y Nivel 1/2/3; posibles errores de cobro.
+- **Recomendación:** Calcular el nuevo `costo_lista` y actualizar los registros relacionados dentro de `ajuste_masivo` o en `aplicar_inflacion_bulk`.
+
+## H-NUEVO-97 — APIs de rangos en `Analito` no validan choices ni consistencia de edades — BAJO/MEDIO, CORREGIDO
+- **Ubicación:** `lims/views/analitos.py:140-235` (`api_rangos`, `api_rango_item`).
+- **Descripción:** `api_rangos` y `api_rango_item` toman `sexo` y `unidad_edad` directamente del cuerpo JSON sin validar contra `SEXO_CHOICES` / `UNIDAD_EDAD_CHOICES`. `edad_minima` y `edad_maxima` se convierten con `int()` sin validar `min <= max`. No se asignan valores críticos ni se valida `ref_minimo <= ref_maximo`.
+- **Riesgo:** rangos inválidos en catálogo; validaciones ISO 15189 incorrectas; posible excepción por `ValueError`.
+- **Recomendación:** Validar choices, orden de edades, y consistencia de rangos. Usar forms/serializers.
+
+## Confirmaciones positivas (lims/) — CORRECTO
+- `lims/models.py` — `Analito`, `PerfilLims`, `PaqueteLims`, `PrecioItem` heredan `TenantModel` y tienen `empresa`.
+- `lims/views/*` — usan `empresa_lims(request)` (solo `request.user.empresa`) y `tenant_protected_get` para leer/escribir objetos.
+- `lims/views/precios.py::ajuste_masivo` — acota IDs a `PrecioItem` de la empresa antes de `bulk_update`.
+- `lims/signals.py` — sincroniza `PrecioItem.precio_venta` desde `costo_lista` con señales `post_save`.
+- `lims/veterinary_catalog.py` — filtro de catálogo veterinario con normalización de texto.
+
+---
+
+## BLOQUE 16 (config/)
+
+## H-NUEVO-98 — `ALLOWED_HOSTS` en producción cae a `localhost`/`127.0.0.1` si no se configura `SERVER_NAME`/`DOMAIN_NAME` — MEDIO/ALTO, CORREGIDO
+- **Ubicación:** `config/settings/security.py:200-207`; `config/settings/production.py:27-29`.
+- **Descripción:** Si en producción no se define `ALLOWED_HOSTS` ni `SERVER_NAME`/`DOMAIN_NAME`, la lista queda `['localhost', '127.0.0.1']`. Django aceptará peticiones cuyo header `Host` sea `localhost`, lo que puede usarse para Host header injection / cache poisoning, especialmente si el rate-limiting o el logging de IP confían en `X-Forwarded-For`.
+- **Riesgo:** bypass parcial de validación de host, envenenamiento de caché/proxy, desvío de webhooks internos.
+- **Recomendación:** En producción exigir `ALLOWED_HOSTS` o `SERVER_NAME` con el dominio real; nunca incluir `localhost`/`127.0.0.1` en producción. Rechazar arranque si no está configurado.
+
+## H-NUEVO-99 — Archivos monolíticos muertos `config/settings.py` y `config/urls.py` coexisten con la configuración activa — MEDIO, ABIERTO
+- **Ubicación:** `config/settings.py` (1176 líneas, ~53 KB), `config/urls.py` (824 líneas, ~64 KB); `config/settings/__init__.py` y `config/urls/__init__.py` son los módulos activos.
+- **Descripción:** `DJANGO_SETTINGS_MODULE='config.settings'` resuelve al paquete `config/settings/`, y `ROOT_URLCONF='config.urls'` resuelve al paquete `config/urls/`. Los archivos `.py` planos son código muerto que contienen duplicados de settings y URL routes. Pueden desfasarse, confundir auditorías futuras o ser importados por scripts legacy por error. Contienen el fallback inseguro de `SECRET_KEY` y otra lógica de arranque duplicada.
+- **Riesgo:** configuración inconsistente, uso accidental, dificultad de mantenimiento, proliferación de secretos/defaults duplicados.
+- **Recomendación:** Eliminar `config/settings.py` y `config/urls.py` (o renombrar a `.bak`/`_legacy`) tras confirmar que ningún script los importa directamente. Usar solo la versión modular.
+
+## H-NUEVO-100 — `FACTURAMA_SANDBOX` por defecto `True` en producción si la variable no está definida — ALTO, CORREGIDO
+- **Ubicación:** `config/settings/ia.py:45` (`FACTURAMA_SANDBOX = os.environ.get('FACTURAMA_SANDBOX', 'True') == 'True'`); `config/settings/__init__.py:52-53` (`if DEBUG or IS_SANDBOX: FACTURAMA_SANDBOX = True`).
+- **Descripción:** El valor por omisión de la variable `FACTURAMA_SANDBOX` es `True`. En producción (`DEBUG=False`, `IS_SANDBOX=False`), si el operador no define explícitamente `FACTURAMA_SANDBOX=False`, el sistema continuará apuntando al entorno sandbox de Facturama en lugar del productivo. Esto generaría CFDI de prueba o fallos silenciosos en facturación real.
+- **Riesgo:** facturación incorrecta, timbrado de prueba en producción, incumplimiento fiscal.
+- **Recomendación:** Cambiar el default a `False` en producción o añadir validación de arranque que rechace `FACTURAMA_SANDBOX=True` si `IS_PRODUCTION`.
+
+## H-NUEVO-101 — `PRISLAB_TENANT_SHADOW_MODE` por defecto `True` y `PRISLAB_TENANT_STRICT_MODE` depende de entorno — MEDIO/ALTO, ABIERTO
+- **Ubicación:** `config/settings/security.py:229-237`.
+- **Descripción:** `PRISLAB_TENANT_SHADOW_MODE` es `True` por defecto. Si `PRISLAB_TENANT_STRICT_MODE` se desactiva (por ejemplo en staging cuando no es producción pero tampoco `DEBUG`), las consultas sin tenant en `TenantModel` no serán bloqueadas, solo logueadas. La combinación de dos flags permite que un entorno no-producción/no-debug opere sin aislamiento forzado.
+- **Riesgo:** fugas de datos entre tenants en entornos intermedios si `STRICT_MODE` se desactiva; dependencia de flags confusa.
+- **Recomendación:** Hacer que `PRISLAB_TENANT_STRICT_MODE` sea `True` por defecto en cualquier entorno que no sea desarrollo local. Documentar y forzar que `SHADOW_MODE` no anule `STRICT_MODE`.
+
+## H-NUEVO-102 — `PRISLAB_TRUSTED_PROXY_COUNT` y `PRISLAB_TRUSTED_PROXY_CIDRS` por defecto insuficientes — MEDIO, ABIERTO
+- **Ubicación:** `config/settings/security.py:241-256`.
+- **Descripción:** En producción `PRISLAB_TRUSTED_PROXY_COUNT` es `1` por defecto y `PRISLAB_TRUSTED_PROXY_CIDRS` incluye `127.0.0.0/8,::1/128`. Si el despliegue real no tiene exactamente un proxy confiable o si un atacante puede enviar `X-Forwarded-For` desde esos rangos, la dirección IP de origen podría ser spoofeada.
+- **Riesgo:** bypass de rate limiting, bloqueos de IP incorrectos, posibles decisiones de seguridad basadas en IP falsa.
+- **Recomendación:** Requerir que `PRISLAB_TRUSTED_PROXY_COUNT` y `PRISLAB_TRUSTED_PROXY_CIDRS` se configuren explícitamente en producción; validar en arranque. No confiar en `X-Forwarded-For` sin validar el proxy inmediato.
+
+## H-NUEVO-103 — `RESULTADOS_PUBLICOS_TOKEN_MAX_AGE_SECONDS` por defecto es 7 días — MEDIO, ABIERTO
+- **Ubicación:** `config/settings/base.py:306-308`.
+- **Descripción:** Los tokens de validación pública de resultados (`validar/resultado/<uuid:token>/`) tienen una vigencia máxima de 7 días por defecto. Si un enlace se filtra o se comparte, permanece activo toda una semana.
+- **Riesgo:** acceso prolongado a resultados de pacientes si el token se expone; violación de principio de mínima exposición.
+- **Recomendación:** Reducir el default a 24-48 horas (o el tiempo de entrega comercial). Permitir override por empresa.
+
+## H-NUEVO-104 — `ADMIN_IP_RESTRICTION_ENABLED` y `ADMIN_GROUP_RESTRICTION_ENABLED` desactivados por defecto — MEDIO, ABIERTO
+- **Ubicación:** `config/settings/base.py:340-342`.
+- **Descripción:** Las protecciones de `/admin/` por IP y por grupo están apagadas por defecto. En producción, si no se configuran, `/admin/` depende únicamente de `is_staff`/`is_superuser` y de la contraseña del usuario.
+- **Riesgo:** aumenta la superficie de ataque del admin; compromiso de una cuenta `is_staff` expone todo el admin.
+- **Recomendación:** Activar `ADMIN_GROUP_RESTRICTION_ENABLED` y `ADMIN_IP_RESTRICTION_ENABLED` por defecto en producción; requerir `ALLOWED_ADMIN_IPS` y grupos explícitos.
+
+## H-NUEVO-105 — `HL7_ACTIVE` puede activarse sin `HL7_ALLOWED_IPS` — MEDIO, ABIERTO
+- **Ubicación:** `config/settings/base.py:322-323`.
+- **Descripción:** `HL7_ACTIVE` se activa por env y `HL7_ALLOWED_IPS` es una lista vacía si no se configura. El receptor `api/iot/hl7/` puede depender de esta lista, pero si la validación es permisiva, un endpoint HL7 activo sin restricción de IP es una superficie de ataque.
+- **Riesgo:** inyección de resultados HL7 falsos desde cualquier origen; integridad de resultados comprometida.
+- **Recomendación:** En `security.py` o en la vista `receptor_hl7` rechazar `HL7_ACTIVE=True` si `HL7_ALLOWED_IPS` está vacío en producción.
+
+## H-NUEVO-106 — `IPS_INTERNAS_2FA_BYPASS` puede derivarse de `X-Forwarded-For` sin validar — MEDIO, ABIERTO
+- **Ubicación:** `config/settings/base.py:303-304`.
+- **Descripción:** La lista `IPS_INTERNAS_2FA_BYPASS` permite omitir 2FA si la IP del cliente coincide. Si el cálculo de IP confía en `X-Forwarded-For` y `PRISLAB_TRUSTED_PROXY_COUNT`/`CIDRS` no es estricto, un atacante externo puede enviar un `X-Forwarded-For` interno y saltarse 2FA.
+- **Riesgo:** bypass de 2FA por IP spoofing; acceso sin segundo factor.
+- **Recomendación:** No usar `X-Forwarded-For` crudo para `2FA_BYPASS`; usar la IP de conexión directa o validar el proxy. Documentar riesgo y desactivar por defecto.
+
+## H-NUEVO-107 — `config/urls/modulos.py` expone módulos sensibles bajo el mismo `urlpatterns` sin separación de autenticación — BAJO, ABIERTO
+- **Ubicación:** `config/urls/modulos.py:24-222`.
+- **Descripción:** Muchas rutas de director, médicos, RRHH, CRM, bienestar, etc. se registran en el mismo URLconf. La protección depende de cada vista individual. No hay un prefijo de middleware o URL namespace que exija rol común. Esto aumenta el riesgo de que una vista mal protegida exponga funcionalidad crítica.
+- **Riesgo:** elevación de privilegios si una vista individual omite `@login_required` o chequeo de rol/empresa.
+- **Recomendación:** Añadir tests de seguridad que visiten cada ruta con usuarios de distintos roles y verifiquen 403. Considerar decoradores de grupo en URLs críticas.
+
+## Confirmaciones positivas (config/) — CORRECTO
+- `config/settings/__init__.py` — estructura modular de settings (base, database, security, storage, ia, cache, celery, logging, local/production).
+- `config/settings/security.py` — validaciones de arranque: `SECRET_KEY`, `FERNET_KEY`, `LAB_VALIDATION_PIN`, `PRISLAB_ESCUDO_USUARIO_ID`, `PRISLAB_EMERGENCY_TENANT_BYPASS`, tokens de servicio.
+- `config/settings/base.py` — `DEBUG` default `False`; `AUTH_PASSWORD_VALIDATORS` con `min_length=10`; `SESSION_COOKIE_HTTPONLY=True`, `SESSION_COOKIE_SAMESITE='Lax'`; `ADMIN_IP_RESTRICTION_ENABLED`/`ADMIN_GROUP_RESTRICTION_ENABLED` existen como opt-in.
+- `config/settings/cache.py` — Redis/Channels comparten `REDIS_URL`; sesiones en cache cuando hay Redis.
+- `config/storage_backends.py` — `TenantS3Storage` inserta automáticamente `empresa_slug` en la ruta de S3; `GoogleDriveStorage` y `TenantDriveStorage` son compatibilidad histórica inactiva.
+- `config/admin_site.py` — `PrislabAdminSite` reorganiza admin por departamentos y filtra por grupos/rol del usuario; superusuario ve todo.
+
+---
+
+## BLOQUE 17 (core/ — middleware, tenant, RBAC, decoradores, vistas generales, 2FA y modelos base)
+
+## Nota de cierre parcial de H-013 (cross-check docs canónicas)
+- **Ubicación:** `docs/audit/PLAN_MAESTRO_LOCAL_AUDITORIA_EXTERNA.md:117-166`, `config/settings/base.py:192-193`, `core/middleware/rate_limit.py:126-137`, `core/middleware/__init__.py:1-30`, `find_by_name` para `admin_access_restrict`.
+- **Descripción:** H-013 afirmaba una deriva entre documentación y código: rate limit no atómico, límite `/api/` solo a POST, `LogAccesoExpedienteMiddleware` presente, `admin_access_restrict.py` presente y `TenantSubdomainMiddleware` activo. En la revisión actual del repositorio local: `RateLimitMiddleware` usa `cache.add`+`cache.incr` (contador atómico), el límite `/api/` aplica a todos los métodos, `LogAccesoExpedienteMiddleware` ya no aparece en `core/middleware/seguridad.py` ni `__init__.py`, `admin_access_restrict.py` no existe como fuente (sólo `.pyc` en `__pycache__`) y `TenantSubdomainMiddleware` está documentado como activo en la guía de auditoría.
+- **Estatus:** H-013 se considera cerrado en el código canónico actual.
+
+## H-NUEVO-108 — `BlindajeExpedienteMiddleware` no bloquea `DELETE` sobre notas selladas — MEDIO, CORREGIDO
+- **Ubicación:** `core/middleware/blindaje_expediente.py:42-48, 62-76`.
+- **Descripción:** El middleware solo intercepta métodos `POST`, `PUT`, `PATCH`. Una petición `DELETE` a una nota sellada puede llegar a la vista y ejecutarse; la señal `pre_save` no se dispara al borrar, con lo que la inmutabilidad forense se rompe.
+- **Riesgo:** eliminación de notas clínicas selladas, pérdida de trazabilidad NOM-004.
+- **Recomendación:** Incluir `DELETE` en el filtro de métodos y/o mover la protección a `pre_delete` en el modelo.
+
+## H-NUEVO-109 — `BlindajeExpedienteMiddleware` delega el desbloqueo a un permiso Django convencional no mapeado en RBAC — BAJO/MEDIO, ABIERTO
+- **Ubicación:** `core/middleware/blindaje_expediente.py:68`.
+- **Descripción:** Verifica `request.user.has_perm('core.desbloquear_nota_sellada')`, un permiso de modelo no listado en `core/rbac/permissions.py`. Si un administrador Django lo asigna manualmente, un usuario puede desbloquear notas selladas sin pasar por el mapa central de roles.
+- **Riesgo:** desbloqueo forense no controlado por el RBAC central.
+- **Recomendación:** Alinear con `PERMISSION_MAP` o con un permiso RBAC explícito; registrar en `LogAccionSensible`.
+
+## H-NUEVO-110 — `SentinelTelemetryMiddleware` captura y persiste `request.POST`/`GET` en incidencias sin garantía de saneado de secretos — MEDIO, ABIERTO
+- **Ubicación:** `core/middleware/sentinel.py:677-697`.
+- **Descripción:** `_registrar_incidencia_async` envuelve `request.GET` y `request.POST` con `sanitizar_datos` y los guarda en `IncidenciaSentinel.datos_request`. Si `sanitizar_datos` (definido en `consultorio.sentinel_service`) no enmascara claves como contraseñas, tokens, PINs o `csrfmiddlewaretoken`, los datos sensibles quedan almacenados en la tabla.
+- **Riesgo:** exposición de credenciales, PII o tokens en tabla de incidencias.
+- **Recomendación:** Verificar/mostrar el saneador; adicionar claves en lista de ofuscación; enmascarar automáticamente antes de guardar.
+
+## H-NUEVO-111 — `SentinelTelemetryMiddleware` ejecuta auto-cleanup y DB close en hilo daemon sin protección de concurrencia — MEDIO, ABIERTO
+- **Ubicación:** `core/middleware/sentinel.py:109-181, 518-559`.
+- **Descripción:** El contador de requests lentos es una variable de clase (`_slow_request_count`) no protegida por locks. Llegados a 5, dispara `_disparar_auto_cleanup`, que corre en un hilo daemon, llama `Session.objects.filter(...).delete()` y `close_old_connections()`. El cierre de conexiones en un hilo daemon puede afectar conexiones compartidas y el contador no es seguro en concurrencia.
+- **Riesgo:** race conditions, cierre de conexiones en uso, degradación de performance.
+- **Recomendación:** Usar un lock para `_slow_request_count`; evitar `close_old_connections()` global o limitarlo al hilo actual; separar responsabilidades.
+
+## H-NUEVO-112 — `SentinelTelemetryMiddleware` redirige a la misma URL tras `DatabaseError` sin protección anti-loop — BAJO, ABIERTO
+- **Ubicación:** `core/middleware/sentinel.py:468-473`.
+- **Descripción:** `_repair_database_error` retorna `HttpResponseRedirect(path)` para reintentar. Si la base de datos sigue caída, el navegador recarga la misma URL y genera un bucle hasta que el usuario aborte.
+- **Riesgo:** bucle de redirecciones, mala UX, posible carga innecesaria.
+- **Recomendación:** Redirigir a una ruta segura como `/home/` o devolver `503` con `Retry-After` en lugar de redirigir a `path`.
+
+## H-NUEVO-113 — `EmpresaIdentityMiddleware` puede asignar un usuario sin `empresa` a `pk=1` en entornos multi-tenant — MEDIO, CORREGIDO
+- **Ubicación:** `core/middleware/empresa.py:78-81`, `core/utils/default_empresa.py:15-41`.
+- **Descripción:** Si `request.user.empresa` es `None`, el middleware llama `resolve_default_empresa_sistema()`. Si hay más de una empresa activa y `pk=1` existe, retorna `Empresa(pk=1)` sin más validación. Ese usuario pasa `PRISLAB_TENANT_STRICT_MODE` y ve datos de `pk=1` aunque pertenezca a otro tenant.
+- **Riesgo:** fuga cross-tenant para usuarios legacy con `empresa` nula.
+- **Recomendación:** En multi-tenant eliminar el fallback a `pk=1`; requerir `PRISLAB_DEFAULT_EMPRESA_ID` explícito o bloquear login de usuarios sin `empresa`.
+
+## H-NUEVO-114 — `TenantSubdomainMiddleware` intenta resolver `Empresa` por campos inexistentes (`subdominio`, `slug`) — BAJO, ABIERTO
+- **Ubicación:** `core/middleware/tenant_subdomain.py:1-144`, `core/models/base.py:69-154`.
+- **Descripción:** El middleware busca empresa por `subdominio`, `slug` o `nombre__iexact`, pero `core.models.Empresa` no define los campos `subdominio` ni `slug`. En la práctica el fallback es `nombre__iexact`, lo cual no es fiable para nombres compuestos.
+- **Riesgo:** resolución incorrecta de tenant para usuarios anónimos; login/branding incorrecto; denegación innecesaria en modo estricto.
+- **Recomendación:** Añadir campos `subdominio`/`slug` a `Empresa` con `unique=True` o usar un modelo relacionado `EmpresaSubdominio`.
+
+## H-NUEVO-115 — `FeatureFlagMiddleware` permite acceso si `request.modulos_activos` no está definido — BAJO/MEDIO, CORREGIDO
+- **Ubicación:** `core/middleware/feature_flags.py:119-123`.
+- **Descripción:** Si `request.modulos_activos` no existe, `getattr(request, 'modulos_activos', {})` retorna `{}` y `.get(modulo_requerido, True)` devuelve `True`. Si `EmpresaIdentityMiddleware` falla o no se ejecuta, se bypassa el bloqueo de módulos.
+- **Riesgo:** acceso a módulos no contratados por fallo de orden de middleware o excepción previa.
+- **Recomendación:** Cambiar el default a `False` cuando no hay empresa/contexto; adoptar el principio de fallar cerrado.
+
+## H-NUEVO-116 — `TenantStorageMiddleware` genera slug de tenant a partir del `nombre` con posible colisión — BAJO/MEDIO, ABIERTO
+- **Ubicación:** `core/middleware/seguridad.py:100-133`.
+- **Descripción:** El "slug" para `TenantS3Storage` se deriva de `empresa.nombre` reemplazando espacios/barras y truncando a 50 caracteres. No hay campo `slug` único en `Empresa`; dos empresas con el mismo nombre normalizado podrían compartir el prefijo en S3.
+- **Riesgo:** colisión de rutas de archivos entre tenants, potencial fuga de documentos.
+- **Recomendación:** Usar `empresa.id` o un `slug` único e inmutable para el prefijo de S3; validar unicidad.
+
+## H-NUEVO-117 — `CustomLoginView` omite 2FA para IPs internas usando `REMOTE_ADDR`, que puede ser 127.0.0.1 en despliegues locales — MEDIO, ABIERTO
+- **Ubicación:** `core/views/general.py:424-437`, `core/views/autenticacion_2fa.py:39-64`.
+- **Descripción:** `CustomLoginView.form_valid` consulta `_ip_exenta_2fa`, que compara `request.META.get('REMOTE_ADDR')` contra `IPS_INTERNAS_2FA_BYPASS`. Si Nginx y Gunicorn están en el mismo host y `REMOTE_ADDR` es `127.0.0.1` para todo cliente, y el operador incluye `127.0.0.0/8`, cualquier cliente salta 2FA.
+- **Riesgo:** bypass de 2FA por configuración de red; compromiso de cuentas con 2FA obligatorio.
+- **Recomendación:** Documentar que `IPS_INTERNAS_2FA_BYPASS` solo debe usarse con NAT confiable y nunca con `127.0.0.0/8` en producción.
+
+## H-NUEVO-118 — Código maestro de recuperación 2FA permite bypass global con un único secreto — MEDIO, ABIERTO
+- **Ubicación:** `core/views/autenticacion_2fa.py:84-92`.
+- **Descripción:** `_verificar_codigo_maestro` compara `hashlib.sha256(codigo)` contra `hashlib.sha256(PRISLAB_MASTER_RECOVERY_CODE)`. Si el código maestro se filtra o es débil, un atacante puede autenticarse como cualquier usuario con 2FA.
+- **Riesgo:** bypass universal de 2FA con un único secreto.
+- **Recomendación:** Vincular códigos de recuperación al usuario, rotar periódicamente, almacenar hash fuerte, aplicar rate-limit por cuenta.
+
+## H-NUEVO-119 — `Usuario.totp_secret` se almacena en texto plano en la base de datos — ALTO, ABIERTO
+- **Ubicación:** `core/models/base.py:388-393`.
+- **Descripción:** El campo `totp_secret` es un `CharField` sin cifrado. Si la base de datos se ve comprometida, un atacante puede generar códigos TOTP y superar el 2FA de cualquier usuario. El flujo actual utiliza `DispositivoTOTP`, pero este campo heredado permanece expuesto.
+- **Riesgo:** bypass total de 2FA tras exfiltración de DB.
+- **Recomendación:** Cifrar `totp_secret` con `FERNET_KEY` o eliminar el campo si ya no se usa; auditar `seguridad.models.DispositivoTOTP` para confirmar cifrado.
+
+## H-NUEVO-120 — `Usuario.sucursal` y `sucursal_id` asignan M2M sin verificar que la sucursal pertenezca a la empresa del usuario — BAJO/MEDIO, ABIERTO
+- **Ubicación:** `core/models/base.py:443-482`.
+- **Descripción:** Los setters `sucursal` y `sucursal_id` (compatibilidad) reciben un objeto o un `pk` y limpian/crean la relación M2M sin validar `sucursal.empresa == usuario.empresa`. Un administrador o API que reciba un `sucursal_id` de otro tenant creará la asignación.
+- **Riesgo:** fuga de datos entre sucursales/tenants por asignaciones incorrectas.
+- **Recomendación:** Validar `sucursal.empresa == usuario.empresa` en ambos setters y en `add_sucursal`.
+
+## H-NUEVO-121 — `ConfiguracionModulos` almacena y verifica PINs de 4 dígitos, espacio reducido y sin limitación de intentos — MEDIO, ABIERTO
+- **Ubicación:** `core/models/base.py:310-323, 249-258`.
+- **Descripción:** `pin_precio_neto` y `pin_cancelacion_venta` son hashes de 4 dígitos. El espacio de claves es 10.000 y, aunque esté hasheado, es vulnerable a fuerza bruta offline. `verificar_pin_farmacia` no limita intentos ni invalida tras varios fallos.
+- **Riesgo:** bypass de PINs de farmacia por fuerza bruta.
+- **Recomendación:** Aumentar longitud mínima a 6-8 dígitos; rate-limit en vistas que verifican PIN; invalidar tras N intentos consecutivos.
+
+## H-NUEVO-122 — `module_required` no concede bypass a superusuarios ni maneja ausencia de `ConfiguracionModulos` — BAJO, ABIERTO
+- **Ubicación:** `core/decorators.py:325-378`.
+- **Descripción:** `module_required` lee `request.user.empresa.configuracion_modulos` sin bypass para `is_superuser` y sin capturar de forma informativa `RelatedObjectDoesNotExist`. Un superusuario sin empresa o sin `ConfiguracionModulos` obtiene 403 si una vista usa este decorador directamente, aunque `FeatureFlagMiddleware` ya lo permita.
+- **Riesgo:** inconsistencia de permisos y posible bloqueo de admin.
+- **Recomendación:** Permitir `is_superuser`; validar empresa y mostrar mensaje claro; reutilizar lógica de `FeatureFlagMiddleware`.
+
+## H-NUEVO-123 — `ingreso_magico` y `crear_admin_rescate` exponen backdoor en modo DEBUG con contraseña por defecto — BAJO/MEDIO, ABIERTO
+- **Ubicación:** `core/views/general.py:185-241`.
+- **Descripción:** Ambas vistas están bloqueadas en producción (`if not _s.DEBUG`). Si `DEBUG` se habilita accidentalmente, crean/loguean un superusuario con contraseña `admin123` por defecto (variable de entorno opcional).
+- **Riesgo:** puerta trasera de emergencia con credenciales débiles.
+- **Recomendación:** Eliminar estas vistas en el paquete de producción; si se necesitan, generar contraseña aleatoria y notificar por canal seguro; no confiar solo en `DEBUG`.
+
+## H-NUEVO-124 — `rate_limit` decorador y `RateLimitMiddleware` tienen condición de carrera en el fallback `cache.set` — BAJO, ABIERTO
+- **Ubicación:** `core/decorators.py:92-100`, `core/middleware/rate_limit.py:126-137`.
+- **Descripción:** Ambos usan `cache.add` + `cache.incr`, y si `cache.incr` lanza `ValueError`, recurren a `cache.set(key, 1)`. En una ventana de conteo concurrente, dos requests pueden ejecutar `set` y reiniciar el contador, permitiendo un pico momentáneo superior al límite.
+- **Riesgo:** límite de tasa parcialmente evadido en condición de carrera.
+- **Recomendación:** No usar `set` como fallback; usar exclusivamente `cache.add` con `timeout` de la ventana o una operación atómica del backend de cache.
+
+## H-NUEVO-125 — `log_frontend_error` acepta JSON arbitrario y loguea campos del cliente sin sanitización contra inyección de logs — BAJO, ABIERTO
+- **Ubicación:** `core/views/general.py:247-308`.
+- **Descripción:** Los campos del JSON (`message`, `source`, `stack`, `url`) se interpolan directamente en el mensaje de log. Si un cliente envía caracteres de control, newlines o secuencias que confundan al parser, puede generar log injection o falsificación de eventos.
+- **Riesgo:** manipulación de logs de frontend; dificultad forense.
+- **Recomendación:** Sanitizar/escapar caracteres no imprimibles y newlines; validar `source` y `url`; usar logging estructurado con JSON.
+
+## H-NUEVO-126 — `core/rbac/permissions.py::require_sucursal_access` no valida `sucursal_id` en querystring ni body — BAJO, ABIERTO
+- **Ubicación:** `core/rbac/permissions.py:388-422`.
+- **Descripción:** El decorador lee `sucursal_id` exclusivamente de `kwargs` (URL). Vistas que reciben `sucursal_id` por `request.GET` o `request.POST` no quedan protegidas por este decorador.
+- **Riesgo:** bypass de aislamiento por sucursal.
+- **Recomendación:** Verificar también `request.GET` y `request.POST` o centralizar validación en la vista.
+
+## H-NUEVO-127 — `AdminAccessMiddleware` no verifica `is_staff` antes de permitir acceso a `/admin/` — BAJO, ABIERTO
+- **Ubicación:** `core/middleware/admin_access.py:26-45`.
+- **Descripción:** Solo verifica el grupo `ADMIN_SISTEMA` y la IP. Si un usuario tiene el grupo pero no `is_staff`, el middleware lo deja pasar; Django admin le mostrará 403 posteriormente.
+- **Riesgo:** bypass parcial (llega al admin aunque luego falle); el filtro de middleware debería requerir `is_staff`.
+- **Recomendación:** Añadir `request.user.is_staff or request.user.is_superuser` a las condiciones de acceso.
+
+## H-NUEVO-128 — `ActividadUsuarioMiddleware` escribe en base de datos en cada request — BAJO, ABIERTO
+- **Ubicación:** `core/middleware/actividad_usuario.py:17-33`.
+- **Descripción:** En cada request guarda `usuario.save(update_fields=['tiempo_actividad_inicio'])`. Esto genera una escritura por request, afectando rendimiento y generando contienda en la fila del usuario.
+- **Riesgo:** DB lock, contienda, posible degradación de latencia.
+- **Recomendación:** Actualizar solo cuando cambia el estado (inicio/nueva sesión); usar caché o campo `last_activity` menos frecuente.
+
+## Confirmaciones positivas (core/ — middleware, tenant, RBAC, decoradores, vistas y modelos base) — CORRECTO
+- `core/tenant.py` — `TenantQuerySet`/`TenantManager` filtran automáticamente por `empresa`/`sucursal`; `tenant_bypass` con context manager y auditoría; `strict_mode` y `shadow_mode` documentados; `tenant_required`/`tenant_protected_get` centralizan acceso.
+- `core/middleware/empresa.py` — `EmpresaIdentityMiddleware` inyecta `request.empresa_actual`, `request.sucursal_actual` y llama `set_current_empresa`; limpia thread-local en `finally`; `X-Sucursal-ID` validado contra asignaciones M2M.
+- `core/middleware/rate_limit.py` — uso de `cache.add`+`cache.incr` atómico; límite `/api/` aplica a todos los métodos; `Retry-After` en respuestas 429.
+- `core/middleware/admin_access.py` — usa `REMOTE_ADDR` (no `X-Forwarded-For`) para validación de IP de `/admin/`.
+- `core/middleware/seguridad.py` — `SessionTimeoutMiddleware` cierra sesión tras 8h de inactividad.
+- `core/middleware/blindaje_expediente.py` — pre-save evita modificación de notas selladas y crea snapshots SHA256 por señal.
+- `core/middleware/read_only.py` — kill-switch global `PRISLAB_READ_ONLY` bloquea escrituras salvo excepciones auditadas.
+- `core/rbac/permissions.py` — mapa de permisos por rol, decoradores `require_permission`, `require_roles`, `deny_roles`, `require_sucursal_access`; verificación M2M de sucursales.
+- `core/utils/tenant_strict.py` — `empresa_desde_request` no usa `Empresa.objects.first()`; requiere empresa del usuario o sesión explícita; `empresa_desde_management` requiere `--empresa-id`.
+- `core/decorators.py` — `require_api_token` usa `secrets.compare_digest`; `check_payment_status` y `check_results_validated` filtran por `empresa`.
+- `core/views/autenticacion_2fa.py` — rate limit de intentos fallidos (5 intentos, ventana 15 min), códigos backup, alerta CISO por código maestro.
+- `core/models/base.py` — `Usuario` hereda `AbstractUser` con FK a `Empresa` y M2M a `Sucursal`; `ConfiguracionModulos` hereda de `TenantModel` y encripta PINs en `save`; `Empresa` encripta `byok_gemini_api_key_enc` y `drive_client_config_enc` con Fernet.
+
+## Bloque 18 — core/models/ (modelos de negocio, clínica, laboratorio, ventas, finanzas, RRHH, operaciones, forense, IA, blindaje) — NUEVO
+
+### H-NUEVO-129: Modelos críticos de `core/models` no heredan `TenantModel`/`TenantManager`, subvirtiendo el aislamiento multi-tenant
+- **Archivos afectados principales**: `core/models/clinico.py`, `core/models/laboratorio.py`, `core/models/ventas.py`, `core/models/finanzas.py`, `core/models/rrhh.py`, `core/models/operaciones.py`, `core/models/catalogos.py`, `core/models/forense.py`, `core/models/ia_config.py`, `core/models/pris.py`, `core/models/expediente_blindaje.py`, `core/models/bienestar_staff.py`, `core/models/base.py`.
+- **Severidad**: Crítica.
+- **Hallazgo**: Decenas de modelos que contienen datos clínicos, financieros, de nómina, operativos, forenses, de IA y de recursos humanos definen `empresa`/`sucursal` como FK pero heredan `models.Model` y usan `objects = models.Manager()` (o `AppendOnlyManager` en `AuditLog`/`ForenseAcceso`, que tampoco filtra por tenant). Esto significa que `TenantQuerySet`/`TenantManager` de `core/tenant.py` no filtra automáticamente sus queries; el aislamiento depende de que cada vista/endpoint/admin recuerde agregar `filter(empresa=...)` manualmente. Cualquier omisión permite listar, editar o borrar registros de otro tenant.
+- **Evidencia**: `Select-String '^class \w+\((TenantModel|models\.Model)\)'` sobre `core/models/*.py` muestra que solo `Paciente` (pacientes.py:17), `Producto` (catalogos.py:18), `Lote` (catalogos.py:158), `OrdenDeServicio` (laboratorio.py:384), `Venta` (ventas.py:262) y `PagoOrden` (ventas.py:524) heredan `TenantModel`; todas las demás clases con `empresa` son `models.Model`. Ejemplos críticos:
+  - Clínica: `CitaMedica` (clinico.py:19), `HistoriaClinica` (78), `SignosVitales` (155), `ConsultaMedica` (218), `CertificadoMedico` (331), `NotaClinicaSOAP` (394), `PlantillaNotaClinica` (431), `Antecedente` (465), `FirmaDigital` (491), `AudioConsulta` (512), `EstudioImagen` (559), `ImagenDetalle` (642), `PlantillaEstudioImagen` (671), `HistorialCambiosConsulta` (703), `LogAccesoExpediente` (741), `ConsentimientoInformado` (779), `RegistroAuditoriaConsentimiento` (815).
+  - Laboratorio: `TomaMuestra` (laboratorio.py:19), `AudioTomaMuestra` (60), `EnvioMaquila` (106), `BitacoraTemperatura` (142), `MantenimientoEquipo` (158), `HistorialResultados` (178), `ResultadoParametro` (216), `DetalleOrden` (619), `PreOrdenLaboratorio` (673), `DetallePreOrden` (703).
+  - Ventas/finanzas: `Receta` (ventas.py:28), `RecetaItem` (140), `DemandaInsatisfecha` (172), `DispensacionReceta` (204), `DetalleVenta` (360), `DetalleVentaLote` (378), `DevolucionVenta` (412), `Pago` (489), `Gasto` (612), `AjusteInventario` (626), `GastoCaja` (651), `MovimientoCaja` (712), `GastoOperativo` (826), `FacturaSAT` (858), `SalesReturn` (893), `MetaVenta` (936), `CuentaPorCobrar` (958), `PagoCuentaPorCobrar` (1016), `NotaCredito` (1039); `PoliticaLimitesCaja` (finanzas.py:13), `GastoCajaEndurecido` (105), `CierreDiaConsolidado` (217), `TicketInvestigacionCaja` (340).
+  - RRHH: `Empleado` (rrhh.py:15), `Bitacora39A` (65), `EvaluacionDesempeno` (171), `DetalleEvaluacion` (250), `PlanDesarrollo` (267), `RegistroAsistencia` (300), `PeriodoNomina` (346), `ReciboNomina` (391), `HorarioTrabajo` (462), `IncidenciaAsistencia` (493).
+  - Operaciones/forense/IA: `AuditLog` (operaciones.py:17), `BackupRegistro` (75), `MensajeInterno` (190), `SolicitudAutorizacion` (219), `IncidenciaOperativa` (262), `BuzonQuejas` (310), `PushSubscription` (415), `VoiceAuditLog` (451), `NotificacionSistema` (535), `BitacoraEntregaResultados` (647), `ConversacionBienestar` (720), `AlertaBienestar` (755), `DocumentoCapacitacion` (805), `CapsulaSabiduria` (926); `UsoRecursosIA` (ia_config.py:13), `ReglaLocalIA` (ia_config.py:79); `AccionPRIS` (pris.py:11); `ForenseAcceso` (forense.py:13); `EvaluacionNOM035` (bienestar_staff.py:47), `DiarioEmocionalStaff` (95), `SesionCoachingStaff` (133), `AlertaBurnout` (182), `ProgramaCapacitacion` (221); `AuditoriaModel` (base.py:40), `DocumentoConocimiento` (524), `DatosFiscales` (575), `ControlCalidad` (601), `RutaLogistica` (624), `Usuario_Sucursal` (647).
+- **Riesgo**: Fuga multi-tenant de confidencialidad e integridad (ICR/IMC), datos clínicos, financieros y de nómina; incumplimiento de NOM-024-SSA3-2012, HIPAA y LFPDPPP.
+- **Recomendación**: Migrar todas las clases de negocio con `empresa` a `TenantModel` (o asignar `objects = TenantManager()` con `objects_all = models.Manager()` para admin global). Auditar y eliminar queries manuales que no filtren por empresa. Priorizar modelos clínicos, financieros y forenses.
+
+### H-NUEVO-130: `ExpedienteNotaSHA` y `HashRaizDiario` no son append-only ni tenant-scoped; anclaje forense global
+- **Archivo**: `core/models/expediente_blindaje.py`.
+- **Líneas**: `ExpedienteNotaSHA` (41-241), `HashRaizDiario` (825-973).
+- **Severidad**: Crítica.
+- **Hallazgo**: `ExpedienteNotaSHA` es `models.Model` (no `TenantModel`) y, aunque crea un hash SHA-256 al insertar, no impide actualizaciones ni borrados: `save()` recalcula el hash solo si `not self.pk`; una modificación posterior deja el hash obsoleto y `verificar_integridad()` falla silenciosamente. `HashRaizDiario` no tiene campo `empresa`; su `verificar_integridad_anclaje()` consulta `ExpedienteNotaSHA.objects.filter(timestamp_creacion__range=..., firmado_con_pin=True)` de **todos los tenants**, rompiendo el aislamiento del anclaje diario.
+- **Riesgo**: Ruptura de cadena forense sin detección; pérdida de evidencia legal NOM-004; fuga cross-tenant en trazabilidad.
+- **Recomendación**: Convertir `ExpedienteNotaSHA` a `TenantModel` + `AppendOnlyManager`, y aplicar `reject_append_only_mutation`. Agregar `empresa` a `HashRaizDiario` y filtrar `ExpedienteNotaSHA` por empresa en `verificar_integridad_anclaje()`.
+
+### H-NUEVO-131: Archivos clínicos, forenses y de recetas se almacenan con Google Drive heredado en lugar de S3 multi-tenant
+- **Archivos**: `core/models/clinico.py`, `core/models/laboratorio.py`, `core/models/ventas.py`.
+- **Líneas**: `AudioConsulta.audio_archivo` (clinico.py:515-521), `ImagenDetalle.imagen` (clinico.py:646-650), `Receta.medico_firma_digital` (ventas.py:56-64), `ResultadoParametro.imagen_microscopio` (laboratorio.py:287-295).
+- **Severidad**: Alta.
+- **Hallazgo**: Estos `FileField`/`ImageField` usan `storage=get_google_drive_storage` y `upload_to='core.utils.paths.generar_ruta_drive...'`. `config/storage_backends.py` comenta que Google Drive es histórico/deshabilitado y define `TenantS3Storage` para Vultr S3 con prefijo `empresa_slug`. Los campos críticos no aprovechan el aislamiento ni la disponibilidad de S3.
+- **Riesgo**: Pérdida de evidencia clínica/firma si Drive se desactiva; falta de aislamiento de archivos por tenant; incumplimiento NOM-004/HIPAA.
+- **Recomendación**: Migrar todos los `FileField`/`ImageField` clínicos a `TenantS3Storage` o `default_storage` configurado con tenant; eliminar `get_google_drive_storage` de modelos clínicos.
+
+### H-NUEVO-132: Generación de folios y tokens no incluye empresa y depende de conteos no atómicos
+- **Archivos**: `core/models/ventas.py`, `core/models/clinico.py`, `core/models/laboratorio.py`, `core/models/expediente_blindaje.py`.
+- **Líneas**: `Receta.folio_receta` (ventas.py:123-128), `Venta.folio_operacion`/`linea_captura` (ventas.py:352-357), `CertificadoMedico.folio_certificado` (clinico.py:375-388), `OrdenDeServicio.folio_orden` (laboratorio.py:597-602), `NotaClinicaSellar.folio_unico` (expediente_blindaje.py:494-506).
+- **Severidad**: Media/Alta.
+- **Hallazgo**: `Receta.save()` cuenta `Receta.objects.filter(folio_receta__startswith='REC-YYYYMM-')` sin filtrar por empresa y `Receta.empresa` es nullable. `Venta.linea_captura` genera `uuid.uuid4().hex[:12].upper()` con `unique=True` global. Otros folios usan conteos `count()` +1 sin `select_for_update()` ni transacción atómica, proclives a condiciones de carrera bajo carga concurrente.
+- **Riesgo**: Violación de constraints `unique` por folios duplicados; colisiones cross-tenant; truncamiento de UUID reduce espacio de claves.
+- **Recomendación**: Envolver generación de folios en `transaction.atomic()` + `select_for_update()`; incluir `empresa_id` en prefijos y constraints; usar UUID completo para `linea_captura` y agregar prefijo tenant.
+
+### H-NUEVO-133: `CatalogoCIE10` y `HashRaizDiario` son catálogos/anchajes globales sin `empresa`
+- **Archivo**: `core/models/expediente_blindaje.py`.
+- **Líneas**: `CatalogoCIE10` (755-818), `HashRaizDiario` (825-973).
+- **Severidad**: Media.
+- **Hallazgo**: `CatalogoCIE10` define `codigo` como `primary_key=True` y carece de `empresa`; una edición desde admin afecta a todos los tenants. `HashRaizDiario` tampoco tiene `empresa`, por lo que su hash raíz diario agrega hashes de todos los tenants.
+- **Riesgo**: Integridad del catálogo diagnóstico; fuga/alteración cross-tenant en evidencia forense.
+- **Recomendación**: Agregar `empresa` a `HashRaizDiario` y calcular una raíz por tenant. Proteger `CatalogoCIE10` con permisos de superusuario o clonar por empresa si se requiere personalización.
+
+### H-NUEVO-134: `Receta` y `RecetaItem` no son `TenantModel`, `empresa` es nullable y folio es global
+- **Archivo**: `core/models/ventas.py`.
+- **Líneas**: `Receta` (28-138), `RecetaItem` (140-165).
+- **Severidad**: Alta.
+- **Hallazgo**: `Receta` hereda `models.Model`; `empresa` es `ForeignKey(..., null=True, blank=True)` y `Receta.save()` genera `folio_receta` con conteo global sin filtrar por empresa. `RecetaItem` carece de `empresa`. Al vincularse con `Venta`, `OrdenDeServicio` y `DispensacionReceta`, la falta de scoping automático es un vector de fuga directo.
+- **Riesgo**: Fuga de recetas entre tenants; duplicación de folios; trazabilidad COFEPRIS comprometida.
+- **Recomendación**: Hacer `Receta` y `RecetaItem` `TenantModel`; eliminar `null=True` de `empresa` en `Receta`; filtrar folio por empresa en `save()`.
+
+### H-NUEVO-135: `Medico.lab_validation_pin_hash` y `ConfiguracionModulos` PIN se almacenan como SHA-256 sin sal y con poca entropía
+- **Archivos**: `core/models/catalogos.py`, `core/models/base.py`.
+- **Líneas**: `Medico.lab_validation_pin_hash` (catalogos.py:256-261), `ConfiguracionModulos` (base.py:261-330).
+- **Severidad**: Media.
+- **Hallazgo**: El PIN de validación del médico se guarda como `SHA256(pin_limpio)` (64 hex, sin sal). `NotaClinicaSellar._validar_pin_medico` (expediente_blindaje.py:577-594) compara hashes hex directamente. El PIN de módulos de `ConfiguracionModulos` también es corto (4 dígitos). Un ataque offline por fuerza bruta es factible si se exfiltra la base.
+- **Riesgo**: Falsificación de firma médica; incumplimiento de NOM-004/FES.
+- **Recomendación**: Usar `bcrypt`/`argon2` con sal para `lab_validation_pin_hash`; exigir longitud mínima > 6; limitar intentos en `sellar_con_pin`.
+
+### H-NUEVO-136: `AuditLog` y `ForenseAcceso` son append-only pero no `TenantModel`
+- **Archivos**: `core/models/operaciones.py`, `core/models/forense.py`.
+- **Líneas**: `AuditLog` (operaciones.py:17-70), `ForenseAcceso` (forense.py:13-93).
+- **Severidad**: Media.
+- **Hallazgo**: Ambos usan `AppendOnlyManager` y `reject_append_only_mutation`, lo cual es positivo, pero `AppendOnlyManager` no hereda de `TenantManager`; por tanto, las queries no se filtran automáticamente por `empresa`. `AuditLog.datos_nuevos/datos_anteriores` es `JSONField` libre y podría incluir PII sin normalizar.
+- **Riesgo**: Lectura de logs de auditoría o forenses de otro tenant si la vista no filtra; fuga de PII en logs.
+- **Recomendación**: Crear `TenantAppendOnlyManager` que combine `TenantQuerySet` con `AppendOnlyQuerySet`; aplicarlo a `AuditLog` y `ForenseAcceso`. Normalizar/mascarar PII en `datos_nuevos`.
