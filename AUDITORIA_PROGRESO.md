@@ -817,4 +817,7 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - **Seguridad de configuración:** el fallback de `SECRET_KEY` solo existe para desarrollo; producción falla al arrancar si falta una clave segura. Se verificó `DEBUG=False`, `IS_PRODUCTION=True` y salud productiva posterior al despliegue.
 - **Deuda abierta real:** reproducibilidad de dependencias. Producción tiene Django `5.0.6`, mientras `requirements.txt` declara `Django>=5.1.13,<5.2`; además hay paquetes transitivos instalados que no están declarados. Requiere una matriz de compatibilidad, lock reproducible y nueva auditoría SBOM antes de cambiar versiones.
 - **Dependencia sensible:** producción contiene `chromadb==1.5.9`; su remediación queda bloqueada hasta validar una versión compatible y el resultado de `pip-audit`, sin cambiarla a ciegas.
+- **Remediación aplicada:** Chroma fue retirado del RAG y del entorno productivo; `RAG_BACKEND=sqlite`, `pip check` y salud productiva confirmados.
+- **Remediación aplicada:** producción fue alineada a Django `5.2.16`; `manage.py check`, 15 pruebas focalizadas y servicios activos confirmados.
+- **Pendiente separado:** lock transitivo reproducible con hashes y adopción en CI/despliegue; no se considera cerrado por tener solo requisitos directos.
 - **Conclusión:** Imperium confirma compilación sin bloqueo, pero no autoriza por sí solo la declaración enterprise-ready. Los controles de seguridad, tenancy, RBAC, LIMS, dependencias y flujos humanos mantienen sus evidencias independientes.

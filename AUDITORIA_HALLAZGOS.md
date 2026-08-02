@@ -1134,8 +1134,16 @@ Los comandos legacy conservados por compatibilidad permanecen bloqueados con `Co
 
 ## Remediación crítica de dependencia — ChromaDB
 
-**Estado:** **CORREGIDO EN CÓDIGO; DESINSTALACIÓN PRODUCTIVA PENDIENTE DE EJECUCIÓN CONTROLADA**
+**Estado:** **CORREGIDO, RETIRADO DE PRODUCCIÓN Y VERIFICADO**
 
 OSV/GitHub Advisory `GHSA-f4j7-r4q5-qw2c` / `PYSEC-2026-311` afecta `chromadb` `1.0.0` a `1.5.9` por inyección de código preautenticada. PRISLAB no necesita ese paquete: `core/utils/rag_engine.py` ya contiene backend SQLite persistente con búsqueda coseno.
 
-La corrección fuerza SQLite, elimina la importación efectiva de Chroma y conserva únicamente un guard de compatibilidad que siempre devuelve `False`. El paquete debe retirarse del entorno virtual productivo y verificarse la ingestión/consulta RAG antes de cerrar definitivamente este hallazgo.
+La corrección fuerza SQLite y elimina la importación efectiva de Chroma. `chromadb` fue retirado del entorno virtual productivo; la aplicación confirmó `RAG_BACKEND=sqlite`, `pip check` no reportó dependencias rotas y la salud productiva permaneció HTTP 200 con base de datos/cache operativos.
+
+## Remediación de desalineación Django
+
+**Estado:** **CORREGIDO Y VERIFICADO**
+
+Producción tenía `Django==5.0.6` aunque el checkout usaba la rama `5.1`. Se actualizó el requisito a `Django>=5.2.16,<5.3` y el VPS quedó en `Django==5.2.16`, rama soportada al momento de la corrección. `manage.py check`, 15 pruebas focalizadas, `pip check` y reinicio de Gunicorn/Celery/Celery Beat pasaron correctamente.
+
+**Pendiente separado:** generar `requirements.lock` con dependencias transitivas y hashes. No se marca como resuelto hasta que el lock se genere desde un entorno probado y CI/producción lo consuman.
