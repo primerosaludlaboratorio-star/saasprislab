@@ -1128,7 +1128,7 @@ Los comandos legacy conservados por compatibilidad permanecen bloqueados con `Co
 
 **No aplicable:** `audit_tools/url_summary.py` no forma parte del checkout canónico actual. No se considera deuda del producto.
 
-**Abierto y no maquillado:** la reproducibilidad de dependencias. La instalación productiva verificada contiene `Django==5.0.6`, mientras `requirements.txt` exige `Django>=5.1.13,<5.2`; también existen dependencias transitivas instaladas que no aparecen en el archivo de requisitos. Producción contiene `chromadb==1.5.9`, que requiere remediación compatible y validación SBOM. No se cambia una dependencia de producción sin matriz de compatibilidad y pruebas.
+**Abierto y no maquillado:** la reproducibilidad del resto de dependencias. La instalación productiva verificada contenía `Django==5.0.6`, mientras el checkout exigía `Django>=5.1.13,<5.2`. El requisito se actualizó a `Django>=5.2.16,<5.3`; falta completar el lock transitivo después de validar la actualización en producción. También existen dependencias transitivas instaladas que no aparecen en el archivo de requisitos.
 
 **Interpretación:** “0 fallas runtime” significa que Imperium no reprodujo una falla ejecutable en su alcance estático; no significa “sistema enterprise certificado” ni elimina los hallazgos funcionales/tenant/RBAC documentados en otras auditorías.
 
