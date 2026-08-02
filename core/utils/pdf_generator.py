@@ -148,7 +148,13 @@ def render_to_pdf(template_path: str, context: Dict[str, Any], css_files: Option
         # Generar PDF
         logger.info("Generando PDF...")
         html = HTML(string=html_string, base_url=settings.STATIC_URL)
-        pdf_bytes = html.write_pdf(stylesheets=css_list, font_config=font_config)
+        # Never enable HTML presentational hints: WeasyPrint has an upstream
+        # advisory for CSS injection through unescaped presentational attrs.
+        pdf_bytes = html.write_pdf(
+            stylesheets=css_list,
+            font_config=font_config,
+            presentational_hints=False,
+        )
         
         logger.info(f"✓ PDF generado exitosamente: {len(pdf_bytes)} bytes")
         return pdf_bytes
@@ -477,7 +483,7 @@ def test_pdf_generation():
         
         # Generar PDF
         html = HTML(string=html_string)
-        pdf_bytes = html.write_pdf()
+        pdf_bytes = html.write_pdf(presentational_hints=False)
         
         # Guardar en archivo temporal (autoeliminado al salir)
         import tempfile
@@ -541,7 +547,7 @@ def generar_pdf_nota_sellada(nota_soap, sello, expediente_sha):
             raise ImportError("WeasyPrint no está instalado")
         
         html = HTML(string=html_string)
-        pdf_bytes = html.write_pdf()
+        pdf_bytes = html.write_pdf(presentational_hints=False)
         
         # Calcular hash del PDF
         hash_pdf = hashlib.sha256(pdf_bytes).hexdigest()

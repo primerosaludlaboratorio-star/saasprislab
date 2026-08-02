@@ -27,7 +27,7 @@ google-cloud-vision==3.14.0
 google-cloud-speech==2.40.0
 
 # Encriptación
-cryptography==48.0.0
+cryptography==48.0.1
 
 # Tareas asíncronas
 celery==5.3.6
@@ -49,10 +49,10 @@ openpyxl==3.1.2
 
 # PDFs e Imágenes
 reportlab==4.1.0
-weasyprint==61.2
-pillow==12.2.0
+weasyprint==68.0
+pillow==12.3.0
 lxml==6.1.1
-pypdf==6.13.0
+pypdf==6.14.2
 
 # Seguridad / Auth
 pyotp==2.9.0
@@ -65,7 +65,7 @@ pytz==2024.1
 qrcode[pil]==7.4.2
 six==1.16.0
 user-agents==2.2.0
-zeep==4.2.1
+zeep==4.3.3
 colorama==0.4.6
 psutil==7.2.2
 

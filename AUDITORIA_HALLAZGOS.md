@@ -1152,6 +1152,8 @@ Producción tenía `Django==5.0.6` aunque el checkout usaba la rama `5.1`. Se ac
 
 ### Remediación de reproducibilidad de dependencias — dependencias directas fijadas
 
-`requirements.txt` ya no usa rangos abiertos para las dependencias directas del runtime. Se fijaron Django `5.2.16`, `django-ninja` `1.6.2`, `psycopg` `3.3.4` y las bibliotecas Google, seguridad, servidor, datos, PDF e integración en las versiones verificadas del entorno productivo. La validación local con `pip install --dry-run -r requirements.txt` terminó sin conflicto de resolución.
+`requirements.txt` ya no usa rangos abiertos para las dependencias directas del runtime. Se fijaron Django `5.2.16`, `django-ninja` `1.6.2`, `psycopg` `3.3.4` y las bibliotecas Google, seguridad, servidor, datos, PDF e integración en versiones verificadas del entorno productivo. La primera auditoría productiva posterior detectó vulnerabilidades en cinco paquetes y se corrigió inmediatamente a `cryptography==48.0.1`, `weasyprint==68.0`, `Pillow==12.3.0`, `pypdf==6.14.2` y `zeep==4.3.3`.
+
+La nueva auditoría productiva dejó una alerta upstream sin versión corregida para `weasyprint==68.0` (`PYSEC-2026-3412`). Como mitigación en código, las tres rutas de generación de PDF fuerzan `presentational_hints=False`, que es la condición de explotación descrita por el aviso. La alerta no se marca como eliminada hasta que exista una versión upstream corregida o se sustituya WeasyPrint por un motor sin esta exposición.
 
 Esto elimina la deriva de versión directa entre checkout y producción. No equivale todavía a un lock transitivo reproducible: las dependencias indirectas y sus hashes siguen requiriendo un artefacto de lock consumido por CI y despliegue.
