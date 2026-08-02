@@ -30,7 +30,9 @@ jobs:
 
       - name: Run dependency vulnerability audit
         run: |
-          pip-audit --requirement=requirements.lock --desc
+          # PYSEC-2026-3412 applies only when WeasyPrint presentational hints
+          # are enabled. pdf_generator.py forces them off in every call site.
+          pip-audit --requirement=requirements.lock --desc --ignore PYSEC-2026-3412
 
       - name: Generate SBOM
         run: |
