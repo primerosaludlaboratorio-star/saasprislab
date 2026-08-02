@@ -1156,4 +1156,6 @@ Producción tenía `Django==5.0.6` aunque el checkout usaba la rama `5.1`. Se ac
 
 La nueva auditoría productiva dejó una alerta upstream sin versión corregida para `weasyprint==68.0` (`PYSEC-2026-3412`). Como mitigación en código, las tres rutas de generación de PDF fuerzan `presentational_hints=False`, que es la condición de explotación descrita por el aviso. La alerta no se marca como eliminada hasta que exista una versión upstream corregida o se sustituya WeasyPrint por un motor sin esta exposición.
 
+La prueba funcional también detectó que el VPS carecía de las bibliotecas nativas de Cairo/Pango requeridas por WeasyPrint. Se instalaron en producción y se incorporaron a `scripts/setup_servidor.sh` y `scripts/deploy_vps.sh`; la generación de PDF de prueba quedó confirmada con `PDF_OK=True`.
+
 Esto elimina la deriva de versión directa entre checkout y producción. No equivale todavía a un lock transitivo reproducible: las dependencias indirectas y sus hashes siguen requiriendo un artefacto de lock consumido por CI y despliegue.

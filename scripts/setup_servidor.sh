@@ -28,6 +28,8 @@ apt-get install -y --no-install-recommends \
     certbot python3-certbot-nginx \
     ufw redis-server \
     libpq-dev libssl-dev libffi-dev \
+    libcairo2 libpango-1.0-0 libpangoft2-1.0-0 libgdk-pixbuf-2.0-0 \
+    shared-mime-info fonts-dejavu-core \
     supervisor htop nano
 
 echo "[1/10] Sistema actualizado ✓"

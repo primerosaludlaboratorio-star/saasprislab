@@ -821,5 +821,6 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - **Remediación aplicada:** Chroma fue retirado del RAG y del entorno productivo; `RAG_BACKEND=sqlite`, `pip check` y salud productiva confirmados.
 - **Remediación aplicada:** producción fue alineada a Django `5.2.16`; `manage.py check`, 15 pruebas focalizadas y servicios activos confirmados.
 - **Auditoría productiva posterior:** `pip-audit` quedó sin vulnerabilidades en los paquetes corregidos; permanece una alerta upstream sin fix para WeasyPrint (`PYSEC-2026-3412`). Las rutas de PDF fuerzan `presentational_hints=False` como mitigación explícita y se mantiene abierta únicamente como riesgo externo pendiente de fix o sustitución del motor.
+- **Corrección funcional PDF:** producción recibió las bibliotecas nativas Cairo/Pango requeridas por WeasyPrint; `test_pdf_generation` confirmó `PDF_OK=True`. Los scripts de instalación y despliegue ya incluyen esas bibliotecas.
 - **Pendiente separado:** lock transitivo reproducible con hashes y adopción en CI/despliegue; no se considera cerrado por tener solo requisitos directos.
 - **Conclusión:** Imperium confirma compilación sin bloqueo, pero no autoriza por sí solo la declaración enterprise-ready. Los controles de seguridad, tenancy, RBAC, LIMS, dependencias y flujos humanos mantienen sus evidencias independientes.
