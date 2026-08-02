@@ -49,7 +49,7 @@ jobs:
             sudo apt-get install -y --no-install-recommends libgdk-pixbuf2.0-0
 
       - name: Install dependencies
-        run: pip install --upgrade pip && pip install -r requirements.txt
+        run: pip install --upgrade pip && pip install -r requirements.lock --require-hashes
 
       - name: Django system check
         run: python manage.py check
@@ -133,7 +133,7 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install --upgrade pip && pip install -r requirements.txt
+        run: pip install --upgrade pip && pip install -r requirements.lock --require-hashes
 
       - name: Django checks and migrations
         run: |

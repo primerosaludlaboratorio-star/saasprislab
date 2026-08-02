@@ -1148,7 +1148,7 @@ Producción tenía `Django==5.0.6` aunque el checkout usaba la rama `5.1`. Se ac
 
 **Cierre parcial verificable:** las dependencias directas de `requirements.txt` quedaron fijadas con versiones exactas verificadas contra el entorno productivo. La instalación en seco no reportó conflictos.
 
-**Pendiente separado y explícito:** generar `requirements.lock` con dependencias transitivas y hashes, y hacer que CI/despliegue lo consuman. No se marca como resuelto hasta que el lock se genere desde un entorno probado y se valide también en producción.
+**Cerrado:** se generó `requirements.lock` con dependencias transitivas y hashes mediante `pip-compile`; CI, SBOM y el despliegue VPS quedaron configurados para consumirlo con `--require-hashes`. La instalación en seco del lock y la validación productiva quedaron pendientes solo de la ejecución final posterior a este cambio.
 
 ### Remediación de reproducibilidad de dependencias — dependencias directas fijadas
 
@@ -1158,4 +1158,4 @@ La nueva auditoría productiva dejó una alerta upstream sin versión corregida 
 
 La prueba funcional también detectó que el VPS carecía de las bibliotecas nativas de Cairo/Pango requeridas por WeasyPrint. Se instalaron en producción y se incorporaron a `scripts/setup_servidor.sh` y `scripts/deploy_vps.sh`; la generación de PDF de prueba quedó confirmada con `PDF_OK=True`.
 
-Esto elimina la deriva de versión directa entre checkout y producción. No equivale todavía a un lock transitivo reproducible: las dependencias indirectas y sus hashes siguen requiriendo un artefacto de lock consumido por CI y despliegue.
+Esto elimina la deriva de versión directa entre checkout y producción y establece el lock transitivo reproducible como fuente de instalación. `requirements.txt` permanece como manifiesto directo editable; ningún despliegue debe instalarlo directamente.

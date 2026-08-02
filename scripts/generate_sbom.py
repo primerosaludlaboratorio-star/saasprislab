@@ -3,12 +3,12 @@
 generate_sbom.py
 
 Genera un SBOM (Software Bill of Materials) en formato CycloneDX JSON a partir de
-requirements.txt. No requiere instalar las dependencias.
+requirements.lock. No requiere instalar las dependencias.
 
 Uso:
     python scripts/generate_sbom.py
     python scripts/generate_sbom.py --output sbom.json
-    python scripts/generate_sbom.py --input requirements.txt --output sbom.json
+    python scripts/generate_sbom.py --input requirements.lock --output sbom.json
 """
 
 import argparse
@@ -96,8 +96,8 @@ def generate_sbom(requirements_path: Path, output_path: Path) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Genera SBOM CycloneDX desde requirements.txt")
-    parser.add_argument("--input", default="requirements.txt", help="Ruta a requirements.txt")
+    parser = argparse.ArgumentParser(description="Genera SBOM CycloneDX desde requirements.lock")
+    parser.add_argument("--input", default="requirements.lock", help="Ruta al archivo lock de requirements")
     parser.add_argument("--output", default="sbom.json", help="Ruta de salida del SBOM")
     args = parser.parse_args()
 

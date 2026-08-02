@@ -816,7 +816,7 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - **Falsos positivos o rutas inexistentes:** `audit_tools/url_summary.py` no existe en el checkout canónico actual; no se modifica ni se registra como deuda del producto.
 - **Seguridad de configuración:** el fallback de `SECRET_KEY` solo existe para desarrollo; producción falla al arrancar si falta una clave segura. Se verificó `DEBUG=False`, `IS_PRODUCTION=True` y salud productiva posterior al despliegue.
 - **Remediación aplicada:** `requirements.txt` fija las dependencias directas del runtime con versiones exactas verificadas contra producción. La resolución local en seco terminó sin conflictos.
-- **Pendiente separado real:** falta generar `requirements.lock` transitivo con hashes y hacer que CI/despliegue lo consuman; no se presenta como cerrado hasta verificar ese flujo.
+- **Remediación aplicada:** `requirements.lock` transitivo con hashes generado mediante `pip-compile`; CI, SBOM y despliegue VPS configurados para consumirlo con `--require-hashes`. Falta ejecutar la validación final posterior al cambio.
 - **Dependencia sensible:** producción contiene `chromadb==1.5.9`; su remediación queda bloqueada hasta validar una versión compatible y el resultado de `pip-audit`, sin cambiarla a ciegas.
 - **Remediación aplicada:** Chroma fue retirado del RAG y del entorno productivo; `RAG_BACKEND=sqlite`, `pip check` y salud productiva confirmados.
 - **Remediación aplicada:** producción fue alineada a Django `5.2.16`; `manage.py check`, 15 pruebas focalizadas y servicios activos confirmados.

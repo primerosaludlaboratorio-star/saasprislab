@@ -67,7 +67,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.lock --require-hashes
 
       - name: Create database schema
         run: |

@@ -105,7 +105,7 @@ chmod 600 "$APP_DIR/.env"
 log "Creando entorno virtual Python..."
 sudo -u "$APP_USER" $PYTHON_VERSION -m venv "$VENV_DIR"
 sudo -u "$APP_USER" "$VENV_DIR/bin/pip" install --upgrade pip --quiet
-sudo -u "$APP_USER" "$VENV_DIR/bin/pip" install -r "$APP_DIR/requirements.txt" --quiet
+sudo -u "$APP_USER" "$VENV_DIR/bin/pip" install -r "$APP_DIR/requirements.lock" --require-hashes --quiet
 
 log "Dependencias Python instaladas"
 

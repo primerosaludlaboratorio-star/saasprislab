@@ -72,7 +72,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.lock --require-hashes
 
       - name: Run migrations and health/metrics tests
         run: |

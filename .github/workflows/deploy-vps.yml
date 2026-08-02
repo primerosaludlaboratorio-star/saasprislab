@@ -39,6 +39,7 @@ on:
       - 'docker-compose.monitoring.yml'
       - 'manage.py'
       - 'requirements.txt'
+      - 'requirements.lock'
       - 'runtime.txt'
       - '.github/workflows/deploy-vps.yml'
   workflow_dispatch:
