@@ -6,8 +6,10 @@ Motor RAG (Cerebro Prislab)
 - Embeddings: Google (text-embedding-004)
 
 Vector DB:
-- Preferido: Chroma (chromadb) persistente
-- Fallback (Windows/Python nuevos sin wheels): SQLite local + búsqueda por coseno (persistente)
+- SQLite local + búsqueda por coseno (persistente)
+
+Chroma fue retirado del camino de ejecución. La rama 1.x tiene una vulnerabilidad
+preautenticada de ejecución de código y el fallback SQLite ya cubre el caso de uso.
 
 Requiere:
   - GOOGLE_API_KEY en variables de entorno
@@ -88,21 +90,12 @@ def _persist_dir() -> str:
 
 
 def _chroma_available() -> bool:
-    try:
-        import chromadb  # noqa: F401
-
-        return True
-    except Exception:
-        logging.getLogger(__name__).exception("Error inesperado en _chroma_available (rag_engine.py)")
-        return False
+    """Mantiene compatibilidad con callers antiguos, pero fuerza SQLite seguro."""
+    return False
 
 
 def _get_chroma_client():
-    import chromadb
-
-    persist_dir = os.path.join(_persist_dir(), "chroma")
-    os.makedirs(persist_dir, exist_ok=True)
-    return chromadb.PersistentClient(path=persist_dir)
+    raise RuntimeError("El backend Chroma fue retirado; use el backend SQLite del RAG.")
 
 
 def _sqlite_path() -> str:

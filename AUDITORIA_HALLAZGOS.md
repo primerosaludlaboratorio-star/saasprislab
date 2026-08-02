@@ -1131,3 +1131,11 @@ Los comandos legacy conservados por compatibilidad permanecen bloqueados con `Co
 **Abierto y no maquillado:** la reproducibilidad de dependencias. La instalación productiva verificada contiene `Django==5.0.6`, mientras `requirements.txt` exige `Django>=5.1.13,<5.2`; también existen dependencias transitivas instaladas que no aparecen en el archivo de requisitos. Producción contiene `chromadb==1.5.9`, que requiere remediación compatible y validación SBOM. No se cambia una dependencia de producción sin matriz de compatibilidad y pruebas.
 
 **Interpretación:** “0 fallas runtime” significa que Imperium no reprodujo una falla ejecutable en su alcance estático; no significa “sistema enterprise certificado” ni elimina los hallazgos funcionales/tenant/RBAC documentados en otras auditorías.
+
+## Remediación crítica de dependencia — ChromaDB
+
+**Estado:** **CORREGIDO EN CÓDIGO; DESINSTALACIÓN PRODUCTIVA PENDIENTE DE EJECUCIÓN CONTROLADA**
+
+OSV/GitHub Advisory `GHSA-f4j7-r4q5-qw2c` / `PYSEC-2026-311` afecta `chromadb` `1.0.0` a `1.5.9` por inyección de código preautenticada. PRISLAB no necesita ese paquete: `core/utils/rag_engine.py` ya contiene backend SQLite persistente con búsqueda coseno.
+
+La corrección fuerza SQLite, elimina la importación efectiva de Chroma y conserva únicamente un guard de compatibilidad que siempre devuelve `False`. El paquete debe retirarse del entorno virtual productivo y verificarse la ingestión/consulta RAG antes de cerrar definitivamente este hallazgo.
