@@ -1146,4 +1146,12 @@ La corrección fuerza SQLite y elimina la importación efectiva de Chroma. `chro
 
 Producción tenía `Django==5.0.6` aunque el checkout usaba la rama `5.1`. Se actualizó el requisito a `Django>=5.2.16,<5.3` y el VPS quedó en `Django==5.2.16`, rama soportada al momento de la corrección. `manage.py check`, 15 pruebas focalizadas, `pip check` y reinicio de Gunicorn/Celery/Celery Beat pasaron correctamente.
 
-**Pendiente separado:** generar `requirements.lock` con dependencias transitivas y hashes. No se marca como resuelto hasta que el lock se genere desde un entorno probado y CI/producción lo consuman.
+**Cierre parcial verificable:** las dependencias directas de `requirements.txt` quedaron fijadas con versiones exactas verificadas contra el entorno productivo. La instalación en seco no reportó conflictos.
+
+**Pendiente separado y explícito:** generar `requirements.lock` con dependencias transitivas y hashes, y hacer que CI/despliegue lo consuman. No se marca como resuelto hasta que el lock se genere desde un entorno probado y se valide también en producción.
+
+### Remediación de reproducibilidad de dependencias — dependencias directas fijadas
+
+`requirements.txt` ya no usa rangos abiertos para las dependencias directas del runtime. Se fijaron Django `5.2.16`, `django-ninja` `1.6.2`, `psycopg` `3.3.4` y las bibliotecas Google, seguridad, servidor, datos, PDF e integración en las versiones verificadas del entorno productivo. La validación local con `pip install --dry-run -r requirements.txt` terminó sin conflicto de resolución.
+
+Esto elimina la deriva de versión directa entre checkout y producción. No equivale todavía a un lock transitivo reproducible: las dependencias indirectas y sus hashes siguen requiriendo un artefacto de lock consumido por CI y despliegue.

@@ -4,30 +4,30 @@
 # ======================================================
 
 # Framework
-Django>=5.2.16,<5.3
-django-ninja>=1.3.0,<2
-asgiref>=3.8.1
+Django==5.2.16
+django-ninja==1.6.2
+asgiref==3.11.1
 whitenoise==6.6.0
-django-cors-headers==4.9.0
+django-cors-headers==4.6.0
 
 # Base de Datos
-psycopg[binary]>=3.3.4,<4
+psycopg[binary]==3.3.4
 
 # Google AI — SDK principal (requiere google-auth>=2.55.1)
 google-genai==1.69.0
 
 # Google Cloud — versiones mínimas compatibles con google-genai 1.69.0
-google-auth>=2.48.1
-google-auth-httplib2>=0.2.0
-google-auth-oauthlib>=1.4.0
-google-api-python-client>=2.100.0
-google-cloud-secret-manager>=2.18.0
-google-cloud-storage>=2.16.0
-google-cloud-vision>=3.15.0
-google-cloud-speech>=2.20.0
+google-auth==2.53.0
+google-auth-httplib2==0.4.0
+google-auth-oauthlib==1.4.0
+google-api-python-client==2.197.0
+google-cloud-secret-manager==2.29.0
+google-cloud-storage==3.11.0
+google-cloud-vision==3.14.0
+google-cloud-speech==2.40.0
 
 # Encriptación
-cryptography>=44.0.0
+cryptography==48.0.0
 
 # Tareas asíncronas
 celery==5.3.6
@@ -37,36 +37,36 @@ channels==4.0.0
 channels-redis==4.1.0
 
 # Web / Servidor
-gunicorn>=23.0.0
+gunicorn==22.0.0
 django-pwa==1.1.0
 django-storages==1.14.2
-boto3>=1.34.0,<2
+boto3==1.43.36
 
 # Datos y Análisis
-numpy>=1.26.4
-pandas>=2.2.1
+numpy==2.4.6
+pandas==3.0.3
 openpyxl==3.1.2
 
 # PDFs e Imágenes
-reportlab>=4.2.2
-weasyprint>=62.3
-pillow>=11.0.0
-lxml>=5.2.2
-pypdf>=4.3.0
+reportlab==4.1.0
+weasyprint==61.2
+pillow==12.2.0
+lxml==6.1.1
+pypdf==6.13.0
 
 # Seguridad / Auth
 pyotp==2.9.0
 pywebpush==1.14.0
 
 # Utilidades
-requests>=2.32.3
+requests==2.34.2
 python-decouple==3.8
 pytz==2024.1
 qrcode[pil]==7.4.2
 six==1.16.0
 user-agents==2.2.0
-zeep>=4.3.3
-colorama>=0.4.6
-psutil>=5.9.0
+zeep==4.2.1
+colorama==0.4.6
+psutil==7.2.2
 
 # Pruebas E2E (Selenium) y pytest: ver requirements-dev.txt
