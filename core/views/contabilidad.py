@@ -346,6 +346,8 @@ def autorizar_poliza(request, poliza_id):
     poliza = get_object_or_404(Poliza, id=poliza_id, empresa=empresa)
     if poliza.estado != 'BORRADOR':
         messages.error(request, 'Solo se pueden autorizar pólizas en borrador.')
+    elif poliza.creado_por_id == request.user.id:
+        messages.error(request, 'Segregación de funciones: el creador no puede autorizar su propia póliza.')
     else:
         poliza.estado = 'AUTORIZADA'
         poliza.autorizado_por = request.user

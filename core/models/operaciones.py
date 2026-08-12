@@ -219,6 +219,12 @@ class MensajeInterno(models.Model):
 # ==============================================================================
 class SolicitudAutorizacion(models.Model):
     """Sistema de autorizaciones para acciones sensibles."""
+    empresa = models.ForeignKey(
+        Empresa,
+        on_delete=models.CASCADE,
+        related_name='solicitudes_autorizacion',
+        verbose_name='Empresa',
+    )
     TIPO_ACCION_CHOICES = [
         ('DESCUENTO', 'Descuento Mayor'),
         ('CANCELACION', 'Cancelación de Orden/Venta'),

@@ -4,12 +4,23 @@ Vistas para el Sistema de Autorizaciones en Tiempo Real.
 import json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.db import transaction
 from core.models import SolicitudAutorizacion, Usuario, MensajeInterno
 import logging
+
+
+def _empresa_autorizacion(request):
+    """El alcance de autorización se deriva del tenant del usuario autenticado."""
+    return getattr(request.user, 'empresa', None)
+
+
+def _solicitud_queryset(request):
+    empresa = _empresa_autorizacion(request)
+    queryset = SolicitudAutorizacion.objects.select_related('usuario_solicita', 'resuelto_por')
+    return queryset.filter(empresa=empresa) if empresa else queryset.none()
 
 
 @login_required
@@ -42,9 +53,17 @@ def crear_solicitud_autorizacion(request):
                 'status': 'error',
                 'mensaje': 'Tipo de acción inválido.'
             }, status=400)
+
+        empresa = _empresa_autorizacion(request)
+        if empresa is None:
+            return JsonResponse({
+                'status': 'error',
+                'mensaje': 'El usuario debe pertenecer a una empresa.',
+            }, status=403)
         
         # Crear la solicitud
         solicitud = SolicitudAutorizacion.objects.create(
+            empresa=empresa,
             usuario_solicita=request.user,
             tipo_accion=tipo_accion,
             descripcion=descripcion,
@@ -137,7 +156,7 @@ def autorizar_solicitud(request, uuid):
     if not request.user.is_superuser:
         return redirect('dashboard_director')
     
-    solicitud = get_object_or_404(SolicitudAutorizacion, token_aprobacion=uuid)
+    solicitud = get_object_or_404(_solicitud_queryset(request), token_aprobacion=uuid)
     
     if solicitud.estado != 'PENDIENTE':
         return render(request, 'core/autorizacion_resuelta.html', {
@@ -189,7 +208,7 @@ def api_aprobar_solicitud(request, solicitud_id):
         }, status=403)
     
     try:
-        solicitud = get_object_or_404(SolicitudAutorizacion, id=solicitud_id)
+        solicitud = get_object_or_404(_solicitud_queryset(request), id=solicitud_id)
         
         if solicitud.estado != 'PENDIENTE':
             return JsonResponse({
@@ -215,6 +234,11 @@ def api_aprobar_solicitud(request, solicitud_id):
             'mensaje': 'Solicitud aprobada exitosamente.'
         })
         
+    except Http404:
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': 'Solicitud no encontrada.',
+        }, status=404)
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_aprobar_solicitud (autorizaciones.py)")
         return JsonResponse({
@@ -245,7 +269,7 @@ def api_rechazar_solicitud(request, solicitud_id):
                 'mensaje': 'Debe proporcionar un motivo de rechazo.'
             }, status=400)
         
-        solicitud = get_object_or_404(SolicitudAutorizacion, id=solicitud_id)
+        solicitud = get_object_or_404(_solicitud_queryset(request), id=solicitud_id)
         
         if solicitud.estado != 'PENDIENTE':
             return JsonResponse({
@@ -272,6 +296,11 @@ def api_rechazar_solicitud(request, solicitud_id):
             'mensaje': 'Solicitud rechazada exitosamente.'
         })
         
+    except Http404:
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': 'Solicitud no encontrada.',
+        }, status=404)
     except json.JSONDecodeError:
         return JsonResponse({
             'status': 'error',

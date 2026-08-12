@@ -891,3 +891,13 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] Las salidas reportan proveedor y siempre requieren revisión humana; no hay mutación automática de inventario/ventas.
 - [x] Pruebas focalizadas OCR/proveedores: 13/13 OK; `manage.py check` sin incidencias.
 - [x] Desplegado a producción después de pruebas y revisión de diff.
+
+### Bloque 19A — Autorizaciones contables y tenant scope — 2026-08-12
+
+- [x] H-NUEVO-137 a H-NUEVO-140 reconfirmados como corregidos con evidencia de código y pruebas existentes.
+- [x] `autorizar_poliza` bloquea la autoautorización y exige segregación de funciones.
+- [x] `SolicitudAutorizacion` incorpora FK obligatoria a `Empresa` mediante `core.0106`.
+- [x] Creación, consulta, aprobación y rechazo de autorizaciones usan el tenant del usuario autenticado.
+- [x] Los intentos fuera de tenant responden 404 sin mutar datos.
+- [x] Verificación local: `manage.py check`, `makemigrations --check`, 11 pruebas de autorizaciones/contabilidad OK y regresiones focalizadas previas OK.
+- [x] Preflight de producción: 0 solicitudes existentes y 0 solicitantes sin empresa antes de aplicar la migración.

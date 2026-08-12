@@ -77,7 +77,20 @@ class ContabilidadGeneralTests(TestCase):
         resp = self.client.post(reverse('contabilidad:autorizar_poliza', kwargs={'poliza_id': poliza.id}))
         self.assertEqual(resp.status_code, 302)
         poliza.refresh_from_db()
+        self.assertEqual(poliza.estado, 'BORRADOR')
+
+        autorizador = Usuario.objects.create_user(
+            username='director_autorizador',
+            password='testpass123',
+            empresa=self.empresa,
+            rol='DIRECTOR',
+        )
+        self.client.force_login(autorizador)
+        resp = self.client.post(reverse('contabilidad:autorizar_poliza', kwargs={'poliza_id': poliza.id}))
+        self.assertEqual(resp.status_code, 302)
+        poliza.refresh_from_db()
         self.assertEqual(poliza.estado, 'AUTORIZADA')
+        self.assertEqual(poliza.autorizado_por_id, autorizador.id)
 
     def test_api_cuentas(self):
         CuentaContable.objects.create(

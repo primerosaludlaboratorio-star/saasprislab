@@ -1234,6 +1234,29 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Riesgo**: Fuga de datos de catálogo cross-tenant a quien posea el token compartido.
 - **Recomendación**: Limitar el muestreo a la empresa que se diagnostica (parámetro obligatorio) o eliminar `sample_<tabla>` del payload.
 
+### Estado verificado de H-NUEVO-137 a H-NUEVO-140 — 2026-08-12
+
+- **H-NUEVO-137: CORREGIDO Y VERIFICADO.** `api_actualizar_usuario` aplica jerarquía explícita mediante `_puede_delegar_privilegios`; un `GERENTE` no puede asignar `ADMIN`/`DIRECTOR` ni activar `is_staff`.
+- **H-NUEVO-138: CORREGIDO Y VERIFICADO.** `desbloqueo_forense` limita la nota y el sello a la empresa efectiva del usuario autenticado.
+- **H-NUEVO-139: CORREGIDO Y VERIFICADO.** El reset de Sentinel exige empresa para operaciones con token y filtra las incidencias por `empresa_id`; el alcance global queda reservado al superusuario.
+- **H-NUEVO-140: CORREGIDO Y VERIFICADO.** El diagnóstico de Sentinel ya no devuelve muestras de filas potencialmente cross-tenant; entrega únicamente metadatos agregados.
+
+### H-NUEVO-141: Falta de segregación de funciones al autorizar pólizas contables
+
+- **Archivo**: `core/views/contabilidad.py`, `autorizar_poliza`.
+- **Severidad**: Alta.
+- **Hallazgo**: el creador de una póliza podía autorizar su propio registro, anulando la segregación de funciones.
+- **Corrección**: se rechaza la autoautorización y se exige un segundo usuario autorizado. Cubierto por `core.tests.test_contabilidad_general`.
+- **Estado**: CORREGIDO Y VERIFICADO.
+
+### H-NUEVO-142: Solicitudes de autorización sin alcance persistente de empresa
+
+- **Archivos**: `core/models/operaciones.py`, `core/views/autorizaciones.py`.
+- **Severidad**: Alta.
+- **Hallazgo**: `SolicitudAutorizacion` no almacenaba la empresa y las APIs de aprobación no expresaban un límite de datos explícito para otro tenant.
+- **Corrección**: se añadió la FK obligatoria `empresa`, se backfillan registros históricos desde `usuario_solicita.empresa`, las consultas de aprobación filtran por empresa y el acceso fuera de tenant responde 404. La migración falla cerrada si encuentra una solicitud huérfana.
+- **Estado**: CORREGIDO Y VERIFICADO. En producción, antes del despliegue, se comprobaron 0 solicitudes existentes y 0 solicitantes sin empresa. Cubierto por `core.tests.test_authorizations_security`.
+
 ## Bloque 8 — PRIS IA y OCR multimodal — CORREGIDO 2026-08-11
 
 - `core/services/ocr_documental.py` ya no exige Gemini directamente para `analizar_documento`, `analizar_compra_farmacia` ni `analizar_compra_laboratorio`.
