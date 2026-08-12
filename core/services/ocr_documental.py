@@ -498,6 +498,34 @@ def _leer_receta_en_cascada(imagen_b64: str) -> tuple[dict, str, dict]:
     }
 
 
+def _vision_call_cascade(imagen_b64: str, prompt: str) -> tuple[str, str, list[str]]:
+    """Ejecuta una solicitud multimodal usando el proveedor configurado y su fallback."""
+    proveedores = []
+    for nombre in (
+        getattr(settings, 'OCR_VISION_PRIMARY', 'deepseek'),
+        getattr(settings, 'OCR_VISION_FALLBACK', 'gemini'),
+    ):
+        nombre = (nombre or '').strip().lower()
+        if nombre in ('gemini', 'deepseek') and nombre not in proveedores:
+            proveedores.append(nombre)
+
+    intentados = []
+    for proveedor in proveedores:
+        if proveedor == 'gemini':
+            api_key = getattr(settings, 'GOOGLE_API_KEY', '') or getattr(settings, 'GEMINI_API_KEY', '')
+            if not api_key:
+                continue
+            raw = _gemini_vision_call(imagen_b64, prompt, api_key)
+        else:
+            if not (getattr(settings, 'DEEPSEEK_API_KEY', '') and getattr(settings, 'DEEPSEEK_VISION_MODEL', '')):
+                continue
+            raw = _deepseek_vision_call(imagen_b64, prompt)
+        intentados.append(proveedor)
+        if raw:
+            return raw, proveedor, intentados
+    return '', '', intentados
+
+
 def _parse_json_respuesta(texto: str) -> dict:
     """Limpia la respuesta de Gemini y parsea el JSON."""
     texto = texto.strip()
@@ -536,12 +564,16 @@ def analizar_documento(imagen_b64: str, empresa=None, usuario=None) -> dict:
     if not flag_activo('OCR_CLASIFICACION_ACTIVO', empresa):
         return {'activo': False, 'mensaje': 'Motor OCR desactivado desde configuración.'}
 
-    api_key = getattr(settings, 'GOOGLE_API_KEY', '') or getattr(settings, 'GEMINI_API_KEY', '')
-    if not api_key:
-        return {'error': 'GOOGLE_API_KEY no configurada.', 'activo': True}
-
     # ── Capa 1: Clasificar ────────────────────────────────────────────────────
-    resp_clase = _gemini_vision_call(imagen_b64, _PROMPT_CLASIFICAR, api_key)
+    resp_clase, proveedor_clasificacion, intentados_clasificacion = _vision_call_cascade(
+        imagen_b64, _PROMPT_CLASIFICAR
+    )
+    if not resp_clase:
+        return {
+            'error': 'OCR documental no disponible: ningún proveedor multimodal respondió.',
+            'activo': True,
+            'proveedores_intentados': intentados_clasificacion,
+        }
     clase = _parse_json_respuesta(resp_clase)
     tipo = clase.get('tipo_documento', 'OTRO')
     confianza = clase.get('confianza', 0.5)
@@ -556,8 +588,19 @@ def analizar_documento(imagen_b64: str, empresa=None, usuario=None) -> dict:
     else:
         prompt_extraccion = _PROMPT_RECETA  # fallback
 
-    resp_datos = _gemini_vision_call(imagen_b64, prompt_extraccion, api_key)
+    resp_datos, proveedor_extraccion, intentados_extraccion = _vision_call_cascade(
+        imagen_b64, prompt_extraccion
+    )
     datos = _parse_json_respuesta(resp_datos)
+    if not datos:
+        return {
+            'error': 'OCR documental no devolvió datos estructurados.',
+            'activo': True,
+            'tipo_documento': tipo,
+            'proveedor_vision': proveedor_extraccion or proveedor_clasificacion,
+            'proveedores_intentados': intentados_clasificacion + intentados_extraccion,
+            'requiere_revision_humana': True,
+        }
 
     # ── Capa 3: Validación informativa ────────────────────────────────────────
     validacion_sep = None
@@ -585,6 +628,9 @@ def analizar_documento(imagen_b64: str, empresa=None, usuario=None) -> dict:
         'prefill': prefill,
         'sugerencias_negocio': sugerencias,
         'validacion_sep': validacion_sep,
+        'proveedor_vision': proveedor_extraccion or proveedor_clasificacion,
+        'proveedores_intentados': intentados_clasificacion + intentados_extraccion,
+        'requiere_revision_humana': True,
     }
 
 
@@ -621,13 +667,11 @@ def analizar_compra_farmacia(imagen_b64: str, empresa=None, usuario=None) -> dic
 
     if not flag_activo('OCR_CLASIFICACION_ACTIVO', empresa):
         return {'activo': False, 'mensaje': 'Motor OCR desactivado desde configuración.'}
-    api_key = getattr(settings, 'GOOGLE_API_KEY', '') or getattr(settings, 'GEMINI_API_KEY', '')
-    if not api_key:
-        return {'activo': True, 'error': 'OCR de compras no disponible: falta configurar GOOGLE_API_KEY o GEMINI_API_KEY.'}
-    respuesta = _gemini_vision_call(imagen_b64, _PROMPT_COMPRA_FARMACIA, api_key)
+    respuesta, proveedor, intentados = _vision_call_cascade(imagen_b64, _PROMPT_COMPRA_FARMACIA)
     datos = _parse_json_respuesta(respuesta)
     if not datos:
-        return {'activo': True, 'error': 'El motor OCR no devolvió una compra estructurada.'}
+        return {'activo': True, 'error': 'El motor OCR no devolvió una compra estructurada.',
+                'proveedores_intentados': intentados, 'requiere_revision_humana': True}
     datos['productos'] = datos.get('productos') if isinstance(datos.get('productos'), list) else []
     return {
         'activo': True,
@@ -635,6 +679,9 @@ def analizar_compra_farmacia(imagen_b64: str, empresa=None, usuario=None) -> dic
         'confianza': datos.get('confianza', 0),
         'datos_extraidos': datos,
         'texto_extraido': respuesta,
+        'proveedor_vision': proveedor,
+        'proveedores_intentados': intentados,
+        'requiere_revision_humana': True,
     }
 
 
@@ -644,17 +691,16 @@ def analizar_compra_laboratorio(imagen_b64: str, empresa=None, usuario=None) -> 
 
     if not flag_activo('OCR_CLASIFICACION_ACTIVO', empresa):
         return {'activo': False, 'mensaje': 'Motor OCR desactivado desde configuración.'}
-    api_key = getattr(settings, 'GOOGLE_API_KEY', '') or getattr(settings, 'GEMINI_API_KEY', '')
-    if not api_key:
-        return {'activo': True, 'error': 'OCR de compras de laboratorio no disponible: falta configurar GOOGLE_API_KEY o GEMINI_API_KEY.'}
-    respuesta = _gemini_vision_call(imagen_b64, _PROMPT_COMPRA_LABORATORIO, api_key)
+    respuesta, proveedor, intentados = _vision_call_cascade(imagen_b64, _PROMPT_COMPRA_LABORATORIO)
     datos = _parse_json_respuesta(respuesta)
     if not datos:
-        return {'activo': True, 'error': 'El motor OCR no devolvió una compra de laboratorio estructurada.'}
+        return {'activo': True, 'error': 'El motor OCR no devolvió una compra de laboratorio estructurada.',
+                'proveedores_intentados': intentados, 'requiere_revision_humana': True}
     datos['productos'] = datos.get('productos') if isinstance(datos.get('productos'), list) else []
     return {'activo': True, 'tipo_documento': datos.get('tipo_documento', 'OTRO'),
             'confianza': datos.get('confianza', 0), 'datos_extraidos': datos,
-            'texto_extraido': respuesta}
+            'texto_extraido': respuesta, 'proveedor_vision': proveedor,
+            'proveedores_intentados': intentados, 'requiere_revision_humana': True}
 
 
 def _construir_prefill(tipo: str, datos: dict) -> dict:

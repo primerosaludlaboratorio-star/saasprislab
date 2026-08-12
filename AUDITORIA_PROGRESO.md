@@ -883,3 +883,11 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - H-NUEVO-140: `api_sentinel_diagnostico` expone filas de muestra cross-tenant de tablas `estudio`/`examen`.
 
 **Pendiente en `core/views/`**: el resto de los ~73 archivos restantes del directorio (módulos de farmacia, finanzas, contabilidad, RRHH, director, PRIS IA/Jarvis, war room, monitoreo, subcarpetas de laboratorio/médico) requieren revisión línea por línea antes de cerrar `9b`. Continúa después con `core/utils/`, `core/rbac/`, `core/decorators.py`, `core/management/commands/`.
+
+### Bloque 8 — PRIS IA y OCR multimodal — COMPLETADO 2026-08-11
+
+- [x] `core/services/ocr_documental.py`: cascada única para clasificación documental, recetas, compras de farmacia y compras de laboratorio.
+- [x] DeepSeek respeta `OCR_VISION_PRIMARY`; Gemini queda como fallback configurable.
+- [x] Las salidas reportan proveedor y siempre requieren revisión humana; no hay mutación automática de inventario/ventas.
+- [x] Pruebas focalizadas OCR/proveedores: 13/13 OK; `manage.py check` sin incidencias.
+- [x] Desplegado a producción después de pruebas y revisión de diff.

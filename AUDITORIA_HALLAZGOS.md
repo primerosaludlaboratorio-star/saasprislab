@@ -1234,6 +1234,13 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Riesgo**: Fuga de datos de catálogo cross-tenant a quien posea el token compartido.
 - **Recomendación**: Limitar el muestreo a la empresa que se diagnostica (parámetro obligatorio) o eliminar `sample_<tabla>` del payload.
 
+## Bloque 8 — PRIS IA y OCR multimodal — CORREGIDO 2026-08-11
+
+- `core/services/ocr_documental.py` ya no exige Gemini directamente para `analizar_documento`, `analizar_compra_farmacia` ni `analizar_compra_laboratorio`.
+- La selección respeta `OCR_VISION_PRIMARY` y `OCR_VISION_FALLBACK`, con DeepSeek primario cuando está configurado y Gemini como fallback explícito.
+- Cada respuesta identifica el proveedor intentado/usado y conserva `requiere_revision_humana=True`; el OCR solo propone datos y no crea ventas, lotes ni movimientos.
+- Evidencia: `core/tests/test_ocr_cascade.py` cubre DeepSeek primario, fallback Gemini y documento sin clave Gemini (5/5 OK).
+
 **Confirmaciones positivas de este bloque**: `core/views/administracion_usuarios.py` sí bloquea auto-modificación de rol/staff/activación y reasignación de empresa; registra auditoría de campo (`auditar_cambio_campo`) y trazabilidad (`registrar_trazabilidad`) en cada cambio. `core/views/cron_tasks.py` usa `secrets.compare_digest` para el secreto de cron y rechaza en producción sin `CRON_SECRET`. `core/views/prisci_webhook.py` rechaza el webhook si `PRISCI_WEBHOOK_TOKEN` no está configurado y `DEBUG=False`. `core/views/excepciones_lab.py:cancelar_orden` exige superusuario explícito vía `user_passes_test`.
 
 **Pendiente en core/views/**: cobertura exhaustiva línea por línea del resto de los ~75 archivos restantes (`farmacia.py`, `finanzas.py`, `contabilidad.py`, `rh.py`, `director.py`, `pris_jarvis.py`, `war_room.py`, `monitor_produccion.py`, subcarpetas `laboratorio/`, `medico/`, `pris_ia/`, etc.); luego `core/utils/`, `core/rbac/`, `core/decorators.py`, `core/management/commands/`, `core/services/`, `core/agent/`.
