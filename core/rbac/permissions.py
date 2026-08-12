@@ -1,6 +1,6 @@
 # core/rbac/permissions.py
 # ==============================================================================
-# PRISLAB SaaS — RBAC: Roles, Permisos y Decoradores
+# PRISLAB SaaS — RBAC: Roles, Permisos y Guards de servicio
 # ==============================================================================
 # Estructura de roles (inmutable por diseño):
 #
@@ -9,6 +9,11 @@
 #   DIRECTOR         → lectura total de su tenant + war room + finanzas
 #   QUIMICO_MEDICO   → captura y valida resultados, consultorio, expediente
 #   CAJA_RECEPCION   → PDV, recepción de pacientes, caja. SIN acceso a medical
+#
+# Contrato arquitectónico:
+# - Las vistas HTTP usan core.decorators.role_required como guard de endpoint.
+# - Este módulo es el guard de servicio y sucursal para código que ya tiene un
+#   usuario autenticado; sus helpers no sustituyen implícitamente los guards HTTP.
 #
 # Criterio de Validación (Pasa/No Pasa):
 #   - Si el rol no está en allowed_roles → HTTP 403, log de intento.

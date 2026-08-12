@@ -17,7 +17,7 @@ class PrisciUnifiedAITests(TestCase):
             empresa=self.empresa,
             rol="RECEPCION",
         )
-        Group.objects.create(name="RECEPCION").user_set.add(self.user)
+        Group.objects.get_or_create(name="RECEPCION")[0].user_set.add(self.user)
 
     def test_prisci_denies_tool_outside_user_role(self):
         ok, msg = _verificar_rbac("registrar_venta_farmacia", self.user, jarvis_mode=True)

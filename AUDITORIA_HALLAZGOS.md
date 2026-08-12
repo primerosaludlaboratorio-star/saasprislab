@@ -1275,6 +1275,12 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - Verificación local: `manage.py check` OK, `makemigrations --check --dry-run` sin cambios, compilación Python OK.
 - Pruebas focalizadas: 26/26 OK (`lims.tests`, seguridad de configuración/dependencias LIMS, HL7 tenant binding y búsqueda del carrito LIMS).
 
+## Bloque 2 — RBAC base y despacho seguro de PRIS — 2026-08-12
+
+- **H-NUEVO-10: CERRADO COMO DEUDA DE ARQUITECTURA CONTROLADA.** Se documentó el contrato único: `core.decorators.role_required` protege endpoints HTTP; `core.rbac.permissions` contiene guards reutilizables de servicio/sucursal y no se considera una segunda capa automática para vistas. Se conserva la API porque tiene cobertura de pruebas y consumidores internos (`check_sucursal_assignment`), pero ya no se presenta como enforcement implícito de endpoints.
+- **H-NUEVO-11: CORREGIDO Y VERIFICADO.** `_verificar_rbac` rechaza cualquier herramienta ausente del catálogo explícito antes de consultar grupos. El despachador activo usa el registro operativo visible a nivel de módulo, mantiene confirmación humana para escrituras y oculta detalles internos de excepciones.
+- Evidencia local: 44/44 pruebas RBAC/PRIS OK, con 2 pruebas omitidas por herramientas retiradas; `manage.py check` OK.
+
 ## Bloque 8 — PRIS IA y OCR multimodal — CORREGIDO 2026-08-11
 
 - `core/services/ocr_documental.py` ya no exige Gemini directamente para `analizar_documento`, `analizar_compra_farmacia` ni `analizar_compra_laboratorio`.

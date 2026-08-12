@@ -24,6 +24,8 @@ class TestDispatcherCatchAll(TestCase):
         self.empresa = MagicMock()
         self.empresa.pk = 1
         self.user = MagicMock()
+        self.user.is_authenticated = True
+        self.user.is_superuser = False
         self.user.groups.values_list.return_value = ['RECEPCION']
 
     def test_herramienta_que_lanza_exception_devuelve_error_dict(self):
@@ -38,21 +40,26 @@ class TestDispatcherCatchAll(TestCase):
                 'grupos_requeridos': [],
             }
         }
-        with patch('core.views.pris_ia._dispatcher.TOOLS_OPERATIVOS', fake_tools):
+        request = RequestFactory().post('/ia/asistente/chat/')
+        request.user = self.user
+        with patch('core.views.pris_ia._dispatcher.TOOLS_OPERATIVOS', fake_tools), \
+             patch('core.views.pris_ia._dispatcher._verificar_rbac', return_value=(True, '')):
             with self.assertLogs('core', level='ERROR') as cm:
-                result = _ejecutar_herramienta('boom_tool', {}, self.empresa, self.user)
+                result = _ejecutar_herramienta('boom_tool', {}, request)
 
         self.assertIn('error', result)
-        self.assertIn('fallo simulado', result['error'])
+        self.assertEqual(result['error'], 'No fue posible procesar la solicitud IA.')
         self.assertTrue(any('boom_tool' in msg for msg in cm.output))
 
-    @patch('core.views.pris_ia._dispatcher._verificar_rbac', return_value=True)
+    @patch('core.views.pris_ia._dispatcher._verificar_rbac', return_value=(True, ''))
     def test_herramienta_inexistente_devuelve_error_disponibles(self, mock_rbac):
         from core.views.pris_ia._dispatcher import _ejecutar_herramienta
 
         # Mock __import__ or TOOLS_OPERATIVOS directly in the module
+        request = RequestFactory().post('/ia/asistente/chat/')
+        request.user = self.user
         with patch('core.views.pris_ia._dispatcher.TOOLS_OPERATIVOS', {}):
-            result = _ejecutar_herramienta('herramienta_fantasma', {}, self.empresa, self.user)
+            result = _ejecutar_herramienta('herramienta_fantasma', {}, request)
             self.assertIn('error', result)
             self.assertIn('no disponible', result['error'].lower())
 

@@ -912,3 +912,11 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] Preflight productivo previo: 0 responsables, 0 HL7 y 0 rangos sin atribución empresarial.
 - [x] Verificación local: compilación, `manage.py check`, `makemigrations --check` y 26/26 pruebas focalizadas OK.
 - [ ] La migración total de modelos legacy globales no se declara cerrada en este bloque; requiere inventario y plan separado para no mezclar datos históricos de tenants.
+
+### Cierre operativo del Bloque 2 — 2026-08-12
+
+- [x] H-NUEVO-10: contrato RBAC documentado; `role_required` es el guard HTTP y `core.rbac.permissions` el guard de servicio/sucursal.
+- [x] H-NUEVO-11: herramientas desconocidas rechazadas antes del despacho; registro operativo disponible para pruebas y excepciones no filtran detalles internos.
+- [x] Pruebas focalizadas: 44/44 OK; 2 casos skipped corresponden a herramientas retiradas.
+- [x] `manage.py check` OK.
+- [ ] Despliegue post-corrección y health check: se ejecutará como parte del cierre de este bloque.

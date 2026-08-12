@@ -31,6 +31,7 @@ from ._tools_lab import (
     _tool_notificar_resultados_whatsapp,
     _tool_validar_orden_laboratorio,
 )
+from core.agent.pris_tools_operativos import TOOLS_OPERATIVOS
 
 logger = logging.getLogger('core')
 
@@ -93,7 +94,6 @@ def _ejecutar_herramienta(nombre_tool, args, request, pris_mode=True):
             return _tool_consultar_manual_lab(args, empresa)
         # Herramientas operativas: toda escritura queda sujeta a confirmación humana.
         else:
-            from core.agent.pris_tools_operativos import TOOLS_OPERATIVOS
             if nombre_tool in TOOLS_OPERATIVOS:
                 entry = TOOLS_OPERATIVOS[nombre_tool]
                 if nombre_tool == "registrar_venta_farmacia":
