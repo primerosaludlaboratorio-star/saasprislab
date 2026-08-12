@@ -416,20 +416,20 @@ Dado que `_dispatcher.py` delega TODAS las herramientas de escritura del asisten
 **TOTAL ACUMULADO DE LA SESIÓN: 33 hallazgos nuevos (H-NUEVO-27 a H-NUEVO-59)** + 3 notas de recurrencia adjuntas a `H-NUEVO-32`.
 
 ## Bloque 10 — seguridad/ (app raíz) — COMPLETADO
-- [x] `seguridad/models.py` — 696/696 líneas. Configuración de seguridad, alertas de pánico, 2FA (TOTP/SMS/backup), sesiones activas, logs de acciones sensibles. `CodigoBackup2FA` almacena `codigo` en texto plano junto a hash, y `DispositivoTOTP` guarda `llave_secreta` en claro (necesario para verificación, sin cifrado añadido). `LogAccionSensible.registrar()` helper append-only. Sin hallazgos nuevos en modelos salvo lo reportado en H-NUEVO-62.
+- [x] `seguridad/models.py` — 696/696 líneas. Configuración de seguridad, alertas de pánico, 2FA (TOTP/SMS/backup), sesiones activas y logs sensibles. `CodigoBackup2FA` conserva el valor cifrado solo para la presentación única posterior a la generación, usa hash adaptativo y no lo expone en `__str__`/Admin. `LogAccionSensible.registrar()` helper append-only.
 - [x] `seguridad/views/__init__.py` — 10/10 líneas. Re-exportación.
 - [x] `seguridad/views/helpers.py` — 77/77 líneas. `_empresa_staff_o_redirect` y `_empresa_staff_o_json` duplicados con `is_staff`; funcional. Sin hallazgos.
-- [x] `seguridad/views/auth2fa.py` — 403/403 líneas. **H-NUEVO-60**: `PRISLAB_MASTER_RECOVERY_CODE` como bypass global de 2FA. **H-NUEVO-62**: regeneración/lectura de códigos de respaldo sin reautenticación. `desactivar_totp` correctamente exige contraseña; `confirmar_totp` y gestión de sesiones con scoping por usuario correcto.
+- [x] `seguridad/views/auth2fa.py` — 403/403 líneas. **H-NUEVO-60**: recuperación maestra deshabilitada en producción. **H-NUEVO-62 corregido**: regenerar exige contraseña actual y mostrar códigos consume una autorización de sesión de un solo uso. `desactivar_totp` correctamente exige contraseña; `confirmar_totp` y gestión de sesiones con scoping por usuario correcto.
 - [x] `seguridad/views/panico.py` — 112/112 líneas. **H-NUEVO-61**: `panic_button` activable por GET sin autenticación/POST/rol, envía notificaciones con cache de 30s por canal.
 - [x] `seguridad/views/auditoria.py` — 140/140 líneas. `dashboard_auditoria`/`logs_auditoria` restringidas a `is_staff` + empresa. Sin hallazgos.
-- [x] `seguridad/views/api.py` — 94/94 líneas. **H-NUEVO-60 (parcial)**: `api_verificar_codigo_2fa` sin `@login_required` ni rate limit. `api_estadisticas_seguridad` restringida a staff/empresa.
+- [x] `seguridad/views/api.py` — 94/94 líneas. **H-NUEVO-60 corregido**: `api_verificar_codigo_2fa` exige sesión autenticada, POST y rate limit de 5 intentos/5 minutos. `api_estadisticas_seguridad` restringida a staff/empresa.
 - [x] `seguridad/views/forense.py` — 148/148 líneas. `rastro_paciente` con `@role_required('DIRECTOR','ADMIN','GERENTE')`, rango de fechas acotado a 90 días, export CSV limitada a 5000 filas. Sin hallazgos.
 - [x] `seguridad/urls.py` — 34/34 líneas. Confirma rutas para 2FA, sesiones, auditoría, forense y APIs (incluyendo `api/panic/` y `api/verificar-2fa/`).
-- [x] `seguridad/admin.py` — 64/64 líneas. `TenantScopedAdmin` consistente; `CodigoBackup2FAAdmin` expone `codigo` en `readonly_fields` (ver H-NUEVO-62). `LogAccionSensibleAdmin` no permite edición.
+- [x] `seguridad/admin.py` — 64/64 líneas. `TenantScopedAdmin` consistente; `CodigoBackup2FAAdmin` excluye `codigo` y no permite su exposición. `LogAccionSensibleAdmin` no permite edición.
 - [x] `seguridad/apps.py` — 8/8 líneas. Sin señales.
 - [ ] `seguridad/tests.py` (1 archivo) — DIFERIDO al bloque de tests.
 
-**BLOQUE 10 (seguridad/, código de aplicación): COMPLETADO.** Hallazgos nuevos: H-NUEVO-60 (CRÍTICO), H-NUEVO-61 (ALTO), H-NUEVO-62 (ALTO).
+**BLOQUE 10 (seguridad/, código de aplicación): COMPLETADO.** Hallazgos H-NUEVO-60, H-NUEVO-61 y H-NUEVO-62 corregidos y cubiertos por pruebas focalizadas.
 
 **TOTAL ACUMULADO DE LA SESIÓN: 36 hallazgos nuevos (H-NUEVO-27 a H-NUEVO-62)** + 3 notas de recurrencia adjuntas a `H-NUEVO-32`.
 
@@ -783,7 +783,8 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - `1dbeed1`: ajuste masivo de precios LIMS exige empresa y sincroniza `costo_lista` y `fecha_actualiz`.
 - Corrección adicional: `auditoria_qa` ya no crea usuarios ni usa `Prislab2026`; exige `PRISLAB_QA_ADMIN_USER` y `PRISLAB_QA_ADMIN_PASSWORD` para ejecutar QA.
 - `7e9fd5d`: secretos TOTP cifrados en reposo con migración `seguridad.0004`; Admin ya no expone la llave secreta.
-- `11a9419`: códigos de respaldo 2FA cifrados en reposo con migración `seguridad.0005`; Admin ya no los expone. La reautenticación para regenerar/mostrar sigue pendiente.
+- `11a9419`: códigos de respaldo 2FA cifrados en reposo con migración `seguridad.0005`; Admin ya no los expone.
+- Corrección posterior: migración `seguridad.0006` amplía el hash de respaldo para hash adaptativo; regeneración exige reautenticación, la revelación está autorizada una sola vez por sesión y la API de verificación tiene rate limit.
 
 **Verificación**: `manage.py check` sin incidencias; pruebas focalizadas de inventario/seguridad/LIMS/tenant/kiosco en verde; producción responde `/health/` HTTP 200 con base de datos y cache operativos después de cada despliegue.
 

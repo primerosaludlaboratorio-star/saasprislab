@@ -15,6 +15,7 @@ from django.core.cache import cache
 from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth import logout
+from django.contrib.auth import authenticate
 from django.db.models import Q, Count
 from django.db.utils import DatabaseError
 from django.core.exceptions import ValidationError
@@ -159,6 +160,7 @@ def confirmar_totp(request, dispositivo_id):
     if dispositivo.confirmar_dispositivo(codigo):
         # Generar códigos de respaldo automáticamente
         generar_codigos_backup(request.user)
+        request.session['2fa_backup_codes_reveal_user'] = request.user.pk
         
         messages.success(request, "✓ Autenticación de dos factores activada exitosamente!")
         
@@ -216,6 +218,15 @@ def mostrar_codigos_backup(request):
     Muestra los códigos de respaldo después de activar 2FA.
     IMPORTANTE: Solo se muestran una vez.
     """
+    reveal_user = request.session.pop('2fa_backup_codes_reveal_user', None)
+    if str(reveal_user) != str(request.user.pk):
+        messages.warning(
+            request,
+            "Por seguridad, los códigos no se pueden volver a consultar. "
+            "Regénéralos después de confirmar tu contraseña actual.",
+        )
+        return redirect('seguridad:configuracion_2fa')
+
     codigos = CodigoBackup2FA.objects.filter(usuario=request.user, usado=False)
     
     context = {
@@ -232,11 +243,22 @@ def regenerar_codigos_backup(request):
     Regenera los códigos de respaldo.
     Los códigos anteriores se marcan como usados.
     """
-    # Marcar códigos anteriores como usados
+    password_actual = request.POST.get('password_actual', '')
+    usuario_autenticado = authenticate(
+        request=request,
+        username=request.user.get_username(),
+        password=password_actual,
+    )
+    if usuario_autenticado is None or usuario_autenticado.pk != request.user.pk:
+        messages.error(request, "La contraseña actual no es válida.")
+        return redirect('seguridad:configuracion_2fa')
+
+    # Invalidar códigos anteriores de forma explícita antes de emitir un lote nuevo.
     CodigoBackup2FA.objects.filter(usuario=request.user, usado=False).update(usado=True)
     
     # Generar nuevos códigos
     generar_codigos_backup(request.user)
+    request.session['2fa_backup_codes_reveal_user'] = request.user.pk
     
     messages.success(request, "Códigos de respaldo regenerados exitosamente.")
     

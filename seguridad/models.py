@@ -14,6 +14,8 @@ import base64
 import hashlib
 import secrets
 
+from django.contrib.auth.hashers import check_password, make_password
+
 
 class ConfiguracionSeguridad(models.Model):
     """
@@ -345,8 +347,8 @@ class CodigoBackup2FA(models.Model):
     )
     
     codigo_hash = models.CharField(
-        max_length=64,
-        help_text='Hash SHA256 del código para verificación segura'
+        max_length=128,
+        help_text='Hash adaptativo del código para verificación segura'
     )
     
     usado = models.BooleanField(default=False)
@@ -360,7 +362,7 @@ class CodigoBackup2FA(models.Model):
     
     def __str__(self):
         estado = "✗ Usado" if self.usado else "✓ Disponible"
-        return f"{self.usuario.username} - {self.codigo} ({estado})"
+        return f"{self.usuario.username} - código de respaldo ({estado})"
     
     @staticmethod
     def generar_codigo():
@@ -373,7 +375,7 @@ class CodigoBackup2FA(models.Model):
     def save(self, *args, **kwargs):
         """Genera el hash del código antes de guardar"""
         if not self.codigo_hash:
-            self.codigo_hash = hashlib.sha256(self.codigo.encode()).hexdigest()
+            self.codigo_hash = make_password(self.codigo)
         super().save(*args, **kwargs)
     
     def verificar(self, codigo_ingresado):
@@ -382,10 +384,18 @@ class CodigoBackup2FA(models.Model):
             return False
         
         codigo_hash_ingresado = hashlib.sha256(codigo_ingresado.encode()).hexdigest()
-        if codigo_hash_ingresado == self.codigo_hash:
+        if self.codigo_hash.startswith(('pbkdf2_', 'argon2', 'bcrypt')):
+            valido = check_password(codigo_ingresado, self.codigo_hash)
+        else:
+            # Compatibilidad transitoria con códigos legacy; se rehashea al usarse.
+            valido = secrets.compare_digest(codigo_hash_ingresado, self.codigo_hash)
+
+        if valido:
             self.usado = True
             self.fecha_uso = timezone.now()
-            self.save()
+            if not self.codigo_hash.startswith(('pbkdf2_', 'argon2', 'bcrypt')):
+                self.codigo_hash = make_password(codigo_ingresado)
+            self.save(update_fields=['usado', 'fecha_uso', 'codigo_hash'])
             return True
         return False
 

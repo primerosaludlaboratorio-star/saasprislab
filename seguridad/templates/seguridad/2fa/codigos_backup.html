@@ -25,6 +25,15 @@
                     {% else %}
                     <p class="text-muted">No hay códigos disponibles. Activa el 2FA primero.</p>
                     {% endif %}
+                    <hr>
+                    <form method="post" action="{% url 'seguridad:regenerar_codigos_backup' %}">
+                        {% csrf_token %}
+                        <label for="password_actual" class="form-label">Contraseña actual para regenerar</label>
+                        <input id="password_actual" name="password_actual" type="password" class="form-control mb-2" autocomplete="current-password" required>
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            Regenerar códigos de respaldo
+                        </button>
+                    </form>
                     <a href="{% url 'seguridad:configuracion_2fa' %}" class="btn btn-outline-primary mt-3">
                         <i class="bi bi-arrow-left"></i> Volver a Seguridad
                     </a>

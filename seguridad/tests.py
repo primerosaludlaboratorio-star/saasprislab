@@ -166,6 +166,51 @@ class TwoFactorTest(TestCase):
         self.assertFalse(data['valido'])
         self.assertEqual(data['mensaje'], 'JSON inválido')
 
+    def test_codigos_backup_no_se_pueden_consultar_dos_veces(self):
+        seguridad_models.CodigoBackup2FA.objects.create(
+            usuario=self.usuario,
+            codigo='AAAA-BBBB-CCCC',
+        )
+        session = self.client.session
+        session['2fa_backup_codes_reveal_user'] = self.usuario.pk
+        session.save()
+
+        first = self.client.get(reverse('seguridad:mostrar_codigos_backup'))
+        self.assertEqual(first.status_code, 200)
+        self.assertContains(first, 'AAAA-BBBB-CCCC')
+
+        second = self.client.get(reverse('seguridad:mostrar_codigos_backup'))
+        self.assertRedirects(second, reverse('seguridad:configuracion_2fa'))
+
+    def test_regenerar_codigos_exige_reautenticacion(self):
+        original = seguridad_models.CodigoBackup2FA.objects.create(
+            usuario=self.usuario,
+            codigo='AAAA-BBBB-CCCC',
+        )
+
+        denied = self.client.post(
+            reverse('seguridad:regenerar_codigos_backup'),
+            {'password_actual': 'incorrecta'},
+        )
+        self.assertRedirects(denied, reverse('seguridad:configuracion_2fa'))
+        original.refresh_from_db()
+        self.assertFalse(original.usado)
+
+        allowed = self.client.post(
+            reverse('seguridad:regenerar_codigos_backup'),
+            {'password_actual': 'test123'},
+        )
+        self.assertRedirects(allowed, reverse('seguridad:mostrar_codigos_backup'))
+        original.refresh_from_db()
+        self.assertTrue(original.usado)
+        self.assertEqual(
+            seguridad_models.CodigoBackup2FA.objects.filter(
+                usuario=self.usuario,
+                usado=False,
+            ).count(),
+            10,
+        )
+
 
 class SeguridadTenantAlignmentTest(TestCase):
     def setUp(self):

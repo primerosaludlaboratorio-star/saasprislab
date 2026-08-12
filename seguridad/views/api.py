@@ -18,7 +18,7 @@ from django.contrib.auth import logout
 from django.db.models import Q, Count
 from user_agents import parse
 
-from core.decorators import role_required
+from core.decorators import role_required, rate_limit
 from core.models import ForenseAcceso, Usuario
 from core.utils.empresa_request import get_empresa_usuario
 from seguridad.views.auth2fa import _verificar_codigo_2fa_usuario
@@ -31,6 +31,7 @@ from seguridad.models import (
 
 @login_required
 @require_POST
+@rate_limit('2fa_verify', limit=5, window_seconds=300)
 def api_verificar_codigo_2fa(request):
     """
     API para verificar un código 2FA en tiempo real.
