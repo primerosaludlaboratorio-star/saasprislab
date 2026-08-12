@@ -1170,6 +1170,15 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - La suite `core.tests.test_laboratorio_contingencias` pasó **7/7 OK** con `PRISLAB_TEST_NO_MIGRATIONS=1`; `manage.py check` pasó sin incidencias. El fixture se ajustó para representar una orden real con sucursal asignada bajo modo estricto.
 - La prueba de archivo de resultado controlado y la ejecución humana con credencial productiva vigente siguen siendo evidencia operativa externa; no se declaran cerradas por una prueba local.
 
+## Corrección Bloque 4 — anclaje forense por empresa
+
+**Fecha:** 2026-08-11
+
+- `HashRaizDiario` dejó de ser global por fecha y ahora exige `empresa`, con unicidad por `(empresa, fecha)` e índice tenant-aware.
+- `verificar_integridad_anclaje()` filtra los hashes por `empresa_id`; el comando `anclar_hashes_diarios` calcula, encadena, verifica y envía una raíz independiente por empresa, con `--empresa-id` opcional.
+- La migración `core.0104` falla explícitamente si encuentra anclajes legacy globales, porque no existe una asignación forense segura automática. `core.0105` normaliza los índices.
+- Evidencia: producción consultada antes del despliegue tenía `0` `HashRaizDiario`; migración local aplicada correctamente, `makemigrations --check` limpio, dry-run del comando sin hashes omitió sin mutar datos y 15/15 pruebas focalizadas pasaron.
+
 ## Bloque 19 — core/views/ (archivos de alto riesgo: administración de usuarios, blindaje forense, sentinel API) — NUEVO
 
 **Fecha:** 2026-08-11

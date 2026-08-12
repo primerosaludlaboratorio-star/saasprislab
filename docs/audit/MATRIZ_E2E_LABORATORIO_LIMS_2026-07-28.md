@@ -104,3 +104,8 @@ Laboratorio/LIMS no se marca 100% cerrado todavía. El siguiente gate es:
 - El flujo de maquila quedó endurecido: roles explícitos, transacción de envío, bloqueo de orden, rechazo de doble envío y recepción idempotente.
 - La prueba automatizada de contingencias pasó 7/7 en entorno local aislado, incluyendo rol no autorizado, aislamiento tenant, doble envío y recepción repetida.
 - La evidencia productiva de archivo de resultado controlado continúa pendiente de ejecución con una cuenta vigente y una orden autorizada de QA. Esta condición es operativa y no se sustituye con una prueba local.
+
+## Actualización Bloque 4 — 2026-08-11
+
+- El anclaje forense diario dejó de ser global: cada empresa tiene su propia raíz, cadena previa y verificación.
+- La migración es fail-closed ante registros legacy globales; producción se verificó con cero registros `HashRaizDiario` antes del cambio.

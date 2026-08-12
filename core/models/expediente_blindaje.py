@@ -880,8 +880,15 @@ class HashRaizDiario(models.Model):
     con el email enviado hace tres meses, evidenciando la manipulación.
     """
     
-    # Identificación temporal
-    fecha = models.DateField(unique=True, verbose_name="Fecha")
+    # Identificación tenant + temporal. Nunca debe existir una raíz global que
+    # mezcle evidencia forense de empresas distintas.
+    empresa = models.ForeignKey(
+        'Empresa',
+        on_delete=models.PROTECT,
+        related_name='hashes_raiz_diarios',
+        verbose_name='Empresa',
+    )
+    fecha = models.DateField(verbose_name="Fecha")
     año = models.PositiveIntegerField(verbose_name="Año")
     mes = models.PositiveIntegerField(verbose_name="Mes")
     dia = models.PositiveIntegerField(verbose_name="Día")
@@ -961,8 +968,14 @@ class HashRaizDiario(models.Model):
         verbose_name = "Hash Raíz Diario (Anclaje)"
         verbose_name_plural = "Hashes Raíz Diarios (Anclaje)"
         ordering = ['-fecha']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'fecha'],
+                name='uq_hash_raiz_diario_empresa_fecha',
+            ),
+        ]
         indexes = [
-            models.Index(fields=['fecha', 'hash_raiz']),
+            models.Index(fields=['empresa', 'fecha', 'hash_raiz']),
             models.Index(fields=['año', 'mes']),
             models.Index(fields=['timestamp_envio']),
         ]
@@ -998,11 +1011,12 @@ class HashRaizDiario(models.Model):
         """
         from core.models import ExpedienteNotaSHA
         
-        # Obtener hashes del día
+        # Obtener hashes del día únicamente de la empresa anclada.
         inicio_dia = datetime.combine(self.fecha, datetime.min.time())
         fin_dia = datetime.combine(self.fecha, datetime.max.time())
-        
-        hashes_del_dia = list(ExpedienteNotaSHA.objects.filter(
+
+        hashes_del_dia = list(ExpedienteNotaSHA.objects_all.filter(
+            empresa_id=self.empresa_id,
             timestamp_creacion__range=(inicio_dia, fin_dia),
             firmado_con_pin=True
         ).values_list('hash_sha256', flat=True))

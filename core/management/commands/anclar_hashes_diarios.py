@@ -58,6 +58,11 @@ class Command(BaseCommand):
             action='store_true',
             help='Verificar integridad de un hash raíz existente',
         )
+        parser.add_argument(
+            '--empresa-id',
+            type=int,
+            help='Limitar el cálculo/verificación a una empresa específica',
+        )
 
     def handle(self, *args, **options):
         # Determinar fecha a procesar
@@ -80,7 +85,7 @@ class Command(BaseCommand):
         
         # Verificar modo
         if options['verificar']:
-            self.verificar_hash_existente(fecha_procesar)
+            self.verificar_hash_existente(fecha_procesar, options.get('empresa_id'))
             return
         
         # Generar hash raíz
@@ -90,77 +95,82 @@ class Command(BaseCommand):
         inicio_dia = timezone.make_aware(datetime.combine(fecha_procesar, datetime.min.time()))
         fin_dia = timezone.make_aware(datetime.combine(fecha_procesar, datetime.max.time()))
         
-        # Obtener todos los hashes del día (solo notas selladas/firmadas)
-        hashes_del_dia = list(ExpedienteNotaSHA.objects.filter(
-            timestamp_creacion__range=(inicio_dia, fin_dia),
-            firmado_con_pin=True
-        ).values_list('hash_sha256', flat=True).order_by('hash_sha256'))
-        
-        total_hashes = len(hashes_del_dia)
-        total_notas = ExpedienteNotaSHA.objects.filter(
+        # Una raíz por empresa: nunca mezclar evidencia de tenants distintos.
+        empresa_ids = list(ExpedienteNotaSHA.objects_all.filter(
             timestamp_creacion__range=(inicio_dia, fin_dia)
-        ).values('nota_soap').distinct().count()
-        
-        self.stdout.write(f'  → Hashes acumulados: {total_hashes}')
-        self.stdout.write(f'  → Notas selladas: {total_notas}')
-        
-        if total_hashes == 0:
+        ).values_list('empresa_id', flat=True).distinct())
+        if options.get('empresa_id'):
+            empresa_ids = [eid for eid in empresa_ids if eid == options['empresa_id']]
+
+        if not empresa_ids:
             self.stdout.write(self.style.WARNING('No hay hashes para esta fecha. Omitiendo.'))
             return
-        
-        # Obtener hash del día anterior para encadenamiento
-        dia_anterior = fecha_procesar - timedelta(days=1)
-        hash_anterior = None
-        try:
-            hash_raiz_anterior = HashRaizDiario.objects.get(fecha=dia_anterior)
-            hash_anterior = hash_raiz_anterior.hash_raiz
-        except HashRaizDiario.DoesNotExist:
-            pass
-        
-        # Calcular hash raíz
-        hashes_ordenados = sorted(hashes_del_dia)
-        bloque = f"{'|'.join(hashes_ordenados)}|{fecha_procesar.isoformat()}"
-        if hash_anterior:
-            bloque = f"{bloque}|{hash_anterior}"
-        
-        hash_raiz = hashlib.sha256(bloque.encode('utf-8')).hexdigest()
-        
-        self.stdout.write(self.style.SUCCESS(f'  → Hash Raíz: {hash_raiz[:32]}...'))
-        self.stdout.write(f'  → Hash Anterior: {hash_anterior[:32] if hash_anterior else "GENESIS"}...')
-        
+
+        for empresa_id in empresa_ids:
+            hashes_del_dia = list(ExpedienteNotaSHA.objects_all.filter(
+                empresa_id=empresa_id,
+                timestamp_creacion__range=(inicio_dia, fin_dia),
+                firmado_con_pin=True,
+            ).values_list('hash_sha256', flat=True).order_by('hash_sha256'))
+            total_hashes = len(hashes_del_dia)
+            total_notas = ExpedienteNotaSHA.objects_all.filter(
+                empresa_id=empresa_id,
+                timestamp_creacion__range=(inicio_dia, fin_dia),
+            ).values('nota_soap').distinct().count()
+            if total_hashes == 0:
+                continue
+
+            dia_anterior = fecha_procesar - timedelta(days=1)
+            anterior = HashRaizDiario.objects.filter(
+                empresa_id=empresa_id, fecha=dia_anterior
+            ).first()
+            hash_anterior = anterior.hash_raiz if anterior else None
+            hashes_ordenados = sorted(hashes_del_dia)
+            bloque = f"{'|'.join(hashes_ordenados)}|{fecha_procesar.isoformat()}"
+            if hash_anterior:
+                bloque = f"{bloque}|{hash_anterior}"
+            hash_raiz = hashlib.sha256(bloque.encode('utf-8')).hexdigest()
+
+            self.stdout.write(
+                f'Empresa {empresa_id}: hashes={total_hashes}, notas={total_notas}, '
+                f'raiz={hash_raiz[:32]}...'
+            )
+            if options['dry_run']:
+                continue
+
+            hash_raiz_obj, created = HashRaizDiario.objects.update_or_create(
+                empresa_id=empresa_id,
+                fecha=fecha_procesar,
+                defaults={
+                    'año': fecha_procesar.year,
+                    'mes': fecha_procesar.month,
+                    'dia': fecha_procesar.day,
+                    'hash_raiz': hash_raiz,
+                    'total_notas_selladas': total_notas,
+                    'total_hashes_acumulados': total_hashes,
+                    'hash_anterior_dia': hash_anterior,
+                    'timestamp_calculo': timezone.now(),
+                    'ip_calculador': '127.0.0.1',
+                }
+            )
+            accion = 'creado' if created else 'actualizado'
+            self.stdout.write(self.style.SUCCESS(
+                f'Empresa {empresa_id}: registro {accion}, ID={hash_raiz_obj.id}'
+            ))
+            if email_destino:
+                self.enviar_email_anclaje(hash_raiz_obj, email_destino, hashes_ordenados)
+
         if options['dry_run']:
             self.stdout.write(self.style.WARNING('Modo DRY-RUN: No se guardará ni enviará'))
-            return
-        
-        # Crear o actualizar registro
-        hash_raiz_obj, created = HashRaizDiario.objects.update_or_create(
-            fecha=fecha_procesar,
-            defaults={
-                'año': fecha_procesar.year,
-                'mes': fecha_procesar.month,
-                'dia': fecha_procesar.day,
-                'hash_raiz': hash_raiz,
-                'total_notas_selladas': total_notas,
-                'total_hashes_acumulados': total_hashes,
-                'hash_anterior_dia': hash_anterior,
-                'timestamp_calculo': timezone.now(),
-                'ip_calculador': '127.0.0.1',  # Se actualizará si hay request
-            }
-        )
-        
-        accion = 'creado' if created else 'actualizado'
-        self.stdout.write(self.style.SUCCESS(f'Registro {accion}: ID={hash_raiz_obj.id}'))
-        
-        # Enviar email de anclaje externo
-        if email_destino:
-            self.enviar_email_anclaje(hash_raiz_obj, email_destino, hashes_ordenados)
-        
         self.stdout.write(self.style.SUCCESS('✓ Anclaje diario completado'))
     
     def enviar_email_anclaje(self, hash_raiz_obj, email_destino, hashes_ordenados):
         """Envía el email con el hash raíz a la cuenta externa."""
         
-        subject = f'[PRISLAB-ANCLAJE] Hash Raíz Diario — {hash_raiz_obj.fecha}'
+        subject = (
+            f'[PRISLAB-ANCLAJE] Empresa {hash_raiz_obj.empresa_id} — '
+            f'Hash Raíz Diario — {hash_raiz_obj.fecha}'
+        )
         
         # Construir cuerpo del email
         message = f"""
@@ -235,25 +245,27 @@ Si la base de datos es alterada, este hash ya no coincidirá.
             logger.error(f'Error enviando email de anclaje: {e}')
             self.stdout.write(self.style.ERROR(f'✗ Error enviando email: {e}'))
     
-    def verificar_hash_existente(self, fecha):
+    def verificar_hash_existente(self, fecha, empresa_id=None):
         """Verifica la integridad de un hash raíz existente."""
-        
-        try:
-            hash_raiz_obj = HashRaizDiario.objects.get(fecha=fecha)
-        except HashRaizDiario.DoesNotExist:
+
+        hashes = HashRaizDiario.objects.filter(fecha=fecha)
+        if empresa_id:
+            hashes = hashes.filter(empresa_id=empresa_id)
+        registros = list(hashes.order_by('empresa_id'))
+        if not registros:
             self.stdout.write(self.style.ERROR(f'No existe hash raíz para {fecha}'))
             return
-        
-        self.stdout.write(f'Verificando hash raíz del {fecha}...')
-        
-        resultado = hash_raiz_obj.verificar_integridad_anclaje()
-        
-        if resultado['valido']:
-            self.stdout.write(self.style.SUCCESS('✓ INTEGRIDAD VERIFICADA'))
-            self.stdout.write(f'  → Hashes verificados: {resultado["total_hashes_verificados"]}')
-            self.stdout.write(f'  → Hash almacenado: {resultado["hash_almacenado"][:32]}...')
-        else:
-            self.stdout.write(self.style.ERROR('✗ ALERTA: INTEGRIDAD COMPROMETIDA'))
-            self.stdout.write(f'  → Hash almacenado: {resultado["hash_almacenado"]}')
-            self.stdout.write(f'  → Hash calculado:  {resultado["hash_calculado"]}')
-            self.stdout.write(self.style.ERROR('  → Posible manipulación detectada'))
+
+        for hash_raiz_obj in registros:
+            self.stdout.write(
+                f'Verificando hash raíz empresa {hash_raiz_obj.empresa_id} del {fecha}...'
+            )
+            resultado = hash_raiz_obj.verificar_integridad_anclaje()
+            if resultado['valido']:
+                self.stdout.write(self.style.SUCCESS('✓ INTEGRIDAD VERIFICADA'))
+                self.stdout.write(f'  → Hashes verificados: {resultado["total_hashes_verificados"]}')
+            else:
+                self.stdout.write(self.style.ERROR('✗ ALERTA: INTEGRIDAD COMPROMETIDA'))
+                self.stdout.write(f'  → Hash almacenado: {resultado["hash_almacenado"]}')
+                self.stdout.write(f'  → Hash calculado:  {resultado["hash_calculado"]}')
+                self.stdout.write(self.style.ERROR('  → Posible manipulación detectada'))

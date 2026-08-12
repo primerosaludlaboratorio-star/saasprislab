@@ -835,6 +835,15 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] `core.tests.test_laboratorio_contingencias`: 7/7 OK con migraciones deshabilitadas para prueba aislada y fixture de sucursal real.
 - [ ] Evidencia humana productiva con archivo de resultado controlado y credencial vigente. No se marca como cerrado hasta ejecutar ese escenario sin inventar datos ni credenciales.
 
+### Bloque 4 — esquema legacy forense — actualización 2026-08-11
+
+- [x] `HashRaizDiario` exige empresa y unicidad tenant-aware `(empresa, fecha)`.
+- [x] El cálculo/verificación de hashes filtra por empresa.
+- [x] `anclar_hashes_diarios` procesa todos los tenants con opción `--empresa-id` y no mezcla cadenas.
+- [x] Migraciones `0104` y `0105` aplicadas localmente; la primera aborta si existen anclajes globales sin atribución segura.
+- [x] Producción verificada antes del cambio: `HashRaizDiario=0`; no hubo datos históricos que migrar.
+- [x] Pruebas focalizadas: 15/15 OK.
+
 ---
 
 ### Bloque 19 — core/views/ (primer barrido de alto riesgo)
