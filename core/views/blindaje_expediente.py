@@ -386,7 +386,8 @@ def desbloqueo_forense(request, nota_id):
                 'error': 'La justificación debe tener al menos 50 caracteres'
             }, status=400)
         
-        nota = get_object_or_404(NotaClinicaSOAP, id=nota_id)
+        empresa = empresa_efectiva_request(request)
+        nota = get_object_or_404(NotaClinicaSOAP, id=nota_id, empresa=empresa)
         sello = get_object_or_404(NotaClinicaSellar, nota_soap=nota)
         
         with transaction.atomic():

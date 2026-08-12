@@ -19,6 +19,34 @@ import logging
 
 Usuario = get_user_model()
 
+_ROLE_LEVEL = {
+    'RECEPCION': 10,
+    'CAJERO': 10,
+    'FARMACIA': 20,
+    'QUIMICO': 20,
+    'MEDICO': 20,
+    'GERENTE': 30,
+    'ADMIN': 40,
+    'DIRECTOR': 50,
+}
+
+
+def _puede_delegar_privilegios(actor, data):
+    """Evita que un administrador delegue privilegios superiores a los suyos."""
+    if actor.is_superuser:
+        return True
+
+    actor_role = (getattr(actor, 'rol', '') or '').upper().strip()
+    actor_level = _ROLE_LEVEL.get(actor_role, -1)
+    target_role = (data.get('rol') or actor_role).upper().strip()
+    target_level = _ROLE_LEVEL.get(target_role, -1)
+
+    if 'rol' in data and (target_level < 0 or target_level > actor_level):
+        return False
+    if data.get('is_staff') is True and actor_role not in {'ADMIN', 'DIRECTOR'}:
+        return False
+    return True
+
 
 def _empresa_tenant_admin(request):
     """Misma resolución que el resto del SaaS (middleware + FK usuario)."""
@@ -159,6 +187,12 @@ def api_actualizar_usuario(request, usuario_id):
             return JsonResponse({
                 'status': 'error',
                 'mensaje': 'No puede modificar su propio rol, estado de staff o activación.',
+            }, status=403)
+
+        if not _puede_delegar_privilegios(request.user, data):
+            return JsonResponse({
+                'status': 'error',
+                'mensaje': 'No puede delegar un rol o privilegio superior al propio.',
             }, status=403)
 
         # Guardar valores anteriores para auditoría

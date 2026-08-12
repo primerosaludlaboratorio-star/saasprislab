@@ -844,6 +844,14 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] Producción verificada antes del cambio: `HashRaizDiario=0`; no hubo datos históricos que migrar.
 - [x] Pruebas focalizadas: 15/15 OK.
 
+### Bloque 5 — aislamiento y RBAC residual — actualización 2026-08-11
+
+- [x] Jerarquía de roles aplicada a modificación de usuarios y `is_staff`.
+- [x] Desbloqueo forense acotado a la empresa de la solicitud.
+- [x] Reset Sentinel tokenizado exige `empresa_id`; solo superusuario puede operar globalmente.
+- [x] Diagnóstico Sentinel ya no devuelve filas de muestra cross-tenant.
+- [x] Pruebas focalizadas: 22/22 OK; `manage.py check` y `makemigrations --check` OK.
+
 ---
 
 ### Bloque 19 — core/views/ (primer barrido de alto riesgo)

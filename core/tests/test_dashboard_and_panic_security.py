@@ -9,7 +9,11 @@ from core.views.laboratorio_captura import registrar_notificacion_panico
 from core.views.monitor_produccion import _puede_validar_resultados
 from core.views.transferencias import api_buscar_productos_transferencia
 from core.utils.pris_audio_vision import generar_hash_digital, verificar_integridad
-from core.views.administracion_usuarios import api_actualizar_tarifa, api_actualizar_usuario
+from core.views.administracion_usuarios import (
+    api_actualizar_tarifa,
+    api_actualizar_usuario,
+    _puede_delegar_privilegios,
+)
 from core.views.configuracion import configuracion_empresa
 from core.views.director import director_analizadores_probar_conexion
 from core.views.excepciones_lab import registrar_merma
@@ -127,6 +131,12 @@ class DashboardAndPanicSecurityTests(SimpleTestCase):
         )
         response = api_actualizar_usuario.__wrapped__(request, 1)
         self.assertEqual(response.status_code, 403)
+
+    def test_manager_cannot_delegate_admin_or_staff_privileges(self):
+        manager = SimpleNamespace(is_superuser=False, rol='GERENTE')
+        self.assertFalse(_puede_delegar_privilegios(manager, {'rol': 'ADMIN'}))
+        self.assertFalse(_puede_delegar_privilegios(manager, {'is_staff': True}))
+        self.assertTrue(_puede_delegar_privilegios(manager, {'rol': 'QUIMICO'}))
 
     def test_tenant_admin_cannot_update_global_tariff(self):
         request = RequestFactory().post('/administracion/tarifas/1/', data='{}', content_type='application/json')

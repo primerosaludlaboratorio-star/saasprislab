@@ -109,21 +109,32 @@ def api_sentinel_reset(request):
         from django.utils import timezone
 
         action = request.POST.get('action', 'resolve')
-        total = IncidenciaSentinel.objects.count()
-        pendientes = IncidenciaSentinel.objects.exclude(estado='SOLUCIONADO').count()
+        if is_superuser:
+            incidencias = IncidenciaSentinel.objects.all()
+        else:
+            empresa_id = request.POST.get('empresa_id')
+            if not str(empresa_id or '').isdigit():
+                return JsonResponse({
+                    'status': 'error',
+                    'mensaje': 'empresa_id es obligatorio para un token de operaciones.',
+                }, status=400)
+            incidencias = IncidenciaSentinel.objects.filter(empresa_id=int(empresa_id))
+
+        total = incidencias.count()
+        pendientes = incidencias.exclude(estado='SOLUCIONADO').count()
 
         # Recopilar resumen antes de limpiar
         resumen = {}
         for sev in ['CRITICA', 'ALTA', 'MEDIA', 'BAJA']:
-            count = IncidenciaSentinel.objects.filter(severidad=sev).count()
+            count = incidencias.filter(severidad=sev).count()
             if count > 0:
                 resumen[sev] = count
 
         if action == 'delete':
-            IncidenciaSentinel.objects.all().delete()
+            incidencias.delete()
             msg = f'{total} incidencias eliminadas. Dashboard limpio al 100%.'
         else:
-            updated = IncidenciaSentinel.objects.exclude(estado='SOLUCIONADO').update(
+            updated = incidencias.exclude(estado='SOLUCIONADO').update(
                 estado='SOLUCIONADO',
                 fecha_resolucion=timezone.now(),
                 notas_resolucion='Reset por el Director via API.',
@@ -194,14 +205,9 @@ def api_sentinel_diagnostico(request):
                     sample_columns = [
                         column for column in ('id', 'nombre', 'codigo') if column in columns
                     ]
-                    if cnt > 0 and sample_columns:
-                        selected = ', '.join(connection.ops.quote_name(column) for column in sample_columns)
-                        cursor.execute(
-                            f'SELECT {selected} FROM {quoted_table} LIMIT 3'
-                        )
-                        info[f'sample_{table}'] = [
-                            dict(zip(sample_columns, row)) for row in cursor.fetchall()
-                        ]
+                    # El diagnóstico solo devuelve metadatos agregados. Las
+                    # filas de muestra pueden pertenecer a cualquier tenant y
+                    # no son necesarias para comprobar salud del esquema.
                 except Exception:
                     logging.getLogger(__name__).exception(
                         "Error inesperado en api_sentinel_diagnostico (sentinel_api.py)"

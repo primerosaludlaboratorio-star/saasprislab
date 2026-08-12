@@ -109,3 +109,8 @@ Laboratorio/LIMS no se marca 100% cerrado todavía. El siguiente gate es:
 
 - El anclaje forense diario dejó de ser global: cada empresa tiene su propia raíz, cadena previa y verificación.
 - La migración es fail-closed ante registros legacy globales; producción se verificó con cero registros `HashRaizDiario` antes del cambio.
+
+## Actualización Bloque 5 — 2026-08-11
+
+- Los controles administrativos y forenses ya no permiten delegación vertical de privilegios ni resolución cross-tenant.
+- Sentinel conserva diagnóstico agregado sin muestras de datos y exige empresa explícita para operaciones tokenizadas.

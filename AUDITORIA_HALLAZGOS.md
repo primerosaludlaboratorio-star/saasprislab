@@ -1179,6 +1179,16 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - La migración `core.0104` falla explícitamente si encuentra anclajes legacy globales, porque no existe una asignación forense segura automática. `core.0105` normaliza los índices.
 - Evidencia: producción consultada antes del despliegue tenía `0` `HashRaizDiario`; migración local aplicada correctamente, `makemigrations --check` limpio, dry-run del comando sin hashes omitió sin mutar datos y 15/15 pruebas focalizadas pasaron.
 
+## Corrección Bloque 5 — RBAC y aislamiento residual
+
+**Fecha:** 2026-08-11
+
+- `api_actualizar_usuario` aplica jerarquía explícita: GERENTE no puede delegar ADMIN/DIRECTOR ni `is_staff`; ADMIN no puede elevar a DIRECTOR; el superusuario conserva la operación global explícita.
+- `desbloqueo_forense` resuelve la nota por `empresa` antes de tocar el sello o crear evidencia de desbloqueo.
+- `api_sentinel_reset` permite operación global únicamente a superusuario; un token operativo debe aportar `empresa_id` y solo modifica incidencias de esa empresa.
+- `api_sentinel_diagnostico` conserva conteos/metadatos del esquema, pero deja de devolver filas de muestra que podían exponer catálogos de otros tenants.
+- Evidencia: 22/22 pruebas focalizadas OK, `manage.py check` OK y `makemigrations --check` sin cambios.
+
 ## Bloque 19 — core/views/ (archivos de alto riesgo: administración de usuarios, blindaje forense, sentinel API) — NUEVO
 
 **Fecha:** 2026-08-11
