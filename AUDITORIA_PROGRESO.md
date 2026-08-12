@@ -824,3 +824,36 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - **Corrección funcional PDF:** producción recibió las bibliotecas nativas Cairo/Pango requeridas por WeasyPrint; `test_pdf_generation` confirmó `PDF_OK=True`. Los scripts de instalación y despliegue ya incluyen esas bibliotecas.
 - **Pendiente separado:** lock transitivo reproducible con hashes y adopción en CI/despliegue; no se considera cerrado por tener solo requisitos directos.
 - **Conclusión:** Imperium confirma compilación sin bloqueo, pero no autoriza por sí solo la declaración enterprise-ready. Los controles de seguridad, tenancy, RBAC, LIMS, dependencias y flujos humanos mantienen sus evidencias independientes.
+
+### Bloque 3 — maquila controlada — actualización 2026-08-11
+
+- [x] Permisos de envío, recepción y listado limitados a roles operativos de laboratorio/administración.
+- [x] Envío protegido con transacción y bloqueo de orden; doble envío activo rechazado.
+- [x] Recepción protegida con transacción y bloqueo de envío; recepción repetida rechazada.
+- [x] Órdenes solo regresan a `EN_PROCESO` desde `EN_MAQUILA`.
+- [x] `manage.py check` sin incidencias.
+- [x] `core.tests.test_laboratorio_contingencias`: 7/7 OK con migraciones deshabilitadas para prueba aislada y fixture de sucursal real.
+- [ ] Evidencia humana productiva con archivo de resultado controlado y credencial vigente. No se marca como cerrado hasta ejecutar ese escenario sin inventar datos ni credenciales.
+
+---
+
+### Bloque 19 — core/views/ (primer barrido de alto riesgo)
+
+**Fecha**: 2026-08-11
+**Rango cubierto**: barrido dirigido por patrones de riesgo (`@csrf_exempt`, `cursor.execute`, `@permission_required`/`@user_passes_test`, `__import__`) sobre los ~80 archivos de `core/views/`, con lectura completa de los archivos identificados como críticos.
+
+- [x] `core/views/administracion_usuarios.py` — 424/424. Gestión de usuarios/roles/tarifas/permisos con auditoría de campo y trazabilidad.
+- [x] `core/views/blindaje_expediente.py` — 589/589 (secciones de sellado/verificación/desbloqueo forense revisadas).
+- [x] `core/views/sentinel_api.py` — 215/215. Telemetría, reset y diagnóstico de PRIS Sentinel.
+- [x] `core/views/cron_tasks.py` — 210/210. Endpoints de cron externo (`check_certificados_metrologicos`, `check_stock_critico`, `verify_escudo_clinico`).
+- [x] `core/views/prisci_webhook.py` — 127/127. Webhook externo WhatsApp/Meta hacia Prisci IA.
+- [x] `core/views/excepciones_lab.py` — confirmado `cancelar_orden` exige superusuario explícito.
+- [x] `core/views/general.py` — reconfirmado `log_frontend_error` (ya documentado en Bloque previo con `@require_api_token`).
+
+**Hallazgos nuevos documentados**: H-NUEVO-137 a H-NUEVO-140 (4 hallazgos, 2 críticos):
+- H-NUEVO-137: `api_actualizar_usuario` permite que un rol `GERENTE` escale a otro usuario a `rol='ADMIN'`/`is_staff=True` sin validación jerárquica.
+- H-NUEVO-138: `desbloqueo_forense` no filtra por `empresa` al buscar `NotaClinicaSOAP`/`NotaClinicaSellar`, permitiendo desbloqueo cross-tenant de notas selladas.
+- H-NUEVO-139: `api_sentinel_reset` borra/resuelve `IncidenciaSentinel` de **todos** los tenants sin filtro `empresa`.
+- H-NUEVO-140: `api_sentinel_diagnostico` expone filas de muestra cross-tenant de tablas `estudio`/`examen`.
+
+**Pendiente en `core/views/`**: el resto de los ~73 archivos restantes del directorio (módulos de farmacia, finanzas, contabilidad, RRHH, director, PRIS IA/Jarvis, war room, monitoreo, subcarpetas de laboratorio/médico) requieren revisión línea por línea antes de cerrar `9b`. Continúa después con `core/utils/`, `core/rbac/`, `core/decorators.py`, `core/management/commands/`.

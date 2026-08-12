@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from core.models import DetalleOrden, Empresa, EnvioMaquila, OrdenDeServicio, Paciente
+from core.models import DetalleOrden, Empresa, EnvioMaquila, OrdenDeServicio, Paciente, Sucursal
 from core.utils.paths import generar_ruta_drive_laboratorio
 from laboratorio.models import Equipo
 from lims.models import Analito
@@ -38,10 +38,14 @@ class LaboratorioContingenciasTest(TestCase):
     def setUp(self):
         self.empresa = Empresa.objects.create(nombre='PRISLAB contingencias', rfc='CON260728A1')
         self.otra_empresa = Empresa.objects.create(nombre='Otro laboratorio', rfc='CON260728B2')
+        self.sucursal = Sucursal.objects.create(
+            empresa=self.empresa, nombre='Sucursal contingencias', codigo_sucursal='CON-001'
+        )
         self.usuario = Usuario.objects.create_user(
             username='quimico_contingencias', password='Test2026!PRIS',
             empresa=self.empresa, rol='QUIMICO',
         )
+        self.usuario.add_sucursal(self.sucursal)
         self.paciente = Paciente.objects.create(
             empresa=self.empresa, nombre_completo='Paciente Contingencia',
             nombres='Paciente', apellido_paterno='Contingencia', sexo='M',
@@ -52,6 +56,7 @@ class LaboratorioContingenciasTest(TestCase):
         )
         self.orden = OrdenDeServicio.objects.create(
             empresa=self.empresa, paciente=self.paciente,
+            sucursal=self.sucursal,
             responsable_ingreso=self.usuario, total=Decimal('100.00'),
             anticipo=Decimal('100.00'), estado='PAGADO', estado_pago='PAGADO',
             estado_clinico='EN_PROCESO', requiere_maquila=True,
@@ -107,6 +112,38 @@ class LaboratorioContingenciasTest(TestCase):
         self.client.post(url, {'notas_recepcion': 'Intento duplicado'})
         envio.refresh_from_db()
         self.assertEqual(envio.notas_recepcion, 'Informe recibido')
+
+    def test_maquila_no_duplica_envio_de_una_orden(self):
+        url = reverse('enviar_a_maquila', args=[self.orden.pk])
+        payload = {'laboratorio_externo': 'Laboratorio externo', 'guia_rastreo': 'GUIA-1'}
+
+        response = self.client.post(url, payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(EnvioMaquila.objects.filter(empresa=self.empresa).count(), 1)
+
+        response = self.client.post(url, {'laboratorio_externo': 'Otro externo'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(EnvioMaquila.objects.filter(empresa=self.empresa).count(), 1)
+        self.orden.refresh_from_db()
+        self.assertEqual(self.orden.estado, 'EN_MAQUILA')
+
+    def test_maquila_requiere_rol_operativo_autorizado(self):
+        recepcion = Usuario.objects.create_user(
+            username='recepcion_sin_maquila', password='Test2026!PRIS',
+            empresa=self.empresa, rol='RECEPCION',
+        )
+        recepcion.add_sucursal(self.sucursal)
+        self.client.force_login(recepcion)
+
+        response = self.client.get(reverse('maquila_envios'))
+        self.assertEqual(response.status_code, 403)
+
+        response = self.client.post(
+            reverse('enviar_a_maquila', args=[self.orden.pk]),
+            {'laboratorio_externo': 'No autorizado'},
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(EnvioMaquila.objects.filter(empresa=self.empresa).exists())
 
     def test_recepcion_maquila_no_cruza_empresa(self):
         envio = EnvioMaquila.objects.create(

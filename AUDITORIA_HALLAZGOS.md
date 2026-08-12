@@ -1159,3 +1159,53 @@ La nueva auditoría productiva identificó `PYSEC-2026-3412` en `weasyprint==68.
 La prueba funcional también detectó que el VPS carecía de las bibliotecas nativas de Cairo/Pango requeridas por WeasyPrint. Se instalaron en producción y se incorporaron a `scripts/setup_servidor.sh` y `scripts/deploy_vps.sh`; la generación de PDF de prueba quedó confirmada con `PDF_OK=True`.
 
 Esto elimina la deriva de versión directa entre checkout y producción y establece el lock transitivo reproducible como fuente de instalación. `requirements.txt` permanece como manifiesto directo editable; ningún despliegue debe instalarlo directamente.
+
+## Corrección Bloque 3 — maquila controlada e idempotente
+
+**Fecha:** 2026-08-11
+
+- Las vistas de maquila ahora requieren un rol operativo explícito (`QUIMICO`, `LABORATORIO`, `ADMIN` o `GERENTE`); una sesión autenticada de recepción ya no puede enviar ni recibir maquilas.
+- El envío usa `transaction.atomic()` y `select_for_update()` sobre la orden. Se rechaza un segundo envío activo para la misma orden, evitando duplicidad por doble clic o solicitudes concurrentes.
+- La recepción mantiene la idempotencia con bloqueo de la fila del envío y solo devuelve a `EN_PROCESO` las órdenes que aún están en `EN_MAQUILA`; no reabre órdenes canceladas o que ya avanzaron de estado.
+- La suite `core.tests.test_laboratorio_contingencias` pasó **7/7 OK** con `PRISLAB_TEST_NO_MIGRATIONS=1`; `manage.py check` pasó sin incidencias. El fixture se ajustó para representar una orden real con sucursal asignada bajo modo estricto.
+- La prueba de archivo de resultado controlado y la ejecución humana con credencial productiva vigente siguen siendo evidencia operativa externa; no se declaran cerradas por una prueba local.
+
+## Bloque 19 — core/views/ (archivos de alto riesgo: administración de usuarios, blindaje forense, sentinel API) — NUEVO
+
+**Fecha:** 2026-08-11
+
+### H-NUEVO-137: `api_actualizar_usuario` permite escalar privilegios de rol sin restricción jerárquica (GERENTE puede promover a ADMIN/DIRECTOR)
+- **Archivo**: `core/views/administracion_usuarios.py`.
+- **Líneas**: 118-266 (`api_actualizar_usuario`), en particular 185-186 (`if 'rol' in data: usuario.rol = data['rol']`).
+- **Severidad**: Crítica.
+- **Hallazgo**: El decorador `@role_required('ADMIN', 'DIRECTOR', 'GERENTE')` permite ejecutar esta vista a cualquier usuario con rol `GERENTE`. El cuerpo solo bloquea (1) reasignar `empresa`/`empresa_id` y (2) que el usuario se modifique su propio `rol`/`is_staff`/`is_active`. No valida que el `rol` destino esté dentro de un subconjunto permitido para el actor ni que no exceda su propio nivel. `core/rbac/permissions.py:36-47` agrupa `ADMINISTRATIVOS = {ADMIN, DIRECTOR, GERENTE}` sin jerarquía explícita en código, pero el mismo archivo reserva operaciones exclusivas a `ADMIN`/`DIRECTOR` (`caja:cancelar_venta`, `farmacia:compras`, `finanzas:ver_costos`, `finanzas:exportar`) o solo `ADMIN` (`tenant:all_branches_manage`), confirmando que `GERENTE` es de menor privilegio previsto. Un usuario `GERENTE` puede enviar `POST` con `{"rol": "ADMIN", "is_staff": true}` sobre otro usuario de su empresa y escalar privilegios a control total del tenant.
+- **Riesgo**: Escalación de privilegios vertical dentro del tenant; compromiso total de un tenant por un actor de nivel gerencial.
+- **Recomendación**: Definir jerarquía explícita de roles y validar en `api_actualizar_usuario` que el `rol` solicitado no sea superior al del actor (o restringir asignación de `'ADMIN'`/`'DIRECTOR'` solo a `ADMIN`/`DIRECTOR`). Aplicar la misma restricción a `is_staff`.
+
+### H-NUEVO-138: `desbloqueo_forense` no filtra por `empresa`, permitiendo desbloquear notas clínicas selladas de otro tenant
+- **Archivo**: `core/views/blindaje_expediente.py`.
+- **Líneas**: 372-390.
+- **Severidad**: Crítica.
+- **Hallazgo**: La vista exige el permiso Django `core.desbloquear_nota_sellada` vía `@permission_required`, pero ejecuta `nota = get_object_or_404(NotaClinicaSOAP, id=nota_id)` y `sello = get_object_or_404(NotaClinicaSellar, nota_soap=nota)` sin filtro `empresa=`. Como estos modelos no son `TenantModel` (ver H-NUEVO-129), cualquier usuario con ese permiso puede desbloquear (pasar de `SELLADA` a `EDITABLE`) la nota clínica sellada de **cualquier tenant** conociendo/enumerando `nota_id`, rompiendo el blindaje forense NOM-004 a nivel cross-tenant.
+- **Riesgo**: Alteración/desbloqueo de evidencia clínica legal de otro tenant.
+- **Recomendación**: Agregar filtro `empresa=request.empresa_actual` a ambos `get_object_or_404`; convertir `NotaClinicaSOAP`/`NotaClinicaSellar` a `TenantModel`.
+
+### H-NUEVO-139: `api_sentinel_reset` opera globalmente sobre `IncidenciaSentinel` de todos los tenants
+- **Archivo**: `core/views/sentinel_api.py`.
+- **Líneas**: 83-143.
+- **Severidad**: Alta.
+- **Hallazgo**: El endpoint autentica por superusuario **o** por token estático (`PRISLAB_SENTINEL_RESET_TOKEN`/`PRISLAB_SENTINEL_DIAGNOSTIC_TOKEN`) vía header `X-Admin-Token`. Autorizado, ejecuta `IncidenciaSentinel.objects.all().delete()` o `.exclude(estado='SOLUCIONADO').update(...)` **sin filtrar por `empresa`**, aunque `IncidenciaSentinel` (`consultorio/models/calidad.py:170-173`) sí tiene FK `empresa`. Quien posea el token compartido puede borrar/resolver incidencias de **todos los tenants** en un solo llamado.
+- **Riesgo**: Pérdida de evidencia operativa de otros tenants; efecto de denegación de servicio funcional cross-tenant.
+- **Recomendación**: Requerir `empresa_id` explícito y filtrar por él; restringir el token de operaciones a una sola empresa o exigir superusuario para acciones multi-tenant.
+
+### H-NUEVO-140: `api_sentinel_diagnostico` expone datos de muestra de todos los tenants sin scoping
+- **Archivo**: `core/views/sentinel_api.py`.
+- **Líneas**: 146-214.
+- **Severidad**: Media.
+- **Hallazgo**: Protegido solo por `PRISLAB_SENTINEL_DIAGNOSTIC_TOKEN` (token estático, sin verificación de superusuario), ejecuta `cursor.execute` sobre tablas con `estudio`/`examen` en el nombre y devuelve hasta 3 filas de muestra (`id`, `nombre`, `codigo`) de **todas las empresas**. Los nombres de tabla vienen de introspección (no inyectables), pero el contenido no se filtra por tenant.
+- **Riesgo**: Fuga de datos de catálogo cross-tenant a quien posea el token compartido.
+- **Recomendación**: Limitar el muestreo a la empresa que se diagnostica (parámetro obligatorio) o eliminar `sample_<tabla>` del payload.
+
+**Confirmaciones positivas de este bloque**: `core/views/administracion_usuarios.py` sí bloquea auto-modificación de rol/staff/activación y reasignación de empresa; registra auditoría de campo (`auditar_cambio_campo`) y trazabilidad (`registrar_trazabilidad`) en cada cambio. `core/views/cron_tasks.py` usa `secrets.compare_digest` para el secreto de cron y rechaza en producción sin `CRON_SECRET`. `core/views/prisci_webhook.py` rechaza el webhook si `PRISCI_WEBHOOK_TOKEN` no está configurado y `DEBUG=False`. `core/views/excepciones_lab.py:cancelar_orden` exige superusuario explícito vía `user_passes_test`.
+
+**Pendiente en core/views/**: cobertura exhaustiva línea por línea del resto de los ~75 archivos restantes (`farmacia.py`, `finanzas.py`, `contabilidad.py`, `rh.py`, `director.py`, `pris_jarvis.py`, `war_room.py`, `monitor_produccion.py`, subcarpetas `laboratorio/`, `medico/`, `pris_ia/`, etc.); luego `core/utils/`, `core/rbac/`, `core/decorators.py`, `core/management/commands/`, `core/services/`, `core/agent/`.

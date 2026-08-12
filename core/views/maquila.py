@@ -4,15 +4,18 @@ Vista para Gestión de Envíos a Maquila.
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db import transaction
 from django.db.models import Q
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
 from core.models import OrdenDeServicio, Empresa, EnvioMaquila
+from core.decorators import role_required
 from core.utils.sucursal_helpers import get_request_sucursal
 
 
 @login_required
+@role_required('QUIMICO', 'LABORATORIO', 'ADMIN', 'GERENTE')
 def maquila_envios(request):
     """Vista para gestionar envíos de muestras a maquila."""
     empresa = getattr(request.user, 'empresa', None)
@@ -52,58 +55,82 @@ def maquila_envios(request):
 
 
 @login_required
+@role_required('QUIMICO', 'LABORATORIO', 'ADMIN', 'GERENTE')
 @require_http_methods(["POST"])
 def enviar_a_maquila(request, orden_id):
     """Marca una orden como enviada a maquila."""
-    orden = get_object_or_404(OrdenDeServicio, id=orden_id, empresa=getattr(request.user, 'empresa', None))
-    
-    if orden.estado not in ['PAGADO', 'EN_PROCESO']:
-        messages.error(request, 'Solo se pueden enviar órdenes pagadas o en proceso.')
-        return redirect('maquila_envios')
-    
-    if not orden.requiere_maquila:
-        messages.error(request, 'La orden no está marcada para maquila externa.')
-        return redirect('maquila_envios')
-
+    empresa = getattr(request.user, 'empresa', None)
     laboratorio_externo = (request.POST.get('laboratorio_externo') or '').strip()
     if not laboratorio_externo:
         messages.error(request, 'Indica el laboratorio externo antes de enviar la orden.')
         return redirect('maquila_envios')
 
-    envio = EnvioMaquila.objects.create(
-        empresa=orden.empresa,
-        sucursal=get_request_sucursal(request),
-        laboratorio_externo=laboratorio_externo,
-        guia_rastreo=(request.POST.get('guia_rastreo') or '').strip() or None,
-        notas=(request.POST.get('notas') or '').strip() or None,
-    )
-    envio.ordenes.add(orden)
+    with transaction.atomic():
+        orden = get_object_or_404(
+            OrdenDeServicio.objects.select_for_update(),
+            id=orden_id,
+            empresa=empresa,
+        )
 
-    orden.estado = 'EN_MAQUILA'
-    orden.save()
+        if orden.estado not in ['PAGADO', 'EN_PROCESO']:
+            messages.error(request, 'Solo se pueden enviar órdenes pagadas o en proceso.')
+            return redirect('maquila_envios')
+
+        if not orden.requiere_maquila:
+            messages.error(request, 'La orden no está marcada para maquila externa.')
+            return redirect('maquila_envios')
+
+        if EnvioMaquila.objects.filter(
+            empresa=empresa,
+            ordenes=orden,
+            estado=EnvioMaquila.ESTADO_ENVIADA,
+        ).exists():
+            messages.error(request, 'La orden ya tiene un envío de maquila activo.')
+            return redirect('maquila_envios')
+
+        envio = EnvioMaquila.objects.create(
+            empresa=orden.empresa,
+            sucursal=get_request_sucursal(request),
+            laboratorio_externo=laboratorio_externo,
+            guia_rastreo=(request.POST.get('guia_rastreo') or '').strip() or None,
+            notas=(request.POST.get('notas') or '').strip() or None,
+        )
+        envio.ordenes.add(orden)
+
+        orden.estado = 'EN_MAQUILA'
+        orden.save(update_fields=['estado'])
     
     messages.success(request, f'Orden {orden.folio_orden} enviada a maquila.')
     return redirect('maquila_envios')
 
 
 @login_required
+@role_required('QUIMICO', 'LABORATORIO', 'ADMIN', 'GERENTE')
 @require_http_methods(["POST"])
 def recibir_de_maquila(request, envio_id):
     """Recibe una maquila y reabre la orden para captura y validación humana."""
     empresa = getattr(request.user, 'empresa', None)
-    envio = get_object_or_404(EnvioMaquila, pk=envio_id, empresa=empresa)
-    if envio.estado != EnvioMaquila.ESTADO_ENVIADA:
-        messages.error(request, 'La maquila ya fue recibida o cancelada; no se puede duplicar la recepción.')
-        return redirect('maquila_envios')
+    with transaction.atomic():
+        envio = get_object_or_404(
+            EnvioMaquila.objects.select_for_update(),
+            pk=envio_id,
+            empresa=empresa,
+        )
+        if envio.estado != EnvioMaquila.ESTADO_ENVIADA:
+            messages.error(request, 'La maquila ya fue recibida o cancelada; no se puede duplicar la recepción.')
+            return redirect('maquila_envios')
 
-    envio.estado = EnvioMaquila.ESTADO_RECIBIDA
-    envio.fecha_recepcion = timezone.now()
-    envio.recibido_por = request.user
-    envio.notas_recepcion = (request.POST.get('notas_recepcion') or '').strip() or None
-    if request.FILES.get('archivo_resultado'):
-        envio.archivo_resultado = request.FILES['archivo_resultado']
-    envio.save()
+        envio.estado = EnvioMaquila.ESTADO_RECIBIDA
+        envio.fecha_recepcion = timezone.now()
+        envio.recibido_por = request.user
+        envio.notas_recepcion = (request.POST.get('notas_recepcion') or '').strip() or None
+        if request.FILES.get('archivo_resultado'):
+            envio.archivo_resultado = request.FILES['archivo_resultado']
+        envio.save()
 
-    envio.ordenes.filter(empresa=empresa).update(estado='EN_PROCESO', estado_clinico='EN_PROCESO')
+        envio.ordenes.filter(
+            empresa=empresa,
+            estado='EN_MAQUILA',
+        ).update(estado='EN_PROCESO', estado_clinico='EN_PROCESO')
     messages.success(request, 'Maquila recibida. La orden está disponible para captura, revisión y validación humana.')
     return redirect('maquila_envios')
