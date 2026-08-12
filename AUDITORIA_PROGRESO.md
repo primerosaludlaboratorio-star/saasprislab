@@ -852,6 +852,14 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] Diagnóstico Sentinel ya no devuelve filas de muestra cross-tenant.
 - [x] Pruebas focalizadas: 22/22 OK; `manage.py check` y `makemigrations --check` OK.
 
+### Bloque 6 — PIN-LAB clínico — actualización 2026-08-11
+
+- [x] PIN-LAB mínimo de 8 caracteres.
+- [x] Rate limit en configuración y sellado.
+- [x] Rehash automático de SHA-256 legacy tras validación correcta.
+- [x] PIN de farmacia de 4 dígitos no alterado.
+- [x] Pruebas focalizadas: 17/17 OK; `manage.py check` y `makemigrations --check` OK.
+
 ---
 
 ### Bloque 19 — core/views/ (primer barrido de alto riesgo)

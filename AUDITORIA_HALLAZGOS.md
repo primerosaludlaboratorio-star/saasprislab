@@ -1189,6 +1189,15 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - `api_sentinel_diagnostico` conserva conteos/metadatos del esquema, pero deja de devolver filas de muestra que podían exponer catálogos de otros tenants.
 - Evidencia: 22/22 pruebas focalizadas OK, `manage.py check` OK y `makemigrations --check` sin cambios.
 
+## Corrección Bloque 6 — PIN-LAB del médico
+
+**Fecha:** 2026-08-11
+
+- El PIN-LAB de firma clínica exige ahora mínimo 8 caracteres; no se modificó el contrato independiente del PIN de farmacia de 4 dígitos.
+- El sellado y la configuración del PIN tienen rate limit de 5 intentos por 5 minutos.
+- Los hashes Django siguen siendo el formato principal. Los hashes SHA-256 legacy se aceptan solo para una validación correcta y se migran inmediatamente a `make_password`; nunca se guarda el PIN.
+- Evidencia: 17/17 pruebas focalizadas OK, `manage.py check` OK y `makemigrations --check` sin cambios.
+
 ## Bloque 19 — core/views/ (archivos de alto riesgo: administración de usuarios, blindaje forense, sentinel API) — NUEVO
 
 **Fecha:** 2026-08-11

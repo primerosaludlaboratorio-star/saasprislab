@@ -114,3 +114,7 @@ Laboratorio/LIMS no se marca 100% cerrado todavía. El siguiente gate es:
 
 - Los controles administrativos y forenses ya no permiten delegación vertical de privilegios ni resolución cross-tenant.
 - Sentinel conserva diagnóstico agregado sin muestras de datos y exige empresa explícita para operaciones tokenizadas.
+
+## Actualización Bloque 6 — 2026-08-11
+
+- El PIN-LAB de firma clínica exige 8 caracteres y limita intentos; el PIN de farmacia de 4 dígitos permanece separado.

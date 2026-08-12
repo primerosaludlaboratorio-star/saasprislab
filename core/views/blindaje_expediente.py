@@ -33,6 +33,7 @@ from core.models import (
 )
 from core.middleware.blindaje_expediente import verificar_cadena_integridad
 from core.utils.empresa_request import empresa_efectiva_request
+from core.decorators import rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +135,7 @@ def pre_sellar_nota(request, nota_id):
 # =============================================================================
 
 @login_required
+@rate_limit('lab_pin_sellado', limit=5, window_seconds=300)
 @require_POST
 def sellar_con_pin(request, nota_id):
     """
@@ -143,10 +145,10 @@ def sellar_con_pin(request, nota_id):
     try:
         pin = request.POST.get('pin', '').strip()
         
-        if not pin or len(pin) < 4:
+        if not pin or len(pin) < 8:
             return JsonResponse({
                 'success': False,
-                'error': 'PIN inválido. Debe tener al menos 4 caracteres.'
+                'error': 'PIN inválido. Debe tener al menos 8 caracteres.'
             }, status=400)
         
         nota = get_object_or_404(
@@ -441,21 +443,22 @@ def desbloqueo_forense(request, nota_id):
 # =============================================================================
 
 @login_required
+@rate_limit('lab_pin_config', limit=5, window_seconds=300)
 @require_POST
 def configurar_pin_lab(request):
     """
     Permite a un médico configurar su PIN-LAB.
-    El PIN se almacena como hash SHA256, nunca en texto plano.
+    El PIN se almacena con el hasher de Django, nunca en texto plano.
     """
     try:
         pin = request.POST.get('pin', '').strip()
         pin_confirmacion = request.POST.get('pin_confirmacion', '').strip()
         
         # Validaciones
-        if len(pin) < 4:
+        if len(pin) < 8:
             return JsonResponse({
                 'success': False,
-                'error': 'El PIN debe tener al menos 4 caracteres'
+                'error': 'El PIN debe tener al menos 8 caracteres'
             }, status=400)
         
         if pin != pin_confirmacion:
