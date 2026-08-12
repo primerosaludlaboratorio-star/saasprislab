@@ -1,6 +1,6 @@
 # Estado Canonico de PRISLAB SaaS
 
-Fecha de consolidacion: 2026-07-28 (última actualización: validación productiva LIMS, almacenamiento tenant y FEFO)
+Fecha de consolidacion: 2026-08-11 (última actualización: bloques técnicos 3-8 desplegados)
 Rama canonica: `release/v1.0-local`
 
 ## Proposito
@@ -8,6 +8,22 @@ Rama canonica: `release/v1.0-local`
 Este documento existe para que Copilot, Claude, Cascada y Codex lean una sola verdad.
 
 Todo reporte nuevo debe contrastarse contra la rama `release/v1.0-local` y no contra snapshots viejos o ramas vacias.
+
+## Corte operativo único 2026-08-11
+
+El HEAD canónico desplegado es `f37f8f7` (`fix(ai): unify multimodal OCR provider cascade`). La secuencia inmediatamente anterior y su evidencia es:
+
+- `29ac79a` — 2FA: códigos de respaldo con reautenticación, revelación de un solo uso, hash adaptativo y rate limit de API; migración `seguridad.0006` aplicada.
+- `dba979f` — PIN clínico mínimo de 8 caracteres y rate limit de configuración/sellado.
+- `12e0d39` — cierre de escalación RBAC, desbloqueo forense tenant-scoped y Sentinel tenant-scoped.
+- `b587092` — hash forense diario con raíz separada por empresa; migraciones `core.0104`/`core.0105` aplicadas.
+- `d38d819` — flujo de maquila con permisos, transacciones, bloqueo concurrente e idempotencia.
+
+Todas las revisiones anteriores se probaron localmente, se desplegaron mediante el procedimiento único local y terminaron con `manage.py check`, servicios activos y `/health/` HTTP 200. Las suites focalizadas y su alcance están registrados en `AUDITORIA_PROGRESO.md`.
+
+### Alcance aún no certificado como E2E humano
+
+El cierre técnico anterior no sustituye la auditoría humana completa en producción. Quedan como evidencia operativa pendiente los flujos con datos QA y efectos laterales de Laboratorio/LIMS: recepción, toma, captura, validación clínica, generación/entrega de PDF, rechazo/repetición, cancelación/reembolso, CCI/Westgard, consumo de reactivos/insumos, equipos, impresoras y HL7 físico. No se deben marcar cerrados sin esa evidencia.
 
 ## Corte vigente 2026-07-28
 

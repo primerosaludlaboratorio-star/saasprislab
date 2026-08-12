@@ -1,6 +1,6 @@
 # Fuente única de verdad PRISLAB
 
-**Vigencia:** 2026-07-29  
+**Vigencia:** 2026-08-11
 **Rama operativa:** `release/v1.0-local`
 
 ## Checkout canónico
@@ -132,3 +132,25 @@ La revisión `4ac7903` es la fuente canónica para la consolidación de middlewa
 - No copiar documentos con el mismo nombre desde otra carpeta sin comparar
   contenido y fecha.
 - No borrar una corrección sin probarla y registrar su razón.
+
+## Corte técnico vigente 2026-08-11
+
+La última cadena local desplegada es:
+
+| Bloque | Alcance | Revisión | Evidencia |
+|---|---|---|---|
+| 3 | Maquila y contingencias LIMS | `d38d819` | 7 pruebas focalizadas, migraciones al día, health 200 |
+| 4 | Hash forense diario por empresa | `b587092` | migraciones `core.0104`/`core.0105`, sin filas legacy ambiguas, health 200 |
+| 5 | Tenant/RBAC/Sentinel residual | `12e0d39` | 22 pruebas focalizadas, health 200 |
+| 6 | PIN clínico y rate limit | `dba979f` | 17 pruebas focalizadas, health 200 |
+| 7 | 2FA, códigos de respaldo y rate limit API | `29ac79a` | 19 pruebas focalizadas, migración `seguridad.0006`, health 200 |
+| 8 | PRIS OCR multimodal | `f37f8f7` | 13 pruebas OCR/proveedores, health 200 |
+
+La publicación se realizó únicamente con `scripts/deploy_local_to_vps.ps1`; no se usó GitHub como mecanismo de despliegue. La última comprobación externa respondió HTTP 200 en `/health/`, con servicios operativos.
+
+### Estado de cierre
+
+- Los bloques 3 a 8 están cerrados a nivel de corrección técnica, pruebas focalizadas y despliegue.
+- El bloque 9 consolida documentación, pero no convierte por sí mismo los módulos de Laboratorio/LIMS en cierre E2E humano.
+- La prueba humana completa en producción sigue siendo una actividad separada: requiere credenciales autorizadas, datos QA no destructivos y ejecución de recepción, toma, captura, validación, PDF, entrega, rechazo/repetición, cancelación/reembolso, calidad, reactivos, equipos, impresoras y HL7.
+- No se declara “enterprise cerrado” solo por `check`, tests unitarios o health check.
