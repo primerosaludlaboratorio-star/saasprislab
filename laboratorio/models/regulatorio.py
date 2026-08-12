@@ -2,6 +2,7 @@
 MÓDULO DE LABORATORIO - Cumplimiento normativo (NOM-007 + ISO 15189).
 """
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from core.validators import validate_image_upload
@@ -22,6 +23,12 @@ class ResponsableSanitario(models.Model):
         related_name='responsable_sanitario',
         verbose_name="Usuario del Sistema",
         help_text="Usuario vinculado al Responsable Sanitario"
+    )
+    empresa = models.ForeignKey(
+        'core.Empresa',
+        on_delete=models.CASCADE,
+        related_name='responsables_sanitarios',
+        verbose_name='Empresa',
     )
     
     # Datos Legales Obligatorios (NOM-007)
@@ -67,7 +74,7 @@ class ResponsableSanitario(models.Model):
     activo = models.BooleanField(
         default=True,
         verbose_name="Responsable Activo",
-        help_text="Solo puede haber UN responsable activo a la vez"
+        help_text="Solo puede haber UN responsable activo por empresa a la vez"
     )
     fecha_alta = models.DateTimeField(
         auto_now_add=True,
@@ -93,9 +100,21 @@ class ResponsableSanitario(models.Model):
         Garantiza que solo haya un Responsable Sanitario activo a la vez.
         Si este se marca como activo, desactiva a los demás.
         """
+        usuario_empresa_id = None
+        if self.usuario_id:
+            usuario_empresa_id = getattr(self.usuario, 'empresa_id', None)
+        if self.empresa_id is None:
+            self.empresa_id = usuario_empresa_id
+        if not self.empresa_id:
+            raise ValidationError('El Responsable Sanitario debe pertenecer a una empresa.')
+        if usuario_empresa_id and self.empresa_id != usuario_empresa_id:
+            raise ValidationError('El Responsable Sanitario y su usuario deben pertenecer a la misma empresa.')
         if self.activo:
             # Desactivar otros responsables activos
-            ResponsableSanitario.objects.filter(activo=True).exclude(pk=self.pk).update(activo=False)
+            ResponsableSanitario.objects.filter(
+                empresa_id=self.empresa_id,
+                activo=True,
+            ).exclude(pk=self.pk).update(activo=False)
         super().save(*args, **kwargs)
 
 

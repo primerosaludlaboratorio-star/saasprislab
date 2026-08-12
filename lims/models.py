@@ -9,6 +9,7 @@ Nivel 4: PrecioItem                        (gestión financiera independiente)
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from core.models import Empresa
@@ -142,6 +143,10 @@ class ValorReferenciaAnalito(models.Model):
         Analito, on_delete=models.CASCADE,
         related_name='rangos', verbose_name='Analito',
     )
+    empresa     = models.ForeignKey(
+        Empresa, on_delete=models.CASCADE,
+        related_name='valores_referencia_lims', verbose_name='Empresa',
+    )
     sexo        = models.CharField(max_length=1, choices=SEXO_CHOICES,
                                    verbose_name='Sexo')
     unidad_edad = models.CharField(max_length=5, choices=UNIDAD_EDAD_CHOICES,
@@ -185,8 +190,18 @@ class ValorReferenciaAnalito(models.Model):
         verbose_name_plural = 'Valores de referencia'
         ordering            = ['analito', 'unidad_edad', 'edad_minima']
         indexes             = [
-            models.Index(fields=['analito', 'unidad_edad', 'sexo']),
+            models.Index(fields=['empresa', 'analito', 'unidad_edad', 'sexo']),
         ]
+
+    def save(self, *args, **kwargs):
+        analito_empresa_id = Analito._base_manager.only('empresa_id').get(
+            pk=self.analito_id,
+        ).empresa_id
+        if self.empresa_id is None:
+            self.empresa_id = analito_empresa_id
+        if self.empresa_id != analito_empresa_id:
+            raise ValidationError('El rango y el analito deben pertenecer a la misma empresa.')
+        super().save(*args, **kwargs)
 
     @classmethod
     def aplica_para_paciente(cls, analito, paciente=None, edad_dias=None, edad_anios=None, sexo=None):
@@ -205,7 +220,10 @@ class ValorReferenciaAnalito(models.Model):
                 edad_anios = paciente.edad_aproximada
                 edad_dias = (edad_anios * 365) if edad_anios is not None else None
 
-        qs = cls.objects.filter(analito=analito)
+        qs = cls.objects.filter(
+            empresa_id=analito.empresa_id,
+            analito=analito,
+        )
         sx = (sexo or '')[:1].upper() if sexo else ''
         if sx in ('M', 'F'):
             qs = qs.filter(Q(sexo=sx) | Q(sexo='I'))

@@ -901,6 +901,7 @@ def _procesar_item_hl7(
             )
             try:
                 _hl7_row = ResultadoHL7.objects.create(
+                    empresa=empresa_ctx,
                     mensaje_crudo=(mensaje_crudo or '')[:2000],
                     orden=None,
                     parametro=None,

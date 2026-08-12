@@ -25,8 +25,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from core.models import Empresa
-from core.tenant import clear_current_empresa, set_current_empresa, tenant_bypass
-from core.utils.default_empresa import resolve_default_empresa_sistema
+from core.tenant import clear_current_empresa, set_current_empresa
 from lims.models import Analito, PaqueteLims, PerfilLims, PrecioItem
 from lims.veterinary_catalog import is_veterinary_catalog_text
 import logging
@@ -169,13 +168,15 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--dry-run', action='store_true')
         parser.add_argument(
-            '--empresa-id', type=int, default=None,
-            help='Empresa destino para fijar contexto tenant durante la importación.',
+            '--empresa-id', type=int, required=True,
+            help='Empresa destino explícita. Nunca se permite una empresa por defecto.',
         )
 
     def handle(self, *args, **options):
         dry = options['dry_run']
-        empresa = self._resolver_empresa(options.get('empresa_id'))
+        empresa = Empresa.objects.filter(pk=options['empresa_id'], activa=True).first()
+        if not empresa:
+            raise CommandError('La empresa destino indicada no existe o está inactiva.')
         if dry:
             self.stdout.write(self.style.WARNING('[DRY-RUN]\n'))
         if empresa:
@@ -184,9 +185,8 @@ class Command(BaseCommand):
             ))
 
         try:
-            with tenant_bypass():
-                if empresa:
-                    set_current_empresa(empresa)
+            set_current_empresa(empresa)
+            try:
 
                 tarifa_rows = _read_tarifa_rows()
                 if tarifa_rows:
@@ -296,6 +296,7 @@ class Command(BaseCommand):
                             na += 1
                             continue
                         PrecioItem.objects.update_or_create(
+                            empresa=empresa,
                             analito=a,
                             defaults={
                                 'tipo': 'A',
@@ -313,6 +314,7 @@ class Command(BaseCommand):
                             np += 1
                             continue
                         PrecioItem.objects.update_or_create(
+                            empresa=empresa,
                             perfil=p,
                             defaults={
                                 'tipo': 'P',
@@ -330,6 +332,7 @@ class Command(BaseCommand):
                             nq += 1
                             continue
                         PrecioItem.objects.update_or_create(
+                            empresa=empresa,
                             paquete=q,
                             defaults={
                                 'tipo': 'Q',
@@ -361,10 +364,7 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.WARNING(
                         f'  Advertencia: {len(sin_match)} filas de tarifa no encontraron coincidencia exacta.'
                     ))
+            finally:
+                pass
         finally:
             clear_current_empresa()
-
-    def _resolver_empresa(self, empresa_id):
-        if empresa_id:
-            return Empresa.objects.filter(pk=empresa_id, activa=True).first()
-        return resolve_default_empresa_sistema()

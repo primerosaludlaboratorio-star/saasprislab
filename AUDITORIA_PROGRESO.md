@@ -901,3 +901,14 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] Los intentos fuera de tenant responden 404 sin mutar datos.
 - [x] Verificación local: `manage.py check`, `makemigrations --check`, 11 pruebas de autorizaciones/contabilidad OK y regresiones focalizadas previas OK.
 - [x] Preflight de producción: 0 solicitudes existentes y 0 solicitantes sin empresa antes de aplicar la migración.
+
+### Bloque 1 — catálogo LIMS y comandos tenant-aware — 2026-08-12
+
+- [x] La cotización activa consulta `Analito` y `PerfilLims` de la empresa, no el catálogo legacy global.
+- [x] La carga de tarifas legacy global queda restringida a superusuario de plataforma.
+- [x] `ResponsableSanitario` y `ResultadoHL7` tienen empresa obligatoria, validación de pertenencia y migración fail-closed.
+- [x] `ValorReferenciaAnalito` tiene empresa obligatoria, índice tenant-aware y validación analito/empresa.
+- [x] Importaciones, ensamblado, sincronización de precios y limpieza LIMS requieren `--empresa-id` explícito.
+- [x] Preflight productivo previo: 0 responsables, 0 HL7 y 0 rangos sin atribución empresarial.
+- [x] Verificación local: compilación, `manage.py check`, `makemigrations --check` y 26/26 pruebas focalizadas OK.
+- [ ] La migración total de modelos legacy globales no se declara cerrada en este bloque; requiere inventario y plan separado para no mezclar datos históricos de tenants.

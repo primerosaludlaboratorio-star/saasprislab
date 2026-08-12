@@ -29,8 +29,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from core.models import Empresa
-from core.tenant import clear_current_empresa, set_current_empresa, tenant_bypass
-from core.utils.default_empresa import resolve_default_empresa_sistema
+from core.tenant import clear_current_empresa, set_current_empresa
 from lims.models import Analito, ValorReferenciaAnalito
 from lims.veterinary_catalog import is_veterinary_catalog_text
 import logging
@@ -113,8 +112,8 @@ class Command(BaseCommand):
             help='Simular importación sin guardar nada en la BD',
         )
         parser.add_argument(
-            '--empresa-id', type=int, default=None,
-            help='Empresa destino para fijar contexto tenant durante la importación.',
+            '--empresa-id', type=int, required=True,
+            help='Empresa destino explícita. Nunca se permite una empresa por defecto.',
         )
         parser.add_argument(
             '--reset', action='store_true',
@@ -130,26 +129,22 @@ class Command(BaseCommand):
         reset   = options['reset']
         if reset and not options.get('empresa_id'):
             raise CommandError('--reset exige --empresa-id explícito; nunca se permite reset global.')
-        empresa = self._resolver_empresa(options.get('empresa_id'))
+        empresa = Empresa.objects.filter(pk=options['empresa_id'], activa=True).first()
         if reset and not empresa:
             raise CommandError('La empresa destino indicada no existe o está inactiva.')
 
-        if empresa:
-            self.stdout.write(self.style.NOTICE(
-                f'Empresa contexto: {empresa.pk} — {empresa.nombre}'
-            ))
-        else:
-            self.stdout.write(self.style.WARNING(
-                'Sin empresa contexto explícita. La importación dependerá del contexto tenant actual.'
-            ))
+        if not empresa:
+            raise CommandError('La empresa destino indicada no existe o está inactiva.')
+        self.stdout.write(self.style.NOTICE(
+            f'Empresa contexto: {empresa.pk} — {empresa.nombre}'
+        ))
 
         if dry_run:
             self.stdout.write(self.style.WARNING('  [DRY-RUN] No se guardarán cambios.\n'))
 
         try:
-            with tenant_bypass():
-                if empresa:
-                    set_current_empresa(empresa)
+            set_current_empresa(empresa)
+            try:
 
                 # ── Opcional: reset previo ────────────────────────────────────
                 if reset and not dry_run:
@@ -227,9 +222,11 @@ class Command(BaseCommand):
                                     creados += 1
                                 else:
                                     obj, created = Analito.objects.update_or_create(
+                                        empresa=empresa,
                                         id_legacy=id_leg if id_leg else None,
                                         defaults={**datos, 'codigo': codigo_final},
                                     ) if id_leg else Analito.objects.get_or_create(
+                                        empresa=empresa,
                                         codigo=codigo_final,
                                         defaults=datos,
                                     )
@@ -264,7 +261,7 @@ class Command(BaseCommand):
 
                 id_legacy_set = {
                     a.id_legacy: a.pk
-                    for a in Analito.objects.exclude(id_legacy=None)
+                    for a in Analito.objects.filter(empresa=empresa).exclude(id_legacy=None)
                 }
                 self.stdout.write(f'  Mapa id_legacy: {len(id_legacy_set)} analitos indexados')
 
@@ -300,6 +297,7 @@ class Command(BaseCommand):
                                     v_creados += 1
                                 else:
                                     ValorReferenciaAnalito.objects.update_or_create(
+                                        empresa=empresa,
                                         analito_id=analito_pk,
                                         sexo=sexo,
                                         unidad_edad=unidad,
@@ -325,16 +323,13 @@ class Command(BaseCommand):
                     f'| omitidos: {v_omitidos} | errores: {v_errores}'
                 )
 
-                self._resumen_final(dry_run, options.get('con_perfiles', False))
+                self._resumen_final(dry_run, options.get('con_perfiles', False), empresa.pk)
+            finally:
+                pass
         finally:
             clear_current_empresa()
 
-    def _resolver_empresa(self, empresa_id):
-        if empresa_id:
-            return Empresa.objects.filter(pk=empresa_id, activa=True).first()
-        return resolve_default_empresa_sistema()
-
-    def _resumen_final(self, dry_run: bool, con_perfiles: bool = False):
+    def _resumen_final(self, dry_run: bool, con_perfiles: bool = False, empresa_id: int = None):
         if dry_run:
             self.stdout.write(self.style.WARNING('\n[DRY-RUN] Nada fue guardado.'))
             return
@@ -352,6 +347,6 @@ class Command(BaseCommand):
         )
         if con_perfiles and not dry_run:
             self.stdout.write('\nEjecutando Niveles 2-4 (perfiles, paquetes, precios)...\n')
-            call_command('importar_examenes_perfil_lims', stdout=self.stdout, stderr=self.stderr)
-            call_command('importar_paquetes_perfil_lims', stdout=self.stdout, stderr=self.stderr)
-            call_command('sincronizar_precios_lims', stdout=self.stdout, stderr=self.stderr)
+            call_command('importar_examenes_perfil_lims', empresa_id=empresa_id, stdout=self.stdout, stderr=self.stderr)
+            call_command('importar_paquetes_perfil_lims', empresa_id=empresa_id, stdout=self.stdout, stderr=self.stderr)
+            call_command('sincronizar_precios_lims', empresa_id=empresa_id, stdout=self.stdout, stderr=self.stderr)

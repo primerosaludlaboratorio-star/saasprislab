@@ -1257,6 +1257,24 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Corrección**: se añadió la FK obligatoria `empresa`, se backfillan registros históricos desde `usuario_solicita.empresa`, las consultas de aprobación filtran por empresa y el acceso fuera de tenant responde 404. La migración falla cerrada si encuentra una solicitud huérfana.
 - **Estado**: CORREGIDO Y VERIFICADO. En producción, antes del despliegue, se comprobaron 0 solicitudes existentes y 0 solicitantes sin empresa. Cubierto por `core.tests.test_authorizations_security`.
 
+## Bloque 1 — catálogo LIMS, referencias clínicas y comandos de importación — 2026-08-12
+
+### Estado de cierre
+
+- **H-NUEVO-81:** MITIGADO. La carga legacy global de tarifas queda restringida a superusuario de plataforma. La cotización operativa usa el catálogo LIMS con empresa explícita; el modelo legacy global permanece como compatibilidad y no se declara eliminado.
+- **H-NUEVO-82:** MITIGADO, no migración total. Los modelos legacy globales siguen existiendo para compatibilidad; los flujos LIMS y cotización modificados ya no los usan como fuente operativa cross-tenant. La conversión completa de ese esquema queda fuera de este bloque para evitar una migración destructiva sin inventario histórico.
+- **H-NUEVO-85:** CORREGIDO EN EL FLUJO ACTIVO. `ResultadoHL7` ahora exige `empresa` y el servicio de interfaz la asigna desde la orden/contexto; la migración aborta si encuentra una relación histórica sin empresa. `ResultadoHL7Huerfano` conserva su modelo de contingencia tenant-aware.
+- **H-NUEVO-87:** CORREGIDO Y VERIFICADO. `ResponsableSanitario` exige empresa, valida que coincida con la empresa del usuario y limita la unicidad funcional del responsable activo por empresa.
+- **H-NUEVO-93:** CORREGIDO Y VERIFICADO. `ValorReferenciaAnalito` exige empresa, valida que coincida con el analito y consulta rangos dentro de esa empresa; la migración falla cerrada ante huérfanos.
+- **H-NUEVO-94:** CORREGIDO Y VERIFICADO. Los comandos de importación, ensamblado, sincronización y limpieza LIMS requieren `--empresa-id` explícito y ya no ejecutan bypass global implícito.
+
+### Evidencia
+
+- Migraciones: `laboratorio.0020_responsablesanitario_empresa_resultadohl7_empresa_and_more` y `lims.0013_remove_valorreferenciaanalito_lims_valorr_analito_c26cad_idx_and_more`.
+- Preflight de producción previo a migrar: `RESP=0`, `HL7=0`, `RANGOS=0` registros sin atribución empresarial.
+- Verificación local: `manage.py check` OK, `makemigrations --check --dry-run` sin cambios, compilación Python OK.
+- Pruebas focalizadas: 26/26 OK (`lims.tests`, seguridad de configuración/dependencias LIMS, HL7 tenant binding y búsqueda del carrito LIMS).
+
 ## Bloque 8 — PRIS IA y OCR multimodal — CORREGIDO 2026-08-11
 
 - `core/services/ocr_documental.py` ya no exige Gemini directamente para `analizar_documento`, `analizar_compra_farmacia` ni `analizar_compra_laboratorio`.

@@ -22,8 +22,7 @@ from django.db import transaction
 from django.db.models import Count
 
 from core.models import Empresa
-from core.tenant import clear_current_empresa, set_current_empresa, tenant_bypass
-from core.utils.default_empresa import resolve_default_empresa_sistema
+from core.tenant import clear_current_empresa, set_current_empresa
 from lims.models import Analito, PerfilLims
 from lims.veterinary_catalog import is_veterinary_catalog_text
 
@@ -91,8 +90,8 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--dry-run', action='store_true', help='Simular sin guardar')
         parser.add_argument(
-            '--empresa-id', type=int, default=None,
-            help='Empresa destino para fijar contexto tenant durante la importación.',
+            '--empresa-id', type=int, required=True,
+            help='Empresa destino explícita. Nunca se permite una empresa por defecto.',
         )
         parser.add_argument(
             '--limpiar-perfiles', action='store_true',
@@ -102,7 +101,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         dry = options['dry_run']
         limpiar = options['limpiar_perfiles']
-        empresa = self._resolver_empresa(options.get('empresa_id'))
+        empresa = Empresa.objects.filter(pk=options['empresa_id'], activa=True).first()
+        if not empresa:
+            raise CommandError('La empresa destino indicada no existe o está inactiva.')
 
         if not os.path.exists(CSV_EXAMENES):
             self.stdout.write(self.style.ERROR(f'No existe: {CSV_EXAMENES}'))
@@ -117,9 +118,8 @@ class Command(BaseCommand):
             ))
 
         try:
-            with tenant_bypass():
-                if empresa:
-                    set_current_empresa(empresa)
+            set_current_empresa(empresa)
+            try:
 
                 if limpiar and not dry:
                     n = PerfilLims.objects.count()
@@ -157,6 +157,7 @@ class Command(BaseCommand):
                             descripcion = ' '.join(x for x in (f'Abrev: {abrev}', titulo, meta) if x).strip()
 
                             PerfilLims.objects.update_or_create(
+                                empresa=empresa,
                                 id_perfil_legacy=pkey,
                                 defaults={
                                     'nombre': nombre,
@@ -263,10 +264,7 @@ class Command(BaseCommand):
                     self.stdout.write('  Muestra (perfil|codigo estudio no resuelto):')
                     for pk, cod in muestra_nf[:12]:
                         self.stdout.write(f'    {pk}  ->  {cod}')
+            finally:
+                pass
         finally:
             clear_current_empresa()
-
-    def _resolver_empresa(self, empresa_id):
-        if empresa_id:
-            return Empresa.objects.filter(pk=empresa_id, activa=True).first()
-        return resolve_default_empresa_sistema()

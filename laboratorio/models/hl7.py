@@ -19,6 +19,12 @@ class ResultadoHL7(models.Model):
     ]
 
     mensaje_crudo = models.TextField(help_text='Mensaje HL7/ASTM raw recibido del analizador')
+    empresa = models.ForeignKey(
+        'core.Empresa',
+        on_delete=models.CASCADE,
+        related_name='resultados_hl7',
+        verbose_name='Empresa',
+    )
     orden = models.ForeignKey(
         'laboratorio.Orden', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='resultados_hl7'

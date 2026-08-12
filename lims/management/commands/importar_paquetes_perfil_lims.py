@@ -21,8 +21,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from core.models import Empresa
-from core.tenant import clear_current_empresa, set_current_empresa, tenant_bypass
-from core.utils.default_empresa import resolve_default_empresa_sistema
+from core.tenant import clear_current_empresa, set_current_empresa
 from lims.models import Analito, PaqueteLims, PerfilLims
 from lims.veterinary_catalog import is_veterinary_catalog_text
 
@@ -90,8 +89,8 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--dry-run', action='store_true')
         parser.add_argument(
-            '--empresa-id', type=int, default=None,
-            help='Empresa destino para fijar contexto tenant durante la importación.',
+            '--empresa-id', type=int, required=True,
+            help='Empresa destino explícita. Nunca se permite una empresa por defecto.',
         )
         parser.add_argument(
             '--limpiar-paquetes', action='store_true',
@@ -101,7 +100,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         dry = options['dry_run']
         limpiar = options['limpiar_paquetes']
-        empresa = self._resolver_empresa(options.get('empresa_id'))
+        empresa = Empresa.objects.filter(pk=options['empresa_id'], activa=True).first()
+        if not empresa:
+            raise CommandError('La empresa destino indicada no existe o está inactiva.')
 
         if not os.path.exists(CSV_PAQUETES):
             self.stdout.write(self.style.ERROR(f'No existe: {CSV_PAQUETES}'))
@@ -116,9 +117,8 @@ class Command(BaseCommand):
             ))
 
         try:
-            with tenant_bypass():
-                if empresa:
-                    set_current_empresa(empresa)
+            set_current_empresa(empresa)
+            try:
 
                 if limpiar and not dry:
                     n = PaqueteLims.objects.count()
@@ -150,6 +150,7 @@ class Command(BaseCommand):
                             texto_desc = ' '.join(x for x in (indic, notas) if x).strip()
 
                             PaqueteLims.objects.update_or_create(
+                                empresa=empresa,
                                 id_paquete_legacy=ab,
                                 defaults={
                                     'nombre': nombre,
@@ -258,10 +259,7 @@ class Command(BaseCommand):
                     self.stdout.write('  Muestra incidencias:')
                     for item in muestra[:12]:
                         self.stdout.write(f'    {item}')
+            finally:
+                pass
         finally:
             clear_current_empresa()
-
-    def _resolver_empresa(self, empresa_id):
-        if empresa_id:
-            return Empresa.objects.filter(pk=empresa_id, activa=True).first()
-        return resolve_default_empresa_sistema()

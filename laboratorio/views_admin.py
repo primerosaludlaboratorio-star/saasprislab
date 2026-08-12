@@ -25,6 +25,14 @@ def cargar_tarifas_desde_csv(request):
     Endpoint para cargar tarifas desde un archivo CSV subido
     Solo accesible para staff
     """
+    # El catálogo legacy es global y se conserva solo para compatibilidad.
+    # Las cargas por tenant deben usar el importador LIMS con --empresa-id.
+    if not request.user.is_superuser:
+        return JsonResponse({
+            'ok': False,
+            'mensaje': 'La carga legacy global requiere un superusuario de plataforma.',
+        }, status=403)
+
     if 'archivo' not in request.FILES:
         return JsonResponse({
             'ok': False,

@@ -6,11 +6,11 @@ venta, y elimina sus relaciones de composición. El modo de simulación es el
 predeterminado; usar ``--apply`` para aplicar.
 """
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from core.tenant import tenant_bypass
-from laboratorio.models import Estudio
+from core.models import Empresa
+from core.tenant import clear_current_empresa, set_current_empresa
 from lims.models import Analito, PaqueteLims, PerfilAnalito, PerfilLims, PrecioItem
 from lims.veterinary_catalog import is_veterinary_catalog_text
 
@@ -20,17 +20,23 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--apply', action='store_true', help='Aplicar la limpieza; sin esto solo simula.')
+        parser.add_argument('--empresa-id', type=int, required=True, help='Empresa destino explícita.')
 
     def handle(self, *args, **options):
         apply = options['apply']
-        with tenant_bypass():
-            return self._handle_all_tenants(apply)
+        empresa = Empresa.objects.filter(pk=options['empresa_id'], activa=True).first()
+        if not empresa:
+            raise CommandError('La empresa indicada no existe o está inactiva.')
+        set_current_empresa(empresa)
+        try:
+            return self._handle_empresa(apply, empresa)
+        finally:
+            clear_current_empresa()
 
-    def _handle_all_tenants(self, apply):
+    def _handle_empresa(self, apply, empresa):
         analitos = list(Analito.objects.all())
         perfiles = list(PerfilLims.objects.all())
         paquetes = list(PaqueteLims.objects.all())
-        estudios = list(Estudio.objects.all())
 
         analito_ids = {
             item.pk for item in analitos
@@ -51,16 +57,9 @@ class Command(BaseCommand):
                 item.id_paquete_legacy, item.nombre, item.descripcion,
             )
         }
-        estudio_ids = {
-            item.pk for item in estudios
-            if is_veterinary_catalog_text(
-                item.codigo, item.nombre, item.categoria.nombre if item.categoria_id else '',
-            )
-        }
-
         self.stdout.write(
             f'Analitos: {len(analito_ids)} | Perfiles: {len(perfil_ids)} | '
-            f'Paquetes: {len(paquete_ids)} | Estudios legacy: {len(estudio_ids)}'
+            f'Paquetes: {len(paquete_ids)} | Empresa: {empresa.pk}'
         )
         if not apply:
             self.stdout.write(self.style.WARNING('[DRY-RUN] No se modificó la base de datos. Use --apply para aplicar.'))
@@ -92,10 +91,5 @@ class Command(BaseCommand):
             PrecioItem.objects.filter(
                 paquete_id__in=paquete_ids,
             ).update(activo=False)
-
-            # Estudio legacy no tiene bandera activo; se conserva para historial.
-            self.stdout.write(self.style.WARNING(
-                f'Estudios legacy veterinarios detectados y preservados: {len(estudio_ids)}'
-            ))
 
         self.stdout.write(self.style.SUCCESS('Catálogo veterinario retirado del catálogo operativo LIMS/venta.'))

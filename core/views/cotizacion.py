@@ -11,7 +11,7 @@ from django.views.decorators.http import require_http_methods
 from django.db.models import Q
 
 from core.models import Empresa, Paciente
-from laboratorio.models import Estudio as LabEstudio, PerfilLaboratorio
+from lims.models import Analito, PerfilLims
 from core.utils.whatsapp_sender import generar_enlace_whatsapp, generar_mensaje_cotizacion
 import logging
 
@@ -133,46 +133,40 @@ def api_buscar_estudios_cotizacion(request):
         if not query:
             return JsonResponse({'status': 'error', 'mensaje': 'Búsqueda vacía'}, status=400)
         
-        # Catálogo clínico local (laboratorio.Estudio); órdenes operativas usan LIMS v7.5 en recepción.
-        try:
-            estudios = LabEstudio.objects.select_related('categoria').filter(
-                Q(nombre__icontains=query) | Q(codigo__icontains=query) | Q(keywords__icontains=query)
-            ).order_by('nombre')[:20]
-        except Exception:
-            logging.getLogger(__name__).exception("Error inesperado en api_buscar_estudios_cotizacion (cotizacion.py)")
-            estudios = []
+        estudios = Analito.objects.filter(
+            empresa=empresa,
+            activo=True,
+            es_vendible_individualmente=True,
+        ).filter(
+            Q(nombre__icontains=query) | Q(codigo__icontains=query) |
+            Q(abreviatura__icontains=query) | Q(departamento__icontains=query)
+        ).order_by('nombre')[:20]
 
-        # PerfilLaboratorio no tiene FK a empresa en el modelo actual.
-        # Filtrar por `empresa` aquí dispara FieldError y rompe la cotización.
-        perfiles = PerfilLaboratorio.objects.filter(
+        perfiles = PerfilLims.objects.filter(
+            empresa=empresa,
             activo=True,
             nombre__icontains=query
         )[:10]
 
         resultados_estudios = []
         for e in estudios:
-            precio = float(getattr(e, 'precio_base', 0) or getattr(e, 'precio', 0) or 0)
-            seccion = ''
-            if hasattr(e, 'categoria') and e.categoria:
-                seccion = e.categoria.nombre
-            elif hasattr(e, 'seccion') and e.seccion:
-                seccion = e.seccion.nombre
+            precio = float(e.costo_lista or 0)
             resultados_estudios.append({
                 'id': e.id,
                 'nombre': e.nombre,
                 'codigo': e.codigo or '',
                 'tipo': 'estudio',
                 'precio': precio,
-                'seccion': seccion,
+                'seccion': e.departamento or '',
             })
         
         resultados_perfiles = [{
             'id': p.id,
             'nombre': p.nombre,
             'tipo': 'perfil',
-            'precio': float(getattr(p, 'precio', 0) or 0),
+            'precio': float(p.costo_lista or 0),
             'descripcion': p.descripcion or '',
-            'pruebas_incluidas': p.pruebas.count()
+            'pruebas_incluidas': p.analitos.count()
         } for p in perfiles]
         
         return JsonResponse({
