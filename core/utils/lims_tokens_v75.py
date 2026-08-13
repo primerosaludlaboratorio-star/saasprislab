@@ -22,6 +22,7 @@ import re
 import logging
 from datetime import datetime
 from django.utils import timezone as _tz_lims
+from django.db.models import Q
 
 from django.db import transaction
 from django.core.exceptions import ValidationError
@@ -185,7 +186,7 @@ class MotorOrdenesLIMS:
             
             for token in tokens:
                 try:
-                    resultado = cls._resolver_token(token)
+                    resultado = cls._resolver_token(token, empresa=empresa)
                     if resultado:
                         token['resuelto'] = True
                         token['analitos'] = resultado['analitos']
@@ -301,14 +302,14 @@ class MotorOrdenesLIMS:
             }
     
     @classmethod
-    def _resolver_token(cls, token):
+    def _resolver_token(cls, token, empresa):
         """
         Resuelve un token específico a analitos del catálogo LIMS.
         
         Returns:
             dict: {'analitos': [...], 'nombre': '...'} o None si no encontrado
         """
-        from lims.models import Analito, Perfil, Paquete
+        from lims.models import Analito, PerfilLims, PaqueteLims
         
         tipo = token['tipo']
         codigo = token['codigo']
@@ -316,6 +317,7 @@ class MotorOrdenesLIMS:
         if tipo == 'analito':
             # Buscar analito por código
             analito = Analito.objects.filter(
+                empresa=empresa,
                 codigo=codigo,
                 activo=True
             ).first()
@@ -323,6 +325,7 @@ class MotorOrdenesLIMS:
             if not analito:
                 # Intentar búsqueda por nombre
                 analito = Analito.objects.filter(
+                    empresa=empresa,
                     nombre__icontains=codigo,
                     activo=True
                 ).first()
@@ -335,34 +338,46 @@ class MotorOrdenesLIMS:
         
         elif tipo == 'perfil':
             # Buscar perfil
-            perfil = Perfil.objects.filter(
-                codigo=codigo,
-                activo=True
+            perfil = PerfilLims.objects.filter(
+                empresa=empresa,
+                activo=True,
+            ).filter(
+                Q(id_perfil_legacy__iexact=codigo) | Q(nombre__iexact=codigo)
             ).first()
-            
+
             if perfil:
-                analitos = list(perfil.analitos.filter(activo=True))
+                analitos = list(perfil.analitos.filter(
+                    empresa=empresa,
+                    activo=True,
+                ))
                 if analitos:
                     return {
                         'analitos': analitos,
                         'nombre': perfil.nombre,
                     }
-        
+
         elif tipo == 'paquete':
-            # Buscar paquete
-            paquete = Paquete.objects.filter(
-                codigo=codigo,
+            paquete = PaqueteLims.objects.filter(
+                empresa=empresa,
                 activo=True
+            ).filter(
+                Q(id_paquete_legacy__iexact=codigo) | Q(nombre__iexact=codigo)
             ).first()
-            
+
             if paquete:
-                # Obtener analitos de todos los perfiles del paquete
-                analitos = []
-                for perfil in paquete.perfiles.filter(activo=True):
-                    analitos.extend(perfil.analitos.filter(activo=True))
-                
+                analitos = list(paquete.analitos.filter(
+                    empresa=empresa,
+                    activo=True,
+                ))
+                for perfil in paquete.perfiles.filter(
+                    empresa=empresa,
+                    activo=True,
+                ):
+                    analitos.extend(perfil.analitos.filter(
+                        empresa=empresa,
+                        activo=True,
+                    ))
                 if analitos:
-                    # Eliminar duplicados
                     analitos_unicos = list({a.id: a for a in analitos}.values())
                     return {
                         'analitos': analitos_unicos,

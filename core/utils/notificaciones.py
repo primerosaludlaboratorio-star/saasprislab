@@ -4,11 +4,18 @@ Genera notificaciones automáticas para eventos críticos.
 """
 from django.utils import timezone
 from datetime import timedelta
-from decimal import Decimal
+from types import SimpleNamespace
 
-# NOTA: Modelos Notificacion y ConfiguracionNotificaciones pendientes de migración. Descomentar cuando existan en DB.
-from core.models import Empresa, Usuario, Producto, Lote
-# from core.models import Notificacion, ConfiguracionNotificaciones
+from core.models import Empresa, Usuario, Producto, Lote, NotificacionSistema
+
+
+_TIPOS_NOTIFICACION = {
+    'STOCK_BAJO': 'ALERTA',
+    'CADUCIDAD_PROXIMA': 'ALERTA',
+    'CADUCIDAD_VENCIDA': 'CRITICO',
+    'RESULTADO_LAB_LISTO': 'INFO',
+    'CITA_PROXIMA': 'INFO',
+}
 
 
 def crear_notificacion(
@@ -40,43 +47,55 @@ def crear_notificacion(
         accion_url: URL para acción
         accion_texto: Texto del botón de acción
     """
+    tipo_sistema = _TIPOS_NOTIFICACION.get(tipo, tipo)
+    if tipo_sistema not in {choice[0] for choice in NotificacionSistema.TIPO_CHOICES}:
+        tipo_sistema = 'ALERTA'
+    modulo = 'LABORATORIO' if tipo in {'RESULTADO_LAB_LISTO'} else (
+        'CONSULTORIO' if tipo == 'CITA_PROXIMA' else 'FARMACIA'
+    )
+
     try:
-        Notificacion.objects.create(
-            tipo=tipo,
+        return NotificacionSistema.objects.create(
+            tipo=tipo_sistema,
             titulo=titulo,
             mensaje=mensaje,
             empresa=empresa,
-            usuario_destino=usuario_destino,
+            destinatario=usuario_destino,
             sucursal=sucursal,
-            prioridad=prioridad,
-            referencia_tipo=referencia_tipo,
-            referencia_id=referencia_id,
-            accion_url=accion_url,
-            accion_texto=accion_texto,
+            modulo=modulo,
+            objeto_tipo=referencia_tipo or '',
+            objeto_id=str(referencia_id or ''),
+            enlace=accion_url or '',
         )
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
-        logger.error(f'Error al crear notificación: {str(e)}')
+        logger.error('Error al crear notificación: %s', e)
+        return None
+
+
+# Compatibilidad con consumidores antiguos que todavía usan este nombre.
+crear_notificacion_sistema = crear_notificacion
 
 
 def obtener_o_crear_config(empresa):
     """Obtiene o crea la configuración de notificaciones para una empresa."""
-    config, created = ConfiguracionNotificaciones.objects.get_or_create(
-        empresa=empresa,
-        defaults={
-            'alerta_stock_bajo': True,
-            'umbral_stock_bajo': 10,
-            'alerta_caducidad_proxima': True,
-            'dias_antes_caducidad': 30,
-            'alerta_orden_pendiente': True,
-            'alerta_resultado_listo': True,
-            'alerta_cita_proxima': True,
-            'horas_antes_cita': 24,
-            'recordatorio_cita': True,
-        }
+    # El modelo histórico ConfiguracionNotificaciones nunca existió. El
+    # centro vigente no requiere una fila de preferencias para emitir alertas.
+    # Estos defaults preservan el comportamiento operativo anterior y permiten
+    # que una futura configuración por empresa sobrescriba los atributos.
+    try:
+        config = empresa.configuracion_modulos
+    except Exception:
+        config = None
+    return SimpleNamespace(
+        alerta_stock_bajo=getattr(config, 'alerta_stock_bajo', True),
+        umbral_stock_bajo=getattr(config, 'umbral_stock_bajo', 10),
+        alerta_caducidad_proxima=getattr(config, 'alerta_caducidad_proxima', True),
+        dias_antes_caducidad=getattr(config, 'dias_antes_caducidad', 30),
+        alerta_resultado_listo=getattr(config, 'alerta_resultado_listo', True),
+        alerta_cita_proxima=getattr(config, 'alerta_cita_proxima', True),
     )
-    return config
 
 
 def verificar_stock_bajo(empresa):
@@ -94,13 +113,13 @@ def verificar_stock_bajo(empresa):
     
     for producto in productos_bajo_stock:
         # Verificar si ya existe una notificación reciente para este producto
-        notificacion_reciente = Notificacion.objects.filter(
+        notificacion_reciente = NotificacionSistema.objects.filter(
             empresa=empresa,
             tipo='STOCK_BAJO',
-            referencia_tipo='Producto',
-            referencia_id=producto.id,
+            objeto_tipo='Producto',
+            objeto_id=str(producto.id),
             leida=False,
-            fecha_creacion__gte=timezone.now() - timedelta(hours=24)
+            creada__gte=timezone.now() - timedelta(hours=24)
         ).exists()
         
         if not notificacion_reciente:
@@ -138,13 +157,13 @@ def verificar_caducidades(empresa):
         dias_restantes = (lote.fecha_caducidad - timezone.now().date()).days
         
         # Verificar si ya existe una notificación reciente
-        notificacion_reciente = Notificacion.objects.filter(
+        notificacion_reciente = NotificacionSistema.objects.filter(
             empresa=empresa,
-            tipo='CADUCIDAD_PROXIMA',
-            referencia_tipo='Lote',
-            referencia_id=lote.id,
+            tipo='ALERTA',
+            objeto_tipo='Lote',
+            objeto_id=str(lote.id),
             leida=False,
-            fecha_creacion__gte=timezone.now() - timedelta(hours=24)
+            creada__gte=timezone.now() - timedelta(hours=24)
         ).exists()
         
         if not notificacion_reciente:
@@ -171,13 +190,13 @@ def verificar_caducidades(empresa):
     ).select_related('producto', 'producto__sucursal')
     
     for lote in lotes_vencidos:
-        notificacion_reciente = Notificacion.objects.filter(
+        notificacion_reciente = NotificacionSistema.objects.filter(
             empresa=empresa,
-            type='CADUCIDAD_VENCIDA',
-            referencia_tipo='Lote',
-            referencia_id=lote.id,
+            tipo='CRITICO',
+            objeto_tipo='Lote',
+            objeto_id=str(lote.id),
             leida=False,
-            fecha_creacion__gte=timezone.now() - timedelta(hours=24)
+            creada__gte=timezone.now() - timedelta(hours=24)
         ).exists()
         
         if not notificacion_reciente:
