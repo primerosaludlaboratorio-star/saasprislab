@@ -71,12 +71,26 @@ def solicitar_acceso(request):
     """
     if request.method == 'POST':
         try:
+            empresa = getattr(request, 'empresa_actual', None)
+            if empresa is None:
+                # Solo asociar automáticamente cuando existe una coincidencia
+                # completa y única; nunca adivinar el tenant por nombre o email.
+                candidatos = Paciente.objects.filter(
+                    email=request.POST.get('email'),
+                    fecha_nacimiento=request.POST.get('fecha_nacimiento'),
+                    nombre_completo=request.POST.get('nombre_completo'),
+                    activo=True,
+                ).select_related('empresa')[:2]
+                if len(candidatos) == 1:
+                    empresa = candidatos[0].empresa
+
             solicitud = SolicitudAccesoPortal.objects.create(
                 nombre_completo=request.POST.get('nombre_completo'),
                 email=request.POST.get('email'),
                 telefono=request.POST.get('telefono'),
                 fecha_nacimiento=request.POST.get('fecha_nacimiento'),
                 numero_identificacion=request.POST.get('numero_identificacion'),
+                empresa=empresa,
                 ip_solicitud=request.META.get('REMOTE_ADDR')
             )
             

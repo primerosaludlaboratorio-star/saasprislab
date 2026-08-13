@@ -688,7 +688,21 @@ Bloque 8 — NO CERRADO. Corrección: lo anterior fue un muestreo de 18/88 archi
 
 **TOTAL ACUMULADO DE LA SESIÓN: 81 hallazgos nuevos (H-NUEVO-27 a H-NUEVO-107).**
 
-Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte, suite de tests, scripts/tools/CI, reporte final.
+### Bloque 21 — `pacientes/` (app raíz, Historial 360° + Portal del Paciente) — 2026-08-13
+
+- [x] `pacientes/views.py` — 579/579 líneas. `historial_360_paciente`, `timeline_consultas`, `graficas_signos_vitales`, `historia_clinica_completa`, `crear_paciente`, `buscar_paciente`, `lista_pacientes`, `api_datos_graficas_signos` — todas usan `empresa_efectiva_request(request)` + `get_object_or_404(..., empresa=empresa)` consistentemente. Registra `LogAccesoExpediente` en cada lectura del historial 360°. Sin hallazgos.
+- [x] `pacientes/portal_models.py` — 165/165 líneas. `UsuarioPaciente` (login independiente del sistema de staff, `AbstractBaseUser` con `check_password`/`set_password` estándar de Django), `SolicitudAccesoPortal`, `AccesoExpedientePortal` (log de auditoría, solo lectura vía Admin).
+- [x] `pacientes/portal_views.py` — 405/405 líneas. Todas las vistas del dashboard/consultas/estudios/recetas/perfil filtran correctamente por `paciente.empresa` derivado de la sesión propia (`paciente_portal_id`); `portal_descargar_resultado` respeta el candado financiero antes de generar el PDF.
+- [x] **H-NUEVO-158 NUEVO (ALTO, CORREGIDO LOCALMENTE)**: `portal_login` quedó protegido por `RateLimitMiddleware` con 5 intentos por IP cada 5 minutos. Prueba focalizada añadida; pendiente despliegue.
+- [x] **H-NUEVO-159 NUEVO (MEDIO, CORREGIDO LOCALMENTE)**: `SolicitudAccesoPortal` ahora tiene `empresa` explícita, scoping de Admin por empresa, selector de pacientes acotado y validación contra vínculos cross-tenant. Migración `pacientes.0004_solicitudaccesoportal_empresa`; pendiente despliegue.
+- [x] `pacientes/admin.py` — 174/174 líneas. `TenantScopedAdmin` en los 3 modelos registrados (ver H-NUEVO-159 sobre su limitación con FKs nulas).
+- [x] `pacientes/models.py`, `pacientes/apps.py` — triviales, re-exportan/configuran. Sin hallazgos.
+- [ ] `pacientes/tests.py` (188 líneas) — diferido al bloque dedicado de suite de tests.
+- [ ] `pacientes/templates/` — sin lógica de seguridad directa, no revisado.
+
+**BLOQUE 21 (`pacientes/`): COMPLETADO.** Hallazgos nuevos: H-NUEVO-158 (ALTO), H-NUEVO-159 (MEDIO).
+
+Pendiente continuar con: `recepcion/`, `enfermeria/`, `academia/`, `iot/`, `logistica/`, `ia/`, `pris_ai_core/`, `reglas_negocio/`, `suscripciones/`, `core/` (services/signals/tasks/templatetags residuales), suite de tests, scripts/tools/CI, reporte final.
 
 (El resto de bloques se detallan a medida que se avanza, usando AUDITORIA_INVENTARIO.txt como checklist maestro por ruta completa.)
 

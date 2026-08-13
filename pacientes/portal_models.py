@@ -3,6 +3,7 @@ PORTAL DEL PACIENTE - MODELOS
 Sistema de acceso web para que los pacientes consulten su información médica
 """
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.utils import timezone
 import uuid
@@ -102,6 +103,16 @@ class SolicitudAccesoPortal(models.Model):
     telefono = models.CharField(max_length=20)
     fecha_nacimiento = models.DateField()
     numero_identificacion = models.CharField(max_length=50, help_text="CURP o ID")
+
+    # Identidad del tenant independiente de la vinculación posterior al paciente.
+    # Una solicitud pública puede existir antes de que el personal la vincule.
+    empresa = models.ForeignKey(
+        'core.Empresa',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='solicitudes_acceso_portal',
+    )
     
     # Relación con paciente existente (se asigna al aprobar)
     paciente = models.ForeignKey(
@@ -133,6 +144,23 @@ class SolicitudAccesoPortal(models.Model):
         verbose_name = 'Solicitud de Acceso al Portal'
         verbose_name_plural = 'Solicitudes de Acceso al Portal'
         ordering = ['-fecha_solicitud']
+
+    def clean(self):
+        super().clean()
+        if self.empresa_id and self.paciente_id:
+            paciente_empresa_id = getattr(self.paciente, 'empresa_id', None)
+            if paciente_empresa_id != self.empresa_id:
+                raise ValidationError({
+                    'paciente': 'El paciente seleccionado pertenece a otra empresa.'
+                })
+
+    def save(self, *args, **kwargs):
+        # Al vincular un paciente, la empresa siempre debe quedar determinada por
+        # la relación persistida y no por datos enviados desde el formulario.
+        if self.paciente_id and not self.empresa_id:
+            self.empresa_id = self.paciente.empresa_id
+        self.full_clean()
+        return super().save(*args, **kwargs)
     
     def __str__(self):
         return f"{self.nombre_completo} - {self.get_estado_display()}"

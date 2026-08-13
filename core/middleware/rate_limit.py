@@ -27,6 +27,11 @@ class RateLimitMiddleware:
         '/login/': {'max_requests': 5, 'window_seconds': 300, 'scope': 'login'},
         '/accounts/login/': {'max_requests': 5, 'window_seconds': 300, 'scope': 'login'},
         '/admin/login/': {'max_requests': 5, 'window_seconds': 300, 'scope': 'admin_login'},
+        '/pacientes/portal/': {
+            'max_requests': 5,
+            'window_seconds': 300,
+            'scope': 'patient_portal_login',
+        },
         '/crear-admin-rescate/': {'max_requests': 1, 'window_seconds': 3600, 'scope': 'rescate'},
         '/ingreso-magico/': {'max_requests': 1, 'window_seconds': 3600, 'scope': 'magico'},
         '/contabilidad/api/autofactura/generar/': {

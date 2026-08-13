@@ -2,7 +2,9 @@
 Admin para el módulo de Pacientes.
 """
 from django.contrib import admin
+from django.core.exceptions import ValidationError
 from core.admin.tenant import TenantScopedAdmin
+from core.models import Paciente
 from django.utils.html import format_html
 from django.urls import reverse
 
@@ -78,6 +80,7 @@ class SolicitudAccesoPortalAdmin(TenantScopedAdmin):
         'nombre_completo',
         'email',
         'telefono',
+        'empresa',
         'estado_display',
         'fecha_solicitud',
         'fecha_respuesta'
@@ -90,11 +93,37 @@ class SolicitudAccesoPortalAdmin(TenantScopedAdmin):
         'numero_identificacion'
     )
     readonly_fields = (
+        'empresa',
         'fecha_solicitud',
         'fecha_respuesta',
         'ip_solicitud'
     )
     date_hierarchy = 'fecha_solicitud'
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        if request.user.is_superuser:
+            return queryset
+        empresa_id = getattr(request.user, 'empresa_id', None)
+        return queryset.filter(empresa_id=empresa_id) if empresa_id else queryset.none()
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'paciente' and not request.user.is_superuser:
+            empresa_id = getattr(request.user, 'empresa_id', None)
+            kwargs['queryset'] = Paciente.objects.filter(
+                empresa_id=empresa_id, activo=True
+            ) if empresa_id else Paciente.objects.none()
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def save_model(self, request, obj, form, change):
+        if not request.user.is_superuser:
+            empresa_id = getattr(request.user, 'empresa_id', None)
+            if not empresa_id:
+                raise ValidationError('El usuario no tiene empresa asignada.')
+            obj.empresa_id = empresa_id
+            if obj.paciente_id and obj.paciente.empresa_id != empresa_id:
+                raise ValidationError('El paciente seleccionado pertenece a otra empresa.')
+        super().save_model(request, obj, form, change)
     
     fieldsets = (
         ('Información del Solicitante', {
