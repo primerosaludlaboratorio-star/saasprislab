@@ -92,7 +92,7 @@ python manage.py runserver
 | `GEMINI_API_KEY` | ⚠️ | Para módulo IA (Gemini) |
 | `FACTURAMA_USER`, `FACTURAMA_PASSWORD` | ⚠️ | Facturación CFDI 4.0 |
 | `FERNET_KEY` | ✅ en prod | Cifrado de campos sensibles |
-| `LAB_VALIDATION_PIN` | ✅ en prod | PIN de validación (mín. 8 chars) |
+| `pin_validacion_laboratorio` | ✅ por empresa | Hash Django en `ConfiguracionModulos`; se configura con `configurar_pin_laboratorio` |
 | `REDIS_URL` | ⚠️ | Cache/colas (fallback a memoria) |
 | `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | ⚠️ | Notificaciones email |
 | `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY` | ⚠️ | Web Push notifications |

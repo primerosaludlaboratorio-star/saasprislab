@@ -184,14 +184,14 @@
 - **Verificación local:** `core.tests.test_autofactura_token` OK; `manage.py check` y compilación OK.
 - **Estado:** corregido, desplegado y verificado en producción en la revisión `c1837ee0eaf9eb859eb7db58cf3274c95e7f6cda`; migraciones sin pendientes, servicios activos y health check exitoso.
 
-## H-NUEVO-20 — `LAB_VALIDATION_PIN` comparado con `!=` directo (no `secrets.compare_digest`); PIN único global compartido por todo el deployment — PARCIALMENTE CORREGIDO
-- **Archivos:** `core/views/laboratorio.py::api_validar_pin` (línea ~1380-1409), `core/views/laboratorio/calidad.py` (mismo patrón, línea ~264-273), `mantenimiento/views/operativo.py` (línea 172-178).
-- **Problema:** `if pin != validation_pin:` compara el PIN recibido del cliente contra `settings.LAB_VALIDATION_PIN` con el operador `!=` (no de tiempo constante). Además, este PIN es un único valor global de entorno (`os.environ.get("LAB_VALIDATION_PIN")`), no un secreto por tenant/empresa ni por usuario — a diferencia del sistema paralelo de `blindaje_expediente.py`/`Medico.lab_validation_pin_hash`, que sí es por-médico y hasheado con SHA-256.
-- **Impacto:** (1) comparación no constante en tiempo — riesgo teórico de timing attack, bajo en la práctica dada la latencia de red HTTP; (2) si el deployment es verdaderamente multi-tenant (una sola instancia Django sirviendo múltiples `Empresa`), este PIN autoriza la liberación de resultados clínicos (`estado='RESULTADOS_LISTOS'`) para TODAS las empresas del sistema con el mismo valor — cualquier filtración del PIN en un tenant compromete la validación de resultados en todos los demás. Si cada cliente tiene su propio deployment/entorno aislado, este riesgo no aplica.
-- **Mitigante:** `settings.py`/`security.py` fuerzan fail-closed en producción (`RuntimeError` si no está configurado o tiene menos de 8 caracteres) — según `scripts/ai_coordination_hub.py` este comportamiento fail-closed ya fue revisado y aceptado por el equipo.
-- **Corrección aplicada:** las tres comparaciones directas fueron sustituidas por `secrets.compare_digest`, manteniendo el rechazo cuando el secreto no está configurado. Esto elimina la debilidad de comparación no constante.
-- **Pendiente de diseño:** el secreto sigue siendo global al deployment. Antes de convertirlo en PIN por empresa hay que definir el flujo de autorización clínica, migración de configuración y compatibilidad con las interfaces de equipos; no se presenta como cerrado hasta ejecutar ese diseño.
-- **Estado:** comparación segura corregida en código local; aislamiento por empresa pendiente de diseño y pruebas.
+## H-NUEVO-20 — PIN clínico global compartido entre tenants — CORREGIDO
+- **Archivos:** `core/views/laboratorio/calidad.py::api_validar_pin`, `core/models/base.py`, `config/settings/security.py`.
+- **Problema original:** la liberación de resultados dependía de `settings.LAB_VALIDATION_PIN`, un secreto único para todo el deployment. Aunque la comparación ya era constante, una filtración en una empresa podía autorizar validaciones clínicas en todas las demás.
+- **Corrección aplicada:** `ConfiguracionModulos.pin_validacion_laboratorio` almacena un hash Django independiente por empresa. `api_validar_pin` resuelve la configuración mediante `orden.empresa`, rechaza con `503` si el tenant no tiene PIN configurado y nunca consulta el secreto global. El modelo exige mínimo de 8 caracteres al configurar un valor nuevo.
+- **Operación segura:** `python manage.py configurar_pin_laboratorio --empresa-id <id>` recibe el PIN desde `PRISLAB_LAB_VALIDATION_PIN` o mediante prompt local; no acepta `--pin`, no imprime el valor y permite rotación por empresa. El bypass de checklist ya usa exclusivamente la contraseña del supervisor con rol autorizado.
+- **Migración:** `core/migrations/0108_configuracion_pin_validacion_laboratorio.py`.
+- **Verificación:** `manage.py check`, `makemigrations --check --dry-run --noinput`, compilación y `git diff --check` correctos. La prueba dirigida requiere crear una base de pruebas completa y quedó bloqueada por el tiempo de inicialización del entorno local; se ejecutará en CI/PostgreSQL antes de declarar cobertura E2E.
+- **Estado:** corregido en código; pendiente de despliegue y configuración inicial por empresa en esta pasada.
 
 ## H-NUEVO-21 — Endpoint legacy de ordenamiento de paquetes mutaba catálogo sin tenant — RETIRADO
 - **Archivo:** `core/views/paquetes.py::api_actualizar_orden_paquete`.
@@ -1368,6 +1368,23 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 
 - **Archivo**: `core/views/consentimiento_digital.py` y `core/models/clinico.py`.
 - **Corrección aplicada**: `ConsentimientoInformado.folio_consentimiento` persiste el folio `CI-...` generado; la descarga usa coincidencia exacta por folio y tenant. Se agregó migración `core.0107_consentimiento_folio`.
+
+### H-NUEVO-149: `crear_incidencia` (GET) permite a cualquier empleado ver los datos de una incidencia de asistencia de otro empleado de la misma empresa (IDOR horizontal)
+- **Archivo**: `core/views/asistencia.py`.
+- **Líneas**: 285-341, específicamente 327-329.
+- **Severidad**: Media.
+- **Hallazgo**: La vista `crear_incidencia` solo exige `@login_required` (no `@role_required`) y aplica auto-restricción a "mis propias incidencias" únicamente dentro de la rama `POST` (líneas 294-298, vía `filtros_incidencia['empleado__usuario'] = request.user` si `not _es_gestor_asistencia`). Sin embargo, en la rama `GET` (para precargar el formulario de edición), la consulta es: `incidencia = get_object_or_404(IncidenciaAsistencia, id=incidencia_id, empresa=empresa)` (línea 329) — **sin** el filtro `empleado__usuario=request.user` para no-gestores. Cualquier empleado autenticado (rol base, sin ser ADMIN/DIRECTOR/GERENTE/FARMACIA/RH) puede visualizar el formulario pre-llenado con los datos de la incidencia de **otro empleado de la misma empresa** navegando a `crear_incidencia?id=<id_ajeno>`, incluyendo `motivo`, fechas, tipo de incidencia (puede incluir permisos médicos/personales sensibles) y el documento de soporte adjunto si el template lo renderiza.
+- **Riesgo**: Exposición horizontal (mismo tenant, distinto empleado) de datos de RRHH potencialmente sensibles (motivo de incapacidad, permisos personales) a personal sin autorización de gestión de RRHH. No es fuga cross-tenant, pero rompe el principio de mínimo privilegio dentro del propio tenant.
+- **Recomendación**: Aplicar el mismo filtro condicional usado en `incidencias_asistencia` y en la rama `POST` de `crear_incidencia`: si `not _es_gestor_asistencia(request.user)`, añadir `empleado__usuario=request.user` también en el `get_object_or_404` de la rama `GET` (línea 329).
+
+### H-NUEVO-150: `transferencias.py` no restringe por rol la creación/envío/recepción de transferencias de inventario entre sucursales
+- **Archivo**: `core/views/transferencias.py`.
+- **Líneas**: 21-303 (todo el archivo).
+- **Severidad**: Media.
+- **Hallazgo**: Ninguna de las vistas de este módulo usa `@role_required` — solo `@login_required`. Esto incluye `crear_transferencia` (crea la transferencia y sus detalles), `enviar_transferencia` (descuenta stock físico de la sucursal origen y de lotes específicos) y `recibir_transferencia` (agrega stock a la sucursal destino, con `get_or_create` de `Producto` por `codigo_barras`). Cualquier usuario autenticado del tenant, sin importar su rol (p. ej. un químico de laboratorio o un cajero de farmacia sin funciones de inventario), puede mover stock físico entre sucursales, lo cual afecta directamente los saldos de inventario valuados y la trazabilidad de existencias. Es correctamente tenant-scoped (`empresa=empresa` en todas las consultas) y registra trazabilidad (`registrar_trazabilidad`), pero falta el control de autorización por rol presente en módulos comparables (`farmacia.py`, `nomina.py`, `cuentas_por_cobrar.py`, que exigen roles como `ADMIN`/`GERENTE`/`FARMACIA`/`FINANZAS`).
+- **Riesgo**: Movimiento no autorizado de inventario entre sucursales por personal sin función de logística/inventario; posible descuadre de existencias o fraude interno facilitado por falta de segregación de funciones.
+- **Recomendación**: Agregar `@role_required(...)` (p. ej. `ADMIN`, `DIRECTOR`, `GERENTE`, `FARMACIA`, `LABORATORIO` según corresponda) a `crear_transferencia`, `enviar_transferencia` y `recibir_transferencia`, replicando el patrón usado en el resto del código para operaciones de inventario/financieras sensibles.
+- **Nota adicional (menor)**: `enviar_transferencia`/`recibir_transferencia` actualizan `producto.stock`/`lote.cantidad` sin `select_for_update()` dentro de la transacción; en alta concurrencia (dos transferencias simultáneas del mismo producto) podría producirse una condición de carrera en el descuento/incremento de stock.
 - **Verificación**: se añadió prueba de recuperación por folio persistido y respuesta `application/pdf`.
 
 ### Verificación de cierre del Bloque 5 — H-NUEVO-143 a H-NUEVO-145

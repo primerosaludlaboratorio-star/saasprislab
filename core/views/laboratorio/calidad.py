@@ -4,7 +4,6 @@ Control de calidad, toma de muestra, validación por PIN, preparación y extracc
 import json
 import re
 import logging
-import secrets
 import binascii
 from datetime import timedelta
 from decimal import Decimal
@@ -17,11 +16,11 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.db import transaction, IntegrityError
-from django.conf import settings
 from django.db.models import Q
 
 from core.models import (
-    OrdenDeServicio, ControlCalidad, TomaMuestra,
+    OrdenDeServicio, ControlCalidad, TomaMuestra, ConfiguracionModulos,
+    verificar_pin_laboratorio,
 )
 from core.lims_cart import detalle_orden_etiqueta
 from core.services.audit_service import registrar_auditoria
@@ -267,10 +266,11 @@ def api_validar_pin(request, orden_id: int):
     if not pin:
         return JsonResponse({"ok": False, "error": "PIN requerido"}, status=400)
 
-    validation_pin = str(getattr(settings, "LAB_VALIDATION_PIN", "") or "").strip()
-    if not validation_pin:
+    configuracion = ConfiguracionModulos.objects.filter(empresa=empresa).first()
+    if not configuracion or not configuracion.pin_validacion_laboratorio:
         logger_core.error(
-            'api_validar_pin: LAB_VALIDATION_PIN no configurado; orden=%s usuario=%s',
+            'api_validar_pin: PIN clínico no configurado por empresa; empresa=%s orden=%s usuario=%s',
+            empresa.pk,
             orden_id,
             getattr(request.user, 'username', 'anon'),
         )
@@ -279,7 +279,7 @@ def api_validar_pin(request, orden_id: int):
             status=503,
         )
 
-    if not secrets.compare_digest(pin, validation_pin):
+    if not verificar_pin_laboratorio(configuracion.pin_validacion_laboratorio, pin):
         return JsonResponse({"ok": False, "error": "PIN incorrecto"}, status=403)
 
     orden = OrdenDeServicio.objects.filter(id=orden_id, empresa=empresa).first()

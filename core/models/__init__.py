@@ -13,6 +13,7 @@ from .base import (
     ConfiguracionModulos,
     farmacia_pin_configurado,
     verificar_pin_farmacia,
+    verificar_pin_laboratorio,
     Usuario_Sucursal,
     Usuario,
     DocumentoConocimiento,
@@ -176,6 +177,7 @@ __all__ = [
     # base
     'get_google_drive_storage',
     'Empresa', 'Sucursal', 'ConfiguracionModulos', 'Usuario_Sucursal', 'Usuario',
+    'verificar_pin_laboratorio',
     'DocumentoConocimiento', 'DatosFiscales', 'ControlCalidad', 'RutaLogistica',
     # catalogos
     'Producto', 'Lote', 'Medico', 'DiscountPolicy',

@@ -46,7 +46,7 @@ Referencia única en código: **`config/settings.py`** (y **`config/drive_creden
 | :--- | :---: | :--- |
 | **`SECRET_KEY`** | Secreto | Sesiones Django; obligatorio en nube. |
 | **`FERNET_KEY`** | Secreto | Cifrado (campos sensibles, backups `.fernet`). |
-| **`LAB_VALIDATION_PIN`** | Secreto | PIN validación laboratorio (≥8 en prod). |
+| **`pin_validacion_laboratorio`** | Configuración por empresa | Hash Django en `ConfiguracionModulos`; se rota con `configurar_pin_laboratorio --empresa-id`. |
 | **`PRISLAB_ESCUDO_USUARIO_ID`** | Crítico | ID de usuario sistema (HL7 / escudo clínico / trazabilidad **`validado_por`** en interfaz). |
 | **`DB_PASSWORD`**, **`DB_NAME`**, **`DB_USER`**, **`DB_HOST`**, **`DB_PORT`** | Secreto / config | Postgres (Cloud SQL o remoto). |
 | **`CLOUD_SQL_CONNECTION_NAME`** | Config | Socket Unix Cloud SQL en Cloud Run. |

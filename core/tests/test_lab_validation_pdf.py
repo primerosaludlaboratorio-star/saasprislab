@@ -3,10 +3,16 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.urls import reverse
 
-from core.models import ConsentimientoInformado, Empresa, OrdenDeServicio, Paciente
+from core.models import (
+    ConfiguracionModulos,
+    ConsentimientoInformado,
+    Empresa,
+    OrdenDeServicio,
+    Paciente,
+)
 
 
 Usuario = get_user_model()
@@ -29,6 +35,10 @@ class LabValidationPdfTest(TestCase):
             sexo='M',
         )
         self.client.login(username='lab_pdf_user', password='test123456789')
+        self.configuracion = ConfiguracionModulos.objects.create(
+            empresa=self.empresa,
+            pin_validacion_laboratorio='77777777',
+        )
 
     def _crear_orden(self, total='100.00', anticipo='100.00'):
         return OrdenDeServicio.objects.create(
@@ -40,9 +50,10 @@ class LabValidationPdfTest(TestCase):
             estado='PAGADO',
         )
 
-    @override_settings(LAB_VALIDATION_PIN='')
     def test_validar_pin_sin_configuracion_falla_seguro(self):
         orden = self._crear_orden()
+        self.configuracion.pin_validacion_laboratorio = ''
+        self.configuracion.save(update_fields=['pin_validacion_laboratorio'])
 
         response = self.client.post(
             reverse('api_validar_pin', args=[orden.id]),
@@ -55,7 +66,6 @@ class LabValidationPdfTest(TestCase):
         orden.refresh_from_db()
         self.assertEqual(orden.estado, 'PAGADO')
 
-    @override_settings(LAB_VALIDATION_PIN='7777')
     def test_validar_pin_genera_pdf_antes_de_marcar_orden_pagada(self):
         orden = self._crear_orden()
 
@@ -69,7 +79,7 @@ class LabValidationPdfTest(TestCase):
             with patch('core.services.motor_reportes_lab.guardar_reporte_en_storage', side_effect=guardar_mock):
                 response = self.client.post(
                     reverse('api_validar_pin', args=[orden.id]),
-                    data=json.dumps({'pin': '7777'}),
+                    data=json.dumps({'pin': '77777777'}),
                     content_type='application/json',
                 )
 
@@ -80,14 +90,13 @@ class LabValidationPdfTest(TestCase):
         self.assertEqual(orden.estado, 'RESULTADOS_LISTOS')
         self.assertEqual(orden.archivo_resultado.name, 'resultados_pdf/mock.pdf')
 
-    @override_settings(LAB_VALIDATION_PIN='7777')
     def test_validar_pin_no_genera_pdf_si_hay_saldo_pendiente(self):
         orden = self._crear_orden(total='100.00', anticipo='0.00')
 
         with patch('core.services.motor_reportes_lab.generar_reporte_pdf') as generar:
             response = self.client.post(
                 reverse('api_validar_pin', args=[orden.id]),
-                data=json.dumps({'pin': '7777'}),
+                    data=json.dumps({'pin': '77777777'}),
                 content_type='application/json',
             )
 

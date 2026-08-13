@@ -493,7 +493,7 @@ Estrategia: dado el volumen, se prioriza por riesgo (endpoints públicos/csrf_ex
 - [x] entrega_resultados.py — COMPLETO (636 líneas). `resultados_publicos`/`resultados_publicos_pdf` (portal público sin login) usan `django.core.signing.loads(token, salt=..., max_age=...)` — token firmado con expiración; además valida candado financiero (`tiene_saldo_pendiente`), estado de orden, y consentimiento de canal digital antes de mostrar datos; registra acceso forense. Diseño excelente.
 - [x] paciente_detalle.py — COMPLETO (602 líneas). `ExpedienteClinicoView.get_queryset()` filtra por `empresa=request.user.empresa` (previene IDOR vía `pk` de paciente en URL); `exportar_historial_pdf` usa `get_object_or_404(..., empresa=empresa)`. Registra acceso forense en `dispatch()`. Sin hallazgos.
 - [x] medico.py (parcial, decoradores verificados vía grep en ~1000 líneas) — todas las vistas `@login_required` + `empresa_efectiva_request(request)`. Patrón consistente.
-- [x] laboratorio.py (134KB, muestreo dirigido: sin `csrf_exempt`/SQL crudo/`os.system` en todo el archivo; decoradores verificados en ~50 vistas vía grep) — `@login_required` universal, `@role_required` en endpoints de captura/validación de resultados (`api_guardar_resultados`, `lista_trabajo_lab`). H-NUEVO-20 parcialmente corregido: las tres comparaciones de `LAB_VALIDATION_PIN` usan `secrets.compare_digest`; permanece pendiente el diseño de un PIN por empresa en despliegues multi-tenant.
+- [x] laboratorio.py (134KB, muestreo dirigido: sin `csrf_exempt`/SQL crudo/`os.system` en todo el archivo; decoradores verificados en ~50 vistas vía grep) — `@login_required` universal, `@role_required` en endpoints de captura/validación de resultados (`api_guardar_resultados`, `lista_trabajo_lab`). H-NUEVO-20 corregido: `api_validar_pin` usa `ConfiguracionModulos.pin_validacion_laboratorio` hasheado y scoped por empresa; el secreto global queda solo como compatibilidad legacy y ya no autoriza resultados.
 - [x] paquetes.py — endpoint legacy de ordenamiento cerrado con `410 Gone`: el modelo `laboratorio.Estudio` no es tenant-scoped y no tenía callers activos; se evita cualquier mutación global.
 - [x] laboratorio/captura.py, calidad.py, config_lims.py — H-NUEVO-24 corregido localmente: equipos y analitos scoped por empresa; pánico exige analito perteneciente a la orden; rangos LIMS validan tenant.
 
@@ -897,6 +897,17 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] `core/views/consentimiento_digital.py` — 439/439. **H-NUEVO-147 (Crítica, ABIERTO)**: `descargar_pdf_consentimiento` desactiva el filtro de tenant (`scope_empresa`) cuando `request.user.is_superuser` es `True`; dado que en PRISLAB `is_superuser` se asigna por tenant (H-NUEVO-142), cualquier Director/Admin puede descargar el PDF de consentimiento informado (firma biométrica + datos del paciente) de otro tenant conociendo/enumerando un folio.
 
 **Nota de concurrencia**: se detectó que otra sesión ya corrigió H-NUEVO-143, H-NUEVO-144 y H-NUEVO-145 en el código antes de que esta sesión terminara de documentarlos; se verificó directamente en el código fuente para evitar reportar hallazgos obsoletos. También se detectó una colisión de ID con un H-NUEVO-146 añadido concurrentemente (`sentinel_reset.py`); el hallazgo de `consentimiento_digital.py` se renombró a H-NUEVO-147.
+
+### Bloque 19D — `nomina.py`, `asistencia.py` — 2026-08-12
+
+- [x] `core/views/nomina.py` — 281/281. Sin hallazgos; helper `_empresa(request)` con `PermissionDenied` + `@role_required` en todas las vistas.
+- [x] `core/views/asistencia.py` — 366/366. **H-NUEVO-149 (Media, ABIERTO)**: `crear_incidencia` (rama GET) no restringe la consulta a `empleado__usuario=request.user` para no-gestores, permitiendo IDOR horizontal (ver datos de incidencia de RRHH de otro empleado del mismo tenant vía `?id=`).
+- [x] **Verificado H-NUEVO-147**: confirmado CORREGIDO en código actual (`descargar_pdf_consentimiento` ya no tiene rama `scope_empresa`/`is_superuser`; filtra siempre por `empresa=empresa_u` y usa `folio_consentimiento` persistido en lugar de `hash_firma__icontains`). Otra sesión concurrente también documentó esta corrección como H-NUEVO-148 (persistencia del folio).
+
+### Bloque 19E — `cuentas_por_cobrar.py`, `transferencias.py` — 2026-08-12
+
+- [x] `core/views/cuentas_por_cobrar.py` — 378/378. Sin hallazgos; `@role_required` + `_empresa()` con `PermissionDenied`, `select_for_update()` para folio CXC, auditoría en pagos.
+- [x] `core/views/transferencias.py` — 339/339. **H-NUEVO-150 (Media, ABIERTO)**: ninguna vista tiene `@role_required` (solo `@login_required`); cualquier usuario del tenant puede crear/enviar/recibir transferencias de inventario entre sucursales (mueve stock físico). Nota menor: falta `select_for_update()` en actualización de `producto.stock`/`lote.cantidad`.
 
 ### Bloque 8 — PRIS IA y OCR multimodal — COMPLETADO 2026-08-11
 

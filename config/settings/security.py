@@ -47,19 +47,11 @@ if IS_PRODUCTION:
             'Los endpoints protegidos por estos tokens retornarán 503.'
         )
 
-# ── LAB_VALIDATION_PIN ────────────────────────────────────────────────────────
-
+# El PIN clínico ya no es un secreto global de despliegue. La validación de
+# resultados usa ConfiguracionModulos.pin_validacion_laboratorio por empresa.
+# Se conserva el nombre únicamente para compatibilidad con integraciones legacy;
+# ningún flujo activo debe leerlo como autorización.
 LAB_VALIDATION_PIN = os.environ.get("LAB_VALIDATION_PIN", "").strip()
-if IS_PRODUCTION and not LAB_VALIDATION_PIN:
-    raise RuntimeError(
-        '🔴 PRISLAB SEGURIDAD: LAB_VALIDATION_PIN no está configurado en producción.\n'
-        'Configure LAB_VALIDATION_PIN vía una variable de entorno segura con un PIN seguro.'
-    )
-if IS_PRODUCTION and len(LAB_VALIDATION_PIN) < 8:
-    raise RuntimeError(
-        '🔴 PRISLAB SEGURIDAD: en producción LAB_VALIDATION_PIN debe tener al menos 8 caracteres '
-        '(auditoría ISO / gobierno de acceso). Actualice el valor en el servidor.'
-    )
 
 # ── PRISLAB_ESCUDO_USUARIO_ID ─────────────────────────────────────────────────
 

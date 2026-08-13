@@ -6,6 +6,7 @@ Sin dependencias internas a otros fragmentos de core/models/.
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.hashers import check_password, identify_hasher, make_password
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import date
 import uuid
@@ -233,6 +234,7 @@ class Sucursal(models.Model):
 
 
 _FARMACIA_PIN_FIELDS = ('pin_precio_neto', 'pin_cancelacion_venta')
+_LABORATORIO_PIN_FIELD = 'pin_validacion_laboratorio'
 
 
 def farmacia_pin_configurado(valor):
@@ -253,6 +255,19 @@ def verificar_pin_farmacia(valor_almacenado, pin_ingresado):
     if not farmacia_pin_configurado(valor_almacenado):
         return False
     try:
+        return check_password(pin_ingresado.strip(), valor_almacenado)
+    except (ValueError, TypeError):
+        return False
+
+
+def verificar_pin_laboratorio(valor_almacenado, pin_ingresado):
+    """Verifica el PIN clínico tenant-scoped usando un hash Django."""
+    if not isinstance(pin_ingresado, str) or len(pin_ingresado.strip()) < 8:
+        return False
+    if not valor_almacenado:
+        return False
+    try:
+        identify_hasher(valor_almacenado)
         return check_password(pin_ingresado.strip(), valor_almacenado)
     except (ValueError, TypeError):
         return False
@@ -321,6 +336,16 @@ class ConfiguracionModulos(models.Model):
         verbose_name="PIN Cancelación de Venta",
         help_text="PIN de 4 dígitos almacenado como hash; debe configurarse manualmente."
     )
+    pin_validacion_laboratorio = models.CharField(
+        max_length=128,
+        blank=True,
+        default='',
+        verbose_name="PIN de Validación de Laboratorio",
+        help_text=(
+            "Hash Django del PIN clínico de esta empresa (mínimo 8 caracteres). "
+            "Nunca se almacena el PIN en texto plano."
+        ),
+    )
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Fecha de Actualización")
 
     class Meta:
@@ -338,6 +363,13 @@ class ConfiguracionModulos(models.Model):
             valor = getattr(self, field_name, '') or ''
             if re.fullmatch(r'\d{4}', valor):
                 setattr(self, field_name, make_password(valor))
+        valor_lab = getattr(self, _LABORATORIO_PIN_FIELD, '') or ''
+        if valor_lab and not farmacia_pin_configurado(valor_lab):
+            if len(valor_lab) < 8:
+                raise ValidationError({
+                    _LABORATORIO_PIN_FIELD: 'El PIN clínico debe tener al menos 8 caracteres.'
+                })
+            setattr(self, _LABORATORIO_PIN_FIELD, make_password(valor_lab))
         return super().save(*args, **kwargs)
 
 

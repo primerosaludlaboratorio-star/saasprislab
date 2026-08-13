@@ -743,18 +743,9 @@ ADMIN_GROUP_RESTRICTION_ENABLED = os.environ.get('ADMIN_GROUP_RESTRICTION_ENABLE
 BACKUP_IMMUTABLE_LOG_AUTO = os.environ.get('BACKUP_IMMUTABLE_LOG_AUTO', 'False').lower() in ('true', '1', 'yes')
 
 # PIN de validación de resultados — OBLIGATORIO configurar en producción
-# FASE SECRETOS (VPS): FERNET_KEY, LAB_VALIDATION_PIN, PRISLAB_ESCUDO_USUARIO_ID
+# Compatibilidad con configuraciones antiguas. El flujo activo no usa un PIN
+# global: la autorización clínica vive en ConfiguracionModulos por empresa.
 LAB_VALIDATION_PIN = os.environ.get("LAB_VALIDATION_PIN", "").strip()
-if IS_PRODUCTION and not LAB_VALIDATION_PIN:
-    raise RuntimeError(
-        '🔴 PRISLAB SEGURIDAD: LAB_VALIDATION_PIN no está configurado en producción.\n'
-        'Configure LAB_VALIDATION_PIN vía una variable de entorno segura con un PIN seguro.'
-    )
-if IS_PRODUCTION and len(LAB_VALIDATION_PIN) < 8:
-    raise RuntimeError(
-        '🔴 PRISLAB SEGURIDAD: en producción LAB_VALIDATION_PIN debe tener al menos 8 caracteres '
-        '(auditoría ISO / gobierno de acceso). Actualice el valor en el servidor.'
-    )
 
 # Escudo clínico LIMS (HL7 / notificaciones automáticas sin sesión): PK de usuario activo
 _raw_escudo = (os.environ.get('PRISLAB_ESCUDO_USUARIO_ID') or '').strip()
