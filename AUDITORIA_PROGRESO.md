@@ -913,7 +913,7 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 ### Bloque 19F — barrido de archivos pequeños de `core/views/` — 2026-08-12
 
 - [x] Sin hallazgos: `ai_brain.py`, `audio_legal.py`, `auditoria_api.py` (endpoint legado retirado, 410), `auditoria_campo.py`, `cerebro.py`, `coach.py`, `capacitacion.py`, `impresion.py`, `inventario.py` (puente legacy), `inventario_predictivo.py`, `paquetes.py` (410 retirado), `tarifas.py` (410 retirado), `operaciones.py`, `sucursal_modo_inventario_lab.py`, `analytics.py` (460 líneas, todas las métricas filtran por `empresa`), `biblioteca.py`, `bienestar.py` (373 líneas, NOM-035 + diario emocional con `EncryptedTextField`, privacidad respetada: solo el propio usuario ve su diario/evaluación, RRHH solo ve alertas sin contenido), `bienestar_mejorado.py` (chat confidencial con detección de riesgo, privacidad total), `bot.py` (consulta catálogo legado `laboratorio.Estudio` sin empresa por diseño, es catálogo global no sensible).
-- [x] **H-NUEVO-151 (Media, ABIERTO)**: `core/views/buzon.py` — `api_cambiar_estado_queja` y `api_obtener_quejas` solo tienen `@login_required`, sin el `@role_required('DIRECTOR','ADMIN','GERENTE')` que sí protege `buzon_kanban`; cualquier empleado autenticado puede leer identidad/contacto de quejosos no anónimos y cambiar el estado de cualquier queja (ocultar/cerrar reportes).
+- [x] **H-NUEVO-151 (Media, CORREGIDO, PROBADO Y DESPLEGADO)**: `core/views/buzon.py` — `api_cambiar_estado_queja` y `api_obtener_quejas` replican `@role_required('DIRECTOR','ADMIN','GERENTE')`; las pruebas de autorización de `CAJERO` pasan y la revisión `5862e58` está activa en producción.
 
 ### Bloque 8 — PRIS IA y OCR multimodal — COMPLETADO 2026-08-11
 

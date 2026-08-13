@@ -1389,7 +1389,7 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Recomendación**: Agregar `@role_required(...)` (p. ej. `ADMIN`, `DIRECTOR`, `GERENTE`, `FARMACIA`, `LABORATORIO` según corresponda) a `crear_transferencia`, `enviar_transferencia` y `recibir_transferencia`, replicando el patrón usado en el resto del código para operaciones de inventario/financieras sensibles.
 - **Nota adicional (menor)**: `enviar_transferencia`/`recibir_transferencia` actualizan `producto.stock`/`lote.cantidad` sin `select_for_update()` dentro de la transacción; en alta concurrencia (dos transferencias simultáneas del mismo producto) podría producirse una condición de carrera en el descuento/incremento de stock.
 
-### H-NUEVO-151: `buzon.py` — las APIs del Buzón de Quejas no replican el `@role_required` de la vista Kanban, exponiendo identidad del quejoso y permitiendo mutar el estado a cualquier empleado autenticado
+### H-NUEVO-151: `buzon.py` — las APIs del Buzón de Quejas no replicaban el `@role_required` de la vista Kanban — CORREGIDO Y DESPLEGADO
 - **Archivo**: `core/views/buzon.py`.
 - **Líneas**: 160-257 (`api_cambiar_estado_queja`, `api_obtener_quejas`).
 - **Severidad**: Media.
@@ -1398,6 +1398,8 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Recomendación**: Añadir `@role_required('DIRECTOR', 'ADMIN', 'GERENTE')` a `api_cambiar_estado_queja` y `api_obtener_quejas`, igual que en `buzon_kanban`.
 - **Corrección aplicada**: ambas APIs replican ahora el control `DIRECTOR`/`ADMIN`/`GERENTE` del panel Kanban. Se añadieron pruebas que verifican que un `CAJERO` no puede consultar ni mutar quejas.
 - **Verificación**: `core.tests.test_buzon_notificaciones` pasa con los casos de autorización y tenant existentes más los dos casos de rol; `manage.py check` correcto.
+- **Despliegue**: revisión `5862e58`; servicios activos y health de producción correcto.
+- **Estado**: cerrado.
 - **Estado**: corregido localmente; pendiente de despliegue.
 - **Corrección aplicada**: las tres mutaciones exigen `ADMIN`, `DIRECTOR`, `GERENTE`, `FARMACIA` o `QUIMICO`. El envío bloquea la transferencia, productos y lotes con `select_for_update()`, valida todos los detalles antes de descontar y evita descuentos parciales ante cualquier error. La recepción bloquea transferencia y producto destino dentro de la transacción.
 - **Verificación**: `core.tests.test_transferencias_security` — 3/3 OK para impedir crear, enviar y recibir con rol `CAJERO`; `manage.py check`, compilación y diff correctos.
