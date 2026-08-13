@@ -959,3 +959,8 @@ Se revalidaron los comandos sensibles contra el checkout actual. H-NUEVO-27 a H-
 Se corrigió H-NUEVO-146 en `core/management/commands/sentinel_reset.py`: simulación por defecto, `--apply --confirm-reset` obligatorio, alcance por `--empresa-id`, alcance global explícito solo fuera de producción y confirmación adicional para eliminación física. La suite de seguridad de comandos pasó 7/7.
 
 Estado: **Bloque 7 cerrado y revalidado.** No se borraron comandos legacy documentales; permanecen desactivados mediante `CommandError` cuando corresponden a catálogos antiguos.
+## Revalidación de consentimiento digital — 2026-08-13
+
+Se corrigieron y verificaron `H-NUEVO-147` y `H-NUEVO-148` en `core/views/consentimiento_digital.py` y `core/models/clinico.py`: el PDF queda estrictamente limitado a la empresa del usuario, incluso si la cuenta es `is_superuser`, y el folio generado se persiste para permitir su descarga posterior. Se agregó la migración `core.0107_consentimiento_folio` y la suite específica de seguridad/descarga.
+
+`manage.py check`, `makemigrations --check --dry-run --noinput` y compilación dirigida pasan. La suite específica fue iniciada, pero el entorno local quedó bloqueado durante la creación de la base temporal en una migración forense previa; no se presenta como prueba completa hasta resolver ese bloqueo.

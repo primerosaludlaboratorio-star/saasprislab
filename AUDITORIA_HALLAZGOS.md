@@ -1354,6 +1354,21 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 
 **`core/views/monitor_produccion.py` (738 líneas, revisado completo)**: sin hallazgos. `monitor_produccion`, `api_monitor_datos` y `api_avanzar_estado` filtran consistentemente por `empresa`, usan `select_for_update()` dentro de `transaction.atomic()` para evitar condiciones de carrera en la transición de estado, y `api_avanzar_estado` exige `_puede_validar_resultados` antes de permitir el paso a `COMPLETO`.
 
+### H-NUEVO-147: `descargar_pdf_consentimiento` omite el filtro de tenant para cualquier usuario `is_superuser` (per-tenant en PRISLAB) — CRÍTICA, CORREGIDO
+- **Archivo**: `core/views/consentimiento_digital.py`.
+- **Líneas**: 363-438.
+- **Severidad**: Crítica.
+- **Hallazgo**: `scope_empresa = empresa_u and not getattr(request.user, 'is_superuser', False)` desactiva **todo** el filtro de tenant (`.filter(empresa=empresa_u)` en `q1`/`q2`, y el chequeo final `ci.empresa_id != empresa_u.id`) cuando el usuario es `is_superuser`. Como ya se documentó en H-NUEVO-142, `is_superuser` en PRISLAB se otorga **por tenant** (el Director/Admin propietario de cada empresa vía `provision_usuarios_base.py`/`sync_usuarios_auditoria.py`), no como bandera exclusiva de un superusuario de plataforma. La búsqueda además usa `hash_firma__icontains=folio_clean[:8]` (solo 8 caracteres hexadecimales del hash, fácilmente enumerable) o `OrdenDeServicio.objects.filter(folio_orden=folio)` sin `empresa=` cuando `scope_empresa` es falso. En consecuencia, el Director/Admin de cualquier tenant puede regenerar y descargar el PDF de **consentimiento informado firmado** (incluye nombre del paciente, IP de captura, y la imagen de firma biométrica en base64) de un paciente de **otro tenant**, con solo conocer u enumerar un folio `CI-XXXXXXXX` o un `folio_orden`.
+- **Riesgo**: Fuga de documento legal con datos personales sensibles (firma biométrica, nombre completo, IP) de pacientes de otro tenant; incumplimiento de LFPDPPP y ruptura de aislamiento multi-tenant en evidencia legal de consentimiento.
+- **Corrección aplicada**: la vista exige una empresa efectiva, filtra siempre por `empresa=empresa_u` en la búsqueda por folio y orden, y verifica nuevamente `ci.empresa_id` antes de generar el PDF. `is_superuser` ya no desactiva el aislamiento tenant.
+- **Verificación**: se añadió prueba que intenta descargar un consentimiento de otro tenant con `is_superuser=True` y recibe `404`.
+
+### H-NUEVO-148: folio de consentimiento no persistido impedía recuperar el PDF generado — MEDIO, CORREGIDO
+
+- **Archivo**: `core/views/consentimiento_digital.py` y `core/models/clinico.py`.
+- **Corrección aplicada**: `ConsentimientoInformado.folio_consentimiento` persiste el folio `CI-...` generado; la descarga usa coincidencia exacta por folio y tenant. Se agregó migración `core.0107_consentimiento_folio`.
+- **Verificación**: se añadió prueba de recuperación por folio persistido y respuesta `application/pdf`.
+
 ### Verificación de cierre del Bloque 5 — H-NUEVO-143 a H-NUEVO-145
 
 - **H-NUEVO-143: CORREGIDO.** Las vistas de analizadores resuelven la empresa efectiva, listan únicamente equipos y mapeos de esa empresa, asignan `empresa` al crear equipos y rechazan por 404 el acceso a equipos o mapeos ajenos.

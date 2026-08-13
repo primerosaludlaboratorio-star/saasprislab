@@ -788,6 +788,13 @@ class ConsentimientoInformado(models.Model):
     consentimiento_marketing = models.BooleanField(default=False, verbose_name='Acepta Comunicaciones de Marketing')
 
     hash_firma = models.CharField(max_length=64, blank=True, verbose_name='Hash SHA-256 de Integridad')
+    folio_consentimiento = models.CharField(
+        max_length=24,
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name='Folio de consentimiento',
+    )
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.CharField(max_length=500, blank=True)
 

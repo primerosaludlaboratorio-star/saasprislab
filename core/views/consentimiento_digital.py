@@ -319,6 +319,7 @@ def api_guardar_consentimiento(request, orden_id: int):
                 defaults={
                     'empresa': empresa,
                     'paciente': orden.paciente if orden.paciente else None,
+                    'folio_consentimiento': folio,
                     'firma_digital': firma_data_url[:500] if firma_data_url else folio,
                     'acepta_privacidad': True,
                     'acepta_procesamiento': True,
@@ -370,33 +371,26 @@ def descargar_pdf_consentimiento(request, folio: str):
     """
     try:
         from core.models import ConsentimientoInformado, OrdenDeServicio
-        # Buscar por hash_firma (los primeros 12 chars del folio sin "CI-" coinciden
-        # con el hash_firma guardado) O por orden relacionada
+        # Buscar primero por el folio persistido y después por el folio interno de la orden.
         ci = None
         empresa_u = getattr(request, 'empresa_actual', None) or getattr(request.user, 'empresa', None)
-        scope_empresa = empresa_u and not getattr(request.user, 'is_superuser', False)
+        if empresa_u is None:
+            return HttpResponse('No autorizado para este consentimiento.', status=403)
 
-        # Opción 1: buscar por hash_firma que empieza con el folio (sin "CI-")
-        folio_clean = folio.replace('CI-', '').lower()
         q1 = ConsentimientoInformado.objects.select_related(
             'paciente', 'orden', 'empresa'
-        ).filter(hash_firma__icontains=folio_clean[:8])
-        if scope_empresa:
-            q1 = q1.filter(empresa=empresa_u)
+        ).filter(folio_consentimiento=folio, empresa=empresa_u)
         ci = q1.first()
 
-        # Opción 2: buscar por orden cuyo folio_orden contiene el token
+        # Compatibilidad con descargas que usan el folio interno de la orden.
         if not ci:
-            oq = OrdenDeServicio.objects.filter(folio_orden=folio)
-            if scope_empresa:
-                oq = oq.filter(empresa=empresa_u)
+            oq = OrdenDeServicio.objects.filter(folio_orden=folio, empresa=empresa_u)
             orden = oq.first()
             if orden:
                 q2 = ConsentimientoInformado.objects.select_related(
                     'paciente', 'orden', 'empresa'
                 ).filter(orden=orden)
-                if scope_empresa:
-                    q2 = q2.filter(empresa=empresa_u)
+                q2 = q2.filter(empresa=empresa_u)
                 ci = q2.first()
 
         if not ci:
@@ -405,7 +399,7 @@ def descargar_pdf_consentimiento(request, folio: str):
                 status=404
             )
 
-        if scope_empresa and ci.empresa_id != empresa_u.id:
+        if ci.empresa_id != empresa_u.id:
             return HttpResponse('No autorizado para este consentimiento.', status=403)
 
         # Regenerar el PDF desde los datos guardados
