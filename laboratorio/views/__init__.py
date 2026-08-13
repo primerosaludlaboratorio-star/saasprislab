@@ -53,9 +53,9 @@ def recepcion_lab(request):
     if not empresa:
         messages.error(request, 'Tu usuario no tiene una empresa asignada. Contacta al administrador.')
         return redirect('home')
-    estudios = Estudio.objects.all().order_by('nombre')
+    estudios = Estudio.objects.filter(activo=True).order_by('nombre')
     perfiles = PerfilLaboratorio.objects.filter(activo=True).select_related('area_pertenencia').order_by('area_pertenencia__nombre', 'nombre')
-    medicos = Medico.objects.filter(activo=True).order_by('nombre')
+    medicos = Medico.objects.filter(empresa=empresa, activo=True).order_by('nombre_completo')
     origenes = _ORIGEN_CHOICES
 
     if request.method == 'POST':
@@ -76,6 +76,21 @@ def recepcion_lab(request):
                         'medicos': medicos,
                         'origenes': origenes,
                     })
+
+                medico = None
+                if medico_id:
+                    medico = Medico.objects.filter(
+                        id=medico_id, empresa=empresa, activo=True
+                    ).first()
+                    if not medico:
+                        raise ValidationError('El médico referente no pertenece a la empresa.')
+
+                origen_orden = {
+                    'PUBLICO_GENERAL': 'PUBLICO_GENERAL',
+                    'CONVENIO': 'CONVENIO',
+                    'SEGURO': 'CONVENIO',
+                    'OTRO': 'PUBLICO_GENERAL',
+                }.get(origen, 'PUBLICO_GENERAL')
 
                 from decimal import Decimal as _Dec
 
@@ -107,6 +122,8 @@ def recepcion_lab(request):
                     sucursal=sucursal,
                     paciente=core_paciente,
                     responsable_ingreso=request.user,
+                    medico_referente=medico,
+                    origen_orden=origen_orden,
                     total=_Dec('0'),
                     anticipo=_Dec('0'),
                     estado='PENDIENTE_PAGO',
@@ -118,9 +135,14 @@ def recepcion_lab(request):
                 for perfil_id in perfiles_seleccionados_ids:
                     try:
                         perfil = PerfilLaboratorio.objects.get(id=perfil_id, activo=True)
-                        pl = PerfilLims.objects.filter(
-                            nombre__iexact=perfil.nombre.strip(), empresa=empresa
-                        ).first()
+                        perfiles_lims = PerfilLims.objects.filter(
+                            nombre__iexact=perfil.nombre.strip(), empresa=empresa, activo=True
+                        )
+                        if perfiles_lims.count() != 1:
+                            raise ValidationError(
+                                f'El perfil "{perfil.nombre}" no tiene una correspondencia LIMS única en la empresa.'
+                            )
+                        pl = perfiles_lims.get()
                         CoreDetalleOrden.objects.create(
                             orden=nueva_orden,
                             perfil_lims=pl,
@@ -132,11 +154,21 @@ def recepcion_lab(request):
                     except PerfilLaboratorio.DoesNotExist:
                         messages.warning(request, 'Un perfil seleccionado no existe o está inactivo.')
 
-                estudios_objs = Estudio.objects.filter(id__in=estudios_seleccionados_ids)
+                estudios_objs = Estudio.objects.filter(
+                    id__in=estudios_seleccionados_ids,
+                    activo=True,
+                )
+                if estudios_objs.count() != len(set(estudios_seleccionados_ids)):
+                    raise ValidationError('Uno o más estudios no existen o están inactivos.')
                 for estudio in estudios_objs:
-                    an = Analito.objects.filter(
+                    analitos = Analito.objects.filter(
                         nombre__iexact=estudio.nombre.strip(), activo=True, empresa=empresa
-                    ).first()
+                    )
+                    if analitos.count() != 1:
+                        raise ValidationError(
+                            f'El estudio "{estudio.nombre}" no tiene una correspondencia LIMS única en la empresa.'
+                        )
+                    an = analitos.get()
                     precio_al_momento = estudio.precio_base or _Dec('0')
                     CoreDetalleOrden.objects.create(
                         orden=nueva_orden,

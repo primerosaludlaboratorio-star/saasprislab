@@ -687,11 +687,14 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 
 ## BLOQUE 14 (laboratorio/ — app raíz)
 
-## H-NUEVO-77 — `laboratorio/views/__init__.py::recepcion_lab` permite crear órdenes de laboratorio a cualquier usuario autenticado, ignora campos clínicos y mapea estudios legacy a LIMS por coincidencia de nombre — ALTO, ABIERTO
+## H-NUEVO-77 — `laboratorio/views/__init__.py::recepcion_lab` permite crear órdenes de laboratorio a cualquier usuario autenticado, ignora campos clínicos y mapea estudios legacy a LIMS por coincidencia de nombre — ALTO, CORREGIDO EN FLUJO ACTIVO
 - **Ubicación:** `laboratorio/views/__init__.py:33-189` (`recepcion_lab`); `laboratorio/urls.py:45-46` (`recepcion/`); `core/OrdenDeServicio`/`core/DetalleOrden`.
 - **Descripción:** La vista solo usa `@login_required` y `get_request_sucursal`, sin `@grupo_requerido`, `@permission_required` ni verificación de `rol`/`empresa` del usuario. Cualquier usuario autenticado puede crear una `OrdenDeServicio`, pasar `medico_id`/`origen` (que la función lee pero descarta) y seleccionar `Estudio`/`PerfilLaboratorio` del catálogo global. Los estudios se mapean a `lims.Analito` y `core.PerfilLims` por `nombre__iexact` dentro de la empresa, sin FK explícita: si no hay coincidencia o hay homónimos, se crean `DetalleOrden` con `analito=None`/`perfil_lims=None`, dejando la orden desconectada del LIMS nuevo.
 - **Riesgo:** creación no autorizada de órdenes, pérdida de médico/origen, órdenes con detalles huérfanos del catálogo LIMS, posibles estudios incorrectos si hay homónimos.
 - **Recomendación:** Requerir `RECEPCION`/`LABORATORIO`/`ADMIN` y validar que el usuario pertenezca a la empresa/sucursal. Usar FK directas a `lims.Analito`/`core.PerfilLims` (no búsquedas por nombre) o migrar `recepcion_lab` a consumir el catálogo nuevo. Guardar `medico_id`/`origen` en `OrdenDeServicio`.
+- **Corrección aplicada:** la vista exige rol operativo y empresa; filtra médicos por empresa y valida el médico referente; persiste `medico_referente` y normaliza/persiste `origen_orden`. La selección de estudios activos se valida completa y la resolución a `Analito`/`PerfilLims` exige exactamente una coincidencia activa dentro de la empresa; cualquier ausencia o ambigüedad aborta la transacción para no crear detalles huérfanos. El catálogo legacy global queda fuera del aislamiento operativo y permanece documentado bajo H82.
+- **Pruebas:** `manage.py check`, compilación dirigida y revisión de transacción/consultas tenant-scoped OK. La cobertura E2E de recepción queda pendiente de la suite funcional del módulo, no se declara como prueba humana de producción.
+- **Estado:** corregido en el flujo activo; desplegar junto con el siguiente artefacto local.
 
 ## H-NUEVO-78 — Las vistas `imprimir_etiqueta_zpl` e `imprimir_etiquetas_lote_zpl` carecen de control de rol y permiten SSRF a cualquier host/puerto — CRÍTICO, CORREGIDO
 - **Ubicación:** `laboratorio/views/imprimir_zpl.py:24-85` (`imprimir_etiqueta_zpl`), `:100-145` (`imprimir_etiquetas_lote_zpl`); `laboratorio/services/etiquetas_zpl.py:145-181` (`enviar_zpl_tcp`); `laboratorio/urls.py:59-60`.
