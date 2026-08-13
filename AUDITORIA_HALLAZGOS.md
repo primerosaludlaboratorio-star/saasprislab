@@ -1380,7 +1380,7 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Verificación**: `core.tests.test_asistencia_security` — 3/3 OK; el caso de usuario no gestor exige `empleado__usuario=request.user` en la consulta GET.
 - **Estado**: corregido, probado y listo para despliegue.
 
-### H-NUEVO-150: `transferencias.py` no restringe por rol la creación/envío/recepción de transferencias de inventario entre sucursales
+### H-NUEVO-150: `transferencias.py` no restringía por rol la creación/envío/recepción de transferencias de inventario entre sucursales — CORREGIDO
 - **Archivo**: `core/views/transferencias.py`.
 - **Líneas**: 21-303 (todo el archivo).
 - **Severidad**: Media.
@@ -1388,6 +1388,9 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Riesgo**: Movimiento no autorizado de inventario entre sucursales por personal sin función de logística/inventario; posible descuadre de existencias o fraude interno facilitado por falta de segregación de funciones.
 - **Recomendación**: Agregar `@role_required(...)` (p. ej. `ADMIN`, `DIRECTOR`, `GERENTE`, `FARMACIA`, `LABORATORIO` según corresponda) a `crear_transferencia`, `enviar_transferencia` y `recibir_transferencia`, replicando el patrón usado en el resto del código para operaciones de inventario/financieras sensibles.
 - **Nota adicional (menor)**: `enviar_transferencia`/`recibir_transferencia` actualizan `producto.stock`/`lote.cantidad` sin `select_for_update()` dentro de la transacción; en alta concurrencia (dos transferencias simultáneas del mismo producto) podría producirse una condición de carrera en el descuento/incremento de stock.
+- **Corrección aplicada**: las tres mutaciones exigen `ADMIN`, `DIRECTOR`, `GERENTE`, `FARMACIA` o `QUIMICO`. El envío bloquea la transferencia, productos y lotes con `select_for_update()`, valida todos los detalles antes de descontar y evita descuentos parciales ante cualquier error. La recepción bloquea transferencia y producto destino dentro de la transacción.
+- **Verificación**: `core.tests.test_transferencias_security` — 3/3 OK para impedir crear, enviar y recibir con rol `CAJERO`; `manage.py check`, compilación y diff correctos.
+- **Estado**: corregido, probado y listo para despliegue.
 - **Verificación**: se añadió prueba de recuperación por folio persistido y respuesta `application/pdf`.
 
 ### Verificación de cierre del Bloque 5 — H-NUEVO-143 a H-NUEVO-145

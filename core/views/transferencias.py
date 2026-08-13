@@ -6,6 +6,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.db import transaction
 from django.views.decorators.http import require_http_methods
@@ -17,6 +18,7 @@ from datetime import datetime
 from core.models import Empresa, Sucursal, Producto, Lote, Usuario
 from logistica.models import TransferenciaInventario, DetalleTransferencia
 from core.utils.trazabilidad import registrar_trazabilidad, serializar_modelo
+from core.decorators import role_required
 import logging
 @login_required
 def lista_transferencias(request):
@@ -57,6 +59,7 @@ def lista_transferencias(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'QUIMICO')
 @require_http_methods(["GET", "POST"])
 def crear_transferencia(request):
     """Crear una nueva transferencia de inventario."""
@@ -162,11 +165,16 @@ def ver_transferencia(request, transferencia_id):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'QUIMICO')
 @require_http_methods(["POST"])
 def enviar_transferencia(request, transferencia_id):
     """Enviar una transferencia (marcar como en tránsito y descontar stock)."""
     empresa = getattr(request.user, 'empresa', None)
-    transferencia = get_object_or_404(TransferenciaInventario, id=transferencia_id, empresa=empresa)
+    transferencia = get_object_or_404(
+        TransferenciaInventario.objects.select_for_update(),
+        id=transferencia_id,
+        empresa=empresa,
+    )
     
     if transferencia.estado != 'BORRADOR':
         messages.error(request, 'Solo se pueden enviar transferencias en estado Borrador')
@@ -174,33 +182,42 @@ def enviar_transferencia(request, transferencia_id):
     
     try:
         with transaction.atomic():
-            # Descontar stock de sucursal origen
-            for detalle in transferencia.detalles.all():
-                producto = detalle.producto
+            detalles = list(transferencia.detalles.select_related('producto', 'lote').all())
+            locked = []
+
+            # Bloquear y validar todo antes de tocar existencias. Si algo falla,
+            # la transacción no puede dejar descuentos parciales.
+            for detalle in detalles:
+                producto = Producto.objects.select_for_update().get(
+                    pk=detalle.producto_id,
+                    empresa=empresa,
+                )
+                lote = None
+                if detalle.lote_id:
+                    lote = Lote.objects.select_for_update().get(
+                        pk=detalle.lote_id,
+                        producto_id=producto.pk,
+                    )
                 
                 # Verificar que el producto esté en la sucursal origen
-                if producto.sucursal != transferencia.sucursal_origen:
-                    messages.error(request, f'El producto {producto.nombre} no está en la sucursal origen')
-                    return redirect('ver_transferencia', transferencia_id=transferencia.id)
-                
-                # Descontar stock
+                # Validar ubicación antes de descontar existencias.
                 cantidad_a_enviar = detalle.cantidad_solicitada or 0
                 if producto.stock < cantidad_a_enviar:
-                    messages.error(request, f'Stock insuficiente para {producto.nombre}')
-                    return redirect('ver_transferencia', transferencia_id=transferencia.id)
+                    raise ValidationError(f'Stock insuficiente para {producto.nombre}')
+                if lote and lote.cantidad < cantidad_a_enviar:
+                    raise ValidationError(f'Cantidad insuficiente en lote {lote.numero_lote}')
+                if producto.sucursal_id != transferencia.sucursal_origen_id:
+                    raise ValidationError(f'El producto {producto.nombre} no está en la sucursal origen')
+                locked.append((detalle, producto, lote, cantidad_a_enviar))
 
+            for detalle, producto, lote, cantidad_a_enviar in locked:
                 producto.stock -= cantidad_a_enviar
-                producto.save()
+                producto.save(update_fields=['stock'])
                 detalle.cantidad_enviada = cantidad_a_enviar
                 detalle.save(update_fields=['cantidad_enviada'])
-
-                # Si hay lote específico, descontar del lote
-                if detalle.lote:
-                    if detalle.lote.cantidad < cantidad_a_enviar:
-                        messages.error(request, f'Cantidad insuficiente en lote {detalle.lote.numero_lote}')
-                        return redirect('ver_transferencia', transferencia_id=transferencia.id)
-                    detalle.lote.cantidad -= cantidad_a_enviar
-                    detalle.lote.save()
+                if lote:
+                    lote.cantidad -= cantidad_a_enviar
+                    lote.save(update_fields=['cantidad'])
             
             # Actualizar estado
             transferencia.estado = 'EN_TRANSITO'
@@ -224,6 +241,8 @@ def enviar_transferencia(request, transferencia_id):
             )
             
             messages.success(request, f'Transferencia {transferencia.folio} enviada exitosamente')
+    except (ValidationError, Producto.DoesNotExist, Lote.DoesNotExist) as e:
+        messages.error(request, str(e) or 'La transferencia no pudo validarse.')
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en enviar_transferencia (transferencias.py)")
         messages.error(request, 'No fue posible enviar la transferencia.')
@@ -232,11 +251,16 @@ def enviar_transferencia(request, transferencia_id):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'QUIMICO')
 @require_http_methods(["POST"])
 def recibir_transferencia(request, transferencia_id):
     """Recibir una transferencia (marcar como recibida y agregar stock a destino)."""
     empresa = getattr(request.user, 'empresa', None)
-    transferencia = get_object_or_404(TransferenciaInventario, id=transferencia_id, empresa=empresa)
+    transferencia = get_object_or_404(
+        TransferenciaInventario.objects.select_for_update(),
+        id=transferencia_id,
+        empresa=empresa,
+    )
     
     if transferencia.estado != 'EN_TRANSITO':
         messages.error(request, 'Solo se pueden recibir transferencias en estado EN_TRANSITO')
@@ -245,11 +269,14 @@ def recibir_transferencia(request, transferencia_id):
     try:
         with transaction.atomic():
             # Agregar stock a sucursal destino
-            for detalle in transferencia.detalles.all():
-                producto = detalle.producto
+            for detalle in transferencia.detalles.select_related('producto').all():
+                producto = Producto.objects.select_for_update().get(
+                    pk=detalle.producto_id,
+                    empresa=empresa,
+                )
                 
                 # Actualizar o crear producto en sucursal destino
-                producto_destino, created = Producto.objects.get_or_create(
+                producto_destino, created = Producto.objects.select_for_update().get_or_create(
                     codigo_barras=producto.codigo_barras,
                     empresa=empresa,
                     defaults={

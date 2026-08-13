@@ -907,7 +907,7 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 ### Bloque 19E — `cuentas_por_cobrar.py`, `transferencias.py` — 2026-08-12
 
 - [x] `core/views/cuentas_por_cobrar.py` — 378/378. Sin hallazgos; `@role_required` + `_empresa()` con `PermissionDenied`, `select_for_update()` para folio CXC, auditoría en pagos.
-- [x] `core/views/transferencias.py` — 339/339. **H-NUEVO-150 (Media, ABIERTO)**: ninguna vista tiene `@role_required` (solo `@login_required`); cualquier usuario del tenant puede crear/enviar/recibir transferencias de inventario entre sucursales (mueve stock físico). Nota menor: falta `select_for_update()` en actualización de `producto.stock`/`lote.cantidad`.
+- [x] `core/views/transferencias.py` — 339/339. **H-NUEVO-150 (Media, CORREGIDO Y PROBADO)**: las mutaciones exigen roles autorizados; envío y recepción bloquean existencias con `select_for_update()` y validan todo antes de mutar para evitar descuentos parciales. Prueba dirigida: 3/3 OK.
 
 ### Bloque 8 — PRIS IA y OCR multimodal — COMPLETADO 2026-08-11
 
