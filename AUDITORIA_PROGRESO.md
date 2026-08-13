@@ -915,6 +915,13 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] Sin hallazgos: `ai_brain.py`, `audio_legal.py`, `auditoria_api.py` (endpoint legado retirado, 410), `auditoria_campo.py`, `cerebro.py`, `coach.py`, `capacitacion.py`, `impresion.py`, `inventario.py` (puente legacy), `inventario_predictivo.py`, `paquetes.py` (410 retirado), `tarifas.py` (410 retirado), `operaciones.py`, `sucursal_modo_inventario_lab.py`, `analytics.py` (460 líneas, todas las métricas filtran por `empresa`), `biblioteca.py`, `bienestar.py` (373 líneas, NOM-035 + diario emocional con `EncryptedTextField`, privacidad respetada: solo el propio usuario ve su diario/evaluación, RRHH solo ve alertas sin contenido), `bienestar_mejorado.py` (chat confidencial con detección de riesgo, privacidad total), `bot.py` (consulta catálogo legado `laboratorio.Estudio` sin empresa por diseño, es catálogo global no sensible).
 - [x] **H-NUEVO-151 (Media, CORREGIDO, PROBADO Y DESPLEGADO)**: `core/views/buzon.py` — `api_cambiar_estado_queja` y `api_obtener_quejas` replican `@role_required('DIRECTOR','ADMIN','GERENTE')`; las pruebas de autorización de `CAJERO` pasan y la revisión `5862e58` está activa en producción.
 
+### Bloque 19G — `capacitacion_rag.py`, `catalogos.py`, `catalogos_maestros.py`, `configuracion.py` — 2026-08-12
+
+- [x] `capacitacion_rag.py` — 463/463. Sin hallazgos; todas las consultas/mutaciones filtran por `empresa`, subida/gestión de documentos protegida por `_es_director_qc`.
+- [x] `configuracion.py` — 175/175. Sin hallazgos; `_puede_administrar_configuracion` exige rol `ADMIN`/`DIRECTOR`/superuser antes de mutar datos de empresa, modo IA o BYOK.
+- [x] `catalogos_maestros.py` — 247/247. Sin hallazgos; catálogo `laboratorio.Estudio` es legado sin FK de empresa por diseño, mutaciones reservadas a superusuario vía `_superuser_only`.
+- [x] `catalogos.py` — 209/209. **H-NUEVO-152 (Alta, CORREGIDO LOCALMENTE)**: `catalogo_medicos` busca y actualiza por `empresa + cedula_profesional`, rechaza usuarios sin empresa y evita reasignaciones cross-tenant. Prueba de aislamiento añadida.
+
 ### Bloque 8 — PRIS IA y OCR multimodal — COMPLETADO 2026-08-11
 
 - [x] `core/services/ocr_documental.py`: cascada única para clasificación documental, recetas, compras de farmacia y compras de laboratorio.

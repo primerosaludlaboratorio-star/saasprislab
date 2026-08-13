@@ -50,6 +50,11 @@ def catalogo_medicos(request):
         empresa = getattr(request.user, 'empresa', None)
 
         if request.method == 'POST':
+            if not empresa:
+                return JsonResponse(
+                    {'status': 'error', 'mensaje': 'Usuario sin empresa asignada'},
+                    status=403,
+                )
             nombre = (request.POST.get('nombre_completo') or '').strip()
             cedula = (request.POST.get('cedula_profesional') or '').strip()
             especialidad = (request.POST.get('especialidad') or 'Médico General').strip()
@@ -58,14 +63,13 @@ def catalogo_medicos(request):
                 return JsonResponse({'status': 'error', 'mensaje': 'Nombre y cédula son obligatorios'}, status=400)
 
             medico, creado = Medico.objects.get_or_create(
+                empresa=empresa,
                 cedula_profesional=cedula,
-                defaults={'nombre_completo': nombre, 'especialidad': especialidad, 'empresa': empresa},
+                defaults={'nombre_completo': nombre, 'especialidad': especialidad},
             )
             if not creado:
                 medico.nombre_completo = nombre
                 medico.especialidad = especialidad
-                if empresa:
-                    medico.empresa = empresa
                 medico.save()
 
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
