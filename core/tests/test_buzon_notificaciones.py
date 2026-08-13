@@ -131,6 +131,9 @@ class ApiCambiarEstadoQuejaTests(TestCase):
         self.director = Usuario.objects.create_user(
             username="dir_api", password="test", empresa=self.empresa, rol="DIRECTOR"
         )
+        self.cajero = Usuario.objects.create_user(
+            username="caj_api", password="test", empresa=self.empresa, rol="CAJERO"
+        )
         self.otro_dir = Usuario.objects.create_user(
             username="otro_dir", password="test", empresa=self.otra, rol="DIRECTOR"
         )
@@ -192,6 +195,12 @@ class ApiCambiarEstadoQuejaTests(TestCase):
         resp = self._cambiar(self.sin_empresa, self.queja.id, "EN_REVISION")
         self.assertEqual(resp.status_code, 403)
 
+    def test_cajero_no_puede_cambiar_estado(self):
+        resp = self._cambiar(self.cajero, self.queja.id, "RESUELTO")
+        self.assertIn(resp.status_code, [302, 403])
+        self.queja.refresh_from_db()
+        self.assertEqual(self.queja.estado, "PENDIENTE")
+
     def test_estado_invalido_rechaza_400(self):
         resp = self._cambiar(self.director, self.queja.id, "INEXISTENTE")
         self.assertEqual(resp.status_code, 400)
@@ -208,6 +217,9 @@ class ApiObtenerQuejasTests(TestCase):
         self.empresa = Empresa.objects.create(nombre="Get E", rfc="GET260625E1")
         self.director = Usuario.objects.create_user(
             username="dir_get", password="test", empresa=self.empresa, rol="DIRECTOR"
+        )
+        self.cajero = Usuario.objects.create_user(
+            username="caj_get", password="test", empresa=self.empresa, rol="CAJERO"
         )
         self.sin_empresa = Usuario.objects.create_user(
             username="sin_get", password="test", empresa=None, rol="DIRECTOR"
@@ -235,6 +247,11 @@ class ApiObtenerQuejasTests(TestCase):
         self.client.force_login(self.sin_empresa)
         resp = self.client.get(reverse("api_obtener_quejas"))
         self.assertEqual(resp.status_code, 403)
+
+    def test_cajero_no_puede_obtener_quejas(self):
+        self.client.force_login(self.cajero)
+        resp = self.client.get(reverse("api_obtener_quejas"))
+        self.assertIn(resp.status_code, [302, 403])
 
 
 class ApiCrearNotificacionTests(TestCase):

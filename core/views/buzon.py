@@ -158,6 +158,7 @@ def buzon_kanban(request):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE')
 @require_http_methods(["POST"])
 def api_cambiar_estado_queja(request, queja_id):
     """
@@ -216,6 +217,7 @@ def api_cambiar_estado_queja(request, queja_id):
 
 
 @login_required
+@role_required('DIRECTOR', 'ADMIN', 'GERENTE')
 @require_http_methods(["GET"])
 def api_obtener_quejas(request):
     """API para obtener quejas agrupadas por estado (para refrescar Kanban)."""

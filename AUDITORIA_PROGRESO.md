@@ -903,11 +903,17 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] `core/views/nomina.py` — 281/281. Sin hallazgos; helper `_empresa(request)` con `PermissionDenied` + `@role_required` en todas las vistas.
 - [x] `core/views/asistencia.py` — 366/366. **H-NUEVO-149 (Media, CORREGIDO Y PROBADO)**: `crear_incidencia` aplica en GET el mismo filtro `empleado__usuario=request.user` que ya usaba en POST para no-gestores; gestores conservan acceso administrativo. Prueba dirigida: 3/3 OK.
 - [x] **Verificado H-NUEVO-147**: confirmado CORREGIDO en código actual (`descargar_pdf_consentimiento` ya no tiene rama `scope_empresa`/`is_superuser`; filtra siempre por `empresa=empresa_u` y usa `folio_consentimiento` persistido en lugar de `hash_firma__icontains`). Otra sesión concurrente también documentó esta corrección como H-NUEVO-148 (persistencia del folio).
+- [x] **H-NUEVO-151 (Media, CORREGIDO LOCALMENTE)**: `api_cambiar_estado_queja` y `api_obtener_quejas` replican el control de rol del Kanban (`DIRECTOR`, `ADMIN`, `GERENTE`); se añadieron pruebas de rechazo para `CAJERO`.
 
 ### Bloque 19E — `cuentas_por_cobrar.py`, `transferencias.py` — 2026-08-12
 
 - [x] `core/views/cuentas_por_cobrar.py` — 378/378. Sin hallazgos; `@role_required` + `_empresa()` con `PermissionDenied`, `select_for_update()` para folio CXC, auditoría en pagos.
 - [x] `core/views/transferencias.py` — 339/339. **H-NUEVO-150 (Media, CORREGIDO Y PROBADO)**: las mutaciones exigen roles autorizados; envío y recepción bloquean existencias con `select_for_update()` y validan todo antes de mutar para evitar descuentos parciales. Prueba dirigida: 3/3 OK.
+
+### Bloque 19F — barrido de archivos pequeños de `core/views/` — 2026-08-12
+
+- [x] Sin hallazgos: `ai_brain.py`, `audio_legal.py`, `auditoria_api.py` (endpoint legado retirado, 410), `auditoria_campo.py`, `cerebro.py`, `coach.py`, `capacitacion.py`, `impresion.py`, `inventario.py` (puente legacy), `inventario_predictivo.py`, `paquetes.py` (410 retirado), `tarifas.py` (410 retirado), `operaciones.py`, `sucursal_modo_inventario_lab.py`, `analytics.py` (460 líneas, todas las métricas filtran por `empresa`), `biblioteca.py`, `bienestar.py` (373 líneas, NOM-035 + diario emocional con `EncryptedTextField`, privacidad respetada: solo el propio usuario ve su diario/evaluación, RRHH solo ve alertas sin contenido), `bienestar_mejorado.py` (chat confidencial con detección de riesgo, privacidad total), `bot.py` (consulta catálogo legado `laboratorio.Estudio` sin empresa por diseño, es catálogo global no sensible).
+- [x] **H-NUEVO-151 (Media, ABIERTO)**: `core/views/buzon.py` — `api_cambiar_estado_queja` y `api_obtener_quejas` solo tienen `@login_required`, sin el `@role_required('DIRECTOR','ADMIN','GERENTE')` que sí protege `buzon_kanban`; cualquier empleado autenticado puede leer identidad/contacto de quejosos no anónimos y cambiar el estado de cualquier queja (ocultar/cerrar reportes).
 
 ### Bloque 8 — PRIS IA y OCR multimodal — COMPLETADO 2026-08-11
 
