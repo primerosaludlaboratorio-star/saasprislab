@@ -158,10 +158,9 @@ class TransferenciaInventario(models.Model):
         if not self.folio:
             from django.utils import timezone as _tz
             fecha = _tz.localtime(_tz.now()).strftime('%Y%m%d')
-            ultimo = TransferenciaInventario.objects.filter(
-                folio__startswith=f'TRANS-{fecha}'
-            ).count()
-            self.folio = f'TRANS-{fecha}-{ultimo + 1:04d}'
+            # UUID evita colisiones entre solicitudes concurrentes; count()+1
+            # no es seguro bajo carga y podía provocar IntegrityError.
+            self.folio = f'TRANS-{fecha}-{uuid.uuid4().hex[:8].upper()}'
         super().save(*args, **kwargs)
     
     def puede_enviar(self):
@@ -179,7 +178,7 @@ class TransferenciaInventario(models.Model):
     def total_cantidad(self):
         """Cantidad total de unidades"""
         return self.detalles.aggregate(
-            total=models.Sum('cantidad')
+            total=models.Sum('cantidad_solicitada')
         )['total'] or 0
 
 

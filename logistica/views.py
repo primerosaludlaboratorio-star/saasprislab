@@ -11,6 +11,7 @@ import logging
 from .models import RutaRecoleccion, VisitaDomicilio, TransferenciaInventario, DetalleTransferencia, LogTransferencia
 from core.models import Producto, Lote, Sucursal
 from core.utils.sucursal_helpers import get_request_sucursal, get_user_sucursales
+from core.decorators import role_required
 
 
 @login_required
@@ -126,6 +127,7 @@ def lista_transferencias(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'QUIMICO')
 def crear_transferencia(request):
     """
     Crear nueva transferencia entre sucursales.
@@ -218,6 +220,7 @@ def detalle_transferencia(request, transferencia_id):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'QUIMICO')
 def agregar_producto_transferencia(request, transferencia_id):
     """
     API para agregar productos a una transferencia en borrador.
@@ -276,6 +279,7 @@ def agregar_producto_transferencia(request, transferencia_id):
 
 @login_required
 @permission_required('logistica.add_transferenciainventario', raise_exception=True)
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'QUIMICO')
 def enviar_transferencia(request, transferencia_id):
     """
     Enviar una transferencia (cambiar estado de BORRADOR a ENVIADA).
@@ -284,19 +288,17 @@ def enviar_transferencia(request, transferencia_id):
     if not empresa:
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
-    transferencia = get_object_or_404(
-        TransferenciaInventario, 
-        id=transferencia_id, 
-        empresa=empresa
-    )
-    
-    if not transferencia.puede_enviar():
-        messages.error(request, 'Esta transferencia no puede ser enviada')
-        return redirect('logistica:detalle_transferencia', transferencia.id)
-    
     if request.method == 'POST':
         try:
             with transaction.atomic():
+                transferencia = get_object_or_404(
+                    TransferenciaInventario.objects.select_for_update(),
+                    id=transferencia_id,
+                    empresa=empresa,
+                )
+                if not transferencia.puede_enviar():
+                    messages.error(request, 'Esta transferencia no puede ser enviada')
+                    return redirect('logistica:detalle_transferencia', transferencia.id)
                 # Actualizar cantidades enviadas
                 for detalle in transferencia.detalles.all():
                     detalle.cantidad_enviada = detalle.cantidad_solicitada
@@ -328,12 +330,16 @@ def enviar_transferencia(request, transferencia_id):
             logging.getLogger(__name__).exception("Error inesperado en enviar_transferencia (views.py)")
             messages.error(request, f'Error al enviar transferencia: {str(e)}')
     
-    return render(request, 'logistica/enviar_transferencia.html', {
-        'transferencia': transferencia,
-    })
+    transferencia = get_object_or_404(
+        TransferenciaInventario,
+        id=transferencia_id,
+        empresa=empresa,
+    )
+    return render(request, 'logistica/enviar_transferencia.html', {'transferencia': transferencia})
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'QUIMICO')
 def recibir_transferencia(request, transferencia_id):
     """
     Recibir una transferencia y actualizar inventarios.
@@ -342,24 +348,34 @@ def recibir_transferencia(request, transferencia_id):
     if not empresa:
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
-    transferencia = get_object_or_404(
-        TransferenciaInventario, 
-        id=transferencia_id, 
-        empresa=empresa
-    )
-    
-    if not transferencia.puede_recibir():
-        messages.error(request, 'Esta transferencia no puede ser recibida')
-        return redirect('logistica:detalle_transferencia', transferencia.id)
-    
     if request.method == 'POST':
         try:
             with transaction.atomic():
+                transferencia = get_object_or_404(
+                    TransferenciaInventario.objects.select_for_update(),
+                    id=transferencia_id,
+                    empresa=empresa,
+                )
+                if not transferencia.puede_recibir():
+                    messages.error(request, 'Esta transferencia no puede ser recibida')
+                    return redirect('logistica:detalle_transferencia', transferencia.id)
+
                 # Procesar cantidades recibidas
-                for detalle in transferencia.detalles.all():
-                    cantidad_recibida = Decimal(
-                        request.POST.get(f'cantidad_recibida_{detalle.id}', '0')
-                    )
+                detalles = list(transferencia.detalles.select_related('producto', 'lote').all())
+                for detalle in detalles:
+                    try:
+                        cantidad_recibida = Decimal(request.POST.get(
+                            f'cantidad_recibida_{detalle.id}', '0'
+                        ))
+                    except Exception as exc:
+                        raise ValidationError(
+                            f'Cantidad inválida para {detalle.producto.nombre}.'
+                        ) from exc
+                    if cantidad_recibida < 0 or cantidad_recibida > detalle.cantidad_enviada:
+                        raise ValidationError(
+                            f'La cantidad recibida de {detalle.producto.nombre} '
+                            'debe estar entre 0 y la cantidad enviada.'
+                        )
                     detalle.cantidad_recibida = cantidad_recibida
                     detalle.daños_reportados = request.POST.get(f'danos_{detalle.id}', '')
                     detalle.save()
@@ -408,9 +424,10 @@ def recibir_transferencia(request, transferencia_id):
                             observaciones=f'Transferencia #{transferencia.folio} desde {transferencia.sucursal_origen.nombre}',
                             usuario_responsable=request.user
                         )
-                    except Exception as e:
-                        logger = logging.getLogger('logistica')
-                        logger.warning(f'No se pudo actualizar inventario: {str(e)}')
+                    except Exception as exc:
+                        raise ValidationError(
+                            f'No se pudo actualizar el inventario de {detalle.producto.nombre}.'
+                        ) from exc
                 
                 # Cambiar estado
                 transferencia.estado = 'COMPLETADA'
@@ -433,9 +450,21 @@ def recibir_transferencia(request, transferencia_id):
                 messages.success(request, f'Transferencia {transferencia.folio} recibida exitosamente')
                 return redirect('logistica:detalle_transferencia', transferencia.id)
                 
+        except ValidationError as e:
+            messages.error(request, str(e))
         except Exception as e:
             logging.getLogger(__name__).exception("Error inesperado en recibir_transferencia (views.py)")
-            messages.error(request, f'Error al recibir transferencia: {str(e)}')
+            messages.error(request, 'No fue posible recibir la transferencia; no se aplicaron cambios.')
+    else:
+        transferencia = get_object_or_404(
+            TransferenciaInventario,
+            id=transferencia_id,
+            empresa=empresa,
+        )
+
+    if not transferencia.puede_recibir():
+        messages.error(request, 'Esta transferencia no puede ser recibida')
+        return redirect('logistica:detalle_transferencia', transferencia.id)
     
     detalles = transferencia.detalles.select_related('producto', 'lote').all()
     

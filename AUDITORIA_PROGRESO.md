@@ -1086,3 +1086,11 @@ Se corrigieron y verificaron `H-NUEVO-147` y `H-NUEVO-148` en `core/views/consen
 
 - **H-NUEVO-161**: `suscripciones/views.py` ahora filtra por `request.user.empresa` y bloquea usuarios sin empresa. Corregido localmente; pendiente despliegue.
 - **H-NUEVO-162**: las APIs públicas IoT ahora exigen un token hash exclusivo del kiosco objetivo. Se añadió `iot.0006_kiosco_api_token_hash`; los kioscos existentes deben reprovisionarse antes del uso operativo. Corregido localmente; pendiente despliegue.
+
+## Corrección H-NUEVO-163 — 2026-08-13
+
+`logistica/views.py` ahora exige roles operativos en todas las mutaciones de transferencias, bloquea la transferencia durante envío/recepción, valida cantidades y aborta la transacción ante errores de inventario. Se eliminó la generación de folios por `count()+1` y se corrigió `total_cantidad()`. Corregido localmente; pendiente despliegue.
+
+## Corrección H-NUEVO-164 — 2026-08-13
+
+`ia/admin.py` ahora calcula las estadísticas de `TranscripcionVoz` desde el queryset tenant-scoped del Admin. Corregido localmente; pendiente despliegue.

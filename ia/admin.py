@@ -248,7 +248,9 @@ class TranscripcionVozAdmin(TenantScopedAdmin):
         extra_context = extra_context or {}
         
         # Estadísticas generales
-        stats = TranscripcionVoz.objects.aggregate(
+        # Reutiliza el queryset tenant-scoped del ModelAdmin. Consultar el
+        # manager base aquí exponía métricas agregadas de otras empresas.
+        stats = self.get_queryset(request).aggregate(
             total=Count('id'),
             promedio_confianza=Avg('confianza_transcripcion'),
             con_orden=Count('orden_asociada')

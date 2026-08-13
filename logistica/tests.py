@@ -38,7 +38,8 @@ class LogisticaModelsTest(TestCase):
         self.usuario = Usuario.objects.create_user(
             username='testuser',
             password='test123',
-            empresa=self.empresa
+            empresa=self.empresa,
+            rol='FARMACIA',
         )
 
         if Sucursal is not None:
