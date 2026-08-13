@@ -1360,3 +1360,21 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **H-NUEVO-144: CORREGIDO.** La tendencia NOM-035 filtra `DiarioEmocional` mediante `usuario__empresa=empresa` antes de agregar conteos semanales.
 - **H-NUEVO-145: CORREGIDO.** `api_crear_archivo_raw` rechaza con 403 a usuarios sin empresa antes de crear evidencia forense.
 - **Pruebas:** `core.tests.test_dashboard_and_panic_security`, `core.tests.test_pdf_and_qr_security` y `core.tests.test_hl7_tenant_binding`: 23 pruebas OK. `manage.py check`, `makemigrations --check --dry-run --noinput` y compilación dirigida: OK. La suite con base de datos de analizadores no completó la creación del esquema local tras 60 segundos; no se presenta como evidencia de cierre.
+## H-NUEVO-146 — `core/management/commands/sentinel_reset.py`: mutación global por defecto sin alcance tenant ni confirmación fuerte — MEDIO/ALTO, CORREGIDO
+
+**Evidencia verificada el 2026-08-12:** el comando podía marcar como solucionadas o eliminar incidencias de todos los tenants sin exigir `--apply`, confirmación de operación ni `empresa_id`.
+
+**Corrección aplicada:**
+
+- sin `--apply` opera únicamente como simulación;
+- toda mutación exige `--apply --confirm-reset`;
+- la eliminación física exige además `--confirm-delete`;
+- las operaciones aplicadas requieren `--empresa-id`;
+- `--all-tenants` queda explícito y bloqueado cuando `IS_PRODUCTION=True`;
+- la consulta y el borrado usan el alcance seleccionado, nunca un queryset global implícito.
+
+**Pruebas:** `core.tests.test_management_command_safety` pasó 7/7; `manage.py check`, `makemigrations --check --dry-run --noinput` y compilación de comandos pasaron. Los comandos legacy desactivados con `CommandError` se conservaron para trazabilidad y no se eliminaron.
+
+## Verificación vigente del Bloque 7 — 2026-08-12
+
+Los hallazgos H-NUEVO-27 a H-NUEVO-31 permanecen corregidos y fueron revalidados contra el código actual. H-NUEVO-146 queda corregido en esta revisión. No se ejecutó ningún comando destructivo ni se modificaron datos productivos.

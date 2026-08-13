@@ -9,6 +9,7 @@ from core.management.commands.resetear_personal_final import Command as ResetPer
 from core.management.commands.resetear_usuarios_acceso import Command as ResetUsersCommand
 from core.management.commands.unificar_empresa_prislab import Command as MergeCommand
 from core.management.commands.wipe_datos_operativos import Command as WipeCommand
+from core.management.commands.sentinel_reset import Command as SentinelResetCommand
 
 
 class ManagementCommandSafetyTests(SimpleTestCase):
@@ -39,3 +40,21 @@ class ManagementCommandSafetyTests(SimpleTestCase):
     def test_backup_requires_dedicated_fernet_key(self):
         with self.assertRaises(CommandError):
             BackupCommand()._generar_clave_encriptacion()
+
+    @override_settings(IS_PRODUCTION=True)
+    def test_sentinel_reset_requires_explicit_apply_and_scope(self):
+        with self.assertRaises(CommandError):
+            SentinelResetCommand().handle(
+                dry_run=False, delete=False, apply=True,
+                confirm_reset=False, confirm_delete=False,
+                empresa_id=None, all_tenants=False,
+            )
+
+    @override_settings(IS_PRODUCTION=True)
+    def test_sentinel_reset_blocks_global_scope_in_production(self):
+        with self.assertRaises(CommandError):
+            SentinelResetCommand().handle(
+                dry_run=False, delete=False, apply=True,
+                confirm_reset=True, confirm_delete=False,
+                empresa_id=None, all_tenants=True,
+            )

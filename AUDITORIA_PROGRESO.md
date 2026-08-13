@@ -952,3 +952,10 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] Pruebas focalizadas: 5/5 RBAC PRIS y 6/6 proveedores IA/transporte.
 - [x] `manage.py check`, migraciones y compilación: OK.
 - [!] `core.rbac.tests` requiere creación de base de datos y quedó bloqueado por la limitación del entorno local; no se declara como prueba ejecutada.
+## Estado vigente — Bloque 7 revalidado (2026-08-12)
+
+Se revalidaron los comandos sensibles contra el checkout actual. H-NUEVO-27 a H-NUEVO-31 siguen corregidos: no existen contraseñas por defecto en los comandos de reseteo, los reseteos destructivos están confirmados y bloqueados en producción, `wipe_datos_operativos` preserva `AuditLog`, la fusión de empresas está protegida y el backup usa `PRISLAB_BACKUP_ENCRYPTION_KEY` dedicada.
+
+Se corrigió H-NUEVO-146 en `core/management/commands/sentinel_reset.py`: simulación por defecto, `--apply --confirm-reset` obligatorio, alcance por `--empresa-id`, alcance global explícito solo fuera de producción y confirmación adicional para eliminación física. La suite de seguridad de comandos pasó 7/7.
+
+Estado: **Bloque 7 cerrado y revalidado.** No se borraron comandos legacy documentales; permanecen desactivados mediante `CommandError` cuando corresponden a catálogos antiguos.
