@@ -752,14 +752,14 @@ valor) y se verificó que tiene formato válido. Despliegue de código:
 - **Riesgo:** fallo silencioso del historial de resultados; permisos de privacidad NOM-024 nunca activos o globales.
 - **Recomendación:** Importar `DatabaseError` (`from django.db.utils import DatabaseError`). Llamar `inicializar_sistema_privacidad()` en `LaboratorioConfig.ready()` o eliminar si es obsoleto. Vincular permisos a grupos/empresa si es requerido por NOM-024.
 
-## H-NUEVO-87 — `ResponsableSanitario` no tiene `empresa` y desactiva responsables de forma global — MEDIO/ALTO, ABIERTO
+## H-NUEVO-87 — `ResponsableSanitario` no tiene `empresa` y desactiva responsables de forma global — MEDIO/ALTO, CORREGIDO Y DESPLEGADO
 - **Ubicación:** `laboratorio/models/regulatorio.py:14-99` (`ResponsableSanitario`), `:91-99` (`save`); `laboratorio/admin.py:262-270`.
 - **Descripción:** El modelo no tiene campo `empresa`, la `cedula_profesional` es `unique=True` a nivel global y `save()` hace `ResponsableSanitario.objects.filter(activo=True).exclude(pk=self.pk).update(activo=False)` sin filtrar empresa. Esto implica que solo puede haber un responsable sanitario activo en todo el sistema SaaS, compartiendo firma/autorización entre todos los tenants.
 - **Riesgo:** un tenant no puede tener su propio responsable sanitario; un cambio en un tenant desactiva el de todos; incumplimiento NOM-007/COFEPRIS por responsable incorrecto en reportes.
 - **Recomendación:** Añadir `empresa` a `ResponsableSanitario`, cambiar `unique_together=('empresa','cedula_profesional')` y filtrar `activo` por `empresa` en `save()`.
 - **Corrección aplicada:** `empresa` ya es obligatoria en el modelo y el guardado ya rota el responsable activo por empresa; se eliminó la unicidad global de cédula y se añadió `uniq_responsable_cedula_empresa`.
 - **Verificación:** no existen duplicados de cédula en la base local; `migrate laboratorio 0021`, `makemigrations --check`, `manage.py check` y compilación pasan. La suite de tests de Django quedó bloqueada durante la creación de su base de pruebas y no se marca como aprobada.
-- **Estado:** corregido localmente; pendiente de despliegue y prueba focalizada en producción.
+- **Estado:** corregido y desplegado en producción; migración `laboratorio.0021` aplicada y health check 200.
 
 ## H-NUEVO-88 — `laboratorio/views/etiquetas.py` descarga etiquetas con solo control de grupo amplio y sin permiso de impresión específico — BAJO/MEDIO, ABIERTO
 - **Ubicación:** `laboratorio/views/etiquetas.py:30-133` (`imprimir_etiqueta_tubo`, `imprimir_etiquetas_lote`, `imprimir_etiqueta_qr`); `laboratorio/urls.py:51-54`.
@@ -1431,7 +1431,7 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Recomendación**: Agregar `empresa=empresa` a las tres consultas de `Analito` en este archivo, igual que en `cotizacion.py` (`Analito.objects.filter(empresa=empresa, activo=True, ...)`).
 - **Corrección aplicada**: las consultas de catálogo y los tres lookups por ID ahora exigen `empresa=empresa`; un usuario no puede enumerar ni cargar analitos de otro tenant.
 - **Verificación**: `core.tests.test_tenant_boundary_views.TenantBoundaryViewsTests.test_result_history_requires_analito_from_request_tenant` y `manage.py check` pasan.
-- **Estado**: corregido localmente; pendiente de despliegue.
+- **Estado**: corregido y desplegado en producción; health check 200.
 
 ### H-NUEVO-154: `marcar_incidencia_revisada` permite a un Director/superuser de un tenant leer y mutar `IncidenciaOperativa` de otro tenant (IDOR cross-tenant)
 - **Archivo**: `core/views/incidencias.py`.
@@ -1442,7 +1442,7 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Recomendación**: Cambiar el lookup a `get_object_or_404(IncidenciaOperativa, id=incidencia_id, empresa=empresa)`, igual que en `panel_auditoria_incidencias`.
 - **Corrección aplicada**: el endpoint exige empresa en el usuario y el lookup usa `id + empresa`; un Director sin empresa o de otro tenant recibe rechazo/no encuentra el registro.
 - **Verificación**: `core.tests.test_tenant_boundary_views.TenantBoundaryViewsTests.test_incidence_review_cannot_cross_tenant` y `manage.py check` pasan.
-- **Estado**: corregido localmente; pendiente de despliegue.
+- **Estado**: corregido y desplegado en producción; health check 200.
 
 ### H-NUEVO-155: `historial_comandos` expone `VoiceAuditLog` de TODOS los tenants a cualquier superuser (transcripciones de voz cross-tenant)
 - **Archivo**: `core/views/voice.py`.
@@ -1452,6 +1452,10 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Riesgo**: Fuga masiva cross-tenant de datos operativos y potencialmente clínicos (dictados de voz) de todos los clientes de la plataforma a cualquier Director de cualquier tenant.
 - **Recomendación**: Cambiar a `VoiceAuditLog.objects.filter(empresa=empresa)` para el caso `is_superuser`, igual que hace `dashboard_voice_logs`, eliminando el `.all()` sin acotar.
 
+- **Corrección aplicada**: el historial de directores queda limitado a `empresa` y el historial de usuarios ordinarios también combina usuario + empresa.
+- **Verificación**: `core.tests.test_tenant_boundary_views.TenantBoundaryViewsTests.test_voice_director_history_is_limited_to_request_tenant` y `manage.py check` pasan.
+- **Estado**: corregido y desplegado en producción; health check 200.
+
 ### H-NUEVO-156: `core/utils/lims_tokens_v75.py` — módulo inoperante (import roto) con fuga latente de catálogo cross-tenant si se repara
 - **Archivo**: `core/utils/lims_tokens_v75.py`.
 - **Líneas**: 311 (`_resolver_token`), 318-356 (consultas `Analito`/`Perfil`/`Paquete`).
@@ -1459,15 +1463,15 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Hallazgo**: `_resolver_token` ejecuta `from lims.models import Analito, Perfil, Paquete`. La app `lims` (`lims/models.py`) **no define `Perfil` ni `Paquete`** (solo `Analito`, `PerfilLims`, `PaqueteLims`, `PerfilAnalito`, `PrecioItem`). Este `ImportError` ocurre en cada invocación, así que `MotorOrdenesLIMS.generar_orden_desde_tokens` (y su API `api_procesar_tokens_lims`) **nunca resuelve tokens exitosamente** hoy; el error es capturado por el `except Exception` del bucle y se reporta como "No se encontró en el catálogo LIMS", enmascarando que la función está rota. Además, si en el futuro alguien corrige el import (p. ej. a `PerfilLims`/`PaqueteLims`), la consulta `Analito.objects.filter(codigo=codigo, activo=True)` (línea 318) **no filtra por `empresa`**, pese a que `Analito` es `TenantModel` con `empresa` obligatoria — permitiría crear un `DetalleOrden` en la orden del tenant actual apuntando a un `Analito` de otro tenant.
 - **Riesgo**: Actualmente ninguno (código inalcanzable), pero es deuda técnica peligrosa: una futura corrección del import reintroduciría sin darse cuenta una vulnerabilidad de aislamiento de catálogo entre tenants.
 - **Recomendación**: Si el módulo sigue en uso, corregir el import a `PerfilLims`/`PaqueteLims` (ajustando también las relaciones `.perfiles`/`.analitos` a la API real de esos modelos) y agregar `empresa=empresa` a las tres consultas de resolución de tokens. Si el módulo es legado sin rutas activas, considerar retirarlo explícitamente como se hizo con otros endpoints deprecados (410).
-- **Corrección aplicada**: el historial de directores queda limitado a `empresa` y el historial de usuarios ordinarios también combina usuario + empresa.
-- **Verificación**: `core.tests.test_tenant_boundary_views.TenantBoundaryViewsTests.test_voice_director_history_is_limited_to_request_tenant` y `manage.py check` pasan.
-- **Estado**: corregido localmente; pendiente de despliegue.
-- **Corrección aplicada**: el lookup incluye `empresa` y la vista rechaza POST de usuarios sin tenant; un médico existente solo puede actualizarse dentro de la misma empresa.
-- **Verificación**: `core.tests.test_catalogos_medicos_security` comprueba que una cédula compartida no reasigna ni modifica el registro de otro tenant.
-- **Estado**: corregido localmente; pendiente de despliegue.
-- **Corrección aplicada**: ambas APIs replican ahora el control `DIRECTOR`/`ADMIN`/`GERENTE` del panel Kanban. Se añadieron pruebas que verifican que un `CAJERO` no puede consultar ni mutar quejas.
-- **Verificación**: `core.tests.test_buzon_notificaciones` pasa con los casos de autorización y tenant existentes más los dos casos de rol; `manage.py check` correcto.
-- **Despliegue**: revisión `5862e58`; servicios activos y health de producción correcto.
+
+### H-NUEVO-157: `core/utils/notificaciones.py` está completamente roto (modelos no importados) y su tarea programada de Celery Beat falla silenciosamente para TODAS las empresas en cada ejecución
+- **Archivo**: `core/utils/notificaciones.py`; consumidores: `core/tasks/notificaciones_tasks.py`, `core/utils/ia_resources.py`.
+- **Líneas**: `notificaciones.py:9-11` (import comentado de `Notificacion`/`ConfiguracionNotificaciones`), `44` (`crear_notificacion`), `65` (`obtener_o_crear_config`); `ia_resources.py:299` (`from core.utils.notificaciones import crear_notificacion_sistema`, función que no existe en el módulo — el nombre real es `crear_notificacion`).
+- **Severidad**: Media (fiabilidad operativa/gobernanza, no exposición de datos).
+- **Hallazgo**: `core/utils/notificaciones.py` usa `Notificacion` y `ConfiguracionNotificaciones` pero el import está comentado ("pendientes de migración"), por lo que **cualquier llamada a `crear_notificacion`, `obtener_o_crear_config`, `verificar_stock_bajo` o `verificar_caducidades` lanza `NameError`**. Este módulo es invocado por la tarea programada `core.tasks.notificaciones_tasks.ejecutar_verificaciones_automaticas_todas_empresas` (Celery Beat), que itera **todas las `Empresa`** y llama `ejecutar_verificaciones_automaticas(empresa)` — la excepción es capturada por un `try/except` genérico que solo loguea el error, así que **las alertas de stock bajo y caducidad/vencimiento de lotes nunca se generan para ningún tenant**, en cada ejecución programada, sin que nadie lo note salvo revisando logs de Celery. Adicionalmente, `core/utils/ia_resources.py::_enviar_alerta_cuota` importa `crear_notificacion_sistema` de este módulo, nombre que no existe (la función real es `crear_notificacion`), por lo que las **alertas de consumo de cuota de IA al 80%/90% tampoco se envían nunca** (fallan con `ImportError`, capturado igual por `except Exception`).
+- **Riesgo**: Pérdida silenciosa de una función de negocio crítica (alertas de stock bajo/caducidad de medicamentos vencidos y de consumo de cuota IA) en todos los tenants de la plataforma, sin ningún error visible al usuario ni administrador — solo aparece en logs internos de Celery.
+- **Recomendación**: Restaurar el import de los modelos `Notificacion`/`ConfiguracionNotificaciones` (si existen bajo otro nombre, p. ej. `NotificacionSistema` en `core/views/notificaciones.py`, migrar esta utilidad a usarlo) o retirar/reemplazar el módulo por el sistema vigente de `NotificacionSistema`. Corregir el nombre de función importado en `ia_resources.py` a `crear_notificacion` (o el que corresponda tras la migración).
+
 - **Estado**: cerrado.
 - **Estado**: corregido localmente; pendiente de despliegue.
 - **Corrección aplicada**: las tres mutaciones exigen `ADMIN`, `DIRECTOR`, `GERENTE`, `FARMACIA` o `QUIMICO`. El envío bloquea la transferencia, productos y lotes con `select_for_update()`, valida todos los detalles antes de descontar y evita descuentos parciales ante cualquier error. La recepción bloquea transferencia y producto destino dentro de la transacción.
