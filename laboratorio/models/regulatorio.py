@@ -34,7 +34,6 @@ class ResponsableSanitario(models.Model):
     # Datos Legales Obligatorios (NOM-007)
     cedula_profesional = models.CharField(
         max_length=50,
-        unique=True,
         verbose_name="Cédula Profesional (DGP)",
         help_text="Número de cédula profesional emitida por la Dirección General de Profesiones"
     )
@@ -90,6 +89,12 @@ class ResponsableSanitario(models.Model):
         verbose_name = "Responsable Sanitario"
         verbose_name_plural = "Responsables Sanitarios"
         ordering = ['-activo', '-fecha_alta']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'cedula_profesional'],
+                name='uniq_responsable_cedula_empresa',
+            ),
+        ]
     
     def __str__(self) -> str:
         activo_str = " [ACTIVO]" if self.activo else ""

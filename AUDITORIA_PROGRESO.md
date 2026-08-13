@@ -938,6 +938,7 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] `push.py` — 231/231. Sin hallazgos; suscripciones push filtradas por `usuario=request.user`, `test_notificacion` restringido a `is_superuser`.
 - [x] `incidencias.py` — 204/204. **H-NUEVO-154 (Alta, CORREGIDO LOCALMENTE)**: `marcar_incidencia_revisada` exige empresa y filtra el lookup por `id + empresa`; prueba de frontera tenant añadida. Pendiente de despliegue.
 - [x] **H-NUEVO-155 (Alta, CORREGIDO LOCALMENTE)**: `core/views/voice.py::historial_comandos` limita el historial de directores a la empresa solicitante y el de usuarios ordinarios a usuario + empresa; prueba de frontera tenant añadida. Pendiente de despliegue.
+- [x] **H-NUEVO-87 (Media/Alta, CORREGIDO LOCALMENTE)**: `ResponsableSanitario` elimina la unicidad global de cédula y aplica unicidad por `empresa + cedula_profesional`; la rotación de responsable activo permanece limitada por empresa. Migración `laboratorio.0021` generada y aplicada localmente. Pendiente de despliegue.
 
 ### Bloque 19J — Re-lectura línea por línea de archivos previamente solo verificados por grep — 2026-08-13
 
@@ -946,6 +947,13 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] `laboratorio_reportes.py` — 226/226. Sin hallazgos; `validar_resultado` (público, QR) usa token UUID no secuencial vía `objects_all`, con registro forense; `imprimir_resultados`/`api_generar_y_guardar_reporte` filtran por `empresa` y respetan candado financiero/LFPDPPP.
 - [x] `pris_checklist.py` — 378/378. Sin hallazgos; motor NLP de checklist sin persistencia de datos de tenant (solo detección de intents en texto recibido).
 - [x] Confirmado por relectura de notas: `laboratorio_captura.py` (427/427, Bloque previo, H-NUEVO-38 corregido) y `excepciones_lab.py` (623/623, Bloque previo, H-NUEVO-48 abierto sobre `registrar_merma`) ya fueron revisados línea por línea en sesiones anteriores.
+
+### Bloque 20 — `core/utils/` (primera pasada) — 2026-08-13
+
+- [x] **H-NUEVO-154 y H-NUEVO-155**: verificados en código como **CORREGIDOS** por sesión concurrente (`core.tests.test_tenant_boundary_views` cubre ambos casos: `test_incidence_review_cannot_cross_tenant` y `test_voice_director_history_is_limited_to_request_tenant`).
+- [x] Sin hallazgos: `empresa_request.py`, `candado_financiero.py`, `permisos.py`, `rbac.py`, `farmacia_tenant.py`, `escudo_clinico_check.py`, `lfpdppp_resultados.py`, `auditoria_helper.py`, `auditoria_nativa.py` (helpers genéricos, la responsabilidad de filtrar por tenant recae en el caller, patrón consistente en todo el proyecto), `backup_inmutable.py`, `detalle_orden.py`, `drive_archive.py`/`google_drive.py` (Drive deshabilitado, shims no-op), `pris_identity.py`, `referencia_lims_edad.py`, `ia_permissions.py`, `ia_resources.py`, `ia_cache.py`, `ia_output_sanitize.py` (sanitiza CURP/RFC/email/teléfono y `empresa_id` en salidas de IA), `rag_engine.py` (colecciones aisladas por `empresa_id` en el nombre).
+- [x] **H-NUEVO-156 (Baja/Media, informativo)**: `lims_tokens_v75.py::_resolver_token` importa `Perfil`/`Paquete` de `lims.models`, que no existen (solo `PerfilLims`/`PaqueteLims`); el módulo `MotorOrdenesLIMS` está roto (siempre falla silenciosamente) y, si se repara el import, la consulta de `Analito` no filtra por `empresa` pese a ser `TenantModel` obligatorio.
+- [ ] Pendiente en `core/utils/`: `analizador_quejas.py`, `corrector_errores.py`, `deepseek_client.py`, `estandares_industriales.py`, `gemini_client.py`, `gemini_transport.py`, `marketing_tracking.py`, `notificaciones.py`, `paths.py`, `pdf_generator.py`, `ranking.py`, `rh_utils.py`, `saludos.py`, `sucursal_helpers.py`, `trazabilidad.py`, `whatsapp_sender.py`.
 
 **`core/views/` (incluyendo subpaquetes `laboratorio/`, `medico/`, `pris_ia/`): CIERRE TOTAL CONFIRMADO.** Todos los archivos `.py` de nivel superior fueron leídos línea por línea en algún bloque (19A-19J o bloques anteriores 1-18). Hallazgos abiertos pendientes de corrección en este directorio: H-NUEVO-48, H-NUEVO-153, H-NUEVO-154, H-NUEVO-155 (ver `AUDITORIA_HALLAZGOS.md`). Continúa la auditoría en `core/utils/`, `core/rbac/`, `core/decorators.py`, `core/management/commands/` y el resto de apps (`farmacia/`, `inventario/`, `contabilidad/`, `marketing/`, `lims/`, `consultorio/`, etc.) que no se hayan cerrado aún.
 
