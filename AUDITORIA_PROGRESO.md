@@ -702,7 +702,34 @@ Bloque 8 — NO CERRADO. Corrección: lo anterior fue un muestreo de 18/88 archi
 
 **BLOQUE 21 (`pacientes/`): COMPLETADO.** Hallazgos nuevos: H-NUEVO-158 (ALTO), H-NUEVO-159 (MEDIO).
 
-Pendiente continuar con: `recepcion/`, `enfermeria/`, `academia/`, `iot/`, `logistica/`, `ia/`, `pris_ai_core/`, `reglas_negocio/`, `suscripciones/`, `core/` (services/signals/tasks/templatetags residuales), suite de tests, scripts/tools/CI, reporte final.
+### Bloque 22 — `recepcion/`, `enfermeria/`, `reglas_negocio/`, `suscripciones/` — 2026-08-13
+
+- [x] `recepcion/views.py` (290 líneas), `recepcion/forms.py`, `recepcion/urls.py`, `recepcion/models.py` — `_empresa_recepcion` restringe correctamente al tenant del usuario (con excepción explícita para superuser); `CitaMedicaForm` acota querysets de `paciente`/`medico` por empresa; `check_in_paciente`/`cobrar_consulta` usan `select_for_update()`. **H-NUEVO-160 NUEVO (MEDIO/ALTO)**: `cobrar_consulta` no persiste ningún registro financiero.
+- [x] `recepcion/tests.py` — 111/111 líneas, cubre aislamiento cross-tenant de `check_in_paciente`/`cobrar_consulta` y timezone local; no cubre la ausencia de registro financiero (consistente con H-NUEVO-160).
+- [x] `enfermeria/views.py` (270 líneas), `enfermeria/forms.py`, `enfermeria/admin.py`, `enfermeria/urls.py` — todas las vistas correctamente `empresa=`-scoped; `capturar_signos_vitales` crea snapshot inmutable de signos vitales (H-009); el `except (DatabaseError, ValidationError)` en `_crear_snapshot_signos_vitales` es consistente con la causa raíz ya corregida en H-NUEVO-05. Sin hallazgos nuevos.
+- [x] `reglas_negocio/models.py`, `reglas_negocio/validadores.py`, `reglas_negocio/admin.py` — `ReglaNegocio`/`EjecucionRegla` con `empresa` y `TenantScopedAdmin`; `validadores.py` son funciones puras (Triple Llave, valor de pánico) sin acceso a datos, sin problema de aislamiento. `reglas_negocio/tests/test_validadores_y_flags.py` (169 líneas) cubre casos legado y ODS. Sin hallazgos.
+- [x] `suscripciones/models.py`, `suscripciones/views.py`, `suscripciones/admin.py`, `core/middleware/suscripciones.py` — **H-NUEVO-161 NUEVO (CRÍTICO)**: `lista_suscripciones` usa `is_staff` (compartido con roles operativos de tenant, confirmado en `crear_usuarios_produccion.py`) en vez de `is_superuser`/tenant, exponiendo `SuscripcionTenant.objects.all()` (incluye `stripe_customer_id`/`stripe_subscription_id` de TODOS los tenants) a cualquier empleado con `is_staff=True` de cualquier empresa. `SuscripcionMiddleware` (bloqueo de acceso por suscripción vencida) correcto y probado en `suscripciones/tests.py`.
+
+**BLOQUE 22: COMPLETADO.** Hallazgos nuevos: H-NUEVO-160 (MEDIO/ALTO), H-NUEVO-161 (CRÍTICO).
+
+### Bloque 23 — `pris_ai_core/`, `iot/` — 2026-08-13
+
+- [x] `pris_ai_core/views.py`, `urls.py`, `services/nlp_engine.py`, `services/ocr_service.py`, `tests.py`, `admin.py`, `test_views_security.py` — todos leídos completos. **Confirmado que `pris_ai_core.urls` NO está montado en el URLconf activo** (`config/urls/__init__.py` solo agrega `.pris_ia`, que mapea `/ia/` a la app `ia/`, no a `pris_ai_core`; la única referencia a `pris_ai_core.urls` está en `config/urls.py`, archivo muerto de 1176 líneas ya documentado como no activo). Sin superficie de ataque HTTP viva; sin hallazgo de seguridad, solo nota informativa de código inalcanzable.
+- [x] `iot/views.py` (201 líneas), `iot/views_api.py` (56 líneas), `iot/models.py` (236 líneas), `iot/urls.py`, `iot/admin.py`, `iot/tests.py` (187 líneas) — vistas con sesión (`dashboard_kioscos`, `api_crear_kiosco`, `api_toggle_kiosco`, `api_enviar_a_kiosco`) correctamente `empresa=`-scoped y probadas contra cross-tenant (`test_api_toggle_kiosco_cross_tenant`, `test_api_enviar_a_kiosco_cross_tenant`). **H-NUEVO-162 NUEVO (CRÍTICO)**: los 4 endpoints públicos del kiosko (`api_kiosco_heartbeat`, `api_kiosco_confirmar`, `api_kiosco_rechazar`, `api_kiosco_checkin`) usan un único token estático de plataforma (`PRISLAB_KIOSCO_API_TOKEN`, sin diferenciación por tenant/kiosko) y no acotan `Kiosco`/`VerificacionKiosco` por `empresa`; la única mitigación (whitelist de IP) es opcional (`Kiosco.ip_address` nullable) y no está cubierta por los tests existentes en el escenario sin IP configurada ni en el escenario cross-tenant por ID.
+
+**BLOQUE 23: COMPLETADO.** Hallazgos nuevos: H-NUEVO-162 (CRÍTICO).
+
+### Bloque 24 — `logistica/`, `academia/`, `ia/` — 2026-08-13
+
+- [x] `logistica/models.py` (259 líneas: `RutaRecoleccion`, `VisitaDomicilio`, `TransferenciaInventario`, `DetalleTransferencia`, `LogTransferencia`), `logistica/urls.py`, `logistica/admin.py` (194 líneas, `TenantScopedAdmin` en los 5 modelos), `logistica/tests.py` (248 líneas). `mapa_rutas`/`asignar_visita`/`monitor_rutas` correctamente `empresa=`-scoped.
+- [x] `logistica/views.py` (511 líneas) — **H-NUEVO-163 NUEVO (CRÍTICO)**: sistema de Transferencias entre Sucursales **duplicado y paralelo** al ya corregido `core/views/transferencias.py` (protegido y probado en `core/tests/test_transferencias_security.py`, montado en `/transferencias/`). Este segundo módulo, montado en `/logistica/transferencias/...` con su propio modelo homónimo `TransferenciaInventario`, tiene `crear_transferencia`/`recibir_transferencia` sin ningún `role_required`/`permission_required` (solo `@login_required`) y sin `select_for_update()`; el propio test `logistica/tests.py::test_recibir_transferencia_kardex_integration` demuestra el bypass al completar una recepción con un usuario sin rol especial.
+- [x] `academia/views.py` (271 líneas), `academia/models.py` (100 líneas: `CursoAcademia`, `VideoAcademia`, `AccesoAcademia`, `SesionVisualizacion`), `academia/admin.py`, `academia/urls.py` — todo correctamente `empresa=`-scoped vía `_academia_habilitada_o_404`/`_curso_con_acceso_o_404`; `_es_admin_academia` usa `is_staff` (mismo patrón amplio de H-NUEVO-161) pero el impacto aquí es bajo (datos de progreso de capacitación, no financieros/clínicos, y ya acotados por empresa). Sin hallazgo nuevo.
+- [x] `ia/views.py` (688 líneas: dashboard, OCR de recetas, transcripción de voz, asistente médico Gemini), `ia/urls.py` (montado en `/ia/` vía `config/urls/pris_ia.py`, cubierto por `RateLimitMiddleware.CHAT_LIMIT` para POST), `ia/forms.py`, `ia/tests.py` (92 líneas, incluye prueba de aislamiento cross-tenant `test_resultado_ocr_no_expone_otro_tenant`). Vistas de resultados correctamente acotadas por `usuario_creador=request.user` (más estricto que por empresa).
+- [x] `ia/models.py` (214 líneas: `CotizacionOCR` es `TenantModel`; `TranscripcionVoz` NO lo es) y `ia/admin.py` (265 líneas). **H-NUEVO-164 NUEVO (MEDIO)**: `TranscripcionVoz` no tiene `empresa`/`TenantModel`, y `TranscripcionVozAdmin.changelist_view` calcula `stats` con el manager por defecto sin tenant-scoping, filtrando estadísticas agregadas (conteo, confianza promedio, órdenes asociadas) de TODOS los tenants en el panel de Admin. Mismo patrón de `changelist_view` en `CotizacionOCRAdmin`, mitigado ahí porque `CotizacionOCR.objects` sí es `TenantManager` auto-scoped.
+
+**BLOQUE 24: COMPLETADO.** Hallazgos nuevos: H-NUEVO-163 (CRÍTICO), H-NUEVO-164 (MEDIO).
+
+Pendiente continuar con: `farmacia/` (fuera de `views/`), `core/` (services/signals/tasks/templatetags — confirmar cierre exhaustivo), suite de tests, templates/static/migraciones, scripts/tools/CI, reporte final.
 
 (El resto de bloques se detallan a medida que se avanza, usando AUDITORIA_INVENTARIO.txt como checklist maestro por ruta completa.)
 
@@ -1054,3 +1081,8 @@ Estado: **Bloque 7 cerrado y revalidado.** No se borraron comandos legacy docume
 Se corrigieron y verificaron `H-NUEVO-147` y `H-NUEVO-148` en `core/views/consentimiento_digital.py` y `core/models/clinico.py`: el PDF queda estrictamente limitado a la empresa del usuario, incluso si la cuenta es `is_superuser`, y el folio generado se persiste para permitir su descarga posterior. Se agregó la migración `core.0107_consentimiento_folio` y la suite específica de seguridad/descarga.
 
 `manage.py check`, `makemigrations --check --dry-run --noinput` y compilación dirigida pasan. La suite específica fue iniciada, pero el entorno local quedó bloqueado durante la creación de la base temporal en una migración forense previa; no se presenta como prueba completa hasta resolver ese bloqueo.
+
+## Correcciones H-NUEVO-161 y H-NUEVO-162 — 2026-08-13
+
+- **H-NUEVO-161**: `suscripciones/views.py` ahora filtra por `request.user.empresa` y bloquea usuarios sin empresa. Corregido localmente; pendiente despliegue.
+- **H-NUEVO-162**: las APIs públicas IoT ahora exigen un token hash exclusivo del kiosco objetivo. Se añadió `iot.0006_kiosco_api_token_hash`; los kioscos existentes deben reprovisionarse antes del uso operativo. Corregido localmente; pendiente despliegue.

@@ -4,12 +4,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from core.models import OrdenDeServicio
 from iot.models import Kiosco, VerificacionKiosco
-from core.decorators import require_api_token
+from iot.auth import require_kiosco_token
 import logging
 
 @csrf_exempt
 @require_POST
-@require_api_token('PRISLAB_KIOSCO_API_TOKEN')
+@require_kiosco_token
 def api_kiosco_checkin(request, kiosco_id):
     """
     API para que el kiosco envíe los datos de check-in del paciente 
@@ -37,7 +37,7 @@ def api_kiosco_checkin(request, kiosco_id):
         # Guardar registro en IoT
         VerificacionKiosco.objects.create(
             kiosco=kiosco,
-            orden_servicio_id=orden.id,
+            orden_id=orden.id,
             estado='EXITOSA',
             detalles='Check-in completado por Kiosco'
         )

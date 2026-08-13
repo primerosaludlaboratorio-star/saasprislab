@@ -11,7 +11,8 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_http_methods
 
-from core.decorators import rate_limit, require_api_token
+from core.decorators import rate_limit
+from .auth import require_kiosco_token
 from .models import Kiosco, VerificacionKiosco
 import logging
 
@@ -63,7 +64,8 @@ def api_crear_kiosco(request):
             ubicacion=data.get('ubicacion', ''),
             ip_address=data.get('ip_address') or None,
         )
-        return JsonResponse({'status': 'success', 'id': kiosco.id, 'mensaje': f'Kiosco "{kiosco.nombre}" creado'})
+        token = kiosco.provisionar_token()
+        return JsonResponse({'status': 'success', 'id': kiosco.id, 'token': token, 'mensaje': f'Kiosco "{kiosco.nombre}" creado'})
     except Exception as e:
         logging.getLogger(__name__).exception("Error inesperado en api_crear_kiosco (views.py)")
         return JsonResponse({'status': 'error', 'mensaje': 'No fue posible crear el kiosco'}, status=500)
@@ -89,7 +91,7 @@ def api_toggle_kiosco(request, kiosco_id):
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
 @rate_limit('kiosco_heartbeat', limit=180, window_seconds=60)
-@require_api_token('PRISLAB_KIOSCO_API_TOKEN')
+@require_kiosco_token
 def api_kiosco_heartbeat(request, kiosco_id):
     """Heartbeat del kiosco - actualiza conexion y retorna verificaciones pendientes."""
     try:
@@ -124,7 +126,7 @@ def api_kiosco_heartbeat(request, kiosco_id):
 @csrf_exempt
 @require_POST
 @rate_limit('kiosco_confirmar', limit=60, window_seconds=60)
-@require_api_token('PRISLAB_KIOSCO_API_TOKEN')
+@require_kiosco_token
 def api_kiosco_confirmar(request, verificacion_id):
     """El paciente confirma sus datos desde el kiosco."""
     try:
@@ -151,7 +153,7 @@ def api_kiosco_confirmar(request, verificacion_id):
 @csrf_exempt
 @require_POST
 @rate_limit('kiosco_rechazar', limit=60, window_seconds=60)
-@require_api_token('PRISLAB_KIOSCO_API_TOKEN')
+@require_kiosco_token
 def api_kiosco_rechazar(request, verificacion_id):
     """El paciente rechaza sus datos desde el kiosco."""
     try:

@@ -6,6 +6,8 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from django.db.models import Q
+from django.contrib.auth.hashers import check_password, make_password
+import secrets
 
 
 class Kiosco(models.Model):
@@ -57,6 +59,14 @@ class Kiosco(models.Model):
     )
     
     fecha_registro = models.DateTimeField(auto_now_add=True)
+
+    api_token_hash = models.CharField(
+        max_length=256,
+        blank=True,
+        default='',
+        editable=False,
+        help_text='Hash de la credencial exclusiva de este kiosco.',
+    )
     
     # Configuración
     intervalo_polling = models.IntegerField(
@@ -76,6 +86,16 @@ class Kiosco(models.Model):
         """Actualiza la fecha de última conexión."""
         self.ultima_conexion = timezone.now()
         self.save(update_fields=['ultima_conexion'])
+
+    def provisionar_token(self):
+        """Genera una credencial por dispositivo; el secreto se devuelve una sola vez."""
+        token = secrets.token_urlsafe(32)
+        self.api_token_hash = make_password(token)
+        self.save(update_fields=['api_token_hash'])
+        return token
+
+    def verificar_token(self, token):
+        return bool(self.api_token_hash and token and check_password(token, self.api_token_hash))
 
 
 class VerificacionKiosco(models.Model):

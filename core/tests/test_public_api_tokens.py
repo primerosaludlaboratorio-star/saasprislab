@@ -35,7 +35,8 @@ class PublicApiTokenSecurityTests(TestCase):
         url = reverse('iot:api_heartbeat', args=[kiosco.id])
 
         sin_token = self.client.get(url)
-        con_token = self.client.get(url, HTTP_X_PRISLAB_KIOSCO_TOKEN='kiosk-token')
+        token = kiosco.provisionar_token()
+        con_token = self.client.get(url, HTTP_X_PRISLAB_KIOSCO_TOKEN=token)
 
         self.assertEqual(sin_token.status_code, 401)
         self.assertEqual(con_token.status_code, 200)
