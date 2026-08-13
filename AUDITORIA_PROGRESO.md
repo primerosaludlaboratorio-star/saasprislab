@@ -943,3 +943,12 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] Bypass de 2FA por loopback bloqueado en producción; recuperación maestra limitada a no-producción y rate-limit.
 - [x] Pruebas focalizadas: 42/42 OK; `manage.py check` y `makemigrations --check` OK.
 - [x] Despliegue post-corrección y health check: revisión `77e1796`, health check 200 y servicios activos.
+
+### Bloque 6 — utilerías, decoradores y RBAC residual — 2026-08-12
+
+- [x] Herramientas PRIS desconocidas: rechazo fail-closed verificado.
+- [x] Módulo duplicado `core/views/pris_ia/views.py`: confirmación y rechazo alineados con tenant y `_puede_confirmar_accion`.
+- [x] H-NUEVO-21/22/23/24/26: correcciones existentes verificadas en el checkout actual.
+- [x] Pruebas focalizadas: 5/5 RBAC PRIS y 6/6 proveedores IA/transporte.
+- [x] `manage.py check`, migraciones y compilación: OK.
+- [!] `core.rbac.tests` requiere creación de base de datos y quedó bloqueado por la limitación del entorno local; no se declara como prueba ejecutada.

@@ -216,6 +216,13 @@
 - **Verificación:** compilación, `manage.py check` y revisión del flujo transaccional; pendiente despliegue de esta revisión.
 - **Estado:** corregido localmente; pendiente despliegue.
 
+### Cierre del Bloque 6 — utilerías, decoradores y RBAC residual
+
+- **H-NUEVO-11:** verificado en la ruta activa y en el módulo legacy; herramientas no registradas se rechazan por defecto.
+- **H-NUEVO-21, H-NUEVO-22, H-NUEVO-23, H-NUEVO-24 y H-NUEVO-26:** verificados en el checkout desplegable actual; el endpoint legacy devuelve 410, las acciones PRIS repiten RBAC, CxC usa transacción/idempotencia, LIMS mantiene scoping por empresa y el cobro captura `OperationalError`.
+- **Corrección nueva:** `core/views/pris_ia/views.py` ahora exige empresa y reutiliza `_puede_confirmar_accion` tanto para confirmar como para rechazar acciones. Esto elimina la divergencia de una implementación duplicada aunque una ruta histórica vuelva a importarla.
+- **Evidencia local:** `core.tests.test_pris_rbac` (5/5), `core.tests.test_ai_provider_deepseek` + `core.tests.test_gemini_transport_canonical` (6/6), compilación, `manage.py check` y migraciones sin cambios.
+
 ## H-NUEVO-24 — Vistas LIMS exponían equipos/analitos cross-tenant y permitían notificar pánico con analito ajeno — CORREGIDO
 - **Archivos:** `core/views/laboratorio/captura.py`, `core/views/laboratorio/calidad.py`, `core/views/laboratorio/config_lims.py`.
 - **Problema:** captura y calidad consultaban equipos/analitos sin empresa; `registrar_notificacion_panico` aceptaba un analito que no pertenecía a la orden y `configurar_rangos` resolvía un analito solo por ID.

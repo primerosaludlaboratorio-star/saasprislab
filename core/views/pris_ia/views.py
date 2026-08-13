@@ -346,11 +346,15 @@ def api_acciones_pendientes(request):
 def api_confirmar_accion(request, accion_id):
     """Confirma y ejecuta una AccionPRIS pendiente delegando en el motor de PRIS."""
     empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse({'ok': False, 'error': 'Usuario sin empresa asignada.'}, status=403)
     accion = get_object_or_404(AccionPRIS, id=accion_id, empresa=empresa)
     if accion.estado != AccionPRIS.ESTADO_PENDIENTE:
         return JsonResponse({'ok': False, 'error': f'La acción ya está en estado: {accion.get_estado_display()}'}, status=400)
     try:
-        from core.views.pris_jarvis import _ejecutar_accion_confirmada
+        from core.views.pris_jarvis import _ejecutar_accion_confirmada, _puede_confirmar_accion
+        if not _puede_confirmar_accion(accion, request.user):
+            return JsonResponse({'ok': False, 'error': 'No autorizado para confirmar esta acción.'}, status=403)
         resultado = _ejecutar_accion_confirmada(accion, request.user)
         # Confirmar SOLO si la ejecución no lanzó excepción
         accion.confirmar(request.user)
@@ -370,9 +374,14 @@ def api_confirmar_accion(request, accion_id):
 def api_rechazar_accion(request, accion_id):
     """Rechaza una AccionPRIS pendiente."""
     empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse({'ok': False, 'error': 'Usuario sin empresa asignada.'}, status=403)
     accion = get_object_or_404(AccionPRIS, id=accion_id, empresa=empresa)
     if accion.estado != AccionPRIS.ESTADO_PENDIENTE:
         return JsonResponse({'ok': False, 'error': f'La acción ya está en estado: {accion.get_estado_display()}'}, status=400)
+    from core.views.pris_jarvis import _puede_confirmar_accion
+    if not _puede_confirmar_accion(accion, request.user):
+        return JsonResponse({'ok': False, 'error': 'No autorizado para rechazar esta acción.'}, status=403)
     try:
         body = json.loads(request.body)
         motivo = body.get('motivo', '')
