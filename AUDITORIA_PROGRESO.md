@@ -368,11 +368,11 @@ Dado que `_dispatcher.py` delega TODAS las herramientas de escritura del asisten
 ## Bloque 8 — inventario/ (app raíz) — EN CURSO
 - [x] `inventario/views/__init__.py` — 134/134 líneas. Re-exportación. Sin hallazgos.
 - [x] `inventario/views/helpers.py` — 27/27 líneas. `_empresa_required` decorator (login + empresa). Sin hallazgos.
-- [x] `inventario/views/generales.py` (silo Insumos Generales) — 369/369 líneas. **H-NUEVO-58 (parcial)**: `detalle_vale` acción `aprobar` sin rol (autoaprobación posible).
+- [x] `inventario/views/generales.py` (silo Insumos Generales) — 369/369 líneas. **H-NUEVO-58 corregido y probado**: la aprobación exige `ADMIN`/`GERENTE`/`DIRECTOR` y bloquea autoaprobación; prueba de inventario ejecutada sin errores.
 - [x] `inventario/views/consultorio.py` (silo Consultorio) — 284/284 líneas. `select_for_update` correcto en `registrar_salida_consultorio`. Sin hallazgos nuevos.
 - [x] `inventario/views/compra_ocr.py` (OCR compras LAB) — 118/118 líneas. `_acceso` exige rol `{ADMIN,DIRECTOR,QUIMICO,GERENTE}`; `api_confirmar_compra_laboratorio` solo prepara sesión, no muta inventario. Sin hallazgos.
 - [x] `inventario/views/lab.py` (silo Laboratorio) — 764/764 líneas. **H-NUEVO-56 NUEVO (CRÍTICO)**: `liberar_lote_qc` sin `role_required` pese a docstring "Solo Químico Jefe/Director/Admin" — bypass de control de calidad de reactivos. Resto de CRUD de catálogo/lotes/salidas técnicas con `select_for_update()` correcto donde aplica.
-- [x] `inventario/views/compras.py` (Motor de Compras) — 444/444 líneas. **H-NUEVO-58 (parcial)**: `detalle_oc` acción `aprobar` (`PENDIENTE_DIRECTOR`→`APROBADA`) sin rol. `_recibir_mercancia` sí exige firma digital (`authenticate` usuario/password) del receptor — buen patrón.
+- [x] `inventario/views/compras.py` (Motor de Compras) — 444/444 líneas. **H-NUEVO-58 corregido y probado**: `detalle_oc` exige `ADMIN`/`GERENTE`/`DIRECTOR` y bloquea autoaprobación; `_recibir_mercancia` mantiene firma digital del receptor.
 - [x] `inventario/views/traspasos.py` (Logística Inter-Sedes) — 442/442 líneas. **H-NUEVO-57 NUEVO (CRÍTICO)**: `_ejecutar_recepcion` crea lotes de reactivo LAB directamente en `ACTIVO`, saltándose la cuarentena QC que sí aplican `compras.py`/`lab.py` para el mismo tipo de lote. PIN de recepción correctamente verificado vía `authenticate()`.
 
 **Hallazgos nuevos de este sub-bloque (views/): H-NUEVO-56 (CRÍTICO), H-NUEVO-57 (CRÍTICO), H-NUEVO-58 (ALTO).**
