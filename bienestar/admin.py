@@ -1,6 +1,7 @@
 from django.contrib import admin
 from core.admin.tenant import TenantScopedAdmin
 from django.utils.html import format_html
+from django.db.models import Q
 from .models import DiarioEmocional, RecursoCrecimiento
 
 
@@ -16,6 +17,13 @@ class DiarioEmocionalAdmin(TenantScopedAdmin):
     search_fields = ('usuario__username', 'usuario__email', 'sentimiento_ia')
     date_hierarchy = 'fecha'
     readonly_fields = ('fecha_creacion', 'fecha_actualizacion', 'contenido_privado_display')
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        empresa_id = getattr(request.user, 'empresa_id', None)
+        if not empresa_id:
+            return queryset.none()
+        return queryset.filter(empresa_id=empresa_id, usuario__empresa_id=empresa_id)
     
     fieldsets = (
         ('Información Básica', {
@@ -46,12 +54,12 @@ class DiarioEmocionalAdmin(TenantScopedAdmin):
     nivel_riesgo_display.short_description = 'Nivel de Riesgo'
     
     def contenido_privado_display(self, obj):
-        """Muestra el contenido solo si el usuario es superusuario."""
-        request = getattr(self, '_request', None)
-        if request and request.user.is_superuser:
-            return format_html('<div style="background: #f0f0f0; padding: 10px; border-radius: 5px;">{}</div>', obj.contenido_privado)
-        else:
-            return format_html('<div style="color: #999; font-style: italic;">[Contenido privado - Solo visible para superusuarios]</div>')
+        """Nunca expone texto emocional sensible desde el panel administrativo."""
+        return format_html(
+            '<div style="color: #999; font-style: italic;">'
+            '[Contenido cifrado - no se muestra en el panel administrativo]'
+            '</div>'
+        )
     contenido_privado_display.short_description = 'Contenido Privado'
     
     def get_readonly_fields(self, request, obj=None):
@@ -81,7 +89,7 @@ class RecursoCrecimientoAdmin(TenantScopedAdmin):
     search_fields = ('titulo', 'descripcion', 'url_contenido')
     fieldsets = (
         ('Información del Recurso', {
-            'fields': ('titulo', 'categoria', 'url_contenido', 'descripcion', 'activo')
+            'fields': ('empresa', 'titulo', 'categoria', 'url_contenido', 'descripcion', 'activo')
         }),
         ('Metadatos', {
             'fields': ('fecha_creacion',),
@@ -89,3 +97,20 @@ class RecursoCrecimientoAdmin(TenantScopedAdmin):
         }),
     )
     readonly_fields = ('fecha_creacion',)
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        empresa_id = getattr(request.user, 'empresa_id', None)
+        if not empresa_id:
+            return queryset.none()
+        return queryset.filter(Q(empresa_id=empresa_id) | Q(empresa__isnull=True))
+
+    def has_change_permission(self, request, obj=None):
+        if obj is not None and obj.empresa_id is None and not request.user.is_superuser:
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None and obj.empresa_id is None and not request.user.is_superuser:
+            return False
+        return super().has_delete_permission(request, obj)

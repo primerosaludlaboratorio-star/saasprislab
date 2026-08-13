@@ -459,14 +459,14 @@ Dado que `_dispatcher.py` delega TODAS las herramientas de escritura del asisten
 **TOTAL ACUMULADO DE LA SESIÓN: 39 hallazgos nuevos (H-NUEVO-27 a H-NUEVO-65)** + 3 notas de recurrencia adjuntas a `H-NUEVO-32`.
 
 ## Bloque 12 — bienestar/ (app raíz) — COMPLETADO
-- [x] `bienestar/models.py` — 158/158 líneas. `DiarioEmocional` y `RecursoCrecimiento`. **H-NUEVO-66**: `contenido_privado` en texto plano sin cifrado, sin campo `empresa`; `RecursoCrecimiento` global sin `empresa`. Campos `nivel_riesgo`, `sentimiento_ia`, `alerta_enviada` correctos; `unique_together` `(usuario, fecha)`.
-- [x] `bienestar/views.py` — 526/526 líneas. `requiere_empresa` aplica login + empresa. Vistas personales (`dashboard_bienestar`, `diario_emocional`, `nueva_entrada_diario`, `estadisticas_diario`) scopadas a `request.user`. `api_chat_bienestar` usa `generate_content` sin rate limit (riesgo menor, behind login). `recursos_bienestar` muestra recursos globales. `agendar_consultorio_bienestar` es stub sin persistencia. Sin hallazgos de RBAC.
+- [x] `bienestar/models.py` — `DiarioEmocional` cifra `contenido_privado` con `EncryptedTextField`, deriva `empresa` del usuario y valida pertenencia. `RecursoCrecimiento` distingue recursos del tenant de recursos globales. H-NUEVO-66 corregido.
+- [x] `bienestar/views.py` — todas las consultas del diario incluyen `empresa`; recursos solo exponen el tenant actual y recursos globales. `api_chat_bienestar` usa `generate_content` sin rate limit (riesgo menor, behind login). `agendar_consultorio_bienestar` es stub sin persistencia. Sin hallazgos de RBAC.
 - [x] `bienestar/urls.py` — 28/28 líneas. Confirma rutas activas.
-- [x] `bienestar/admin.py` — 92/92 líneas. `DiarioEmocionalAdmin` hereda `TenantScopedAdmin` pero el modelo carece de `empresa` (ver H-NUEVO-66). Restricciones add/change/delete a `is_superuser`; `contenido_privado_display` depende de `self._request` no estándar.
+- [x] `bienestar/admin.py` — aislamiento explícito por empresa para diario y recursos; el contenido emocional permanece cifrado y no se muestra en el Admin. Recursos globales quedan protegidos contra edición desde un tenant.
 - [x] `bienestar/apps.py` — 7/7 líneas. Sin señales.
 - [ ] `bienestar/tests.py` (1 archivo) — DIFERIDO al bloque de tests.
 
-**BLOQUE 12 (bienestar/, código de aplicación): COMPLETADO.** Hallazgo nuevo: H-NUEVO-66 (MEDIO).
+**BLOQUE 12 (bienestar/, código de aplicación): COMPLETADO.** H-NUEVO-66 corregido, probado y desplegado.
 
 **TOTAL ACUMULADO DE LA SESIÓN: 40 hallazgos nuevos (H-NUEVO-27 a H-NUEVO-66)** + 3 notas de recurrencia adjuntas a `H-NUEVO-32`.
 

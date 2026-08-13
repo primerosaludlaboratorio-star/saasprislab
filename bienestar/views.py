@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, Q
 from datetime import timedelta, date
 from functools import wraps
 import json
@@ -42,7 +42,7 @@ def dashboard_bienestar(request):
     usuario = request.user
     
     # Obtener última entrada del diario
-    ultima_entrada = DiarioEmocional.objects.filter(usuario=usuario).first()
+    ultima_entrada = DiarioEmocional.objects.filter(usuario=usuario, empresa=empresa).first()
     
     # Afirmación del día
     afirmaciones_diarias = [
@@ -68,8 +68,8 @@ def dashboard_bienestar(request):
     afirmacion_hoy = afirmaciones_diarias[dia_del_ano % len(afirmaciones_diarias)]
     
     # Estadísticas rápidas
-    total_entradas = DiarioEmocional.objects.filter(usuario=usuario).count()
-    racha_dias = calcular_racha(usuario)
+    total_entradas = DiarioEmocional.objects.filter(usuario=usuario, empresa=empresa).count()
+    racha_dias = calcular_racha(usuario, empresa)
     
     context = {
         'empresa': empresa,
@@ -82,14 +82,17 @@ def dashboard_bienestar(request):
     return render(request, 'bienestar/dashboard.html', context)
 
 
-def calcular_racha(usuario):
+def calcular_racha(usuario, empresa=None):
     """Calcula la racha de días consecutivos con entradas."""
     hoy = timezone.localdate()
     racha = 0
     
     for i in range(365):  # Máximo 365 días
         fecha = hoy - timedelta(days=i)
-        if DiarioEmocional.objects.filter(usuario=usuario, fecha=fecha).exists():
+        filtros = {'usuario': usuario, 'fecha': fecha}
+        if empresa is not None:
+            filtros['empresa'] = empresa
+        if DiarioEmocional.objects.filter(**filtros).exists():
             racha += 1
         else:
             break
@@ -218,7 +221,7 @@ def diario_emocional(request):
     empresa = getattr(request.user, 'empresa', None)
     
     # Obtener entradas del usuario
-    entradas = DiarioEmocional.objects.filter(usuario=usuario).order_by('-fecha')[:30]
+    entradas = DiarioEmocional.objects.filter(usuario=usuario, empresa=empresa).order_by('-fecha')[:30]
     
     # Datos para gráfica de tendencias (últimos 30 días)
     hoy = timezone.localdate()
@@ -226,7 +229,7 @@ def diario_emocional(request):
     
     for i in range(30):
         fecha = hoy - timedelta(days=29-i)
-        entrada = DiarioEmocional.objects.filter(usuario=usuario, fecha=fecha).first()
+        entrada = DiarioEmocional.objects.filter(usuario=usuario, empresa=empresa, fecha=fecha).first()
         
         # Mapear sentimiento a valor numérico
         valor = 3  # Neutro por defecto
@@ -298,6 +301,7 @@ Responde solo con UNA de estas palabras: feliz, triste, ansioso, enojado, neutra
             entrada, created = DiarioEmocional.objects.update_or_create(
                 usuario=request.user,
                 fecha=fecha_hoy,
+                empresa=empresa,
                 defaults={
                     'contenido_privado': contenido,
                     'sentimiento_ia': sentimiento_ia,
@@ -390,6 +394,7 @@ def estadisticas_diario(request):
     hace_30_dias = timezone.localdate() - timedelta(days=30)
     entradas = DiarioEmocional.objects.filter(
         usuario=usuario,
+        empresa=empresa,
         fecha__gte=hace_30_dias
     ).order_by('fecha')
     
@@ -405,7 +410,7 @@ def estadisticas_diario(request):
         entradas_por_dia_semana[dia].append(entrada)
     
     # Patrón 2: Racha actual
-    racha = calcular_racha(usuario)
+    racha = calcular_racha(usuario, empresa)
     if racha > 0:
         patrones.append({
             'tipo': 'Positivo',
@@ -452,7 +457,10 @@ def recursos_bienestar(request):
     categoria = request.GET.get('categoria', 'TODOS')
     
     # Obtener recursos de la base de datos
-    recursos = RecursoCrecimiento.objects.filter(activo=True)
+    recursos = RecursoCrecimiento.objects.filter(
+        Q(empresa=empresa) | Q(empresa__isnull=True),
+        activo=True,
+    )
     
     if categoria != 'TODOS':
         recursos = recursos.filter(categoria=categoria)
@@ -475,10 +483,16 @@ def detalle_recurso(request, recurso_id):
     """Detalle de un recurso de bienestar."""
     empresa = getattr(request.user, 'empresa', None)
         
-    recurso = get_object_or_404(RecursoCrecimiento, id=recurso_id, activo=True)
+    alcance = Q(empresa=empresa) | Q(empresa__isnull=True)
+    recurso = get_object_or_404(
+        RecursoCrecimiento.objects.filter(alcance),
+        id=recurso_id,
+        activo=True,
+    )
     
     # Recursos relacionados
     relacionados = RecursoCrecimiento.objects.filter(
+        alcance,
         categoria=recurso.categoria,
         activo=True
     ).exclude(id=recurso.id)[:3]

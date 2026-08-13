@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+
+from core.fields import EncryptedTextField
 
 Usuario = get_user_model()
 
@@ -29,14 +32,23 @@ class DiarioEmocional(models.Model):
         verbose_name="Usuario",
         help_text="Usuario que escribe esta entrada"
     )
+    empresa = models.ForeignKey(
+        'core.Empresa',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='diarios_emocionales',
+        verbose_name='Empresa',
+        help_text='Empresa propietaria; se recupera del usuario al guardar.'
+    )
     fecha = models.DateField(
         default=timezone.now,
         verbose_name="Fecha",
         help_text="Fecha de la entrada"
     )
-    contenido_privado = models.TextField(
+    contenido_privado = EncryptedTextField(
         verbose_name="Contenido Privado",
-        help_text="Contenido del diario (simula cifrado visual en admin)"
+        help_text="Contenido privado cifrado con Fernet"
     )
     sentimiento_ia = models.CharField(
         max_length=50,
@@ -86,6 +98,20 @@ class DiarioEmocional(models.Model):
         verbose_name_plural = "Entradas de Diario Emocional"
         ordering = ['-fecha', '-fecha_creacion']
         unique_together = [['usuario', 'fecha']]  # Una entrada por usuario por día
+
+    def clean(self):
+        super().clean()
+        usuario_empresa_id = getattr(self.usuario, 'empresa_id', None)
+        if usuario_empresa_id and self.empresa_id and usuario_empresa_id != self.empresa_id:
+            raise ValidationError({'empresa': 'La entrada debe pertenecer a la empresa del usuario.'})
+        if usuario_empresa_id and not self.empresa_id:
+            self.empresa_id = usuario_empresa_id
+
+    def save(self, *args, **kwargs):
+        if self.usuario_id and not self.empresa_id:
+            self.empresa_id = getattr(self.usuario, 'empresa_id', None)
+        self.full_clean()
+        return super().save(*args, **kwargs)
     
     def __str__(self):
         riesgo_icon = {
@@ -117,6 +143,16 @@ class RecursoCrecimiento(models.Model):
         ('RELACIONES', 'Relaciones'),
         ('OTRO', 'Otro'),
     ]
+
+    empresa = models.ForeignKey(
+        'core.Empresa',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='recursos_bienestar',
+        verbose_name='Empresa',
+        help_text='Vacío significa recurso global publicado por la plataforma.'
+    )
     
     titulo = models.CharField(
         max_length=255,
