@@ -50,7 +50,7 @@ Hallazgos totales del bloque: H-NUEVO-01 (corregido), H-NUEVO-02 (corregido), H-
 
 ## Bloque 2 — core/ (raíz, admin/, agent/, api_contracts/, constants/, rbac/)
 - [x] core/decorators.py — COMPLETO (433 líneas, 6 decoradores). Sin hallazgos nuevos.
-- [!] core/rbac/permissions.py — COMPLETO (444 líneas). H-NUEVO-09 corregido y desplegado con fail-closed; H-NUEVO-10 permanece abierto como deuda de arquitectura por decoradores RBAC no usados en vistas reales.
+- [x] core/rbac/permissions.py — COMPLETO (444 líneas). H-NUEVO-09 corregido y desplegado con fail-closed; H-NUEVO-10 cerrado como arquitectura controlada: `role_required` es el guard HTTP único y `core.rbac.permissions` protege servicios/sucursal mediante consumidores explícitos.
 - [x] core/rbac/__init__.py — COMPLETO. Re-exporta símbolos de permissions.py.
 - [x] core/api_contracts/ninja_api.py — COMPLETO (314 líneas). Sin csrf_exempt, protegido por CsrfViewMiddleware; confirmado con scripts/e2e_api_v3_redteam.py. Sin hallazgos.
 - [x] core/api_contracts/errors.py — COMPLETO. BusinessApiError.
