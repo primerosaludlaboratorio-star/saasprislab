@@ -1465,7 +1465,7 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Recomendación**: Si el módulo sigue en uso, corregir el import a `PerfilLims`/`PaqueteLims` (ajustando también las relaciones `.perfiles`/`.analitos` a la API real de esos modelos) y agregar `empresa=empresa` a las tres consultas de resolución de tokens. Si el módulo es legado sin rutas activas, considerar retirarlo explícitamente como se hizo con otros endpoints deprecados (410).
 - **Corrección aplicada**: el motor usa los modelos vigentes `Analito`, `PerfilLims` y `PaqueteLims`; resuelve códigos por `empresa`, filtra las relaciones de analitos por la misma empresa y conserva la composición de perfiles/paquetes.
 - **Verificación**: `core.tests.test_legacy_utils_repairs.test_lims_token_resolution_is_scoped_to_empresa`, compilación y `manage.py check` pasan.
-- **Estado**: corregido localmente; pendiente de despliegue.
+- **Estado**: corregido y desplegado en producción; health check 200.
 
 ### H-NUEVO-157: `core/utils/notificaciones.py` está completamente roto (modelos no importados) y su tarea programada de Celery Beat falla silenciosamente para TODAS las empresas en cada ejecución
 - **Archivo**: `core/utils/notificaciones.py`; consumidores: `core/tasks/notificaciones_tasks.py`, `core/utils/ia_resources.py`.
@@ -1476,7 +1476,7 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Recomendación**: Restaurar el import de los modelos `Notificacion`/`ConfiguracionNotificaciones` (si existen bajo otro nombre, p. ej. `NotificacionSistema` en `core/views/notificaciones.py`, migrar esta utilidad a usarlo) o retirar/reemplazar el módulo por el sistema vigente de `NotificacionSistema`. Corregir el nombre de función importado en `ia_resources.py` a `crear_notificacion` (o el que corresponda tras la migración).
 - **Corrección aplicada**: la utilidad escribe en `NotificacionSistema`, traduce tipos legacy a tipos vigentes, conserva referencias/enlaces y expone `crear_notificacion_sistema` como alias compatible para las alertas de cuota IA. También se corrigió el filtro de alertas de lotes vencidos.
 - **Verificación**: `core.tests.test_legacy_utils_repairs.test_notification_bridge_writes_to_current_model`, compilación, `manage.py check` y `makemigrations --check` pasan.
-- **Estado**: corregido localmente; pendiente de despliegue.
+- **Estado**: corregido y desplegado en producción; health check 200.
 
 - **Estado**: cerrado.
 - **Estado**: corregido localmente; pendiente de despliegue.
