@@ -927,4 +927,4 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] Prefijo de almacenamiento estable por `empresa.pk`.
 - [x] Bypass de 2FA por loopback bloqueado en producción; recuperación maestra limitada a no-producción y rate-limit.
 - [x] Pruebas focalizadas: 42/42 OK; `manage.py check` y `makemigrations --check` OK.
-- [ ] Despliegue post-corrección y health check: se ejecutará como parte del cierre de este bloque.
+- [x] Despliegue post-corrección y health check: revisión `77e1796`, health check 200 y servicios activos.
