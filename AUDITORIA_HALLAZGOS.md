@@ -1426,6 +1426,31 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Hallazgo**: `lims.Analito` (`lims/models.py:22-30`) hereda de `TenantModel` y tiene `empresa = models.ForeignKey(Empresa, ..., related_name='analitos_lims')` **obligatorio** (no `null=True`). Sin embargo, `historial_resultados.py` nunca filtra `Analito` por `empresa`: `analitos = Analito.objects.filter(activo=True).order_by('nombre')` (línea 38) alimenta el dropdown de estudios con **el catálogo completo de analitos de todos los tenants**, y `get_object_or_404(Analito, id=int(estudio_id), activo=True)` (líneas 64, 123, 176) permite cargar **cualquier analito de cualquier tenant por ID** para graficar tendencias y obtener sus rangos de referencia (`_ref_min_max_analito`). Aunque los resultados de pacientes (`ResultadoParametro`) sí quedan acotados por `orden__empresa=empresa`, el catálogo de estudios (nombres, códigos, departamentos, rangos de referencia personalizados) de otros laboratorios queda expuesto, y un usuario puede enumerar IDs de `Analito` ajenos.
 - **Riesgo**: Fuga de catálogo propietario (nomenclatura y organización de estudios, posible ventaja competitiva) de otros tenants; violación de aislamiento multi-tenant en un módulo clínico.
 - **Recomendación**: Agregar `empresa=empresa` a las tres consultas de `Analito` en este archivo, igual que en `cotizacion.py` (`Analito.objects.filter(empresa=empresa, activo=True, ...)`).
+- **Corrección aplicada**: las consultas de catálogo y los tres lookups por ID ahora exigen `empresa=empresa`; un usuario no puede enumerar ni cargar analitos de otro tenant.
+- **Verificación**: `core.tests.test_tenant_boundary_views.TenantBoundaryViewsTests.test_result_history_requires_analito_from_request_tenant` y `manage.py check` pasan.
+- **Estado**: corregido localmente; pendiente de despliegue.
+
+### H-NUEVO-154: `marcar_incidencia_revisada` permite a un Director/superuser de un tenant leer y mutar `IncidenciaOperativa` de otro tenant (IDOR cross-tenant)
+- **Archivo**: `core/views/incidencias.py`.
+- **Líneas**: 155-203.
+- **Severidad**: Alta.
+- **Hallazgo**: `panel_auditoria_incidencias` (línea 96-152) correctamente filtra `IncidenciaOperativa.objects.filter(empresa=empresa)`. Sin embargo, `marcar_incidencia_revisada` obtiene el objeto con `get_object_or_404(IncidenciaOperativa, id=incidencia_id)` — **sin `empresa` en el lookup** — y solo valida `request.user.is_superuser`. Dado que en PRISLAB `is_superuser` se asigna por tenant (patrón ya documentado en H-NUEVO-142/H-NUEVO-147), cualquier Director/Admin de un tenant puede enumerar `incidencia_id` y marcar como `JUSTIFICADA`/`SANCIONADA` (con `comentario_revision` propio) una incidencia operativa perteneciente a **otro tenant**, sobrescribiendo `revisado_por`, `fecha_revision` y el estado de un registro de auditoría/disciplinario ajeno.
+- **Riesgo**: Manipulación cross-tenant de expedientes de incidencias operativas (potencialmente disciplinarios/legales) de otra empresa cliente de la plataforma.
+- **Recomendación**: Cambiar el lookup a `get_object_or_404(IncidenciaOperativa, id=incidencia_id, empresa=empresa)`, igual que en `panel_auditoria_incidencias`.
+- **Corrección aplicada**: el endpoint exige empresa en el usuario y el lookup usa `id + empresa`; un Director sin empresa o de otro tenant recibe rechazo/no encuentra el registro.
+- **Verificación**: `core.tests.test_tenant_boundary_views.TenantBoundaryViewsTests.test_incidence_review_cannot_cross_tenant` y `manage.py check` pasan.
+- **Estado**: corregido localmente; pendiente de despliegue.
+
+### H-NUEVO-155: `historial_comandos` expone `VoiceAuditLog` de TODOS los tenants a cualquier superuser (transcripciones de voz cross-tenant)
+- **Archivo**: `core/views/voice.py`.
+- **Líneas**: 87-130.
+- **Severidad**: Alta.
+- **Hallazgo**: `dashboard_voice_logs` (línea 133-176) correctamente filtra `VoiceAuditLog.objects.filter(empresa=empresa)`. Sin embargo, `historial_comandos` hace: `if request.user.is_superuser: logs = VoiceAuditLog.objects.all()` — **sin ningún filtro de `empresa`**. Dado que `is_superuser` en PRISLAB se asigna por tenant (patrón documentado en H-NUEVO-142/147/154), cualquier Director/Admin de **cualquier tenant** que llame a `GET /api/voice/historial/` (o ruta equivalente) recibe **las transcripciones completas de comandos de voz de todos los laboratorios de la plataforma** (`transcripcion`, `intencion_detectada`, `respuesta_ia`), incluyendo potencialmente nombres de pacientes, resultados dictados y otra información clínica/operativa sensible de tenants ajenos.
+- **Riesgo**: Fuga masiva cross-tenant de datos operativos y potencialmente clínicos (dictados de voz) de todos los clientes de la plataforma a cualquier Director de cualquier tenant.
+- **Recomendación**: Cambiar a `VoiceAuditLog.objects.filter(empresa=empresa)` para el caso `is_superuser`, igual que hace `dashboard_voice_logs`, eliminando el `.all()` sin acotar.
+- **Corrección aplicada**: el historial de directores queda limitado a `empresa` y el historial de usuarios ordinarios también combina usuario + empresa.
+- **Verificación**: `core.tests.test_tenant_boundary_views.TenantBoundaryViewsTests.test_voice_director_history_is_limited_to_request_tenant` y `manage.py check` pasan.
+- **Estado**: corregido localmente; pendiente de despliegue.
 - **Corrección aplicada**: el lookup incluye `empresa` y la vista rechaza POST de usuarios sin tenant; un médico existente solo puede actualizarse dentro de la misma empresa.
 - **Verificación**: `core.tests.test_catalogos_medicos_security` comprueba que una cédula compartida no reasigna ni modifica el registro de otro tenant.
 - **Estado**: corregido localmente; pendiente de despliegue.

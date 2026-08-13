@@ -35,7 +35,8 @@ def historial_resultados(request, paciente_id=None):
     if paciente_id:
         paciente = get_object_or_404(Paciente, id=paciente_id, empresa=empresa)
 
-    analitos = Analito.objects.filter(activo=True).order_by('nombre')
+    # El catalogo y sus rangos son propiedad del tenant, igual que los resultados.
+    analitos = Analito.objects.filter(empresa=empresa, activo=True).order_by('nombre')
 
     estudio_id = request.GET.get('estudio', '')
     fecha_desde = request.GET.get('fecha_desde', '')
@@ -61,7 +62,9 @@ def historial_resultados(request, paciente_id=None):
 
     resultados_grafica = []
     if estudio_id and str(estudio_id).isdigit():
-        analito = get_object_or_404(Analito, id=int(estudio_id), activo=True)
+        analito = get_object_or_404(
+            Analito, id=int(estudio_id), empresa=empresa, activo=True
+        )
         rps = ResultadoParametro.objects.filter(
             orden__paciente=paciente,
             orden__empresa=empresa,
@@ -120,7 +123,9 @@ def api_resultados_grafica(request, paciente_id, estudio_id):
     """estudio_id = lims.Analito.pk (compatibilidad de nombre de ruta)."""
     empresa = getattr(request.user, 'empresa', None)
     paciente = get_object_or_404(Paciente, id=paciente_id, empresa=empresa)
-    analito = get_object_or_404(Analito, id=estudio_id, activo=True)
+    analito = get_object_or_404(
+        Analito, id=estudio_id, empresa=empresa, activo=True
+    )
 
     fecha_desde = request.GET.get('fecha_desde', '')
     fecha_hasta = request.GET.get('fecha_hasta', '')
@@ -173,7 +178,9 @@ def comparar_resultados(request, paciente_id):
     datos_comparacion = {}
 
     for aid in estudios_ids:
-        analito = get_object_or_404(Analito, id=int(aid), activo=True)
+        analito = get_object_or_404(
+            Analito, id=int(aid), empresa=empresa, activo=True
+        )
         resultados = ResultadoParametro.objects.filter(
             orden__paciente=paciente,
             orden__empresa=empresa,

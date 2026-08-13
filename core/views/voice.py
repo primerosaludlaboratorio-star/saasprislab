@@ -97,11 +97,13 @@ def historial_comandos(request):
     limit = int(request.GET.get('limit', 20))
     offset = int(request.GET.get('offset', 0))
     
-    # Filtrar por usuario (o todos si es director)
+    # Un Director puede consultar el historial de su empresa, nunca el de toda
+    # la plataforma. Los usuarios ordinarios siguen viendo solo sus comandos.
+    empresa = getattr(request.user, 'empresa', None)
     if request.user.is_superuser:
-        logs = VoiceAuditLog.objects.all()
+        logs = VoiceAuditLog.objects.filter(empresa=empresa)
     else:
-        logs = VoiceAuditLog.objects.filter(usuario=request.user)
+        logs = VoiceAuditLog.objects.filter(usuario=request.user, empresa=empresa)
     
     # Paginación
     total = logs.count()

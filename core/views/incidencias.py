@@ -169,7 +169,18 @@ def marcar_incidencia_revisada(request, incidencia_id):
         estado = data.get('estado', 'JUSTIFICADA')  # JUSTIFICADA o SANCIONADA
         comentario = data.get('comentario', '').strip()
         
-        incidencia = get_object_or_404(IncidenciaOperativa, id=incidencia_id)
+        empresa = getattr(request.user, 'empresa', None)
+        if not empresa:
+            return JsonResponse({
+                'status': 'error',
+                'mensaje': 'Director sin empresa asignada.'
+            }, status=403)
+
+        incidencia = get_object_or_404(
+            IncidenciaOperativa,
+            id=incidencia_id,
+            empresa=empresa,
+        )
         
         if estado not in ['JUSTIFICADA', 'SANCIONADA']:
             return JsonResponse({

@@ -927,6 +927,28 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] `catalogos_maestros.py` — 247/247. Sin hallazgos; catálogo `laboratorio.Estudio` es legado sin FK de empresa por diseño, mutaciones reservadas a superusuario vía `_superuser_only`.
 - [x] `catalogos.py` — 209/209. **H-NUEVO-152 (Alta, CORREGIDO LOCALMENTE)**: `catalogo_medicos` busca y actualiza por `empresa + cedula_profesional`, rechaza usuarios sin empresa y evita reasignaciones cross-tenant. Prueba de aislamiento añadida.
 
+### Bloque 19H — `comunicacion.py`, `consentimientos.py`, `consulta_ordenes.py`, `contabilidad_personal.py`, `cotizacion.py`, `crm.py`, `dashboard_unificado.py`, `expediente.py`, `historial_resultados.py`, `ia.py`, `ia_dashboard.py` — 2026-08-13
+
+- [x] Sin hallazgos: `comunicacion.py` (315 líneas, PRIS-Chat, todas las queries filtran por `empresa` incluyendo el destinatario), `consentimientos.py`, `consulta_ordenes.py`, `contabilidad_personal.py` (`_solo_director` con `user_passes_test`), `cotizacion.py`, `crm.py` (`_empresa()`/`_verificar_empresa()` con `PermissionDenied`), `dashboard_unificado.py` (`@role_required` en ambas vistas), `expediente.py`, `ia.py`, `ia_dashboard.py`.
+- [x] **H-NUEVO-153 (Media, CORREGIDO LOCALMENTE)**: `core/views/historial_resultados.py` exige `empresa` en el catálogo y en los tres lookups de `Analito`; prueba de frontera tenant añadida. Pendiente de despliegue.
+
+### Bloque 19I — `incidencias.py`, `monitoring.py`, `push.py` — 2026-08-13
+
+- [x] `monitoring.py` — 123/123. Sin hallazgos; endpoint `/metrics/` protegido opcionalmente por `PRISLAB_METRICS_TOKEN` con `secrets.compare_digest`, no expone datos de tenant.
+- [x] `push.py` — 231/231. Sin hallazgos; suscripciones push filtradas por `usuario=request.user`, `test_notificacion` restringido a `is_superuser`.
+- [x] `incidencias.py` — 204/204. **H-NUEVO-154 (Alta, CORREGIDO LOCALMENTE)**: `marcar_incidencia_revisada` exige empresa y filtra el lookup por `id + empresa`; prueba de frontera tenant añadida. Pendiente de despliegue.
+- [x] **H-NUEVO-155 (Alta, CORREGIDO LOCALMENTE)**: `core/views/voice.py::historial_comandos` limita el historial de directores a la empresa solicitante y el de usuarios ordinarios a usuario + empresa; prueba de frontera tenant añadida. Pendiente de despliegue.
+
+### Bloque 19J — Re-lectura línea por línea de archivos previamente solo verificados por grep — 2026-08-13
+
+- [x] Sin hallazgos: `manual.py`, `maquila.py` (`@role_required` + `select_for_update` en envío/recepción), `microbiologia.py`, `omnisearch.py`, `paciente.py` (`timeline_paciente` reafirma scope de tenant explícito pese a middleware), `pacientes.py`, `ranking.py`, `reporte_friccion.py`, `notificaciones.py` (todas las queries de `NotificacionSistema` filtran por `empresa` + destinatario), `laboratorio_config.py` (wrappers legacy hacia LIMS v7.5, `_can_manage_lims_catalog` exige empresa+rol).
+- [x] **H-NUEVO-155 (Alta, ABIERTO)**: `core/views/voice.py` — `historial_comandos` hace `VoiceAuditLog.objects.all()` sin filtrar por `empresa` cuando `request.user.is_superuser` (rol por tenant), a diferencia de `dashboard_voice_logs` que sí filtra correctamente; expone transcripciones de voz de todos los tenants de la plataforma a cualquier Director.
+- [x] `laboratorio_reportes.py` — 226/226. Sin hallazgos; `validar_resultado` (público, QR) usa token UUID no secuencial vía `objects_all`, con registro forense; `imprimir_resultados`/`api_generar_y_guardar_reporte` filtran por `empresa` y respetan candado financiero/LFPDPPP.
+- [x] `pris_checklist.py` — 378/378. Sin hallazgos; motor NLP de checklist sin persistencia de datos de tenant (solo detección de intents en texto recibido).
+- [x] Confirmado por relectura de notas: `laboratorio_captura.py` (427/427, Bloque previo, H-NUEVO-38 corregido) y `excepciones_lab.py` (623/623, Bloque previo, H-NUEVO-48 abierto sobre `registrar_merma`) ya fueron revisados línea por línea en sesiones anteriores.
+
+**`core/views/` (incluyendo subpaquetes `laboratorio/`, `medico/`, `pris_ia/`): CIERRE TOTAL CONFIRMADO.** Todos los archivos `.py` de nivel superior fueron leídos línea por línea en algún bloque (19A-19J o bloques anteriores 1-18). Hallazgos abiertos pendientes de corrección en este directorio: H-NUEVO-48, H-NUEVO-153, H-NUEVO-154, H-NUEVO-155 (ver `AUDITORIA_HALLAZGOS.md`). Continúa la auditoría en `core/utils/`, `core/rbac/`, `core/decorators.py`, `core/management/commands/` y el resto de apps (`farmacia/`, `inventario/`, `contabilidad/`, `marketing/`, `lims/`, `consultorio/`, etc.) que no se hayan cerrado aún.
+
 ### Bloque 8 — PRIS IA y OCR multimodal — COMPLETADO 2026-08-11
 
 - [x] `core/services/ocr_documental.py`: cascada única para clasificación documental, recetas, compras de farmacia y compras de laboratorio.
