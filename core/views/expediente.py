@@ -8,8 +8,7 @@ from django.http import JsonResponse
 from django.db.models import Q
 from django.utils import timezone
 
-from core.models import Paciente, OrdenDeServicio
-from consultorio.models import ConsultaMedica
+from core.models import Paciente, OrdenDeServicio, ConsultaMedica
 
 
 @login_required

@@ -5,7 +5,7 @@ CONSULTORIO - Registro en Django Admin
 from django.contrib import admin
 from core.admin.tenant import TenantScopedAdmin
 from .models import (
-    AgendaCita, ConsultaMedica, Somatometria, NotaMedica,
+    AgendaCita, NotaMedica,
     ConfiguracionMedico, Vademecum, ArchivoAdjuntoConsulta,
     ListaEspera, EncuestaSatisfaccion, SeguimientoTratamiento,
     AnalisisPatron, CajaConsultorio, CobroConsulta,
@@ -20,23 +20,6 @@ class AgendaCitaAdmin(TenantScopedAdmin):
     list_filter = ('estatus', 'fecha')
     search_fields = ('paciente__nombre_completo',)
     date_hierarchy = 'fecha'
-
-
-@admin.register(ConsultaMedica)
-class ConsultaMedicaLegacyAdmin(TenantScopedAdmin):
-    """LEGACY - No usar. El modelo activo es core.ConsultaMedica."""
-    list_display = ('paciente', 'medico', 'motivo', 'fecha_creacion')
-    list_filter = ('empresa',)
-    search_fields = ('paciente__nombre_completo',)
-    readonly_fields = ('empresa', 'sucursal', 'cita', 'paciente', 'medico',
-                       'motivo', 'exploracion_fisica', 'diagnostico_cie10',
-                       'diagnostico_texto', 'tratamiento', 'fecha_creacion')
-
-
-@admin.register(Somatometria)
-class SomatometriaAdmin(TenantScopedAdmin):
-    list_display = ('consulta', 'peso', 'talla', 'temperatura', 'presion_arterial', 'fecha_registro')
-    search_fields = ('consulta__paciente__nombre_completo',)
 
 
 @admin.register(NotaMedica)

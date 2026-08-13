@@ -16,29 +16,6 @@ Modelos clínicos: somatometría, notas médicas y análisis de patrones.
 from django.conf import settings
 from django.db import models
 
-from .legacy import ConsultaMedica
-
-
-class Somatometria(models.Model):
-    consulta = models.OneToOneField(ConsultaMedica, on_delete=models.CASCADE, related_name="somatometria")
-
-    peso = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-    talla = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, help_text="En metros o cm (definir estándar).")
-    temperatura = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
-    presion_arterial = models.CharField(max_length=20, null=True, blank=True, help_text="Ej: 120/80")
-    sato2 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-
-    fecha_registro = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Somatometría"
-        verbose_name_plural = "Somatometrías"
-        ordering = ["-fecha_registro"]
-
-    def __str__(self):
-        return f"Somatometría ({self.consulta_id})"
-
-
 class NotaMedica(models.Model):
     """Nota médica / historia clínica (placeholder inicial)."""
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="notas_medicas")
