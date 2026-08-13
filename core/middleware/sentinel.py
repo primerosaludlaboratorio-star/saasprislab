@@ -132,6 +132,7 @@ class SentinelTelemetryMiddleware:
 
     # ── Latency tracking para Auto-Cleanup (Rev 128) ──
     _slow_request_count = 0
+    _slow_request_lock = threading.RLock()
     _SLOW_THRESHOLD_SECONDS = 2.0
     _SLOW_REQUESTS_TRIGGER = 5  # N requests lentos → dispara cleanup
     _cleanup_running = False
@@ -165,15 +166,20 @@ class SentinelTelemetryMiddleware:
         is_exempt = any(path.startswith(prefix) for prefix in self._SLOW_EXEMPT_PREFIXES)
 
         if t_elapsed > self._SLOW_THRESHOLD_SECONDS and not is_exempt:
-            SentinelTelemetryMiddleware._slow_request_count += 1
+            start_cleanup = False
+            with SentinelTelemetryMiddleware._slow_request_lock:
+                SentinelTelemetryMiddleware._slow_request_count += 1
+                slow_count = SentinelTelemetryMiddleware._slow_request_count
+                if (slow_count >= self._SLOW_REQUESTS_TRIGGER
+                        and not SentinelTelemetryMiddleware._cleanup_running):
+                    SentinelTelemetryMiddleware._cleanup_running = True
+                    SentinelTelemetryMiddleware._slow_request_count = 0
+                    start_cleanup = True
             logger.warning(
                 f"SENTINEL LATENCY: {request.method} {path} "
-                f"tardo {t_elapsed:.2f}s (slow #{SentinelTelemetryMiddleware._slow_request_count})"
+                f"tardo {t_elapsed:.2f}s (slow #{slow_count})"
             )
-            if (SentinelTelemetryMiddleware._slow_request_count >= self._SLOW_REQUESTS_TRIGGER
-                    and not SentinelTelemetryMiddleware._cleanup_running):
-                SentinelTelemetryMiddleware._cleanup_running = True
-                SentinelTelemetryMiddleware._slow_request_count = 0
+            if start_cleanup:
                 threading.Thread(
                     target=self._disparar_auto_cleanup,
                     daemon=True,
@@ -465,11 +471,17 @@ class SentinelTelemetryMiddleware:
             logging.getLogger(__name__).exception("Error inesperado en _repair_database_error (sentinel.py)")
             pass
 
-        # Redirigir al usuario a la misma ruta para reintentar
-        return self._redirect_with_message(
-            request, path,
-            "Se detecto un problema temporal con la base de datos. Reintentando automaticamente...",
-            'warning'
+        # No reintentar la misma URL: evita bucles de redireccion cuando la DB
+        # sigue caída y deja una señal HTTP explícita para el monitor.
+        from django.http import HttpResponse
+        return HttpResponse(
+            "Servicio temporalmente no disponible. Intenta nuevamente en unos segundos.",
+            status=503,
+            headers={
+                'Retry-After': '5',
+                'Cache-Control': 'no-store',
+                'X-Sentinel-Degraded': '1',
+            },
         )
 
     def _redirect_with_message(self, request, url, message, level='info'):
@@ -556,7 +568,8 @@ class SentinelTelemetryMiddleware:
             logger.error(f"SENTINEL AUTO-CLEANUP: Error general: {e}")
         finally:
             # Reset flag para permitir futuras limpiezas
-            cls._cleanup_running = False
+            with cls._slow_request_lock:
+                cls._cleanup_running = False
 
     # ===================================================================
     # PAGINA DE ERROR MEJORADA (cuando no se puede auto-reparar)

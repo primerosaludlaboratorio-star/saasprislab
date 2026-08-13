@@ -1281,6 +1281,24 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **H-NUEVO-11: CORREGIDO Y VERIFICADO.** `_verificar_rbac` rechaza cualquier herramienta ausente del catálogo explícito antes de consultar grupos. El despachador activo usa el registro operativo visible a nivel de módulo, mantiene confirmación humana para escrituras y oculta detalles internos de excepciones.
 - Evidencia local: 44/44 pruebas RBAC/PRIS OK, con 2 pruebas omitidas por herramientas retiradas; `manage.py check` OK.
 
+## Bloque 3 — middleware, tenant, Sentinel y 2FA — 2026-08-12
+
+- **H-NUEVO-109: CORREGIDO Y VERIFICADO.** El desbloqueo de notas selladas usa ahora el permiso RBAC explícito `expediente:desbloquear_nota_sellada`; la asignación manual de un permiso Django aislado ya no basta.
+- **H-NUEVO-110: CORREGIDO Y VERIFICADO.** `sanitizar_datos` redacciona claves sensibles también dentro de diccionarios y listas anidadas, con límite de profundidad.
+- **H-NUEVO-111: CORREGIDO Y VERIFICADO.** El contador de latencia y el estado de limpieza de Sentinel se actualizan bajo lock; la limpieza en segundo plano no comparte el estado de concurrencia sin protección.
+- **H-NUEVO-112: CORREGIDO Y VERIFICADO.** Los errores de base de datos devuelven `503`, `Retry-After` y `Cache-Control: no-store`; ya no redirigen a la misma URL.
+- **H-NUEVO-114: CORREGIDO Y VERIFICADO.** La resolución por subdominio ya no usa el nombre comercial como identidad. Solo acepta campos explícitos `subdominio`/`slug`; sin ellos falla cerrado y no asigna tenant por coincidencia ambigua.
+- **H-NUEVO-116: CORREGIDO Y VERIFICADO.** El prefijo de almacenamiento usa `tenant-{empresa.pk}`, estable e independiente del nombre comercial.
+- **H-NUEVO-117: CORREGIDO Y VERIFICADO.** El loopback nunca concede bypass de 2FA en producción; las excepciones restantes requieren configuración explícita.
+- **H-NUEVO-118: CORREGIDO Y VERIFICADO.** El código maestro solo funciona fuera de producción con flag explícito, se compara en tiempo constante y queda sujeto al límite de cinco intentos por usuario/ventana.
+
+### Evidencia del bloque
+
+- Compilación de middleware, RBAC, Sentinel y 2FA: OK.
+- `manage.py check`: OK.
+- `makemigrations --check --dry-run`: sin cambios.
+- Pruebas focalizadas: 42/42 OK.
+
 ## Bloque 8 — PRIS IA y OCR multimodal — CORREGIDO 2026-08-11
 
 - `core/services/ocr_documental.py` ya no exige Gemini directamente para `analizar_documento`, `analizar_compra_farmacia` ni `analizar_compra_laboratorio`.
@@ -1290,4 +1308,6 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 
 **Confirmaciones positivas de este bloque**: `core/views/administracion_usuarios.py` sí bloquea auto-modificación de rol/staff/activación y reasignación de empresa; registra auditoría de campo (`auditar_cambio_campo`) y trazabilidad (`registrar_trazabilidad`) en cada cambio. `core/views/cron_tasks.py` usa `secrets.compare_digest` para el secreto de cron y rechaza en producción sin `CRON_SECRET`. `core/views/prisci_webhook.py` rechaza el webhook si `PRISCI_WEBHOOK_TOKEN` no está configurado y `DEBUG=False`. `core/views/excepciones_lab.py:cancelar_orden` exige superusuario explícito vía `user_passes_test`.
 
-**Pendiente en core/views/**: cobertura exhaustiva línea por línea del resto de los ~75 archivos restantes (`farmacia.py`, `finanzas.py`, `contabilidad.py`, `rh.py`, `director.py`, `pris_jarvis.py`, `war_room.py`, `monitor_produccion.py`, subcarpetas `laboratorio/`, `medico/`, `pris_ia/`, etc.); luego `core/utils/`, `core/rbac/`, `core/decorators.py`, `core/management/commands/`, `core/services/`, `core/agent/`.
+**Pendiente en core/views/**: cobertura exhaustiva línea por línea del resto de los ~75 archivos restantes (`farmacia.py`, `rh.py`, `director.py`, `pris_jarvis.py`, `war_room.py`, `monitor_produccion.py`, subcarpetas `laboratorio/`, `medico/`, `pris_ia/`, etc.); luego `core/utils/`, `core/rbac/`, `core/decorators.py`, `core/management/commands/`, `core/services/`, `core/agent/`.
+
+**Nota:** H-NUEVO-141 (segregación de funciones en `autorizar_poliza`) y H-NUEVO-142 (alcance de tenant en `SolicitudAutorizacion`) ya están documentados y **CORREGIDOS Y VERIFICADOS** más arriba, en la sección "Estado verificado de H-NUEVO-137 a H-NUEVO-140 — 2026-08-12" (líneas 1244-1258 de este archivo). Verificado en código actual: `contabilidad.py:349` rechaza `poliza.creado_por_id == request.user.id`; `autorizaciones.py:159` usa `_solicitud_queryset(request)` con alcance de empresa.

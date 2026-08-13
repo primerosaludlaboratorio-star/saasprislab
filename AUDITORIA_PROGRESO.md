@@ -876,13 +876,9 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] `core/views/excepciones_lab.py` — confirmado `cancelar_orden` exige superusuario explícito.
 - [x] `core/views/general.py` — reconfirmado `log_frontend_error` (ya documentado en Bloque previo con `@require_api_token`).
 
-**Hallazgos nuevos documentados**: H-NUEVO-137 a H-NUEVO-140 (4 hallazgos, 2 críticos):
-- H-NUEVO-137: `api_actualizar_usuario` permite que un rol `GERENTE` escale a otro usuario a `rol='ADMIN'`/`is_staff=True` sin validación jerárquica.
-- H-NUEVO-138: `desbloqueo_forense` no filtra por `empresa` al buscar `NotaClinicaSOAP`/`NotaClinicaSellar`, permitiendo desbloqueo cross-tenant de notas selladas.
-- H-NUEVO-139: `api_sentinel_reset` borra/resuelve `IncidenciaSentinel` de **todos** los tenants sin filtro `empresa`.
-- H-NUEVO-140: `api_sentinel_diagnostico` expone filas de muestra cross-tenant de tablas `estudio`/`examen`.
+**Hallazgos nuevos documentados**: H-NUEVO-137 a H-NUEVO-142 (6 hallazgos). **Estado: TODOS CORREGIDOS Y VERIFICADOS**. H-137 a H-140 se detectaron y corrigieron en esta ronda; H-141 (segregación de funciones en `autorizar_poliza`) y H-142 (tenant scope en `SolicitudAutorizacion`) resultaron ya corregidos por el trabajo del "Bloque 19A — Autorizaciones contables y tenant scope — 2026-08-12" (ver esa sección más abajo y `AUDITORIA_HALLAZGOS.md:1237-1259`); se verificó directamente en código (`contabilidad.py:349`, `autorizaciones.py:159`) para evitar deuda duplicada.
 
-**Pendiente en `core/views/`**: el resto de los ~73 archivos restantes del directorio (módulos de farmacia, finanzas, contabilidad, RRHH, director, PRIS IA/Jarvis, war room, monitoreo, subcarpetas de laboratorio/médico) requieren revisión línea por línea antes de cerrar `9b`. Continúa después con `core/utils/`, `core/rbac/`, `core/decorators.py`, `core/management/commands/`.
+**Pendiente en `core/views/`**: el resto de los ~73 archivos restantes del directorio (módulos de farmacia, RRHH, director, PRIS IA/Jarvis, war room, monitoreo, subcarpetas de laboratorio/médico) requieren revisión línea por línea antes de cerrar `9b`. `finanzas.py`, `motor_financiero.py`, `autofactura.py`, `contabilidad.py` y `feature_flags_admin.py` ya se revisaron sin hallazgos adicionales pendientes. Continúa después con `core/utils/`, `core/rbac/`, `core/decorators.py`, `core/management/commands/`.
 
 ### Bloque 8 — PRIS IA y OCR multimodal — COMPLETADO 2026-08-11
 
@@ -919,4 +915,16 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] H-NUEVO-11: herramientas desconocidas rechazadas antes del despacho; registro operativo disponible para pruebas y excepciones no filtran detalles internos.
 - [x] Pruebas focalizadas: 44/44 OK; 2 casos skipped corresponden a herramientas retiradas.
 - [x] `manage.py check` OK.
+- [x] Despliegue post-corrección y health check: revisión `764763c`, health check 200 y servicios activos.
+
+### Bloque 3 — cierre operativo 2026-08-12
+
+- [x] Permiso de desbloqueo forense integrado al mapa RBAC central.
+- [x] Sanitización recursiva de datos de Sentinel con redacción de secretos.
+- [x] Contadores de latencia y cleanup de Sentinel protegidos contra carreras.
+- [x] Errores de base de datos responden `503` sin bucle de redirección.
+- [x] Resolución de subdominio fail-closed; no usa nombres comerciales como identidad.
+- [x] Prefijo de almacenamiento estable por `empresa.pk`.
+- [x] Bypass de 2FA por loopback bloqueado en producción; recuperación maestra limitada a no-producción y rate-limit.
+- [x] Pruebas focalizadas: 42/42 OK; `manage.py check` y `makemigrations --check` OK.
 - [ ] Despliegue post-corrección y health check: se ejecutará como parte del cierre de este bloque.

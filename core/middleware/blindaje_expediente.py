@@ -66,7 +66,10 @@ class BlindajeExpedienteMiddleware:
                     
                     if sello and sello.estado_sello == 'SELLADA':
                         # Verificar si tiene permiso de desbloqueo forense
-                        if not request.user.has_perm('core.desbloquear_nota_sellada'):
+                        from core.rbac.permissions import check_permission
+                        try:
+                            check_permission(request.user, 'expediente:desbloquear_nota_sellada')
+                        except PermissionDenied:
                             logger.warning(
                                 f"[BLINDAJE] Intento de modificación de nota sellada #{nota_id} "
                                 f"por usuario {request.user.username} SIN PERMISO"
@@ -75,11 +78,10 @@ class BlindajeExpedienteMiddleware:
                                 "Esta nota está sellada e inmutable. "
                                 "Contacte al administrador para desbloqueo forense."
                             )
-                        else:
-                            logger.info(
-                                f"[BLINDAJE] Desbloqueo forense de nota #{nota_id} "
-                                f"por {request.user.username}"
-                            )
+                        logger.info(
+                            f"[BLINDAJE] Desbloqueo forense de nota #{nota_id} "
+                            f"por {request.user.username}"
+                        )
                 except PermissionDenied:
                     raise
                 except (DatabaseError, TypeError, ValueError) as e:

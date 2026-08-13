@@ -113,14 +113,9 @@ class TenantStorageMiddleware:
         if request.user.is_authenticated:
             empresa = getattr(request.user, 'empresa', None)
             if empresa:
-                # Normalizar slug: nombre → slug seguro para carpeta
-                nombre = getattr(empresa, 'nombre', '') or ''
-                empresa_slug = (
-                    nombre.lower()
-                    .replace(' ', '_')
-                    .replace('/', '_')
-                    .replace('\\', '_')
-                )[:50]
+                # El ID es estable e inmutable; el nombre puede cambiar o
+                # colisionar entre empresas y no debe definir aislamiento.
+                empresa_slug = f'tenant-{empresa.pk}'
 
         # Inyectar en thread-local del storage
         try:

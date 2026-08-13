@@ -39,6 +39,13 @@ def _get_client_ip(request) -> str:
 def _ip_exenta_2fa(request) -> bool:
     """Bypass solo para IPs explícitamente permitidas en configuración."""
     ip = _get_client_ip(request)
+    try:
+        # Nunca convertir loopback en bypass en producción: detrás de un
+        # proxy local REMOTE_ADDR puede ser 127.0.0.1 para cualquier cliente.
+        if not settings.DEBUG and ipaddress.ip_address(ip).is_loopback:
+            return False
+    except ValueError:
+        return False
     if settings.DEBUG and ip in {'127.0.0.1', 'localhost', '::1'}:
         return True
 

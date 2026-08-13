@@ -70,9 +70,8 @@ def _resolve_empresa_by_slug(slug: str):
         elif 'slug' in field_names:
             empresa = empresa_model.objects.filter(slug=slug, activa=True).first()
 
-        if empresa is None:
-            # Fallback compatible con esquemas sin slug explícito.
-            empresa = empresa_model.objects.filter(nombre__iexact=slug, activa=True).first()
+        # Sin un identificador tenant explícito no se usa el nombre comercial:
+        # no es único, puede cambiar y no constituye una identidad segura.
         return empresa
     except Exception as exc:
         logger.error("Error al resolver empresa por slug='%s': %s", slug, exc)

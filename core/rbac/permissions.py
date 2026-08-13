@@ -67,6 +67,7 @@ PERMISSION_MAP: dict[str, frozenset[str]] = {
     "consultorio:nueva_consulta": frozenset({Rol.MEDICO}),
     "consultorio:ver_expediente": frozenset({Rol.MEDICO, Rol.QUIMICO, Rol.ADMIN, Rol.DIRECTOR}),
     "consultorio:modificar_dx":   frozenset({Rol.MEDICO}),
+    "expediente:desbloquear_nota_sellada": frozenset({Rol.ADMIN, Rol.DIRECTOR}),
 
     # Caja / PDV — solo operativos y admin
     "caja:registrar_venta":      frozenset({Rol.CAJA, Rol.RECEPCION, Rol.ADMIN}),

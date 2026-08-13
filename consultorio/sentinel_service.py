@@ -26,15 +26,23 @@ CAMPOS_SENSIBLES = {
 }
 
 
-def sanitizar_datos(data: dict) -> dict:
-    """Elimina campos sensibles de un diccionario de request."""
+def sanitizar_datos(data: dict, _depth: int = 0) -> dict:
+    """Elimina campos sensibles de estructuras de request, incluidos anidados."""
     if not data:
         return {}
+    if _depth > 3:
+        return {'__truncated__': 'max nesting depth'}
     sanitizado = {}
     for key, value in data.items():
         key_lower = key.lower().replace('-', '_')
         if any(campo in key_lower for campo in CAMPOS_SENSIBLES):
             sanitizado[key] = '***REDACTED***'
+        elif isinstance(value, dict):
+            sanitizado[key] = sanitizar_datos(value, _depth + 1)
+        elif isinstance(value, (list, tuple)) and value and all(isinstance(item, dict) for item in value[:5]):
+            sanitizado[key] = [sanitizar_datos(item, _depth + 1) for item in value[:5]]
+            if len(value) > 5:
+                sanitizado[key].append(f'[{len(value) - 5} items - truncated]')
         elif isinstance(value, (list, tuple)) and len(value) > 5:
             sanitizado[key] = f'[{len(value)} items - truncated]'
         elif isinstance(value, str) and len(value) > 500:
