@@ -1311,3 +1311,45 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 **Pendiente en core/views/**: cobertura exhaustiva línea por línea del resto de los ~75 archivos restantes (`farmacia.py`, `rh.py`, `director.py`, `pris_jarvis.py`, `war_room.py`, `monitor_produccion.py`, subcarpetas `laboratorio/`, `medico/`, `pris_ia/`, etc.); luego `core/utils/`, `core/rbac/`, `core/decorators.py`, `core/management/commands/`, `core/services/`, `core/agent/`.
 
 **Nota:** H-NUEVO-141 (segregación de funciones en `autorizar_poliza`) y H-NUEVO-142 (alcance de tenant en `SolicitudAutorizacion`) ya están documentados y **CORREGIDOS Y VERIFICADOS** más arriba, en la sección "Estado verificado de H-NUEVO-137 a H-NUEVO-140 — 2026-08-12" (líneas 1244-1258 de este archivo). Verificado en código actual: `contabilidad.py:349` rechaza `poliza.creado_por_id == request.user.id`; `autorizaciones.py:159` usa `_solicitud_queryset(request)` con alcance de empresa.
+
+### H-NUEVO-143: CRUD completo de `Equipo`/`CodigoParametroEquipo` (analizadores de laboratorio) sin filtro de `empresa` en `core/views/director.py`
+- **Archivo**: `core/views/director.py`.
+- **Líneas**: 310-472 (`director_analizadores`, `director_analizadores_crear`, `director_analizadores_toggle`, `director_analizadores_mapeos`, `director_analizadores_eliminar_mapeo`).
+- **Severidad**: Crítica.
+- **Hallazgo**: El comentario en línea 328-329 afirma que "`laboratorio.Equipo` no tiene FK empresa", pero esto es **falso**: `laboratorio/models/hardware.py:25-30` define `Equipo.empresa` como `ForeignKey('core.Empresa', ..., null=True, blank=True)`. Basado en esa premisa incorrecta, cinco vistas del módulo de analizadores operan sin ningún filtro de tenant:
+  - `director_analizadores`: `Equipo.objects.all()` lista el hardware de **todos los tenants**.
+  - `director_analizadores_crear`: `Equipo.objects.create(...)` nunca asigna `empresa=`, dejando el equipo huérfano (`empresa=None`) y visible a cualquier tenant.
+  - `director_analizadores_toggle`: `get_object_or_404(Equipo, id=equipo_id)` sin `empresa=`, permite activar/desactivar equipo de otro tenant.
+  - `director_analizadores_mapeos`: mismo patrón, expone mapeos HL7/ASTM de cualquier tenant.
+  - `director_analizadores_eliminar_mapeo`: `get_object_or_404(CodigoParametroEquipo, id=mapeo_id)` sin `empresa=` (vía `equipo__empresa=`), permite borrar el mapeo de código-parámetro de cualquier tenant.
+
+  En contraste, `director_analizadores_probar_conexion` (líneas 418-457, en el mismo archivo) sí filtra correctamente por `Equipo.objects.filter(empresa=empresa, ...)`, confirmando que la omisión en las otras cinco vistas es una inconsistencia real y no un diseño intencional.
+- **Riesgo**: Cualquier usuario con rol `QUIMICO`/`LABORATORIO`/`GERENTE`/`ADMIN`/`DIRECTOR` de un tenant puede ver, crear (huérfano), activar/desactivar o eliminar la configuración de hardware/interfaz (IP, puerto, protocolo ASTM/HL7, mapeos de parámetros) de analizadores de **cualquier otro tenant**, con riesgo de interrupción operativa o corrupción de la interpretación de resultados de laboratorio entre tenants.
+- **Recomendación**: Agregar `empresa=empresa` (via `empresa_efectiva_request(request)` o `getattr(request.user, 'empresa', None)`) a los cuatro `get_object_or_404`/`.objects.all()` restantes, y asignar `empresa=empresa` explícitamente en `director_analizadores_crear`. Alinear con el patrón ya correcto de `director_analizadores_probar_conexion`.
+
+### H-NUEVO-144: `_obtener_tendencia_bienestar` en el War Room agrega datos de salud mental (`DiarioEmocional`, NOM-035) de todos los tenants sin filtro de empresa
+- **Archivo**: `core/views/war_room.py`.
+- **Líneas**: 456-512 (`_obtener_tendencia_bienestar`), consumida por `war_room` (línea 606) y expuesta al Director vía `core/director/war_room.html`.
+- **Severidad**: Alta.
+- **Hallazgo**: `bienestar/models.py:11-84` define `DiarioEmocional` con FK `usuario` pero **sin campo `empresa`**. `_obtener_tendencia_bienestar` ejecuta `DiarioEmocional.objects.filter(fecha_creacion__gte=desde)` sin ningún filtro de tenant (ni siquiera `usuario__empresa=empresa`), agregando por semana los niveles de riesgo (`VERDE`/`AMARILLO`/`ROJO_*`, incluyendo riesgo de suicidio/autolesión, violencia, acoso y consumo de sustancias per los choices del modelo) de **todos los tenants combinados**. El resultado, aunque son solo conteos (sin nombres), se presenta al Director de cada tenant como si fuera la tendencia de bienestar de su propia plantilla, contaminando la métrica con datos de salud mental de empleados de otras empresas.
+- **Riesgo**: Fuga de datos agregados de salud mental (categoría sensible bajo NOM-035 y protección de datos personales) entre tenants; además de integridad del dato, el Director recibe una métrica de riesgo psicosocial de su propio personal que es incorrecta (contaminada por otros tenants), pudiendo llevar a decisiones erróneas de intervención NOM-035.
+- **Recomendación**: Agregar filtro `usuario__empresa=empresa` (requiere que `DiarioEmocional.usuario` tenga `empresa` accesible, lo cual aplica dado que `Usuario` sí es tenant-aware) a la consulta de `_obtener_tendencia_bienestar`.
+
+### H-NUEVO-145: `api_crear_archivo_raw` no valida que el usuario tenga `empresa` antes de sellar evidencia legal
+- **Archivo**: `core/views/pris_jarvis.py`.
+- **Líneas**: 399-427.
+- **Severidad**: Baja.
+- **Hallazgo**: A diferencia de las demás vistas del archivo (que retornan 403 si `empresa` es `None`), `api_crear_archivo_raw` obtiene `empresa = getattr(request.user, 'empresa', None)` y continúa sin validarla, llamando `sellar_transcripcion(..., empresa=None, ...)` si el usuario no tiene empresa asignada. Esta vista sella evidencia legal (cadena de custodia AES-256 + timestamp RFC 3161) para el módulo médico.
+- **Riesgo**: Registro de evidencia legal huérfana (`empresa=None`), lo que puede complicar la trazabilidad forense o quedar fuera del alcance de auditoría por tenant.
+- **Recomendación**: Agregar el mismo guard `if not empresa: return JsonResponse(..., status=403)` usado en el resto del archivo.
+
+**Confirmaciones positivas — `pris_jarvis.py` (891 líneas, revisado completo)**: todas las demás vistas (`api_dictado_resultado`, `api_dictado_inventario`, `api_dictado_busqueda`, `api_dictado_validar_orden`, `api_ocr_documento`, `api_consulta_voz`, `api_generar_hoja_trabajo`, `api_crear_alerta_clinica`, `api_confirmar_accion`, `api_rechazar_accion`, `_ejecutar_accion_confirmada`, `lista_acciones_pris`, `validar_accion_pris`, `api_coach_toma_muestra`) filtran correctamente por `empresa` en cada consulta/mutación, aplican RBAC por módulo (`_puede_confirmar_accion`, `_rbac_dictado_resultado`, `_rbac_dictado_inventario`) y usan el patrón `AccionPRIS` (PENDIENTE → confirmación humana) para todas las mutaciones sensibles, sin ejecutar cambios automáticos en base de datos antes de la confirmación explícita del usuario (excepto alertas críticas, que se autoconfirman por diseño y quedan igualmente scoped a `empresa`).
+
+**`core/views/monitor_produccion.py` (738 líneas, revisado completo)**: sin hallazgos. `monitor_produccion`, `api_monitor_datos` y `api_avanzar_estado` filtran consistentemente por `empresa`, usan `select_for_update()` dentro de `transaction.atomic()` para evitar condiciones de carrera en la transición de estado, y `api_avanzar_estado` exige `_puede_validar_resultados` antes de permitir el paso a `COMPLETO`.
+
+### Verificación de cierre del Bloque 5 — H-NUEVO-143 a H-NUEVO-145
+
+- **H-NUEVO-143: CORREGIDO.** Las vistas de analizadores resuelven la empresa efectiva, listan únicamente equipos y mapeos de esa empresa, asignan `empresa` al crear equipos y rechazan por 404 el acceso a equipos o mapeos ajenos.
+- **H-NUEVO-144: CORREGIDO.** La tendencia NOM-035 filtra `DiarioEmocional` mediante `usuario__empresa=empresa` antes de agregar conteos semanales.
+- **H-NUEVO-145: CORREGIDO.** `api_crear_archivo_raw` rechaza con 403 a usuarios sin empresa antes de crear evidencia forense.
+- **Pruebas:** `core.tests.test_dashboard_and_panic_security`, `core.tests.test_pdf_and_qr_security` y `core.tests.test_hl7_tenant_binding`: 23 pruebas OK. `manage.py check`, `makemigrations --check --dry-run --noinput` y compilación dirigida: OK. La suite con base de datos de analizadores no completó la creación del esquema local tras 60 segundos; no se presenta como evidencia de cierre.

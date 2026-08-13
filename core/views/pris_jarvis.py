@@ -404,6 +404,11 @@ def api_crear_archivo_raw(request):
     Usado para la Caja Negra del módulo médico.
     """
     empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse(
+            {'status': 'error', 'mensaje': 'Usuario sin empresa asignada'},
+            status=403,
+        )
     transcripcion = (request.POST.get('transcripcion') or '').strip()
     if not transcripcion:
         return JsonResponse({'status': 'error', 'mensaje': 'Transcripción vacía'}, status=400)

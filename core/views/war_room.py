@@ -476,7 +476,10 @@ def _obtener_tendencia_bienestar(empresa) -> dict:
         desde = timezone.now() - timedelta(weeks=8)
         entradas = (
             DiarioEmocional.objects
-            .filter(fecha_creacion__gte=desde)
+            .filter(
+                fecha_creacion__gte=desde,
+                usuario__empresa=empresa,
+            )
             .annotate(semana=TruncWeek('fecha_creacion'))
             .values('semana', 'nivel_riesgo')
             .annotate(total=Count('id'))

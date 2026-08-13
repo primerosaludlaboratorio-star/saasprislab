@@ -165,27 +165,43 @@ class AuditoriaFuncionalJunio21Test(TestCase):
         producto.refresh_from_db()
         self.assertEqual(producto.stock, 7)
 
-    def test_director_analizadores_carga_sin_filtrar_empresa_inexistente(self):
+    def test_director_analizadores_excluye_equipos_de_otras_empresas(self):
+        otra_empresa = Empresa.objects.create(nombre="Otra Empresa", rfc="OTR260621TST")
         Equipo.objects.create(
             nombre="Mindray Auditoria",
             marca="Mindray",
             protocolo=Equipo.PROTOCOLO_HL7,
             activo=True,
+            empresa=otra_empresa,
         )
 
         response = self.client.get(reverse("director_analizadores"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Mindray Auditoria")
+        self.assertNotContains(response, "Mindray Auditoria")
 
-    def test_director_analizadores_crear_y_toggle_equipo_global(self):
-        equipo = self._crear_analizador_global()
+    def test_director_analizadores_toggle_rechaza_equipo_de_otra_empresa(self):
+        otra_empresa = Empresa.objects.create(nombre="Otra Empresa Toggle", rfc="OTR260622TST")
+        equipo = Equipo.objects.create(
+            nombre="Analizador Ajeno",
+            protocolo=Equipo.PROTOCOLO_HL7,
+            empresa=otra_empresa,
+            activo=True,
+        )
 
-        # POST
-        response = self.client.post(reverse("analizadores_toggle_activo", args=[equipo.id]))
-        self.assertEqual(response.status_code, 200)
+        response = self.client.post(reverse("director_analizadores_toggle", args=[equipo.id]))
+        self.assertEqual(response.status_code, 404)
         equipo.refresh_from_db()
-        self.assertFalse(equipo.activo)
+        self.assertTrue(equipo.activo)
+
+    def test_director_analizadores_crea_equipo_en_su_empresa(self):
+        response = self.client.post(
+            reverse("director_analizadores_crear"),
+            {"nombre": "Analizador Propio", "protocolo": "HL7"},
+        )
+        self.assertEqual(response.status_code, 302)
+        equipo = Equipo.objects.get(nombre="Analizador Propio")
+        self.assertEqual(equipo.empresa_id, self.empresa.pk)
 
     def test_dashboard_director_carga_con_empresa_del_usuario(self):
         response = self.client.get(reverse("dashboard_director"))

@@ -16,6 +16,7 @@ from core.views.administracion_usuarios import (
 )
 from core.views.configuracion import configuracion_empresa
 from core.views.director import director_analizadores_probar_conexion
+from core.views.pris_jarvis import api_crear_archivo_raw
 from core.views.excepciones_lab import registrar_merma
 from core.views.catalogos import catalogo_convenios
 from core.agent.tools.registry import TOOLS_OPERATIVOS
@@ -107,6 +108,18 @@ class DashboardAndPanicSecurityTests(SimpleTestCase):
             empresa=object(),
         )
         response = director_analizadores_probar_conexion.__wrapped__(request)
+        self.assertEqual(response.status_code, 403)
+
+    def test_raw_audio_rejects_user_without_tenant(self):
+        request = RequestFactory().post(
+            '/pris/api/archivo-raw/',
+            data={'transcripcion': 'prueba'},
+        )
+        request.user = SimpleNamespace(
+            is_authenticated=True,
+            empresa=None,
+        )
+        response = api_crear_archivo_raw.__wrapped__(request)
         self.assertEqual(response.status_code, 403)
 
     def test_employee_cannot_register_inventory_shrinkage(self):

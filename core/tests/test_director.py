@@ -192,7 +192,7 @@ class DirectorAnalizadoresTest(TestCase):
 
     def test_toggle_requiere_post(self):
         from laboratorio.models import Equipo
-        eq = Equipo.objects.create(nombre="EqToggle", protocolo="ASTM", activo=True)
+        eq = Equipo.objects.create(nombre="EqToggle", protocolo="ASTM", activo=True, empresa=self.empresa)
         response = self.client.get(
             reverse("director_analizadores_toggle", args=[eq.id])
         )
@@ -200,7 +200,7 @@ class DirectorAnalizadoresTest(TestCase):
 
     def test_toggle_cambia_estado(self):
         from laboratorio.models import Equipo
-        eq = Equipo.objects.create(nombre="EqToggle2", protocolo="ASTM", activo=True)
+        eq = Equipo.objects.create(nombre="EqToggle2", protocolo="ASTM", activo=True, empresa=self.empresa)
         response = self.client.post(
             reverse("director_analizadores_toggle", args=[eq.id])
         )
@@ -213,7 +213,7 @@ class DirectorAnalizadoresTest(TestCase):
     def test_eliminar_mapeo_requiere_post(self):
         from laboratorio.models import Equipo, CodigoParametroEquipo
         from laboratorio.models import Parametro, Estudio, CategoriaExamen
-        eq = Equipo.objects.create(nombre="EqMapeo", protocolo="ASTM")
+        eq = Equipo.objects.create(nombre="EqMapeo", protocolo="ASTM", empresa=self.empresa)
         cat = CategoriaExamen.objects.create(nombre="Cat Test")
         estudio = Estudio.objects.create(nombre="Estudio Test", codigo="ET01", categoria=cat)
         param = Parametro.objects.create(
@@ -230,7 +230,7 @@ class DirectorAnalizadoresTest(TestCase):
     def test_eliminar_mapeo_post_elimina(self):
         from laboratorio.models import Equipo, CodigoParametroEquipo
         from laboratorio.models import Parametro, Estudio, CategoriaExamen
-        eq = Equipo.objects.create(nombre="EqMapeo2", protocolo="ASTM")
+        eq = Equipo.objects.create(nombre="EqMapeo2", protocolo="ASTM", empresa=self.empresa)
         cat = CategoriaExamen.objects.create(nombre="Cat Test2")
         estudio = Estudio.objects.create(nombre="Estudio Test2", codigo="ET02", categoria=cat)
         param = Parametro.objects.create(

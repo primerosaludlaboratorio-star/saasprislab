@@ -878,7 +878,14 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 
 **Hallazgos nuevos documentados**: H-NUEVO-137 a H-NUEVO-142 (6 hallazgos). **Estado: TODOS CORREGIDOS Y VERIFICADOS**. H-137 a H-140 se detectaron y corrigieron en esta ronda; H-141 (segregación de funciones en `autorizar_poliza`) y H-142 (tenant scope en `SolicitudAutorizacion`) resultaron ya corregidos por el trabajo del "Bloque 19A — Autorizaciones contables y tenant scope — 2026-08-12" (ver esa sección más abajo y `AUDITORIA_HALLAZGOS.md:1237-1259`); se verificó directamente en código (`contabilidad.py:349`, `autorizaciones.py:159`) para evitar deuda duplicada.
 
-**Pendiente en `core/views/`**: el resto de los ~73 archivos restantes del directorio (módulos de farmacia, RRHH, director, PRIS IA/Jarvis, war room, monitoreo, subcarpetas de laboratorio/médico) requieren revisión línea por línea antes de cerrar `9b`. `finanzas.py`, `motor_financiero.py`, `autofactura.py`, `contabilidad.py` y `feature_flags_admin.py` ya se revisaron sin hallazgos adicionales pendientes. Continúa después con `core/utils/`, `core/rbac/`, `core/decorators.py`, `core/management/commands/`.
+**Pendiente en `core/views/`**: el resto de los ~69 archivos restantes del directorio (módulos de farmacia, RRHH, PRIS IA restante, subcarpetas de laboratorio/médico/pris_ia) requieren revisión línea por línea antes de cerrar `9b`. `finanzas.py`, `motor_financiero.py`, `autofactura.py`, `contabilidad.py`, `feature_flags_admin.py`, `director.py`, `war_room.py`, `monitor_produccion.py` y `pris_jarvis.py` ya se revisaron. Continúa después con `core/utils/`, `core/rbac/`, `core/decorators.py`, `core/management/commands/`.
+
+### Bloque 19B — `director.py`, `war_room.py`, `monitor_produccion.py`, `pris_jarvis.py` — 2026-08-12
+
+- [x] `core/views/director.py` — 472/472. **H-NUEVO-143 (Crítica, ABIERTO)**: 5 vistas de gestión de analizadores (`director_analizadores*`) operan sobre `Equipo`/`CodigoParametroEquipo` sin filtrar por `empresa`, basadas en un comentario incorrecto en el código; permite CRUD cross-tenant de hardware de laboratorio (IP/protocolo HL7-ASTM).
+- [x] `core/views/war_room.py` — 658/658. **H-NUEVO-144 (Alta, ABIERTO)**: `_obtener_tendencia_bienestar` agrega datos NOM-035 (`DiarioEmocional`, incluye riesgo suicida/violencia/acoso) de **todos los tenants** sin filtro de empresa.
+- [x] `core/views/monitor_produccion.py` — 738/738. Sin hallazgos; correctamente tenant-scoped con `select_for_update()`.
+- [x] `core/views/pris_jarvis.py` — 891/891. **H-NUEVO-145 (Baja, ABIERTO)**: `api_crear_archivo_raw` no valida `empresa` antes de sellar evidencia legal. Resto del archivo (14 vistas) correctamente scoped, con patrón `AccionPRIS` de confirmación humana antes de mutar datos.
 
 ### Bloque 8 — PRIS IA y OCR multimodal — COMPLETADO 2026-08-11
 
@@ -908,6 +915,14 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 - [x] Preflight productivo previo: 0 responsables, 0 HL7 y 0 rangos sin atribución empresarial.
 - [x] Verificación local: compilación, `manage.py check`, `makemigrations --check` y 26/26 pruebas focalizadas OK.
 - [ ] La migración total de modelos legacy globales no se declara cerrada en este bloque; requiere inventario y plan separado para no mezclar datos históricos de tenants.
+
+### Bloque 5 — cierre operativo 2026-08-12
+
+- [x] H-NUEVO-143: gestión de analizadores aislada por empresa en listado, creación, activación, mapeos y eliminación.
+- [x] H-NUEVO-144: tendencia NOM-035 filtrada por `usuario__empresa` antes de agregar datos.
+- [x] H-NUEVO-145: sellado de archivo RAW bloqueado cuando el usuario no tiene empresa.
+- [x] Regresiones sin base de datos: 23 pruebas OK; `check`, migraciones y compilación OK.
+- [!] Suite con base de datos de analizadores: bloqueada durante la creación del esquema local, sin traceback de aplicación; queda como limitación de entorno, no como defecto funcional confirmado.
 
 ### Cierre operativo del Bloque 2 — 2026-08-12
 
