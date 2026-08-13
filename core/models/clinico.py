@@ -144,11 +144,7 @@ class HistoriaClinica(models.Model):
         if not self.numero_expediente:
             from django.utils import timezone as _tz
             año = _tz.localtime(_tz.now()).year
-            ultimos = HistoriaClinica.objects.filter(
-                empresa=self.empresa,
-                numero_expediente__startswith=f'HC-{año}-'
-            ).count()
-            self.numero_expediente = f'HC-{año}-{str(ultimos + 1).zfill(5)}'
+            self.numero_expediente = f'HC-{año}-{uuid.uuid4().hex[:12].upper()}'
         super().save(*args, **kwargs)
 
 
@@ -316,11 +312,7 @@ class ConsultaMedica(models.Model):
             año = _tz.localtime(_tz.now()).year
             # Prefijo incluye empresa_id para garantizar unicidad multi-tenant
             prefijo = f'CONS-{self.empresa_id}-{año}-'
-            ultimas = ConsultaMedica.objects.filter(
-                empresa=self.empresa,
-                folio_consulta__startswith=prefijo
-            ).count()
-            self.folio_consulta = f'{prefijo}{str(ultimas + 1).zfill(5)}'
+            self.folio_consulta = f'{prefijo}{uuid.uuid4().hex[:12].upper()}'
         if self.estado == 'FINALIZADA':
             self.full_clean()
         if not self.historia_clinica and hasattr(self.paciente, 'historia_clinica'):
@@ -379,12 +371,7 @@ class CertificadoMedico(models.Model):
             tipo_corto = self.tipo_certificado[:3].upper()
             # Prefijo incluye empresa_id para garantizar unicidad multi-tenant
             prefijo = f'CERT-{self.empresa_id}-{tipo_corto}-{año}-'
-            ultimos = CertificadoMedico.objects.filter(
-                empresa=self.empresa,
-                tipo_certificado=self.tipo_certificado,
-                folio_certificado__startswith=prefijo
-            ).count()
-            self.folio_certificado = f'{prefijo}{str(ultimos + 1).zfill(5)}'
+            self.folio_certificado = f'{prefijo}{uuid.uuid4().hex[:12].upper()}'
         super().save(*args, **kwargs)
 
 
@@ -629,11 +616,7 @@ class EstudioImagen(models.Model):
             from django.utils import timezone as _tz
             año = _tz.localtime(_tz.now()).year
             tipo_corto = self.tipo_estudio.split('_')[0][:3].upper()
-            ultimos = EstudioImagen.objects.filter(
-                empresa=self.empresa,
-                folio_estudio__startswith=f'IMG-{tipo_corto}-{año}-'
-            ).count()
-            self.folio_estudio = f'IMG-{tipo_corto}-{año}-{str(ultimos + 1).zfill(5)}'
+            self.folio_estudio = f'IMG-{tipo_corto}-{año}-{uuid.uuid4().hex[:12].upper()}'
         if not self.edad_paciente:
             self.edad_paciente = self.paciente.edad
         super().save(*args, **kwargs)

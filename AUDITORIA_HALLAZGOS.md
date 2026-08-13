@@ -52,13 +52,13 @@
 - **Estado:** corregido en `core.0098_hash_farmacia_pins` y en el modelo/verificadores centrales. Los PIN existentes se migran a hash Django PBKDF2; precio neto, devolución y servicio de cancelación usan `check_password`.
 - **Nota de consistencia:** el patrón correcto SÍ existe en el código: `core/models/catalogos.py::Medico.lab_validation_pin_hash` guarda el PIN-LAB como hash SHA256 con comentario explícito "NUNCA almacenar el PIN en texto plano". Confirma que `ConfiguracionModulos.pin_precio_neto`/`pin_cancelacion_venta` es una inconsistencia, no una limitación técnica del proyecto.
 
-## H-NUEVO-03 — Generación de folios por count()+1 sin bloqueo (condición de carrera)
+## H-NUEVO-03 — Generación de folios por count()+1 sin bloqueo (condición de carrera) — CORREGIDO
 - **Archivos:** `core/models/clinico.py`: `HistoriaClinica.save()` (142-151), `ConsultaMedica.save()` (312-327), `CertificadoMedico.save()` (374-387), `EstudioImagen.save()` (626-638). También `core/models/laboratorio.py::OrdenDeServicio.save()` (597-602, `folio_orden`, `unique=True`), `core/models/expediente_blindaje.py::NotaClinicaSellar.generar_folio()` (473-485, `folio_unico`), `core/models/ventas.py::Receta.save()` (122-130, `folio_receta`) y `core/models/ventas.py::Venta.save()` (348-357, `folio_operacion`).
 - **Problema:** todos generan folio/expediente con `Model.objects.filter(...).count()` seguido de `+1` y `zfill`, sin `select_for_update()` ni secuencia atómica de BD. Dos requests concurrentes (ej. dos consultas finalizándose al mismo tiempo) pueden leer el mismo `count()` antes de que cualquiera confirme.
 - **Impacto:** con `unique=True`/`UniqueConstraint` en el folio, la segunda escritura falla con `IntegrityError` (error 500 visible al usuario) en vez de reintentar o usar un contador atómico. No genera duplicados silenciosos, pero sí interrumpe el flujo clínico bajo concurrencia real (dos consultorios, alta demanda).
 - **Contraste:** `core/services/ventas/cobro_service.py` sí usa `select_for_update()` correctamente para esta misma clase de problema (folios/stock).
-- **Recomendación:** usar secuencia de BD, `select_for_update()` sobre un contador dedicado, o reintento con backoff ante `IntegrityError`.
-- **Estado:** pendiente de decisión del usuario.
+- **Corrección aplicada:** los seis generadores afectados usan ahora un sufijo UUID criptográficamente aleatorio, conservando el prefijo legible y el identificador de empresa. Se elimina la lectura `count()+1`, por lo que dos altas concurrentes no compiten por el mismo siguiente número. La restricción única del modelo permanece como defensa adicional.
+- **Estado:** corregido en código; pendiente de despliegue y validación productiva de concurrencia.
 
 ## H-NUEVO-04 — Hash de integridad computado antes de que `auto_now_add` fije el timestamp — CORREGIDO Y VERIFICADO EN PRODUCCIÓN
 - **Archivo:** `core/models/clinico.py:730-735` (`HistorialCambiosConsulta.save`)

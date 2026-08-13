@@ -598,8 +598,7 @@ class OrdenDeServicio(TenantModel):
             from django.utils import timezone as _tz
             ahora = _tz.localtime(_tz.now())
             prefijo = f'LAB-{ahora.strftime("%Y%m")}-'
-            ultimos = OrdenDeServicio.objects.filter(folio_orden__startswith=prefijo).count()
-            self.folio_orden = f'{prefijo}{str(ultimos + 1).zfill(5)}'
+            self.folio_orden = f'{prefijo}{uuid.uuid4().hex[:12].upper()}'
         if self.paciente_id and (
             not self.paciente_nombre_snapshot
             or self.paciente_edad_snapshot is None

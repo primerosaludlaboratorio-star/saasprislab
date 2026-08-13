@@ -535,12 +535,9 @@ class NotaClinicaSellar(models.Model):
         año = _tz.localtime(_tz.now()).year
         prefijo = f"EXP-{self.nota_soap.empresa_id}-{año}-"
         
-        # Contar sellos existentes de esta empresa
-        count = NotaClinicaSellar.objects.filter(
-            folio_unico__startswith=prefijo
-        ).count()
-        
-        self.folio_unico = f"{prefijo}{str(count + 1).zfill(6)}"
+        # El sufijo aleatorio evita duplicados bajo concurrencia; la unicidad
+        # queda reforzada por la restricción única del modelo.
+        self.folio_unico = f"{prefijo}{uuid.uuid4().hex[:12].upper()}"
         return self.folio_unico
     
     def pre_sellar(self, medico):
