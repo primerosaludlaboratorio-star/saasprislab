@@ -191,7 +191,7 @@
 - **Operación segura:** `python manage.py configurar_pin_laboratorio --empresa-id <id>` recibe el PIN desde `PRISLAB_LAB_VALIDATION_PIN` o mediante prompt local; no acepta `--pin`, no imprime el valor y permite rotación por empresa. El bypass de checklist ya usa exclusivamente la contraseña del supervisor con rol autorizado.
 - **Migración:** `core/migrations/0108_configuracion_pin_validacion_laboratorio.py`.
 - **Verificación:** `manage.py check`, `makemigrations --check --dry-run --noinput`, compilación y `git diff --check` correctos. La prueba dirigida requiere crear una base de pruebas completa y quedó bloqueada por el tiempo de inicialización del entorno local; se ejecutará en CI/PostgreSQL antes de declarar cobertura E2E.
-- **Estado:** corregido en código; pendiente de despliegue y configuración inicial por empresa en esta pasada.
+- **Estado:** corregido, desplegado en `a1159d7`, migración `0108` aplicada y hashes configurados para las 2 empresas activas. Producción saludable; queda pendiente la rotación individual de cada empresa cuando se definan sus PINs definitivos.
 
 ## H-NUEVO-21 — Endpoint legacy de ordenamiento de paquetes mutaba catálogo sin tenant — RETIRADO
 - **Archivo:** `core/views/paquetes.py::api_actualizar_orden_paquete`.
