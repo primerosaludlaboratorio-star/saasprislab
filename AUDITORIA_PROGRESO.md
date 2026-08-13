@@ -468,6 +468,9 @@ Dado que `_dispatcher.py` delega TODAS las herramientas de escritura del asisten
 
 **BLOQUE 12 (bienestar/, código de aplicación): COMPLETADO.** H-NUEVO-66 corregido, probado y desplegado.
 
+**H-NUEVO-66:** corregido, probado y desplegado. `bienestar.0004` aplicado en producción; diario cifrado y scoped por tenant.
+**H-NUEVO-73:** corregido y probado localmente; pendiente de despliegue controlado en el siguiente paso.
+
 **TOTAL ACUMULADO DE LA SESIÓN: 40 hallazgos nuevos (H-NUEVO-27 a H-NUEVO-66)** + 3 notas de recurrencia adjuntas a `H-NUEVO-32`.
 
 Pendiente continuar con el resto de bloques de apps de negocio: `consultorio/`, `laboratorio/` (app raíz), `lims/`, etc., y la suite de tests completa (incluyendo `contabilidad/tests/`, `inventario/tests/`, `marketing/tests.py`, `seguridad/tests.py`, `mantenimiento/tests.py` y `bienestar/tests.py` diferidos).

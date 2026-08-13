@@ -19,7 +19,7 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.urls import reverse, NoReverseMatch
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q
-from core.decorators import role_required
+from core.decorators import role_required, rate_limit
 
 from core.models import (
     Paciente, Medico, CitaMedica, ConsultaMedica,
@@ -37,6 +37,54 @@ from ._helpers import (
 )
 
 logger = logging.getLogger('consultorio')
+
+_SOAP_TEXT_FIELDS = (
+    'motivo_consulta', 'padecimiento_actual', 'exploracion_fisica',
+    'diagnostico_principal', 'diagnostico_cie10', 'diagnosticos_secundarios',
+    'plan_tratamiento', 'estudios_solicitados', 'pronostico',
+)
+
+
+def _validar_respuesta_soap(payload):
+    """Limita la respuesta de IA a un contrato pequeño y predecible."""
+    if not isinstance(payload, dict):
+        raise ValueError('La respuesta de IA debe ser un objeto JSON')
+
+    resultado = {}
+    for campo in _SOAP_TEXT_FIELDS:
+        valor = payload.get(campo, '')
+        if valor is None:
+            valor = ''
+        if not isinstance(valor, str):
+            raise ValueError(f'Campo SOAP inválido: {campo}')
+        resultado[campo] = valor.strip()[:4000]
+
+    pronosticos = {'EXCELENTE', 'BUENO', 'REGULAR', 'RESERVADO', 'MALO', ''}
+    if resultado['pronostico'].upper() not in pronosticos:
+        resultado['pronostico'] = ''
+
+    medicamentos = payload.get('medicamentos_detectados', [])
+    if not isinstance(medicamentos, list):
+        raise ValueError('medicamentos_detectados debe ser una lista')
+    resultado['medicamentos_detectados'] = []
+    for medicamento in medicamentos[:50]:
+        if not isinstance(medicamento, dict):
+            raise ValueError('Medicamento detectado inválido')
+        resultado['medicamentos_detectados'].append({
+            campo: str(medicamento.get(campo, '') or '').strip()[:300]
+            for campo in ('nombre', 'dosis', 'frecuencia', 'duracion', 'via')
+        })
+
+    signos = payload.get('signos_vitales_detectados', {})
+    if not isinstance(signos, dict):
+        raise ValueError('signos_vitales_detectados debe ser un objeto')
+    resultado['signos_vitales_detectados'] = {
+        campo: signos.get(campo) for campo in (
+            'temperatura', 'frecuencia_cardiaca', 'presion_arterial',
+            'peso', 'talla', 'saturacion',
+        )
+    }
+    return resultado
 
 
 # ==============================================================================
@@ -270,6 +318,7 @@ def api_buscar_pacientes(request):
 
 @login_required
 @role_required('MEDICO', 'ADMIN', 'DIRECTOR')
+@rate_limit('consultorio_ia_transcripcion', limit=20, window_seconds=60)
 @require_http_methods(['POST'])
 def api_analizar_transcripcion(request):
     """
@@ -394,12 +443,19 @@ REGLAS CRÍTICAS:
                 respuesta_texto = respuesta_texto[4:]
             respuesta_texto = respuesta_texto.strip()
 
-        campos_soap = json.loads(respuesta_texto)
+        campos_soap = _validar_respuesta_soap(json.loads(respuesta_texto))
 
         transcripcion_guardada = False
         if cita_id:
             try:
                 cita = CitaMedica.objects.filter(id=cita_id, empresa=empresa).first()
+                if cita and (getattr(request.user, 'rol', '') or '').upper() == 'MEDICO':
+                    medico_actual = _resolver_medico_usuario(request, empresa, autocrear=False)
+                    if not medico_actual or cita.medico_id != medico_actual.id:
+                        return JsonResponse(
+                            {'ok': False, 'error': 'La consulta no está asignada al médico actual'},
+                            status=403,
+                        )
                 consulta_tr = ConsultaMedica.objects.filter(cita=cita).first() if cita else None
                 if consulta_tr:
                     consulta_tr.transcripcion_completa = transcripcion

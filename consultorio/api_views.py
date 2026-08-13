@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from core.utils.empresa_request import get_empresa_usuario
+from core.decorators import rate_limit
 import logging
 
 logger = logging.getLogger('ia')
@@ -40,6 +41,7 @@ def _require_empresa(user):
 
 
 @login_required
+@rate_limit('consultorio_ia_audio', limit=10, window_seconds=60)
 @require_http_methods(["POST"])
 def procesar_audio_consulta(request):
     """
