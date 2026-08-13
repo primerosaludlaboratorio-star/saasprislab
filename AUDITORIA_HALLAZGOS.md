@@ -1369,13 +1369,16 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Archivo**: `core/views/consentimiento_digital.py` y `core/models/clinico.py`.
 - **Corrección aplicada**: `ConsentimientoInformado.folio_consentimiento` persiste el folio `CI-...` generado; la descarga usa coincidencia exacta por folio y tenant. Se agregó migración `core.0107_consentimiento_folio`.
 
-### H-NUEVO-149: `crear_incidencia` (GET) permite a cualquier empleado ver los datos de una incidencia de asistencia de otro empleado de la misma empresa (IDOR horizontal)
+### H-NUEVO-149: `crear_incidencia` (GET) permitía a cualquier empleado ver los datos de una incidencia de asistencia de otro empleado de la misma empresa (IDOR horizontal) — CORREGIDO
 - **Archivo**: `core/views/asistencia.py`.
 - **Líneas**: 285-341, específicamente 327-329.
 - **Severidad**: Media.
 - **Hallazgo**: La vista `crear_incidencia` solo exige `@login_required` (no `@role_required`) y aplica auto-restricción a "mis propias incidencias" únicamente dentro de la rama `POST` (líneas 294-298, vía `filtros_incidencia['empleado__usuario'] = request.user` si `not _es_gestor_asistencia`). Sin embargo, en la rama `GET` (para precargar el formulario de edición), la consulta es: `incidencia = get_object_or_404(IncidenciaAsistencia, id=incidencia_id, empresa=empresa)` (línea 329) — **sin** el filtro `empleado__usuario=request.user` para no-gestores. Cualquier empleado autenticado (rol base, sin ser ADMIN/DIRECTOR/GERENTE/FARMACIA/RH) puede visualizar el formulario pre-llenado con los datos de la incidencia de **otro empleado de la misma empresa** navegando a `crear_incidencia?id=<id_ajeno>`, incluyendo `motivo`, fechas, tipo de incidencia (puede incluir permisos médicos/personales sensibles) y el documento de soporte adjunto si el template lo renderiza.
 - **Riesgo**: Exposición horizontal (mismo tenant, distinto empleado) de datos de RRHH potencialmente sensibles (motivo de incapacidad, permisos personales) a personal sin autorización de gestión de RRHH. No es fuga cross-tenant, pero rompe el principio de mínimo privilegio dentro del propio tenant.
 - **Recomendación**: Aplicar el mismo filtro condicional usado en `incidencias_asistencia` y en la rama `POST` de `crear_incidencia`: si `not _es_gestor_asistencia(request.user)`, añadir `empleado__usuario=request.user` también en el `get_object_or_404` de la rama `GET` (línea 329).
+- **Corrección aplicada**: la rama GET reutiliza ahora el mismo filtro tenant + empleado de la rama POST; los gestores mantienen acceso de gestión y los demás usuarios solo pueden editar/visualizar sus propias incidencias.
+- **Verificación**: `core.tests.test_asistencia_security` — 3/3 OK; el caso de usuario no gestor exige `empleado__usuario=request.user` en la consulta GET.
+- **Estado**: corregido, probado y listo para despliegue.
 
 ### H-NUEVO-150: `transferencias.py` no restringe por rol la creación/envío/recepción de transferencias de inventario entre sucursales
 - **Archivo**: `core/views/transferencias.py`.

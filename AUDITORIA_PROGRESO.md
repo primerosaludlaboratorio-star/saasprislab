@@ -901,7 +901,7 @@ Pendiente continuar con: `core/` completo y el resto de apps de negocio/soporte,
 ### Bloque 19D — `nomina.py`, `asistencia.py` — 2026-08-12
 
 - [x] `core/views/nomina.py` — 281/281. Sin hallazgos; helper `_empresa(request)` con `PermissionDenied` + `@role_required` en todas las vistas.
-- [x] `core/views/asistencia.py` — 366/366. **H-NUEVO-149 (Media, ABIERTO)**: `crear_incidencia` (rama GET) no restringe la consulta a `empleado__usuario=request.user` para no-gestores, permitiendo IDOR horizontal (ver datos de incidencia de RRHH de otro empleado del mismo tenant vía `?id=`).
+- [x] `core/views/asistencia.py` — 366/366. **H-NUEVO-149 (Media, CORREGIDO Y PROBADO)**: `crear_incidencia` aplica en GET el mismo filtro `empleado__usuario=request.user` que ya usaba en POST para no-gestores; gestores conservan acceso administrativo. Prueba dirigida: 3/3 OK.
 - [x] **Verificado H-NUEVO-147**: confirmado CORREGIDO en código actual (`descargar_pdf_consentimiento` ya no tiene rama `scope_empresa`/`is_superuser`; filtra siempre por `empresa=empresa_u` y usa `folio_consentimiento` persistido en lugar de `hash_firma__icontains`). Otra sesión concurrente también documentó esta corrección como H-NUEVO-148 (persistencia del folio).
 
 ### Bloque 19E — `cuentas_por_cobrar.py`, `transferencias.py` — 2026-08-12

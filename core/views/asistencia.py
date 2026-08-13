@@ -326,7 +326,10 @@ def crear_incidencia(request):
     # GET: Mostrar formulario
     incidencia = None
     if incidencia_id:
-        incidencia = get_object_or_404(IncidenciaAsistencia, id=incidencia_id, empresa=empresa)
+        filtros_incidencia = {'id': incidencia_id, 'empresa': empresa}
+        if not _es_gestor_asistencia(request.user):
+            filtros_incidencia['empleado__usuario'] = request.user
+        incidencia = get_object_or_404(IncidenciaAsistencia, **filtros_incidencia)
     
     empleados = Empleado.objects.filter(empresa=empresa, activo=True)
     if not _es_gestor_asistencia(request.user):
