@@ -729,7 +729,17 @@ Bloque 8 — NO CERRADO. Corrección: lo anterior fue un muestreo de 18/88 archi
 
 **BLOQUE 24: COMPLETADO.** Hallazgos nuevos: H-NUEVO-163 (CRÍTICO), H-NUEVO-164 (MEDIO).
 
-Pendiente continuar con: `farmacia/` (fuera de `views/`), `core/` (services/signals/tasks/templatetags — confirmar cierre exhaustivo), suite de tests, templates/static/migraciones, scripts/tools/CI, reporte final.
+### Bloque 25 — `farmacia/` fuera de `views/` (models, admin, signals, services) — 2026-08-13
+
+- [x] `farmacia/models/` (8 archivos: `antibiotico.py`, `caja.py`, `compra_ocr.py`, `devoluciones.py`, `inventario.py`, `proveedor.py`, `receta_ocr.py`) — todos los modelos tienen `empresa` FK explícito (o heredan `TenantModel` en `LecturaCompraFarmacia`/`LecturaRecetaFarmacia`). Sin hallazgos de aislamiento a nivel de modelo.
+- [x] `farmacia/admin.py` (89 líneas, 8 modelos con `TenantScopedAdmin`; `MovimientoInventarioAdmin` correctamente inmutable vía `has_change_permission`/`has_delete_permission` → `False`) y `farmacia/signals.py` (124 líneas, email a `DIRECTOR_EMAIL` al cerrar turno, con manejo de excepción no bloqueante). Sin hallazgos.
+- [x] `farmacia/services/venta_farmacia_service.py`, `receta_ocr.py` (117 líneas, conciliación fuzzy de medicamentos correctamente `empresa=`-scoped vía `Producto.objects_all.filter(empresa=empresa)`), `compra_ocr.py` — sin hallazgos.
+- [x] `farmacia/services/corte_caja_unificado.py` (552 líneas) + `farmacia/views/corte_caja_api.py` (134 líneas, re-revisado en profundidad cruzando con el service que lo respalda, no solo el archivo de vista aislado como en el Bloque 6). **H-NUEVO-165 NUEVO (MEDIO)**: `POST /api/caja/corte-unificado/` cierra el turno de Farmacia+Laboratorio sin crear ningún `AuditLog` (solo logging de Python), a diferencia del endpoint canónico `farmacia/views/caja.py::corte_caja_farmacia` que sí registra `AuditLog.objects.create(...)`. Además, `_es_administrador_caja()` está definida en el service pero nunca se invoca en ningún punto del código (control de autorización previsto pero nunca conectado).
+- [x] **H-NUEVO-165 corregido localmente**: el corte unificado exige roles operativos y persiste un `AuditLog` append-only dentro de la transacción con el resumen financiero serializado. El modelo de negocio conserva el cierre por personal autorizado, sin usar `_es_administrador_caja` como control implícito. Pendiente despliegue.
+
+**BLOQUE 25: COMPLETADO.** Hallazgos nuevos: H-NUEVO-165 (MEDIO).
+
+Pendiente continuar con: `core/` (services/signals/tasks/templatetags — confirmar cierre exhaustivo), suite de tests, templates/static/migraciones, scripts/tools/CI, reporte final.
 
 (El resto de bloques se detallan a medida que se avanza, usando AUDITORIA_INVENTARIO.txt como checklist maestro por ruta completa.)
 

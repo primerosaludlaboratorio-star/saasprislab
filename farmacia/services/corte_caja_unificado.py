@@ -19,6 +19,7 @@ Candado Migraciones: Los campos nuevos están comentados.
 """
 from __future__ import annotations
 import logging
+import json
 from decimal import Decimal
 from datetime import datetime, timedelta
 
@@ -330,6 +331,20 @@ def cerrar_turno_unificado(
             'diferencia': _money(diferencia),
             'estado': 'CUADRADO' if abs(diferencia) < Decimal('1') else 'DESCUADRADO',
         }
+
+        # El cierre unificado es una mutación financiera y debe dejar una
+        # evidencia forense append-only dentro de la misma transacción.
+        from core.models import AuditLog
+        AuditLog.objects.create(
+            empresa=empresa,
+            sucursal=sucursal or getattr(corte_farmacia, 'sucursal', None),
+            usuario=cajero,
+            accion=AuditLog.ACCION_CREATE,
+            modelo_afectado='CorteCajaUnificado',
+            objeto_id=str(corte_farmacia.get('cierre_id') or corte_farmacia.get('apertura_id') or '0'),
+            datos_anteriores=None,
+            datos_nuevos=json.loads(json.dumps(corte_data, default=str)),
+        )
 
         logger.info(
             f'[CorteUnificado] {cajero} | Total: ${total_consolidado} | '

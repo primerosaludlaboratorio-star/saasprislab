@@ -11,6 +11,7 @@ from django.views.decorators.http import require_http_methods
 from django.conf import settings
 
 from core.utils.sucursal_helpers import get_request_sucursal
+from core.decorators import role_required
 
 logger = logging.getLogger('farmacia.corte_caja_api')
 
@@ -62,6 +63,7 @@ def api_precorte_unificado(request):
 
 
 @login_required
+@role_required('ADMIN', 'DIRECTOR', 'GERENTE', 'FARMACIA', 'CAJERO', 'RECEPCION', 'QUIMICO')
 @require_http_methods(['POST'])
 def api_corte_caja_unificado(request):
     """
