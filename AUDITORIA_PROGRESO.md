@@ -627,6 +627,7 @@ Bloque 8 — NO CERRADO. Corrección: lo anterior fue un muestreo de 18/88 archi
 - [ ] `laboratorio/migrations/` — no revisados en esta fase.
 
 **BLOQUE 14 (laboratorio/ — app raíz): COMPLETADO.** Hallazgos nuevos: **H-NUEVO-77** (ALTO), **H-NUEVO-78** (CRÍTICO), **H-NUEVO-79** (ALTO), **H-NUEVO-80** (MEDIO/ALTO), **H-NUEVO-81** (CRÍTICO), **H-NUEVO-82** (ALTO), **H-NUEVO-83** (ALTO), **H-NUEVO-84** (ALTO), **H-NUEVO-85** (MEDIO), **H-NUEVO-86** (MEDIO), **H-NUEVO-87** (MEDIO/ALTO), **H-NUEVO-88** (BAJO/MEDIO), **H-NUEVO-89** (BAJO/MEDIO), **H-NUEVO-90** (BAJO/MEDIO).
+**H-NUEVO-77:** corregido en el flujo activo y desplegado en `5ab5afa1e1208536a554bda7c380d397294d8500`; recepción valida rol, empresa, médico/origen y correspondencia LIMS única. El catálogo legacy global continúa bajo H82.
 
 **TOTAL ACUMULADO DE LA SESIÓN: 64 hallazgos nuevos (H-NUEVO-27 a H-NUEVO-90).**
 
