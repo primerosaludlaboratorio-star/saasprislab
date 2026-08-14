@@ -739,7 +739,17 @@ Bloque 8 — NO CERRADO. Corrección: lo anterior fue un muestreo de 18/88 archi
 
 **BLOQUE 25: COMPLETADO.** Hallazgos nuevos: H-NUEVO-165 (MEDIO).
 
-Pendiente continuar con: `core/` (services/signals/tasks/templatetags — confirmar cierre exhaustivo), suite de tests, templates/static/migraciones, scripts/tools/CI, reporte final.
+### Bloque 26 — `core/signals/`, `core/tasks/`, `core/templatetags/` — 2026-08-14
+
+- [x] `core/signals/ventas.py` (348 líneas: descuento PEPS de inventario + `MovimientoCaja` idempotente con retry/backoff para deadlocks) — cross-verificado contra `core/services/ventas/cobro_service.py:391` (`inventario_descontado=True` seteado en la misma transacción del cobro): **no hay doble descuento de inventario**, la venta ya llega con el flag en `True` antes de que el signal `post_save` pueda re-ejecutar el descuento PEPS.
+- [x] `core/signals/devoluciones.py` (182 líneas, reintegro de inventario + reembolso en `MovimientoCaja` al crear `DevolucionVenta`, con guard de idempotencia `reintegrado_inventario`), `core/signals/auditoria.py` (171 líneas: `AuditLog` en `pre_delete` de Paciente/Orden, auto-etiquetado universal de `empresa` vía `get_current_empresa()` en `pre_save`, sincronización de grupos por rol), `core/signals/resultados.py` (259 líneas: `HistorialResultados` forense ISO 15189 en cada cambio de valor + alerta de pánico por correo al Director). Sin hallazgos.
+- [x] `core/signals/folios.py` (47 líneas) — el generador de folio por `count()+1` (`LAB-{sucursal}-{año}-{consecutivo}`) tiene una condición de carrera teórica, pero está **superado en la práctica**: `core/models/laboratorio.py:593-612` (`OrdenDeServicio.save()`) ya asigna `folio_orden` con un sufijo `uuid.uuid4()` ANTES de llamar a `super().save()`, por lo que el signal `pre_save` (que solo actúa `if not instance.folio_orden`) nunca ejecuta su rama insegura en la práctica. Código muerto, no vulnerabilidad viva.
+- [x] `core/tasks/maintenance_tasks.py`, `notificaciones_tasks.py`, `storage_tasks.py`, `core/tasks.py` — tareas Celery Beat, todas con guard `IS_PRODUCTION`/manejo de excepción por empresa. Sin hallazgos.
+- [x] `core/templatetags/auth_extras.py` (386 líneas, filtros `has_group`/`has_permission`/`is_role`/`can_access_module`, todos de uso puramente presentacional — la autorización real ya está verificada en `core/views/`/decoradores en bloques previos), `tenant_tags.py` (208 líneas, `empresa_css_custom` confirmado auto-escapado por Django `simple_tag` — sin XSS, en el peor caso rompe visualmente selectores CSS con `>`), `math_filters.py`, `prislab_text.py`, `saludos_tags.py`. Sin hallazgos.
+
+**BLOQUE 26: COMPLETADO.** Sin hallazgos nuevos. `core/signals/`, `core/tasks/`, `core/templatetags/`: CIERRE TOTAL CONFIRMADO.
+
+Pendiente continuar con: suite de tests, templates/static/migraciones, scripts/tools/CI, reporte final.
 
 (El resto de bloques se detallan a medida que se avanza, usando AUDITORIA_INVENTARIO.txt como checklist maestro por ruta completa.)
 
