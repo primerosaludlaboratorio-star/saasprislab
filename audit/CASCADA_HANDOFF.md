@@ -84,3 +84,5 @@ hasta su ejecucion documentada.
 - Plantillas de interfaz: escape de salidas dinamicas, CSRF en acciones de lista y mensajes explicitos cuando el PDF no esta disponible.
 - `core/views/sentinel_api.py`: comparaciones de tokens Sentinel mediante `secrets.compare_digest`.
 - Herramientas auxiliares de PRIS-IA: rechazan mutaciones sobre ordenes `RESULTADOS_LISTOS` o `ENTREGADO`; la prueba de regresion debe confirmar que no se ejecuta ninguna escritura.
+- `core/views/paciente_detalle.py`: el timeline ya enlaza al endpoint protegido de PDF y no expone la URL física de `/media/`.
+- La prueba `core.tests.test_lab_validation_pdf` requiere creación de base de datos; si el entorno se bloquea durante esa fase, debe reportarse como bloqueo y no como aprobación.

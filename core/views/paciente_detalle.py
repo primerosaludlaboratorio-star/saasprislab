@@ -285,11 +285,12 @@ class ExpedienteClinicoView(LoginRequiredMixin, DetailView):
         
         prioridad = 'URGENTE' if orden.tipo_servicio == 'URGENCIA' else 'NORMAL'
         
-        # URL del archivo de resultado
+        # Nunca exponer la URL física de media: Nginx bloquea /media/ y los
+        # PDFs clínicos deben pasar por la vista autorizada de resultados.
         archivo_url = None
         if orden.archivo_resultado:
             try:
-                archivo_url = orden.archivo_resultado.url
+                archivo_url = reverse('imprimir_resultados_pdf', args=[orden.id])
             except Exception:
                 logging.getLogger(__name__).exception("Error inesperado en _normalizar_laboratorio (paciente_detalle.py)")
                 archivo_url = None
