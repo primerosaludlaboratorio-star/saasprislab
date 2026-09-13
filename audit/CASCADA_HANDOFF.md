@@ -104,3 +104,8 @@ hasta su ejecucion documentada.
   worktree limpio: migraciones, `collectstatic`, servicios, Nginx, `/health/`
   y bloqueo de `/media/` verificados. La evidencia completa esta en
   `audit/VALIDACION_PY312_POSTGRES_2026-09-13.md`.
+- El commit `6893fcd` actualiza esa evidencia: Python `3.12.14` y las
+  migraciones PostgreSQL aisladas pasan, pero la creación del esquema de
+  pruebas Django queda bloqueada en una transacción `idle in transaction` al
+  crear un índice de `HashRaizDiario`. La base temporal fue eliminada; no se
+  declara aprobada la suite PostgreSQL hasta aislar ese bloqueo.
