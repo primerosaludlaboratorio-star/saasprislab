@@ -749,7 +749,17 @@ Bloque 8 — NO CERRADO. Corrección: lo anterior fue un muestreo de 18/88 archi
 
 **BLOQUE 26: COMPLETADO.** Sin hallazgos nuevos. `core/signals/`, `core/tasks/`, `core/templatetags/`: CIERRE TOTAL CONFIRMADO.
 
-Pendiente continuar con: suite de tests, templates/static/migraciones, scripts/tools/CI, reporte final.
+### Bloque 27 — Scripts sueltos de la raíz del repositorio (gestión de usuarios/admin) — 2026-08-14
+
+- [x] `reset_admin_password.py`, `reset_password.py`, `create_admin.py`, `configurar_admin.py`, `configurar_admin_completo.py`, `setup_admin_access.py` — todos exigen contraseña por variable de entorno (`DEV_ADMIN_PASSWORD`/`PRISLAB_SUPERUSER_PASSWORD`) o argumento CLI explícito, sin default hardcodeado. Sin hallazgos.
+- [!] **H-NUEVO-166 NUEVO (CRÍTICO)**: `desactivar_usuarios_antiguos.py`, `limpiar_usuarios_antiguos.py` **y `EJECUTAR_EN_SERVIDOR.sh`** (script de despliegue a producción; los tres rastreados por Git, sin excepción en `.gitignore`) imprimen y documentan en texto plano las contraseñas REALES del equipo (CEO/Super Admin `jonathan`, gerenciales `nancy`/`gabriela`, técnicos `janette`/`tania`/`deyaneira`) — credenciales reales de personas reales versionadas en el repositorio, no datos de prueba. Que aparezcan también en el script de despliegue confirma que no son ficticias.
+- [!] **H-NUEVO-167 NUEVO (BAJO)**: `create_e2e_user.py` y `test_integracion_real.py` crean superusuarios (`e2e_admin`, `integ_admin`) con contraseña fija hardcodeada en el código (`'e2e_test_pass_123'`, `"IntegTest2026!"`), sin el mismo gate de variable de entorno que ya aplican los scripts canónicos de administración.
+- [!] **H-NUEVO-168 NUEVO (CRÍTICO, consolidado)**: patrón sistémico confirmado en 4 archivos adicionales de QA/smoke-test — `e2e_test_prod.py` (URL productiva real `prislab.labcorecloud.com` + password `Prislab@Admin2026!`), `test_pdv_buttons_snapshot.py` (URL real de Cloud Run + password `PrislabV5_2026`), `test_lab_detailed.py` y `test_lab_flow.py` (usuario real `jonathan`/CEO + password `Admin2024!`, variante anterior de la ya filtrada en H-NUEVO-166). Múltiples variantes de contraseña del mismo superusuario expuestas a lo largo del tiempo, ninguna purgada del repositorio.
+- [x] Resto de scripts sueltos de raíz revisados sin hallazgos: `cargar_excel_forzado.py`, `cargar_excel_robusto.py`, `cargar_tarifas.py`, `crear_demo.py`, `migracion_ordenes_forense.py`, `procesar_firma_brizia.py`, `generar_vapid_keys.py`, `poblar_recursos_bienestar.py`, `completar_todo_funcional.py` (script legado que referencia una estructura de `core/views/` monolítica ya refactorizada; inocuo hoy por sus checks de `Path.exists()`), `verificar_sistema.py`, `verificar_requisitos.py`, `verificar_carga_inventario.py`, `verificar_pacientes_bd.py`, `probar_registro_pacientes.py`, `ver_primeras_filas.py`, `test_conexion_storage.py`, `validate_security_fixes.py`, `test_subida_pdf_drive.py`, `generar_migraciones_consolidacion.py`, `test_api.py`, `test_fase2_stabilization.py`, `DESPLEGAR_A_PRODUCCION.bat`, `verify_deployment.sh`, `migracion_ia.ps1`. `audit.py` y `generate_full_report.py` fueron retirados por usar rutas externas obsoletas; la auditoría canónica vive en `tools/`.
+
+**BLOQUE 27: COMPLETADO.** Hallazgos nuevos: H-NUEVO-166 (CRÍTICO), H-NUEVO-167 (BAJO), H-NUEVO-168 (CRÍTICO) — **los dos hallazgos CRÍTICOS requieren rotación inmediata de credenciales reales, independiente de cualquier despliegue de código.**
+
+Pendiente continuar con: `scripts/`, `tools/`, `audit/`, suite de tests, templates/static/migraciones, reporte final.
 
 (El resto de bloques se detallan a medida que se avanza, usando AUDITORIA_INVENTARIO.txt como checklist maestro por ruta completa.)
 
@@ -1114,3 +1124,90 @@ Se corrigieron y verificaron `H-NUEVO-147` y `H-NUEVO-148` en `core/views/consen
 ## Corrección H-NUEVO-164 — 2026-08-13
 
 `ia/admin.py` ahora calcula las estadísticas de `TranscripcionVoz` desde el queryset tenant-scoped del Admin. Corregido localmente; pendiente despliegue.
+
+### Bloque 28 — `scripts/`, `tools/` y `audit/` — 2026-08-14
+
+- [x] Compilación sintáctica de los tres directorios sin errores.
+- [x] `scripts/run_manage_with_env.py`: `--help` funciona sin exigir `.env`; los comandos reales siguen fallando explícitamente si falta el entorno.
+- [x] `tools/audit_data_integrity.py`: timestamp UTC actualizado a API consciente de zona horaria; ejecución local correcta.
+- [x] `git diff --check` sin errores.
+- [x] Los artefactos de credenciales existentes permanecen intactos por decisión operativa.
+
+**BLOQUE 28: CERRADO.** Sin despliegue: las correcciones son utilidades locales y no se autorizó todavía un nuevo paquete de producción.
+
+### Bloque 29 — validación estructural de la suite — 2026-08-14
+
+- [x] Compilación de `core/tests`, `core/rbac`, pruebas de apps y `tests/` sin errores.
+- [x] `python manage.py check`: sin incidencias.
+- [x] `python manage.py makemigrations --check --dry-run --noinput`: sin cambios pendientes.
+- [ ] Ejecución completa con base de datos: pendiente por separado; no se presenta como realizada.
+- [ ] Pruebas E2E y flujo humano en producción: pendientes hasta cerrar la validación de suites con base de datos.
+
+**BLOQUE 29: VALIDACIÓN ESTRUCTURAL COMPLETADA; CIERRE FUNCIONAL PENDIENTE.**
+
+### Bloque 30 — suites focalizadas con base de datos — 2026-08-14
+
+- [x] `core.tests.test_management_command_safety`: **7/7 OK**.
+- [!] `core.tests.test_patient_portal_security`: inició la creación de la base temporal y quedó bloqueada en la migración forense local; detenida sin mutar datos.
+- [!] `core.tests.test_suscripciones_iot_security`: mismo bloqueo durante la creación de la base temporal; no se presentan casos como ejecutados.
+- [ ] Suites completas y E2E: continúan pendientes hasta resolver el bloqueo del runner de base de datos.
+
+**BLOQUE 30: PARCIAL.** No se autoriza despliegue basado únicamente en esta evidencia.
+
+### Bloque 31 — agentes UI y generador Excel — 2026-08-14
+
+- [x] Sintaxis de los módulos `.mjs` de auditoría y del generador Excel: correcta.
+- [x] `ai_agent_tools.mjs`: la búsqueda de código usa `execFileSync` con argumentos separados; se elimina la interpolación de una orden completa de PowerShell.
+- [x] `build_reactivos_insumos.mjs`: la salida usa `PRISLAB_OUTPUT_DIR` o una ruta relativa al checkout, sin depender de `PRISLAB_deploy_checkout`.
+- [x] `npm ci --ignore-scripts`: dependencias declaradas instaladas; auditoría de paquetes sin vulnerabilidades.
+- [x] `tools/test_agent_tools.mjs`: **42/42 OK** después de alinear el caso CRITICAL con el contrato obligatorio de `root_cause`.
+- [ ] Auditoría UI real y pruebas E2E: pendientes hasta disponer de la dependencia y ejecutar contra un entorno autorizado.
+
+**BLOQUE 31: HERRAMIENTAS DE AGENTES VALIDADAS Y CORREGIDAS; E2E UI AÚN PENDIENTE.**
+
+### Bloque 32 — seguridad de templates: CSS personalizado por tenant — 2026-08-15
+
+- [x] Se detectó que `Empresa.css_personalizado` se renderizaba con `|safe` sin sanitización.
+- [x] Se agregó `core/utils/tenant_css.py` con bloqueo de etiquetas HTML, `@import`, `expression()` y esquemas `javascript/data/vbscript`.
+- [x] La sanitización se aplica al guardar onboarding y al construir el contexto de templates.
+- [x] El shell base usa el valor sanitizado, no el campo crudo del modelo.
+- [x] Pruebas: `core.tests.test_tenant_css_security` **2/2 OK**; compilación, `manage.py check` y `git diff --check` correctos.
+
+**BLOQUE 32: CORREGIDO LOCALMENTE.** Pendiente despliegue controlado y verificación UI posterior.
+
+### Bloque 33 — seguridad DOM en interfaces — 2026-08-16
+
+- [x] Coach ejecutivo: preguntas, respuestas y errores se escapan antes de renderizarse.
+- [x] Consulta RAG: respuesta y documentos fuente se escapan antes de insertarse en el DOM.
+- [x] Autofactura pública: mensajes se renderizan mediante `textContent` y `replaceChildren`.
+- [x] `manage.py check`, compilación y `git diff --check`: correctos.
+
+**BLOQUE 33: CORREGIDO LOCALMENTE.** Pendiente despliegue controlado y verificación visual posterior.
+
+### Bloque 34 — migraciones locales y runner de pruebas — 2026-08-16
+
+- [x] `iot.0006_kiosco_api_token_hash`: plan revisado y aplicado localmente; operación aditiva.
+- [x] `pacientes.0004_solicitudaccesoportal_empresa`: plan revisado y aplicado localmente; operación aditiva.
+- [x] `showmigrations`: ambas migraciones completas.
+- [x] `manage.py check` y `makemigrations --check --dry-run`: correctos.
+- [x] `core.tests.test_patient_portal_security`: **2/2 OK** con migraciones completas; la inicialización tarda varios minutos por el esquema y los permisos, pero termina correctamente.
+- [x] `core.tests.test_suscripciones_iot_security`: **2/2 OK** con `PRISLAB_TEST_NO_MIGRATIONS=1`; la ruta rápida valida los modelos y límites tenant sin depender del arranque largo de migraciones.
+- [!] La suite de suscripciones/IoT con todas las migraciones no se presenta como cerrada todavía: su inicialización completa excedió el tiempo operativo de esta pasada y fue detenida sin alterar datos del proyecto.
+
+**BLOQUE 34: MIGRACIONES LOCALES CERRADAS; PORTAL VALIDADO; SUITE COMPLETA DE SUSCRIPCIONES/IoT PENDIENTE DE UNA EJECUCIÓN ACOTADA.**
+
+### Bloque 35 — endurecimiento de DOM global — 2026-08-16
+
+- [x] `base.html`: notificaciones globales escapan el mensaje antes de insertarlo en el DOM.
+- [x] `base.html`: resultados de OmniSearch escapan títulos, subtítulos, iconos y color; las URLs quedan limitadas a rutas internas relativas.
+- [x] Banner de valores críticos: nombre y valor se escapan; el cierre usa `addEventListener` en vez de un handler inline construido dinámicamente.
+- [x] `ia_dashboard.html`: diagnóstico, problemas, sugerencias y errores de red se escapan antes de insertarse en el DOM.
+- [x] `dashboard_medico.html`: datos de pacientes, resultados y existencias recibidos por API se escapan; UUID y folios no se interpolan como JavaScript ejecutable.
+- [x] Captura industrial: respuestas RAG y abreviaturas se escapan antes de insertarse.
+- [x] Widget PRIS: mensajes de dictado y OCR se escapan antes de renderizarse.
+- [x] Entrada de mercancía: resultados de productos del catálogo se escapan antes de mostrarse; selección de lotes ya usa `textContent`.
+- [x] Formulario de compra de farmacia: nombres, códigos, marcas, existencias y precios se escapan; IDs y cantidades numéricas se normalizan antes de construir acciones HTML.
+- [x] Contrato de código de barras entre tenants: la prueba regulatoria ahora valida la regla vigente de unicidad por empresa, sin bloquear el mismo código en otra empresa.
+- [x] `manage.py check` y `git diff --check`: correctos después del cambio.
+
+**BLOQUE 35: CORREGIDO LOCALMENTE.** Pendiente despliegue controlado y verificación visual posterior.
