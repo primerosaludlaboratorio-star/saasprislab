@@ -10,7 +10,7 @@ usuarios, credenciales, despliegues ni historiales.
 
 - Repositorio: `primerosaludlaboratorio-star/saasprislab`
 - Rama local: `release/v1.0-local`
-- Commit a auditar: `016801f`
+- Commit a auditar: `09310ad`
 - Directorio: `PRISLAB_SaaS-master/PRISLAB_SaaS-master`
 - Fuente de inventario: `audit/FUNCTION_LEDGER.md` y `audit/FRONTEND_FUNCTION_LEDGER.md`
 - Manifiesto de cobertura: `tools/omni_manifest.json`
@@ -79,3 +79,4 @@ hasta su ejecucion documentada.
 - `core/views/laboratorio/calidad.py`: rol clinico y rate-limit para validar PIN.
 - `iot/views.py`: disponibilidad calculada con `total_seconds()`.
 - `core/services/ventas/cobro_service.py`: redondeo de efectivo limitado a +/- $0.50.
+- `core/services/ventas/cobro_service.py`: porcentaje de descuento derivado en servidor.
