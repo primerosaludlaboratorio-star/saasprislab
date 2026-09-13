@@ -10,7 +10,7 @@ usuarios, credenciales, despliegues ni historiales.
 
 - Repositorio: `primerosaludlaboratorio-star/saasprislab`
 - Rama local: `release/v1.0-local`
-- Commit a auditar: `f4c0546`
+- Commit a auditar: `f32fb6a`
 - Directorio: `PRISLAB_SaaS-master/PRISLAB_SaaS-master`
 - Fuente de inventario: `audit/FUNCTION_LEDGER.md` y `audit/FRONTEND_FUNCTION_LEDGER.md`
 - Manifiesto de cobertura: `tools/omni_manifest.json`
@@ -82,3 +82,5 @@ hasta su ejecucion documentada.
 - `core/services/ventas/cobro_service.py`: porcentaje de descuento derivado en servidor.
 - `core/views/historial_resultados.py` y su plantilla: anotacion compatible con Django para el indicador forense.
 - Plantillas de interfaz: escape de salidas dinamicas, CSRF en acciones de lista y mensajes explicitos cuando el PDF no esta disponible.
+- `core/views/sentinel_api.py`: comparaciones de tokens Sentinel mediante `secrets.compare_digest`.
+- Herramientas auxiliares de PRIS-IA: rechazan mutaciones sobre ordenes `RESULTADOS_LISTOS` o `ENTREGADO`; la prueba de regresion debe confirmar que no se ejecuta ninguna escritura.
