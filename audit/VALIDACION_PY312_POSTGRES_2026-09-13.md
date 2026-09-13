@@ -65,3 +65,26 @@ operacion fue exitosa:
 
 Esto confirma despliegue y migracion, pero no sustituye la validacion Python
 3.12/PostgreSQL ni las pruebas E2E humanas.
+
+## Revalidacion aislada 2026-09-13
+
+- Se instalo Python `3.12.14` en un entorno virtual ignorado por Git y se
+  sincronizaron las dependencias desde `requirements.lock`.
+- Se creo el rol y la base PostgreSQL temporales `prislab_ci_20260913`; el rol
+  recibio `CREATEDB` exclusivamente para que Django pudiera crear su base de
+  pruebas.
+- `manage.py migrate --noinput` completo sobre la base temporal: correcto.
+- La primera bateria no pudo iniciar porque el rol carecia de `CREATEDB`.
+  Tras corregir ese permiso temporal, el esquema de prueba parcial se elimino.
+- En una segunda ejecucion limpia, la base de pruebas comenzo a crearse pero
+  quedo bloqueada durante las migraciones, en una transaccion `idle in
+  transaction` al crear el indice `core_hashraizdiario_timestamp_envio`.
+  Se detuvo de forma controlada despues de mas de cinco minutos sin avance.
+- La base temporal `test_prislab_ci_20260913` fue eliminada con `DROP DATABASE
+  ... WITH (FORCE)`. No se uso ni modifico la base productiva.
+
+**Resultado:** Python 3.12 esta instalado y las migraciones sobre PostgreSQL
+aislado pasan, pero la bateria Django sobre PostgreSQL permanece
+**inconclusa por bloqueo reproducible del runner/migraciones**. No se declara
+verde ni se atribuye el bloqueo a un defecto funcional sin aislar primero la
+migracion o señal que deja la transaccion abierta.
