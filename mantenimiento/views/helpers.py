@@ -11,26 +11,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def _empresa(request):
-    return empresa_desde_request(request)
-
-
-def _req_empresa(fn):
-    @login_required
-    @wraps(fn)
-    def inner(request, *args, **kwargs):
-        emp = _empresa(request)
-        if not emp:
-            messages.error(request, "Sin empresa asignada.")
-            return redirect('home')
-        return fn(request, emp, *args, **kwargs)
-    return inner
-
-
-def _get_ip(request):
-    return request.META.get('REMOTE_ADDR')
-
-
 import hashlib
 from datetime import date, timedelta
 

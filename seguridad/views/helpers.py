@@ -1,32 +1,3 @@
-"""
-Seguridad V8.0 — Helpers compartidos
-"""
-from django.contrib import messages
-from django.http import JsonResponse
-from django.shortcuts import redirect
-from core.utils.empresa_request import get_empresa_usuario
-
-
-def _empresa_staff_o_redirect(request):
-    if not request.user.is_staff:
-        messages.error(request, "No tienes permisos para acceder a esta sección.")
-        return None, redirect('dashboard')
-    empresa = get_empresa_usuario(request.user)
-    if not empresa:
-        messages.error(request, "Usuario sin empresa asignada.")
-        return None, redirect('dashboard')
-    return empresa, None
-
-
-def _empresa_staff_o_json(request):
-    if not request.user.is_staff:
-        return None, JsonResponse({'error': 'No autorizado'}, status=403)
-    empresa = get_empresa_usuario(request.user)
-    if not empresa:
-        return None, JsonResponse({'error': 'Usuario sin empresa asignada'}, status=403)
-    return empresa, None
-
-
 import csv
 import json
 import logging
