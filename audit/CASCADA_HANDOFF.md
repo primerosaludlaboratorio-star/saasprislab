@@ -10,7 +10,7 @@ usuarios, credenciales, despliegues ni historiales.
 
 - Repositorio: `primerosaludlaboratorio-star/saasprislab`
 - Rama local: `release/v1.0-local`
-- Commit a auditar: `9b9b12e`
+- Commit a auditar: `72bd201`
 - Directorio: `PRISLAB_SaaS-master/PRISLAB_SaaS-master`
 - Fuente de inventario: `audit/FUNCTION_LEDGER.md` y `audit/FRONTEND_FUNCTION_LEDGER.md`
 - Manifiesto de cobertura: `tools/omni_manifest.json`
@@ -96,3 +96,7 @@ hasta su ejecucion documentada.
   core.tests.test_suscripciones_iot_security core.tests.test_pris_jarvis_rbac`
   volvió a quedar bloqueada durante `Creating test database`; no se declara
   aprobación de esa batería.
+- La comprobación `check --deploy` con `PRISLAB_ENV=production` y secretos
+  ficticios falló cerrado al exigir `PRISLAB_ESCUDO_USUARIO_ID` y reportó
+  tokens de servicio ausentes. No se rellenaron secretos ni identificadores
+  reales; validar en el entorno seguro de despliegue.
