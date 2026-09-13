@@ -10,7 +10,7 @@ usuarios, credenciales, despliegues ni historiales.
 
 - Repositorio: `primerosaludlaboratorio-star/saasprislab`
 - Rama local: `release/v1.0-local`
-- Commit a auditar: `99d7372`
+- Commit a auditar: `f4c0546`
 - Directorio: `PRISLAB_SaaS-master/PRISLAB_SaaS-master`
 - Fuente de inventario: `audit/FUNCTION_LEDGER.md` y `audit/FRONTEND_FUNCTION_LEDGER.md`
 - Manifiesto de cobertura: `tools/omni_manifest.json`
@@ -81,3 +81,4 @@ hasta su ejecucion documentada.
 - `core/services/ventas/cobro_service.py`: redondeo de efectivo limitado a +/- $0.50.
 - `core/services/ventas/cobro_service.py`: porcentaje de descuento derivado en servidor.
 - `core/views/historial_resultados.py` y su plantilla: anotacion compatible con Django para el indicador forense.
+- Plantillas de interfaz: escape de salidas dinamicas, CSRF en acciones de lista y mensajes explicitos cuando el PDF no esta disponible.
