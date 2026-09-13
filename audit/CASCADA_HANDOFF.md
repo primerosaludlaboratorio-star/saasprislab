@@ -86,3 +86,4 @@ hasta su ejecucion documentada.
 - Herramientas auxiliares de PRIS-IA: rechazan mutaciones sobre ordenes `RESULTADOS_LISTOS` o `ENTREGADO`; la prueba de regresion debe confirmar que no se ejecuta ninguna escritura.
 - `core/views/paciente_detalle.py`: el timeline ya enlaza al endpoint protegido de PDF y no expone la URL física de `/media/`.
 - La prueba `core.tests.test_lab_validation_pdf` requiere creación de base de datos; si el entorno se bloquea durante esa fase, debe reportarse como bloqueo y no como aprobación.
+- `core/views/prisci_webhook.py`: los tokens de recepción y verificación usan `secrets.compare_digest`; validar ambas rutas y sus regresiones.

@@ -6,6 +6,7 @@ from django.test import Client, RequestFactory, TestCase, override_settings
 
 from core.models import Empresa, Usuario
 from core.views.pris_ia import _ejecutar_herramienta, _verificar_rbac
+from core.views.prisci_webhook import _webhook_token_ok, verify
 
 
 class PrisciUnifiedAITests(TestCase):
@@ -34,6 +35,28 @@ class PrisciUnifiedAITests(TestCase):
         req.prisci_external_channel = True
         result = _ejecutar_herramienta("crear_paciente", {}, req)
         self.assertTrue(result.get("denegado_rbac"))
+
+    @override_settings(PRISCI_WEBHOOK_TOKEN="secret")
+    def test_webhook_token_uses_exact_constant_time_match(self):
+        request = RequestFactory().post(
+            "/api/prisci/webhook/",
+            HTTP_X_PRISCI_WEBHOOK_TOKEN="secret",
+        )
+        self.assertTrue(_webhook_token_ok(request))
+        request = RequestFactory().post(
+            "/api/prisci/webhook/",
+            HTTP_X_PRISCI_WEBHOOK_TOKEN="secret-extra",
+        )
+        self.assertFalse(_webhook_token_ok(request))
+
+    @override_settings(PRISCI_WEBHOOK_VERIFY_TOKEN="verify-secret")
+    def test_webhook_verify_requires_exact_token(self):
+        response = verify(RequestFactory().get(
+            "/api/prisci/verify/",
+            {"hub.verify_token": "verify-secret", "hub.challenge": "abc"},
+        ))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b"abc")
 
     @override_settings(DEBUG=True, PRISCI_WEBHOOK_TOKEN="")
     def test_prisci_webhook_falla_cerrado_sin_token_aun_en_debug(self):

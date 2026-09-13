@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import secrets
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -28,7 +29,7 @@ def _webhook_token_ok(request) -> bool:
         or request.GET.get("token")
         or ""
     ).strip()
-    return provided == expected
+    return secrets.compare_digest(provided, expected)
 
 
 def _safe_external_id(value: str) -> str:
@@ -99,7 +100,7 @@ def verify(request):
     expected = (getattr(settings, "PRISCI_WEBHOOK_VERIFY_TOKEN", "") or "").strip()
     token = (request.GET.get("hub.verify_token") or "").strip()
     challenge = request.GET.get("hub.challenge") or ""
-    if expected and token == expected:
+    if expected and secrets.compare_digest(token, expected):
         return HttpResponse(challenge)
     return HttpResponse("", status=403)
 
