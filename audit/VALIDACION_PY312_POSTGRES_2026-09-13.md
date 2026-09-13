@@ -90,3 +90,16 @@ aislado pasan, pero la bateria Django sobre PostgreSQL permanece
 **inconclusa por bloqueo reproducible del runner/migraciones**. No se declara
 verde ni se atribuye el bloqueo a un defecto funcional sin aislar primero la
 migracion o señal que deja la transaccion abierta.
+
+### Reproduccion adicional
+
+- Se repitio con una base PostgreSQL nueva y `PRISLAB_TEST_NO_MIGRATIONS=1`,
+  para excluir la historia de migraciones.
+- Django volvio a quedar detenido en `Creating test database` antes de
+  ejecutar las pruebas. Se interrumpio despues de mas de cinco minutos.
+- La base de pruebas, la base aislada y el rol temporal fueron eliminados
+  nuevamente.
+
+Esto acota el siguiente diagnostico a la creacion/sincronizacion del esquema
+de pruebas PostgreSQL o a la inicializacion de la aplicacion; no hay evidencia
+para declarar aprobada la suite PostgreSQL completa.
