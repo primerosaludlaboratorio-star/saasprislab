@@ -10,7 +10,7 @@ usuarios, credenciales, despliegues ni historiales.
 
 - Repositorio: `primerosaludlaboratorio-star/saasprislab`
 - Rama local: `release/v1.0-local`
-- Commit a auditar: `72bd201`
+- Commit a auditar: `a7b0804dd852ed5c3eadfc97d8fec681de8caf5c`
 - Directorio: `PRISLAB_SaaS-master/PRISLAB_SaaS-master`
 - Fuente de inventario: `audit/FUNCTION_LEDGER.md` y `audit/FRONTEND_FUNCTION_LEDGER.md`
 - Manifiesto de cobertura: `tools/omni_manifest.json`
@@ -100,3 +100,7 @@ hasta su ejecucion documentada.
   ficticios falló cerrado al exigir `PRISLAB_ESCUDO_USUARIO_ID` y reportó
   tokens de servicio ausentes. No se rellenaron secretos ni identificadores
   reales; validar en el entorno seguro de despliegue.
+- El commit `a7b0804dd852ed5c3eadfc97d8fec681de8caf5c` fue desplegado mediante
+  worktree limpio: migraciones, `collectstatic`, servicios, Nginx, `/health/`
+  y bloqueo de `/media/` verificados. La evidencia completa esta en
+  `audit/VALIDACION_PY312_POSTGRES_2026-09-13.md`.

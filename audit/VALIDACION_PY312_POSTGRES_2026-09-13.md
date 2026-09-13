@@ -47,3 +47,21 @@ Python 3.12/PostgreSQL como aprobada.
 
 Las pruebas E2E humanas quedan fuera de este documento y permanecen reservadas
 para la fase final.
+
+## Despliegue posterior
+
+El 2026-09-13 se publico el commit `a7b0804dd852ed5c3eadfc97d8fec681de8caf5c`
+mediante `scripts/deploy_local_to_vps.ps1` usando un worktree limpio. La
+operacion fue exitosa:
+
+- Migracion `contabilidad.0014_alter_clientefacturacion_empresa_and_more`: OK.
+- `collectstatic`: 52 archivos copiados, 152 sin cambios y 869 procesados.
+- `prislab-gunicorn`, `prislab-celery` y `prislab-celerybeat`: activos.
+- `nginx -t`: correcto; solo queda un warning de deprecacion de la sintaxis
+  `listen ... http2`.
+- `/health/`: HTTP 200.
+- `/media/does-not-exist.txt`: HTTP 404.
+- `showmigrations contabilidad`: `0014` marcada con `[X]`.
+
+Esto confirma despliegue y migracion, pero no sustituye la validacion Python
+3.12/PostgreSQL ni las pruebas E2E humanas.
