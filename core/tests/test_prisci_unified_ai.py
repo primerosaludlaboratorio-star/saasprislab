@@ -35,6 +35,15 @@ class PrisciUnifiedAITests(TestCase):
         result = _ejecutar_herramienta("crear_paciente", {}, req)
         self.assertTrue(result.get("denegado_rbac"))
 
+    @override_settings(DEBUG=True, PRISCI_WEBHOOK_TOKEN="")
+    def test_prisci_webhook_falla_cerrado_sin_token_aun_en_debug(self):
+        resp = Client().post(
+            "/api/prisci/webhook/",
+            data=json.dumps({"plataforma": "whatsapp", "remitente_id": "521555", "mensaje": "hola"}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 401)
+
     @override_settings(DEBUG=False, PRISCI_WEBHOOK_TOKEN="secret")
     def test_prisci_webhook_requires_token_when_configured(self):
         resp = Client().post(

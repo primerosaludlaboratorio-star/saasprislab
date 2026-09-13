@@ -10,6 +10,7 @@ import secrets
 import sys
 import subprocess
 import json
+import shlex
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
@@ -17,7 +18,10 @@ os.chdir(BASE_DIR)
 
 def run_cmd(cmd, check=True):
     print(f"> {cmd}")
-    result = subprocess.run(cmd, shell=True, cwd=BASE_DIR, capture_output=True, text=True)
+    # Ejecuta comandos como argv. Nunca interpretar cadenas mediante un shell.
+    if isinstance(cmd, str):
+        cmd = shlex.split(cmd, posix=False)
+    result = subprocess.run(cmd, shell=False, cwd=BASE_DIR, capture_output=True, text=True)
     if check and result.returncode != 0:
         print("ERROR:", result.stderr)
         sys.exit(1)
@@ -73,7 +77,16 @@ DEEPSEEK_API_KEY=
 
     # 4. Crear superusuario si no existe
     print("\n[3] Creando superusuario admin...")
-    run_cmd('echo from django.contrib.auth import get_user_model; import os; User = get_user_model(); pwd = os.environ.get("DEV_ADMIN_PASSWORD"); pwd or (_ for _ in ()).throw(SystemExit("Falta DEV_ADMIN_PASSWORD")); User.objects.filter(username="admin").exists() or User.objects.create_superuser("admin", "admin@prislab.com", pwd) | .venv\\Scripts\\python manage.py shell', check=False)
+    admin_bootstrap = (
+        'from django.contrib.auth import get_user_model; import os; '
+        'User = get_user_model(); pwd = os.environ.get("DEV_ADMIN_PASSWORD"); '
+        'pwd or (_ for _ in ()).throw(SystemExit("Falta DEV_ADMIN_PASSWORD")); '
+        'User.objects.filter(username="admin").exists() or '
+        'User.objects.create_superuser("admin", "admin@prislab.com", pwd)'
+    )
+    run_cmd([
+        sys.executable, 'manage.py', 'shell', '-c', admin_bootstrap
+    ], check=False)
 
     # 5. Crear datos demo básicos (empresa, productos, analitos)
     print("\n[4] Creando datos de demostracion...")

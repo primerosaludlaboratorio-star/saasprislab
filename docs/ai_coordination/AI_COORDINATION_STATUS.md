@@ -1506,3 +1506,361 @@ ronda de humo funcional, no sustituye las pruebas de acciones de toma,
 repeticion, maquila, interfaces de analizadores, publicacion/entrega y
 reportes, que siguen marcadas como abiertas hasta ejecutarlas con datos y
 equipos reales.
+
+## Triaje Imperium de 24 fallos — 2026-08-16
+
+Reporte canónico: `REPORTE_TRIAGE_IMPERIUM_24_FALLOS_2026-08-16.md`.
+
+Imperium clasificó 1 bug confirmado, 6 artefactos de prueba y 17 casos
+pendientes. El bug confirmado reportado está en
+`core/views/laboratorio/calidad.py`: `api_finalizar_toma` usa `settings` sin
+importarlo al procesar el audio de toma. Los artefactos corresponden a Selenium
+ausente, fixtures de consultorio y fechas de caducidad rígidas; deben corregirse
+para conservar una suite reproducible y no simplemente ocultarse.
+
+Los 17 casos pendientes no se consideran cerrados hasta repetirlos con
+PostgreSQL, permisos, tokens, tenants y `FERNET_KEY` de prueba correctamente
+sembrados. Un `401` o `403` previo solo prueba un bloqueo en esa etapa, no el
+aislamiento completo de tenant.
+
+Cuenta temporal vigente para auditoría: `auditoriaside`, empresa `1`, sucursal
+`1`, rol `ADMIN`/superusuario, expiración automática 2026-09-16 23:59 UTC. La
+contraseña no se almacena en documentación versionada.
+
+## Cierre de correcciones del triaje Imperium - 2026-08-16
+
+Se corrigió el bug confirmado de audio de toma agregando la importación de
+`django.conf.settings` en `core/views/laboratorio/calidad.py`. También se
+cerraron los contratos de prueba desfasados respecto al código canónico:
+ruta JSON de búsqueda de devoluciones, respuestas ERP con `status=success`,
+fixtures de consultorio, tokens por kiosco IoT, autenticación de sensores,
+permisos de Director y simulación de lotes caducados.
+
+Se corrigió además el flujo de baja por caducidad: el botón del semáforo llama
+al endpoint real de Kardex, resuelve producto, cantidad y costo desde el lote
+de la empresa y descuenta con bloqueo transaccional, conservando la fecha
+histórica de caducidad.
+
+Evidencia local: `core.tests` completó 589 pruebas con 5 omitidas por
+dependencias opcionales; la batería integrada completó 59 pruebas. `manage.py
+check`, `makemigrations --check --dry-run`, compilación de los módulos
+modificados y `git diff --check` quedaron correctos.
+
+## Auditoria humana autenticada en produccion - 2026-08-17
+
+Se uso la cuenta temporal `auditoriaside` documentada en
+`CREDENCIALES_AUDITORIA_PRODUCTIVA_2026-07-27.local.md`. La contraseña no se
+repite ni se almacena en este documento.
+
+Rutas navegadas en modo lectura, sin ventas, devoluciones, cancelaciones,
+captura de resultados, altas ni cambios de catalogo:
+
+- Dashboard, Farmacia, Inventario, Alertas, Historial de ventas y Corte de caja.
+- Recepcion, Toma de muestra, Monitor, Captura, Control de calidad y Entrega.
+- LIMS: Analitos, Perfiles, Paquetes y Precios.
+
+Resultado: **16/16 rutas cargaron correctamente**, con titulo esperado y sin
+errores visibles 500, trazas, `NameError`, `NoReverseMatch` u
+`OperationalError`. La revision visual del catalogo LIMS mostro la separacion
+correcta entre codigo tecnico y nombre presentado.
+
+Se corrigio el filtro reutilizable `nombre_lims` para normalizar ortografia
+clinica en presentacion (`Proteinas` -> `Proteínas`, `Urobilinogeno` ->
+`Urobilinógeno`, `PH.` -> `pH`) sin modificar datos almacenados ni codigos.
+Regresion: `lims.tests.LimsPresentationTextTests` **2/2 OK**.
+
+Despliegue local directo al VPS completado con revision de artefacto
+`ad3ba29d3c962c4cb9d18030963846493bbd1312`; migraciones sin pendientes,
+staticfiles procesados y servicios productivos activos. La ronda autentica
+cierra navegacion y presentacion de estas rutas; no sustituye pruebas de
+acciones destructivas o transaccionales con datos reales, que se mantienen
+fuera de esta ronda para no alterar produccion.
+
+## Auditoria por flujo modulo a modulo - 2026-08-17
+
+La navegacion autenticada se amplio a 50 rutas de Farmacia, Laboratorio,
+LIMS/inventario de laboratorio, Consultorio y Administracion. Se validaron
+titulos, carga de contenido, formularios, buscadores, filtros y ausencia de
+errores tecnicos visibles.
+
+### Hallazgos corregidos en esta ronda
+
+1. `GET /medico/` devolvia 503 mediante Sentinel para usuarios sin perfil
+   clinico porque `ConsultaMedica.medico` se filtraba con `request.user` en vez
+   de resolver el catalogo `core.Medico`. Se corrigio el resolver: las cuentas
+   administrativas sin perfil medico muestran el tablero sin consultas, sin
+   inventar identidad clinica. Evidencia: log productivo con el error
+   `Cannot query "auditoriaside": Must be "Medico" instance`, regresion del
+   tablero **1/1 OK**, y produccion ahora responde `Consultorio Medico - PRISLAB`
+   sin Sentinel ni 503.
+2. `Entrega de Resultados` mostraba `Ver PDF` aunque el candado de saldo o
+   consentimiento lo iba a bloquear. Ahora el enlace y el link publico solo
+   aparecen con candados cumplidos; en caso contrario se muestra el motivo.
+   Regresion local **1/1 OK** para falta de consentimiento; produccion mostro
+   cero enlaces PDF y el motivo `Falta firma de aviso de privacidad` para las
+   ordenes existentes, sin redireccion enganosa.
+
+### Flujos interactivos de lectura
+
+- PDV: buscador, receta, folio interno, PIN y acciones visibles; se probo
+  busqueda de `amox` sin agregar productos ni cobrar.
+- Recepcion de laboratorio: buscador de paciente, carga de receta/identidad,
+  busqueda de estudios y controles de cobro visibles; se probo `garcia` sin
+  crear orden.
+- LIMS: filtros de analitos y nombres clinicos; sin errores de servidor.
+- PDF: se confirmo el candado correcto en ordenes sin consentimiento; no se
+  forzo una entrega ni se alteraron datos clinicos.
+
+### Prueba de resistencia segura
+
+Se ejecutaron 30 solicitudes de lectura a `/health/`, `/ready/` y `/login/`
+con maximo 5 conexiones concurrentes: **30/30 HTTP 200**, 0 fallos, 1.45 s
+totales. No es una prueba de carga maxima ni sustituye un ensayo controlado de
+escrituras concurrentes.
+
+Estado de servicios posterior: Gunicorn, Celery y Celery Beat activos; sin
+nuevos `ERROR`, `Traceback` o `503` en los logs del servicio durante la
+verificacion posterior al despliegue.
+
+## Auditoria de regresion operativa - 2026-08-17
+
+Durante la navegacion productiva se detectaron dos errores reales, ambos
+corregidos antes del siguiente despliegue:
+
+1. `GET /mantenimiento/operativo/` devolvia 503 porque la vista no estaba
+   decorada con `_req_empresa` y Django no podia inyectar el tenant requerido.
+   Se agrego el decorador y una prueba HTTP que confirma respuesta 200 para un
+   usuario con empresa.
+2. `generar_sugerencias_proceso()` consultaba `fecha_validacion` en
+   `OrdenDeServicio`, aunque el campo pertenece a `DetalleOrden`. Se cambio el
+   agregado para trabajar sobre detalles validados, conservando el filtro por
+   `orden__empresa` y el conteo de ordenes estancadas.
+
+Regresion local: `core.tests.test_validador_ia_regression` y
+`mantenimiento.tests.MantenimientoScopingTest`, **6/6 OK**. `manage.py check`
+sin problemas y `git diff --check` sin errores de contenido.
+
+Despliegue local directo al VPS completado con el artefacto
+`ad3ba29d3c962c4cb9d18030963846493bbd1312`; no hubo migraciones pendientes,
+staticfiles procesados y los servicios quedaron activos. Produccion confirmo
+`/health/` **200**, `/ready/` **200**, `/mantenimiento/operativo/` **200**
+(`Panel Operativo - PRISLAB`) y `/ia/panel/` **200**. Los logs posteriores al
+despliegue registraron ambas solicitudes como 200, sin `TypeError`, `Traceback`,
+`Cannot resolve keyword` ni 503. Las incidencias antiguas de Sentinel siguen
+visibles como historial y no se contabilizan como errores nuevos.
+
+### Ronda amplia posterior al despliegue
+
+Se recorrieron **26 rutas** autenticadas de Farmacia, Laboratorio, LIMS,
+Inventario, Contabilidad, RH, Consultorio, Seguridad, Mantenimiento e IA en la
+misma sesion de usuario. Todas devolvieron HTTP 200 con titulo y contenido
+esperados. Los endpoints auxiliares cargados por las pantallas tambien
+respondieron 200.
+
+El log de infraestructura registro una solicitud directa a la IP publica con
+`Invalid HTTP_HOST`; fue rechazada por `ALLOWED_HOSTS` y no representa una
+falla de la aplicacion. Tambien se registro una alerta de latencia del endpoint
+de anomalias (200, aproximadamente 2.05 s y 1,228 consultas); queda como
+optimizacion de rendimiento independiente, sin error funcional ni fuga
+confirmada en esta ronda.
+
+Se repitieron interacciones de solo lectura: busqueda de `jeringa` en PDV,
+busqueda de paciente en recepcion y filtro `glucosa` en Analitos LIMS. Las tres
+interfaces conservaron su contenido y no mostraron excepciones. Finalmente se
+realizaron 40 solicitudes a `/health/` y `/ready/`: **40/40 HTTP 200**. En los
+logs posteriores no aparecieron 500/503 ni excepciones de la aplicacion; solo
+permanecio el rechazo esperado de `HTTP_HOST` por acceso directo a la IP.
+
+## Optimizacion de prediccion de inventario - 2026-08-17
+
+La prueba de resistencia detecto que la prediccion de stock calculaba ventas,
+ajustes y lotes con consultas dentro del ciclo de cada producto. Se cambio a
+agregaciones por producto y se agrego regresion de limite de consultas:
+`core.tests.test_validador_ia_regression`, **2/2 OK**. Tras el despliegue, la
+API autenticada de anomalías respondió **200 en 671 ms**; las solicitudes
+posteriores no registraron una nueva alerta de latencia. La ruta conserva el
+tenant y los mismos campos de salida de días restantes, stock y recomendación.
+
+## Flujo humano integrado de laboratorio - 2026-08-17
+
+Se ejecuto una orden sintetica completa en produccion: recepcion, cobro,
+confirmacion humana de PRIS, toma de muestra, checklist de bioseguridad, lista
+de trabajo, captura manual, validacion humana y control de liberacion de PDF.
+
+- Folio probado: `LAB-20260817-001`; GLUCOSA; cobro `$85.00`; saldo `$0.00`.
+- Se reprodujo un 403 real al marcar la toma. La causa fue un token CSRF
+  invalido enviado por `core/templates/core/lista_trabajo.html`.
+- Se corrigio la plantilla para priorizar el token renderizado por Django/meta,
+  decodificar el fallback de cookie y enviar `credentials: 'same-origin'`.
+- Regresion: `core.tests.test_lista_trabajo_csrf`, **1/1 OK**; `manage.py
+  check` sin problemas.
+- La misma orden marco la toma correctamente despues del despliegue.
+- Se registro temporalmente un equipo manual sintetico; se capturo `95 mg/dl`
+  y la orden paso a `RESULTADOS_LISTOS` con validacion humana.
+- El PDF quedo retenido correctamente por falta de firma de aviso de privacidad.
+  No se forzo una firma con datos inventados; esa llave requiere la interaccion
+  real del paciente en el lienzo de firma.
+
+## Flujo humano integrado de farmacia - 2026-08-17
+
+Se validaron en produccion ventas de material de curacion, desglose, devolución
+total, devoluciones parciales sucesivas, cancelacion con PIN, historial,
+reingreso de inventario, ticket y corte de caja.
+
+- El boton de devolucion del historial apuntaba al endpoint JSON equivocado.
+  Se corrigio para abrir el formulario ERP con seleccion de partida, PIN y
+  trazabilidad. `manage.py check` paso sin problemas.
+- Venta sintetica `VTA-20260817122508-26C5`: 3 jeringas, devolución total
+  `DEV-2026-000003`, historial visible y reingreso confirmado en inventario.
+- Venta sintetica `VTA-20260817123831-8268`: 2 jeringas, dos devoluciones
+  parciales de una pieza, `DEV-4` y `DEV-5`, con saldo disponible agotado,
+  historial visible y detalle libre conservado.
+- Venta sintetica `VTA-20260817123946-1F6B`: cancelacion con confirmacion y
+  PIN, estado `CANCELADA`, ticket visible y stock revertido.
+- Se corrigio el corte de caja para descontar devoluciones por el medio de
+  pago original. En produccion, el dia probado mostro ventas netas `$0.00`,
+  devoluciones `$50.00` y desglose por farmacia en `$0.00`, coherente con las
+  ventas sinteticas devueltas/canceladas.
+- El filtro de inventario por `JERINGA 10ML` mostro las existencias esperadas
+  y el lote `AUTO-316-20260729`.
+- La suite Django focalizada quedo no concluyente en local por bloqueo durante
+  la creacion/reutilizacion de la base de pruebas; no se reporta como aprobada.
+### Correccion LIMS de catalogo veterinario - 2026-08-17
+
+Durante la verificacion humana en produccion se detecto que el catalogo de
+Analitos mostraba un registro veterinario ("Acido urico canino") aunque las
+reglas de importacion y venta ya lo excluian. Se corrigio
+`lims/views/analitos.py` para aplicar la regla unica de catalogo veterinario
+en la lista y en el acceso directo al detalle, sin borrar datos productivos.
+
+Validacion en produccion despues del despliegue local-to-VPS:
+
+- `/lims/analitos/` carga correctamente y conserva los analitos humanos.
+- El registro veterinario ya no aparece en la lista.
+- La URL directa del registro veterinario redirige al catalogo humano.
+- `python manage.py check` paso sin problemas.
+- El despliegue finalizo correctamente y los servicios quedaron activos.
+### Retiro operativo completo del catalogo veterinario LIMS - 2026-08-17
+
+Se ejecuto en produccion la limpieza canonica para la empresa 1 despues de
+corregir un error en el nombre de la columna de la relacion Paquete-Perfil.
+El comando retiro del catalogo operativo 31 analitos y 3 perfiles
+veterinarios; no habia paquetes veterinarios activos.
+
+- Los analitos y perfiles quedaron inactivos.
+- Los precios asociados quedaron inactivos.
+- Las relaciones de composicion veterinarias fueron eliminadas.
+- Los registros historicos se conservaron para no romper resultados emitidos.
+- Verificacion productiva: 0 analitos activos con marcadores canino, felino,
+  equino o veterinario; 0 perfiles y 0 paquetes activos con esos marcadores.
+- La interfaz `/lims/analitos/` sigue mostrando analitos humanos y no muestra
+  registros veterinarios.
+### Correccion de saturacion de conexiones PostgreSQL - 2026-08-19
+
+La verificacion posterior detecto que produccion habia alcanzado el limite de
+conexiones PostgreSQL: 97 sesiones ociosas sobre `max_connections=100`.
+La causa era el valor predeterminado de `CONN_MAX_AGE=60` en el ensamblador
+activo `config/settings/database.py`, combinado con los workers de Gunicorn y
+Celery.
+
+Se cambio el valor predeterminado de produccion a `CONN_MAX_AGE=0`; se puede
+sobrescribir explicitamente mediante `DB_CONN_MAX_AGE` si una instalacion lo
+requiere. Se liberaron sesiones ociosas, se reiniciaron Gunicorn/Celery y se
+verifico el despliegue sin migraciones pendientes.
+
+Validacion:
+
+- `python manage.py check`: sin problemas.
+- Gunicorn, Celery y Celery Beat: activos.
+- `/health/`: HTTP 200.
+- `/ready/`: HTTP 200.
+- No quedaron conexiones no administrativas acumuladas despues del reinicio.
+### Reconciliacion de auditoria Copilot CLI - 2026-08-19
+
+Se contrasto el informe "Auditoria Total del Sistema PRISLAB SaaS v5.2"
+contra el checkout local y la configuracion activa.
+
+Confirmado:
+
+- `config/settings.py` y `config/settings/` coexisten; Django carga
+  `config/settings/__init__.py`. El archivo monolitico es deuda de limpieza,
+  no la configuracion activa.
+- Existe un script raiz (`completar_todo_funcional.py`) con
+  `subprocess.run(..., shell=True)`. No se observo entrada de usuario en la
+  cadena actual, pero el script es operativo y debe aislarse o reescribirse.
+- Hay 237 bloques `except Exception` en `core/views`; no son 237 silencios:
+  muchos registran, devuelven 503 o manejan errores esperados. Requieren
+  clasificacion por flujo, no reemplazo mecanico.
+- Las restricciones opcionales de IP/grupo del Admin tienen default
+  desactivado y no aparecen sobrescritas en el `.env` productivo. Es un punto
+  de hardening que requiere definir allowlist antes de activarlo.
+- `channels`, `kombu` y `redis` estan fijados en requirements; actualizar
+  requiere pruebas de compatibilidad, no es un fallo funcional confirmado.
+- Dockerfile es de una etapa y conserva herramientas de compilacion; es una
+  mejora de superficie e imagen, no un incidente de produccion en el proceso
+  actual local-to-VPS.
+
+No confirmado o desactualizado:
+
+- El informe afirma que solo existe un archivo de pruebas; el checkout
+  contiene 188 archivos de pruebas y scripts de validacion.
+- Reporta `CONN_MAX_AGE=60` como estado activo; ya se corrigio a `0` en
+  produccion y se verifico `/health/` y `/ready/` en 200 despues de resolver
+  la saturacion de conexiones.
+- Presenta Docker como el proceso productivo principal; el despliegue activo
+  verificado es local-to-VPS con systemd, Gunicorn, Celery y Nginx.
+- La trazabilidad de expediente no depende exclusivamente de un middleware
+  comentado: existen hooks y servicios explicitos `ForenseAcceso` utilizados
+  por los flujos de expediente, PDF y entrega.
+
+Conclusión: el reporte es útil como inventario de hardening, pero su score
+global no debe tomarse como estado definitivo. Los riesgos confirmados deben
+resolverse por flujo y con prueba de regresion, evitando refactors masivos o
+eliminaciones de scripts/documentos sin clasificacion.
+### Correccion del script operativo y verificacion de despliegue - 2026-08-19
+
+Se elimino el uso de `shell=True` de `completar_todo_funcional.py`. El script
+ahora ejecuta comandos mediante listas de argumentos (`shell=False`), incluido
+el bootstrap del administrador, por lo que no interpreta cadenas mediante un
+shell.
+
+Validacion realizada:
+
+- El archivo compila con `py_compile`.
+- `python manage.py check`: sin problemas.
+- La busqueda del patron `shell=True` en ese script no devuelve coincidencias.
+- Despliegue local-a-VPS completado con revision
+  `ad3ba29d3c962c4cb9d18030963846493bbd1312`.
+- Migraciones: sin cambios pendientes.
+- Gunicorn, Celery y Celery Beat: activos.
+- `/health/` y `/ready/`: HTTP 200.
+
+La suite inicialmente parecia bloqueada durante la creacion de la base de
+pruebas. Se ejecuto de nuevo con `PRISLAB_TEST_NO_MIGRATIONS=1` y la suite
+dirigida de IoT termino correctamente: 7 pruebas OK en 27.396 segundos. La
+validacion productiva de salud y servicios tambien quedo aprobada.
+
+### Endurecimiento de configuracion - 2026-08-19
+
+- Se retiro el archivo monolitico `config/settings.py`, que no era cargado por
+  Django; el ensamblador canonico es `config/settings/__init__.py`.
+- Se actualizaron las verificaciones internas para usar la ruta canonica.
+- En produccion el acceso administrativo requiere el grupo `ADMIN_SISTEMA`;
+  los superusuarios conservan acceso de plataforma. La restriccion por IP
+  permanece opt-in hasta definir una allowlist operativa.
+- `Dockerfile` ahora usa etapas separadas de compilacion y runtime; los
+  compiladores y headers no se copian a la imagen final.
+- Se agrego `scripts/run_targeted_tests.ps1` para repetir las suites dirigidas
+  con `PRISLAB_TEST_NO_MIGRATIONS=1` y `--keepdb`.
+## Reconciliacion de auditoria profunda 2026-08-19
+
+Se verificaron contra el checkout local los siete hallazgos reportados por el agente profundo:
+
+- C2 confirmado y corregido: `core/utils/gemini_transport.py` ya no envia `GOOGLE_API_KEY` en la URL; usa el header `x-goog-api-key`.
+- C1 confirmado y corregido: `ResultadosLimsService` bloquea cualquier mutacion por captura sobre ordenes `RESULTADOS_LISTOS` o `ENTREGADO`, registra el intento y devuelve `RESULTADOS_INMUTABLES`.
+- C4 confirmado como riesgo de contrato y corregido: la creacion de orden exige `client_mutation_id`; las interfaces de recepcion ahora lo generan con UUID antes del POST.
+- C5 y C6 ya estaban corregidos al revisar el checkout: `api_verificar_codigo_2fa` y `panic_button` tienen `login_required`.
+- C3 no reproduce el reporte actual: `Venta.folio_operacion` ya declara `unique=True`; se mantiene el control de concurrencia y debe validarse en la base desplegada.
+- C7 confirmado como riesgo y corregido parcialmente de forma transversal: el prompt enviado a DeepSeek/Gemini redacciona nombres de paciente, telefono, correo, CURP, direccion y fecha de nacimiento. Los datos permanecen disponibles localmente para las herramientas autorizadas, pero no se envian sin esa redaccion al proveedor externo.
+
+Validacion ejecutada: compilacion Python y `git diff --check`. Pendiente de este cierre: ejecutar la suite dirigida, `manage.py check`, migraciones y despliegue controlado.

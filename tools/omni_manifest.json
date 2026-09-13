@@ -3,19 +3,19 @@
   "description": "Inventario central de cobertura para la suite Omni-Tester. Se evoluciona con el sistema.",
   "inventory_baseline": {
     "source": "tools/url_inventory.json",
-    "count": 1732,
+    "count": 1956,
     "kinds": {
-      "ui": 1494,
-      "api": 223,
-      "pdf": 15
+      "ui": 1671,
+      "api": 269,
+      "pdf": 16
     },
     "prefixes_top": [
-      { "prefix": "/admin/", "count": 1019 },
-      { "prefix": "/laboratorio/", "count": 114 },
-      { "prefix": "/consultorio/", "count": 67 },
-      { "prefix": "/api/", "count": 53 },
-      { "prefix": "/farmacia/", "count": 51 },
-      { "prefix": "/silo-lab/", "count": 50 }
+      { "prefix": "/admin/", "count": 1103 },
+      { "prefix": "/laboratorio/", "count": 126 },
+      { "prefix": "/farmacia/", "count": 92 },
+      { "prefix": "/consultorio/", "count": 68 },
+      { "prefix": "/api/", "count": 62 },
+      { "prefix": "/silo-lab/", "count": 57 }
     ]
   },
   "coverage_targets": [
@@ -51,7 +51,306 @@
       "kind": "api",
       "owners": ["api_smoke"],
       "notes": "Sentinel/IA/autorizaciones y endpoints globales."
+    },
+    {
+      "prefix": "/lims/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "LIMS: analitos, perfiles, paquetes, precios y APIs; requiere matriz de roles."
+    },
+    {
+      "prefix": "/consultorio/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Consultorio clinico, archivos, cobros, PDFs y Sentinel."
+    },
+    {
+      "prefix": "/silo-lab/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Inventario de laboratorio, consumos, lotes, compras y traspasos."
+    },
+    {
+      "prefix": "/mantenimiento/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "CMMS, metrologia, sensores y checklists."
+    },
+    {
+      "prefix": "/director/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Paneles administrativos, autorizaciones, analizadores y auditoria."
+    },
+    {
+      "prefix": "/contabilidad/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Catalogos, polizas, clientes, facturacion y PDFs."
+    },
+    {
+      "prefix": "/pacientes/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Historial 360 y portal del paciente."
+    },
+    {
+      "prefix": "/ia/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "IA, OCR, voz y consentimiento."
+    },
+    {
+      "prefix": "/bienestar/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Bienestar y datos sensibles NOM-035."
+    },
+    {
+      "prefix": "/marketing/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Marketing, cupones, campanas y reactivacion."
+    },
+    {
+      "prefix": "/seguridad/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Autenticacion y dispositivos 2FA."
+    },
+    {
+      "prefix": "/finanzas/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Cajas, CXC, convenios y reportes financieros."
+    },
+    {
+      "prefix": "/pris/",
+      "kind": "api",
+      "owners": ["api_smoke", "role_matrix"],
+      "notes": "Acciones PRIS, voz, OCR y checklist clinico."
+    },
+    {
+      "prefix": "/medico/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Consultas, recetas, expedientes, USG y PDFs."
+    },
+    {
+      "prefix": "/crm/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Prospectos, clientes y seguimiento."
+    },
+    {
+      "prefix": "/logistica/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Rutas y transferencias de inventario."
+    },
+    {
+      "prefix": "/capacitacion/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Capacitacion y RAG."
+    },
+    {
+      "prefix": "/rh/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Recursos humanos y resultados propios."
+    },
+    {
+      "prefix": "/nomina/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Periodos, recibos y autorizaciones."
+    },
+    {
+      "prefix": "/asistencia/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Asistencia, horarios e incidencias."
+    },
+    {
+      "prefix": "/notificaciones/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Bandeja, configuracion y verificaciones."
+    },
+    {
+      "prefix": "/academia/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Cursos, video, accesos y reportes."
+    },
+    {
+      "prefix": "/recepcion/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Recepcion, pacientes, citas, espera y cobros."
+    },
+    {
+      "prefix": "/enfermeria/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Triage, signos vitales, historial y alertas."
+    },
+    {
+      "prefix": "/iot/",
+      "kind": "api",
+      "owners": ["api_smoke", "role_matrix"],
+      "notes": "Kioscos e integraciones IoT con aislamiento tenant."
+    },
+    {
+      "prefix": "/inventario/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Inventario de laboratorio y farmacia."
+    },
+    {
+      "prefix": "/transferencias/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Transferencias entre sucursales."
+    },
+    {
+      "prefix": "/cotizacion/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Cotizacion y conversion a orden."
+    },
+    {
+      "prefix": "/catalogos/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Catalogos maestros y convenios."
+    },
+    {
+      "prefix": "/configuracion/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Configuracion de empresa, usuarios y flags."
+    },
+    {
+      "prefix": "/contabilidad-personal/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Pagos y cuentas personales."
+    },
+    {
+      "prefix": "/reportes/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Reportes financieros y exportaciones."
+    },
+    {
+      "prefix": "/facturacion/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Autofactura y CFDI."
+    },
+    {
+      "prefix": "/suscripciones/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix"],
+      "notes": "Suscripciones y planes; requiere verificacion tenant."
+    },
+    {
+      "prefix": "/historial-resultados/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Historial de resultados y graficas."
+    },
+    {
+      "prefix": "/blindaje/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Sellado, verificacion y desbloqueo forense."
+    },
+    {
+      "prefix": "/consentimiento/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Consentimientos digitales."
+    },
+    {
+      "prefix": "/kiosko/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Kiosko publico y check-in."
+    },
+    {
+      "prefix": "/cron/",
+      "kind": "api",
+      "owners": ["api_smoke", "role_matrix"],
+      "notes": "Tareas protegidas por secreto operativo; no probar con datos productivos."
+    },
+    {
+      "prefix": "/onboarding/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix"],
+      "notes": "Alta y configuracion inicial."
+    },
+    {
+      "prefix": "/analytics/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix"],
+      "notes": "Analitica y dashboards."
+    },
+    {
+      "prefix": "/dashboard-unificado/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix"],
+      "notes": "Dashboard unificado con datos financieros."
+    },
+    {
+      "prefix": "/bienestar-staff/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix"],
+      "notes": "Bienestar interno y datos sensibles."
+    },
+    {
+      "prefix": "/manual/",
+      "kind": "ui",
+      "owners": ["ui_omni"],
+      "notes": "Manual operativo y PDF."
+    },
+    {
+      "prefix": "/voice/",
+      "kind": "ui",
+      "owners": ["ui_omni", "role_matrix", "api_smoke"],
+      "notes": "Logs y funciones de voz."
     }
+  ],
+  "exact_targets": [
+    { "path": "/", "owners": ["ui_omni"], "notes": "Entrada principal." },
+    { "path": "/favicon.ico", "owners": ["ui_omni"], "notes": "Recurso estatico." },
+    { "path": "/media/logos/LOGO_PRISLAB.png", "owners": ["ui_omni"], "notes": "Recurso estatico publico." },
+    { "path": "/sw.js", "owners": ["ui_omni"], "notes": "Service worker." },
+    { "path": "/health/", "owners": ["api_smoke"], "notes": "Health check sin datos de negocio." },
+    { "path": "/ready/", "owners": ["api_smoke"], "notes": "Readiness check." },
+    { "path": "/live/", "owners": ["api_smoke"], "notes": "Liveness check." },
+    { "path": "/metrics/", "owners": ["api_smoke"], "notes": "Metricas operativas." },
+    { "path": "/login/", "owners": ["ui_omni", "role_matrix"], "notes": "Autenticacion y rate limiting." },
+    { "path": "/logout/", "owners": ["ui_omni", "role_matrix"], "notes": "Cierre de sesion." },
+    { "path": "/auth/2fa/verificar/", "owners": ["ui_omni", "role_matrix"], "notes": "Verificacion 2FA." },
+    { "path": "/auth/2fa/configurar/", "owners": ["ui_omni", "role_matrix"], "notes": "Configuracion 2FA." },
+    { "path": "/auth/2fa/desactivar/", "owners": ["ui_omni", "role_matrix"], "notes": "Desactivacion 2FA." },
+    { "path": "/home/", "owners": ["ui_omni", "role_matrix"], "notes": "Inicio autenticado." },
+    { "path": "/dashboard/", "owners": ["ui_omni", "role_matrix"], "notes": "Dashboard principal." },
+    { "path": "/validar/resultado/<uuid:token>/", "owners": ["ui_omni", "api_smoke"], "notes": "Validacion publica por token." },
+    { "path": "/reporte-friccion/", "owners": ["ui_omni", "role_matrix"], "notes": "Reporte de friccion." },
+    { "path": "/tu-opinion/", "owners": ["ui_omni"], "notes": "Opinion del usuario." },
+    { "path": "/cerebro/chat/", "owners": ["ui_omni", "role_matrix", "api_smoke"], "notes": "Chat del cerebro PRIS." },
+    { "path": "/chat/", "owners": ["ui_omni", "role_matrix", "api_smoke"], "notes": "Chat interno." },
+    { "path": "/chat/api/enviar/", "owners": ["api_smoke", "role_matrix"], "notes": "Envio de mensajes." },
+    { "path": "/chat/api/enviar-audio/", "owners": ["api_smoke", "role_matrix"], "notes": "Envio de audio." },
+    { "path": "/chat/api/mensajes/", "owners": ["api_smoke", "role_matrix"], "notes": "Consulta de mensajes." },
+    { "path": "/chat/api/conversaciones/", "owners": ["api_smoke", "role_matrix"], "notes": "Conversaciones." },
+    { "path": "/chat/api/usuarios/", "owners": ["api_smoke", "role_matrix"], "notes": "Usuarios del chat." },
+    { "path": "/buscar-paciente/", "owners": ["ui_omni", "role_matrix", "api_smoke"], "notes": "Busqueda de paciente." },
+    { "path": "/verificar/<uuid:token>/", "owners": ["ui_omni", "api_smoke"], "notes": "Verificacion publica por token." }
   ],
   "targets": {
     "local": {

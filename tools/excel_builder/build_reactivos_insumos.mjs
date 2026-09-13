@@ -1,7 +1,11 @@
 import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { SpreadsheetFile, Workbook } from "@oai/artifact-tool";
 
-const outputDir = "C:/Users/jonil/Desktop/PRISLAB_deploy_checkout/outputs/reactivos_insumos_2026-07-24";
+const outputDir = process.env.PRISLAB_OUTPUT_DIR
+  ? path.resolve(process.env.PRISLAB_OUTPUT_DIR)
+  : path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../outputs/reactivos_insumos_2026-07-24");
 await fs.mkdir(outputDir, { recursive: true });
 const wb = Workbook.create();
 const C = { navy: "#12304A", teal: "#0F766E", yellow: "#FFF2CC", blue: "#DCEEFF", orange: "#FCE4D6", gray: "#F2F4F7", border: "#C8D1DC", white: "#FFFFFF", red: "#F4CCCC" };

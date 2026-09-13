@@ -1537,6 +1537,34 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 - **Hallazgo**: Ambos endpoints realizan la misma clase de operación sensible (declarar efectivo/tarjeta/transferencia contados y cerrar el turno de caja, creando un `CierreTurnoFarmacia` inmutable), pero solo `corte_caja_farmacia` dentro de `farmacia/views/caja.py` persiste un `AuditLog` consultable desde el panel de auditoría. El flujo alterno `cerrar_turno_unificado` (que además intenta cerrar el turno de Laboratorio en la misma operación) solo usa `logger.info`/`logger.warning` de Python — no crea ningún `AuditLog`, por lo que el cierre de caja realizado por esta vía queda fuera del sistema de auditoría estructurado de la aplicación, dependiendo únicamente de logs de servidor (menos accesibles/consultables por el equipo de cumplimiento). Adicionalmente, `_es_administrador_caja` está definida en `corte_caja_unificado.py:41-47` pero **nunca se invoca en ningún punto del código** (confirmado por búsqueda global) — es un control de autorización pensado pero jamás conectado; ambos endpoints (`corte_caja_farmacia` y `api_corte_caja_unificado`) solo exigen `@login_required`, consistente entre sí pero sin restricción de rol para una acción financiera de cierre de turno.
 - **Riesgo**: Pérdida de trazabilidad auditable para cierres de caja realizados vía la API unificada — dificulta la reconciliación y la detección de irregularidades en corte de caja/arqueo si se usa este endpoint en vez del formulario web tradicional.
 - **Recomendación**: Registrar un `AuditLog` equivalente dentro de `cerrar_turno_unificado` (o en `api_corte_caja_unificado` tras la llamada) con el mismo nivel de detalle que `corte_caja_farmacia`; evaluar si conectar `_es_administrador_caja` como control adicional es deseable para esta operación o eliminar la función muerta si el diseño es intencionalmente "cualquier cajero puede cerrar su propio turno".
+
+### H-NUEVO-166 (CRÍTICO): Contraseñas reales del personal (CEO/Super Admin y equipo gerencial/técnico) versionadas en texto plano en la raíz del repositorio
+- **Archivo**: `desactivar_usuarios_antiguos.py:82-98`, `limpiar_usuarios_antiguos.py:67-77` **y también** `EJECUTAR_EN_SERVIDOR.sh:98-101` (script de despliegue a producción en Google Cloud) — los tres rastreados por Git, sin ninguna regla de `.gitignore` que los excluya (solo `/_*.py` con guion bajo al inicio está excluido, y ninguno de estos tres empieza con `_`).
+- **Hallazgo**: Los tres scripts imprimen las contraseñas reales de todo el equipo con nombre y apellido real de la operación PRISLAB: `jonathan -> Admin2026!` (CEO/Super Admin), `nancy -> Nancy2026!` (IQFB Gerencial), `gabriela -> Gabriela2026!` (QFB Gerencial), `janette -> Janette2026!` (TLQ), `tania -> Tania2026!` (TLQ), `deyaneira -> Deyaneira2026!` (Auxiliar). Que la misma tripleta de credenciales aparezca también en el script oficial de despliegue a producción (`EJECUTAR_EN_SERVIDOR.sh`, bajo el título "Credenciales temporales") confirma que no son datos de prueba: son las contraseñas reales usadas para poner en marcha el entorno productivo. Estas credenciales quedan en el historial de Git de forma permanente (aunque se borren en un commit futuro) y son visibles para cualquiera con acceso de lectura al repositorio (colaboradores, contratistas, CI, o cualquier fuga/leak del repo).
+- **Riesgo**: Compromiso total de las cuentas de la organización, incluida la cuenta de **Super Administrador/CEO** (acceso completo a todos los tenants si es el superusuario de la plataforma) y de las cuentas gerenciales de laboratorio (IQFB/QFB), con capacidad de modificar resultados clínicos, facturación y configuración de todo el sistema. Es la fuga de credenciales más severa encontrada en toda la auditoría porque son contraseñas reales de personas reales, no de datos de prueba.
+- **Recomendación**: (1) Rotar INMEDIATAMENTE las contraseñas de las 6 cuentas listadas (`jonathan`, `nancy`, `gabriela`, `janette`, `tania`, `deyaneira`) sin esperar el despliegue de la corrección de código. (2) Eliminar los tres archivos del repositorio y purgarlos del historial de Git (`git filter-repo`/BFG Repo-Cleaner), no solo borrar el contenido en un commit nuevo. (3) Si se requiere un script de mantenimiento de usuarios o despliegue, debe operar por `username`/rol sin imprimir ni hardcodear contraseñas, análogo al patrón ya usado en `reset_admin_password.py`/`create_admin.py` (exigir `DEV_ADMIN_PASSWORD` u otra variable de entorno, nunca literal en el código fuente).
+
+### H-NUEVO-168 (CRÍTICO): Múltiples scripts de QA/smoke-test versionan en texto plano contraseñas REALES de superusuario/CEO contra URLs de producción o Cloud Run reales — patrón sistémico, no un caso aislado
+- **Archivos** (todos rastreados por Git, ninguno cubierto por `.gitignore`):
+  - `e2e_test_prod.py:4,43` — `BASE = "https://prislab.labcorecloud.com"` (dominio productivo real); login con `username=admin&password=Prislab%40Admin2026%21` (URL-decodificado: `Prislab@Admin2026!`).
+  - `test_pdv_buttons_snapshot.py:17-19` — `BASE_URL = "https://prislab-v5-811785477499.us-central1.run.app"` (URL real de Cloud Run); `USERNAME = "admin"`, `PASSWORD = "PrislabV5_2026"`.
+  - `test_lab_detailed.py:16-18` y `test_lab_flow.py:17-19` — `USERNAME = "jonathan"` (cuenta real del CEO/Super Admin, la misma persona de H-NUEVO-166), `PASSWORD = "Admin2024!"` (variante/antecesora de la contraseña `Admin2026!` ya filtrada en H-NUEVO-166; apuntan a `http://127.0.0.1:8000` pero usan la credencial real del CEO, no una cuenta de prueba).
+- **Hallazgo**: No es un caso aislado — es un patrón repetido en al menos 4 scripts de QA/smoke-test distintos, cada uno con una variante de la contraseña real del superusuario/CEO de PRISLAB, en algunos casos apuntando explícitamente a URLs de producción o de Cloud Run reales. La existencia de múltiples variantes (`Admin2024!`, `Admin2026!`, `Prislab@Admin2026!`, `PrislabV5_2026`) sugiere un historial de rotaciones de contraseña donde cada valor anterior quedó igualmente expuesto y nunca se purgó del repositorio.
+- **Riesgo**: Máximo. Cualquiera con acceso de lectura al repositorio (colaboradores, contratistas, un fork, o una fuga del repo) obtiene acceso de superadministrador a instancias reales (producción/Cloud Run) de PRISLAB, con control total sobre todos los tenants, datos clínicos, facturación y configuración del sistema. Combinado con H-NUEVO-166 (contraseñas reales del personal impresas en scripts de mantenimiento), confirma que el equipo tiene la costumbre operativa de escribir contraseñas reales directamente en el código en lugar de usar variables de entorno/secret manager — es un problema de proceso, no un error puntual.
+- **Recomendación**: (1) Rotar INMEDIATAMENTE todas las contraseñas de las cuentas `admin`/`jonathan` en cualquier entorno (local, Cloud Run, `prislab.labcorecloud.com`) que alguna vez haya coincidido con cualquiera de los valores listados arriba. (2) Purgar estos archivos del historial de Git. (3) Establecer como regla de proceso que ningún script de QA/smoke-test contenga contraseñas literales — todas deben leerse de variables de entorno, y preferentemente usar cuentas de prueba de bajo privilegio dedicadas en vez del superusuario/CEO real. (4) Auditar el historial completo de Git (no solo el HEAD actual) por si hay más variantes de contraseña expuestas en commits antiguos ya sobrescritos.
+
+### H-NUEVO-167 (BAJO): Scripts de utilidad crean superusuarios con contraseña fija hardcodeada en el código, sin el mismo gate de variable de entorno que ya usan los scripts de administración canónicos
+- **Archivo**: `create_e2e_user.py:19` (`password = 'e2e_test_pass_123'`, usuario `e2e_admin` con `is_staff=True, is_superuser=True`) y `test_integracion_real.py:71` (`admin.set_password("IntegTest2026!")`, usuario `integ_admin` con `is_superuser=True`).
+- **Hallazgo**: A diferencia de `reset_admin_password.py`, `create_admin.py`, `configurar_admin.py` y `setup_admin_access.py` (todos ya corregidos para exigir `DEV_ADMIN_PASSWORD`/`PRISLAB_SUPERUSER_PASSWORD` desde el entorno, sin contraseña por defecto), estos dos scripts de pruebas siguen creando un superusuario con una contraseña fija embebida directamente en el código fuente. Si alguno de estos scripts se ejecutara por error contra una base de datos compartida (staging con datos reales, o incluso producción por un despliegue/CI mal configurado), crearía una cuenta de superusuario con contraseña pública y predecible.
+- **Riesgo**: Bajo en el flujo normal (son scripts de prueba pensados para entornos aislados/CI), pero es exactamente el mismo patrón que ya causó H-NUEVO-166 en scripts de mantenimiento — el riesgo se materializa si se ejecutan fuera de su entorno previsto.
+- **Recomendación**: Aplicar el mismo patrón que los scripts canónicos: leer la contraseña desde una variable de entorno (`E2E_ADMIN_PASSWORD`/`INTEGRATION_TEST_PASSWORD`) con un valor aleatorio generado si no se provee, en vez de un literal fijo en el código.
+
+### H-NUEVO-169 (CRÍTICO): Contraseña real de PostgreSQL de servidor hardcodeada en `scripts/setup_servidor.sh`
+- **Archivo**: `scripts/setup_servidor.sh:8` — `DB_PASSWORD="feTLeV3skPy%3I8B6O^RO12BqKr@B6iz"`, usada en la línea 57 para ejecutar `ALTER USER $DB_USER WITH PASSWORD '$DB_PASSWORD';` contra PostgreSQL real en el VPS.
+- **Hallazgo**: A diferencia de `scripts/deploy_vps.sh:72` (`DB_PASSWORD="${DB_PASSWORD:-$(openssl rand -base64 24)}"`, que permite override por entorno y genera una aleatoria si falta), este script alterno de setup de servidor tiene la contraseña real de la base de datos de PostgreSQL escrita en texto plano y versionada en git. Si este script se ha ejecutado alguna vez contra un VPS real, la contraseña de la cuenta `prislab_user` en PostgreSQL de ese servidor es exactamente ese valor y está expuesta en el repositorio. Combinado con `scripts/deploy_local_to_vps.ps1:3-4`, que documenta la IP real del VPS (`216.238.89.243`) y usuario SSH (`prislab`), un atacante con acceso de lectura al repo tendría IP, usuario y contraseña de base de datos en un solo lugar (aunque el acceso a PostgreSQL normalmente está restringido a `127.0.0.1`, cualquier exposición futura del puerto 5432 o acceso lateral al servidor comprometería la BD directamente).
+- **Riesgo**: Crítico si el valor sigue vigente en algún entorno real — acceso directo a la base de datos completa (todos los tenants, expedientes clínicos, facturación) sin pasar por la aplicación ni por RBAC/tenant-scoping.
+- **Recomendación**: (1) Rotar la contraseña de `prislab_user` en cualquier PostgreSQL que haya usado este script. (2) Eliminar el literal del script y aplicar el mismo patrón que `deploy_vps.sh` (`${DB_PASSWORD:-$(openssl rand -base64 24)}`), o eliminar `setup_servidor.sh` si `deploy_vps.sh` ya lo reemplaza como script canónico. (3) Purgar el valor del historial de Git.
+
 - **Corrección aplicada**: `api_corte_caja_unificado` exige roles operativos autorizados y `cerrar_turno_unificado` crea un `AuditLog` append-only dentro de la transacción, con el resumen financiero serializado. Se conserva el modelo operativo de que el personal autorizado puede cerrar su turno; no se usa la función huérfana `_es_administrador_caja` como autorización implícita.
 - **Estado**: corregido localmente; pendiente de despliegue.
 - **Corrección aplicada**: se agregó `SolicitudAccesoPortal.empresa` mediante `pacientes.0004_solicitudaccesoportal_empresa`. El alta pública usa `request.empresa_actual` y solo aplica una coincidencia única exacta con un paciente activo cuando no existe contexto de tenant; si no puede demostrar el tenant, la solicitud queda sin asignar para triage de plataforma. El Admin filtra explícitamente por `empresa`, limita el selector de paciente al tenant y `clean()`/`save()` rechazan vínculos entre empresas.
@@ -1577,3 +1605,187 @@ Esto elimina la deriva de versión directa entre checkout y producción y establ
 ## Verificación vigente del Bloque 7 — 2026-08-12
 
 Los hallazgos H-NUEVO-27 a H-NUEVO-31 permanecen corregidos y fueron revalidados contra el código actual. H-NUEVO-146 queda corregido en esta revisión. No se ejecutó ningún comando destructivo ni se modificaron datos productivos.
+
+## BLOQUE 28 — scripts, tools y audit
+
+### Correcciones verificadas
+
+- `scripts/run_manage_with_env.py`: la ayuda no depende de que exista `.env`; los comandos reales siguen exigiendo el entorno requerido.
+- `tools/audit_data_integrity.py`: timestamps UTC sin uso de API obsoleta.
+- Compilación sintáctica de `scripts/`, `tools/` y `audit/`, ejecución del auditor de integridad y `git diff --check`: correctos.
+- Los artefactos de credenciales existentes permanecen sin modificación por decisión operativa; su tratamiento queda diferido.
+
+## BLOQUE 29 — validación estructural de la suite
+
+- Compilación de los directorios de pruebas: correcta.
+- `manage.py check`: correcto.
+- `makemigrations --check --dry-run --noinput`: sin cambios pendientes.
+- La ejecución completa con base de datos y los flujos E2E no se declaran cerrados en esta etapa; requieren una pasada independiente con evidencia de ejecución.
+
+## BLOQUE 30 — suites focalizadas con base de datos
+
+- `core.tests.test_management_command_safety`: 7/7 OK.
+- Las suites de portal e IoT quedaron bloqueadas durante la creación de la base temporal local, en una migración forense previa; se detuvieron sin modificar datos.
+- No se declara cierre de suites completas, E2E ni producción con esta evidencia parcial.
+
+## BLOQUE 31 — agentes UI y generador Excel
+
+- `ai_agent_tools.mjs` dejó de ejecutar PowerShell mediante interpolación de una orden completa; ahora usa argumentos separados.
+- `build_reactivos_insumos.mjs` dejó de depender de una ruta absoluta antigua y admite `PRISLAB_OUTPUT_DIR`.
+- Todos los `.mjs` pasan `node --check` y `git diff --check` permanece limpio.
+- `npm ci --ignore-scripts` instaló las dependencias ya declaradas y reportó 0 vulnerabilidades.
+- `tools/test_agent_tools.mjs`: 42/42 OK. La prueba CRITICAL fue corregida para proporcionar la causa raíz obligatoria; no se debilitó el control.
+- La auditoría UI real y E2E contra un entorno autorizado siguen pendientes.
+
+## BLOQUE 32 — CSS personalizado por tenant
+
+- **Hallazgo corregido:** el CSS personalizado se insertaba con `|safe` sin sanitización, permitiendo romper el elemento `<style>`.
+- **Corrección:** sanitización central aplicada al onboarding y al contexto de templates; el shell base ya no consume directamente el campo crudo.
+- **Pruebas:** `core.tests.test_tenant_css_security` 2/2 OK, compilación y `manage.py check` correctos.
+- **Estado:** corregido localmente; pendiente despliegue y verificación visual controlada.
+
+## BLOQUE 33 — seguridad DOM en interfaces
+
+- **Hallazgo corregido:** tres vistas insertaban datos de usuario/IA directamente en `innerHTML`.
+- **Corrección:** escape explícito para contenido HTML permitido y `textContent` para mensajes de autofactura.
+- **Verificación:** `manage.py check`, compilación y `git diff --check` correctos.
+- **Estado:** corregido localmente; pendiente despliegue y verificación visual.
+
+## BLOQUE 34 — migraciones locales y runner de pruebas
+
+- `iot.0006_kiosco_api_token_hash` y `pacientes.0004_solicitudaccesoportal_empresa` fueron revisadas y aplicadas localmente.
+- `showmigrations`, `manage.py check` y `makemigrations --check` quedan correctos.
+- `core.tests.test_patient_portal_security`: **2/2 OK** con migraciones completas. La salida detallada confirmó que `core.0003_migrar_datos_laboratorio` termina correctamente (`0.181s` con cero órdenes); el tiempo total corresponde a la creación completa del esquema y permisos.
+- `core.tests.test_suscripciones_iot_security`: **2/2 OK** con `PRISLAB_TEST_NO_MIGRATIONS=1`, validando el aislamiento de suscripciones y la no intercambiabilidad de tokens de kiosco.
+- La ejecución de suscripciones/IoT con todas las migraciones excedió el tiempo operativo de esta pasada y fue detenida sin modificar datos; no se declara como cierre de la ruta migratoria completa.
+
+## BLOQUE 35 — endurecimiento de DOM global
+
+- `base.html` ya no inserta directamente mensajes de notificación ni resultados de OmniSearch sin escape.
+- Las rutas devueltas por OmniSearch se aceptan únicamente si son internas y relativas; valores externos o esquemas peligrosos se convierten en `#`.
+- El banner de valores críticos ya no construye un `onclick` con contenido dinámico.
+- `ia_dashboard.html` escapa el estado del diagnóstico, problemas, sugerencias y mensajes de error antes de renderizarlos.
+- `dashboard_medico.html` escapa datos de pacientes, resultados y productos; el UUID se transporta codificado y el folio se fuerza a número antes de construir la acción.
+- La captura industrial escapa respuestas RAG y la tabla de abreviaturas; el widget PRIS escapa los mensajes recibidos de dictado y OCR.
+- Entrada de mercancía escapa los datos del producto recibidos por API y conserva la selección de lotes mediante nodos DOM.
+- El formulario de compra de farmacia ya no inserta datos del catálogo sin escape en enlaces, atributos ni campos de compra.
+- Se corrigió una prueba desfasada: los códigos de barras son únicos por empresa; se verificó que un código usado por otro tenant pueda registrarse localmente sin alterar el producto ajeno.
+- Verificación: `manage.py check` y `git diff --check` correctos.
+- Estado: corregido localmente; pendiente despliegue controlado y prueba visual.
+
+## BLOQUE 36 — errores encontrados en flujo productivo 2026-08-17
+
+### H-FLUJO-001 — Panel operativo sin inyeccion de empresa
+
+- **Severidad:** Alta funcional.
+- **Evidencia:** `GET /mantenimiento/operativo/` devolvia 503 con
+  `lista_equipos_operativo() missing 1 required positional argument: empresa`.
+- **Causa:** la vista recibia `empresa` pero no tenia el decorador `_req_empresa`
+  que lo resuelve desde la sesion.
+- **Correccion:** se agrego `_req_empresa` y una regresion HTTP en
+  `mantenimiento/tests.py`.
+- **Estado:** corregido, desplegado y verificado en produccion. La ruta
+  responde HTTP 200 y el log posterior no muestra TypeError ni 503.
+
+### H-FLUJO-002 — Validador IA consultaba campo inexistente
+
+- **Severidad:** Alta funcional.
+- **Evidencia:** el panel de IA registraba `Cannot resolve keyword
+  'fecha_validacion' into field` al generar sugerencias de proceso.
+- **Causa:** `fecha_validacion` pertenece a `core.DetalleOrden`, no a
+  `core.OrdenDeServicio`.
+- **Correccion:** el promedio se calcula sobre detalles validados y enlaza la
+  fecha de creacion mediante `orden__fecha_creacion`, manteniendo el filtro
+  `orden__empresa`.
+- **Regresion:** `core.tests.test_validador_ia_regression` incluido en la
+  bateria enfocada.
+- **Estado:** corregido, desplegado y verificado en produccion. El panel IA
+  responde HTTP 200 y el log posterior no muestra el error de campo inexistente.
+
+### H-PERF-001 — Prediccion de stock con consultas N+1
+
+- **Severidad:** Media de rendimiento.
+- **Evidencia:** la actualizacion del War Room alcanzo 1,228 consultas y mas
+  de dos segundos al calcular consumo por producto.
+- **Causa:** ventas, ajustes y lotes se consultaban individualmente dentro del
+  ciclo de hasta 200 productos.
+- **Correccion:** agregaciones agrupadas por `producto_id` para el periodo de
+  30 dias, con fallback de stock por producto y salida equivalente.
+- **Regresion:** limite de consultas en `core.tests.test_validador_ia_regression`,
+  2/2 OK.
+- **Estado:** corregido, desplegado y verificado en produccion; la API de
+  anomalias respondio 200 en 671 ms en la medicion posterior.
+
+### H-FLUJO-003 - Lista de trabajo enviaba CSRF invalido al marcar toma
+
+- **Severidad:** Alta funcional.
+- **Evidencia:** en produccion, `POST /laboratorio/api/toma-muestra/12/`
+  respondia HTTP 403 y Sentinel registraba token CSRF invalido.
+- **Causa:** la plantilla usaba un valor de cookie invalido o ausente para
+  `X-CSRFToken` y no declaraba credenciales same-origin.
+- **Correccion:** token renderizado en meta/ventana, fallback de cookie
+  decodificado, `credentials: 'same-origin'` y `X-Requested-With`.
+- **Regresion:** `core.tests.test_lista_trabajo_csrf`, **1/1 OK**.
+- **Estado:** corregido, desplegado y verificado en produccion con la misma
+  orden sintetica.
+
+## Reconciliacion de hallazgos profundos 2026-08-19
+
+### DP-01 - Mutacion de resultados publicados
+
+- **Severidad:** Critica.
+- **Estado:** Corregido en codigo; pendiente despliegue de este cierre.
+- **Evidencia:** `ResultadosLimsService.guardar_captura_desde_datos` permitia
+  continuar por la ruta `borrador` cuando la orden ya estaba en
+  `RESULTADOS_LISTOS` o `ENTREGADO`.
+- **Correccion:** se bloquea cualquier mutacion por la ruta normal de captura,
+  se devuelve `RESULTADOS_INMUTABLES` (409) y se registra el intento con
+  empresa, usuario, orden, estado y accion solicitada. Las correcciones deben
+  usar un flujo autorizado separado.
+
+### DP-02 - Clave Gemini en query string
+
+- **Severidad:** Critica.
+- **Estado:** Corregido en codigo; pendiente despliegue de este cierre.
+- **Correccion:** la URL ya no contiene `?key=`; la credencial viaja en
+  `x-goog-api-key` y queda fuera de URLs, logs de proxy y trazas de acceso.
+- **Regresion:** `test_api_key_uses_header_not_query_string` OK.
+
+### DP-03 - Idempotencia de orden de recepcion opcional
+
+- **Severidad:** Critica funcional.
+- **Estado:** Corregido en codigo; pendiente despliegue de este cierre.
+- **Correccion:** `client_mutation_id` UUID es obligatorio en la creacion de
+  ordenes. Las dos interfaces de recepcion lo generan antes del POST y la
+  restriccion por empresa deduplica reintentos concurrentes.
+
+### DP-04 - Folio de venta sin unicidad
+
+- **Estado:** No reproducido en checkout actual.
+- **Evidencia:** `Venta.folio_operacion` ya declara `unique=True`; no se agrega
+  una migracion especulativa.
+
+### DP-05/DP-06 - 2FA y boton de panico sin autenticacion
+
+- **Estado:** Cerrados previamente; el reporte esta desfasado.
+- **Evidencia:** ambas vistas tienen `login_required` y pruebas de regresion
+  existentes.
+
+### DP-07 - PHI enviado sin redaccion al proveedor externo
+
+- **Severidad:** Critica.
+- **Estado:** Corregido en codigo; pendiente despliegue de este cierre.
+- **Correccion:** todo prompt que sale hacia DeepSeek/Gemini pasa por un
+  sanitizador que redacciona nombres de paciente, telefono, correo, CURP,
+  direccion y fecha de nacimiento, incluidos resultados anidados de las
+  herramientas; las herramientas siguen operando con datos completos dentro
+  del tenant y bajo RBAC.
+- **Regresion:** `core.tests.test_pris_ai_privacy`, OK.
+
+### DP-08 - Webhook externo fail-open sin token
+
+- **Severidad:** Alta.
+- **Estado:** Corregido en codigo; pendiente despliegue de este cierre.
+- **Evidencia:** el webhook aceptaba solicitudes sin token cuando `DEBUG=True`.
+- **Correccion:** ausencia de `PRISCI_WEBHOOK_TOKEN` ahora rechaza siempre la
+  solicitud; todos los entornos deben configurar un token explicito.

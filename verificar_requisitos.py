@@ -124,7 +124,7 @@ for modulo in modulos:
 print("[7/8] Verificando archivos de configuración...")
 configs = [
     'manage.py',
-    'config/settings.py',
+    'config/settings/__init__.py',
     'app.yaml',
     '.gitignore',
 ]

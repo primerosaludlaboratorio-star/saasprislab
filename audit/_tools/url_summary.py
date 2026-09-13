@@ -1,7 +1,7 @@
 import json
 from collections import Counter
 
-with open('tools/url_inventory.json') as f:
+with open('tools/url_inventory.json', encoding="utf-8") as f:
     d = json.load(f)
 
 items = d.get('items', [])

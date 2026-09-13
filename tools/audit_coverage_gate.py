@@ -28,7 +28,7 @@ def _match_prefix(path: str, prefixes):
         p = '/' + p
     # Más específico primero
     for pref in sorted(prefixes, key=len, reverse=True):
-        if p.startswith(pref):
+        if p == pref.rstrip('/') or p.startswith(pref):
             return pref
     return None
 
@@ -47,6 +47,7 @@ def main():
 
     items = inv.get('items') or []
     targets = man.get('coverage_targets') or []
+    exact_targets = man.get('exact_targets') or []
 
     prefixes = []
     prefix_to_owners = {}
@@ -56,6 +57,11 @@ def main():
             continue
         prefixes.append(pref)
         prefix_to_owners[pref] = t.get('owners') or []
+    exact_to_owners = {
+        (t.get('path') or '').strip(): t.get('owners') or []
+        for t in exact_targets
+        if (t.get('path') or '').strip()
+    }
 
     uncovered = []
     covered = 0
@@ -64,6 +70,14 @@ def main():
 
     for it in items:
         p = it.get('path') or ''
+        exact_owners = exact_to_owners.get(p)
+        if exact_owners is not None:
+            covered += 1
+            exact_key = f"exact:{p}"
+            covered_by_prefix[exact_key] = covered_by_prefix.get(exact_key, 0) + 1
+            if not exact_owners:
+                missing_owner.append({'prefix': exact_key, 'path': p})
+            continue
         m = _match_prefix(p, prefixes)
         if not m:
             uncovered.append({
@@ -94,6 +108,7 @@ def main():
         'manifest': {
             'path': args.manifest,
             'coverage_targets_count': len(targets),
+            'exact_targets_count': len(exact_targets),
         },
         'coverage': {
             'covered': covered,

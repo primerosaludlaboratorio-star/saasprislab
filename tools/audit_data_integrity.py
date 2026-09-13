@@ -1,12 +1,12 @@
 import os
 import sys
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 
 def _iso():
-    return datetime.utcnow().isoformat() + "Z"
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def main():

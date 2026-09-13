@@ -34,16 +34,19 @@ def load_env_file(env_path: Path) -> dict[str, str]:
 
 
 def main(argv: list[str]) -> int:
-    env_path = Path(os.environ.get("PRISLAB_ENV_FILE", str(DEFAULT_ENV_PATH))).expanduser()
-    env = load_env_file(env_path)
-    env.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
-
     if len(argv) < 2:
         print(
             "Uso: python scripts/run_manage_with_env.py <comando-manage.py> [args...]",
             file=sys.stderr,
         )
         return 2
+    if argv[1] in {"-h", "--help"}:
+        print(__doc__.strip())
+        return 0
+
+    env_path = Path(os.environ.get("PRISLAB_ENV_FILE", str(DEFAULT_ENV_PATH))).expanduser()
+    env = load_env_file(env_path)
+    env.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
     command = [sys.executable, str(ROOT / "manage.py"), *argv[1:]]
     completed = subprocess.run(command, cwd=str(ROOT), env=env)

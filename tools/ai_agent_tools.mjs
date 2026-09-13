@@ -11,6 +11,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -357,7 +358,6 @@ export const TOOLS = [
       required: ['query'],
     },
     async handler(page, params, ctx) {
-      const { execSync } = await import('node:child_process');
       const query = String(params.query || '').trim();
       if (!query) return { ok: false, data: {}, error: 'query vacío' };
 
@@ -391,7 +391,7 @@ export const TOOLS = [
           `| Select-Object -First 40`,
           `| Out-String -Width 200`,
         ].join(' ');
-        const out = execSync(`powershell -NoProfile -Command "${psCmd}"`, {
+        const out = execFileSync('powershell.exe', ['-NoProfile', '-Command', psCmd], {
           encoding: 'utf8', timeout: 30000, maxBuffer: 1024 * 1024,
         });
         results = out.trim();

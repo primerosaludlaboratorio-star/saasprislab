@@ -1,20 +1,24 @@
 {
   "protocol": "PRISLAB_URL_INVENTORY_SUMMARY",
   "source": "tools/url_inventory.json",
-  "count": 1812,
+  "count": 1956,
   "kinds": {
-    "ui": 1544,
-    "api": 252,
+    "ui": 1671,
+    "api": 269,
     "pdf": 16
   },
   "prefixes_top": [
     {
       "prefix": "/admin/",
-      "count": 1043
+      "count": 1103
     },
     {
       "prefix": "/laboratorio/",
-      "count": 118
+      "count": 126
+    },
+    {
+      "prefix": "/farmacia/",
+      "count": 92
     },
     {
       "prefix": "/consultorio/",
@@ -22,15 +26,11 @@
     },
     {
       "prefix": "/api/",
-      "count": 61
-    },
-    {
-      "prefix": "/farmacia/",
-      "count": 53
+      "count": 62
     },
     {
       "prefix": "/silo-lab/",
-      "count": 50
+      "count": 57
     },
     {
       "prefix": "/lims/",
@@ -45,16 +45,20 @@
       "count": 24
     },
     {
-      "prefix": "/bienestar/",
-      "count": 21
+      "prefix": "/contabilidad/",
+      "count": 20
     },
     {
       "prefix": "/pacientes/",
-      "count": 18
+      "count": 20
     },
     {
-      "prefix": "/contabilidad/",
+      "prefix": "/ia/",
       "count": 17
+    },
+    {
+      "prefix": "/bienestar/",
+      "count": 16
     },
     {
       "prefix": "/marketing/",
@@ -65,7 +69,7 @@
       "count": 15
     },
     {
-      "prefix": "/ia/",
+      "prefix": "/finanzas/",
       "count": 14
     },
     {
@@ -73,20 +77,16 @@
       "count": 14
     },
     {
-      "prefix": "/crm/",
-      "count": 14
-    },
-    {
       "prefix": "/medico/",
       "count": 14
     },
     {
-      "prefix": "/finanzas/",
-      "count": 13
+      "prefix": "/crm/",
+      "count": 14
     },
     {
       "prefix": "/logistica/",
-      "count": 11
+      "count": 12
     },
     {
       "prefix": "/capacitacion/",
@@ -97,7 +97,7 @@
       "count": 10
     },
     {
-      "prefix": "/notificaciones/",
+      "prefix": "/reportes/",
       "count": 9
     },
     {
@@ -109,58 +109,66 @@
       "count": 8
     },
     {
-      "prefix": "/reportes/",
+      "prefix": "/iot/",
       "count": 8
+    },
+    {
+      "prefix": "/inventario/",
+      "count": 7
+    },
+    {
+      "prefix": "/academia/",
+      "count": 7
     },
     {
       "prefix": "/recepcion/",
       "count": 7
     },
     {
-      "prefix": "/iot/",
-      "count": 7
-    },
-    {
-      "prefix": "/cotizacion/",
-      "count": 6
-    },
-    {
-      "prefix": "/blindaje/",
+      "prefix": "/transferencias/",
       "count": 6
     }
   ],
   "view_modules_top": [
     {
       "module": "django.contrib",
-      "count": 869
+      "count": 919
     },
     {
       "module": "core.views",
-      "count": 435
+      "count": 368
     },
     {
       "module": "django.views",
-      "count": 177
+      "count": 200
+    },
+    {
+      "module": "farmacia.views",
+      "count": 79
     },
     {
       "module": "consultorio.views",
       "count": 63
     },
     {
+      "module": "config.urls",
+      "count": 61
+    },
+    {
+      "module": "inventario.views",
+      "count": 53
+    },
+    {
+      "module": "mantenimiento.views",
+      "count": 31
+    },
+    {
       "module": "lims.views",
       "count": 26
     },
     {
-      "module": "farmacia.views",
-      "count": 24
-    },
-    {
-      "module": "mantenimiento.views",
-      "count": 22
-    },
-    {
-      "module": "inventario.views",
-      "count": 20
+      "module": "laboratorio.views",
+      "count": 15
     },
     {
       "module": "seguridad.views",
@@ -171,27 +179,19 @@
       "count": 15
     },
     {
-      "module": "bienestar.views",
+      "module": "ia.views",
       "count": 12
     },
     {
-      "module": "laboratorio.views",
-      "count": 11
-    },
-    {
-      "module": "logistica.views",
-      "count": 11
-    },
-    {
-      "module": "ia.views",
-      "count": 10
+      "module": "bienestar.views",
+      "count": 12
     },
     {
       "module": "pacientes.portal_views",
       "count": 10
     },
     {
-      "module": "inventario.views_generales",
+      "module": "logistica.views",
       "count": 10
     },
     {
@@ -199,12 +199,12 @@
       "count": 9
     },
     {
-      "module": "mantenimiento.views_metrologia",
-      "count": 9
+      "module": "pacientes.views",
+      "count": 8
     },
     {
-      "module": "inventario.views_consultorio",
-      "count": 8
+      "module": "academia.views",
+      "count": 7
     },
     {
       "module": "recepcion.views",
@@ -215,19 +215,7 @@
       "count": 7
     },
     {
-      "module": "pacientes.views",
-      "count": 6
-    },
-    {
       "module": "enfermeria.views",
-      "count": 6
-    },
-    {
-      "module": "inventario.views_compras",
-      "count": 6
-    },
-    {
-      "module": "inventario.views_traspasos",
       "count": 6
     },
     {
@@ -243,6 +231,18 @@
       "count": 2
     },
     {
+      "module": "laboratorio.views_admin",
+      "count": 2
+    },
+    {
+      "module": "contabilidad.views_public",
+      "count": 2
+    },
+    {
+      "module": "suscripciones.views",
+      "count": 2
+    },
+    {
       "module": "consultorio.api_views",
       "count": 2
     },
@@ -254,39 +254,71 @@
   "views_top": [
     {
       "view": "django.views.generic.base.view",
-      "count": 177
+      "count": 200
     },
     {
       "view": "django.contrib.admin.options.history_view",
-      "count": 172
+      "count": 182
     },
     {
       "view": "django.contrib.admin.options.delete_view",
-      "count": 172
+      "count": 182
     },
     {
       "view": "django.contrib.admin.options.change_view",
-      "count": 172
+      "count": 182
     },
     {
       "view": "django.contrib.admin.options.add_view",
-      "count": 171
+      "count": 181
     },
     {
       "view": "django.contrib.admin.options.changelist_view",
-      "count": 170
+      "count": 180
     },
     {
       "view": "pacientes.portal_views.wrapper",
       "count": 7
     },
     {
-      "view": "core.views.laboratorio_config.configurar_prueba",
+      "view": "core.views.laboratorio.config_lims.configurar_prueba",
       "count": 4
     },
     {
-      "view": "consultorio.views.nueva_consulta_soap",
+      "view": "core.views.farmacia.corte_caja_dia",
       "count": 4
+    },
+    {
+      "view": "consultorio.views.clinico.nueva_consulta_soap",
+      "count": 4
+    },
+    {
+      "view": "core.views.laboratorio.recepcion.recepcion_lab",
+      "count": 3
+    },
+    {
+      "view": "core.views.laboratorio.config_lims.editar_parametro",
+      "count": 3
+    },
+    {
+      "view": "core.views.impresion.imprimir_ticket_raw",
+      "count": 3
+    },
+    {
+      "view": "farmacia.views.inventario.dashboard_farmacia",
+      "count": 3
+    },
+    {
+      "view": "farmacia.views.inventario.api_buscar_productos_compra",
+      "count": 3
+    },
+    {
+      "view": "farmacia.views.inventario.registro_gasto",
+      "count": 3
+    },
+    {
+      "view": "core.views.finanzas.view",
+      "count": 3
     },
     {
       "view": "functools.partial",
@@ -294,18 +326,6 @@
     },
     {
       "view": "ninja.operation.sync_view_wrapper",
-      "count": 3
-    },
-    {
-      "view": "core.views.laboratorio.recepcion_lab",
-      "count": 3
-    },
-    {
-      "view": "core.views.laboratorio_config.editar_parametro",
-      "count": 3
-    },
-    {
-      "view": "core.views.finanzas.view",
       "count": 3
     },
     {
@@ -321,55 +341,35 @@
       "count": 2
     },
     {
-      "view": "core.views.notificaciones.api_notificaciones_badge",
+      "view": "core.views.laboratorio.resultados.registro_resultados_entrada",
       "count": 2
     },
     {
-      "view": "core.views.notificaciones.marcar_leida",
+      "view": "core.views.laboratorio.resultados.lista_trabajo_lab",
       "count": 2
     },
     {
-      "view": "core.views.notificaciones.marcar_todas_leidas",
+      "view": "core.views.monitor_produccion.monitor_produccion",
       "count": 2
     },
     {
-      "view": "core.views.laboratorio.registro_resultados_entrada",
+      "view": "core.views.laboratorio.pacientes_lab.historial_lab_paciente",
       "count": 2
     },
     {
-      "view": "core.views.farmacia.dashboard_farmacia",
+      "view": "core.views.laboratorio.config_lims.lista_pruebas",
       "count": 2
     },
     {
-      "view": "core.views.laboratorio.lista_trabajo_lab",
+      "view": "core.views.laboratorio.config_lims.duplicar_prueba",
       "count": 2
     },
     {
-      "view": "core.views.laboratorio_config.lista_pruebas",
+      "view": "core.views.laboratorio.config_lims.eliminar_prueba",
       "count": 2
     },
     {
-      "view": "core.views.laboratorio_config.duplicar_prueba",
-      "count": 2
-    },
-    {
-      "view": "core.views.laboratorio_config.eliminar_prueba",
-      "count": 2
-    },
-    {
-      "view": "core.views.laboratorio_config.configurar_rangos",
-      "count": 2
-    },
-    {
-      "view": "core.views.laboratorio_config.api_parametros_estudio",
-      "count": 2
-    },
-    {
-      "view": "core.views.laboratorio.imprimir_hoja_trabajo_pdf",
-      "count": 2
-    },
-    {
-      "view": "core.views.laboratorio.abrir_worklist_qr",
+      "view": "core.views.laboratorio.config_lims.configurar_rangos",
       "count": 2
     }
   ]

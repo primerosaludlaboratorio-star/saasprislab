@@ -144,11 +144,11 @@ class MarketingSecurityTests(TestCase):
         self.assertTrue(response.json()["ok"])
 
     def test_entrenamiento_ia_enforces_empresa(self):
-        # User without company is redirected to home
+        # A user without the required marketing role is denied before the
+        # company redirect guard is reached.
         self.client.login(username="marketing_user_sin_emp", password="password123")
         response = self.client.get(reverse("marketing:entrenamiento_ia"))
-        self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse("home"), target_status_code=302)
+        self.assertEqual(response.status_code, 403)
 
         # User with company can access
         self.client.login(username="marketing_user_con_emp", password="password123")

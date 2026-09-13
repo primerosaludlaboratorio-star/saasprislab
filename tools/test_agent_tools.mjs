@@ -371,6 +371,7 @@ async function main() {
       module: 'TEST',
       title: 'Error crítico de prueba',
       detail: 'El módulo explotó.',
+      root_cause: 'tools/test_agent_tools.mjs:367 — caso de prueba controlado',
     }, ctx);
     assert(r.ok);
     assert(r.data.screenshot, 'CRITICAL debería tener screenshot automático');
