@@ -82,9 +82,9 @@
                             <td>{% if resultado.analito %}{{ resultado.analito.nombre }}{% else %}—{% endif %}</td>
                             <td>
                                 {{ resultado.valor }}
-                                {% if resultado._forense_num_ediciones %}
+                                {% if resultado.forense_num_ediciones %}
                                 <span class="badge bg-dark ms-1"
-                                      title="Este resultado tiene {{ resultado._forense_num_ediciones }} registro(s) de modificación en auditoría forense."
+                                      title="Este resultado tiene {{ resultado.forense_num_ediciones }} registro(s) de modificación en auditoría forense."
                                       data-testid="badge-espejo-forense">Espejo forense</span>
                                 {% endif %}
                                 {% if resultado.fuera_rango or resultado.es_critico %}

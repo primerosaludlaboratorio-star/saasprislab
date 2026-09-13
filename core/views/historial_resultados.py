@@ -94,7 +94,7 @@ def historial_resultados(request, paciente_id=None):
             orden__estado__in=('RESULTADOS_LISTOS', 'ENTREGADO'),
         )
         .select_related('orden', 'analito')
-        .annotate(_forense_num_ediciones=Count('historial_cambios', distinct=True))
+        .annotate(forense_num_ediciones=Count('historial_cambios', distinct=True))
         .order_by('-orden__fecha_creacion', 'analito__nombre')
     )
 
