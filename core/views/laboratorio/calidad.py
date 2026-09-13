@@ -27,6 +27,7 @@ from core.lims_cart import detalle_orden_etiqueta
 from core.services.audit_service import registrar_auditoria
 from core.services.forense_service import metadata_consentimiento_snapshot, registrar_acceso_forense
 from core.models import ForenseAcceso
+from core.decorators import rate_limit, role_required
 from core.utils.detalle_orden import attach_detalle_display_attrs
 from core.utils.sucursal_helpers import get_request_sucursal
 from lims.models import Analito
@@ -251,6 +252,8 @@ def api_toma_muestra(request, orden_id: int):
 
 
 @login_required
+@role_required('QUIMICO', 'LABORATORIO', 'ADMIN', 'DIRECTOR')
+@rate_limit('laboratorio-validar-pin', limit=5, window_seconds=300)
 def api_validar_pin(request, orden_id: int):
     """API: valida resultados por PIN (MVP)."""
     if request.method != "POST":

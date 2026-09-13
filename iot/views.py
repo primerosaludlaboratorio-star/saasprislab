@@ -38,7 +38,10 @@ def dashboard_kioscos(request):
     kioscos = Kiosco.objects.filter(empresa=empresa)
     ahora = timezone.now()
     for k in kioscos:
-        k.online = k.ultima_conexion and (ahora - k.ultima_conexion).seconds < 60
+        k.online = bool(
+            k.ultima_conexion
+            and (ahora - k.ultima_conexion).total_seconds() < 60
+        )
     verificaciones_hoy = VerificacionKiosco.objects.filter(
         kiosco__empresa=empresa,
         fecha_creacion__date=ahora.date()

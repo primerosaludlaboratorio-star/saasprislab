@@ -195,6 +195,54 @@ class VentaFarmaciaService:
                             status=400,
                         )
 
+                # El navegador solo propone cantidades y productos. Los
+                # importes se calculan aqui desde el catalogo del tenant para
+                # impedir ventas a precio manipulado por el cliente.
+                precios_autorizados = {}
+                subtotal_autorizado = Decimal('0.00')
+                iva_autorizado = Decimal('0.00')
+                subtotal_publico = Decimal('0.00')
+                for idx, raw_item in enumerate(items, start=1):
+                    producto_id = raw_item.get('producto_id') or raw_item.get('id')
+                    producto_catalogo = Producto.objects.filter(
+                        id=producto_id,
+                        empresa=empresa,
+                    ).first()
+                    if not producto_catalogo:
+                        return JsonResponse(
+                            {'status': 'error', 'mensaje': f'Producto #{idx} no encontrado.'},
+                            status=404,
+                        )
+                    cantidad_item = int(raw_item.get('cantidad', 1))
+                    precio_publico = _moneto(producto_catalogo.precio_por_fraccion_efectivo())
+                    precio_unitario_autorizado = precio_publico
+                    if tipo_precio_especial:
+                        precio_unitario_autorizado = _moneto(producto_catalogo.precio_compra)
+                    base_item = _moneto(precio_unitario_autorizado * cantidad_item)
+                    iva_item_autorizado = _moneto(
+                        base_item * _moneto(producto_catalogo.iva_porcentaje) / Decimal('100')
+                    )
+                    precios_autorizados[str(producto_catalogo.pk)] = {
+                        'precio_unitario': precio_unitario_autorizado,
+                        'subtotal': base_item,
+                        'iva': iva_item_autorizado,
+                    }
+                    subtotal_autorizado += base_item
+                    iva_autorizado += iva_item_autorizado
+                    subtotal_publico += _moneto(precio_publico * cantidad_item)
+
+                # ``Venta.subtotal`` representa el subtotal de lista; el
+                # descuento autorizado se registra por separado. Asi el
+                # ticket y los reportes conservan una base auditable.
+                subtotal = _moneto(subtotal_publico)
+                iva_total = _moneto(iva_autorizado)
+                descuento_aplicado = _moneto(
+                    max(Decimal('0.00'), subtotal_publico - subtotal)
+                    if tipo_precio_especial else Decimal('0.00')
+                )
+                total_original = _moneto(subtotal_publico + iva_total)
+                total_final = _moneto(subtotal - descuento_aplicado + iva_total + redondeo)
+
                 # 3. Generar folio único
                 max_intentos = 10
                 folio_generado = None
@@ -228,6 +276,7 @@ class VentaFarmaciaService:
                         max_dias_receta = int(getattr(empresa, "farmacia_dias_max_antiguedad_receta", 30))
                         # Buscar o crear médico
                         medico, _ = Medico.objects.get_or_create(
+                            empresa=empresa,
                             cedula_profesional=medico_cedula,
                             defaults={'nombre_completo': medico_nombre}
                         )
@@ -470,9 +519,10 @@ class VentaFarmaciaService:
 
                     cantidad = int(item_data.get('cantidad', 1))
                     cantidad_restante = cantidad  # Cantidad que aún falta descontar
-                    precio_unitario = _moneto(item_data.get('precio_unitario', 0))
-                    subtotal_item = _moneto(item_data.get('subtotal', precio_unitario * cantidad))
-                    iva_item = _moneto(item_data.get('iva_item', 0))
+                    precio_servidor = precios_autorizados[str(producto.pk)]
+                    precio_unitario = precio_servidor['precio_unitario']
+                    subtotal_item = precio_servidor['subtotal']
+                    iva_item = precio_servidor['iva']
 
                     # ALGORITMO PEPS: Obtener lotes ordenados por fecha_caducidad (más antiguo primero)
                     # select_for_update() evita que dos ventas simultáneas desconten el mismo lote y sobredesen stock

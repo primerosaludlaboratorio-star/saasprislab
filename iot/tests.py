@@ -185,3 +185,15 @@ class IoTKioscoSecurityTests(TestCase):
             REMOTE_ADDR="192.168.1.100"
         )
         self.assertEqual(response.status_code, 200)
+
+    def test_api_kiosco_checkin_usa_estado_y_campos_reales(self):
+        response = self.client.post(
+            reverse("iot:api_checkin", args=[self.kiosco_a.id]),
+            data=json.dumps({"orden_id": self.orden_a.id}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.kiosco_token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        verificacion = VerificacionKiosco.objects.get(orden=self.orden_a)
+        self.assertEqual(verificacion.estado, VerificacionKiosco.ESTADO_CONFIRMADO)
+        self.assertEqual(verificacion.datos_confirmados["checkin"], True)

@@ -1,4 +1,5 @@
 import json
+from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -29,18 +30,24 @@ def api_kiosco_checkin(request, kiosco_id):
         if not orden:
             return JsonResponse({'status': 'error', 'mensaje': 'Orden no encontrada o no pertenece a la empresa'}, status=404)
             
-        # Actualizar la orden como verificada / autorizada por paciente
-        # Suponiendo que el modelo OrdenDeServicio tiene un estado o un flag
-        orden.estado = 'EN_PROCESO' # o 'VERIFICADA'
-        orden.save(update_fields=['estado'])
-        
-        # Guardar registro en IoT
-        VerificacionKiosco.objects.create(
-            kiosco=kiosco,
-            orden_id=orden.id,
-            estado='EXITOSA',
-            detalles='Check-in completado por Kiosco'
-        )
+        # La orden y la verificacion deben confirmarse juntas: un error de
+        # persistencia no puede dejar la orden avanzada sin trazabilidad.
+        with transaction.atomic():
+            orden = OrdenDeServicio.objects.select_for_update().get(
+                id=orden.id,
+                empresa=kiosco.empresa,
+            )
+            orden.estado = 'EN_PROCESO'
+            orden.save(update_fields=['estado'])
+            VerificacionKiosco.objects.create(
+                kiosco=kiosco,
+                orden=orden,
+                estado=VerificacionKiosco.ESTADO_CONFIRMADO,
+                datos_confirmados={
+                    'checkin': True,
+                    'firma_capturada': bool(firma_b64),
+                },
+            )
         
         return JsonResponse({
             'status': 'success',
