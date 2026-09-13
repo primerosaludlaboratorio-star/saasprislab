@@ -4,11 +4,12 @@
 # ======================================================
 
 # Framework
-Django==5.2.16
+Django==5.2.17
 django-ninja==1.6.2
 asgiref==3.11.1
 whitenoise==6.6.0
 django-cors-headers==4.6.0
+sqlparse==0.6.0
 
 # Base de Datos
 psycopg[binary]==3.3.4
@@ -27,7 +28,7 @@ google-cloud-vision==3.14.0
 google-cloud-speech==2.40.0
 
 # Encriptación
-cryptography==48.0.1
+cryptography==50.0.0
 
 # Tareas asíncronas
 celery==5.3.6
@@ -49,10 +50,10 @@ openpyxl==3.1.2
 
 # PDFs e Imágenes
 reportlab==4.1.0
-weasyprint==68.0
+weasyprint==70.0
 pillow==12.3.0
 lxml==6.1.1
-pypdf==6.14.2
+pypdf==6.16.1
 
 # Seguridad / Auth
 pyotp==2.9.0

@@ -1,47 +1,9 @@
 name: PRISLAB Deploy to VPS
 
 on:
-  push:
-    branches: [release/v1.0-local]
-    paths:
-      # La documentación aislada no dispara este flujo; se usa un cambio de código,
-      # script, infraestructura o workflow para activar un despliegue real.
-      - 'academia/**'
-      - 'bienestar/**'
-      - 'config/**'
-      - 'consultorio/**'
-      - 'contabilidad/**'
-      - 'core/**'
-      - 'enfermeria/**'
-      - 'farmacia/**'
-      - 'ia/**'
-      - 'inventario/**'
-      - 'iot/**'
-      - 'laboratorio/**'
-      - 'lims/**'
-      - 'logistica/**'
-      - 'mantenimiento/**'
-      - 'marketing/**'
-      - 'middleware_local/**'
-      - 'monitoring/**'
-      - 'nginx/**'
-      - 'pacientes/**'
-      - 'pris_ai_core/**'
-      - 'recepcion/**'
-      - 'reglas_negocio/**'
-      - 'scripts/**'
-      - 'seguridad/**'
-      - 'suscripciones/**'
-      - 'templates/**'
-      - 'tools/**'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - 'docker-compose.monitoring.yml'
-      - 'manage.py'
-      - 'requirements.txt'
-      - 'requirements.lock'
-      - 'runtime.txt'
-      - '.github/workflows/deploy-vps.yml'
+  workflow_run:
+    workflows: ["PRISLAB Quality Gate"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       environment:
@@ -66,12 +28,18 @@ env:
 
 jobs:
   deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'release/v1.0-local')
     name: Deploy to VPS (${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'production' }})
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'production' }}
     steps:
-      - name: Checkout
+      - name: Checkout quality-gated revision
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Validate deploy secrets
         run: |

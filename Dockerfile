@@ -7,35 +7,23 @@
 # Docker Compose: PORT=8000 (definido en docker-compose.yml)
 # ==============================================================================
 
-FROM python:3.12-slim
+FROM python:3.12-slim AS builder
 
 LABEL maintainer="Jonathan Alonso <admin@prislab.com>" \
       description="PRISLAB V5.2 SaaS — Sistema Clínico Integral (Emporio)" \
       version="5.2"
 
-# Variables de entorno
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DJANGO_SETTINGS_MODULE=config.settings \
     PORT=8080
 
-# ── Dependencias del sistema ─────────────────────────────────────────────────
-# Incluye: PostgreSQL client, WeasyPrint, Pillow, ReportLab, Cairo (PDF)
+# ── Herramientas de compilacion, solo en la etapa builder ────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Compiladores (necesarios para psycopg2, cffi)
     gcc \
     python3-dev \
     libpq-dev \
     libffi-dev \
-    # PostgreSQL client (pg_isready, pg_dump para backups)
-    postgresql-client \
-    # WeasyPrint / ReportLab / Cairo runtime
-    libcairo2 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libgdk-pixbuf-2.0-0 \
-    shared-mime-info \
-    # Pillow runtime
     libjpeg62-turbo-dev \
     zlib1g-dev \
     libfreetype6-dev \
@@ -43,20 +31,48 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libopenjp2-7-dev \
     libtiff5-dev \
     libwebp-dev \
-    # Utilidades
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Directorio de trabajo ────────────────────────────────────────────────────
-WORKDIR /app
+WORKDIR /build
 
 # ── Instalar dependencias Python (cache de Docker por capa) ──────────────────
-COPY requirements.txt .
+COPY requirements.txt /build/requirements.txt
+COPY requirements.lock /build/requirements.lock
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir \
-        gunicorn==22.0.0 \
-        redis==5.0.4
+    pip install --no-cache-dir --prefix=/install --require-hashes -r requirements.lock
+
+FROM python:3.12-slim AS runtime
+
+LABEL maintainer="Jonathan Alonso <admin@prislab.com>" \
+      description="PRISLAB V5.2 SaaS - Sistema Clinico Integral (Emporio)" \
+      version="5.2"
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DJANGO_SETTINGS_MODULE=config.settings \
+    PORT=8080
+
+# Solo bibliotecas de ejecucion; no se incluyen gcc, headers ni toolchains.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-client \
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf-2.0-0 \
+    shared-mime-info \
+    libjpeg62-turbo \
+    zlib1g \
+    libfreetype6 \
+    liblcms2-2 \
+    libopenjp2-7 \
+    libtiff6 \
+    libwebp7 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY --from=builder /install /usr/local
 
 # ── Copiar código fuente ─────────────────────────────────────────────────────
 COPY . .

@@ -32,5 +32,9 @@
   "bugs": {
     "url": "https://github.com/primerosaludlaboratorio-star/saasprislab/issues"
   },
-  "homepage": "https://github.com/primerosaludlaboratorio-star/saasprislab#readme"
+  "homepage": "https://github.com/primerosaludlaboratorio-star/saasprislab#readme",
+  "devDependencies": {
+    "@babel/parser": "^7.29.8",
+    "parse5": "^8.0.1"
+  }
 }

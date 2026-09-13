@@ -91,6 +91,8 @@ services:
     environment:
       # Django
       DJANGO_SETTINGS_MODULE: config.settings
+      PRISLAB_ENV: production
+      DJANGO_ENV: production
       DEBUG: "False"
       SECRET_KEY: ${SECRET_KEY:?Debes definir SECRET_KEY en .env}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:?Debes definir ALLOWED_HOSTS en .env}

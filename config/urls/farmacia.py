@@ -6,6 +6,7 @@ from farmacia.views import pdv as farmacia_pdv
 from farmacia.views import inventario as farmacia_inventario
 from farmacia.views import reportes as farmacia_reportes
 from farmacia.views.devoluciones import (
+    buscar_venta_devolucion as farmacia_api_buscar_venta_devolucion,
     buscar_venta_para_devolucion as farmacia_buscar_venta_para_devolucion,
     procesar_devolucion as farmacia_procesar_devolucion,
 )
@@ -27,7 +28,7 @@ urlpatterns = [
     path('farmacia/inventario/', views.farmacia_inventario_general, name='farmacia_inventario_general'),
     # Flujo canónico: evita el template legacy sin selección por partida ni PIN.
     path('farmacia/devoluciones/', farmacia_buscar_venta_para_devolucion, name='historial_devoluciones'),
-    path('farmacia/devoluciones/buscar/', farmacia_buscar_venta_para_devolucion, name='buscar_venta_devolucion'),
+    path('farmacia/devoluciones/buscar/', farmacia_api_buscar_venta_devolucion, name='buscar_venta_devolucion'),
     path('farmacia/devoluciones/procesar/', farmacia_procesar_devolucion, name='procesar_devolucion'),
     path('farmacia/ventas/cancelar/<int:venta_id>/', views.cancelar_venta, name='cancelar_venta'),
     path('farmacia/ticket/<int:venta_id>/', views.imprimir_ticket, name='imprimir_ticket'),

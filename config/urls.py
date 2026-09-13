@@ -10,6 +10,7 @@ from core.views import medico as medico_views
 from farmacia.views import pdv as farmacia_pdv
 from farmacia.views import inventario as farmacia_inventario
 from farmacia.views import devoluciones as farmacia_devoluciones
+from farmacia.views.devoluciones import buscar_venta_devolucion as api_buscar_venta_devolucion
 from farmacia.views import reportes as farmacia_reportes
 from farmacia.views import caja as farmacia_caja
 from core.views import laboratorio_config as lims_views
@@ -193,7 +194,9 @@ urlpatterns = [
     path('farmacia/libro-control/', farmacia_inventario.libro_control_antibioticos, name='libro_control'),
     path('farmacia/inventario/', views.farmacia_inventario_general, name='farmacia_inventario_general'),
     path('farmacia/devoluciones/', views.historial_devoluciones, name='historial_devoluciones'),
-    path('farmacia/devoluciones/buscar/', views.buscar_venta_devolucion, name='buscar_venta_devolucion'),
+    # La ruta consumida por el PDV es JSON; la pantalla HTML vive en
+    # farmacia.urls bajo buscar_venta_para_devolucion.
+    path('farmacia/devoluciones/buscar/', api_buscar_venta_devolucion, name='buscar_venta_devolucion'),
     path('farmacia/devoluciones/procesar/', views.procesar_devolucion, name='procesar_devolucion'),
     path('farmacia/ventas/cancelar/<int:venta_id>/', views.cancelar_venta, name='cancelar_venta'),
     # Aliases legacy aún consumidos por templates/tests/comandos

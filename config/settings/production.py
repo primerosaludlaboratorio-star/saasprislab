@@ -24,6 +24,27 @@ if not _e2e_disable_ssl and not _testing:
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# En producción el Admin requiere el grupo explícito de administración.
+# Los superusuarios conservan acceso para las tareas de plataforma.
+ADMIN_GROUP_RESTRICTION_ENABLED = os.environ.get(
+    'ADMIN_GROUP_RESTRICTION_ENABLED', 'True'
+).lower() in ('true', '1', 'yes')
+
+_admin_ip_restriction = os.environ.get(
+    'ADMIN_IP_RESTRICTION_ENABLED', 'False'
+).lower() in ('true', '1', 'yes')
+_allowed_admin_ips = [
+    value.strip()
+    for value in os.environ.get('ALLOWED_ADMIN_IPS', '').split(',')
+    if value.strip()
+]
+if _admin_ip_restriction and not _allowed_admin_ips:
+    raise RuntimeError(
+        'ADMIN_IP_RESTRICTION_ENABLED requiere ALLOWED_ADMIN_IPS en producción.'
+    )
+ADMIN_IP_RESTRICTION_ENABLED = _admin_ip_restriction
+ALLOWED_ADMIN_IPS = _allowed_admin_ips
+
 # ── ALLOWED_HOSTS ─────────────────────────────────────────────────────────────
 _server_name = (os.environ.get('SERVER_NAME') or os.environ.get('DOMAIN_NAME') or '').strip()
 if not _server_name:
