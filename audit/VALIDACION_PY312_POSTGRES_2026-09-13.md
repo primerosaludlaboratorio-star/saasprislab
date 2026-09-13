@@ -82,6 +82,8 @@ Esto confirma despliegue y migracion, pero no sustituye la validacion Python
   Se detuvo de forma controlada despues de mas de cinco minutos sin avance.
 - La base temporal `test_prislab_ci_20260913` fue eliminada con `DROP DATABASE
   ... WITH (FORCE)`. No se uso ni modifico la base productiva.
+- Al finalizar, tambien se eliminaron la base y el rol temporales
+  `prislab_ci_20260913` del VPS.
 
 **Resultado:** Python 3.12 esta instalado y las migraciones sobre PostgreSQL
 aislado pasan, pero la bateria Django sobre PostgreSQL permanece
