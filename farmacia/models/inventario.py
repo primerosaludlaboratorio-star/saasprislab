@@ -327,8 +327,17 @@ class MovimientoInventario(models.Model):
                 self.full_clean()
                 
                 if self.lote:
+                    # Lock the lot before changing its quantity. An expired
+                    # lot may be reduced for a documented disposal; calling
+                    # Lote.save() would reject that historical expiration.
+                    self.lote = Lote.objects.select_for_update().get(
+                        pk=self.lote.pk,
+                        empresa=self.empresa,
+                        producto=self.producto,
+                    )
                     if es_entrada:
                         self.lote.cantidad += self.cantidad
+                        self.lote.save()
                     else:
                         self.lote.cantidad -= self.cantidad
                         if self.lote.cantidad < 0:
@@ -336,7 +345,12 @@ class MovimientoInventario(models.Model):
                                 f"Stock insuficiente en lote {self.lote.numero_lote}. "
                                 f"Disponible: {self.lote.cantidad + self.cantidad}"
                             )
-                    self.lote.save()
+                        # Bypass Lote.clean() only for a stock decrement. The
+                        # lot date is already historical and must remain
+                        # auditable while its remaining quantity is reduced.
+                        Lote.objects.filter(pk=self.lote.pk).update(
+                            cantidad=self.lote.cantidad
+                        )
                 
                 if es_entrada and self.tipo_movimiento == 'ENTRADA_COMPRA':
                     valor_anterior = self.stock_anterior * self.costo_promedio_anterior

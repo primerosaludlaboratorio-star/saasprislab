@@ -139,16 +139,101 @@ def predecir_agotamiento_critico(
     Ordenados por urgencia (menos días primero).
     """
     from core.models import Producto
-
+    from django.db.models import Case, DecimalField, F, Sum, When
+    from django.utils import timezone
+    from datetime import timedelta
     productos = Producto.objects.filter(
         empresa=empresa,
         stock__gt=0,
     ).order_by('nombre')[:200]
 
+    # Agrega todo el periodo en tres consultas, en lugar de ejecutar tres
+    # consultas por producto dentro del ciclo de prediccion.
+    producto_ids = [producto.id for producto in productos]
+    if not producto_ids:
+        return []
+
+    desde = timezone.now() - timedelta(days=30)
+    consumo_por_producto = {}
+    try:
+        from core.models import DetalleVenta
+        ventas = (
+            DetalleVenta.objects
+            .filter(
+                producto_id__in=producto_ids,
+                venta__empresa=empresa,
+                venta__fecha__gte=desde,
+                venta__estado='COMPLETADA',
+            )
+            .values('producto_id')
+            .annotate(total=Sum('cantidad'))
+        )
+        consumo_por_producto.update({row['producto_id']: float(row['total'] or 0) for row in ventas})
+    except Exception as exc:
+        logger.warning('prediccion_stock - no se pudo agregar ventas: %s', exc)
+
+    try:
+        from core.models import AjusteInventario
+        cantidad_abs = Case(
+            When(cantidad__lt=0, then=F('cantidad') * -1),
+            default=F('cantidad'),
+            output_field=DecimalField(max_digits=12, decimal_places=3),
+        )
+        ajustes = (
+            AjusteInventario.objects
+            .filter(
+                producto_id__in=producto_ids,
+                empresa=empresa,
+                fecha__gte=desde,
+                tipo_movimiento__in=['USO_INTERNO', 'MERMA', 'CADUCIDAD', 'ROBO'],
+            )
+            .values('producto_id')
+            .annotate(total=Sum(cantidad_abs))
+        )
+        for row in ajustes:
+            consumo_por_producto[row['producto_id']] = (
+                consumo_por_producto.get(row['producto_id'], 0.0)
+                + float(row['total'] or 0)
+            )
+    except Exception as exc:
+        logger.warning('prediccion_stock - no se pudo agregar ajustes: %s', exc)
+
+    stock_por_producto = {}
+    try:
+        from core.models import Lote
+        lotes = (
+            Lote.objects
+            .filter(producto_id__in=producto_ids, empresa=empresa, cantidad__gt=0)
+            .values('producto_id')
+            .annotate(total=Sum('cantidad'))
+        )
+        stock_por_producto = {row['producto_id']: float(row['total'] or 0) for row in lotes}
+    except Exception as exc:
+        logger.warning('prediccion_stock - no se pudo agregar lotes: %s', exc)
+
     criticos = []
     for prod in productos:
         try:
-            pred = predecir_dias_hasta_agotamiento(empresa, prod)
+            consumo_diario = consumo_por_producto.get(prod.id, 0.0) / 30
+            stock_actual = stock_por_producto.get(prod.id, float(prod.stock or 0))
+            if consumo_diario <= 0:
+                dias_restantes = 999
+                fecha_agotamiento = None
+            else:
+                dias_restantes = int(stock_actual / consumo_diario)
+                fecha_agotamiento = (timezone.now() + timedelta(days=dias_restantes)).date()
+            pred = {
+                'producto_id': prod.id,
+                'producto_nombre': prod.nombre,
+                'sustancia': getattr(prod, 'sustancia_activa', '') or '',
+                'stock_actual': stock_actual,
+                'consumo_diario': round(consumo_diario, 2),
+                'consumo_semanal': round(consumo_diario * 7, 1),
+                'dias_restantes': dias_restantes,
+                'fecha_agotamiento': fecha_agotamiento.isoformat() if fecha_agotamiento else None,
+                'nivel_alerta': _calcular_nivel_alerta(dias_restantes),
+                'recomendacion': _generar_recomendacion(prod.nombre, dias_restantes, consumo_diario),
+            }
             if pred['consumo_diario'] > 0 and pred['dias_restantes'] <= dias_umbral:
                 criticos.append(pred)
         except Exception as exc:

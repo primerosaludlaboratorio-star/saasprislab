@@ -118,6 +118,7 @@ class OnboardingCrearEmpresaView(View):
         """Toda la creación en una única transacción. Si falla → rollback."""
         from core.models import Empresa, ConfiguracionModulos, Usuario
         from core.tenant import tenant_bypass
+        from core.utils.tenant_css import sanitize_tenant_css
 
         with tenant_bypass():
 
@@ -130,7 +131,7 @@ class OnboardingCrearEmpresaView(View):
                 color_primario    = payload.get('color_primario', '#003366'),
                 color_secundario  = payload.get('color_secundario', '#FFD700'),
                 color_fondo       = payload.get('color_fondo', '#F8F9FA'),
-                css_personalizado = payload.get('css_personalizado', ''),
+                css_personalizado = sanitize_tenant_css(payload.get('css_personalizado', '')),
                 activa            = True,
             )
             logger.info('[ONBOARDING] Empresa creada: %s (id=%s)', empresa.nombre, empresa.pk)

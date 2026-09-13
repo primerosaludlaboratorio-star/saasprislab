@@ -207,7 +207,7 @@ def generar_sugerencias_proceso(empresa):
     """
     sugerencias = []
     try:
-        from core.models import OrdenDeServicio
+        from core.models import DetalleOrden, OrdenDeServicio
         from django.utils import timezone
         from django.db.models import Avg, F, ExpressionWrapper, DurationField
         from datetime import timedelta
@@ -216,17 +216,17 @@ def generar_sugerencias_proceso(empresa):
         hace_7_dias = ahora - timedelta(days=7)
 
         # Tiempo promedio de proceso total
-        ordenes = OrdenDeServicio.objects.filter(
-            empresa=empresa,
-            fecha_creacion__gte=hace_7_dias,
-            hora_toma_muestra__isnull=False,
+        detalles_validados = DetalleOrden.objects.filter(
+            orden__empresa=empresa,
+            orden__fecha_creacion__gte=hace_7_dias,
+            orden__hora_toma_muestra__isnull=False,
             fecha_validacion__isnull=False,
         )
 
-        if ordenes.exists():
-            avg_total = ordenes.annotate(
+        if detalles_validados.exists():
+            avg_total = detalles_validados.annotate(
                 tiempo_total=ExpressionWrapper(
-                    F('fecha_validacion') - F('fecha_creacion'),
+                    F('fecha_validacion') - F('orden__fecha_creacion'),
                     output_field=DurationField()
                 )
             ).aggregate(avg=Avg('tiempo_total'))

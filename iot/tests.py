@@ -53,6 +53,7 @@ class IoTKioscoSecurityTests(TestCase):
             ip_address="192.168.1.100",
             activo=True
         )
+        self.kiosco_token = self.kiosco_a.provisionar_token()
 
         self.verificacion_a = VerificacionKiosco.objects.create(
             orden=self.orden_a,
@@ -134,7 +135,7 @@ class IoTKioscoSecurityTests(TestCase):
         # 2. Valid token but incorrect IP -> 403 Forbidden
         response = self.client.get(
             reverse("iot:api_heartbeat", args=[self.kiosco_a.id]),
-            HTTP_AUTHORIZATION="Bearer test-kiosco-token-123",
+            HTTP_AUTHORIZATION=f"Bearer {self.kiosco_token}",
             REMOTE_ADDR="192.168.1.200"
         )
         self.assertEqual(response.status_code, 403)
@@ -142,7 +143,7 @@ class IoTKioscoSecurityTests(TestCase):
         # 3. Valid token and correct IP -> 200 OK
         response = self.client.get(
             reverse("iot:api_heartbeat", args=[self.kiosco_a.id]),
-            HTTP_AUTHORIZATION="Bearer test-kiosco-token-123",
+            HTTP_AUTHORIZATION=f"Bearer {self.kiosco_token}",
             REMOTE_ADDR="192.168.1.100"
         )
         self.assertEqual(response.status_code, 200)
@@ -153,7 +154,7 @@ class IoTKioscoSecurityTests(TestCase):
             reverse("iot:api_confirmar", args=[self.verificacion_a.id]),
             data=json.dumps({"datos": {}}),
             content_type="application/json",
-            HTTP_AUTHORIZATION="Bearer test-kiosco-token-123",
+            HTTP_AUTHORIZATION=f"Bearer {self.kiosco_token}",
             REMOTE_ADDR="192.168.1.200"
         )
         self.assertEqual(response.status_code, 403)
@@ -163,7 +164,7 @@ class IoTKioscoSecurityTests(TestCase):
             reverse("iot:api_confirmar", args=[self.verificacion_a.id]),
             data=json.dumps({"datos": {}}),
             content_type="application/json",
-            HTTP_AUTHORIZATION="Bearer test-kiosco-token-123",
+            HTTP_AUTHORIZATION=f"Bearer {self.kiosco_token}",
             REMOTE_ADDR="192.168.1.100"
         )
         self.assertEqual(response.status_code, 200)
@@ -172,7 +173,7 @@ class IoTKioscoSecurityTests(TestCase):
         # 1. Incorrect IP -> 403 Forbidden
         response = self.client.post(
             reverse("iot:api_rechazar", args=[self.verificacion_a.id]),
-            HTTP_AUTHORIZATION="Bearer test-kiosco-token-123",
+            HTTP_AUTHORIZATION=f"Bearer {self.kiosco_token}",
             REMOTE_ADDR="192.168.1.200"
         )
         self.assertEqual(response.status_code, 403)
@@ -180,7 +181,7 @@ class IoTKioscoSecurityTests(TestCase):
         # 2. Correct IP -> 200 OK
         response = self.client.post(
             reverse("iot:api_rechazar", args=[self.verificacion_a.id]),
-            HTTP_AUTHORIZATION="Bearer test-kiosco-token-123",
+            HTTP_AUTHORIZATION=f"Bearer {self.kiosco_token}",
             REMOTE_ADDR="192.168.1.100"
         )
         self.assertEqual(response.status_code, 200)

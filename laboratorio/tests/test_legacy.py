@@ -71,6 +71,8 @@ class AdminCSVRegresionTest(TestCase):
             username='stafflab',
             password='testpass123',
             is_staff=True,
+            is_superuser=True,
+            rol='DIRECTOR',
         )
         self.client.login(username='stafflab', password='testpass123')
 

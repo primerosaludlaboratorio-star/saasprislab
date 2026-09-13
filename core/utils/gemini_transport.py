@@ -10,7 +10,7 @@ from django.conf import settings
 
 logger = logging.getLogger('core')
 
-_URL = 'https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={key}'
+_URL = 'https://generativelanguage.googleapis.com/v1/models/{model}:generateContent'
 _MODELS = ('gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-flash-lite')
 
 
@@ -41,9 +41,14 @@ def generate_gemini_content(prompt, api_key=None, image_b64='', temperature=0.4,
     for model in _MODELS:
         for attempt in range(3):
             request = urllib.request.Request(
-                _URL.format(model=model, key=key),
+                _URL.format(model=model),
                 data=body,
-                headers={'Content-Type': 'application/json'},
+                headers={
+                    'Content-Type': 'application/json',
+                    # Never place provider credentials in URLs: proxies and
+                    # access logs commonly persist query strings.
+                    'x-goog-api-key': key,
+                },
                 method='POST',
             )
             try:

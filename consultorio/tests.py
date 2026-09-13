@@ -54,7 +54,7 @@ class ConsultorioModelTests(TestCase):
             sexo='M',
             fecha_nacimiento='1990-01-01',
         )
-        Medico.objects.create(
+        self.medico = Medico.objects.create(
             empresa=self.empresa,
             nombre_completo='Dr. Test Medico',
             cedula_profesional='TEST-MED-001',
@@ -64,31 +64,31 @@ class ConsultorioModelTests(TestCase):
         self.client = Client()
     
     def test_consulta_medica_creation(self):
-        """Test ConsultaMedica model creation (legacy consultorio)."""
+        """Test ConsultaMedica creation through the canonical core model."""
         consulta = ConsultaMedica.objects.create(
             paciente=self.paciente,
-            medico=self.usuario,
+            medico=self.medico,
             empresa=self.empresa,
-            motivo='Paciente refiere dolor de cabeza',
+            motivo_consulta='Paciente refiere dolor de cabeza',
             exploracion_fisica='TA: 120/80, FC: 72',
-            diagnostico_texto='Cefalea tensional',
-            tratamiento='Reposo y analgésicos',
+            diagnostico_principal='Cefalea tensional',
+            plan_tratamiento='Reposo y analgésicos',
         )
         self.assertIsNotNone(consulta.id)
         self.assertEqual(consulta.paciente, self.paciente)
-        self.assertEqual(consulta.medico, self.usuario)
+        self.assertEqual(consulta.medico, self.medico)
         self.assertEqual(consulta.empresa, self.empresa)
     
     def test_consulta_medica_string_representation(self):
         """Test ConsultaMedica string representation."""
         consulta = ConsultaMedica.objects.create(
             paciente=self.paciente,
-            medico=self.usuario,
+            medico=self.medico,
             empresa=self.empresa,
-            motivo='Test',
+            motivo_consulta='Test',
             exploracion_fisica='Test',
-            diagnostico_texto='Test',
-            tratamiento='Test',
+            diagnostico_principal='Test',
+            plan_tratamiento='Test',
         )
         str_repr = str(consulta)
         self.assertIsInstance(str_repr, str)

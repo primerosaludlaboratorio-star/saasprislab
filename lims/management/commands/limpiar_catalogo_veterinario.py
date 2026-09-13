@@ -78,7 +78,7 @@ class Command(BaseCommand):
                 analito_id__in=analito_ids,
             ).delete()
             PaqueteLims.perfiles.through.objects.filter(
-                perfil_id__in=perfil_ids,
+                perfillims_id__in=perfil_ids,
             ).delete()
 
             # PrecioItem tiene referencias polimórficas; se desactiva sin borrar.

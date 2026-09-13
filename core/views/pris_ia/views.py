@@ -31,6 +31,55 @@ from ._tools_lectura import _resumir_resultado_tool
 logger = logging.getLogger('core')
 
 
+def _sanitizar_prompt_externo(texto):
+    """Redacta campos PHI antes de enviar contexto a un proveedor externo."""
+    import re
+
+    value = str(texto or '')
+    patterns = (
+        (r'(?i)(["\']?(?:nombre_completo|paciente|paciente_nombre|paciente_nombre_snapshot|nombre_paciente|patient_name)["\']?\s*[:=]\s*["\'])(.*?)(["\'])', r'\1[REDACTADO]\3'),
+        (r'(?i)(["\']?(?:telefono|phone|celular|email|correo|curp|direccion|fecha_nacimiento|birth_date)["\']?\s*[:=]\s*["\']?)([^,}\n"\']+)', r'\1[REDACTADO]'),
+        (r'\b[A-Z]{4}\d{6}[A-Z0-9]{8}\b', '[CURP_REDACTADA]'),
+        (r'\b(?:\+?52\s*)?(?:\d[ -]?){10}\b', '[TELEFONO_REDACTADO]'),
+    )
+    for pattern, replacement in patterns:
+        value = re.sub(pattern, replacement, value)
+    return value
+
+
+def _sanitizar_datos_externos(value, _patient_context=False):
+    """Redacta PHI en resultados estructurados antes de serializarlos al prompt."""
+    sensitive = {
+        'nombre_completo', 'paciente', 'paciente_nombre',
+        'paciente_nombre_snapshot', 'patient_name', 'telefono', 'phone',
+        'celular', 'email', 'correo', 'curp', 'direccion',
+        'fecha_nacimiento', 'birth_date',
+    }
+    patient_containers = {'paciente', 'pacientes', 'patient', 'patients', 'ordenes'}
+    if isinstance(value, dict):
+        out = {}
+        for key, item in value.items():
+            key_norm = str(key).lower()
+            is_patient_field = key_norm in sensitive or (
+                _patient_context and key_norm in {'nombre', 'fecha', 'fecha_nacimiento'}
+            )
+            out[key] = '[REDACTADO]' if is_patient_field else _sanitizar_datos_externos(
+                item, _patient_context or key_norm in patient_containers
+            )
+        return out
+    if isinstance(value, list):
+        return [_sanitizar_datos_externos(item, _patient_context) for item in value]
+    return value
+
+
+def _serializar_resultado_externo(resultado):
+    return json.dumps(
+        _sanitizar_datos_externos(resultado),
+        ensure_ascii=False,
+        default=str,
+    )
+
+
 @login_required
 def asistente_page(request):
     return render(request, 'core/pris_ia_assistant.html', {
@@ -101,6 +150,7 @@ def asistente_chat(request):
 
         def _llamar_modelo(prompt_texto):
             """Usa el proveedor activo sin saltarse el contexto ni las herramientas."""
+            prompt_texto = _sanitizar_prompt_externo(prompt_texto)
             if provider == 'deepseek':
                 from core.utils.deepseek_client import generate_content as _deepseek_generate
                 return _deepseek_generate(
@@ -167,7 +217,7 @@ def asistente_chat(request):
                 except (IntegrityError, OperationalError) as _pris_err:
                     logger.warning(f"AccionPRIS no pudo guardarse: {_pris_err}")
 
-                resultado_txt = json.dumps(resultado, ensure_ascii=False, default=str)
+                resultado_txt = _serializar_resultado_externo(resultado)
                 partes_prompt.append(
                     f"\n[Sistema: la herramienta '{tool_name}' requiere confirmación. "
                     f"Resultado: {resultado_txt}]\n"
@@ -179,7 +229,7 @@ def asistente_chat(request):
 
             # Aclaración necesaria: usuario debe proporcionar más info
             if isinstance(resultado, dict) and resultado.get("necesita_aclaracion"):
-                resultado_txt = json.dumps(resultado, ensure_ascii=False, default=str)
+                resultado_txt = _serializar_resultado_externo(resultado)
                 partes_prompt.append(
                     f"\n[Sistema: herramienta '{tool_name}' necesita aclaración. "
                     f"Resultado: {resultado_txt}]\n"
@@ -209,7 +259,7 @@ def asistente_chat(request):
                 except (IntegrityError, OperationalError) as _pris_err:
                     logger.warning(f"AccionPRIS confirmada no pudo guardarse: {_pris_err}")
 
-            resultado_txt = json.dumps(resultado, ensure_ascii=False, default=str)
+            resultado_txt = _serializar_resultado_externo(resultado)
             partes_prompt.append(
                 f"\n[Sistema: herramienta '{tool_name}' ejecutada exitosamente. "
                 f"Resultado: {resultado_txt}]\n"

@@ -137,3 +137,28 @@ class EntregaResultadosBitacoraTest(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertIn("aún no ha validado", response.content.decode("utf-8"))
+
+    def test_entrega_solo_muestra_pdf_si_candados_estan_cumplidos(self):
+        orden = self._crear_orden()
+
+        response = self.client.get(reverse("entrega_resultados"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f"/laboratorio/resultados/{orden.id}/pdf/")
+        self.assertContains(response, "Ver PDF")
+
+        ConsentimientoInformado.objects.filter(orden=orden).delete()
+        response = self.client.get(reverse("entrega_resultados"))
+
+        self.assertNotContains(response, f"/laboratorio/resultados/{orden.id}/pdf/")
+        self.assertContains(response, "Falta firma de aviso de privacidad")
+
+    def test_entrega_oculta_pdf_con_saldo_pendiente(self):
+        orden = self._crear_orden()
+        OrdenDeServicio.objects.filter(id=orden.id).update(anticipo=Decimal("0.00"))
+
+        response = self.client.get(reverse("entrega_resultados"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, f"/laboratorio/resultados/{orden.id}/pdf/")
+        self.assertContains(response, "Saldo pendiente")

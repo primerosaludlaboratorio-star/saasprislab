@@ -11,6 +11,7 @@ from django.views.decorators.http import require_http_methods
 from core.tenant import tenant_protected_get
 from core.utils.empresa_request import get_empresa_usuario
 from lims.models import Analito, ValorReferenciaAnalito
+from lims.veterinary_catalog import is_veterinary_catalog_text
 from lims.views.tenant_lims import empresa_lims
 import logging
 
@@ -42,7 +43,17 @@ def lista(request):
         return redirect('home')
 
     # FIX V8.2 LIMS TENANT: filtro explícito (superusuario sin ORM tenant)
+    # The operational catalog is human-only. Keep veterinary records in the
+    # database for auditability, but never expose them in the LIMS UI.
     qs = Analito.objects.filter(empresa=empresa).select_related('precio')
+    veterinary_ids = [
+        row['id'] for row in qs.values('id', 'codigo', 'abreviatura', 'nombre', 'departamento')
+        if is_veterinary_catalog_text(
+            row['codigo'], row['abreviatura'], row['nombre'], row['departamento']
+        )
+    ]
+    if veterinary_ids:
+        qs = qs.exclude(id__in=veterinary_ids)
 
     q = (request.GET.get('q') or '').strip()
     departamento = (request.GET.get('dep') or '').strip()
@@ -82,6 +93,10 @@ def detalle(request, pk):
     if not _check_perm(request.user):
         return redirect('home')
     analito = tenant_protected_get(Analito, pk=pk)
+    if is_veterinary_catalog_text(
+        analito.codigo, analito.abreviatura, analito.nombre, analito.departamento
+    ):
+        return redirect('lims_analitos')
     rangos = analito.rangos.all().order_by('unidad_edad', 'sexo', 'edad_minima')
     return render(request, 'lims/analito_detalle.html', {
         'analito': analito,

@@ -127,6 +127,7 @@ def home_view(request):
 def dashboard_medico(request):
     """Dashboard médico (consultorio) - Escritorio digital del doctor."""
     from consultorio.models import ConsultaMedica
+    from consultorio.views._helpers import _resolver_medico_usuario
     from core.models import OrdenDeServicio, PreOrdenLaboratorio
     from django.utils import timezone
     from datetime import timedelta
@@ -136,12 +137,20 @@ def dashboard_medico(request):
         from django.contrib import messages
         messages.error(request, 'Usuario no tiene empresa asignada.')
         return redirect('home')
+
+    # ConsultaMedica.medico apunta al catálogo clínico Medico, no al usuario
+    # de autenticación. Las cuentas administrativas pueden abrir el tablero
+    # sin tener perfil médico, pero nunca deben provocar un ValueError ni
+    # inventar una identidad clínica para consultar expedientes.
+    medico_perfil = _resolver_medico_usuario(request, empresa)
     
     # Obtener consultas recientes del médico (últimas 10)
-    consultas_recientes = ConsultaMedica.objects.filter(
-        empresa=empresa,
-        medico=request.user
-    ).select_related('paciente').order_by('-fecha_creacion')[:10]
+    consultas_recientes = ConsultaMedica.objects.none()
+    if medico_perfil:
+        consultas_recientes = ConsultaMedica.objects.filter(
+            empresa=empresa,
+            medico=medico_perfil,
+        ).select_related('paciente').order_by('-fecha_creacion')[:10]
     
     # Obtener recetas recientes del médico (últimas 10)
     from core.models import Receta

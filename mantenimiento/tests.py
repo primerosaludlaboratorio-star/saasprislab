@@ -90,6 +90,15 @@ class MantenimientoScopingTest(TestCase):
         response = self.client.get(url, {'silo': 'GENERAL', 'lote_id': self.lote_general_b.id})
         self.assertEqual(response.status_code, 404)
 
+    def test_panel_operativo_resuelve_empresa_del_usuario(self):
+        """La pantalla operativa no debe fallar por falta de argumento empresa."""
+        self.client.login(username='usera', password='password123')
+
+        response = self.client.get(reverse('mantenimiento:lista_equipos_operativo'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Panel Operativo')
+
     def test_crear_ticket_expediente_cross_tenant_validation(self):
         """A user cannot link a ticket to an equipment file (expediente) of another company."""
         self.client.login(username='usera', password='password123')
@@ -150,9 +159,13 @@ class MantenimientoScopingTest(TestCase):
             tipo="TEMPERATURA",
             activo=True
         )
+        sensor_a.set_api_token(code)
+        sensor_a.save(update_fields=['api_token_hash'])
+        sensor_b.set_api_token(code)
+        sensor_b.save(update_fields=['api_token_hash'])
 
         url = reverse('mantenimiento:api_iot_lectura')
-        headers = {'HTTP_X_SENSOR_TOKEN': code}
+        headers = {'HTTP_X_SENSOR_ID': code, 'HTTP_X_SENSOR_TOKEN': code}
         post_data = {'temperatura': 4.5, 'humedad': 50.0}
 
         # Sending POST request -> Should succeed and not return a 500 error due to MultipleObjectsReturned

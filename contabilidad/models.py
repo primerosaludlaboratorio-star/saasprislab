@@ -32,7 +32,7 @@ class ClienteFacturacion(models.Model):
     # FK empresa — necesaria para multi-tenancy
     empresa = models.ForeignKey(
         'core.Empresa',
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='clientes_facturacion',
     )
 
@@ -113,7 +113,7 @@ class FacturaCFDI(models.Model):
     # Empresa — FK directa para multi-tenancy y scoping de folios
     empresa = models.ForeignKey(
         'core.Empresa',
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='facturas_cfdi',
         help_text='Empresa emisora del CFDI (denormalizada de cliente.empresa para integridad y performance)',
     )
@@ -333,7 +333,7 @@ class CuentaContable(models.Model):
         ('ACREEDOR', 'Acreedor'),
     ]
 
-    empresa = models.ForeignKey('core.Empresa', on_delete=models.CASCADE, related_name='cuentas_contables')
+    empresa = models.ForeignKey('core.Empresa', on_delete=models.PROTECT, related_name='cuentas_contables')
     codigo = models.CharField(max_length=20, db_index=True)
     nombre = models.CharField(max_length=200)
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
@@ -369,7 +369,7 @@ class Poliza(models.Model):
         ('CANCELADA', 'Cancelada'),
     ]
 
-    empresa = models.ForeignKey('core.Empresa', on_delete=models.CASCADE, related_name='polizas')
+    empresa = models.ForeignKey('core.Empresa', on_delete=models.PROTECT, related_name='polizas')
     folio = models.CharField(max_length=30, db_index=True)
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='DIARIO')
     concepto = models.TextField()
@@ -430,7 +430,7 @@ class AsientoContable(models.Model):
 
 class Compra(models.Model):
     """Registro de facturas de proveedores y cuentas por pagar."""
-    empresa = models.ForeignKey('core.Empresa', on_delete=models.CASCADE, related_name='compras')
+    empresa = models.ForeignKey('core.Empresa', on_delete=models.PROTECT, related_name='compras')
     proveedor = models.CharField(max_length=200, help_text='Nombre o Razón Social del proveedor')
     rfc_proveedor = models.CharField(max_length=13, blank=True)
     folio_factura = models.CharField(max_length=50, blank=True)
@@ -460,7 +460,7 @@ class Nomina(models.Model):
         ('COMISIONES', 'Comisiones por venta'),
         ('OTRO', 'Otro tipo de pago')
     ]
-    empresa = models.ForeignKey('core.Empresa', on_delete=models.CASCADE, related_name='nominas')
+    empresa = models.ForeignKey('core.Empresa', on_delete=models.PROTECT, related_name='nominas')
     empleado = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='pagos_nomina')
     tipo = models.CharField(max_length=20, choices=TIPO_PAGO, default='SALARIO')
     fecha_pago = models.DateField(default=timezone.localdate)

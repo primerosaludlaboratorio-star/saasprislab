@@ -211,7 +211,7 @@ class FarmaciaRegulatorioContractTest(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertTrue(response.json()["requiere_validacion"])
 
-    def test_entrada_con_codigo_globalmente_existente_no_devuelve_500(self):
+    def test_entrada_con_codigo_de_otro_tenant_se_aisla_correctamente(self):
         otra_empresa = Empresa.objects.create(
             nombre="Otra Empresa",
             rfc="OTR123456789",
@@ -235,5 +235,16 @@ class FarmaciaRegulatorioContractTest(TestCase):
             content_type="application/json",
         )
 
-        self.assertEqual(response.status_code, 409)
-        self.assertEqual(response.json()["status"], "error")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "success")
+        self.assertTrue(
+            Producto.objects.filter(
+                empresa=self.empresa,
+                codigo_barras="CODIGO-RESERVADO-001",
+                nombre="Producto nuevo",
+            ).exists()
+        )
+        self.assertEqual(
+            Producto.objects.filter(codigo_barras="CODIGO-RESERVADO-001").count(),
+            2,
+        )

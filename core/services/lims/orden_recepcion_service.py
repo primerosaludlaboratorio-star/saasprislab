@@ -128,6 +128,19 @@ class OrdenServicioLims:
                     'body': {'status': 'error', 'mensaje': 'client_mutation_id no es un UUID válido'},
                 }
 
+            if cmid is None:
+                return {
+                    'http_status': 400,
+                    'body': {
+                        'status': 'error',
+                        'codigo': 'CLIENT_MUTATION_ID_REQUERIDO',
+                        'mensaje': (
+                            'client_mutation_id es obligatorio para crear una orden. '
+                            'Permite deduplicar reintentos y evita órdenes duplicadas.'
+                        ),
+                    },
+                }
+
             if cmid:
                 exist = OrdenDeServicio.objects.filter(
                     empresa=empresa, client_mutation_id=cmid

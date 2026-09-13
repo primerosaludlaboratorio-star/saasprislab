@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.test import SimpleTestCase
 
 from lims.veterinary_catalog import is_veterinary_catalog_text
+from core.templatetags.prislab_text import nombre_lims
 
 
 class VeterinaryCatalogFilterTests(SimpleTestCase):
@@ -15,6 +16,17 @@ class VeterinaryCatalogFilterTests(SimpleTestCase):
     def test_keeps_human_catalog_identifiers(self):
         self.assertFalse(is_veterinary_catalog_text('GLU', 'Glucosa', 'Química clínica'))
         self.assertFalse(is_veterinary_catalog_text('BH', 'Biometría hemática'))
+
+
+class LimsPresentationTextTests(SimpleTestCase):
+    def test_normalizes_clinical_display_names_without_changing_codes(self):
+        self.assertEqual(nombre_lims('PROTEINAS'), 'Proteínas')
+        self.assertEqual(nombre_lims('UROBILINOGENO'), 'Urobilinógeno')
+        self.assertEqual(nombre_lims('PH.'), 'pH')
+        self.assertEqual(nombre_lims('GLU'), 'GLU')
+
+    def test_preserves_multiword_clinical_spelling(self):
+        self.assertEqual(nombre_lims('ACIDO URICO'), 'Ácido úrico')
 from django.contrib.auth import get_user_model
 from core.models import Empresa, Paciente
 from lims.models import Analito, ValorReferenciaAnalito

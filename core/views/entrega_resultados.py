@@ -181,6 +181,7 @@ def entrega_resultados(request):
         # Calcular saldo para el semáforo financiero
         saldo_ord = calcular_saldo(o)
         bloqueado_por_saldo = saldo_ord > Decimal("0.01")
+        consentimiento_digital = paciente_autorizado_canal_digital_resultados(o.paciente)
 
         whatsapp_link = None
         if tel and not bloqueado_por_saldo and o.paciente and paciente_autorizado_canal_digital_resultados(o.paciente):
@@ -191,18 +192,27 @@ def entrega_resultados(request):
         # Estado del semáforo
         email_enviado = bitacora.fecha_enviado_mail is not None
         whatsapp_enviado = bitacora.fecha_whatsapp_enviado is not None
-        pdf_generado = True  # Si está en RESULTADOS_LISTOS, el PDF ya se puede generar
+        # El endpoint de PDF aplica el mismo candado financiero y de privacidad.
+        # No mostrar un enlace que necesariamente terminaría en una redirección.
+        pdf_generado = not bloqueado_por_saldo and consentimiento_digital
+        if bloqueado_por_saldo:
+            pdf_bloqueo_motivo = "Saldo pendiente"
+        elif not consentimiento_digital:
+            pdf_bloqueo_motivo = "Falta firma de aviso de privacidad"
+        else:
+            pdf_bloqueo_motivo = ""
         leido_paciente = bitacora.fecha_leido_paciente is not None
 
         items.append(
             {
                 "orden": o,
                 "bitacora": bitacora,
-                "link_publico": link_publico if not bloqueado_por_saldo else None,
+                "link_publico": link_publico if not bloqueado_por_saldo and consentimiento_digital else None,
                 "whatsapp_link": whatsapp_link,
                 "email_enviado": email_enviado,
                 "whatsapp_enviado": whatsapp_enviado,
                 "pdf_generado": pdf_generado,
+                "pdf_bloqueo_motivo": pdf_bloqueo_motivo,
                 "leido_paciente": leido_paciente,
                 # Candado financiero — usado en el template para badge/alerta
                 "saldo_pendiente": saldo_ord,

@@ -10,6 +10,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ImproperlyConfigured
 from django.http import JsonResponse

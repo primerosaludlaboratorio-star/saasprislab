@@ -20,7 +20,9 @@ logger = logging.getLogger("core.prisci_webhook")
 def _webhook_token_ok(request) -> bool:
     expected = (getattr(settings, "PRISCI_WEBHOOK_TOKEN", "") or "").strip()
     if not expected:
-        return bool(getattr(settings, "DEBUG", False))
+        # External ingress must fail closed in every environment.
+        logger.error("PRISCI_WEBHOOK_TOKEN no configurado; webhook rechazado")
+        return False
     provided = (
         request.headers.get("X-Prisci-Webhook-Token")
         or request.GET.get("token")

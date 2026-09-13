@@ -742,6 +742,9 @@ def _procesar_devolucion_erp(request, data, empresa, venta, sucursal, disponible
 
     if tipo == 'PARCIAL':
         from core.services.ventas.devolucion_service import DevolucionService
+        motivo_para_servicio = motivo
+        if motivo_detallado:
+            motivo_para_servicio = f'{motivo}: {motivo_detallado}'
         resultado = DevolucionService.registrar_devolucion_resultado(
             request,
             empresa,
@@ -749,7 +752,9 @@ def _procesar_devolucion_erp(request, data, empresa, venta, sucursal, disponible
                 **data,
                 'tipo_devolucion': 'PARCIAL',
                 'monto_reembolsado': monto,
-                'motivo_error': motivo,
+                # Preserve the selected reason and the operator's explanation
+                # in the auditable history instead of dropping the explanation.
+                'motivo_error': motivo_para_servicio,
             },
         )
         body = resultado['body']
@@ -803,6 +808,7 @@ def _procesar_devolucion_erp(request, data, empresa, venta, sucursal, disponible
         if devolucion.requiere_autorizacion:
             return JsonResponse({
                 'success': True,
+                'status': 'success',
                 'requiere_autorizacion': True,
                 'folio': devolucion.folio,
                 'message': f'Devolución {devolucion.folio} creada. Requiere autorización gerencial (monto > $500).'
@@ -859,6 +865,7 @@ def _procesar_devolucion_erp(request, data, empresa, venta, sucursal, disponible
 
         return JsonResponse({
             'success': True,
+            'status': 'success',
             'folio': devolucion.folio,
             'message': f'Devolución {devolucion.folio} procesada correctamente.'
         })

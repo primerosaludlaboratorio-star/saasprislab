@@ -274,9 +274,15 @@ def api_iot_lectura(request):
     if not sensor_id or not token:
         return JsonResponse({'error': 'X-SENSOR-ID y X-SENSOR-TOKEN son obligatorios'}, status=401)
 
-    sensor = SensorIoT.objects.select_related('empresa').filter(
+    sensores = list(SensorIoT.objects.select_related('empresa').filter(
         codigo=sensor_id, activo=True
-    ).first()
+    )[:2])
+    if len(sensores) > 1:
+        return JsonResponse(
+            {'error': 'Código de sensor ambiguo; debe ser único entre empresas.'},
+            status=409,
+        )
+    sensor = sensores[0] if sensores else None
     if not sensor or not sensor.verificar_api_token(token):
         return JsonResponse({'error': 'Sensor no reconocido'}, status=401)
 

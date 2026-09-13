@@ -247,18 +247,33 @@ def crear_movimiento_manual(request):
             producto_id = request.POST.get('producto_id')
             lote_id = request.POST.get('lote_id')
             tipo_movimiento = request.POST.get('tipo_movimiento')
-            cantidad = Decimal(request.POST.get('cantidad', 0))
+            cantidad_raw = request.POST.get('cantidad')
+            cantidad = Decimal(cantidad_raw or 0)
             costo_unitario = Decimal(request.POST.get('costo_unitario', 0))
             motivo_ajuste_id = request.POST.get('motivo_ajuste_id')
             observaciones = request.POST.get('observaciones', '')
             
+            empresa = getattr(request.user, 'empresa', None)
+            # The expiry dashboard submits only the selected lot. Resolve the
+            # rest from that tenant-owned lot instead of trusting the browser.
+            if tipo_movimiento == 'SALIDA_MERMA' and lote_id and not producto_id:
+                lote_resuelto = get_object_or_404(
+                    Lote.objects.select_related('producto'),
+                    id=lote_id,
+                    empresa=empresa,
+                    producto__empresa=empresa,
+                    cantidad__gt=0,
+                )
+                producto_id = lote_resuelto.producto_id
+                if not cantidad_raw:
+                    cantidad = lote_resuelto.cantidad
+                if costo_unitario <= 0:
+                    costo_unitario = lote_resuelto.costo_adquisicion
             if not producto_id or cantidad <= 0:
                 return JsonResponse({
                     'status': 'error',
                     'mensaje': 'Datos incompletos o inválidos'
                 }, status=400)
-            
-            empresa = getattr(request.user, 'empresa', None)
             producto = get_object_or_404(Producto, id=producto_id, empresa=empresa)
             lote = get_object_or_404(
                 Lote,

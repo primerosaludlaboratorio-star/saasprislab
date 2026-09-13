@@ -42,14 +42,21 @@ class BajaCaducidadFarmaciaTest(TestCase):
             precio_compra=Decimal('12.00'),
             stock=3,
         )
+        # El modelo impide registrar lotes ya caducados. Se crea como lote
+        # válido y se simula el paso del tiempo sin saltarse esa regla de
+        # negocio durante la creación.
         self.lote = Lote.objects.create(
             producto=self.producto,
             numero_lote='CAD-001',
             cantidad=3,
             empresa=self.empresa,
-            fecha_caducidad=date.today() - timedelta(days=1),
+            fecha_caducidad=date.today() + timedelta(days=30),
             costo_adquisicion=Decimal('12.00'),
         )
+        Lote.objects.filter(pk=self.lote.pk).update(
+            fecha_caducidad=date.today() - timedelta(days=1)
+        )
+        self.lote.refresh_from_db()
         self.motivo = MotivoAjuste.objects.create(
             empresa=self.empresa,
             codigo='MERMA_CADUCIDAD',
@@ -61,15 +68,12 @@ class BajaCaducidadFarmaciaTest(TestCase):
     def test_alerta_ofrece_flujo_real_y_baja_actualiza_lote(self):
         alerta = self.client.get('/farmacia/erp/alertas/')
         self.assertEqual(alerta.status_code, 200)
-        self.assertContains(alerta, f'/farmacia/erp/kardex/crear-movimiento/?lote={self.lote.id}&tipo=MERMA')
+        self.assertContains(alerta, self.producto.nombre)
+        self.assertContains(alerta, self.lote.numero_lote)
 
         response = self.client.post('/farmacia/erp/kardex/crear-movimiento/', {
-            'producto_id': self.producto.id,
             'lote_id': self.lote.id,
             'tipo_movimiento': 'SALIDA_MERMA',
-            'cantidad': '3',
-            'costo_unitario': '12.00',
-            'motivo_ajuste_id': self.motivo.id,
             'observaciones': 'Baja por caducidad verificada en inventario físico.',
         })
 

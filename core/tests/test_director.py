@@ -79,6 +79,7 @@ class DashboardDirectorAccesoTest(TestCase):
     def test_grupo_gerencia_puede_acceder(self):
         gerente = Usuario.objects.create_user(
             username="gerente_g", password="test123456789", empresa=self.empresa
+            , rol="GERENTE"
         )
         g, _ = Group.objects.get_or_create(name="GERENCIA")
         gerente.groups.add(g)
@@ -272,7 +273,7 @@ class ProbarConexionTest(TestCase):
             data=json.dumps({"ip": "192.0.2.1", "puerto": 9999}),
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
         data = json.loads(response.content)
         self.assertIn("ok", data)
 

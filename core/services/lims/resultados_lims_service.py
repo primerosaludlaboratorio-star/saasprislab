@@ -261,6 +261,41 @@ class ResultadosLimsService:
                         },
                     }
 
+                if orden.estado in ('RESULTADOS_LISTOS', 'ENTREGADO'):
+                    # A published result is immutable through the normal
+                    # capture path. Corrections require the dedicated,
+                    # authorized correction workflow so the original value,
+                    # reason and approver remain auditable.
+                    from core.utils.auditoria_helper import crear_log_auditoria
+
+                    actor_id = getattr(actor, 'id', None)
+                    crear_log_auditoria(
+                        empresa=empresa,
+                        usuario=actor,
+                        accion=AuditLog.ACCION_UPDATE,
+                        modelo='OrdenDeServicio',
+                        objeto_id=orden.id,
+                        datos_anterior={'estado': orden.estado},
+                        datos_nuevo={
+                            'resultado_mutacion_rechazada': True,
+                            'accion_solicitada': accion,
+                            'usuario_id': actor_id,
+                        },
+                        sucursal=get_request_sucursal(request),
+                        request=request,
+                    )
+                    return {
+                        'http_status': 409,
+                        'body': {
+                            'status': 'error',
+                            'codigo': 'RESULTADOS_INMUTABLES',
+                            'mensaje': (
+                                'La orden ya fue validada o entregada. Los resultados publicados '
+                                'no pueden modificarse desde captura; use el flujo autorizado de corrección.'
+                            ),
+                        },
+                    }
+
                 if not resultados_data:
                     return {
                         'http_status': 400,

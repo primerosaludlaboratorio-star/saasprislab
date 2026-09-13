@@ -240,7 +240,7 @@ def collect_migration_readiness() -> list[BlockCheck]:
 
     # Bloque 10 - seguridad
     sec_files = [
-        "config/settings.py",
+        "config/settings/__init__.py",
         "core/middleware/read_only.py",
         "core/utils/permisos.py",
     ]

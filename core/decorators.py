@@ -96,8 +96,19 @@ def rate_limit(key_prefix, limit=60, window_seconds=60):
                 try:
                     count = cache.incr(key)
                 except ValueError:
-                    cache.set(key, 1, timeout=window_seconds)
-                    count = 1
+                    # La clave pudo expirar entre ``add`` e ``incr``. ``set``
+                    # sobrescribiría un contador creado concurrentemente y
+                    # permitiría superar el límite; ``add`` conserva la
+                    # semántica atómica del primer escritor.
+                    if cache.add(key, 1, timeout=window_seconds):
+                        count = 1
+                    else:
+                        try:
+                            count = cache.incr(key)
+                        except ValueError:
+                            # Backend inconsistente: fail-closed para el
+                            # límite, sin resetear un contador ajeno.
+                            count = limit + 1
 
             if count > limit:
                 response = JsonResponse(

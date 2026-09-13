@@ -137,6 +137,16 @@ class DevolucionesFarmaciaAPITest(TestCase):
         self.assertEqual(len(venta['detalles']), 1)
         self.assertEqual(venta['detalles'][0]['producto_nombre'], 'Ibuprofeno 400mg')
 
+    def test_enlace_devolucion_desde_historial_abre_formulario_erp(self):
+        """El enlace de historial no debe apuntar al endpoint JSON de búsqueda."""
+        response = self.client.get(
+            f'/farmacia/erp/devoluciones/buscar/?venta_id={self.venta.id}'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('text/html', response.headers.get('Content-Type', ''))
+        self.assertContains(response, 'Procesar Devolución')
+        self.assertContains(response, self.venta.folio_operacion)
+
     def test_procesar_devolucion_con_campos_frontend(self):
         """La API debe aceptar los nombres de campo que envía el frontend."""
         payload = {
@@ -376,6 +386,29 @@ class DevolucionesFarmaciaAPITest(TestCase):
         self.assertEqual(response.status_code, 200)
         devolucion = SalesReturn.objects.filter(venta_original=self.venta).latest('id')
         self.assertIn('productos_devueltos', devolucion.observaciones or '')
+
+    def test_devolucion_erp_parcial_conserva_detalle_del_motivo(self):
+        """El flujo ERP parcial no debe reducir el motivo al código solamente."""
+        from core.models import SalesReturn
+
+        detalle = self.venta.detalles.first()
+        payload = {
+            'venta_id': self.venta.id,
+            'tipo_devolucion': 'PARCIAL',
+            'monto_reembolsado': '40.00',
+            'motivo_error': 'ERROR_VENTA: Cambio solicitado por la paciente',
+            'accion_stock': 'REINGRESAR',
+            'productos': [{'detalle_id': detalle.id, 'cantidad': 1}],
+            'pin': '2468',
+        }
+        response = self.client.post(
+            '/farmacia/erp/devoluciones/procesar/',
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        devolucion = SalesReturn.objects.filter(venta_original=self.venta).latest('id')
+        self.assertIn('Cambio solicitado por la paciente', devolucion.motivo_error)
 
     def test_procesar_devolucion_parcial_rechaza_sin_partidas_validas(self):
         """Una devolución parcial sin partidas reales no debe registrarse."""

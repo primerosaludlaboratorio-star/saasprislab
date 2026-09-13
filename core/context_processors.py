@@ -14,6 +14,7 @@ Inyecta en TODOS los templates:
 """
 from django.conf import settings
 import logging
+from core.utils.tenant_css import sanitize_tenant_css
 
 
 def empresa_actual(request):
@@ -52,7 +53,7 @@ def empresa_actual(request):
         'empresa_color_primario':   color_primario,
         'empresa_color_secundario': color_secundario,
         'empresa_color_fondo':      color_fondo,
-        'empresa_css':              getattr(empresa, 'css_personalizado', '') if empresa else '',
+        'empresa_css':              sanitize_tenant_css(getattr(empresa, 'css_personalizado', '')) if empresa else '',
         'tenant_logo_url':          logo_url,
         'tenant_nombre':            getattr(empresa, 'nombre', 'PRISLAB') if empresa else 'PRISLAB',
         'is_sandbox_mode':          getattr(settings, 'IS_SANDBOX', False),

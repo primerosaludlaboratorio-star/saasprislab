@@ -37,6 +37,7 @@ from .helpers import _req_empresa, _empresa
 
 
 
+@_req_empresa
 def lista_equipos_operativo(request, empresa):
     """Pantalla de inicio operativo: equipos con semáforo de estado."""
     expedientes = (

@@ -251,6 +251,77 @@ def corte_caja_dia(request):
     ventas_tarjeta = pagos_qs.aggregate(total=Coalesce(Sum("monto_tarjeta"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
     ventas_transferencia = pagos_qs.aggregate(total=Coalesce(Sum("monto_transferencia"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
     ventas_vales = pagos_qs.aggregate(total=Coalesce(Sum("monto_vales"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
+
+    # Refunds must reduce the same payment channels as their original sale.
+    # Otherwise a returned or cancelled transaction still inflates the cutoff.
+    devoluciones_efectivo = Decimal("0.00")
+    devoluciones_tarjeta = Decimal("0.00")
+    devoluciones_transferencia = Decimal("0.00")
+    devoluciones_vales = Decimal("0.00")
+    total_devoluciones = Decimal("0.00")
+
+    from core.models import SalesReturn
+    from farmacia.models import DevolucionVenta
+
+    devoluciones_core = SalesReturn.objects.filter(
+        empresa=empresa,
+        fecha_devolucion__range=(inicio, fin),
+        venta_original__in=ventas_qs,
+    ).select_related("venta_original").prefetch_related("venta_original__pagos")
+    devoluciones_erp = DevolucionVenta.objects.filter(
+        empresa=empresa,
+        fecha_devolucion__range=(inicio, fin),
+        venta_original__in=ventas_qs,
+    ).select_related("venta_original").prefetch_related("venta_original__pagos")
+
+    def _repartir_devolucion(venta, monto):
+        """Allocate a refund proportionally to the original payment mix."""
+        nonlocal devoluciones_efectivo, devoluciones_tarjeta
+        nonlocal devoluciones_transferencia, devoluciones_vales
+        total_venta = Decimal(str(venta.total or "0.00"))
+        pagos_venta = list(venta.pagos.all())
+        if not pagos_venta or total_venta <= 0:
+            devoluciones_efectivo += monto
+            return
+        asignado = Decimal("0.00")
+        for pago in pagos_venta:
+            for campo, destino in (
+                ("monto_efectivo", "efectivo"),
+                ("monto_tarjeta", "tarjeta"),
+                ("monto_transferencia", "transferencia"),
+                ("monto_vales", "vales"),
+            ):
+                importe = Decimal(str(getattr(pago, campo, 0) or 0))
+                if importe <= 0:
+                    continue
+                parte = (monto * importe / total_venta).quantize(Decimal("0.01"))
+                asignado += parte
+                if destino == "efectivo":
+                    devoluciones_efectivo += parte
+                elif destino == "tarjeta":
+                    devoluciones_tarjeta += parte
+                elif destino == "transferencia":
+                    devoluciones_transferencia += parte
+                else:
+                    devoluciones_vales += parte
+        # Keep channel totals exact after cent-level rounding.
+        diferencia = monto - asignado
+        devoluciones_efectivo += diferencia
+
+    for devolucion in list(devoluciones_core) + list(devoluciones_erp):
+        monto_devolucion = Decimal(str(
+            getattr(devolucion, "monto_reembolsado", None)
+            or getattr(devolucion, "monto_devolucion", 0)
+            or 0
+        ))
+        if monto_devolucion > 0:
+            total_devoluciones += monto_devolucion
+            _repartir_devolucion(devolucion.venta_original, monto_devolucion)
+
+    ventas_efectivo = max(Decimal("0.00"), ventas_efectivo - devoluciones_efectivo)
+    ventas_tarjeta = max(Decimal("0.00"), ventas_tarjeta - devoluciones_tarjeta)
+    ventas_transferencia = max(Decimal("0.00"), ventas_transferencia - devoluciones_transferencia)
+    ventas_vales = max(Decimal("0.00"), ventas_vales - devoluciones_vales)
     total_gastos = gastos_qs.aggregate(total=Coalesce(Sum("monto"), Decimal("0.00"), output_field=DecimalField()))["total"] or Decimal("0.00")
     egresos_kardex = movimientos_qs.filter(tipo_movimiento="EGRESO").exclude(concepto="GASTO_MENOR").aggregate(
         total=Coalesce(Sum("monto"), Decimal("0.00"), output_field=DecimalField())
@@ -291,7 +362,7 @@ def corte_caja_dia(request):
         "cons_efectivo": Decimal("0.00"),
         "cons_digital": Decimal("0.00"),
         "total_gastos": total_gastos,
-        "total_devoluciones": Decimal("0.00"),
+        "total_devoluciones": total_devoluciones,
         "saldo_caja": saldo_caja,
         "total_farmacia": total_ventas,
         "total_lab": Decimal("0.00"),
