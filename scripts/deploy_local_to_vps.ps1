@@ -101,6 +101,8 @@ $remoteScript = $remoteScript.Replace("__ARCHIVE__", $remoteArchive)
 $remoteScript = $remoteScript.Replace("__REVISION__", $revision)
 $remoteScript = $remoteScript.Replace("__NGINX_CONFIG__", $remoteNginxConfig)
 $remoteScript = $remoteScript.Replace("__NGINX_LIMITS__", $remoteNginxLimits)
+# OpenSSH on Linux must receive the heredoc with Unix line endings.
+$remoteScript = $remoteScript -replace "`r`n", "`n"
 
 Write-Host "Applying artifact on VPS"
 & ssh.exe @sshOptions $target $remoteScript
