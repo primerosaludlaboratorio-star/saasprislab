@@ -1,12 +1,15 @@
 """Punto 18 — PRIS no libera resultados clínicos ni orden validada sin captura humana."""
 from pathlib import Path
+from unittest.mock import patch
 from unittest.mock import MagicMock
 
 from django.conf import settings
 from django.test import SimpleTestCase
 
 from core.agent.pris_tools_operativos import tool_cambiar_estado_orden
+from core.agent.tools.laboratorio import tool_actualizar_resultado_laboratorio
 from core.services.ia_clinical_governance import METODO_IA_BORRADOR, defaults_resultado_ia_borrador
+from core.views.pris_ia._tools_lectura import _tool_guardar_resultado
 
 
 class IAEthicsToolTests(SimpleTestCase):
@@ -47,6 +50,45 @@ class IAEthicsToolTests(SimpleTestCase):
         self.assertEqual(d['metodo_captura'], METODO_IA_BORRADOR)
         self.assertFalse(d['validado'])
         self.assertFalse(d['aprobado_por_humano'])
+
+    @patch('core.models.OrdenDeServicio.objects.get')
+    def test_tool_laboratorio_no_reescribe_orden_publicada(self, get_orden):
+        orden = MagicMock(estado='RESULTADOS_LISTOS')
+        get_orden.return_value = orden
+
+        with patch('core.models.ResultadoParametro.objects.update_or_create') as update_resultado:
+            respuesta = tool_actualizar_resultado_laboratorio(
+                {
+                    'folio_orden': 'LAB-001',
+                    'nombre_parametro': 'Glucosa',
+                    'valor': '95',
+                    'confirmado': True,
+                },
+                self.empresa,
+                self.user,
+            )
+
+        self.assertEqual(respuesta.get('codigo'), 'RESULTADOS_INMUTABLES')
+        update_resultado.assert_not_called()
+
+    @patch('core.models.OrdenDeServicio.objects.filter')
+    def test_tool_lectura_no_reescribe_orden_entregada(self, filter_orden):
+        orden = MagicMock(estado='ENTREGADO')
+        filter_orden.return_value.first.return_value = orden
+
+        with patch('core.models.ResultadoParametro.objects.get_or_create') as get_resultado:
+            respuesta = _tool_guardar_resultado(
+                {
+                    'folio_orden': 'LAB-001',
+                    'nombre_parametro': 'Glucosa',
+                    'valor': '95',
+                },
+                self.empresa,
+                self.user,
+            )
+
+        self.assertEqual(respuesta.get('codigo'), 'RESULTADOS_INMUTABLES')
+        get_resultado.assert_not_called()
 
 
 class CapturaIndustrialP18LeyendaTests(SimpleTestCase):

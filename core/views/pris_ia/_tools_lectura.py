@@ -147,6 +147,14 @@ def _tool_guardar_resultado(args, empresa, user):
         orden = OrdenDeServicio.objects.filter(empresa=empresa, folio_orden__icontains=folio).first()
         if not orden:
             return {"error": f"Orden '{folio}' no encontrada"}
+        if orden.estado in ('RESULTADOS_LISTOS', 'ENTREGADO'):
+            return {
+                "error": (
+                    "La orden ya fue validada o entregada. Los resultados publicados "
+                    "son inmutables; use el flujo autorizado de corrección clínica."
+                ),
+                "codigo": "RESULTADOS_INMUTABLES",
+            }
         analitos_ids = list(
             DetalleOrden.objects.filter(orden=orden, analito__isnull=False).values_list(
                 'analito_id', flat=True,

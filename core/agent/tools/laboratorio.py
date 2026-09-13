@@ -347,6 +347,14 @@ def tool_actualizar_resultado_laboratorio(args: dict, empresa, user) -> dict:
         from core.services.ia_clinical_governance import METODO_IA_BORRADOR, defaults_resultado_ia_borrador
 
         orden = OrdenDeServicio.objects.get(folio_orden=folio, empresa=empresa)
+        if orden.estado in ('RESULTADOS_LISTOS', 'ENTREGADO'):
+            return {
+                "error": (
+                    "La orden ya fue validada o entregada. Los resultados publicados "
+                    "son inmutables; use el flujo autorizado de corrección clínica."
+                ),
+                "codigo": "RESULTADOS_INMUTABLES",
+            }
         analitos_ids = list(
             DetalleOrden.objects.filter(orden=orden, analito__isnull=False).values_list(
                 'analito_id', flat=True,
