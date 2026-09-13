@@ -10,7 +10,7 @@ usuarios, credenciales, despliegues ni historiales.
 
 - Repositorio: `primerosaludlaboratorio-star/saasprislab`
 - Rama local: `release/v1.0-local`
-- Commit a auditar: `b2f2bc8`
+- Commit a auditar: `78ec46e`
 - Directorio: `PRISLAB_SaaS-master/PRISLAB_SaaS-master`
 - Fuente de inventario: `audit/FUNCTION_LEDGER.md` y `audit/FRONTEND_FUNCTION_LEDGER.md`
 - Manifiesto de cobertura: `tools/omni_manifest.json`
@@ -71,3 +71,10 @@ rutas. El cierre requiere evidencia funcional, prueba de regresion, aislamiento
 por tenant y resultado reproducible en el entorno correspondiente. Las
 interfaces y las pruebas E2E humanas son la fase final y permanecen abiertas
 hasta su ejecucion documentada.
+
+## Correcciones recientes a verificar
+
+- `iot/views_api.py`: check-in con campos y estados reales dentro de transaccion atomica.
+- `core/services/ventas/cobro_service.py`: importes calculados desde el producto del tenant, no desde valores del navegador; medico acotado por empresa.
+- `core/views/laboratorio/calidad.py`: rol clinico y rate-limit para validar PIN.
+- `iot/views.py`: disponibilidad calculada con `total_seconds()`.
