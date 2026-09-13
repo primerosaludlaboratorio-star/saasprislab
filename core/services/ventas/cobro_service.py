@@ -37,6 +37,12 @@ from core.services.ventas.catalogo_service import CatalogoService, _int_or_none
 
 logger = logging.getLogger("core.farmacia")
 logger_core = logging.getLogger("core")
+MAX_REDONDEO_EFECTIVO = Decimal('0.50')
+
+
+def redondeo_efectivo_valido(redondeo):
+    """Limita el ajuste de efectivo a una diferencia de centavos razonable."""
+    return abs(redondeo) <= MAX_REDONDEO_EFECTIVO
 
 
 class VentaFarmaciaService:
@@ -129,6 +135,14 @@ class VentaFarmaciaService:
                 subtotal = _moneto(data.get('subtotal', 0))
                 iva_total = _moneto(data.get('iva_total', 0))
                 redondeo = _moneto(data.get('redondeo', 0))
+                if not redondeo_efectivo_valido(redondeo):
+                    return JsonResponse(
+                        {
+                            'status': 'error',
+                            'mensaje': 'El redondeo permitido debe estar entre -0.50 y 0.50.',
+                        },
+                        status=400,
+                    )
                 total_final = _moneto(data.get('total_final', 0))
                 descuento_aplicado = _moneto(data.get('descuento_aplicado', 0))
                 porcentaje_descuento = _moneto(data.get('descuento_porcentaje', 0))
