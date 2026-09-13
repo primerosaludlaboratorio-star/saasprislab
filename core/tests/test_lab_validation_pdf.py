@@ -27,6 +27,7 @@ class LabValidationPdfTest(TestCase):
         self.usuario = Usuario.objects.create_user(
             username='lab_pdf_user',
             password='test123456789',
+            rol='QUIMICO',
             empresa=self.empresa,
         )
         self.paciente = Paciente.objects.create(

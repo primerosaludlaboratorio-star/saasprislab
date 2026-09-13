@@ -237,7 +237,7 @@ class VentaFarmaciaService:
                 subtotal = _moneto(subtotal_publico)
                 iva_total = _moneto(iva_autorizado)
                 descuento_aplicado = _moneto(
-                    max(Decimal('0.00'), subtotal_publico - subtotal)
+                    max(Decimal('0.00'), subtotal_publico - subtotal_autorizado)
                     if tipo_precio_especial else Decimal('0.00')
                 )
                 total_original = _moneto(subtotal_publico + iva_total)

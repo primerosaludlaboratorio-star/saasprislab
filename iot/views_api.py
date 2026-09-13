@@ -1,6 +1,7 @@
 import json
 from django.db import transaction
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from core.models import OrdenDeServicio
@@ -39,15 +40,28 @@ def api_kiosco_checkin(request, kiosco_id):
             )
             orden.estado = 'EN_PROCESO'
             orden.save(update_fields=['estado'])
-            VerificacionKiosco.objects.create(
+            verificacion = VerificacionKiosco.objects.select_for_update().filter(
                 kiosco=kiosco,
                 orden=orden,
-                estado=VerificacionKiosco.ESTADO_CONFIRMADO,
-                datos_confirmados={
-                    'checkin': True,
-                    'firma_capturada': bool(firma_b64),
-                },
-            )
+            ).order_by('-id').first()
+            datos_confirmados = {
+                'checkin': True,
+                'firma_capturada': bool(firma_b64),
+            }
+            if verificacion is None:
+                VerificacionKiosco.objects.create(
+                    kiosco=kiosco,
+                    orden=orden,
+                    estado=VerificacionKiosco.ESTADO_CONFIRMADO,
+                    datos_confirmados=datos_confirmados,
+                )
+            else:
+                verificacion.estado = VerificacionKiosco.ESTADO_CONFIRMADO
+                verificacion.datos_confirmados = datos_confirmados
+                verificacion.fecha_confirmacion = timezone.now()
+                verificacion.save(update_fields=[
+                    'estado', 'datos_confirmados', 'fecha_confirmacion',
+                ])
         
         return JsonResponse({
             'status': 'success',
