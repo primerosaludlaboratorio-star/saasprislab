@@ -4,6 +4,7 @@ PRIS SENTINEL API — Endpoints para Shield Telemetry y Mantenimiento
 """
 import json
 import logging
+import secrets
 
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -41,7 +42,7 @@ def _sentinel_remote_token_valid(admin_token):
     )
     if not ops:
         return False
-    return admin_token == ops
+    return secrets.compare_digest(admin_token.strip(), ops)
 
 
 @csrf_exempt
@@ -173,7 +174,7 @@ def api_sentinel_diagnostico(request):
             status=503,
         )
 
-    if admin_token != diag_secret:
+    if not secrets.compare_digest(admin_token.strip(), diag_secret):
         return JsonResponse({'status': 'error', 'mensaje': 'Token invalido'}, status=403)
 
     try:
