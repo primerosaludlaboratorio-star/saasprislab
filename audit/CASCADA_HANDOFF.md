@@ -10,7 +10,7 @@ usuarios, credenciales, despliegues ni historiales.
 
 - Repositorio: `primerosaludlaboratorio-star/saasprislab`
 - Rama local: `release/v1.0-local`
-- Commit a auditar: `78ec46e`
+- Commit a auditar: `0334bc5`
 - Directorio: `PRISLAB_SaaS-master/PRISLAB_SaaS-master`
 - Fuente de inventario: `audit/FUNCTION_LEDGER.md` y `audit/FRONTEND_FUNCTION_LEDGER.md`
 - Manifiesto de cobertura: `tools/omni_manifest.json`
