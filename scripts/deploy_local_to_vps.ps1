@@ -30,7 +30,6 @@ $target = "$User@$HostName"
 $sshOptions = @("-i", $KeyPath, "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes", "-o", "ConnectTimeout=15")
 
 if (-not (Test-Path -LiteralPath $KeyPath)) { throw "SSH key not found: $KeyPath" }
-if (-not (Get-Command tar.exe -ErrorAction SilentlyContinue)) { throw "tar.exe is required" }
 if (-not (Get-Command scp.exe -ErrorAction SilentlyContinue)) { throw "scp.exe is required" }
 if (-not (Get-Command ssh.exe -ErrorAction SilentlyContinue)) { throw "ssh.exe is required" }
 foreach ($requiredFile in @(
@@ -48,18 +47,7 @@ if ($LASTEXITCODE -ne 0) { throw "SSH preflight failed" }
 
 if (Test-Path -LiteralPath $archive) { Remove-Item -LiteralPath $archive -Force }
 Write-Host "Creating local artifact $revision"
-& tar.exe -czf $archive `
-    --exclude=.git `
-    --exclude=.env `
-    --exclude=.env.* `
-    --exclude=.venv `
-    --exclude=media `
-    --exclude=staticfiles `
-    --exclude=logs `
-    --exclude=__pycache__ `
-    --exclude=.pytest_cache `
-    --exclude=node_modules `
-    -C $repoRoot .
+& git -C $repoRoot archive --format=tar.gz --output=$archive $revision
 if ($LASTEXITCODE -ne 0) { throw "Could not create deployment artifact" }
 
 Write-Host "Uploading artifact without GitHub"
