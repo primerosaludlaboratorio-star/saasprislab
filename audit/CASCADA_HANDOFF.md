@@ -10,7 +10,7 @@ usuarios, credenciales, despliegues ni historiales.
 
 - Repositorio: `primerosaludlaboratorio-star/saasprislab`
 - Rama local: `release/v1.0-local`
-- Commit a auditar: `881429c`
+- Commit a auditar: `9b9b12e`
 - Directorio: `PRISLAB_SaaS-master/PRISLAB_SaaS-master`
 - Fuente de inventario: `audit/FUNCTION_LEDGER.md` y `audit/FRONTEND_FUNCTION_LEDGER.md`
 - Manifiesto de cobertura: `tools/omni_manifest.json`
@@ -87,4 +87,12 @@ hasta su ejecucion documentada.
 - `core/views/paciente_detalle.py`: el timeline ya enlaza al endpoint protegido de PDF y no expone la URL física de `/media/`.
 - La prueba `core.tests.test_lab_validation_pdf` requiere creación de base de datos; si el entorno se bloquea durante esa fase, debe reportarse como bloqueo y no como aprobación.
 - `core/views/prisci_webhook.py`: los tokens de recepción y verificación usan `secrets.compare_digest`; validar ambas rutas y sus regresiones.
+- `mantenimiento/views/helpers.py` y `seguridad/views/helpers.py`: se eliminaron las
+  definiciones duplicadas que quedaban sombreadas; la única implementación activa
+  conserva el mismo contrato de tenant y autenticación.
 - En esta máquina, `python manage.py test core.tests.test_prisci_unified_ai --keepdb` llegó a `Using existing test database` y no avanzó durante 60 segundos; el proceso fue finalizado de forma controlada. La validación directa sin BD sí confirmó token válido, token alterado rechazado y challenge GET correcto. Tratarlo como bloqueo del runner, no como prueba verde.
+- En la verificación posterior del commit `9b9b12e`, `manage.py check` y
+  `compileall` pasaron, pero la batería `core.tests.test_tenant_boundary_views
+  core.tests.test_suscripciones_iot_security core.tests.test_pris_jarvis_rbac`
+  volvió a quedar bloqueada durante `Creating test database`; no se declara
+  aprobación de esa batería.
