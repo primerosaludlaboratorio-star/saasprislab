@@ -45,6 +45,13 @@ def redondeo_efectivo_valido(redondeo):
     return abs(redondeo) <= MAX_REDONDEO_EFECTIVO
 
 
+def porcentaje_descuento_autorizado(descuento, subtotal):
+    """Calcula el porcentaje reportable sin confiar en el valor del cliente."""
+    if subtotal <= 0 or descuento <= 0:
+        return Decimal('0.00')
+    return ((descuento / subtotal) * Decimal('100')).quantize(Decimal('0.01'))
+
+
 class VentaFarmaciaService:
     """Cobro PDV, Kardex PEPS y búsqueda de catálogo por empresa (sin lógica en la vista)."""
 
@@ -253,6 +260,10 @@ class VentaFarmaciaService:
                 descuento_aplicado = _moneto(
                     max(Decimal('0.00'), subtotal_publico - subtotal_autorizado)
                     if tipo_precio_especial else Decimal('0.00')
+                )
+                porcentaje_descuento = porcentaje_descuento_autorizado(
+                    descuento_aplicado,
+                    subtotal_publico,
                 )
                 total_original = _moneto(subtotal_publico + iva_total)
                 total_final = _moneto(subtotal - descuento_aplicado + iva_total + redondeo)
