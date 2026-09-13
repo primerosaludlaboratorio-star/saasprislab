@@ -74,6 +74,12 @@
   const docsSec  = document.getElementById('documentos-fuente');
   const listaFuentes = document.getElementById('lista-fuentes');
 
+  function escapeRagHtml(value){
+    const node = document.createElement('div');
+    node.textContent = String(value ?? '');
+    return node.innerHTML;
+  }
+
   async function consultar(){
     const pregunta = input.value.trim();
     if(!pregunta) return;
@@ -89,12 +95,12 @@
       });
       const data = await r.json();
       if(data.status === 'success'){
-        texto.innerHTML = data.respuesta.replace(/\n/g,'<br>');
+        texto.innerHTML = escapeRagHtml(data.respuesta).replace(/\n/g,'<br>');
         fuenteBadge.textContent = data.fuente === 'RAG' ? '📚 Documentos internos' : '🤖 IA Gemini';
         fuenteBadge.className = 'badge ms-auto ' + (data.fuente === 'RAG' ? 'bg-success' : 'bg-primary');
         if(data.documentos_consultados && data.documentos_consultados.length){
           docsSec.classList.remove('d-none');
-          listaFuentes.innerHTML = data.documentos_consultados.map(d=>`<span class="badge bg-light text-dark me-1">${d}</span>`).join('');
+          listaFuentes.innerHTML = data.documentos_consultados.map(d=>`<span class="badge bg-light text-dark me-1">${escapeRagHtml(d)}</span>`).join('');
         }
         area.classList.remove('d-none');
       } else {

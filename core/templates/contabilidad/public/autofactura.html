@@ -54,11 +54,12 @@ document.getElementById('autofacturaForm').addEventListener('submit', function(e
     })
     .then(res => res.json())
     .then(data => {
-        if(data.error) {
-            document.getElementById('resultado').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
-        } else {
-            document.getElementById('resultado').innerHTML = `<div class="alert alert-success">${data.mensaje}</div>`;
-        }
+        const resultado = document.getElementById('resultado');
+        const mensaje = data.error || data.mensaje || 'Respuesta no disponible';
+        const alerta = document.createElement('div');
+        alerta.className = data.error ? 'alert alert-danger' : 'alert alert-success';
+        alerta.textContent = mensaje;
+        resultado.replaceChildren(alerta);
     });
 });
 </script>

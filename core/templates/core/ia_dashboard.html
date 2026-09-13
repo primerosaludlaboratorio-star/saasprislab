@@ -334,6 +334,12 @@
 
 {% block extra_js %}
 <script>
+  function escapeDashboardHtml(value) {
+    const node = document.createElement('div');
+    node.textContent = value == null ? '' : String(value);
+    return node.innerHTML;
+  }
+
   function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
@@ -443,16 +449,16 @@
         if (data.status === 'success') {
           const d = data.diagnostico;
           const saludColor = d.salud === 'OK' ? 'success' : d.salud === 'CRITICA' ? 'danger' : 'warning';
-          let html = `<div class="alert alert-${saludColor} fw-bold mb-3">Estado del Sistema: ${d.salud}</div>`;
+          let html = `<div class="alert alert-${saludColor} fw-bold mb-3">Estado del Sistema: ${escapeDashboardHtml(d.salud)}</div>`;
 
           if (d.problemas && d.problemas.length) {
             html += '<h6 class="fw-bold"><i class="fas fa-exclamation-circle text-danger me-1"></i>Problemas Detectados</h6><ul class="list-group mb-3">';
-            d.problemas.forEach(p => { html += `<li class="list-group-item" style="font-size:.88rem;">${p}</li>`; });
+            d.problemas.forEach(p => { html += `<li class="list-group-item" style="font-size:.88rem;">${escapeDashboardHtml(p)}</li>`; });
             html += '</ul>';
           }
           if (d.sugerencias && d.sugerencias.length) {
             html += '<h6 class="fw-bold"><i class="fas fa-lightbulb text-warning me-1"></i>Sugerencias</h6><ul class="list-group mb-3">';
-            d.sugerencias.forEach(s => { html += `<li class="list-group-item" style="font-size:.88rem;">${s}</li>`; });
+            d.sugerencias.forEach(s => { html += `<li class="list-group-item" style="font-size:.88rem;">${escapeDashboardHtml(s)}</li>`; });
             html += '</ul>';
           }
           if (d.metricas) {
@@ -465,10 +471,10 @@
           }
           body.innerHTML = html;
         } else {
-          body.innerHTML = '<div class="alert alert-danger">Error: ' + (data.mensaje || 'Desconocido') + '</div>';
+          body.innerHTML = '<div class="alert alert-danger">Error: ' + escapeDashboardHtml(data.mensaje || 'Desconocido') + '</div>';
         }
       } catch (e) {
-        body.innerHTML = '<div class="alert alert-danger">Error de red: ' + e.message + '</div>';
+        body.innerHTML = '<div class="alert alert-danger">Error de red: ' + escapeDashboardHtml(e.message) + '</div>';
       }
     });
   }

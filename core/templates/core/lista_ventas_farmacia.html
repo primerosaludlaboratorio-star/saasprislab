@@ -181,7 +181,9 @@
 {% block extra_js %}
 <script>
     function procesarDevolucion(ventaId) {
-        window.location.href = `/farmacia/devoluciones/buscar/?venta_id=${ventaId}`;
+        // The root path is the JSON lookup endpoint; use the ERP page route
+        // so the operator gets the complete form with PIN and line selection.
+        window.location.href = `{% url 'farmacia:buscar_venta_devolucion' %}?venta_id=${ventaId}`;
     }
 
     function getCookie(name) {

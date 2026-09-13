@@ -1528,6 +1528,12 @@ function mostrarToast(msg, tipo) {
 
 <script>
 /* ──── Panel RAG toggle ──── */
+function escapeIndustrialHtml(value) {
+    const node = document.createElement('div');
+    node.textContent = value == null ? '' : String(value);
+    return node.innerHTML;
+}
+
 function togglePanelRAG() {
     const p = document.getElementById('panel-rag');
     if (p) p.style.display = (p.style.display === 'none' || !p.style.display) ? 'block' : 'none';
@@ -1538,7 +1544,8 @@ function addRagMsg(text, type, fuentes=[]) {
     if (!hist) return;
     const div = document.createElement('div');
     div.className = type === 'user' ? 'rag-msg-user' : 'rag-msg-bot';
-    div.innerHTML = (text||'').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+    const safeText = escapeIndustrialHtml(text || '');
+    div.innerHTML = safeText.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
     hist.appendChild(div);
     if (fuentes.length) {
         const f = document.createElement('div');
@@ -1730,8 +1737,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const e = entries[i + c];
             if (e) {
                 html += `<td style="padding:1px 6px;border:1px solid #dee2e6;">` +
-                    `<b style="color:#003366;">${e[0]}</b>` +
-                    `<span style="color:#6b7280;"> = ${e[1]}</span></td>`;
+                    `<b style="color:#003366;">${escapeIndustrialHtml(e[0])}</b>` +
+                    `<span style="color:#6b7280;"> = ${escapeIndustrialHtml(e[1])}</span></td>`;
             } else {
                 html += '<td></td>';
             }

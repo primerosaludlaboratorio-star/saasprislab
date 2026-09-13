@@ -117,7 +117,8 @@
                                 {% if it.pdf_generado %}
                                     <i class="bi bi-file-pdf-fill text-danger fs-5" title="PDF disponible"></i>
                                 {% else %}
-                                    <i class="bi bi-dash-circle text-secondary fs-5" title="No disponible"></i>
+                                    <i class="bi bi-dash-circle text-secondary fs-5" title="{{ it.pdf_bloqueo_motivo|default:'No disponible' }}"></i>
+                                    <br><small class="text-muted">{{ it.pdf_bloqueo_motivo|default:'No disponible' }}</small>
                                 {% endif %}
                             </td>
                             <td style="text-align: center;">
@@ -129,12 +130,16 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{% url 'imprimir_resultados_pdf' orden.id %}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                    <i class="bi bi-file-pdf"></i> Ver PDF
-                                </a>
-                                <a href="{{ it.link_publico }}" class="btn btn-sm btn-outline-dark" target="_blank" title="Link para paciente (mide Leído)">
-                                    <i class="bi bi-link-45deg"></i> Link
-                                </a>
+                                {% if it.pdf_generado %}
+                                    <a href="{% url 'imprimir_resultados_pdf' orden.id %}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                        <i class="bi bi-file-pdf"></i> Ver PDF
+                                    </a>
+                                {% endif %}
+                                {% if it.link_publico %}
+                                    <a href="{{ it.link_publico }}" class="btn btn-sm btn-outline-dark" target="_blank" title="Link para paciente (mide Leído)">
+                                        <i class="bi bi-link-45deg"></i> Link
+                                    </a>
+                                {% endif %}
                                 {% if it.whatsapp_link %}
                                     <a href="{{ it.whatsapp_link }}" class="btn btn-sm btn-outline-success" target="_blank" onclick="marcarWhatsAppEnviado({{ orden.id }})">
                                         <i class="bi bi-whatsapp"></i> WhatsApp

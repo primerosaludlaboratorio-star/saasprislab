@@ -64,7 +64,7 @@
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
         {% if request.empresa and request.empresa.css_personalizado %}
-        {{ request.empresa.css_personalizado|safe }}
+        {{ empresa_css|safe }}
         {% endif %}
         body {
             font-family: var(--prislab-font-primary);
@@ -157,8 +157,8 @@
         }
         
         /* CSS Personalizado adicional de la empresa */
-        {% if empresa_actual.css_personalizado %}
-        {{ empresa_actual.css_personalizado|safe }}
+        {% if empresa_css %}
+        {{ empresa_css|safe }}
         {% endif %}
     </style>
     {% endif %}
@@ -754,6 +754,17 @@
             _origAlert.call(window, msg);
         };
 
+        function prisEscapeHtml(value) {
+            const node = document.createElement('div');
+            node.textContent = value == null ? '' : String(value);
+            return node.innerHTML;
+        }
+
+        function prisSafeInternalUrl(value) {
+            const url = String(value || '');
+            return url.startsWith('/') && !url.startsWith('//') ? url : '#';
+        }
+
         // Funcion global de notificacion elegante
         window.prisNotify = function(msg, type) {
             type = type || 'info';
@@ -769,7 +780,7 @@
             div.id = 'prisNotify';
             div.className = `alert alert-${cls} alert-dismissible fade show shadow-lg`;
             div.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;max-width:500px;border-radius:12px;animation:prisSlideIn .3s ease;font-size:.9rem;';
-            div.innerHTML = `<i class="fas fa-${icon} me-2"></i>${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+            div.innerHTML = `<i class="fas fa-${icon} me-2"></i>${prisEscapeHtml(msg)}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
             document.body.appendChild(div);
             setTimeout(() => { if (div.parentNode) div.remove(); }, 10000);
         };
@@ -1555,18 +1566,18 @@
             .then(data => {
                 activeIdx = -1;
                 if(!data.resultados || data.resultados.length === 0){
-                    results.innerHTML = '<div class="omnisearch-empty"><i class="fas fa-search me-1"></i> Sin resultados para "' + q + '"</div>';
+                    results.innerHTML = '<div class="omnisearch-empty"><i class="fas fa-search me-1"></i> Sin resultados para "' + prisEscapeHtml(q) + '"</div>';
                     return;
                 }
                 let html = '';
                 data.resultados.forEach(r => {
-                    html += `<a href="${r.url}" class="omnisearch-item">
-                        <div class="omnisearch-item-icon" style="background:${r.color}">
-                            <i class="fas ${r.icono}"></i>
+                    html += `<a href="${prisEscapeHtml(prisSafeInternalUrl(r.url))}" class="omnisearch-item">
+                        <div class="omnisearch-item-icon" style="background:${prisEscapeHtml(r.color)}">
+                            <i class="fas ${prisEscapeHtml(r.icono)}"></i>
                         </div>
                         <div class="omnisearch-item-text">
-                            <div class="omnisearch-item-title">${r.titulo}</div>
-                            <div class="omnisearch-item-sub">${r.subtitulo}</div>
+                            <div class="omnisearch-item-title">${prisEscapeHtml(r.titulo)}</div>
+                            <div class="omnisearch-item-sub">${prisEscapeHtml(r.subtitulo)}</div>
                         </div>
                         <span class="badge bg-light text-dark" style="font-size:.7rem">${r.tipo === 'paciente' ? 'Paciente' : 'Orden'}</span>
                     </a>`;
@@ -1887,7 +1898,11 @@
           banner = document.createElement('div');
           banner.id = 'banner-critico-pris';
           banner.className = 'banner-critico';
-          banner.innerHTML = '<span class="icon-pulse">⚠️</span> VALOR CRÍTICO DETECTADO — ' + nombre.toUpperCase() + ': ' + val + ' — ISO 15189: CONFIRMACIÓN OBLIGATORIA <button onclick="this.parentNode.remove();document.body.classList.remove(\'modo-panico\')" style="margin-left:1rem;background:rgba(255,255,255,.2);border:none;color:#fff;padding:.2rem .6rem;border-radius:6px;cursor:pointer;">✕</button>';
+          banner.innerHTML = '<span class="icon-pulse">⚠️</span> VALOR CRÍTICO DETECTADO — ' + prisEscapeHtml(nombre).toUpperCase() + ': ' + prisEscapeHtml(val) + ' — ISO 15189: CONFIRMACIÓN OBLIGATORIA <button type="button" style="margin-left:1rem;background:rgba(255,255,255,.2);border:none;color:#fff;padding:.2rem .6rem;border-radius:6px;cursor:pointer;">✕</button>';
+          banner.querySelector('button').addEventListener('click', function() {
+            banner.remove();
+            document.body.classList.remove('modo-panico');
+          });
           document.body.prepend(banner);
         }
         setTimeout(function() {

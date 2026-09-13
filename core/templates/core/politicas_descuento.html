@@ -65,11 +65,11 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <button class="btn btn-sm btn-primary" onclick="editarPolitica({{ politica.id }}, '{{ politica.nombre }}', {{ politica.porcentaje_descuento }}, {{ politica.requiere_autorizacion|yesno:"true,false" }})">
+                                            <button class="btn btn-sm btn-primary" onclick="editarPolitica({{ politica.id }}, '{{ politica.nombre }}', {{ politica.porcentaje_descuento }}, {{ politica.requiere_autorizacion|yesno:'true,false' }})">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-warning" onclick="toggleActiva({{ politica.id }}, {{ politica.activa|yesno:"true,false" }})">
-                                                <i class="bi bi-{{ politica.activa|yesno:"pause,play" }}-circle"></i>
+                                            <button class="btn btn-sm btn-warning" onclick="toggleActiva({{ politica.id }}, {{ politica.activa|yesno:'true,false' }})">
+                                                <i class="bi bi-{{ politica.activa|yesno:'pause,play' }}-circle"></i>
                                             </button>
                                             <button class="btn btn-sm btn-danger" onclick="eliminarPolitica({{ politica.id }}, '{{ politica.nombre }}')">
                                                 <i class="bi bi-trash"></i>

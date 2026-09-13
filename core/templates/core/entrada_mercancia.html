@@ -112,6 +112,12 @@
 </div>
 
 <script>
+    function escapeEntradaHtml(value) {
+        const node = document.createElement('div');
+        node.textContent = value == null ? '' : String(value);
+        return node.innerHTML;
+    }
+
     // Función para obtener CSRF token
     function getCookie(name) {
         let cookieValue = null;
@@ -352,7 +358,7 @@
                     const boton = document.createElement('button');
                     boton.type = 'button';
                     boton.className = 'list-group-item list-group-item-action text-start';
-                    boton.innerHTML = '<strong>' + (producto.nombre || '') + '</strong><br><small class="text-muted">Ficha #' + producto.id + ' | Codigo: ' + (producto.codigo_barras || 'Sin codigo de barras') + ' | Stock: ' + (producto.stock || 0) + ' | Costo: $' + Number(producto.precio_compra || 0).toFixed(2) + ' | Venta: $' + Number(producto.precio_publico || 0).toFixed(2) + '</small>';
+                    boton.innerHTML = '<strong>' + escapeEntradaHtml(producto.nombre || '') + '</strong><br><small class="text-muted">Ficha #' + escapeEntradaHtml(producto.id) + ' | Codigo: ' + escapeEntradaHtml(producto.codigo_barras || 'Sin codigo de barras') + ' | Stock: ' + escapeEntradaHtml(producto.stock || 0) + ' | Costo: $' + Number(producto.precio_compra || 0).toFixed(2) + ' | Venta: $' + Number(producto.precio_publico || 0).toFixed(2) + '</small>';
                     boton.addEventListener('click', function() { aplicarProductoEntrada(producto); });
                     resultados.appendChild(boton);
                 });

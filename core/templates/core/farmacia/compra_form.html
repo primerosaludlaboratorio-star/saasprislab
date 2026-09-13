@@ -153,6 +153,12 @@
 </div>
 
 <script>
+function escapeCompraHtml(value) {
+    const node = document.createElement('div');
+    node.textContent = value == null ? '' : String(value);
+    return node.innerHTML;
+}
+
 let contadorProductos = 0;
 let productosAgregados = [];
 
@@ -198,18 +204,22 @@ function buscarProductos(termino) {
         if (data.productos && data.productos.length > 0) {
             let html = '<div class="list-group">';
             data.productos.forEach(producto => {
+                const productoId = Number(producto.id) || 0;
+                const precioCompra = Number(producto.precio_compra_actual) || 0;
+                const stockActual = Number(producto.stock_actual) || 0;
+                const nombre = escapeCompraHtml(producto.nombre || '');
+                const codigo = escapeCompraHtml(producto.codigo_barras || '');
                 html += `
                     <a href="#" class="list-group-item list-group-item-action" 
-                       onclick="seleccionarProducto(${producto.id}, '${producto.nombre.replace(/'/g, "\\'")}', 
-                       '${producto.codigo_barras}', ${producto.precio_compra_actual}, ${producto.stock_actual}); return false;">
+                       onclick="seleccionarProducto(${productoId}, '${nombre}', '${codigo}', ${precioCompra}, ${stockActual}); return false;">
                         <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">${producto.nombre}</h6>
-                            <small>Código: ${producto.codigo_barras}</small>
+                            <h6 class="mb-1">${nombre}</h6>
+                            <small>Código: ${codigo}</small>
                         </div>
                         <p class="mb-1 small text-muted">
-                            ${producto.sustancia_activa ? 'Sustancia: ' + producto.sustancia_activa + ' | ' : ''}
-                            ${producto.marca_laboratorio ? 'Lab: ' + producto.marca_laboratorio + ' | ' : ''}
-                            Stock: ${producto.stock_actual} | Precio Compra: $${producto.precio_compra_actual}
+                            ${producto.sustancia_activa ? 'Sustancia: ' + escapeCompraHtml(producto.sustancia_activa) + ' | ' : ''}
+                            ${producto.marca_laboratorio ? 'Lab: ' + escapeCompraHtml(producto.marca_laboratorio) + ' | ' : ''}
+                            Stock: ${escapeCompraHtml(stockActual)} | Precio Compra: $${escapeCompraHtml(precioCompra)}
                         </p>
                     </a>
                 `;
@@ -247,9 +257,9 @@ function agregarProducto(productoId, nombre, codigoBarras, precioCompra = 0, sto
         <div class="row">
             <div class="col-md-4">
                 <label class="form-label">Producto</label>
-                <input type="text" class="form-control" value="${nombre}" readonly>
-                <input type="hidden" name="productos[${index}][producto_id]" value="${productoId}">
-                <small class="text-muted">Código: ${codigoBarras} | Stock actual: ${stockActual}</small>
+                <input type="text" class="form-control" value="${escapeCompraHtml(nombre)}" readonly>
+                <input type="hidden" name="productos[${index}][producto_id]" value="${escapeCompraHtml(productoId)}">
+                <small class="text-muted">Código: ${escapeCompraHtml(codigoBarras)} | Stock actual: ${escapeCompraHtml(stockActual)}</small>
             </div>
             <div class="col-md-2">
                 <label class="form-label">Cantidad <span class="text-danger">*</span></label>
@@ -261,7 +271,7 @@ function agregarProducto(productoId, nombre, codigoBarras, precioCompra = 0, sto
                 <label class="form-label">Costo Unitario <span class="text-danger">*</span></label>
                 <input type="number" name="productos[${index}][costo_unitario]" 
                        class="form-control costo-input" step="0.01" min="0" 
-                       value="${precioCompra}" required onchange="calcularTotal()">
+                       value="${escapeCompraHtml(precioCompra)}" required onchange="calcularTotal()">
             </div>
             <div class="col-md-2">
                 <label class="form-label">Lote</label>

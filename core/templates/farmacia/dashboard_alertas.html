@@ -382,12 +382,39 @@ function darDeBajaLote(loteId) {
         cancelButtonText: 'Cancelar'
     }).then((result) => {
         if (result.isConfirmed) {
-            // Aquí iría la llamada AJAX para crear el movimiento de baja
-            Swal.fire(
-                '¡Lote dado de baja!',
-                'Se creó un registro en el Kardex',
+            const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+                || document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+            fetch('{% url "farmacia:crear_movimiento" %}', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                    'X-CSRFToken': csrf,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams({
+                    lote_id: String(loteId),
+                    tipo_movimiento: 'SALIDA_MERMA',
+                    observaciones: 'Baja por caducidad desde semáforo de farmacia.'
+                })
+            })
+            .then(async (response) => {
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || data.status !== 'success') {
+                    throw new Error(data.mensaje || 'No fue posible dar de baja el lote.');
+                }
+                return data;
+            })
+            .then((data) => Swal.fire(
+                'Lote dado de baja',
+                `${data.mensaje} Folio: ${data.folio}`,
                 'success'
-            );
+            ).then(() => window.location.reload()))
+            .catch((error) => Swal.fire(
+                'No se pudo completar la baja',
+                error.message,
+                'error'
+            ));
         }
     });
 }

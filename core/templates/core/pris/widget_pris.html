@@ -169,6 +169,12 @@
 </style>
 
 <script>
+function escapePrisWidgetHtml(value) {
+    const node = document.createElement('div');
+    node.textContent = value == null ? '' : String(value);
+    return node.innerHTML;
+}
+
 // Web Speech API para Dictado
 let recognition = null;
 let isListening = false;
@@ -273,7 +279,7 @@ document.getElementById('pris-btn-procesar')?.addEventListener('click', function
         if (data.status === 'success') {
             document.getElementById('pris-resultado-dictado').innerHTML = `
                 <div class="alert alert-success">
-                    <strong>✓ Procesado:</strong> ${data.mensaje}<br>
+                    <strong>✓ Procesado:</strong> ${escapePrisWidgetHtml(data.mensaje)}<br>
                     <small>Pendiente de validación</small>
                 </div>
             `;
@@ -329,7 +335,7 @@ document.getElementById('pris-btn-procesar-ocr')?.addEventListener('click', func
         if (data.status === 'success') {
             document.getElementById('pris-resultado-ocr').innerHTML = `
                 <div class="alert alert-success">
-                    <strong>✓ Documento procesado:</strong> ${data.mensaje}<br>
+                    <strong>✓ Documento procesado:</strong> ${escapePrisWidgetHtml(data.mensaje)}<br>
                     <small>Pendiente de validación</small>
                 </div>
             `;

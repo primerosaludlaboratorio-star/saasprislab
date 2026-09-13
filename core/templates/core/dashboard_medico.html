@@ -291,6 +291,12 @@
 </div>
 
 <script>
+    function escapeMedicoHtml(value) {
+        const node = document.createElement('div');
+        node.textContent = value == null ? '' : String(value);
+        return node.innerHTML;
+    }
+
     // ==============================================================================
     // BÚSQUEDA RÁPIDA DE PACIENTES (PRINCIPAL)
     // ==============================================================================
@@ -316,16 +322,16 @@
                                     <div class="card border-primary h-100" style="cursor: pointer; transition: all 0.3s;" 
                                          onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.15)';"
                                          onmouseout="this.style.transform=''; this.style.boxShadow='';"
-                                         onclick='iniciarConsulta(${JSON.stringify(p.uuid || "")})'>
+                                         onclick="iniciarConsulta('${encodeURIComponent(String(p.uuid || ''))}')">
                                         <div class="card-body">
                                             <h6 class="card-title text-primary fw-bold mb-2">
-                                                <i class="bi bi-person-circle"></i> ${p.nombre}
+                                                <i class="bi bi-person-circle"></i> ${escapeMedicoHtml(p.nombre)}
                                             </h6>
                                             <p class="card-text small mb-1">
-                                                ${p.edad ? '<strong>Edad:</strong> ' + p.edad + ' años<br>' : ''}
-                                                ${p.fecha_nacimiento ? '<strong>Nacimiento:</strong> ' + p.fecha_nacimiento + '<br>' : ''}
-                                                ${p.sexo ? '<strong>Sexo:</strong> ' + p.sexo + '<br>' : ''}
-                                                ${p.telefono ? '<strong>Tel:</strong> ' + p.telefono : ''}
+                                                ${p.edad ? '<strong>Edad:</strong> ' + escapeMedicoHtml(p.edad) + ' años<br>' : ''}
+                                                ${p.fecha_nacimiento ? '<strong>Nacimiento:</strong> ' + escapeMedicoHtml(p.fecha_nacimiento) + '<br>' : ''}
+                                                ${p.sexo ? '<strong>Sexo:</strong> ' + escapeMedicoHtml(p.sexo) + '<br>' : ''}
+                                                ${p.telefono ? '<strong>Tel:</strong> ' + escapeMedicoHtml(p.telefono) : ''}
                                             </p>
                                         </div>
                                         <div class="card-footer bg-primary text-white text-center">
@@ -355,6 +361,11 @@
     }
     
     function iniciarConsulta(pacienteUuid) {
+        try {
+            pacienteUuid = decodeURIComponent(pacienteUuid || '');
+        } catch (error) {
+            pacienteUuid = '';
+        }
         if (!pacienteUuid) {
             Swal.fire({
                 icon: 'error',
@@ -395,12 +406,12 @@
                                 <strong class="text-success">
                                     <i class="bi bi-check-circle-fill"></i> Resultados Disponibles
                                 </strong>
-                                <span class="badge bg-success">${r.fecha}</span>
+                                <span class="badge bg-success">${escapeMedicoHtml(r.fecha)}</span>
                             </div>
-                            <p class="mb-1 small"><strong>Paciente:</strong> ${r.paciente_nombre}</p>
-                            <p class="mb-1 small"><strong>Estudios:</strong> ${r.estudios}</p>
+                            <p class="mb-1 small"><strong>Paciente:</strong> ${escapeMedicoHtml(r.paciente_nombre)}</p>
+                            <p class="mb-1 small"><strong>Estudios:</strong> ${escapeMedicoHtml(r.estudios)}</p>
                             <button class="btn btn-sm btn-outline-success w-100 mt-2" 
-                                    onclick="verResultadosLab(${r.orden_id})">
+                                    onclick="verResultadosLab(${Number(r.orden_id) || 0})">
                                 <i class="bi bi-eye"></i> Ver Resultados
                             </button>
                         </div>
@@ -494,15 +505,15 @@
                     if (data.status === 'success' && data.productos && data.productos.length > 0) {
                         tbody.innerHTML = data.productos.map(prod => `
                             <tr>
-                                <td><strong>${prod.nombre}</strong></td>
-                                <td><small class="text-muted">${prod.sustancia_activa || 'N/A'}</small></td>
+                                <td><strong>${escapeMedicoHtml(prod.nombre)}</strong></td>
+                                <td><small class="text-muted">${escapeMedicoHtml(prod.sustancia_activa || 'N/A')}</small></td>
                                 <td class="text-center">
                                     <span class="badge ${prod.stock > 10 ? 'bg-success' : prod.stock > 0 ? 'bg-warning' : 'bg-danger'}">
-                                        ${prod.stock}
+                                        ${escapeMedicoHtml(prod.stock)}
                                     </span>
                                 </td>
                                 <td class="text-end fw-bold">$${prod.precio.toFixed(2)}</td>
-                                <td><small>${prod.categoria}</small></td>
+                                <td><small>${escapeMedicoHtml(prod.categoria)}</small></td>
                             </tr>
                         `).join('');
                     } else {

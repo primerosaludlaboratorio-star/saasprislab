@@ -50,13 +50,19 @@
 </div>
 
 <script>
+function escapeCoachHtml(value) {
+    const node = document.createElement('div');
+    node.textContent = String(value ?? '');
+    return node.innerHTML;
+}
+
 function enviarPreguntaCoach() {
     const input = document.getElementById('coach-input');
     const chatBox = document.getElementById('coach-chat-box');
     const pregunta = input.value.trim();
     if (!pregunta) return;
 
-    chatBox.innerHTML += `<div class="mb-2 text-end"><span class="badge bg-dark p-2" style="font-size:.85rem;white-space:normal;text-align:left;">${pregunta}</span></div>`;
+    chatBox.innerHTML += `<div class="mb-2 text-end"><span class="badge bg-dark p-2" style="font-size:.85rem;white-space:normal;text-align:left;">${escapeCoachHtml(pregunta)}</span></div>`;
     input.value = '';
     chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -75,12 +81,12 @@ function enviarPreguntaCoach() {
     .then(data => {
         loading.remove();
         const respuesta = data.respuesta || data.error || 'Sin respuesta';
-        chatBox.innerHTML += `<div class="mb-2"><span class="badge bg-info text-dark p-2" style="font-size:.85rem;white-space:normal;text-align:left;">${respuesta}</span></div>`;
+        chatBox.innerHTML += `<div class="mb-2"><span class="badge bg-info text-dark p-2" style="font-size:.85rem;white-space:normal;text-align:left;">${escapeCoachHtml(respuesta)}</span></div>`;
         chatBox.scrollTop = chatBox.scrollHeight;
     })
     .catch(err => {
         loading.remove();
-        chatBox.innerHTML += `<div class="mb-2"><span class="badge bg-danger p-2">Error: ${err.message}</span></div>`;
+        chatBox.innerHTML += `<div class="mb-2"><span class="badge bg-danger p-2">Error: ${escapeCoachHtml(err.message)}</span></div>`;
     });
 }
 
