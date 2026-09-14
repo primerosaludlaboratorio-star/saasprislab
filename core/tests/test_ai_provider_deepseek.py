@@ -46,6 +46,8 @@ class DeepSeekProviderTests(SimpleTestCase):
     @override_settings(
         AI_PROVIDER="gemini",
         GOOGLE_API_KEY="",
+        GOOGLE_GEMINI_API_KEY="",
+        GEMINI_API_KEY="",
         DEEPSEEK_API_KEY="sk-test",
     )
     def test_provider_falls_back_to_deepseek_when_gemini_key_missing(self):

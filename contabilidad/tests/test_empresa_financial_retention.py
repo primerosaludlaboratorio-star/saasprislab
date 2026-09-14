@@ -1,4 +1,5 @@
 from django.db.models.deletion import ProtectedError, PROTECT
+from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 
 from contabilidad.models import (
@@ -37,10 +38,17 @@ class EmpresaFinancialRetentionDatabaseTests(TestCase):
             nombre='Empresa Retencion Fiscal',
             rfc='RET260913AAA',
         )
+        usuario = get_user_model().objects.create_user(
+            username='retencion_fiscal_test',
+            password='test-only-password',
+            empresa=empresa,
+            rol='ADMIN',
+        )
         Compra.objects.create(
             empresa=empresa,
             proveedor='Proveedor de prueba',
             total='100.00',
+            creada_por=usuario,
         )
 
         with self.assertRaises(ProtectedError):
