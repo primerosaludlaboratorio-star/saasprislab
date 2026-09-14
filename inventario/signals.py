@@ -320,7 +320,10 @@ def descontar_repeticion_analitica(sender, instance, created, **kwargs):
         (ResultadoParametro, _Consumo, _Lote, _Salida, RepeticionAnaliticaLab, _Costeo) = _get_lab_models()
         with transaction.atomic():
             repeticion = (
-                RepeticionAnaliticaLab.objects.select_for_update()
+                # PostgreSQL rechaza FOR UPDATE sobre el lado nullable de los
+                # joins generados por select_related; bloquear solo la
+                # repeticion es suficiente para hacer idempotente el signal.
+                RepeticionAnaliticaLab.objects.select_for_update(of=('self',))
                 .select_related('resultado__orden', 'resultado__orden__empresa', 'resultado__analito', 'resultado__equipo')
                 .get(pk=instance.pk)
             )
