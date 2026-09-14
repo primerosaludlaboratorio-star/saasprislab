@@ -26,7 +26,11 @@ def persist_marketing_tracking_hit(
     user_agent_hash: str,
     ip_hash: str,
 ) -> None:
-    close_old_connections()
+    # En modo eager Celery ejecuta la tarea en el hilo del request/test.
+    # No cerrar ahi la conexion del llamador; el worker real si debe limpiarla.
+    is_eager = bool(getattr(persist_marketing_tracking_hit.request, 'is_eager', False))
+    if not is_eager:
+        close_old_connections()
     try:
         if empresa_id is None:
             logger.critical(
@@ -47,4 +51,5 @@ def persist_marketing_tracking_hit(
             ip_hash=(ip_hash or "")[:64],
         )
     finally:
-        close_old_connections()
+        if not is_eager:
+            close_old_connections()
