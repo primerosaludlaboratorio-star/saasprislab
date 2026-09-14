@@ -109,3 +109,9 @@ hasta su ejecucion documentada.
   pruebas Django queda bloqueada en una transacción `idle in transaction` al
   crear un índice de `HashRaizDiario`. La base temporal fue eliminada; no se
   declara aprobada la suite PostgreSQL hasta aislar ese bloqueo.
+- La revision independiente `audit/REVISION_VALIDACION_PY312_POSTGRES_2026-09-13.md`
+  reemplaza esa conclusion: la bateria dirigida paso `8/8` con migraciones,
+  `PRISLAB_TEST_NO_MIGRATIONS=1` y `--keepdb`. El estado `idle in transaction`
+  fue latencia del tunel SSH (`ClientRead`), no deadlock. La suite completa
+  sigue sin certificarse porque por tunel tarda horas; debe ejecutarse en el
+  mismo host que PostgreSQL o con conectividad de baja latencia.

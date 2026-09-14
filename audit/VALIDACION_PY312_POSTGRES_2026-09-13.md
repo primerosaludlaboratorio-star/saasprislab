@@ -104,6 +104,25 @@ Esto acota el siguiente diagnostico a la creacion/sincronizacion del esquema
 de pruebas PostgreSQL o a la inicializacion de la aplicacion; no hay evidencia
 para declarar aprobada la suite PostgreSQL completa.
 
+## Reconciliacion independiente
+
+La revision independiente documentada en
+`audit/REVISION_VALIDACION_PY312_POSTGRES_2026-09-13.md` corrigio esta
+interpretacion. La bateria dirigida si completo sobre PostgreSQL 18.6 con
+Python 3.12.14:
+
+- Migraciones: `8/8` correctas, aproximadamente 767 segundos incluyendo
+  creacion del esquema.
+- `PRISLAB_TEST_NO_MIGRATIONS=1`: `8/8` correctas, aproximadamente 111
+  segundos.
+- `--keepdb`: `8/8` correctas, aproximadamente 32 segundos.
+
+El estado `idle in transaction` con `ClientRead` correspondia a Django
+esperando entre sentencias DDL a traves del tunel SSH; no era un deadlock.
+Las migraciones directas tambien completaron sin error. La suite completa no
+se certifica porque su ejecucion por tunel es impracticable por latencia, no
+porque haya fallado.
+
 ### Aislamiento final del diagnóstico
 
 - En una base PostgreSQL nueva, `manage.py migrate --noinput` ejecutado
