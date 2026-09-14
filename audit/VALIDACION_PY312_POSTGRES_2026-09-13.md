@@ -103,3 +103,15 @@ migracion o señal que deja la transaccion abierta.
 Esto acota el siguiente diagnostico a la creacion/sincronizacion del esquema
 de pruebas PostgreSQL o a la inicializacion de la aplicacion; no hay evidencia
 para declarar aprobada la suite PostgreSQL completa.
+
+### Aislamiento final del diagnóstico
+
+- En una base PostgreSQL nueva, `manage.py migrate --noinput` ejecutado
+  directamente completo todo el historial de migraciones sin errores.
+- El estado `idle in transaction` observado durante la creación de la base de
+  pruebas correspondia a una operación DDL que seguia avanzando lentamente;
+  no se reprodujo como excepción de migración.
+- El runner Django continúa sin entregar el resultado de las pruebas dentro de
+  la ventana operativa porque recrea/revalida un esquema grande a través del
+  túnel SSH. Por rigor, la suite PostgreSQL sigue **no concluyente**, aunque el
+  historial de migraciones queda validado.
