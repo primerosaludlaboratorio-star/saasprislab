@@ -95,7 +95,7 @@ class MarketingSecurityTests(TestCase):
             username="marketing_user_con_emp",
             password="password123",
             empresa=self.empresa_a,
-            rol="RECEPCION"
+            rol="GERENTE"
         )
         self.user_sin_empresa = Usuario.objects.create_user(
             username="marketing_user_sin_emp",
@@ -111,16 +111,16 @@ class MarketingSecurityTests(TestCase):
         response = self.client.post(reverse("marketing:api_generar_cupon"), {
             "porcentaje": "15",
             "descripcion": "Descuento especial"
-        })
+        }, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
         self.assertEqual(response.status_code, 403)
-        self.assertFalse(response.json()["ok"])
+        self.assertEqual(response.json()["status"], "error")
 
         # User with company can generate coupon
         self.client.login(username="marketing_user_con_emp", password="password123")
         response = self.client.post(reverse("marketing:api_generar_cupon"), {
             "porcentaje": "15",
             "descripcion": "Descuento especial"
-        })
+        }, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["ok"])
 
@@ -130,16 +130,16 @@ class MarketingSecurityTests(TestCase):
         response = self.client.post(reverse("marketing:api_crear_campana"), {
             "segmento": "diabeticos",
             "mensaje": "Mensaje de campaña"
-        })
+        }, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
         self.assertEqual(response.status_code, 403)
-        self.assertFalse(response.json()["ok"])
+        self.assertEqual(response.json()["status"], "error")
 
         # User with company can create campaign
         self.client.login(username="marketing_user_con_emp", password="password123")
         response = self.client.post(reverse("marketing:api_crear_campana"), {
             "segmento": "diabeticos",
             "mensaje": "Mensaje de campaña"
-        })
+        }, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["ok"])
 

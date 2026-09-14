@@ -1,4 +1,5 @@
 import json
+import uuid
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -122,6 +123,7 @@ class LimsCartSearchTests(TestCase):
             ],
             'total': 0,
             'anticipo': 0,
+            'client_mutation_id': str(uuid.uuid4()),
         }
         factory = RequestFactory()
         request = factory.post(

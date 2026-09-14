@@ -744,6 +744,16 @@ class SentinelTelemetryMiddleware:
                     "(multi-tenant: prohibido Empresa.objects.first())."
                 )
                 return
+            # El error puede llegar despues de que una transaccion de prueba
+            # haya hecho rollback; evita convertir el registro forense en una
+            # segunda excepcion por FK invalida.
+            from core.models import Empresa
+            if not Empresa.objects.filter(id=empresa_id).exists():
+                logger.warning(
+                    "SENTINEL: empresa_id=%s ya no existe; se omite la incidencia.",
+                    empresa_id,
+                )
+                return
             usuario_id = datos.get('user_id') or None
 
             datos_sanitizados = {

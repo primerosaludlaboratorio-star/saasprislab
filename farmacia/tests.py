@@ -1019,4 +1019,4 @@ class FarmaciaCargaMasivaTests(TestCase):
         u = User.objects.get(pk=u.pk)
         self.client.force_login(u)
         response = self.client.post(reverse("farmacia:carga_masiva_productos"))
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 403)

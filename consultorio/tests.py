@@ -124,7 +124,8 @@ class ConsultorioViewTests(TestCase):
             username='test_medico',
             password='test123',
             email='medico@test.com',
-            empresa=self.empresa
+            empresa=self.empresa,
+            rol='MEDICO'
         )
         
         # Create Paciente
