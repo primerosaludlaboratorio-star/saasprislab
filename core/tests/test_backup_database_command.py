@@ -8,7 +8,15 @@ from django.test import TestCase, override_settings
 
 
 class BackupDatabaseCommandTests(TestCase):
-    @override_settings(FERNET_KEY=Fernet.generate_key().decode())
+    @override_settings(
+        FERNET_KEY=Fernet.generate_key().decode(),
+        DATABASES={
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': ':memory:',
+            }
+        },
+    )
     def test_sqlite_raises_command_error(self):
         with self.assertRaises(CommandError) as ctx:
             call_command('backup_database', stdout=StringIO(), stderr=StringIO())

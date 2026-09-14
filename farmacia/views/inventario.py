@@ -129,9 +129,17 @@ def inventario_farmacia(request):
     categoria = request.GET.get('categoria', '').strip().upper()
     marca = request.GET.get('marca', '').strip()
     estado = request.GET.get('estado', '').strip().lower()
+    sucursal_usuario = get_user_primary_sucursal(request.user)
     lotes_con_existencia = Lote.objects.filter(cantidad__gt=0).order_by('fecha_caducidad')
+    productos_qs = Producto.objects_all.filter(empresa=empresa)
+    # Un producto sin sucursal es catalogo compartido dentro del tenant;
+    # conservarlo visible sin abrir productos de otras sucursales.
+    if sucursal_usuario is not None:
+        productos_qs = productos_qs.filter(
+            Q(sucursal__isnull=True) | Q(sucursal=sucursal_usuario)
+        )
     productos = (
-        Producto.objects.filter(empresa=empresa)
+        productos_qs
         .select_related('sucursal')
         .prefetch_related(Prefetch('lotes', queryset=lotes_con_existencia, to_attr='inventario_lotes'))
         .order_by('nombre')
@@ -217,7 +225,7 @@ def inventario_farmacia(request):
     paginator = Paginator(filas_todas, 50)
     pagina = paginator.get_page(request.GET.get('page', 1))
     marcas = (
-        Producto.objects.filter(empresa=empresa)
+        productos_qs
         .exclude(marca_laboratorio__isnull=True)
         .exclude(marca_laboratorio='')
         .values_list('marca_laboratorio', flat=True)

@@ -896,7 +896,10 @@ class SentinelTelemetryMiddleware:
             except Exception as e:
                 logger.warning(f"SENTINEL: Error al enviar push notification: {e}")
 
-            connection.close()
+            # No cerrar la conexion compartida mientras una transaccion activa
+            # (incluidos los tests Django) aun la necesita.
+            if not connection.in_atomic_block:
+                connection.close()
 
         except Exception as e:
             logger.error(f"SENTINEL: Error fatal al crear incidencia: {e}", exc_info=True)
