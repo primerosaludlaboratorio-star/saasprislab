@@ -466,7 +466,11 @@ class SentinelTelemetryMiddleware:
         try:
             # Cerrar la conexión actual (forzar reconexión en siguiente request)
             from django.db import connection
-            connection.close()
+            # No cerrar la conexion si pertenece a una transaccion activa:
+            # el middleware puede ejecutarse dentro de un request atomico o
+            # de TestCase y cerrar ahi rompe la operacion principal.
+            if not connection.in_atomic_block:
+                connection.close()
         except Exception:
             logging.getLogger(__name__).exception("Error inesperado en _repair_database_error (sentinel.py)")
             pass
@@ -898,7 +902,8 @@ class SentinelTelemetryMiddleware:
             logger.error(f"SENTINEL: Error fatal al crear incidencia: {e}", exc_info=True)
             try:
                 from django.db import connection
-                connection.close()
+                if not connection.in_atomic_block:
+                    connection.close()
             except Exception:
                 logging.getLogger(__name__).exception("Error inesperado en _crear_incidencia (sentinel.py)")
                 pass
