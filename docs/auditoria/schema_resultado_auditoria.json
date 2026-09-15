@@ -78,6 +78,7 @@
         "id",
         "auditor",
         "perfil",
+        "rol",
         "modulo",
         "tipo_flujo",
         "tipo_prueba",
@@ -98,6 +99,7 @@
         "id": { "type": "string", "pattern": "^F5-[ABC]-\\d{3}$" },
         "auditor": { "type": "string", "minLength": 1 },
         "perfil": { "type": "string", "minLength": 1 },
+        "rol": { "type": "string", "minLength": 1 },
         "modulo": { "type": "string", "minLength": 1 },
         "tipo_flujo": { "type": "string", "minLength": 1 },
         "tipo_prueba": { "type": "string", "minLength": 1 },
@@ -227,8 +229,7 @@
         "modulo",
         "rol",
         "tipo_prueba",
-        "estado_cobertura",
-        "escenarios_ids"
+        "estado_cobertura"
       ],
       "properties": {
         "modulo": { "type": "string", "minLength": 1 },
@@ -240,10 +241,15 @@
         },
         "escenarios_ids": {
           "type": "array",
-          "minItems": 1,
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^F5-[ABC]-\\d{3}$" }
         },
+        "total_escenarios": { "type": "integer", "minimum": 0 },
+        "ejecutados": { "type": "integer", "minimum": 0 },
+        "pass": { "type": "integer", "minimum": 0 },
+        "fail": { "type": "integer", "minimum": 0 },
+        "blocked": { "type": "integer", "minimum": 0 },
+        "no_probado": { "type": "integer", "minimum": 0 },
         "omisiones": { "type": "integer", "minimum": 0 },
         "auditor_responsable": { "type": "string" },
         "muestra_cruzada_por": {
@@ -251,7 +257,22 @@
           "description": "Auditores separados por ',' para compatibilidad con CSV UTF-8"
         },
         "observaciones": { "type": "string" }
-      }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "total_escenarios",
+            "ejecutados",
+            "pass",
+            "fail",
+            "blocked",
+            "no_probado"
+          ]
+        },
+        {
+          "required": ["escenarios_ids"]
+        }
+      ]
     },
     "reconciliacion": {
       "type": "object",
