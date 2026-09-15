@@ -1,7 +1,7 @@
 # Checklist de cierre — Fase 5 Auditoria humana integral (L11)
 
 ## Regla STOP (obligatoria)
-- [ ] **STOP:** Si existe algun FAIL de severidad **CRITICA** abierto, se detiene el cierre inmediatamente.
+- [ ] **STOP:** Si existe algún FAIL de severidad **CRITICA** abierto, se detiene el cierre inmediatamente.
 
 ## Gates de cierre
 - [ ] Matriz Modulo x Rol x Tipo de prueba ejecutada y consolidada (`cubierto|parcial|no_cubierto|bloqueado`).

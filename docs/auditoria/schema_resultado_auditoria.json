@@ -93,7 +93,8 @@
         "esperado",
         "real",
         "resultado",
-        "reproducibilidad"
+        "reproducibilidad",
+        "evidencia_refs"
       ],
       "properties": {
         "id": { "type": "string", "pattern": "^F5-[ABC]-\\d{3}$" },
@@ -258,7 +259,7 @@
         },
         "observaciones": { "type": "string" }
       },
-      "anyOf": [
+      "oneOf": [
         {
           "required": [
             "total_escenarios",
@@ -267,10 +268,21 @@
             "fail",
             "blocked",
             "no_probado"
-          ]
+          ],
+          "not": { "required": ["escenarios_ids"] }
         },
         {
-          "required": ["escenarios_ids"]
+          "required": ["escenarios_ids"],
+          "not": {
+            "anyOf": [
+              { "required": ["total_escenarios"] },
+              { "required": ["ejecutados"] },
+              { "required": ["pass"] },
+              { "required": ["fail"] },
+              { "required": ["blocked"] },
+              { "required": ["no_probado"] }
+            ]
+          }
         }
       ]
     },
