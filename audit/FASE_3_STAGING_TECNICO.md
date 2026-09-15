@@ -2,7 +2,7 @@
 
 **Versión:** 1.0  
 **Fecha:** 2026-09-15  
-**Estado:** 🟡 Fase 3 - INICIADA  
+**Estado:** Fase 3 - ENTORNO EJECUTABLE PREPARADO
 **Commit Anterior:** `88c22cb` (Fase 2 Cerrada)
 
 ---
@@ -29,7 +29,14 @@ Validar que PRISLAB SaaS **funciona correctamente en un entorno equivalente a pr
 - Artefactos externos verificados con SHA-256
 - Reporte: `REPORTE_CIERRE_FASE_2.md`
 
-### ⏳ Pendiente en Fase 3
+### ✅ Preparado para ejecución reproducible
+- [x] Workflow aislado `.github/workflows/fase3-staging.yml`
+- [x] Python 3.12 via `actions/setup-python`
+- [x] PostgreSQL 16 Alpine como servicio efímero
+- [x] Redis 7 Alpine como servicio efímero
+- [x] Evidencia automática por `github.run_id`
+
+### ⏳ Pendiente de ejecución en Fase 3
 - [ ] Entorno staging Python 3.12 + PostgreSQL 16
 - [ ] Migraciones: desde cero
 - [ ] Migraciones: reutilización (idempotencia)
@@ -72,12 +79,12 @@ docker-compose --version # Debe estar disponible
 - manage.py (Django)
 - Todas las migraciones en lugar
 
-⏳ NECESARIO CREAR:
-- docker-compose.yml (staging)
-- docker/Dockerfile.staging
-- scripts/test/integration_tests.py
-- scripts/test/concurrent_tests.py
-- scripts/test/performance_baseline.py
+✅ IMPLEMENTADO:
+- `.github/workflows/fase3-staging.yml` (staging efímero reproducible)
+
+⏳ NO SE USA EN ESTA FASE:
+- Docker Compose en el VPS: el VPS es producción y no debe reutilizarse como staging.
+- Scripts pseudogenericos que no correspondan a modelos y rutas reales.
 ```
 
 ---
@@ -569,10 +576,11 @@ audit/fase3/celery/
 
 **ANTES de ejecutar Fase 3:**
 
-1. [ ] Verificar disponibilidad de Python 3.12, PostgreSQL 16, Docker
-2. [ ] Crear `docker-compose.yml` para staging
-3. [ ] Crear scripts de test (integration, ACID, concurrency, performance)
-4. [ ] Establecer directorio de evidencia externa: `C:\Users\jonil\Desktop\PRISLAB_AUDIT_EVIDENCE\PRISLAB_AUDIT_PHASE3_88C22CB_STAGING_20260915`
+1. [x] El workflow define Python 3.12, PostgreSQL 16 Alpine y Redis 7
+2. [x] El VPS productivo queda fuera del staging
+3. [x] Se usan pruebas Django reales existentes, no pseudopruebas
+4. [ ] Ejecutar manualmente el workflow y conservar el artifact `prislab-fase3-<run_id>`
+5. [ ] Copiar el artifact fuera del checkout y documentar su SHA-256
 
 **Veredicto al cierre de Fase 3:**
 

@@ -1,0 +1,138 @@
+name: PRISLAB Fase 3 - Staging tecnico
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_expression:
+        description: "Modulos Django a ejecutar; vacio usa la bateria de integracion"
+        required: false
+        default: ""
+  push:
+    branches: [release/v1.0-local]
+    paths:
+      - "audit/FASE_3_STAGING_TECNICO.md"
+      - ".github/workflows/fase3-staging.yml"
+      - "requirements.lock"
+      - "config/**"
+      - "core/**"
+      - "laboratorio/**"
+      - "lims/**"
+      - "inventario/**"
+      - "farmacia/**"
+
+permissions:
+  contents: read
+
+env:
+  DJANGO_SETTINGS_MODULE: config.settings
+  PYTHONUNBUFFERED: "1"
+  PYTHONIOENCODING: utf-8
+  SECRET_KEY: ci-fase3-prislab-dummy-key-not-for-production-0123456789
+  FERNET_KEY: crFEHsDc7QApfMoN2nKLLdaHvGW4TMfx4vB7Wf8DYOE=
+  DEBUG: "False"
+  PRISLAB_ENV: test
+  DJANGO_ENV: test
+  DB_HOST: 127.0.0.1
+  DB_PORT: "5432"
+  DB_NAME: prislab_fase3
+  DB_USER: prislab_fase3
+  DB_PASSWORD: prislab_fase3_password
+  REDIS_URL: redis://127.0.0.1:6379/0
+
+jobs:
+  staging:
+    name: Python 3.12 + PostgreSQL 16 + Redis
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: prislab_fase3
+          POSTGRES_USER: prislab_fase3
+          POSTGRES_PASSWORD: prislab_fase3_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prislab_fase3 -d prislab_fase3"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install locked dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --require-hashes -r requirements.lock
+
+      - name: Verify runtime services
+        run: |
+          mkdir -p audit/fase3-runtime
+          python --version | tee audit/fase3-runtime/python-version.txt
+          python -c "import django; print('Django ' + django.get_version())" | tee audit/fase3-runtime/django-version.txt
+          psql --version | tee audit/fase3-runtime/psql-version.txt
+          PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -c 'select version();' | tee audit/fase3-runtime/postgres-version.txt
+          python -c "import redis; r=redis.Redis.from_url('$REDIS_URL'); print(r.ping())" | tee audit/fase3-runtime/redis-ping.txt
+
+      - name: Django checks
+        run: |
+          python manage.py check 2>&1 | tee audit/fase3-runtime/django-check.log
+          python manage.py makemigrations --check --no-input 2>&1 | tee audit/fase3-runtime/migrations-check.log
+
+      - name: Migrations from zero
+        run: |
+          python manage.py migrate --noinput 2>&1 | tee audit/fase3-runtime/migrate-first.log
+          python manage.py showmigrations --plan 2>&1 | tee audit/fase3-runtime/migration-plan.log
+          PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -Atc "select count(*) from information_schema.tables where table_schema='public';" | tee audit/fase3-runtime/public-table-count.txt
+
+      - name: Migration idempotence
+        run: |
+          python manage.py migrate --noinput 2>&1 | tee audit/fase3-runtime/migrate-second.log
+          if grep -Eq 'Applying |Running migrations:' audit/fase3-runtime/migrate-second.log; then
+            echo "Second migration run applied changes" >&2
+            exit 1
+          fi
+
+      - name: Integration and security tests
+        env:
+          TEST_EXPRESSION: ${{ inputs.test_expression }}
+        run: |
+          if [ -n "$TEST_EXPRESSION" ]; then
+            python manage.py test $TEST_EXPRESSION -v 2 2>&1 | tee audit/fase3-runtime/tests.log
+          else
+            python manage.py test \
+              core.tests.test_tenant_isolation \
+              core.tests.test_lims_config_tenant_security \
+              core.tests.test_enterprise_security_closures \
+              core.tests.test_gemini_transport_canonical \
+              laboratorio.tests.test_cci_lj_postgres_guard \
+              laboratorio.tests.test_cci_canal \
+              laboratorio.tests.test_compliance_iso15189 \
+              contabilidad.tests.test_views_public_autofactura \
+              ia.tests \
+              -v 2 2>&1 | tee audit/fase3-runtime/tests.log
+          fi
+
+      - name: Upload Fase 3 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prislab-fase3-${{ github.run_id }}
+          path: audit/fase3-runtime/
+          if-no-files-found: warn
