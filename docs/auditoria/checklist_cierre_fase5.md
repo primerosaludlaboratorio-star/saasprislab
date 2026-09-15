@@ -10,7 +10,7 @@
 - [ ] Cada corrección aplicada tiene regresión en verde (misma ruta/flujo afectado).
 - [ ] PDFs/reportes/exportaciones (PDF, Excel, CSV) fueron abiertos y validados como legibles.
 - [ ] Inventario de ortografía, consistencia y lenguaje humano completado e inventariado.
-- [ ] Variaciones obligatorias ejecutadas (doble clic, recarga POST, back, doble sesion, concurrencia, red, timeout, CSRF ausente, etc.).
+- [ ] Variaciones obligatorias ejecutadas (doble clic, recarga POST, back, doble sesión, concurrencia, red, timeout, CSRF ausente, etc.).
 - [ ] Verificación de aislamiento tenant y RBAC por URL directa completada.
 - [ ] Limpieza de datos sintéticos completada y evidenciada.
 

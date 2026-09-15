@@ -225,7 +225,7 @@
     },
     "cobertura": {
       "type": "object",
-      "description": "Invariante operativa esperada: ejecutados = pass + fail + blocked y total_escenarios = ejecutados + no_probado.",
+      "description": "Invariante operativa esperada (validación manual): ejecutados = pass + fail + blocked y total_escenarios = ejecutados + no_probado.",
       "additionalProperties": false,
       "required": [
         "modulo",

@@ -1,5 +1,5 @@
 modulo,rol,tipo_prueba,estado_cobertura,total_escenarios,ejecutados,pass,fail,blocked,no_probado,omisiones,auditor_responsable,muestra_cruzada_por,observaciones,escenarios_ids
 Farmacia,Vendedor,funcional_e2e,parcial,12,12,11,1,0,0,0,A,"B,C",Incluye venta/devolucion/caja y variaciones obligatorias,"F5-A-001;F5-A-002;F5-A-003;F5-A-004;F5-A-005;F5-A-006;F5-A-007;F5-A-008;F5-A-009;F5-A-010;F5-A-011;F5-A-012"
-Laboratorio,Quimico,seguridad_rbac,parcial,9,9,8,0,1,0,0,B,"A,C",Pendientes por dependencia de proveedor externo,"F5-B-001;F5-B-002;F5-B-003;F5-B-004;F5-B-005;F5-B-006;F5-B-007;F5-B-008;F5-B-009"
+Laboratorio,Quimico,seguridad_rbac,parcial,9,9,8,0,1,0,0,B,"A,C",Cobertura parcial por hallazgo bloqueado confirmado,"F5-B-001;F5-B-002;F5-B-003;F5-B-004;F5-B-005;F5-B-006;F5-B-007;F5-B-008;F5-B-009"
 Core/Acceso,Auditor tecnico,resiliencia,bloqueado,4,4,0,0,4,0,0,C,"A,B",Bloqueos por timeout intermitente documentado,"F5-C-001;F5-C-002;F5-C-003;F5-C-004"
 Expediente,Medico,funcional_e2e,no_cubierto,9,0,0,0,0,9,9,B,"A,C",Sin ejecucion en esta corrida por restriccion de entorno,"F5-B-101;F5-B-102;F5-B-103;F5-B-104;F5-B-105;F5-B-106;F5-B-107;F5-B-108;F5-B-109"
