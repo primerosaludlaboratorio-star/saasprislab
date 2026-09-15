@@ -104,8 +104,8 @@ jobs:
       - name: Migration idempotence
         run: |
           python manage.py migrate --noinput 2>&1 | tee audit/fase3-runtime/migrate-second.log
-          if grep -Eq 'Applying |Running migrations:' audit/fase3-runtime/migrate-second.log; then
-            echo "Second migration run applied changes" >&2
+          if ! grep -q 'No migrations to apply.' audit/fase3-runtime/migrate-second.log; then
+            echo "Second migration run did not report a no-op" >&2
             exit 1
           fi
 
