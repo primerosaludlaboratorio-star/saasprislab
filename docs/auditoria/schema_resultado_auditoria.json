@@ -228,12 +228,7 @@
         "rol",
         "tipo_prueba",
         "estado_cobertura",
-        "total_escenarios",
-        "ejecutados",
-        "pass",
-        "fail",
-        "blocked",
-        "no_probado"
+        "escenarios_ids"
       ],
       "properties": {
         "modulo": { "type": "string", "minLength": 1 },
@@ -243,12 +238,12 @@
           "type": "string",
           "enum": ["cubierto", "parcial", "no_cubierto", "bloqueado"]
         },
-        "total_escenarios": { "type": "integer", "minimum": 0 },
-        "ejecutados": { "type": "integer", "minimum": 0 },
-        "pass": { "type": "integer", "minimum": 0 },
-        "fail": { "type": "integer", "minimum": 0 },
-        "blocked": { "type": "integer", "minimum": 0 },
-        "no_probado": { "type": "integer", "minimum": 0 },
+        "escenarios_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^F5-[ABC]-\\d{3}$" }
+        },
         "omisiones": { "type": "integer", "minimum": 0 },
         "auditor_responsable": { "type": "string" },
         "muestra_cruzada_por": {
@@ -256,66 +251,7 @@
           "description": "Auditores separados por ',' para compatibilidad con CSV UTF-8"
         },
         "observaciones": { "type": "string" }
-      },
-      "allOf": [
-        {
-          "if": {
-            "properties": { "estado_cobertura": { "const": "no_cubierto" } },
-            "required": ["estado_cobertura"]
-          },
-          "then": {
-            "properties": {
-              "ejecutados": { "const": 0 },
-              "pass": { "const": 0 },
-              "fail": { "const": 0 },
-              "blocked": { "const": 0 },
-              "no_probado": { "minimum": 1 }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": { "estado_cobertura": { "const": "cubierto" } },
-            "required": ["estado_cobertura"]
-          },
-          "then": {
-            "properties": {
-              "no_probado": { "const": 0 },
-              "blocked": { "const": 0 }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": { "estado_cobertura": { "const": "bloqueado" } },
-            "required": ["estado_cobertura"]
-          },
-          "then": {
-            "properties": {
-              "pass": { "const": 0 },
-              "fail": { "const": 0 },
-              "blocked": { "minimum": 1 }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": { "estado_cobertura": { "const": "parcial" } },
-            "required": ["estado_cobertura"]
-          },
-          "then": {
-            "properties": {
-              "no_probado": { "minimum": 1 },
-              "ejecutados": { "minimum": 1 }
-            },
-            "anyOf": [
-              { "properties": { "pass": { "minimum": 1 } } },
-              { "properties": { "fail": { "minimum": 1 } } },
-              { "properties": { "blocked": { "minimum": 1 } } }
-            ]
-          }
-        }
-      ]
+      }
     },
     "reconciliacion": {
       "type": "object",
