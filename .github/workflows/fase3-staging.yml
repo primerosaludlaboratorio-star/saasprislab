@@ -129,6 +129,64 @@ jobs:
               -v 2 2>&1 | tee audit/fase3-runtime/tests.log
           fi
 
+      - name: 3.5 LIMS append-only and ISO 15189
+        if: always()
+        run: |
+          python manage.py test \
+            core.tests.test_append_only_audit \
+            laboratorio.tests.test_compliance_iso15189 \
+            -v 2 2>&1 | tee audit/fase3-runtime/lims-append-only.log
+
+      - name: 3.6 ACID rollback
+        if: always()
+        run: |
+          python manage.py test core.tests.test_phase3_acid -v 2 2>&1 | tee audit/fase3-runtime/acid.log
+
+      - name: 3.7 Performance baseline
+        if: always()
+        run: |
+          python - <<'PY' 2>&1 | tee audit/fase3-runtime/performance-baseline.json
+          import json
+          import statistics
+          import time
+          import django
+          from django.db import connection
+          django.setup()
+          samples = []
+          with connection.cursor() as cursor:
+              for _ in range(100):
+                  start = time.perf_counter()
+                  cursor.execute("SELECT 1")
+                  cursor.fetchone()
+                  samples.append((time.perf_counter() - start) * 1000)
+          samples.sort()
+          print(json.dumps({
+              "database_vendor": connection.vendor,
+              "samples": len(samples),
+              "min_ms": round(min(samples), 3),
+              "median_ms": round(statistics.median(samples), 3),
+              "p95_ms": round(samples[94], 3),
+              "max_ms": round(max(samples), 3),
+          }, indent=2))
+          PY
+
+      - name: 3.8 PostgreSQL concurrency and locks
+        if: always()
+        run: |
+          python manage.py test \
+            core.tests.test_concurrencia_cmms \
+            core.tests.test_e2e_cfdi.TimbradoBlindajeTests.test_timbrado_concurrente_una_llamada_api_cuando_hay_lock_real \
+            -v 2 2>&1 | tee audit/fase3-runtime/concurrency.log
+
+      - name: 3.9 Celery worker availability
+        if: always()
+        run: |
+          celery -A config worker --loglevel=warning --concurrency=1 --hostname=fase3@%h > audit/fase3-runtime/celery-worker.log 2>&1 &
+          worker_pid=$!
+          trap 'kill "$worker_pid" 2>/dev/null || true' EXIT
+          sleep 8
+          celery -A config inspect ping --timeout=10 2>&1 | tee audit/fase3-runtime/celery-ping.log
+
       - name: Upload Fase 3 evidence
         if: always()
         uses: actions/upload-artifact@v4

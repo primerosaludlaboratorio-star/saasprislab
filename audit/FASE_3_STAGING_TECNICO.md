@@ -566,11 +566,11 @@ audit/fase3/celery/
 | 3.2 | Migraciones desde cero | logs del artifact | PASS |
 | 3.3 | Idempotencia migraciones | `migrate-second.log` | PASS |
 | 3.4 | Integracion y seguridad seleccionada | `tests.log` | PASS |
-| 3.5 | LIMS append-only | immutability-results.xml | ⏳ |
-| 3.6 | ACID transactions | transaction-results.xml | ⏳ |
-| 3.7 | Performance baseline | baseline.json | ⏳ |
-| 3.8 | Concurrency/deadlocks | concurrency-results.xml | ⏳ |
-| 3.9 | Celery workers | active-tasks.json | ⏳ |
+| 3.5 | LIMS append-only | `lims-append-only.log` | EJECUCION DEDICADA |
+| 3.6 | ACID transactions | `acid.log` | EJECUCION DEDICADA |
+| 3.7 | Performance baseline | `performance-baseline.json` | EJECUCION DEDICADA |
+| 3.8 | Concurrency/deadlocks | `concurrency.log` | EJECUCION DEDICADA |
+| 3.9 | Celery workers | `celery-ping.log` | EJECUCION DEDICADA |
 
 ---
 
