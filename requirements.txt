@@ -71,3 +71,5 @@ colorama==0.4.6
 psutil==7.2.2
 
 # Pruebas E2E (Selenium) y pytest: ver requirements-dev.txt
+# Herramienta usada por el quality gate de GitHub Actions.
+coverage==7.13.5
