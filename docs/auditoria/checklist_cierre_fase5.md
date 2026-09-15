@@ -12,7 +12,7 @@
 - [ ] Inventario de ortografía, consistencia y lenguaje humano completado e inventariado.
 - [ ] Variaciones obligatorias ejecutadas (doble clic, recarga POST, back, doble sesion, concurrencia, red, timeout, CSRF ausente, etc.).
 - [ ] Verificación de aislamiento tenant y RBAC por URL directa completada.
-- [ ] Limpieza de datos sinteticos completada y evidenciada.
+- [ ] Limpieza de datos sintéticos completada y evidenciada.
 
 ## Muestra cruzada y conciliación
 - [ ] Muestra cruzada independiente completada en **20%** de flujos de otros auditores (**redondeo hacia arriba**).

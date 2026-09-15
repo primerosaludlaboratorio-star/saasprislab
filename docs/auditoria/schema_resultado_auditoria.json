@@ -225,6 +225,7 @@
     },
     "cobertura": {
       "type": "object",
+      "description": "Invariante operativa esperada: ejecutados = pass + fail + blocked y total_escenarios = ejecutados + no_probado.",
       "additionalProperties": false,
       "required": [
         "modulo",
@@ -253,8 +254,16 @@
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^F5-[ABC]-\\d{3}$" }
         },
-        "total_escenarios": { "type": "integer", "minimum": 0 },
-        "ejecutados": { "type": "integer", "minimum": 0 },
+        "total_escenarios": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total planeado para la fila de cobertura (debe coincidir con IDs listados)."
+        },
+        "ejecutados": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Escenarios efectivamente corridos (PASS + FAIL + BLOCKED)."
+        },
         "pass": { "type": "integer", "minimum": 0 },
         "fail": { "type": "integer", "minimum": 0 },
         "blocked": { "type": "integer", "minimum": 0 },
