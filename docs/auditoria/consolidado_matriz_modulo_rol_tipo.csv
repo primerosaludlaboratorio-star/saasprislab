@@ -1,5 +1,5 @@
 modulo,rol,tipo_prueba,estado_cobertura,total_escenarios,ejecutados,pass,fail,blocked,no_probado,omisiones,auditor_responsable,muestra_cruzada_por,observaciones
 Farmacia,Vendedor,funcional_e2e,cubierto,12,12,11,1,0,0,0,A,"B,C",Incluye venta/devolucion/caja y variaciones obligatorias
-Laboratorio,Quimico,seguridad_rbac,parcial,10,8,7,0,1,2,2,B,"A,C",Pendientes por dependencia de proveedor externo
-Core/Acceso,Auditor tecnico,resiliencia,parcial,6,4,0,0,4,2,2,C,"A,B",Bloqueos por timeout intermitente documentado
+Laboratorio,Quimico,seguridad_rbac,parcial,8,8,7,0,1,0,0,B,"A,C",Pendientes por dependencia de proveedor externo
+Core/Acceso,Auditor tecnico,resiliencia,bloqueado,4,4,0,0,4,0,0,C,"A,B",Bloqueos por timeout intermitente documentado
 Expediente,Medico,funcional_e2e,no_cubierto,9,0,0,0,0,9,9,B,"A,C",Sin ejecucion en esta corrida por restriccion de entorno

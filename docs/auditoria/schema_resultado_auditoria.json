@@ -258,7 +258,7 @@
         },
         "observaciones": { "type": "string" }
       },
-      "oneOf": [
+      "anyOf": [
         {
           "required": [
             "total_escenarios",
