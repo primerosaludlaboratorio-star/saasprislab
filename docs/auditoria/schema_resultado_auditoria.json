@@ -230,7 +230,14 @@
         "modulo",
         "rol",
         "tipo_prueba",
-        "estado_cobertura"
+        "estado_cobertura",
+        "escenarios_ids",
+        "total_escenarios",
+        "ejecutados",
+        "pass",
+        "fail",
+        "blocked",
+        "no_probado"
       ],
       "properties": {
         "modulo": { "type": "string", "minLength": 1 },
@@ -258,22 +265,7 @@
           "description": "Auditores separados por ',' para compatibilidad con CSV UTF-8"
         },
         "observaciones": { "type": "string" }
-      },
-      "anyOf": [
-        {
-          "required": [
-            "total_escenarios",
-            "ejecutados",
-            "pass",
-            "fail",
-            "blocked",
-            "no_probado"
-          ]
-        },
-        {
-          "required": ["escenarios_ids"]
-        }
-      ]
+      }
     },
     "reconciliacion": {
       "type": "object",
