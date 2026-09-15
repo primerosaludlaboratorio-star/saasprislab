@@ -249,6 +249,7 @@
         },
         "escenarios_ids": {
           "type": "array",
+          "description": "En CSV se captura como lista delimitada por ';' y al consolidar se transforma a arreglo JSON",
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^F5-[ABC]-\\d{3}$" }
         },
