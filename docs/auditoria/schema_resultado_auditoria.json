@@ -124,8 +124,8 @@
         },
         "intentos": { "type": "integer", "minimum": 0 },
         "evidencia_refs": {
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "type": "string",
+          "description": "Referencias separadas por ';' para compatibilidad con CSV UTF-8"
         },
         "efectos_relacionados": { "type": "string" },
         "limpieza_estado": { "type": "string" },
@@ -196,8 +196,8 @@
         "hipotesis": { "type": "string", "minLength": 1 },
         "recomendacion": { "type": "string", "minLength": 1 },
         "evidencia_refs": {
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "type": "string",
+          "description": "Referencias separadas por ';' para compatibilidad con CSV UTF-8"
         },
         "fecha_utc": { "type": "string", "format": "date-time" },
         "auditor": { "type": "string", "minLength": 1 }
@@ -250,11 +250,38 @@
         "omisiones": { "type": "integer", "minimum": 0 },
         "auditor_responsable": { "type": "string" },
         "muestra_cruzada_por": {
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "type": "string",
+          "description": "Auditores separados por ',' para compatibilidad con CSV UTF-8"
         },
         "observaciones": { "type": "string" }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "estado_cobertura": { "const": "no_cubierto" } },
+            "required": ["estado_cobertura"]
+          },
+          "then": {
+            "properties": {
+              "ejecutados": { "const": 0 },
+              "pass": { "const": 0 },
+              "fail": { "const": 0 },
+              "blocked": { "const": 0 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "estado_cobertura": { "const": "cubierto" } },
+            "required": ["estado_cobertura"]
+          },
+          "then": {
+            "properties": {
+              "no_probado": { "const": 0 }
+            }
+          }
+        }
+      ]
     },
     "reconciliacion": {
       "type": "object",
