@@ -1,0 +1,37 @@
+name: Fase 4 - Negative Controls
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/audit/run_negative_controls.py"
+      - ".github/workflows/fase4-negative-controls.yml"
+      - "core/**"
+
+permissions:
+  contents: read
+
+jobs:
+  negative-controls:
+    runs-on: ubuntu-latest
+    container: python:3.12-slim
+    steps:
+      - name: Checkout disposable runner workspace
+        uses: actions/checkout@v4
+      - name: Dry-run catalog validation
+        run: >-
+          python scripts/audit/run_negative_controls.py
+          --mode dry-run
+          --output audit/fase4-runtime/negative-controls-dry-run.json
+      - name: Execute controls in temporary copy
+        run: >-
+          python scripts/audit/run_negative_controls.py
+          --mode execute
+          --output audit/fase4-runtime/negative-controls-execute.json
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prislab-fase4-negative-controls-${{ github.sha }}
+          path: audit/fase4-runtime/
+          if-no-files-found: error
