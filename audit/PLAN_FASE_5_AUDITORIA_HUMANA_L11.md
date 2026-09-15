@@ -17,6 +17,11 @@ resultados de commits, entornos o tenants. En produccion solo se permiten
 consultas y datos sinteticos reversibles. Las escrituras deben hacerse en
 staging o con datos marcados AUDIT-YYYYMMDD.
 
+La auditoria de observacion es read-only. La prueba funcional con escritura es
+una fase separada, ejecutada solo en staging o en un tenant de pruebas
+autorizado. Nunca se debe confundir una escritura reversible de prueba con una
+modificacion permitida en produccion.
+
 ## Perfiles
 
 1. Paciente: portal, citas, consentimiento, resultados y descarga.
@@ -160,6 +165,18 @@ causa externa comprobable. Un hallazgo incluye severidad, reproducibilidad,
 impacto, pasos, URL, rol, tenant, esperado, real y evidencia. Nunca incluye
 contrasenas, tokens, API keys, PII innecesaria o datos productivos.
 
+Cada hallazgo usa un identificador unico con el formato HUM-MODULO-###. Debe
+separar explicitamente HECHO, OBSERVACION, INFERENCIA, HIPOTESIS y
+RECOMENDACION. La confianza Alta solo se permite cuando se trazaron request,
+vista, template, persistencia, auditoria y respuesta observada. La confianza
+Media requiere una verificacion pendiente. La confianza Baja es una sospecha
+que no puede presentarse como defecto confirmado.
+
+Un hallazgo tecnico debe incluir archivo y linea. Uno de interfaz debe incluir
+template/componente, selector o texto visible, URL, captura y el flujo que lo
+renderiza. Ningun numero de cobertura puede ser estimado: debe derivarse de
+un inventario contable.
+
 Critica significa acceso cross-tenant, perdida de datos, cobro incorrecto,
 publicacion clinica insegura o accion destructiva sin control. Alta significa
 bypass de rol, alteracion clinica/financiera, integridad rota o bloqueo del
@@ -176,6 +193,75 @@ inventario corregido o aceptado.
 Tambien se requiere muestra cruzada independiente, reporte consolidado con
 omisiones y limites, y reconciliacion de commit, entorno y artefactos. Tener
 pantallas construidas o tests verdes no equivale a cierre humano.
+
+## Auditoria independiente y conciliacion
+
+Los tres auditores reciben exactamente el mismo commit, entorno, glosario,
+cuentas de prueba y este plan. Durante la primera entrega no pueden leer los
+reportes de los otros ni adaptar sus conclusiones al consenso. Cada reporte
+indica el IDE, modelo, version, fecha UTC, commit, URL base y modo de acceso.
+
+La conciliacion se realiza despues de recibir los tres reportes y compara
+evidencia, no solo titulos o severidades:
+
+1. Unificar hallazgos con evidencia equivalente, conservando todos los pasos.
+2. Marcar coincidencias, exclusivos y discrepancias de severidad.
+3. Reproducir manualmente cada exclusivo antes de aceptarlo o descartarlo.
+4. Unir las pruebas propuestas por los tres; nunca quedarse solo con la
+   interseccion.
+5. Resolver cada hallazgo en confirmado, refutado, pendiente o bloqueado.
+6. Crear un backlog de remediacion separado, sin editar durante la auditoria.
+
+El reporte consolidado debe incluir una matriz Modulo x Rol x Tipo de prueba
+con estados cubierto, parcial, no cubierto o bloqueado. Tambien debe contar
+modulos, pantallas, endpoints, formularios, roles, entidades y escenarios.
+
+## Entregables obligatorios por auditor
+
+Cada auditor entrega:
+
+- AUDITORIA_INTEGRAL_<IDE>_<FECHA>.md con mapa, roles, flujos, hallazgos,
+  cobertura, omisiones y autoevaluacion.
+- escenarios.csv con ID, modulo, rol, precondicion, pasos, esperado, real,
+  resultado y evidencia.
+- hallazgos.csv con ID, categoria, severidad, confianza, ubicacion y estado.
+- capturas o referencias de evidencia sin PII innecesaria.
+- lista de comandos, URLs, commit y entorno usados.
+
+El auditor declara al final: modo solo lectura respetado, si hubo datos creados,
+si fueron limpiados, que no pudo probar y por que. Un archivo o modulo no
+revisado se etiqueta NO AUDITADO, nunca limpio.
+
+## Reglas especiales de interfaz
+
+La revision de UI no se limita a que una pagina cargue. Para cada pantalla
+critica se verifica objetivo, jerarquia, accion primaria, estados vacio/carga/
+error/exito, recuperacion, confirmaciones, mensajes accionables, consistencia
+de nombres y navegacion de entrada y salida.
+
+Se debe revisar texto visible, labels, placeholders, tooltips, validaciones,
+alertas, tablas, PDF, Excel, correo y mensajes de API presentados al usuario.
+Se registra texto exacto, correccion propuesta, regla gramatical aplicable,
+impacto y todas las pantallas donde se repite. La correccion no se aplica en
+esta fase.
+
+## Revision de omisiones
+
+Antes de cerrar el reporte, cada auditor responde con evidencia:
+
+- Que aplicaciones, URLs, vistas, templates, APIs y modelos existen.
+- Que roles, empresas y sucursales se probaron.
+- Que flujos normales, alternos, cancelaciones, errores y recuperaciones se
+  ejecutaron.
+- Que funciones visibles, ocultas, duplicadas o muertas se encontraron.
+- Que integraciones, PDFs, exportaciones, auditoria y notificaciones se
+  comprobaron.
+- Que escenarios de concurrencia, doble envio y perdida de red se probaron.
+- Que accesibilidad, responsive, lenguaje y consistencia se revisaron.
+- Que quedo fuera por falta de acceso, datos, infraestructura o tiempo.
+
+La ausencia de evidencia en cualquier respuesta se clasifica como
+NO_PROBADO o BLOCKED, no como PASS.
 
 ## Instruccion para cada auditor IA
 
