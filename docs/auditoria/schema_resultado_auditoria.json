@@ -1,0 +1,324 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prislab.local/schemas/resultado_auditoria_fase5.json",
+  "title": "Resultado consolidado de auditoria humana integral PRISLAB (Fase 5)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "metadata",
+    "escenarios",
+    "hallazgos",
+    "cobertura",
+    "reconciliacion",
+    "metricas"
+  ],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commit",
+        "rama",
+        "entorno",
+        "fecha_utc",
+        "url_base",
+        "auditor"
+      ],
+      "properties": {
+        "ide": { "type": "string", "minLength": 1 },
+        "modelo": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "fecha_utc": { "type": "string", "format": "date-time" },
+        "commit": { "type": "string", "minLength": 7 },
+        "rama": { "type": "string", "minLength": 1 },
+        "entorno": { "type": "string", "minLength": 1 },
+        "url_base": { "type": "string", "format": "uri" },
+        "auditor": { "type": "string", "minLength": 1 },
+        "perfil": { "type": "string" },
+        "empresa": { "type": "string" },
+        "sucursal": { "type": "string" },
+        "modo_acceso": {
+          "type": "string",
+          "enum": ["solo_lectura", "escritura_controlada"]
+        }
+      }
+    },
+    "escenarios": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/escenario" }
+    },
+    "hallazgos": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/hallazgo" }
+    },
+    "evidencia": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evidencia" }
+    },
+    "cobertura": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/cobertura" }
+    },
+    "reconciliacion": { "$ref": "#/$defs/reconciliacion" },
+    "metricas": { "$ref": "#/$defs/metricas" },
+    "omisiones": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "limites": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "escenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "auditor",
+        "perfil",
+        "rol",
+        "modulo",
+        "tipo_flujo",
+        "tipo_prueba",
+        "fecha_utc",
+        "commit",
+        "rama",
+        "entorno",
+        "url_base",
+        "empresa",
+        "sucursal",
+        "pasos",
+        "esperado",
+        "real",
+        "resultado",
+        "reproducibilidad",
+        "evidencia_refs"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^F5-[A-Z]-\\d{3}$" },
+        "auditor": { "type": "string", "minLength": 1 },
+        "perfil": { "type": "string", "minLength": 1 },
+        "rol": { "type": "string", "minLength": 1 },
+        "modulo": { "type": "string", "minLength": 1 },
+        "tipo_flujo": { "type": "string", "minLength": 1 },
+        "tipo_prueba": { "type": "string", "minLength": 1 },
+        "criticidad_pantalla": { "type": "string" },
+        "fecha_utc": { "type": "string", "format": "date-time" },
+        "commit": { "type": "string", "minLength": 7 },
+        "rama": { "type": "string", "minLength": 1 },
+        "entorno": { "type": "string", "minLength": 1 },
+        "url_base": { "type": "string", "format": "uri" },
+        "empresa": { "type": "string", "minLength": 1 },
+        "sucursal": { "type": "string", "minLength": 1 },
+        "precondiciones": { "type": "string" },
+        "datos_prueba": { "type": "string" },
+        "pasos": { "type": "string", "minLength": 1 },
+        "esperado": { "type": "string", "minLength": 1 },
+        "real": { "type": "string", "minLength": 1 },
+        "resultado": {
+          "type": "string",
+          "enum": ["PASS", "FAIL", "BLOCKED", "NO_PROBADO"]
+        },
+        "reproducibilidad": {
+          "type": "string",
+          "enum": ["REPRODUCIBLE", "INTERMITENTE", "NO_REPRODUCIDO", "REFUTADO"]
+        },
+        "intentos": { "type": "integer", "minimum": 0 },
+        "evidencia_refs": {
+          "type": "array",
+          "description": "Arreglo JSON de referencias; al importar CSV dividir por ';' y recortar espacios",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "efectos_relacionados": { "type": "string" },
+        "limpieza_estado": { "type": "string" },
+        "limpieza_detalle": { "type": "string" },
+        "notas": { "type": "string" }
+      }
+    },
+    "hallazgo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "escenario_id",
+        "categoria",
+        "modulo",
+        "severidad",
+        "confianza",
+        "estado",
+        "reproducibilidad",
+        "impacto",
+        "rol",
+        "tenant",
+        "empresa",
+        "sucursal",
+        "url",
+        "esperado",
+        "real",
+        "hecho",
+        "observacion",
+        "inferencia",
+        "hipotesis",
+        "recomendacion",
+        "fecha_utc",
+        "auditor"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^HUM-[A-Z0-9_]+-\\d{3}$" },
+        "escenario_id": { "type": "string", "pattern": "^F5-[A-Z]-\\d{3}$" },
+        "categoria": { "type": "string", "minLength": 1 },
+        "modulo": { "type": "string", "minLength": 1 },
+        "severidad": {
+          "type": "string",
+          "enum": ["CRITICA", "ALTA", "MEDIA", "BAJA"]
+        },
+        "confianza": {
+          "type": "string",
+          "enum": ["ALTA", "MEDIA", "BAJA"]
+        },
+        "estado": { "type": "string", "minLength": 1 },
+        "reproducibilidad": {
+          "type": "string",
+          "enum": ["REPRODUCIBLE", "INTERMITENTE", "NO_REPRODUCIDO", "REFUTADO"]
+        },
+        "impacto": { "type": "string", "minLength": 1 },
+        "rol": { "type": "string", "minLength": 1 },
+        "tenant": { "type": "string", "minLength": 1 },
+        "empresa": { "type": "string", "minLength": 1 },
+        "sucursal": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri" },
+        "ubicacion_tecnica": { "type": "string" },
+        "archivo_linea": { "type": "string" },
+        "componente_selector_texto": { "type": "string" },
+        "esperado": { "type": "string", "minLength": 1 },
+        "real": { "type": "string", "minLength": 1 },
+        "hecho": { "type": "string", "minLength": 1 },
+        "observacion": { "type": "string", "minLength": 1 },
+        "inferencia": { "type": "string", "minLength": 1 },
+        "hipotesis": { "type": "string", "minLength": 1 },
+        "recomendacion": { "type": "string", "minLength": 1 },
+        "evidencia_refs": {
+          "type": "array",
+          "description": "Arreglo JSON de referencias; al importar CSV dividir por ';' y recortar espacios",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "fecha_utc": { "type": "string", "format": "date-time" },
+        "auditor": { "type": "string", "minLength": 1 }
+      }
+    },
+    "evidencia": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "tipo", "sha256", "fecha_utc"],
+      "properties": {
+        "ref": { "type": "string", "minLength": 1 },
+        "tipo": { "type": "string", "minLength": 1 },
+        "ruta": { "type": "string", "minLength": 1 },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "fecha_utc": { "type": "string", "format": "date-time" }
+      }
+    },
+    "cobertura": {
+      "type": "object",
+      "description": "Contadores de cobertura para reporte consolidado; se recomienda verificar su conciliación durante QA del entregable.",
+      "additionalProperties": false,
+      "required": [
+        "modulo",
+        "rol",
+        "tipo_prueba",
+        "estado_cobertura",
+        "escenarios_ids",
+        "total_escenarios",
+        "ejecutados",
+        "pass",
+        "fail",
+        "blocked",
+        "no_probado"
+      ],
+      "properties": {
+        "modulo": { "type": "string", "minLength": 1 },
+        "rol": { "type": "string", "minLength": 1 },
+        "tipo_prueba": { "type": "string", "minLength": 1 },
+        "estado_cobertura": {
+          "type": "string",
+          "enum": ["cubierto", "parcial", "no_cubierto", "bloqueado"]
+        },
+        "escenarios_ids": {
+          "type": "array",
+          "description": "En CSV se captura como lista delimitada por ';' y al consolidar se transforma a arreglo JSON",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^F5-[A-Z]-\\d{3}$" }
+        },
+        "total_escenarios": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total planeado para la fila de cobertura (debe coincidir con IDs listados)."
+        },
+        "ejecutados": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Escenarios efectivamente corridos (PASS + FAIL + BLOCKED)."
+        },
+        "pass": { "type": "integer", "minimum": 0 },
+        "fail": { "type": "integer", "minimum": 0 },
+        "blocked": { "type": "integer", "minimum": 0 },
+        "no_probado": { "type": "integer", "minimum": 0 },
+        "omisiones": { "type": "integer", "minimum": 0 },
+        "auditor_responsable": { "type": "string" },
+        "muestra_cruzada_por": {
+          "type": "string",
+          "description": "Auditores separados por ',' para compatibilidad con CSV UTF-8"
+        },
+        "observaciones": { "type": "string" }
+      }
+    },
+    "reconciliacion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coincidencias",
+        "exclusivos",
+        "discrepancias_severidad",
+        "resueltos"
+      ],
+      "properties": {
+        "coincidencias": { "type": "integer", "minimum": 0 },
+        "exclusivos": { "type": "integer", "minimum": 0 },
+        "discrepancias_severidad": { "type": "integer", "minimum": 0 },
+        "resueltos": { "type": "integer", "minimum": 0 },
+        "pendientes": { "type": "integer", "minimum": 0 },
+        "notas": { "type": "string" }
+      }
+    },
+    "metricas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total_modulos",
+        "total_pantallas",
+        "total_endpoints",
+        "total_formularios",
+        "total_roles",
+        "total_entidades",
+        "total_escenarios",
+        "total_hallazgos"
+      ],
+      "properties": {
+        "total_modulos": { "type": "integer", "minimum": 0 },
+        "total_pantallas": { "type": "integer", "minimum": 0 },
+        "total_endpoints": { "type": "integer", "minimum": 0 },
+        "total_formularios": { "type": "integer", "minimum": 0 },
+        "total_roles": { "type": "integer", "minimum": 0 },
+        "total_entidades": { "type": "integer", "minimum": 0 },
+        "total_escenarios": { "type": "integer", "minimum": 0 },
+        "total_hallazgos": { "type": "integer", "minimum": 0 },
+        "tasa_pass": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    }
+  }
+}
