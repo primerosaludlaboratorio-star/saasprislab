@@ -23,6 +23,9 @@ from pathlib import Path
 from datetime import datetime
 import re
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 
 def get_django_apps():
     """Extrae todas las aplicaciones Django instaladas."""
@@ -91,6 +94,8 @@ def get_views(app_name):
         
         for name, obj in inspect.getmembers(views_module):
             if inspect.isclass(obj) and name.endswith('View'):
+                if getattr(obj, '__module__', '') != views_module.__name__:
+                    continue
                 # Es una Class-Based View
                 views.append({
                     "name": name,
@@ -98,6 +103,8 @@ def get_views(app_name):
                     "methods": [m for m in dir(obj) if not m.startswith('_')],
                 })
             elif inspect.isfunction(obj) and not name.startswith('_'):
+                if getattr(obj, '__module__', '') != views_module.__name__:
+                    continue
                 # Es una Function-Based View
                 views.append({
                     "name": name,
@@ -136,17 +143,23 @@ def get_urls():
         
         resolver = get_resolver()
         
-        for pattern in resolver.url_patterns:
-            pattern_str = str(pattern.pattern)
-            name = pattern.name or "N/A"
-            callback = str(pattern.callback) if hasattr(pattern, 'callback') else "N/A"
-            
-            urls.append({
-                "path": pattern_str,
-                "name": name,
-                "callback": callback[:80],  # Limitar longitud
-                "method": "N/A",
-            })
+        def visit(patterns, prefix=""):
+            for pattern in patterns:
+                route = str(pattern.pattern)
+                full_path = f"{prefix}{route}"
+                if hasattr(pattern, "url_patterns"):
+                    visit(pattern.url_patterns, full_path)
+                    continue
+                name = pattern.name or "N/A"
+                callback = str(pattern.callback) if hasattr(pattern, 'callback') else "N/A"
+                urls.append({
+                    "path": full_path,
+                    "name": name,
+                    "callback": callback[:200],
+                    "method": "N/A",
+                })
+
+        visit(resolver.url_patterns)
     except Exception as e:
         pass
     
@@ -235,7 +248,7 @@ def generate_inventory(output_json="audit/INVENTARIO.json", output_csv="audit/IN
         "urls": get_urls(),
         "celery_tasks": get_celery_tasks(),
         "management_commands": get_management_commands(),
-        "dependencies": get_dependencies()[:50],  # Top 50 para brevedad
+        "dependencies": get_dependencies(),
     }
     
     # Por cada app, obtener modelos, vistas, migraciones
@@ -276,13 +289,13 @@ def generate_inventory(output_json="audit/INVENTARIO.json", output_csv="audit/IN
     Path(output_json).parent.mkdir(parents=True, exist_ok=True)
     
     # Escribir JSON
-    with open(output_json, 'w') as f:
+    with open(output_json, 'w', encoding='utf-8') as f:
         json.dump(inventory, f, indent=2)
     
     print(f"\n✅ INVENTARIO.json generado: {output_json}")
     
     # Escribir CSV (resumen de modelos)
-    with open(output_csv, 'w', newline='') as f:
+    with open(output_csv, 'w', newline='', encoding='utf-8-sig') as f:
         writer = csv.writer(f)
         writer.writerow(['App', 'Model', 'Fields', 'Tenant Filter', 'Table'])
         

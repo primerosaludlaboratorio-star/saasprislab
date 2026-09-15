@@ -21,6 +21,10 @@ from pathlib import Path
 import hashlib
 import argparse
 
+# PowerShell on Windows may expose a CP1252 console. Audit output must never
+# fail before the JSON artifact is written just because it contains a symbol.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 def run_cmd(cmd, capture=True):
     """Ejecuta comando y retorna stdout o returncode."""
@@ -37,17 +41,32 @@ def run_cmd(cmd, capture=True):
         return None
 
 
+def run_cmd_args(args):
+    """Ejecuta un comando sin shell, portable entre Windows y CI."""
+    try:
+        result = subprocess.run(
+            args, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", check=True,
+        )
+        return result.stdout.strip()
+    except (OSError, subprocess.CalledProcessError) as e:
+        print(f"⚠️ Error ejecutando: {' '.join(args)}")
+        if isinstance(e, subprocess.CalledProcessError):
+            print(f"   {e.stderr}")
+        return None
+
+
 def get_git_info():
     """Extrae información de git."""
     return {
-        "commit_sha": run_cmd("git rev-parse HEAD"),
-        "commit_short": run_cmd("git rev-parse --short HEAD"),
-        "branch": run_cmd("git rev-parse --abbrev-ref HEAD"),
-        "remote": run_cmd("git config --get remote.origin.url"),
-        "tree_hash": run_cmd("git rev-parse HEAD^{tree}"),
-        "committer_name": run_cmd("git log -1 --format=%an"),
-        "committer_email": run_cmd("git log -1 --format=%ae"),
-        "commit_date": run_cmd("git log -1 --format=%ai"),
+        "commit_sha": run_cmd_args(["git", "rev-parse", "HEAD"]),
+        "commit_short": run_cmd_args(["git", "rev-parse", "--short", "HEAD"]),
+        "branch": run_cmd_args(["git", "rev-parse", "--abbrev-ref", "HEAD"]),
+        "remote": run_cmd_args(["git", "config", "--get", "remote.origin.url"]),
+        "tree_hash": run_cmd_args(["git", "rev-parse", "HEAD^{tree}"]),
+        "committer_name": run_cmd_args(["git", "log", "-1", "--format=%an"]),
+        "committer_email": run_cmd_args(["git", "log", "-1", "--format=%ae"]),
+        "commit_date": run_cmd_args(["git", "log", "-1", "--format=%ai"]),
     }
 
 
@@ -84,8 +103,18 @@ def get_versions():
 
 def get_file_stats():
     """Cuenta archivos versionados y no versionados."""
-    versionados = int(run_cmd("git ls-files | wc -l") or "0")
-    no_versionados = int(run_cmd("git ls-files --others --exclude-standard | wc -l") or "0")
+    def git_file_count(*args):
+        try:
+            result = subprocess.run(
+                ["git", *args], capture_output=True, text=True,
+                encoding="utf-8", errors="replace", check=True,
+            )
+            return len([line for line in result.stdout.splitlines() if line.strip()])
+        except (OSError, subprocess.CalledProcessError):
+            return 0
+
+    versionados = git_file_count("ls-files")
+    no_versionados = git_file_count("ls-files", "--others", "--exclude-standard")
     
     return {
         "versionados": versionados,
