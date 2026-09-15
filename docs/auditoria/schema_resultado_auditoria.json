@@ -124,8 +124,9 @@
         },
         "intentos": { "type": "integer", "minimum": 0 },
         "evidencia_refs": {
-          "type": "string",
-          "description": "Referencias separadas por ';' para compatibilidad con CSV UTF-8"
+          "type": "array",
+          "description": "Arreglo JSON de referencias; al importar CSV dividir por ';' y recortar espacios",
+          "items": { "type": "string", "minLength": 1 }
         },
         "efectos_relacionados": { "type": "string" },
         "limpieza_estado": { "type": "string" },
@@ -196,8 +197,9 @@
         "hipotesis": { "type": "string", "minLength": 1 },
         "recomendacion": { "type": "string", "minLength": 1 },
         "evidencia_refs": {
-          "type": "string",
-          "description": "Referencias separadas por ';' para compatibilidad con CSV UTF-8"
+          "type": "array",
+          "description": "Arreglo JSON de referencias; al importar CSV dividir por ';' y recortar espacios",
+          "items": { "type": "string", "minLength": 1 }
         },
         "fecha_utc": { "type": "string", "format": "date-time" },
         "auditor": { "type": "string", "minLength": 1 }
@@ -278,6 +280,29 @@
           "then": {
             "properties": {
               "no_probado": { "const": 0 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "estado_cobertura": { "const": "bloqueado" } },
+            "required": ["estado_cobertura"]
+          },
+          "then": {
+            "properties": {
+              "blocked": { "minimum": 1 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "estado_cobertura": { "const": "parcial" } },
+            "required": ["estado_cobertura"]
+          },
+          "then": {
+            "properties": {
+              "no_probado": { "minimum": 1 },
+              "ejecutados": { "minimum": 1 }
             }
           }
         }
