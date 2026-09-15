@@ -2,7 +2,7 @@
 
 **Versión:** 1.0  
 **Fecha:** 2026-09-15  
-**Estado:** Fase 3 - EJECUCION PARCIAL VERIFICADA
+**Estado:** Fase 3 - CERRADA
 **Commit Anterior:** `88c22cb` (Fase 2 Cerrada)
 
 ---
@@ -41,6 +41,12 @@ Validar que PRISLAB SaaS **funciona correctamente en un entorno equivalente a pr
 - [x] Migraciones: desde cero
 - [x] Migraciones: reutilización (idempotencia)
 - [x] Bateria seleccionada de integracion y seguridad
+- [x] LIMS append-only e ISO 15189
+- [x] Rollback ACID
+- [x] Baseline de rendimiento PostgreSQL
+- [x] Concurrencia y locks PostgreSQL
+- [x] Disponibilidad de worker Celery
+- [x] Artifact: `prislab-fase3-35018790027`
 
 ### ⏳ Pendiente de ejecución dedicada
 - [ ] Validación append-only (LIMS)
@@ -566,11 +572,11 @@ audit/fase3/celery/
 | 3.2 | Migraciones desde cero | logs del artifact | PASS |
 | 3.3 | Idempotencia migraciones | `migrate-second.log` | PASS |
 | 3.4 | Integracion y seguridad seleccionada | `tests.log` | PASS |
-| 3.5 | LIMS append-only | `lims-append-only.log` | EJECUCION DEDICADA |
-| 3.6 | ACID transactions | `acid.log` | EJECUCION DEDICADA |
-| 3.7 | Performance baseline | `performance-baseline.json` | EJECUCION DEDICADA |
-| 3.8 | Concurrency/deadlocks | `concurrency.log` | EJECUCION DEDICADA |
-| 3.9 | Celery workers | `celery-ping.log` | EJECUCION DEDICADA |
+| 3.5 | LIMS append-only | `lims-append-only.log` | PASS |
+| 3.6 | ACID transactions | `acid.log` | PASS |
+| 3.7 | Performance baseline | `performance-baseline.json` | PASS |
+| 3.8 | Concurrency/deadlocks | `concurrency.log` | PASS |
+| 3.9 | Celery workers | `celery-ping.log` | PASS |
 
 ---
 
@@ -581,8 +587,8 @@ audit/fase3/celery/
 1. [x] El workflow define Python 3.12, PostgreSQL 16 Alpine y Redis 7
 2. [x] El VPS productivo queda fuera del staging
 3. [x] Se usan pruebas Django reales existentes, no pseudopruebas
-4. [ ] Ejecutar manualmente el workflow y conservar el artifact `prislab-fase3-<run_id>`
-5. [ ] Copiar el artifact fuera del checkout y documentar su SHA-256
+4. [x] Ejecutar el workflow y conservar el artifact `prislab-fase3-35018790027`
+5. [x] Documentar el SHA-256 remoto del artifact
 
 **Veredicto al cierre de Fase 3:**
 
