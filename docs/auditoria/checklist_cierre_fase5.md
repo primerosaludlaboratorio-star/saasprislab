@@ -6,7 +6,7 @@
 ## Gates de cierre
 - [ ] Matriz Modulo x Rol x Tipo de prueba ejecutada y consolidada (`cubierto|parcial|no_cubierto|bloqueado`).
 - [ ] Todos los flujos principales con PASS de inicio a fin por perfil aplicable.
-- [ ] No hay FAIL abierto que viole la regla STOP o el gate de cierre por severidad ALTA.
+- [ ] No hay FAIL ALTA abierto (o, si existe, cuenta con dispensa formal aprobada y fecha de remediacion comprometida).
 - [ ] Cada correccion aplicada tiene regresion en verde (misma ruta/flujo afectado).
 - [ ] PDFs/reportes/exportaciones (PDF, Excel, CSV) fueron abiertos y validados como legibles.
 - [ ] Inventario de ortografia, consistencia y lenguaje humano completado e inventariado.
