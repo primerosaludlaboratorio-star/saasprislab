@@ -97,7 +97,7 @@
         "evidencia_refs"
       ],
       "properties": {
-        "id": { "type": "string", "pattern": "^F5-[ABC]-\\d{3}$" },
+        "id": { "type": "string", "pattern": "^F5-[A-Z]-\\d{3}$" },
         "auditor": { "type": "string", "minLength": 1 },
         "perfil": { "type": "string", "minLength": 1 },
         "rol": { "type": "string", "minLength": 1 },
@@ -167,7 +167,7 @@
       ],
       "properties": {
         "id": { "type": "string", "pattern": "^HUM-[A-Z0-9_]+-\\d{3}$" },
-        "escenario_id": { "type": "string", "pattern": "^F5-[ABC]-\\d{3}$" },
+        "escenario_id": { "type": "string", "pattern": "^F5-[A-Z]-\\d{3}$" },
         "categoria": { "type": "string", "minLength": 1 },
         "modulo": { "type": "string", "minLength": 1 },
         "severidad": {
@@ -225,7 +225,7 @@
     },
     "cobertura": {
       "type": "object",
-      "description": "Invariante operativa esperada (validación manual): ejecutados = pass + fail + blocked y total_escenarios = ejecutados + no_probado.",
+      "description": "Contadores de cobertura para reporte consolidado; se recomienda verificar su conciliación durante QA del entregable.",
       "additionalProperties": false,
       "required": [
         "modulo",
@@ -252,7 +252,7 @@
           "type": "array",
           "description": "En CSV se captura como lista delimitada por ';' y al consolidar se transforma a arreglo JSON",
           "uniqueItems": true,
-          "items": { "type": "string", "pattern": "^F5-[ABC]-\\d{3}$" }
+          "items": { "type": "string", "pattern": "^F5-[A-Z]-\\d{3}$" }
         },
         "total_escenarios": {
           "type": "integer",
